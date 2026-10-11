@@ -1,5 +1,5 @@
 # SPA de React servida por Nginx sin privilegios.
-FROM node:24-alpine AS construccion
+FROM node:25-alpine AS construccion
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
