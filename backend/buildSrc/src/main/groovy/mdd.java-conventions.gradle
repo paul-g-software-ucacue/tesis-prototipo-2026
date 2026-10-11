@@ -1,0 +1,121 @@
+// Convención común de los 12 servicios, las 4 aplicaciones y el gateway.
+import com.github.spotbugs.snom.Confidence
+import com.github.spotbugs.snom.Effort
+
+plugins {
+    id 'java'
+    id 'jacoco'
+    id 'jvm-test-suite'
+    id 'com.diffplug.spotless'
+    id 'com.github.spotbugs'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+def versionSpringBoot = providers.gradleProperty('versionSpringBoot').get()
+
+dependencies {
+    implementation platform("org.springframework.boot:spring-boot-dependencies:${versionSpringBoot}")
+    // Reglas de seguridad para SpotBugs: inyección SQL, XSS, XXE, criptografía débil, deserialización.
+    spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0'
+}
+
+testing {
+    suites {
+        // Unitarias, de arquitectura y de contrato: sin Docker, en cada pull request.
+        test {
+            useJUnitJupiter()
+            dependencies {
+                implementation platform("org.springframework.boot:spring-boot-dependencies:${versionSpringBoot}")
+                // JUnit 5, AssertJ y Mockito. Mockito solo en la capa de aplicación (DS-2).
+                implementation 'org.springframework.boot:spring-boot-starter-test'
+            }
+        }
+        // Adaptadores con PostgreSQL real (Testcontainers).
+        integrationTest(JvmTestSuite) {
+            useJUnitJupiter()
+            dependencies {
+                implementation project()
+                implementation platform("org.springframework.boot:spring-boot-dependencies:${versionSpringBoot}")
+                implementation 'org.springframework.boot:spring-boot-starter-test'
+                implementation 'org.springframework.boot:spring-boot-testcontainers'
+                implementation 'org.testcontainers:testcontainers-postgresql'
+            }
+            targets {
+                all {
+                    testTask.configure { shouldRunAfter(test) }
+                }
+            }
+        }
+    }
+}
+
+jacoco {
+    toolVersion = '0.8.15'
+}
+
+tasks.named('jacocoTestReport') {
+    dependsOn tasks.named('test')
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+// Piso de cobertura de cada módulo (DS-1). mdd.servicio-central agrega el 80 % del dominio.
+tasks.named('jacocoTestCoverageVerification') {
+    dependsOn tasks.named('test')
+    violationRules {
+        rule {
+            limit {
+                counter = 'LINE'
+                minimum = 0.60
+            }
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('jacocoTestCoverageVerification')
+}
+
+spotless {
+    java {
+        target 'src/*/java/**/*.java'
+        palantirJavaFormat()
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+
+// Análisis estático del código propio (etapa 1). Solo el código de main: las pruebas no van a producción.
+spotbugs {
+    ignoreFailures = false
+    effort = Effort.valueOf('MAX')
+    reportLevel = Confidence.valueOf('HIGH')   // falla solo con hallazgos de confianza alta
+    excludeFilter = rootProject.file('config/spotbugs/excluir.xml')
+}
+
+tasks.named('spotbugsTest') {
+    enabled = false
+}
+
+tasks.named('spotbugsIntegrationTest') {
+    enabled = false
+}
+
+tasks.named('spotbugsMain') {
+    reports {
+        html.required = true
+        xml.required = false
+    }
+}

@@ -1,0 +1,79 @@
+name: Historia de usuario
+description: Una historia del backlog, sub-issue de su feature.
+title: "Fxx-Hxx · "
+labels: ["tipo:historia"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Usa los términos del glosario (`docs/modelo_dominio.md`, sección 7). Después de crearla, enlázala como sub-issue de su feature y completa los campos del proyecto.
+  - type: textarea
+    id: historia
+    attributes:
+      label: Historia
+      description: Como ‹rol›, quiero ‹acción›, para ‹beneficio›.
+      placeholder: Como Coordinadora de carrera, quiero …, para …
+    validations:
+      required: true
+  - type: input
+    id: requerimientos
+    attributes:
+      label: Requerimientos
+      description: RF, RN, RNF, decisiones (D-xx) o ADR que cubre. Agrega también las etiquetas RF y RN.
+      placeholder: RF-24, RN-19, ADR-010
+    validations:
+      required: true
+  - type: textarea
+    id: criterios
+    attributes:
+      label: Criterios de aceptación
+      description: Escenarios en Dado–Cuando–Entonces, tomados de la ERS. Solo datos ficticios.
+      render: gherkin
+      value: |
+        Escenario: 
+          Dado 
+          Cuando 
+          Entonces 
+    validations:
+      required: true
+  - type: dropdown
+    id: servicio
+    attributes:
+      label: Servicio
+      options:
+        - 01-usuarios
+        - 02-roles
+        - 03-cargas
+        - 04-docentes
+        - 05-generacion
+        - 06-validacion-ocs
+        - 07-notificaciones
+        - 08-reporting
+        - 09-dashboard
+        - 10-firma
+        - 11-academico
+        - 12-normativa
+        - gateway
+        - frontend
+        - transversal
+    validations:
+      required: true
+  - type: input
+    id: depende
+    attributes:
+      label: Depende de
+      description: Issues que deben estar terminados antes (#número).
+  - type: textarea
+    id: notas
+    attributes:
+      label: Notas
+  - type: checkboxes
+    id: listo
+    attributes:
+      label: Definición de listo
+      options:
+        - label: Redactada con los términos del glosario.
+        - label: Es sub-issue de su feature y lleva sus etiquetas, su milestone y el campo «Ola LI».
+        - label: Criterios de aceptación en Dado–Cuando–Entonces.
+        - label: Sus dependencias están terminadas o no la bloquean.
+        - label: Tiene «Tamaño» y «Horas estimadas», y cabe en una semana.

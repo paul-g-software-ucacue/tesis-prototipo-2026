@@ -1,0 +1,71 @@
+name: Defecto
+description: Algo que no cumple un criterio de aceptación o un requerimiento.
+title: "Defecto · "
+labels: ["tipo:defecto"]
+body:
+  - type: input
+    id: historia
+    attributes:
+      label: Historia o requerimiento afectado
+      description: El issue de la historia (#número) y el RF, RN o RNF que no se cumple.
+      placeholder: "#42, RF-28"
+    validations:
+      required: true
+  - type: textarea
+    id: pasos
+    attributes:
+      label: Pasos para reproducirlo
+      description: Solo datos ficticios. Nunca nombres ni cédulas reales.
+      placeholder: |
+        1. Inicio sesión como …
+        2. …
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: Resultado esperado
+    validations:
+      required: true
+  - type: textarea
+    id: obtenido
+    attributes:
+      label: Resultado obtenido
+      description: Incluye el código de error y el idIncidente si la respuesta los trae.
+    validations:
+      required: true
+  - type: dropdown
+    id: severidad
+    attributes:
+      label: Severidad
+      options:
+        - Alta (bloquea el flujo o pierde datos)
+        - Media (hay un rodeo)
+        - Baja (cosmético)
+    validations:
+      required: true
+  - type: dropdown
+    id: servicio
+    attributes:
+      label: Servicio
+      options:
+        - 01-usuarios
+        - 02-roles
+        - 03-cargas
+        - 04-docentes
+        - 05-generacion
+        - 06-validacion-ocs
+        - 07-notificaciones
+        - 08-reporting
+        - 09-dashboard
+        - 10-firma
+        - 11-academico
+        - 12-normativa
+        - gateway
+        - frontend
+        - transversal
+  - type: input
+    id: version
+    attributes:
+      label: Commit o versión
+      placeholder: ola-2, o el SHA corto

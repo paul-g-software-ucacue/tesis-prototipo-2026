@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Exclusiones de SpotBugs. Cada exclusión lleva su motivo; no se excluye un hallazgo de seguridad sin un ADR o una nota en el PR. -->
+<FindBugsFilter>
+  <!-- Código generado por openapi-generator desde los contratos. -->
+  <Match>
+    <Source name="~.*/build/generated/.*" />
+  </Match>
+</FindBugsFilter>

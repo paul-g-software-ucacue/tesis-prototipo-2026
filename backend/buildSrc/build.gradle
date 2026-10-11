@@ -1,0 +1,14 @@
+// Plugins de convención del MDD, en Groovy (D-27, ADR-011 por aprobar).
+plugins {
+    id 'groovy-gradle-plugin'
+}
+
+repositories {
+    gradlePluginPortal()
+}
+
+dependencies {
+    // Versiones verificadas el 11/10/2026; Dependabot las mantiene al día.
+    implementation 'com.diffplug.spotless:spotless-plugin-gradle:8.10.4'
+    implementation 'com.github.spotbugs.snom:spotbugs-gradle-plugin:6.5.12'
+}

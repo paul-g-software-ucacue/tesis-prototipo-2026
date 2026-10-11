@@ -1,0 +1,18 @@
+// Servicios centrales (5 Generación, 6 Validación OCS, 10 Firma y 12 Normativa):
+// además del 60 %, cada paquete del dominio exige 80 % de líneas (RNF-MAN-02).
+plugins {
+    id 'mdd.java-conventions'
+}
+
+tasks.named('jacocoTestCoverageVerification') {
+    violationRules {
+        rule {
+            element = 'PACKAGE'
+            includes = ['*.dominio', '*.dominio.*']
+            limit {
+                counter = 'LINE'
+                minimum = 0.80
+            }
+        }
+    }
+}

@@ -1,0 +1,19 @@
+// Raíz del multiproyecto. CycloneDX registra cyclonedxDirectBom en cada subproyecto
+// y cyclonedxBom (agregado) aquí.
+import org.cyclonedx.gradle.CyclonedxDirectTask
+import org.gradle.api.file.RegularFile
+
+plugins {
+    id 'org.cyclonedx.bom' version '3.5.1'
+}
+
+subprojects {
+    tasks.withType(CyclonedxDirectTask).configureEach {
+        includeConfigs = ['runtimeClasspath']   // lo que viaja en la imagen
+        xmlOutput.convention((RegularFile) null)  // solo JSON
+    }
+}
+
+tasks.named('cyclonedxBom') {
+    xmlOutput.convention((RegularFile) null)
+}

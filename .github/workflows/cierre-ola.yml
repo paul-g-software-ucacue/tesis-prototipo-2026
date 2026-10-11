@@ -1,0 +1,116 @@
+# Cierre de ola: OWASP ZAP (RNF-SEG-04), k6 (D-15) y la evidencia de la ola como release.
+# Se lanza al crear el tag ola-N o a mano. No bloquea pull requests.
+name: cierre-ola
+
+on:
+  push:
+    tags: ["ola-*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  JAVA_VERSION: "25"
+  URL: https://${{ vars.DOMINIO }}
+
+jobs:
+  zap-web:
+    name: "ZAP · frontend"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with: { sparse-checkout: deploy/zap }
+      - name: Escaneo completo con la cabecera del proxy
+        env: { ACCESO: "${{ secrets.DEMO_ACCESO_BASIC }}" }
+        run: |
+          valor="Basic $(printf '%s' "$ACCESO" | base64 -w0)"
+          echo "::add-mask::$valor"
+          mkdir -m 777 -p zap
+          docker run --rm -v "$PWD/zap:/zap/wrk:rw" \
+            -e ZAP_AUTH_HEADER=Authorization -e ZAP_AUTH_HEADER_VALUE="$valor" \
+            ghcr.io/zaproxy/zaproxy:stable zap-full-scan.py -t "$URL" -I -r zap-web.html -J zap-web.json
+          bash deploy/zap/sin_altos.sh zap/zap-web.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with: { name: zap-web, path: zap/ }
+
+  zap-api:
+    name: "ZAP · API ${{ matrix.contrato }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # Solo los contratos de los servicios ya construidos al cerrar la ola.
+        contrato: [identidad, cargas, academico, docentes, normativa]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: |
+            contratos
+            deploy/zap
+      - name: Escaneo de la API desde su contrato, con el token de un usuario ficticio
+        env:
+          USUARIO: ${{ secrets.DEMO_USUARIO_ZAP }}
+          CLAVE: ${{ secrets.DEMO_CLAVE_ZAP }}
+        run: |
+          token=$(curl -fsS -X POST "$URL${{ vars.RUTA_INICIO_SESION }}" -H 'Content-Type: application/json' \
+            -d "{\"usuario\":\"$USUARIO\",\"clave\":\"$CLAVE\"}" | jq -r .token)
+          echo "::add-mask::$token"
+          mkdir -m 777 -p zap && cp contratos/${{ matrix.contrato }}.yaml zap/
+          docker run --rm -v "$PWD/zap:/zap/wrk:rw" \
+            -e ZAP_AUTH_HEADER=Authorization -e ZAP_AUTH_HEADER_VALUE="Bearer $token" \
+            ghcr.io/zaproxy/zaproxy:stable zap-api-scan.py -t ${{ matrix.contrato }}.yaml -f openapi -O "$URL" \
+            -I -r zap-api.html -J zap-api.json
+          bash deploy/zap/sin_altos.sh zap/zap-api.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with: { name: "zap-api-${{ matrix.contrato }}", path: zap/ }
+
+  k6:
+    name: "k6 · nómina base"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with: { sparse-checkout: pruebas/k6 }
+      - uses: grafana/setup-k6-action@v1
+      - uses: grafana/run-k6-action@v1
+        env:
+          URL_BASE: ${{ env.URL }}
+          K6_WEB_DASHBOARD: "true"
+          K6_WEB_DASHBOARD_EXPORT: informe-k6.html
+        with:
+          path: pruebas/k6/nomina_base.js
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with: { name: k6, path: informe-k6.html }
+
+  evidencia:
+    name: "Evidencia de la ola"
+    needs: [zap-web, zap-api, k6]
+    if: always() && startsWith(github.ref, 'refs/tags/ola-')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write   # solo este job crea la release
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with: { distribution: temurin, java-version: "${{ env.JAVA_VERSION }}" }
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Cobertura y SBOM de la versión etiquetada
+        working-directory: backend
+        run: ./gradlew test jacocoTestReport cyclonedxDirectBom cyclonedxBom
+      - uses: actions/download-artifact@v8
+        with: { path: informes }
+      - name: Empaquetar y publicar la release
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          mkdir -p evidencia
+          find backend -path '*/build/reports/cyclonedx*/bom.json' -exec sh -c 'cp "$1" "evidencia/sbom-$(echo "$1" | tr / _)"' _ {} \;
+          find backend -type d -path '*/build/reports/jacoco/test/html' -print0 | tar -czf evidencia/cobertura.tgz --null -T -
+          tar -czf evidencia/informes.tgz informes
+          gh release create "$GITHUB_REF_NAME" evidencia/* --title "$GITHUB_REF_NAME" --notes "Evidencia del cierre de $GITHUB_REF_NAME: ZAP, k6, cobertura y SBOM."

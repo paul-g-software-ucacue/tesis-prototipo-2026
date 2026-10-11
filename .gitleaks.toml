@@ -1,0 +1,15 @@
+# Gitleaks del MDD: reglas por defecto más una regla de certificados y llaves.
+# El certificado real del autor no se sube nunca al repositorio.
+title = "Gitleaks del MDD"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "certificado-o-llave"
+description = "Certificado o llave privada fuera de la CA de prueba"
+path = '''(?i)\.(p12|pfx|pem|key|jks|keystore|crt|cer)$'''
+
+[[rules.allowlists]]
+description = "CA de prueba y certificados ficticios de los firmantes de la demo"
+paths = ['''^backend/.+/src/test/resources/ca-prueba/''', '''^pruebas/ca-prueba/''']

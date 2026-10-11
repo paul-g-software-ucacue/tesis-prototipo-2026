@@ -1,0 +1,17 @@
+# Actualizaciones semanales agrupadas. Las de GitHub Actions mantienen al día los SHA fijados.
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /backend
+    schedule: { interval: weekly }
+    groups: { gradle-menores: { update-types: [minor, patch] } }
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule: { interval: weekly }
+    groups: { npm-menores: { update-types: [minor, patch] } }
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+  - package-ecosystem: docker
+    directory: /deploy/docker
+    schedule: { interval: weekly }
