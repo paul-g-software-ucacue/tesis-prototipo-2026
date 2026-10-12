@@ -110,7 +110,7 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
   4. Registrar la fila `palantir-java25` en `specs/001-repo-plantilla-ci/evidencia.md`.
 
   Si falla, no desactivar Spotless: se registra en las notas y se aplica T050.
-- [ ] T019 [US1] Hacer commit y push en `001-repo-plantilla-ci`, y abrir el pull request hacia `main` **en borrador** con `gh pr create --draft`, usando `.github/pull_request_template.md`. Lleva `Refs #18` (la historia se cierra en T054), la carpeta `specs/001-repo-plantilla-ci/` y «Contrato OpenAPI cambiado: no».
+- [X] T019 [US1] Hacer commit y push en `001-repo-plantilla-ci`, y abrir el pull request hacia `main` **en borrador** con `gh pr create --draft`, usando `.github/pull_request_template.md`. Lleva `Refs #18` (la historia se cierra en T054), la carpeta `specs/001-repo-plantilla-ci/` y «Contrato OpenAPI cambiado: no».
 - [ ] T020 [US1] Comprobar el caso límite «Pull request en borrador»: con el pull request de T019 todavía en borrador, `2 · test-integracion`, `4 · sbom-backend`, `4 · sbom-frontend` y `4 · sca` quedan *skipped*. Marcarlo como listo con `gh pr ready` y, en el run nuevo, comprobar la tabla de [contracts/ci-y-regla-main.md](contracts/ci-y-regla-main.md):
   - `0 · deteccion` en éxito con `frontend=false`;
   - `1 · lint-backend`, `2 · test-backend` y `2 · test-integracion` en éxito;
@@ -136,28 +136,28 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
 
 > Escribir primero estas pruebas y comprobar que **fallan**, o que no compilan porque todavía no existe `ReglasCapas`, antes de T030.
 
-- [ ] T024 [P] [US2] Crear la *fixture* correcta en `backend/plataforma/arquitectura/src/test/java/ec/mdd/arquitectura/fixtures/capas/correcto/`. Lleva una clase mínima en cada capa (`dominio/`, `puertos/entrada/`, `puertos/salida/`, `aplicacion/`, `adaptadores/` e `infraestructura/`) y respeta el sentido de la tabla «Capa» de [data-model.md](data-model.md):
+- [X] T024 [P] [US2] Crear la *fixture* correcta en `backend/plataforma/arquitectura/src/test/java/ec/mdd/arquitectura/fixtures/capas/correcto/`. Lleva una clase mínima en cada capa (`dominio/`, `puertos/entrada/`, `puertos/salida/`, `aplicacion/`, `adaptadores/` e `infraestructura/`) y respeta el sentido de la tabla «Capa» de [data-model.md](data-model.md):
   - aplicación usa un puerto y el dominio;
   - un adaptador usa un puerto;
   - infraestructura usa un adaptador.
-- [ ] T025 [P] [US2] Crear las *fixtures* de violación en `backend/plataforma/arquitectura/src/test/java/ec/mdd/arquitectura/fixtures/capas/`, cada una en su paquete:
+- [X] T025 [P] [US2] Crear las *fixtures* de violación en `backend/plataforma/arquitectura/src/test/java/ec/mdd/arquitectura/fixtures/capas/`, cada una en su paquete:
   - `dominioconspring/dominio/`: usa `org.springframework.stereotype.Component`;
   - `dominioconjpa/dominio/`: usa `jakarta.persistence.Entity`;
   - `dominioconhttp/dominio/`: usa `java.net.http.HttpClient`;
   - `dominioconpdf/dominio/`: usa la clase sustituta `org.apache.pdfbox.fixtures.DocumentoPdfSimulado`, creada en `backend/plataforma/arquitectura/src/test/java/org/apache/pdfbox/fixtures/DocumentoPdfSimulado.java` para no agregar la dependencia de PDFBox;
   - `aplicacionconadaptador/`: una clase de `aplicacion` usa una de `adaptadores`;
   - `puertoconinfraestructura/`: una clase de `puertos` usa una de `infraestructura`.
-- [ ] T026 [US2] Crear `backend/plataforma/arquitectura/src/test/java/ec/mdd/arquitectura/ReglasCapasTest.java`, que importa cada paquete de *fixtures* con `new ClassFileImporter().importPackages(...)`. Los nombres de los métodos van en estilo Dado–Cuando–Entonces. Comprueba que:
+- [X] T026 [US2] Crear `backend/plataforma/arquitectura/src/test/java/ec/mdd/arquitectura/ReglasCapasTest.java`, que importa cada paquete de *fixtures* con `new ClassFileImporter().importPackages(...)`. Los nombres de los métodos van en estilo Dado–Cuando–Entonces. Comprueba que:
   - la *fixture* correcta pasa `ReglasCapas.SENTIDO_DE_LAS_CAPAS` y `ReglasCapas.DOMINIO_SIN_DETALLES`;
   - cada *fixture* de dominio lanza `AssertionError` con `DOMINIO_SIN_DETALLES`;
   - `aplicacionconadaptador` y `puertoconinfraestructura` lanzan `AssertionError` con `SENTIDO_DE_LAS_CAPAS`;
   - un paquete sin clases pasa las dos reglas (servicio recién creado, research §11).
-- [ ] T027 [P] [US2] Crear las *fixtures* de módulos en `backend/plataforma/arquitectura/src/test/java/ec/mdd/arquitectura/fixtures/modulos/`:
+- [X] T027 [P] [US2] Crear las *fixtures* de módulos en `backend/plataforma/arquitectura/src/test/java/ec/mdd/arquitectura/fixtures/modulos/`:
   - `correcto/alfa/` con `puertos/entrada/package-info.java` anotado `@org.springframework.modulith.NamedInterface("api")` y una interfaz en ese paquete, más una clase en `alfa/aplicacion/`;
   - `correcto/beta/aplicacion/`, con una clase que solo usa la interfaz de `alfa.puertos.entrada`;
   - `usointerno/alfa/` y `usointerno/beta/`, con la misma estructura, salvo que `beta` usa la clase de `alfa.aplicacion`.
-- [ ] T028 [US2] Crear `backend/plataforma/arquitectura/src/test/java/ec/mdd/arquitectura/ModulosFixturesTest.java`. Comprueba que `ApplicationModules.of(...)` sobre `...fixtures.modulos.correcto` pasa `verify()`, y que sobre `...fixtures.modulos.usointerno` lanza `org.springframework.modulith.core.Violations`. Como las *fixtures* son clases de prueba, se importan con la sobrecarga de `ApplicationModules` que acepta una `ImportOption`, con una opción que incluya las clases de prueba. Antes hay que confirmar la firma en `spring-modulith-core` 2.1.1 (research §12).
-- [ ] T029 [US2] Ejecutar `./gradlew :plataforma:arquitectura:test` y confirmar que falla, o que no compila, porque falta `ReglasCapas`. Anotarlo en el mensaje del commit de las pruebas.
+- [X] T028 [US2] Crear `backend/plataforma/arquitectura/src/test/java/ec/mdd/arquitectura/ModulosFixturesTest.java`. Comprueba que `ApplicationModules.of(...)` sobre `...fixtures.modulos.correcto` pasa `verify()`, y que sobre `...fixtures.modulos.usointerno` lanza `org.springframework.modulith.core.Violations`. Como las *fixtures* son clases de prueba, se importan con la sobrecarga de `ApplicationModules` que acepta una `ImportOption`, con una opción que incluya las clases de prueba. Antes hay que confirmar la firma en `spring-modulith-core` 2.1.1 (research §12).
+- [X] T029 [US2] Ejecutar `./gradlew :plataforma:arquitectura:test` y confirmar que falla, o que no compila, porque falta `ReglasCapas`. Anotarlo en el mensaje del commit de las pruebas.
 
 ### Implementation for User Story 2
 
