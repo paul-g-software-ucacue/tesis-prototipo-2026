@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-34 · ADR-013.
+- **Siguiente número libre:** D-36 · ADR-013.
 
 ## Índice
 
@@ -19,8 +19,10 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-30 | 2026-10-11 | Repositorio en la cuenta `paul-g-software-ucacue` con GitHub Pro | Aceptada | — (D-24 se mantiene) |
 | D-31 | 2026-10-11 | Regla de la rama principal: 10 checks, estricta, solo *squash*, sin excepciones | Aceptada | — (aplica `pipeline_cicd.md` §8) |
 | D-32 | 2026-10-11 | Cobertura única del 60 % por módulo, también en el dominio central | Aceptada | Constitución principio VIII y §3 (2.0.0), RNF-MAN-02, D-27, ADR-011 punto 3, issue #18 (escenario 4) |
-| ADR-012 | 2026-10-11 | Plantilla de servicio: paquete base, API publicada y plugins de convención | Aceptada | ADR-011 punto 2 |
+| ADR-012 | 2026-10-11 | Plantilla de servicio: paquete base, API publicada y plugins de convención | Aceptada, modificada por D-35 (los 12 servicios se crean en B00-H02) | ADR-011 punto 2 |
 | D-33 | 2026-10-11 | google-java-format (estilo AOSP) en lugar de palantir-java-format | Aceptada | Constitución §8 (2.0.1), ADR-011 punto 4 (Spotless) |
+| D-34 | 2026-10-12 | Medición de R-19 en dos pasos: en B00-H02 tras un calentamiento y en B00-H03 tras iniciar sesión | Aceptada | Issue #19 (escenario de memoria), issue #20 |
+| D-35 | 2026-10-12 | B00-H02 crea los 12 servicios vacíos, cada uno con su esquema y una migración mínima | Aceptada | Issue #19 (alcance), ADR-012 (cuándo se crean los servicios) |
 
 ---
 
@@ -155,6 +157,38 @@ Se conservan las reglas que ya tenía: prohibido borrar `main` o reescribir su h
 **Alternativas.** Mantener palantir y prohibir esas dos construcciones (la CI ya las rechazaba); usar google-java-format con el estilo de Google por defecto (sangría de 2 espacios).
 
 **Consecuencias.** El código existente se reformateó una vez (6 archivos de `plataforma:arquitectura` y los esqueletos de `backend/plantillas/`). Las líneas pasan de un máximo de 120 a 100 caracteres. Los esqueletos se formatearon con el mismo Spotless que usa la CI; el JAR de la línea de comandos en modo `--aosp` agrupa los `import` de otra forma (agrega una línea en blanco entre grupos).
+
+---
+
+## D-34. Medición de R-19 en dos pasos
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-12 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q1 de la especificación de B00-H02 (`specs/002-compose-cuatro-procesos/spec.md`)
+- **Modifica a:** issue #19 (escenario «Cabe en la memoria de la VM») e issue #20, B00-H03 (recibe el escenario de la medición después de iniciar sesión)
+
+**Decisión.** B00-H02 mide la memoria con `docker stats` con todo levantado y sano, después de un calentamiento que llama a la salud de cada proceso. La medición «después de iniciar sesión» pasa a B00-H03, que es la historia que crea el inicio de sesión.
+
+**Por qué.** El escenario original de B00-H02 pedía medir después de iniciar sesión, pero el inicio de sesión llega con B00-H03, que depende de B00-H02. Así R-19 se conoce desde la ola 0 y se vuelve a medir con una sesión real.
+
+**Alternativas.** Medir solo en reposo, sin repetir; dejar la medición pendiente hasta B00-H03 (B00-H02 no podría cerrarse).
+
+**Consecuencias.** Los issues #19 y #20 se editaron el 2026-10-12. La evidencia de R-19 tiene dos mediciones.
+
+---
+
+## D-35. B00-H02 crea los 12 servicios vacíos
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-12 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q2 de la especificación de B00-H02
+- **Modifica a:** ADR-012 (decía que los servicios llegan con sus historias) y el alcance del issue #19
+
+**Decisión.** B00-H02 crea los 12 servicios desde `backend/plantillas/servicio`, sin lógica de negocio. Cada uno tiene su esquema en PostgreSQL y una primera migración de Flyway mínima, sin tablas de negocio. Los 4 procesos los ensamblan según ADR-006. Las tablas y la lógica de cada servicio llegan con sus historias.
+
+**Por qué.** El escenario «Un esquema por servicio» necesita servicios que apliquen migraciones, y la medición de R-19 es más realista si cada proceso carga sus módulos. Sin servicios, los procesos arrancarían vacíos.
+
+**Alternativas.** Demostrar la regla con un servicio de prueba y dejar los procesos vacíos; pasar el escenario de esquemas a la primera historia con datos (F04-H01).
+
+**Consecuencias.** La primera historia de cada servicio parte de un servicio ya creado y ensamblado en su proceso, en lugar de copiar la plantilla.
 
 ---
 
