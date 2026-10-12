@@ -33,7 +33,7 @@ Los detalles y sus alternativas están en [research.md](research.md); las decisi
 - Se repiten las pruebas de arquitectura existentes.
 
 **Target Platform**:
-- Docker Compose sobre Ubuntu Server, compatible con aaPanel (RNF-POR-01), en una VM de 4 vCPU y 8 GiB (D-36). La referencia es `ubuntu-latest` en GitHub Actions.
+- Docker Compose sobre Ubuntu Server, compatible con aaPanel (RNF-POR-01), en un servidor o PC de 4 núcleos y 8 GiB de RAM (D-36). La referencia es `ubuntu-latest` en GitHub Actions.
 - En local, Docker Engine con Docker Compose v2, de los paquetes de Fedora.
 
 **Project Type**: monorepo web: multiproyecto Gradle en `backend/`, despliegue en `compose.yaml` y `deploy/`.
@@ -42,7 +42,7 @@ Los detalles y sus alternativas están en [research.md](research.md); las decisi
 
 **Constraints**:
 - Consumo total por debajo de 8 GiB después del calentamiento, con alerta en 7 GiB (R-19, D-36).
-- La suma de los límites iniciales es 5 888 MiB.
+- La suma de los límites iniciales es 2 944 MiB.
 - Solo el gateway publica un puerto.
 - No hay secretos reales en el repositorio.
 - No hay JPA hasta que exista una entidad.
@@ -69,7 +69,7 @@ Los detalles y sus alternativas están en [research.md](research.md); las decisi
 | XI. Diseño pragmático | Una configuración explícita de tres líneas por servicio en lugar de una abstracción compartida. Las alternativas descartadas están en research §1 a §4. | ✅ |
 | XII. JavaDoc | Las clases `<Servicio>FlywayConfig` y la prueba de esquemas del esqueleto llevan JavaDoc en español. | ✅ |
 | XIII. Errores | Esta historia no tiene errores de API. | ✅ N/A |
-| §3 Infraestructura y memoria | Docker Compose en la VM de 4 vCPU y 8 GiB (constitución 2.1.0, D-36), un esquema por módulo, límites explícitos por JVM y por contenedor, y medición de R-19 en la ola 0. | ✅ |
+| §3 Infraestructura y memoria | Docker Compose en un servidor o PC de 4 núcleos y 8 GiB (constitución 2.1.0, D-36), un esquema por módulo, límites explícitos por JVM y por contenedor, y medición de R-19 en la ola 0. | ✅ |
 | §6.4 ADR | Las decisiones que afectan a varias features (persistencia por servicio, roles por proceso y construcción de imágenes) están en ADR-013, aprobado por el autor el 2026-10-12. | ✅ |
 
 **Resultado del gate antes de la fase 0:** pasa. ADR-013 quedó aprobado el 2026-10-12.

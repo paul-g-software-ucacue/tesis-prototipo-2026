@@ -93,13 +93,13 @@ Fuentes leídas: constitución 2.0.1, `docs/decisiones.md` (D-28 a D-35, ADR-012
 
   | Contenedor | Límite |
   |---|---|
-  | `postgres` | 1 024 MiB |
-  | `identidad`, `datos`, `distributivo` y `salida` | 1 024 MiB cada uno |
-  | `gateway` | 768 MiB |
-  | **Total** | **5 888 MiB** (5,75 GiB) |
+  | `postgres` | 512 MiB |
+  | `identidad`, `datos`, `distributivo` y `salida` | 512 MiB cada uno |
+  | `gateway` | 384 MiB |
+  | **Total** | **2 944 MiB** (2,9 GiB) |
 
-  Quedan unos 2,25 GiB de los 8 GiB de la VM para el sistema operativo (D-36, que duplicó los límites de 512 y 384 MiB).
-- **JVM:** `JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=60`, como ya anticipaba `java.Dockerfile`. Con menos de 1 792 MiB por contenedor, la JVM elige SerialGC aunque la VM tenga 4 vCPU; es la opción de menor consumo. No se agregan más ajustes hasta medir.
+  Quedan unos 5,1 GiB de los 8 GiB del equipo para el sistema operativo y para lo que llegue en las olas siguientes (D-36). Si una medición lo pide, los límites se suben mientras el total quede por debajo de 8 GiB.
+- **JVM:** `JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=60`, como ya anticipaba `java.Dockerfile`. Con menos de 1 792 MiB por contenedor, la JVM elige SerialGC aunque el equipo tenga 4 núcleos; es la opción de menor consumo. No se agregan más ajustes hasta medir.
 - **Si la medición no cabe:** primero se ajustan los límites y las opciones de la JVM. Si aun así queda en 8 GiB o más, se aplica la alternativa de R-19 (Nginx en lugar de Spring Cloud Gateway), con una decisión nueva.
 
 ## 9. Medición de R-19 (FR-007, FR-008, D-34)

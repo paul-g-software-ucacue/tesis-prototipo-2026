@@ -12,14 +12,14 @@
 
 **Requerimientos que cubre**: ADR-006 · ADR-008 · RNF-POR-01 · RNF-POR-02 · R-19. **Decisiones tomadas en esta historia** (`docs/decisiones.md`): D-34, D-35 y D-36.
 
-**Historia (del issue, con la VM de D-36)**: Como autor, quiero levantar los 4 procesos, el API Gateway y PostgreSQL con un solo `docker compose up`, para comprobar desde el inicio que el perfil consolidado cabe en la VM de 8 GiB.
+**Historia (del issue, con el equipo de D-36)**: Como autor, quiero levantar los 4 procesos, el API Gateway y PostgreSQL con un solo `docker compose up`, para comprobar desde el inicio que el perfil consolidado cabe en el equipo de despliegue de 8 GiB.
 
 ## Clarifications
 
 ### Session 2026-10-12
 
 - Q: El inicio de sesión llega con B00-H03, que depende de esta historia. ¿Cómo se cumple la medición «después de iniciar sesión» en B00-H02? → A: B00-H02 mide con todo levantado y sano, después de un calentamiento que llama a la salud de cada proceso. La medición después de iniciar sesión pasa a B00-H03 (D-34). Los issues #19 y #20 se editaron.
-- Q: (análisis, hallazgo I2) La especificación decía «4 GB» y los contratos «4 GiB». ¿Qué umbral vale? → A: El autor duplicó las limitaciones del hardware: la VM pasa a 4 vCPU y 8 GiB, R-19 exige menos de 8 GiB con alerta en 7 GiB, y los límites por contenedor se duplican (D-36).
+- Q: (análisis, hallazgo I2) La especificación decía «4 GB» y los contratos «4 GiB». ¿Qué umbral vale? → A: El autor duplicó las limitaciones del hardware: el despliegue será en un servidor o PC de 4 núcleos y 8 GiB de RAM, y R-19 exige menos de 8 GiB con alerta en 7 GiB. Los límites por contenedor no cambian (D-36).
 - Q: Los 12 servicios todavía no existen. ¿Qué servicios aplican migraciones en B00-H02? → A: B00-H02 crea los 12 servicios desde la plantilla, sin lógica de negocio, cada uno con su esquema y una primera migración mínima sin tablas de negocio, y los 4 procesos los ensamblan según ADR-006 (D-35).
 
 > **Nota sobre el lenguaje de esta especificación.** Igual que B00-H01, es una historia de la base técnica: su usuario es el autor y su objeto es el despliegue que ya fijan la constitución (sección 3) y ADR-006. Los nombres de herramientas (Docker Compose, PostgreSQL, Flyway, `docker stats`) aparecen porque los trae la historia; la especificación no elige ninguna tecnología nueva.
@@ -49,7 +49,7 @@ Escenario: Todo se levanta con un comando
 
 ### User Story 2 - El perfil consolidado cabe en la memoria de la VM (Priority: P1)
 
-Como autor, quiero medir el consumo de memoria de los contenedores levantados con sus límites, y registrarlo como evidencia, para comprobar en la ola 0 que el perfil consolidado cabe en la VM de 8 GiB (R-19, RNF-POR-02, D-36).
+Como autor, quiero medir el consumo de memoria de los contenedores levantados con sus límites, y registrarlo como evidencia, para comprobar en la ola 0 que el perfil consolidado cabe en el equipo de despliegue de 8 GiB (R-19, RNF-POR-02, D-36).
 
 **Why this priority**: R-19 es un riesgo abierto que puede cambiar la arquitectura: si no cabe, la alternativa prevista es reemplazar el API Gateway (ADR-008). Conviene saberlo antes de construir sobre esta base.
 
@@ -67,7 +67,7 @@ Escenario: Cabe en la memoria de la VM
 
 > **Cambios respecto del issue #19:**
 > - D-34 (2026-10-12): la medición «después de iniciar sesión» pasó a B00-H03 (#20), que crea el inicio de sesión. El issue #19 está actualizado.
-> - D-36 (2026-10-12): la VM pasa de 4 GB a 8 GiB y el umbral del escenario, de «4 GB» a «8 GiB». El issue #19 se edita con la aprobación del autor.
+> - D-36 (2026-10-12): el equipo de despliegue pasa de una VM de 4 GB a un servidor o PC de 8 GiB, y el umbral del escenario, de «4 GB» a «8 GiB». El issue #19 se edita con la aprobación del autor.
 
 ---
 
@@ -159,5 +159,5 @@ Escenario: Un esquema por servicio
 - La SPA (B00-H06), el proxy HTTPS del VPS (`deploy/Caddyfile`), la publicación en Docker Hub y el despliegue en el VPS (B00-H08) quedan fuera de esta historia.
 - El almacenamiento de archivos separado de la base (RNF-POR-01) se agrega cuando una historia guarde archivos; en esta historia ningún servicio los guarda.
 - En la máquina del autor hay Docker Engine con Docker Compose v2 (paquetes de Fedora), además de Podman. El comando se valida allí, y la medición de referencia de R-19 se hace en GitHub Actions con Docker.
-- La VM y el VPS de demostración tienen 4 vCPU y 8 GiB (D-36). La memoria se mide en GiB (1 GiB = 1 024 MiB), la unidad en que la informa `docker stats`.
+- El servidor o PC de despliegue tiene 4 núcleos y 8 GiB de RAM (D-36). La memoria se mide en GiB (1 GiB = 1 024 MiB), la unidad en que la informa `docker stats`.
 - Las pruebas y el archivo de ejemplo usan solo datos ficticios (principios VIII y IX).

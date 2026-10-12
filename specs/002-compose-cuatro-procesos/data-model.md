@@ -6,17 +6,17 @@ No hay datos de negocio. El modelo describe los elementos del despliegue que nom
 
 | Contenedor | Imagen | Depende de | Puerto en el anfitrión | Límite de memoria | Sano cuando |
 |---|---|---|---|---|---|
-| `postgres` | `postgres:18.6-alpine` | — | ninguno | 1 024 MiB | `pg_isready -h 127.0.0.1 -U postgres -d mdd` responde |
-| `identidad` | construida desde `apps:identidad` | `postgres` sano | ninguno | 1 024 MiB | `/actuator/health/readiness` = `UP` (incluye la base) |
-| `datos` | construida desde `apps:datos` | `postgres` sano | ninguno | 1 024 MiB | ídem |
-| `distributivo` | construida desde `apps:distributivo` | `postgres` sano | ninguno | 1 024 MiB | ídem |
-| `salida` | construida desde `apps:salida` | `postgres` sano | ninguno | 1 024 MiB | ídem |
-| `gateway` | construida desde `gateway` | — | `8080` | 768 MiB | `/actuator/health/readiness` = `UP` |
+| `postgres` | `postgres:18.6-alpine` | — | ninguno | 512 MiB | `pg_isready -h 127.0.0.1 -U postgres -d mdd` responde |
+| `identidad` | construida desde `apps:identidad` | `postgres` sano | ninguno | 512 MiB | `/actuator/health/readiness` = `UP` (incluye la base) |
+| `datos` | construida desde `apps:datos` | `postgres` sano | ninguno | 512 MiB | ídem |
+| `distributivo` | construida desde `apps:distributivo` | `postgres` sano | ninguno | 512 MiB | ídem |
+| `salida` | construida desde `apps:salida` | `postgres` sano | ninguno | 512 MiB | ídem |
+| `gateway` | construida desde `gateway` | — | `8080` | 384 MiB | `/actuator/health/readiness` = `UP` |
 
 **Validaciones:**
 
 - Son exactamente 6 contenedores (FR-002).
-- Todos tienen un *healthcheck* (FR-003) y un límite de memoria (FR-006). La suma de los límites es 5 888 MiB (D-36).
+- Todos tienen un *healthcheck* (FR-003) y un límite de memoria (FR-006). La suma de los límites es 2 944 MiB.
 - Cada JVM recibe `-XX:MaxRAMPercentage=60` (FR-006).
 
 ## Proceso

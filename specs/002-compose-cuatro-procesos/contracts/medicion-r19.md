@@ -27,13 +27,13 @@ Calentamiento: 20 llamadas a la salud por componente y 30 s de espera.
 
 | Contenedor | Consumo (MiB) | Límite (MiB) |
 |---|---:|---:|
-| postgres | … | 1 024 |
-| identidad | … | 1 024 |
-| datos | … | 1 024 |
-| distributivo | … | 1 024 |
-| salida | … | 1 024 |
-| gateway | … | 768 |
-| **Total** | **…** (… GiB) | 5 888 |
+| postgres | … | 512 |
+| identidad | … | 512 |
+| datos | … | 512 |
+| distributivo | … | 512 |
+| salida | … | 512 |
+| gateway | … | 384 |
+| **Total** | **…** (… GiB) | 2 944 |
 
 Resultado: <cumple (< 8 GiB) | falla (≥ 8 GiB)>. <Alerta R-19: más de 7 GiB | Sin alerta de R-19 (≤ 7 GiB)>.
 ```

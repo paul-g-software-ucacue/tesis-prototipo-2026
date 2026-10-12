@@ -178,7 +178,7 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
 - [ ] T024 [US1] Crear `compose.yaml` en la raíz según [contracts/compose.md](contracts/compose.md):
   - los 6 servicios, con `env_file: [{path: .env.ejemplo, required: true}, {path: .env, required: false}]`;
   - `build` con contexto `backend`, `dockerfile: ../deploy/docker/java.Dockerfile` y los `args` `MODULO` y `NOMBRE`;
-  - `deploy.resources.limits.memory`: 1024m para `postgres` y cada proceso, y 768m para `gateway`, que suman 5 888 MiB (D-36);
+  - `deploy.resources.limits.memory`: 512m para `postgres` y cada proceso, y 384m para `gateway`, que suman 2 944 MiB;
   - en `postgres`, el *healthcheck* `pg_isready -h 127.0.0.1 -U postgres -d mdd`, por TCP, para que no quede sano con el servidor temporal de `01-esquemas.sh`;
   - los *healthchecks* del contrato, con `interval: 10s`, `timeout: 5s`, `retries: 12` y `start_period: 60s`;
   - en los procesos, `depends_on: postgres: {condition: service_healthy}`;

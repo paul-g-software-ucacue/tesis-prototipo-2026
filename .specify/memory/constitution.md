@@ -1,6 +1,6 @@
 # Constitución del desarrollo del MDD
 
-- **Versión:** 2.1.0, enmienda menor del 12/10/2026 (D-36): la VM objetivo y el VPS de demostración pasan de 2 vCPU y 4 GB a 4 vCPU y 8 GiB (principio V, secciones 3 y 8). Los límites de memoria por JVM y por contenedor siguen siendo obligatorios. No cambia la regla de ningún principio.
+- **Versión:** 2.1.0, enmienda menor del 12/10/2026 (D-36): el despliegue pasa de una VM de 2 vCPU y 4 GB a un servidor o PC de 4 núcleos y 8 GiB de RAM (principio V, secciones 3 y 8). Los límites de memoria por JVM y por contenedor siguen siendo obligatorios. No cambia la regla de ningún principio.
 - **Versión 2.0.1:** enmienda de parche del 11/10/2026 (D-33): en la sección 8, el formateador de Spotless pasa a ser google-java-format en estilo AOSP, porque palantir-java-format no soporta toda la sintaxis de Java 25. No cambia ningún principio.
 - **Versión 2.0.0:** enmienda mayor del 11/10/2026 (D-32): el principio VIII deja de exigir el 80 % de cobertura en el dominio central y queda un solo umbral, el 60 % por módulo. También se aclara que las decisiones desde D-28 y los ADR desde ADR-012 se registran en `docs/decisiones.md`.
 - **Versión 1.0.1:** enmienda de parche del 11/10/2026 (D-28): en la sección 3, «JUnit 5» pasa a «JUnit Jupiter 6», la versión que fija el BOM de Spring Boot (6.0.3 con Spring Boot 4.1.1). Se detectó al planificar B00-H01 y no cambia ningún principio.
@@ -80,7 +80,7 @@ Cada principio dice qué se debe hacer (**DEBE**), qué no (**NO DEBE**) y por q
 ### V. Microservicios y límites de servicio
 
 - El backend es una arquitectura de microservicios. Cada uno de los **12 servicios** de la ERS 8.5 es un microservicio: tiene una capacidad de negocio, su contrato OpenAPI, su esquema en PostgreSQL y sus reglas, y se puede desplegar solo sin cambiar código (ADR-009).
-- En el prototipo se despliegan agrupados en 4 procesos, más el API Gateway: identidad (1, 2, 7), datos (3, 4, 11, 12), distributivo (5, 6, 10) y salida (8, 9). Ver ADR-006. No es una excepción a la regla: 12 JVM con sus límites no caben en la VM de 8 GiB (R-19, D-36), y distribuir sin una razón técnica es justo lo que este principio evita.
+- En el prototipo se despliegan agrupados en 4 procesos, más el API Gateway: identidad (1, 2, 7), datos (3, 4, 11, 12), distributivo (5, 6, 10) y salida (8, 9). Ver ADR-006. No es una excepción a la regla: 12 JVM reducirían mucho el margen de memoria del equipo de 8 GiB (R-19, D-36), y distribuir sin una razón técnica es justo lo que este principio evita.
 - Un servicio NO DEBE leer ni escribir tablas de otro, ni depender de sus clases internas, entidades de dominio o repositorios. Solo usa los DTO de su contrato, generados del OpenAPI. Los dos servicios de un mismo contexto delimitado (por ejemplo, Académico y Docentes) comparten los términos del glosario, no las clases.
 - Dentro de un proceso, los servicios se llaman por la interfaz de aplicación que refleja el contrato; entre procesos, por HTTP según ese contrato (ADR-006).
 - **Fallos entre procesos:**
@@ -228,7 +228,7 @@ Cada principio dice qué se debe hacer (**DEBE**), qué no (**NO DEBE**) y por q
 
 | Tema | Restricción | Fuente |
 |---|---|---|
-| Infraestructura | Docker Compose sobre Ubuntu Server, compatible con aaPanel, en una VM de 4 vCPU y 8 GiB (D-36). Los 4 procesos, el gateway y PostgreSQL deben caber con límites de memoria. La demostración corre en un VPS del autor del mismo tamaño; el pipeline no despliega en la VM del IST. | RNF-POR-01, RNF-POR-02, ADR-006, ADR-011, D-36 |
+| Infraestructura | Docker Compose sobre Ubuntu Server, compatible con aaPanel, en un servidor o PC de 4 núcleos y 8 GiB de RAM (D-36). Los 4 procesos, el gateway y PostgreSQL deben caber con límites de memoria. La demostración corre en un equipo del autor del mismo tamaño; el pipeline no despliega en la VM del IST. | RNF-POR-01, RNF-POR-02, ADR-006, ADR-011, D-36 |
 | Base de datos | PostgreSQL, un esquema por módulo. Los archivos (PDF y evidencias) van fuera de la base. | ERS 8.5, RNF-POR-01 |
 | Frontend | SPA en español. Funciona en las dos últimas versiones de Chrome, Firefox y Edge, desde 1366 px de ancho, y cumple WCAG 2.1 AA en las pantallas principales. | RNF-COM-01, RNF-USA-01 |
 | Archivos de intercambio | CSV según RFC 4180, en UTF-8, con encabezado y fechas ISO 8601. También se aceptan XLSX en las cargas. | RNF-COM-02 |
