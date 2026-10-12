@@ -67,7 +67,7 @@ Escenario: Cabe en la memoria de la VM
 
 > **Cambios respecto del issue #19:**
 > - D-34 (2026-10-12): la medición «después de iniciar sesión» pasó a B00-H03 (#20), que crea el inicio de sesión. El issue #19 está actualizado.
-> - D-36 (2026-10-12): el equipo de despliegue pasa de una VM de 4 GB a un servidor o PC de 8 GiB, y el umbral del escenario, de «4 GB» a «8 GiB». El issue #19 se edita con la aprobación del autor.
+> - D-36 (2026-10-12): el equipo de despliegue pasa de una VM de 4 GB a un servidor o PC de 8 GiB, y el umbral del escenario, de «4 GB» a «8 GiB». El issue #19 está actualizado.
 
 ---
 

@@ -237,7 +237,7 @@ Se conservan las reglas que ya tenía: prohibido borrar `main` o reescribir su h
 - La alternativa de R-19 (Nginx en lugar de Spring Cloud Gateway) queda para un consumo de 8 GiB o más.
 - La ERS (RNF-POR-02, R-19), ADR-006 y ADR-008, fuera del repositorio, quedan desactualizados en este punto; este registro prevalece.
 - El runner estándar de GitHub Actions de un repositorio privado tiene menos RAM que el equipo de despliegue. La medición de referencia sigue siendo válida mientras el consumo quede por debajo de la RAM del runner.
-- El issue #19 se edita con la aprobación del autor.
+- El issue #19 se editó el 2026-10-12.
 
 ---
 
