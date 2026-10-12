@@ -4,3 +4,7 @@
 plugins {
     id 'mdd.servicio'
 }
+
+dependencies {
+    implementation project(':servicios:demoalfa')
+}
