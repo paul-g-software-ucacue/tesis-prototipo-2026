@@ -34,16 +34,16 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
 
 **Purpose**: que `./gradlew` funcione en `backend/` con Java 25, Gradle 9.8.1 y las versiones fijadas.
 
-- [ ] T001 Agregar a `.gitignore` las entradas `backend/.gradle/`, `**/build/` y `backend/buildSrc/.gradle/`, sin quitar la entrada existente `.claude/settings.local.json`.
-- [ ] T002 Crear `backend/settings.gradle` con `rootProject.name = 'mdd'` y un comentario que diga que los servicios (`servicios:<servicio>`) y los procesos (`apps:<proceso>`) se incluyen con sus historias. Todavía no lleva `include`.
-- [ ] T003 Generar el Gradle Wrapper 9.8.1 en `backend/`:
+- [X] T001 Agregar a `.gitignore` las entradas `backend/.gradle/`, `**/build/` y `backend/buildSrc/.gradle/`, sin quitar la entrada existente `.claude/settings.local.json`.
+- [X] T002 Crear `backend/settings.gradle` con `rootProject.name = 'mdd'` y un comentario que diga que los servicios (`servicios:<servicio>`) y los procesos (`apps:<proceso>`) se incluyen con sus historias. Todavía no lleva `include`.
+- [X] T003 Generar el Gradle Wrapper 9.8.1 en `backend/`:
   1. Descargar `https://services.gradle.org/distributions/gradle-9.8.1-bin.zip` y su `.sha256` al directorio temporal de la sesión, y verificar el checksum con `sha256sum -c`.
   2. Desde `backend/`, ejecutar `<dist>/bin/gradle wrapper --gradle-version 9.8.1 --distribution-type bin --gradle-distribution-sha256-sum <sha256>`.
   3. Hacer commit de `backend/gradlew`, `backend/gradlew.bat`, `backend/gradle/wrapper/gradle-wrapper.jar` y `backend/gradle/wrapper/gradle-wrapper.properties`. Este último lleva `distributionSha256Sum`.
-- [ ] T004 [P] Agregar `allprojects { group = 'ec.mdd' }` en `backend/build.gradle` y conservar la configuración de CycloneDX que ya tiene.
-- [ ] T005 [P] Agregar `versionSpringModulith=2.1.1` y `versionArchUnit=1.4.2` a `backend/gradle.properties`, sin tocar `versionSpringBoot=4.1.1` ni las opciones de caché.
-- [ ] T006 [P] En `backend/buildSrc/build.gradle`, leer `versionSpringBoot` desde `../gradle.properties` (`Properties` y `file('../gradle.properties')`) y agregar `implementation "org.springframework.boot:spring-boot-gradle-plugin:${versionSpringBoot}"`. Debe quedar una sola fuente para la versión de Boot.
-- [ ] T007 Modificar `backend/buildSrc/src/main/groovy/mdd.java-conventions.gradle`:
+- [X] T004 [P] Agregar `allprojects { group = 'ec.mdd' }` en `backend/build.gradle` y conservar la configuración de CycloneDX que ya tiene.
+- [X] T005 [P] Agregar `versionSpringModulith=2.1.1` y `versionArchUnit=1.4.2` a `backend/gradle.properties`, sin tocar `versionSpringBoot=4.1.1` ni las opciones de caché.
+- [X] T006 [P] En `backend/buildSrc/build.gradle`, leer `versionSpringBoot` desde `../gradle.properties` (`Properties` y `file('../gradle.properties')`) y agregar `implementation "org.springframework.boot:spring-boot-gradle-plugin:${versionSpringBoot}"`. Debe quedar una sola fuente para la versión de Boot.
+- [X] T007 Modificar `backend/buildSrc/src/main/groovy/mdd.java-conventions.gradle`:
   - leer `versionSpringModulith` con `providers.gradleProperty`;
   - agregar `implementation platform("org.springframework.modulith:spring-modulith-bom:${versionSpringModulith}")` en `dependencies` y dentro de las suites `test` e `integrationTest`;
   - en `spotless.java`, cambiar `palantirJavaFormat()` por `palantirJavaFormat('2.102.0')`;
@@ -51,7 +51,7 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
   - cambiar el comentario `// Piso de cobertura de cada módulo (DS-1). mdd.servicio-central agrega el 80 % del dominio.` por uno que diga que el 60 % de líneas por módulo es el único umbral, también en el dominio central (D-32).
 
   Las tres versiones tienen un comentario que remite a research §1 a §3.
-- [ ] T008 Ejecutar `./gradlew --version` (Gradle 9.8.1, launcher JVM 25) y `./gradlew build` en `backend/`. Ambos tienen que terminar sin errores con el proyecto raíz vacío.
+- [X] T008 Ejecutar `./gradlew --version` (Gradle 9.8.1, launcher JVM 25) y `./gradlew build` en `backend/`. Ambos tienen que terminar sin errores con el proyecto raíz vacío.
 
 **Checkpoint**: el multiproyecto construye en local (FR-001).
 
@@ -63,18 +63,18 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
 
 **⚠️ CRITICAL**: ninguna historia puede empezar sin esta fase.
 
-- [ ] T009 Crear `backend/plataforma/arquitectura/build.gradle` con `plugins { id 'java-library'; id 'mdd.java-conventions' }` y estas dependencias:
+- [X] T009 Crear `backend/plataforma/arquitectura/build.gradle` con `plugins { id 'java-library'; id 'mdd.java-conventions' }` y estas dependencias:
   - `api "com.tngtech.archunit:archunit:${versionArchUnit}"`;
   - en la suite `test`: `com.tngtech.archunit:archunit-junit5:${versionArchUnit}`, `org.springframework.modulith:spring-modulith-core`, `org.springframework.modulith:spring-modulith-api` y `jakarta.persistence:jakarta.persistence-api`. Las tres últimas tienen la versión del BOM.
 
   Agregar `include 'plataforma:arquitectura'` en `backend/settings.gradle`.
-- [ ] T010 Crear `backend/plataforma/arquitectura/src/main/java/ec/mdd/arquitectura/package-info.java`, con un JavaDoc en español que diga que el paquete contiene las reglas de arquitectura compartidas por todos los servicios (principios I y V).
-- [ ] T011 [P] Crear `specs/001-repo-plantilla-ci/evidencia.md` con dos tablas:
+- [X] T010 Crear `backend/plataforma/arquitectura/src/main/java/ec/mdd/arquitectura/package-info.java`, con un JavaDoc en español que diga que el paquete contiene las reglas de arquitectura compartidas por todos los servicios (principios I y V).
+- [X] T011 [P] Crear `specs/001-repo-plantilla-ci/evidencia.md` con dos tablas:
   - las comprobaciones de la sección 8 de la constitución, con las columnas Comprobación, Resultado (`confirmada` o `fallida`), Evidencia y Fecha, y las filas `palantir-java25`, `spotbugs-java25`, `modulith21-boot41` y `pinact`;
   - los pull requests de demostración, con las columnas PR, Violación, Check en rojo, Mensaje y «Merging is blocked».
 
   Agregar una sección de notas para las excepciones (research §8 y §14).
-- [ ] T012 Ejecutar `./gradlew build` en `backend/`. `:plataforma:arquitectura` tiene que compilar y quedar en NO-SOURCE en las tareas sin clases.
+- [X] T012 Ejecutar `./gradlew build` en `backend/`. `:plataforma:arquitectura` tiene que compilar y quedar en NO-SOURCE en las tareas sin clases.
 
 **Checkpoint**: fundación lista. US1, US2, US3 y US4 pueden empezar.
 
@@ -88,22 +88,22 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
 
 ### Implementation for User Story 1
 
-- [ ] T013 [US1] En `.github/workflows/ci.yml`, agregar al principio de `jobs:` el job `deteccion`, con `name: "0 · deteccion"`, `runs-on: ubuntu-latest` y `timeout-minutes: 5`:
+- [X] T013 [US1] En `.github/workflows/ci.yml`, agregar al principio de `jobs:` el job `deteccion`, con `name: "0 · deteccion"`, `runs-on: ubuntu-latest` y `timeout-minutes: 5`:
   - un paso `actions/checkout` con `sparse-checkout: frontend/package.json` y `sparse-checkout-cone-mode: false`;
   - un paso `id: frontend` que escriba `frontend=true` en `$GITHUB_OUTPUT` si `test -f frontend/package.json` tiene éxito, y `frontend=false` si no;
   - `outputs: { frontend: ${{ steps.frontend.outputs.frontend }} }`.
 
   Arriba del job va un comentario que explica por qué no se usa `hashFiles()` (research §7).
-- [ ] T014 [US1] En `.github/workflows/ci.yml`:
+- [X] T014 [US1] En `.github/workflows/ci.yml`:
   - en `lint-frontend`, agregar `needs: deteccion` y `if: needs.deteccion.outputs.frontend == 'true'`;
   - en `sbom-frontend`, agregar `needs: deteccion` y cambiar su `if` a `github.event.pull_request.draft == false && needs.deteccion.outputs.frontend == 'true'`;
   - `test-frontend` no cambia, porque se omite junto con `lint-frontend`.
 
   Comentar que ESLint es un criterio de B00-H06 (#23).
-- [ ] T015 [US1] En el job `sca` de `.github/workflows/ci.yml`, agregar `if: ${{ !cancelled() && needs.sbom-backend.result == 'success' && contains(fromJSON('["success","skipped"]'), needs.sbom-frontend.result) }}` y un comentario sobre el caso límite «repositorio sin frontend» (research §7). En el mismo archivo, en el paso de pruebas de `test-backend`, cambiar el comentario `# jacocoTestCoverageVerification: 60 % por módulo y 80 % en dominio de los servicios centrales.` por `# jacocoTestCoverageVerification: 60 % de líneas por módulo, también en el dominio central (D-32).`
-- [ ] T016 [US1] Validar `.github/workflows/ci.yml` y `.github/workflows/cierre-ola.yml` con `actionlint`, usando el binario de su release o `podman run --rm -v "$PWD:/repo" -w /repo docker.io/rhysd/actionlint:latest`. No puede haber errores, incluidos los de shellcheck.
-- [ ] T017 [US1] Instalar `pinact` desde el binario de su release en GitHub y ejecutar `pinact run` en la raíz. Así quedan fijadas por SHA de 40 caracteres, con la etiqueta como comentario, todas las líneas `uses:` de `.github/workflows/ci.yml` y `.github/workflows/cierre-ola.yml`. Después ejecutar `pinact run --check` y registrar la fila `pinact` en `specs/001-repo-plantilla-ci/evidencia.md` (FR-010, SC-004).
-- [ ] T018 [US1] Comprobar palantir-java-format con Java 25 (FR-016):
+- [X] T015 [US1] En el job `sca` de `.github/workflows/ci.yml`, agregar `if: ${{ !cancelled() && needs.sbom-backend.result == 'success' && contains(fromJSON('["success","skipped"]'), needs.sbom-frontend.result) }}` y un comentario sobre el caso límite «repositorio sin frontend» (research §7). En el mismo archivo, en el paso de pruebas de `test-backend`, cambiar el comentario `# jacocoTestCoverageVerification: 60 % por módulo y 80 % en dominio de los servicios centrales.` por `# jacocoTestCoverageVerification: 60 % de líneas por módulo, también en el dominio central (D-32).`
+- [X] T016 [US1] Validar `.github/workflows/ci.yml` y `.github/workflows/cierre-ola.yml` con `actionlint`, usando el binario de su release o `podman run --rm -v "$PWD:/repo" -w /repo docker.io/rhysd/actionlint:latest`. No puede haber errores, incluidos los de shellcheck.
+- [X] T017 [US1] Instalar `pinact` desde el binario de su release en GitHub y ejecutar `pinact run` en la raíz. Así quedan fijadas por SHA de 40 caracteres, con la etiqueta como comentario, todas las líneas `uses:` de `.github/workflows/ci.yml` y `.github/workflows/cierre-ola.yml`. Después ejecutar `pinact run --check` y registrar la fila `pinact` en `specs/001-repo-plantilla-ci/evidencia.md` (FR-010, SC-004).
+- [X] T018 [US1] Comprobar palantir-java-format con Java 25 (FR-016):
   1. Crear un archivo temporal `backend/plataforma/arquitectura/src/test/java/ec/mdd/arquitectura/SintaxisJava25Temporal.java` con `import module java.base;`, un constructor con sentencias antes de `super(...)` y una variable sin nombre `_` en un `catch` o un `for`.
   2. Ejecutar `./gradlew :plataforma:arquitectura:spotlessApply :plataforma:arquitectura:spotlessCheck`.
   3. Borrar el archivo.
