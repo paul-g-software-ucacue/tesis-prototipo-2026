@@ -4,3 +4,8 @@
 rootProject.name = 'mdd'
 
 include 'plataforma:arquitectura'
+
+// Solo en la rama de demostración demo/b00-h01 (no se fusiona).
+include 'servicios:demoalfa'
+include 'servicios:demobeta'
+include 'apps:demo'
