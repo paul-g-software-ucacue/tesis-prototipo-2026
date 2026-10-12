@@ -1,0 +1,17 @@
+// Proceso datos del MDD, creado desde backend/plantillas/aplicacion (ADR-006, ADR-012).
+plugins {
+    id 'mdd.aplicacion'
+}
+
+dependencies {
+    // Servidor web para la salud de Actuator y un DataSource con el rol del proceso (ADR-013).
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    runtimeOnly 'org.postgresql:postgresql'
+
+    // Servicios que ensambla este proceso (ADR-006).
+    implementation project(':servicios:cargas')
+    implementation project(':servicios:docentes')
+    implementation project(':servicios:academico')
+    implementation project(':servicios:normativa')
+}

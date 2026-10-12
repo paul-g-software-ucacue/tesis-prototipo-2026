@@ -128,21 +128,21 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
 
 ### Servicios, procesos y gateway
 
-- [ ] T017 Crear los 12 servicios en `backend/servicios/<servicio>/`, copiando `backend/plantillas/servicio` con los renombres de T015 para cada nombre de la tabla de convenciones. Agregar los 12 `include 'servicios:<servicio>'` a `backend/settings.gradle`, en lugar del comentario de que se incluyen con sus historias.
-- [ ] T018 Crear los 4 procesos en `backend/apps/<proceso>/`, copiando `backend/plantillas/aplicacion`:
+- [X] T017 Crear los 12 servicios en `backend/servicios/<servicio>/`, copiando `backend/plantillas/servicio` con los renombres de T015 para cada nombre de la tabla de convenciones. Agregar los 12 `include 'servicios:<servicio>'` a `backend/settings.gradle`, en lugar del comentario de que se incluyen con sus historias.
+- [X] T018 Crear los 4 procesos en `backend/apps/<proceso>/`, copiando `backend/plantillas/aplicacion`:
   - renombrar `ProcesoAplicacion` a `<Proceso>Aplicacion`, también en `ModulosTest`;
   - en `application.yaml`, poner el nombre del proceso, el usuario `<proceso>` y la contraseña `${DB_CLAVE_<PROCESO>}`;
   - en `build.gradle`, agregar `implementation project(':servicios:<servicio>')` por cada servicio del proceso, según la tabla de convenciones.
 
   Agregar los 4 `include 'apps:<proceso>'` a `backend/settings.gradle`.
-- [ ] T019 Crear el gateway en `backend/gateway/`:
+- [X] T019 Crear el gateway en `backend/gateway/`:
   - `build.gradle` con `plugins { id 'mdd.aplicacion' }`, `implementation platform("org.springframework.cloud:spring-cloud-dependencies:${versionSpringCloud}")` e `implementation 'org.springframework.cloud:spring-cloud-starter-gateway-server-webflux'`;
   - `src/main/java/ec/mdd/gateway/GatewayAplicacion.java`, con `@SpringBootApplication` y JavaDoc: «en B00-H02 solo arranca y expone su salud; las rutas y el JWT son de B00-H03»;
   - `src/main/resources/application.yaml`, con `spring.application.name: gateway`, `server.port: 8080`, salud expuesta y *probes* activas;
   - `src/test/java/ec/mdd/gateway/GatewayAplicacionTest.java`, con `@SpringBootTest` que carga el contexto. Así se detecta si Spring Cloud no fuera compatible con Boot 4.1.1.
 
   Agregar `include 'gateway'` a `backend/settings.gradle`.
-- [ ] T020 Ejecutar `./gradlew spotlessApply build integrationTest`. Tiene que quedar todo en verde:
+- [X] T020 Ejecutar `./gradlew spotlessApply build integrationTest`. Tiene que quedar todo en verde:
   - 12 `<Servicio>FlywayConfigTest` y 12 `<Servicio>EsquemaIntegrationTest`;
   - 4 `ModulosTest` y 4 `EsquemasIntegrationTest`;
   - `GatewayAplicacionTest`;

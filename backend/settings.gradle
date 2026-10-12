@@ -1,6 +1,15 @@
-// Multiproyecto del MDD (ADR-011, ADR-012).
-// Los servicios se incluyen como 'servicios:<servicio>' y los procesos como 'apps:<proceso>'
-// cuando la historia correspondiente los crea a partir de backend/plantillas/.
+// Multiproyecto del MDD (ADR-011, ADR-012). Los 12 servicios y los 4 procesos se crearon desde
+// backend/plantillas/ en B00-H02 (D-35); cada proceso ensambla sus servicios según ADR-006.
 rootProject.name = 'mdd'
 
 include 'plataforma:arquitectura'
+
+// Servicios, agrupados por el proceso que los ensambla.
+include 'servicios:usuarios', 'servicios:roles', 'servicios:notificaciones'
+include 'servicios:cargas', 'servicios:docentes', 'servicios:academico', 'servicios:normativa'
+include 'servicios:generacion', 'servicios:validacionocs', 'servicios:firma'
+include 'servicios:reporting', 'servicios:dashboard'
+
+// Procesos del perfil consolidado y API Gateway.
+include 'apps:identidad', 'apps:datos', 'apps:distributivo', 'apps:salida'
+include 'gateway'

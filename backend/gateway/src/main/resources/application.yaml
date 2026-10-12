@@ -1,0 +1,5 @@
+# API Gateway del MDD. En B00-H02 no tiene rutas; solo expone su salud (research §5 y §6).
+spring.application.name: gateway
+server.port: 8080
+management.endpoints.web.exposure.include: health
+management.endpoint.health.probes.enabled: true
