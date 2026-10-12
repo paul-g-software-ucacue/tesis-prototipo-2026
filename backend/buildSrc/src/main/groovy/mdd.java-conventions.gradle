@@ -95,8 +95,9 @@ tasks.named('check') {
 spotless {
     java {
         target 'src/*/java/**/*.java'
-        // Versión fijada para que la comprobación con Java 25 sea repetible (research §2).
-        palantirJavaFormat('2.102.0')
+        // google-java-format con el estilo AOSP (sangría de 4 espacios), versión fijada (D-33).
+        // Usa el analizador de javac y soporta toda la sintaxis de Java 25.
+        googleJavaFormat('1.36.1').aosp()
         removeUnusedImports()
         trimTrailingWhitespace()
         endWithNewline()

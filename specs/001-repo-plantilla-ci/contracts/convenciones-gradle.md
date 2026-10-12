@@ -1,6 +1,6 @@
 # Contrato: plugins de convención de Gradle
 
-Decisiones: ADR-012 (plugins y paquete base) y D-32 (cobertura única del 60 %), en `docs/decisiones.md`.
+Decisiones: ADR-012 (plugins y paquete base), D-32 (cobertura única del 60 %) y D-33 (google-java-format), en `docs/decisiones.md`.
 
 Viven en `backend/buildSrc/src/main/groovy/`. Un subproyecto solo aplica **un** plugin de convención; los demás se encadenan solos. Ningún subproyecto repite la configuración que da su plugin (FR-002).
 
@@ -19,7 +19,7 @@ mdd.java-conventions          (todos)
 | BOM | `spring-boot-dependencies` 4.1.1 en `implementation` y en las suites de prueba | **+** `spring-modulith-bom` 2.1.1 |
 | Suites | `test` (JUnit Jupiter, sin Docker) e `integrationTest` (Testcontainers, después de `test`) | — |
 | JaCoCo | 0.8.15. `check` depende de `jacocoTestCoverageVerification`. Regla `LINE ≥ 0.60` del módulo; es el único umbral (D-32). | El comentario que mencionaba el 80 % de `mdd.servicio-central` pasa a decir que el 60 % es el único umbral |
-| Spotless | `src/*/java/**/*.java`, palantir-java-format, `removeUnusedImports`, espacios finales y salto de línea final | **Versión fijada:** `palantirJavaFormat('2.102.0')` |
+| Spotless | `src/*/java/**/*.java`, google-java-format en estilo AOSP, `removeUnusedImports`, espacios finales y salto de línea final | **Formateador fijado (D-33):** `googleJavaFormat('1.36.1').aosp()`, que reemplaza a palantir-java-format |
 | SpotBugs | `effort MAX`, `reportLevel HIGH`, `ignoreFailures false`, FindSecBugs 1.14.0, solo `spotbugsMain`, exclusión de `build/generated` | **Versión fijada:** `toolVersion = '4.10.4'` |
 
 ## `mdd.servicio` (nuevo)
@@ -58,4 +58,4 @@ Aplica `mdd.java-conventions` y `org.springframework.boot`.
 | `versionSpringModulith` | `2.1.1` (nueva) | `mdd.java-conventions` |
 | `versionArchUnit` | `1.4.2` (nueva; la misma que usa Modulith 2.1.1) | `mdd.servicio` y `plataforma:arquitectura` |
 
-Las versiones de palantir, SpotBugs, FindSecBugs y JaCoCo quedan escritas en los scripts de convención, como ya están hoy las de FindSecBugs y JaCoCo.
+Las versiones de google-java-format, SpotBugs, FindSecBugs y JaCoCo quedan escritas en los scripts de convención, como ya están hoy las de FindSecBugs y JaCoCo.

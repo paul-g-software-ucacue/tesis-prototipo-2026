@@ -31,7 +31,7 @@ cd backend
 
 | Comprobación | Cómo | Resultado esperado |
 |---|---|---|
-| palantir con Java 25 | Crear un archivo temporal en `plataforma/arquitectura/src/test/java/` con `import module java.base;`, un constructor con sentencias antes de `super(...)` y una variable sin nombre `_`. Correr `./gradlew spotlessApply spotlessCheck` y después borrar el archivo. | Spotless formatea y verifica sin excepción |
+| Formateador con Java 25 (google-java-format AOSP, D-33) | Crear un archivo temporal en `plataforma/arquitectura/src/test/java/` con `import module java.base;`, un archivo fuente compacto (`void main() {}` sin clase), un constructor con sentencias antes de `super(...)` y una variable sin nombre `_`. Correr `./gradlew spotlessApply spotlessCheck` y después borrar el archivo. | Spotless formatea y verifica sin excepción |
 | SpotBugs con Java 25 | `./gradlew :plataforma:arquitectura:spotbugsMain --info` | Analiza las clases (versión 69) sin `Unsupported class file major version` |
 | Modulith 2.1 con Boot 4.1 | `./gradlew :plataforma:arquitectura:dependencies --configuration testRuntimeClasspath` y la prueba de `verify()` con *fixtures* | Spring Boot resuelto en 4.1.1 y Modulith en 2.1.1, sin conflictos; la prueba pasa |
 | Acciones por SHA | `pinact run --check` en la raíz | Ningún hallazgo; todas las líneas `uses:` tienen un SHA de 40 caracteres |

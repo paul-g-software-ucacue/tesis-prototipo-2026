@@ -112,7 +112,7 @@ Registro en `evidencia.md` (FR-018).
 
 | Atributo | Valor |
 |---|---|
-| Comprobación | `palantir-java25`, `spotbugs-java25`, `modulith21-boot41` o `pinact` |
+| Comprobación | `palantir-java25` (fallida parcial), `google-java-format-java25` (D-33), `spotbugs-java25`, `modulith21-boot41` o `pinact` |
 | Resultado | `confirmada` o `fallida` |
 | Evidencia | Comando, versión y salida resumida, o el enlace al run de CI |
 | Si falla | Una decisión nueva en `docs/decisiones.md` y la enmienda de la sección 8 de la constitución |

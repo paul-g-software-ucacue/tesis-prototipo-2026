@@ -39,7 +39,7 @@ servicios/<servicio>/
 | Las dependencias entre capas respetan su sentido | Regla «sentido de las cinco capas» | FR-005 |
 | Los demás servicios del proceso solo pueden usar `puertos.entrada` | `ModulosTest` del proceso | Escenario 2, FR-006 |
 | El módulo exige 60 % de líneas cubiertas, sea central o no | `jacocoTestCoverageVerification` | Escenario 4, FR-012 y FR-013 (D-32) |
-| El formato es el de palantir-java-format | `spotlessCheck` | FR-015 |
+| El formato es el de google-java-format en estilo AOSP (D-33) | `spotlessCheck` | FR-015 |
 | SpotBugs con FindSecBugs no encuentra hallazgos de confianza alta en `main` | `spotbugsMain` | Escenario 5, FR-014 |
 | Un servicio recién creado, sin clases o sin alguna capa, pasa las reglas de arquitectura | Capas opcionales y `should` vacío permitido | research §11 |
 

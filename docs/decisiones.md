@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-33 · ADR-013.
+- **Siguiente número libre:** D-34 · ADR-013.
 
 ## Índice
 
@@ -20,6 +20,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-31 | 2026-10-11 | Regla de la rama principal: 10 checks, estricta, solo *squash*, sin excepciones | Aceptada | — (aplica `pipeline_cicd.md` §8) |
 | D-32 | 2026-10-11 | Cobertura única del 60 % por módulo, también en el dominio central | Aceptada | Constitución principio VIII y §3 (2.0.0), RNF-MAN-02, D-27, ADR-011 punto 3, issue #18 (escenario 4) |
 | ADR-012 | 2026-10-11 | Plantilla de servicio: paquete base, API publicada y plugins de convención | Aceptada | ADR-011 punto 2 |
+| D-33 | 2026-10-11 | google-java-format (estilo AOSP) en lugar de palantir-java-format | Aceptada | Constitución §8 (2.0.1), ADR-011 punto 4 (Spotless) |
 
 ---
 
@@ -136,6 +137,27 @@ Se conservan las reglas que ya tenía: prohibido borrar `main` o reescribir su h
 
 ---
 
+## D-33. google-java-format (estilo AOSP) en lugar de palantir-java-format
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-11 · **Decidido por:** autor de la tesis
+- **Origen:** comprobación de la sección 8 de la constitución en B00-H01 (`specs/001-repo-plantilla-ci/evidencia.md`, fila `palantir-java25`)
+- **Modifica a:** constitución §8 (versión 2.0.1); ADR-011 y `pipeline_cicd.md`, que nombraban palantir-java-format en Spotless
+
+**Decisión.** Spotless formatea el código Java con **google-java-format 1.36.1 en estilo AOSP**: sangría de 4 espacios y líneas de 100 caracteres. La versión queda fijada en `mdd.java-conventions`.
+
+**Por qué.**
+- palantir-java-format 2.102.0 no soporta dos construcciones de Java 25: la importación de módulos (JEP 511) y los archivos fuente compactos (JEP 512). Son los issues abiertos [#1506](https://github.com/palantir/palantir-java-format/issues/1506) y [#1701](https://github.com/palantir/palantir-java-format/issues/1701).
+- google-java-format usa el analizador de javac y soporta toda la sintaxis de Java 25.
+- Cambiar ahora, con muy poco código, cuesta mucho menos que reformatear los 12 servicios más adelante.
+
+**Detalle técnico.** Se usa la 1.36.1 y no la 1.37.0, la última disponible, porque Spotless 8.10.4 trae por defecto la 1.36.1 y falla con la 1.37.0 (`InvocationTargetException` en todos los archivos). Usada directamente desde la línea de comandos, la 1.37.0 sí funciona con Java 25. Cuando Dependabot proponga una versión nueva de Spotless, se revisa si ya acepta la 1.37 o una posterior.
+
+**Alternativas.** Mantener palantir y prohibir esas dos construcciones (la CI ya las rechazaba); usar google-java-format con el estilo de Google por defecto (sangría de 2 espacios).
+
+**Consecuencias.** El código existente se reformateó una vez (6 archivos de `plataforma:arquitectura` y los esqueletos de `backend/plantillas/`). Las líneas pasan de un máximo de 120 a 100 caracteres. Los esqueletos se formatearon con el mismo Spotless que usa la CI; el JAR de la línea de comandos en modo `--aosp` agrupa los `import` de otra forma (agrega una línea en blanco entre grupos).
+
+---
+
 ## Anexo A. Decisiones anteriores (D-01 a D-27)
 
 Copia de la tabla de la ERS v2.1, sección 8.6, al 2026-10-11. El registro original es `lean_inception/Matriz_decisiones_SCD_MDD.xlsx`; las de arquitectura, integración y flujo tienen además un ADR (anexo B).
@@ -191,4 +213,4 @@ Estado al 2026-10-11. El texto completo está en `lean_inception/adr/`.
 | ADR-008 | Stack de desarrollo: Java con Spring Boot en el backend y React en el frontend | Aceptada, modificada por ADR-009, ADR-011 y D-28 |
 | ADR-009 | Estándares de ingeniería backend: microservicios en el perfil consolidado, cinco capas, errores y fallos entre procesos | Aceptada |
 | ADR-010 | El puntaje de afinidad se calcula en el servicio de Generación (contexto Distributivo) | Aceptada |
-| ADR-011 | Plataforma Java 25 con Spring Boot 4.1.1 y Gradle, y pipeline de DevSecOps | Aceptada, modificada por ADR-012 (punto 2), D-28 y D-32 (punto 3) |
+| ADR-011 | Plataforma Java 25 con Spring Boot 4.1.1 y Gradle, y pipeline de DevSecOps | Aceptada, modificada por ADR-012 (punto 2), D-28, D-32 (punto 3) y D-33 (formateador de Spotless) |

@@ -12,7 +12,7 @@ El multiproyecto de Gradle se completa para que pueda construirse: `settings.gra
 2. los plugins de convención `mdd.servicio` y `mdd.aplicacion`, que aplican sin configuración por servicio las reglas, la cobertura del 60 %, Spotless y SpotBugs. Se elimina `mdd.servicio-central` (D-32);
 3. dos esqueletos para copiar, uno de servicio y otro de proceso. El de proceso trae `ApplicationModules.verify()` de Spring Modulith 2.1.1.
 
-En el `ci.yml` que ya existe, los jobs de frontend pasan a depender de que exista `frontend/package.json`, el job `sca` deja de omitirse cuando no hay frontend y las acciones se fijan por SHA con pinact. Al final, el ruleset `main` exige los checks con la política estricta y la fusión *squash*. Las tres comprobaciones de la sección 8 de la constitución quedan registradas con evidencia: palantir y SpotBugs con Java 25, Modulith 2.1 con Boot 4.1, y pinact. Los detalles y su evidencia previa están en [research.md](research.md). Las decisiones de arquitectura están en ADR-012 y las demás en D-28 a D-32, todas en [`docs/decisiones.md`](../../docs/decisiones.md).
+En el `ci.yml` que ya existe, los jobs de frontend pasan a depender de que exista `frontend/package.json`, el job `sca` deja de omitirse cuando no hay frontend y las acciones se fijan por SHA con pinact. Al final, el ruleset `main` exige los checks con la política estricta y la fusión *squash*. Las tres comprobaciones de la sección 8 de la constitución quedan registradas con evidencia: formateador de Spotless y SpotBugs con Java 25 (palantir falló en parte y D-33 lo cambió por google-java-format en estilo AOSP), Modulith 2.1 con Boot 4.1, y pinact. Los detalles y su evidencia previa están en [research.md](research.md). Las decisiones de arquitectura están en ADR-012 y las demás en D-28 a D-33, todas en [`docs/decisiones.md`](../../docs/decisiones.md).
 
 ## Technical Context
 
@@ -21,7 +21,7 @@ En el `ci.yml` que ya existe, los jobs de frontend pasan a depender de que exist
 **Primary Dependencies**:
 - Plataforma: Spring Boot 4.1.1 (BOM) y Spring Modulith 2.1.1 (BOM propio, `spring-modulith-api` y `spring-modulith-starter-test`).
 - Pruebas: ArchUnit 1.4.2 (`archunit` y `archunit-junit5`).
-- Plugins de Gradle: Gradle 9.8.1 con Wrapper, Spring Boot Gradle Plugin 4.1.1 (para `mdd.aplicacion`), Spotless 8.10.4 con palantir-java-format 2.102.0, SpotBugs Gradle Plugin 6.5.12 con SpotBugs 4.10.4 y FindSecBugs 1.14.0, JaCoCo 0.8.15 y CycloneDX 3.5.1 (ya existe).
+- Plugins de Gradle: Gradle 9.8.1 con Wrapper, Spring Boot Gradle Plugin 4.1.1 (para `mdd.aplicacion`), Spotless 8.10.4 con google-java-format 1.36.1 en estilo AOSP (D-33; antes palantir-java-format 2.102.0), SpotBugs Gradle Plugin 6.5.12 con SpotBugs 4.10.4 y FindSecBugs 1.14.0, JaCoCo 0.8.15 y CycloneDX 3.5.1 (ya existe).
 
 **Storage**: N/A. Esta historia no tiene persistencia.
 
@@ -69,7 +69,7 @@ En el `ci.yml` que ya existe, los jobs de frontend pasan a depender de que exist
 | XII. JavaDoc | Las reglas de `plataforma:arquitectura` y los `package-info.java` del esqueleto llevan JavaDoc en español sobre el contrato de cada capa. | ✅ |
 | XIII. Errores | Esta historia no tiene errores HTTP; el modelo es de B00-H04. | ✅ N/A |
 | §3 Restricciones técnicas | Java 25, Boot 4.1.1, Gradle Groovy DSL, Modulith 2.1, Spotless, SpotBugs, FindSecBugs, JaCoCo 60 % (D-32) y JUnit Jupiter 6 (D-28). | ✅ |
-| §8 Comprobaciones de la ola 0 | palantir y SpotBugs con Java 25, Modulith 2.1 con Boot 4.1 y pinact: tareas explícitas con evidencia en `evidencia.md`. | ✅ |
+| §8 Comprobaciones de la ola 0 | Formateador de Spotless (D-33) y SpotBugs con Java 25, Modulith 2.1 con Boot 4.1 y pinact: tareas explícitas con evidencia en `evidencia.md`. | ✅ |
 
 **Resultado del gate antes de la fase 0:** pasa. La desviación de JUnit se resolvió con la enmienda 1.0.1 (D-28). Después del análisis, la constitución pasó a la 2.0.0 (D-32, cobertura única del 60 %), y las decisiones que afectan a varias features quedaron en ADR-012, como pide la sección 6, paso 4.
 
@@ -116,7 +116,7 @@ backend/
 ├── buildSrc/
 │   ├── build.gradle                         # cambia: + spring-boot-gradle-plugin (versión leída de ../gradle.properties)
 │   └── src/main/groovy/
-│       ├── mdd.java-conventions.gradle      # cambia: BOM de Modulith, toolVersion SpotBugs 4.10.4, palantir 2.102.0
+│       ├── mdd.java-conventions.gradle      # cambia: BOM de Modulith, toolVersion SpotBugs 4.10.4, google-java-format 1.36.1 AOSP (D-33)
 │       ├── mdd.servicio.gradle              # nuevo: java-library, spring-modulith-api, reglas de arquitectura en test
 │       ├── mdd.servicio-central.gradle      # se elimina (D-32)
 │       └── mdd.aplicacion.gradle            # nuevo: Spring Boot, Modulith en test, clase de arranque fuera de JaCoCo
@@ -140,7 +140,7 @@ Los servicios irán en `backend/servicios/<servicio>` y los procesos en `backend
 
 1. **Base de construcción:**
    - `.gitignore`, `settings.gradle` y Wrapper 9.8.1 con checksum.
-   - Versiones en `gradle.properties` y cambios en `mdd.java-conventions`: BOM de Modulith, SpotBugs 4.10.4 y palantir 2.102.0.
+   - Versiones en `gradle.properties` y cambios en `mdd.java-conventions`: BOM de Modulith, SpotBugs 4.10.4 y el formateador fijado (google-java-format 1.36.1 AOSP, D-33).
    - `./gradlew build` pasa en local.
 2. **Reglas primero (pruebas en rojo):**
    - *Fixtures* y pruebas de `plataforma:arquitectura` para cada violación de capas y de dominio, y para `verify()` con dos módulos.
@@ -151,7 +151,7 @@ Los servicios irán en `backend/servicios/<servicio>` y los procesos en `backend
    - `plantillas/servicio` y `plantillas/aplicacion`.
    - Prueba local: copiar los esqueletos a un directorio temporal, incluirlos y construir; después se revierte.
 4. **Comprobaciones de §8:**
-   - palantir con sintaxis de Java 25, SpotBugs sobre clases de Java 25 y Modulith 2.1.1 con Boot 4.1.1.
+   - Formateador de Spotless con sintaxis de Java 25 (D-33), SpotBugs sobre clases de Java 25 y Modulith 2.1.1 con Boot 4.1.1.
    - Se registran en `evidencia.md`.
 5. **CI:**
    - Job `0 · deteccion` y condiciones de los jobs de frontend y de `sca` en `ci.yml`.

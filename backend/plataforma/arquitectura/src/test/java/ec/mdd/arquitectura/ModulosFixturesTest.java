@@ -10,8 +10,8 @@ import org.springframework.modulith.core.ApplicationModules;
 import org.springframework.modulith.core.Violations;
 
 /**
- * Comprueba que, con la API publicada en {@code puertos.entrada}, Spring Modulith detecta el uso
- * de clases internas entre servicios de un mismo proceso (escenario «Un servicio no usa las clases
+ * Comprueba que, con la API publicada en {@code puertos.entrada}, Spring Modulith detecta el uso de
+ * clases internas entre servicios de un mismo proceso (escenario «Un servicio no usa las clases
  * internas de otro», FR-006, ADR-012).
  */
 class ModulosFixturesTest {
@@ -31,9 +31,12 @@ class ModulosFixturesTest {
 
     @Test
     void dadoUnServicioQueUsaUnaClaseInternaDeOtro_cuandoSeVerificanLosModulos_entoncesFalla() {
-        ApplicationModules modulos = ApplicationModules.of(FIXTURES + "usointerno", INCLUIR_PRUEBAS);
+        ApplicationModules modulos =
+                ApplicationModules.of(FIXTURES + "usointerno", INCLUIR_PRUEBAS);
 
         assertThat(modulos.stream()).hasSize(2);
-        assertThatThrownBy(modulos::verify).isInstanceOf(Violations.class).hasMessageContaining("ServicioAlfa");
+        assertThatThrownBy(modulos::verify)
+                .isInstanceOf(Violations.class)
+                .hasMessageContaining("ServicioAlfa");
     }
 }

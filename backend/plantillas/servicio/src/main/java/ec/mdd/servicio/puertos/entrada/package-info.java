@@ -4,7 +4,7 @@
  *
  * <p>Obligatorio en los servicios centrales (5, 6, 10 y 12); en los de soporte y genéricos el
  * controlador puede llamar directamente a la aplicación, salvo que otro servicio del proceso
- * necesite llamarlos. NO DEBE exponer detalles de infraestructura.</p>
+ * necesite llamarlos. NO DEBE exponer detalles de infraestructura.
  */
 @NamedInterface("api")
 package ec.mdd.servicio.puertos.entrada;

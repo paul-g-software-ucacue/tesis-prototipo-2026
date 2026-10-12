@@ -17,12 +17,12 @@ En las comprobaciones de la sección 8 de la constitución, este documento solo 
 - **Confirmación pendiente:** compilar y correr `ApplicationModules.verify()` con Boot 4.1.1 y Modulith 2.1.1 en el mismo classpath, sin conflictos de versión.
 - **Alternativas consideradas:** 2.2.x, que es un hito para Boot 4.2 y queda descartada; 2.0.x, que es la línea de Boot 4.0 y también queda descartada.
 
-## 2. palantir-java-format con Java 25 (FR-016)
+## 2. Formateador de Spotless con Java 25 (FR-016)
 
-- **Decisión:** fijar la versión del formateador en la convención, `palantirJavaFormat('2.102.0')` (la última en Maven Central el 11/10/2026), en lugar de depender de la versión por defecto de Spotless 8.10.4.
-- **Por qué:** se sabe de versiones antiguas de palantir que usan API del JDK que ya no existen en Java 25 ([OSGeo, «Exploring builds with Java 25»](https://discourse.osgeo.org/t/exploring-builds-with-java-25/149783)). Las notas de versión de palantir no nombran Java 25 de forma explícita ([releases](https://github.com/palantir/palantir-java-format/releases)). Fijar la versión hace que la comprobación sea repetible.
-- **Confirmación pendiente:** `spotlessCheck` y `spotlessApply` sobre un archivo que use sintaxis de Java 25: importación de módulos (`import module java.base;`), cuerpos de constructor flexibles y variables sin nombre (`_`). La prueba corre con el JDK 25 local y en CI.
-- **Si falla:** se registra una decisión nueva en `docs/decisiones.md`, por ejemplo `googleJavaFormat()` o Eclipse JDT en Spotless, y se enmienda la constitución (sección 8). No se desactiva Spotless en silencio.
+- **Plan inicial:** fijar `palantirJavaFormat('2.102.0')`, la última en Maven Central el 11/10/2026, porque se sabía de versiones antiguas de palantir que usan API del JDK que ya no existen en Java 25 ([OSGeo](https://discourse.osgeo.org/t/exploring-builds-with-java-25/149783)).
+- **Resultado (T018):** fallida parcial. palantir 2.102.0 formatea cuerpos de constructor flexibles, variables sin nombre, *pattern matching* y `switch` como expresión, pero no `import module` (JEP 511) ni los archivos fuente compactos (JEP 512): issues abiertos [#1506](https://github.com/palantir/palantir-java-format/issues/1506) y [#1701](https://github.com/palantir/palantir-java-format/issues/1701).
+- **Decisión (D-33):** google-java-format **1.36.1** en estilo AOSP, `googleJavaFormat('1.36.1').aosp()`. Se comprobó con la misma sintaxis, incluidas las dos construcciones que fallaban con palantir.
+- **Por qué la 1.36.1 y no la 1.37.0:** Spotless 8.10.4 trae por defecto la 1.36.1 y falla con la 1.37.0 (`InvocationTargetException` en todos los archivos), aunque la 1.37.0 funciona con Java 25 desde la línea de comandos.
 
 ## 3. SpotBugs con clases de Java 25 (FR-016)
 

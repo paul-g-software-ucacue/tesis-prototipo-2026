@@ -10,7 +10,7 @@
 
 **Origen**: issue #18 · B00-H01 · sub-issue de #2 (B00 · Base técnica de la ola 0) · milestone «Ola 0 · Base técnica» · etiquetas `tipo:historia`, `prioridad:must`, `modulo:transversal` · tamaño propuesto L.
 
-**Requerimientos que cubre**: ADR-008 · ADR-009 · ADR-011 · D-24 · D-27 · RNF-MAN-01 · RNF-MAN-02 (modificado por D-32: 60 % por módulo). **Decisiones tomadas en esta historia** (`docs/decisiones.md`): D-28 a D-32 y ADR-012.
+**Requerimientos que cubre**: ADR-008 · ADR-009 · ADR-011 · D-24 · D-27 · RNF-MAN-01 · RNF-MAN-02 (modificado por D-32: 60 % por módulo). **Decisiones tomadas en esta historia** (`docs/decisiones.md`): D-28 a D-33 y ADR-012.
 
 **Historia (tal como está en el issue)**: Como autor, quiero un monorepo privado con Gradle (Groovy DSL, Java 25, Spring Boot 4.1.1), la plantilla de servicio en cinco capas y las etapas de lint y pruebas en cada pull request, para que cada historia se integre con las pruebas en verde y sin cruzar límites.
 
@@ -130,7 +130,7 @@ Escenario: Hallazgo de análisis estático
 - **Hallazgo de confianza media o baja**: no hace fallar el check; la constitución solo exige que no haya hallazgos altos.
 - **Repositorio sin frontend**: mientras no exista `frontend/package.json`, los jobs de frontend de la CI no corren y no hacen fallar el pull request. Los checks del backend siguen corriendo y siguen siendo obligatorios para fusionar: omitir los jobs de frontend no debe omitir ningún check del backend.
 - **Llega el frontend**: cuando un pull request agrega `frontend/package.json` (B00-H06), los jobs de frontend empiezan a correr en ese mismo pull request sin cambiar el workflow.
-- **Una comprobación de compatibilidad falla**: si palantir-java-format o SpotBugs no funcionan con Java 25, o Spring Modulith 2.1 no es la línea para Spring Boot 4.1, se registra una decisión nueva en `docs/decisiones.md` y se enmienda la constitución (sección 8), en lugar de desactivar la herramienta en silencio.
+- **Una comprobación de compatibilidad falla**: si el formateador de Spotless o SpotBugs no funcionan con Java 25, o Spring Modulith 2.1 no es la línea para Spring Boot 4.1, se registra una decisión nueva en `docs/decisiones.md` y se enmienda la constitución (sección 8), en lugar de desactivar la herramienta en silencio.
 
 ## Requirements *(mandatory)*
 
@@ -168,7 +168,7 @@ Escenario: Hallazgo de análisis estático
 
 **Comprobaciones de la ola 0 asignadas a esta historia (constitución, sección 8)**
 
-- **FR-016**: DEBE comprobarse que palantir-java-format (vía Spotless) y SpotBugs funcionan con Java 25.
+- **FR-016**: DEBE comprobarse que el formateador de Spotless y SpotBugs funcionan con Java 25. palantir-java-format falló en parte, y D-33 lo reemplazó por google-java-format en estilo AOSP, que también se comprueba.
 - **FR-017**: DEBE comprobarse que Spring Modulith 2.1 es la línea compatible con Spring Boot 4.1.
 - **FR-018**: El resultado de cada comprobación (FR-010, FR-016, FR-017) DEBE quedar registrado; si alguna falla, DEBE registrarse una decisión nueva en `docs/decisiones.md` y enmendarse la constitución.
 
@@ -190,7 +190,7 @@ Escenario: Hallazgo de análisis estático
 - **SC-002**: Un pull request sin violaciones pasa todos sus checks y se puede fusionar.
 - **SC-003**: Ningún pull request se fusiona en la rama principal con un check en rojo desde que se cierra la historia (0 casos).
 - **SC-004**: El 100 % de las acciones usadas en los workflows está fijado por SHA completo.
-- **SC-005**: Las 3 comprobaciones de la constitución asignadas a esta historia (palantir-java-format y SpotBugs con Java 25, Spring Modulith 2.1 con Spring Boot 4.1, acciones fijadas por SHA) tienen su resultado registrado; ninguna queda pendiente.
+- **SC-005**: Las 3 comprobaciones de la constitución asignadas a esta historia (formateador de Spotless y SpotBugs con Java 25, Spring Modulith 2.1 con Spring Boot 4.1, acciones fijadas por SHA) tienen su resultado registrado; ninguna queda pendiente.
 - **SC-006**: Un servicio nuevo creado desde la plantilla queda cubierto por las reglas de capas, de límites, de cobertura y de análisis estático sin configuración adicional en el propio servicio.
 
 ## Assumptions

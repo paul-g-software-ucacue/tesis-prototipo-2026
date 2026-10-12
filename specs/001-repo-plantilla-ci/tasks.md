@@ -109,7 +109,9 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
   3. Borrar el archivo.
   4. Registrar la fila `palantir-java25` en `specs/001-repo-plantilla-ci/evidencia.md`.
 
-  Si falla, no desactivar Spotless: se registra en las notas y se aplica T050.
+  Si falla, no desactivar Spotless: se registra en las notas y se aplica T054.
+
+  **Resultado:** fallida parcial; palantir no soporta `import module` ni los archivos fuente compactos. El autor decidió **D-33**: google-java-format 1.36.1 en estilo AOSP. Se comprobó con la misma sintaxis, se reformateó el código y los esqueletos, y se volvió a validar T038.
 - [X] T019 [US1] Hacer commit y push en `001-repo-plantilla-ci`, y abrir el pull request hacia `main` **en borrador** con `gh pr create --draft`, usando `.github/pull_request_template.md`. Lleva `Refs #18` (la historia se cierra en T054), la carpeta `specs/001-repo-plantilla-ci/` y «Contrato OpenAPI cambiado: no».
 - [X] T020 [US1] Comprobar el caso límite «Pull request en borrador»: con el pull request de T019 todavía en borrador, `2 · test-integracion`, `4 · sbom-backend`, `4 · sbom-frontend` y `4 · sca` quedan *skipped*. Marcarlo como listo con `gh pr ready` y, en el run nuevo, comprobar la tabla de [contracts/ci-y-regla-main.md](contracts/ci-y-regla-main.md):
   - `0 · deteccion` en éxito con `frontend=false`;
