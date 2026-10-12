@@ -47,23 +47,23 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
 
 **Purpose**: versiones, convenciones y archivos base.
 
-- [ ] T001 Agregar `versionSpringCloud=2025.1.3` a `backend/gradle.properties`, con un comentario: «primera línea compatible con Spring Boot 4.1 desde 2025.1.2; research §5».
-- [ ] T002 [P] En `backend/buildSrc/src/main/groovy/mdd.servicio.gradle`, agregar:
+- [X] T001 Agregar `versionSpringCloud=2025.1.3` a `backend/gradle.properties`, con un comentario: «primera línea compatible con Spring Boot 4.1 desde 2025.1.2; research §5».
+- [X] T002 [P] En `backend/buildSrc/src/main/groovy/mdd.servicio.gradle`, agregar:
   - en `dependencies`: `implementation 'org.springframework.boot:spring-boot-starter-flyway'` y `runtimeOnly 'org.flywaydb:flyway-database-postgresql'`;
   - en la suite `integrationTest`: `runtimeOnly 'org.postgresql:postgresql'`.
 
   Todo con las versiones del BOM. Actualizar el comentario de cabecera: «cada servicio tiene su esquema y su Flyway (D-35, ADR-013)».
-- [ ] T003 [P] Agregar `implementation 'org.springframework.boot:spring-boot-starter-actuator'` a `backend/buildSrc/src/main/groovy/mdd.aplicacion.gradle`, con un comentario: «salud de Actuator para los *healthchecks*; research §6».
-- [ ] T004 [P] Agregar `.env` a `.gitignore`, con el comentario «# Variables locales; el ejemplo versionado es .env.ejemplo».
-- [ ] T005 [P] Crear `backend/.dockerignore` que excluya `**/build/`, `.gradle/`, `**/.gradle/` y `buildSrc/build/`.
-- [ ] T006 [P] Crear `specs/002-compose-cuatro-procesos/evidencia.md` con estas secciones:
+- [X] T003 [P] Agregar `implementation 'org.springframework.boot:spring-boot-starter-actuator'` a `backend/buildSrc/src/main/groovy/mdd.aplicacion.gradle`, con un comentario: «salud de Actuator para los *healthchecks*; research §6».
+- [X] T004 [P] Agregar `.env` a `.gitignore`, con el comentario «# Variables locales; el ejemplo versionado es .env.ejemplo».
+- [X] T005 [P] Crear `backend/.dockerignore` que excluya `**/build/`, `.gradle/`, `**/.gradle/` y `buildSrc/build/`.
+- [X] T006 [P] Crear `specs/002-compose-cuatro-procesos/evidencia.md` con estas secciones:
   - entorno;
   - construcción y pruebas;
   - escenario 1 (perfil levantado);
   - escenario 2 (mediciones de R-19, con el formato de [contracts/medicion-r19.md](contracts/medicion-r19.md));
   - escenario 3 (esquemas y permisos);
   - notas.
-- [ ] T007 Comprobar que Docker responde sin `sudo`: `docker version`, y `docker compose version` 2.24 o posterior. El autor lo instala antes con los paquetes de Fedora (quickstart, requisitos previos). Anotar las versiones en la sección «entorno» de `specs/002-compose-cuatro-procesos/evidencia.md`. Después ejecutar `./gradlew build` en `backend/`; tiene que quedar en verde.
+- [X] T007 Comprobar que Docker responde sin `sudo`: `docker version`, y `docker compose version` 2.24 o posterior. El autor lo instala antes con los paquetes de Fedora (quickstart, requisitos previos). Anotar las versiones en la sección «entorno» de `specs/002-compose-cuatro-procesos/evidencia.md`. Después ejecutar `./gradlew build` en `backend/`; tiene que quedar en verde.
 
 ---
 

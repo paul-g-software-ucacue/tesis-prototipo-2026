@@ -9,6 +9,8 @@ plugins {
 dependencies {
     // Lo mínimo para @SpringBootApplication; cada historia agrega lo que use su proceso.
     implementation 'org.springframework.boot:spring-boot-starter'
+    // Salud de Actuator para los healthchecks (research §6).
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 }
 
 testing {

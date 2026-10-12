@@ -1,6 +1,7 @@
 // Convención de los 12 servicios (ADR-012). Un servicio solo aplica este plugin y recibe
 // las reglas de las cinco capas, la cobertura del 60 % (D-32), Spotless y SpotBugs.
-// No agrega Spring Web, JPA ni Flyway: cada historia agrega lo que usa su servicio.
+// Cada servicio tiene su esquema y su Flyway (D-35, ADR-013). No agrega Spring Web ni JPA:
+// cada historia agrega lo que usa su servicio.
 plugins {
     id 'java-library'
     id 'mdd.java-conventions'
@@ -11,6 +12,9 @@ def versionArchUnit = providers.gradleProperty('versionArchUnit').get()
 dependencies {
     // @NamedInterface("api") en puertos.entrada: la API publicada del servicio en su proceso.
     implementation 'org.springframework.modulith:spring-modulith-api'
+    // Flyway del servicio, limitado a su esquema (<Servicio>FlywayConfig).
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
+    runtimeOnly 'org.flywaydb:flyway-database-postgresql'
 }
 
 testing {
@@ -20,6 +24,12 @@ testing {
                 // Reglas de las cinco capas, aplicadas desde ArquitecturaTest.
                 implementation project(':plataforma:arquitectura')
                 implementation "com.tngtech.archunit:archunit-junit5:${versionArchUnit}"
+            }
+        }
+        integrationTest {
+            dependencies {
+                // <Servicio>EsquemaIntegrationTest migra el servicio contra PostgreSQL real.
+                runtimeOnly 'org.postgresql:postgresql'
             }
         }
     }

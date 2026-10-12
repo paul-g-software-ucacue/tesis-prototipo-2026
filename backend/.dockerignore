@@ -1,0 +1,5 @@
+# Contexto de construcción de deploy/docker/java.Dockerfile: solo el código, sin salidas de Gradle.
+**/build/
+.gradle/
+**/.gradle/
+buildSrc/build/
