@@ -161,7 +161,7 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
 
 ### Implementation for User Story 2
 
-- [ ] T030 [US2] Crear `backend/plataforma/arquitectura/src/main/java/ec/mdd/arquitectura/ReglasCapas.java`: una clase `final` con constructor privado y dos `public static final ArchRule`, cada una con JavaDoc en español que explica su contrato y cita los principios I y V.
+- [X] T030 [US2] Crear `backend/plataforma/arquitectura/src/main/java/ec/mdd/arquitectura/ReglasCapas.java`: una clase `final` con constructor privado y dos `public static final ArchRule`, cada una con JavaDoc en español que explica su contrato y cita los principios I y V.
   - `SENTIDO_DE_LAS_CAPAS`: `layeredArchitecture().consideringOnlyDependenciesInLayers()` con las capas `Dominio` (`..dominio..`), `Puertos` (`..puertos..`), `Aplicacion` (`..aplicacion..`), `Adaptadores` (`..adaptadores..`) e `Infraestructura` (`..infraestructura..`), y estas restricciones:
     - Dominio solo lo usan Aplicación, Puertos, Adaptadores e Infraestructura;
     - Puertos solo lo usan Aplicación, Adaptadores e Infraestructura;
@@ -177,7 +177,7 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
     - PDF: `org.apache.pdfbox..` y `com.openhtmltopdf..`
 
   Las dos reglas llevan `.allowEmptyShould(true)` y `because(...)` en español. T026 tiene que pasar.
-- [ ] T031 [US2] Con T030 hecha, ejecutar `./gradlew :plataforma:arquitectura:build`. Tienen que pasar T026 y T028, `spotlessCheck` y `spotbugsMain`, y `jacocoTestCoverageVerification` con 60 % o más de líneas.
+- [X] T031 [US2] Con T030 hecha, ejecutar `./gradlew :plataforma:arquitectura:build`. Tienen que pasar T026 y T028, `spotlessCheck` y `spotbugsMain`, y `jacocoTestCoverageVerification` con 60 % o más de líneas.
 - [ ] T032 [US2] Crear `backend/buildSrc/src/main/groovy/mdd.servicio.gradle`:
   - `plugins { id 'java-library'; id 'mdd.java-conventions' }`;
   - `implementation 'org.springframework.modulith:spring-modulith-api'`;
