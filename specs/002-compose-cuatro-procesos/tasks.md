@@ -222,7 +222,7 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
 
   Fijar las acciones con `pinact run` y validar con actionlint, como en B00-H01.
 - [X] T030 [P] [US2] Agregar a `.github/dependabot.yml` el ecosistema `docker-compose` con `directory: /` y `schedule: { interval: weekly }`, para que proponga las actualizaciones de `postgres:18.6-alpine`.
-- [ ] T031 [US2] Medir en local con el perfil de T026: `deploy/medir_memoria.sh | tee` a un archivo en el directorio temporal de la sesión, y pegar la tabla en `specs/002-compose-cuatro-procesos/evidencia.md` (entorno: Docker local). Anotar que en local cada JVM ve 12 núcleos y en el equipo de despliegue verá 4: con más hilos, la medición local sale algo más alta, así que la diferencia deja margen a favor. Según el total:
+- [X] T031 [US2] Medir en local con el perfil de T026: `deploy/medir_memoria.sh | tee` a un archivo en el directorio temporal de la sesión, y pegar la tabla en `specs/002-compose-cuatro-procesos/evidencia.md` (entorno: Docker local). Anotar que en local cada JVM ve 12 núcleos y en el equipo de despliegue verá 4: con más hilos, la medición local sale algo más alta, así que la diferencia deja margen a favor. Según el total:
   - si es de 8 GiB o más, ajustar los límites o `JAVA_TOOL_OPTIONS` (research §8) y repetir;
   - si sigue sin caber, detenerse y proponer al autor una decisión nueva (alternativa de R-19: Nginx en lugar de Spring Cloud Gateway).
 - [ ] T032 [US2] Cuando el pull request quede listo para revisión (T038), esperar el run de `perfil-consolidado` (`gh run list --workflow perfil-consolidado.yml --branch 002-compose-cuatro-procesos`). `gh workflow run` no sirve antes de fusionar, porque GitHub solo ejecuta a mano los workflows que están en la rama principal. Pegar en `specs/002-compose-cuatro-procesos/evidencia.md` la tabla del resumen (entorno: Docker en `ubuntu-latest`), el enlace al run, el tiempo de construcción y el tiempo de `up --wait`. Este último es la referencia de SC-001 en un equipo más parecido al de despliegue que el local. Si la construcción en paralelo resulta lenta, construir una imagen a la vez. Es la medición de referencia de R-19 y, además, la prueba del escenario 1 en un clon limpio con Docker.
@@ -239,13 +239,13 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
 
 ### Implementation for User Story 3
 
-- [ ] T033 [US3] Comprobar el caso límite «una migración apunta al esquema de otro servicio»:
+- [X] T033 [US3] Comprobar el caso límite «una migración apunta al esquema de otro servicio»:
   1. Agregar temporalmente `backend/servicios/normativa/src/main/resources/db/migration/normativa/V2__intruso.sql` con `create table docentes.intruso(id int);`.
   2. `./gradlew :servicios:normativa:integrationTest` tiene que fallar en `NormativaEsquemaIntegrationTest`.
   3. Borrar el archivo, comprobar que la prueba vuelve a pasar y anotar el mensaje de la falla en `specs/002-compose-cuatro-procesos/evidencia.md`.
-- [ ] T034 [US3] Sobre el perfil levantado, ejecutar la consulta de esquemas del quickstart §4. Tiene que haber 12 filas `<servicio> | flyway_schema_history` y ninguna en `public`. Pegar la salida en `specs/002-compose-cuatro-procesos/evidencia.md`.
-- [ ] T035 [US3] Comprobar los permisos entre procesos, según el quickstart §4: como rol `identidad`, `create table normativa.intruso(id int);` tiene que responder `permission denied for schema normativa`. Repetirlo como rol `salida` contra `firma`. Anotar los resultados en `specs/002-compose-cuatro-procesos/evidencia.md`.
-- [ ] T036 [US3] Comprobar la segunda ejecución (SC-004): `docker compose down && docker compose up -d --wait`. Todo tiene que quedar sano, y en `docker compose logs <proceso>` Flyway tiene que decir que cada esquema está al día, sin migraciones nuevas. Anotar el resultado en `specs/002-compose-cuatro-procesos/evidencia.md`.
+- [X] T034 [US3] Sobre el perfil levantado, ejecutar la consulta de esquemas del quickstart §4. Tiene que haber 12 filas `<servicio> | flyway_schema_history` y ninguna en `public`. Pegar la salida en `specs/002-compose-cuatro-procesos/evidencia.md`.
+- [X] T035 [US3] Comprobar los permisos entre procesos, según el quickstart §4: como rol `identidad`, `create table normativa.intruso(id int);` tiene que responder `permission denied for schema normativa`. Repetirlo como rol `salida` contra `firma`. Anotar los resultados en `specs/002-compose-cuatro-procesos/evidencia.md`.
+- [X] T036 [US3] Comprobar la segunda ejecución (SC-004): `docker compose down && docker compose up -d --wait`. Todo tiene que quedar sano, y en `docker compose logs <proceso>` Flyway tiene que decir que cada esquema está al día, sin migraciones nuevas. Anotar el resultado en `specs/002-compose-cuatro-procesos/evidencia.md`.
 
 **Checkpoint**: el aislamiento de esquemas está demostrado de forma automática y sobre el perfil.
 

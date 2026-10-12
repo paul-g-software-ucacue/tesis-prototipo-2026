@@ -31,9 +31,36 @@ Registro de las comprobaciones de los tres escenarios de la historia (issue #19)
 
 Formato de cada medición: [contracts/medicion-r19.md](contracts/medicion-r19.md).
 
+### Medición local (T031)
+
+**Medición de R-19** · 2026-10-12T06:16:56-05:00 · commit `70f3988` · entorno: local (Docker 29.8.2)
+Calentamiento: 20 llamadas a la salud por componente y 30 s de espera.
+
+| Contenedor | Consumo (MiB) | Límite (MiB) |
+|---|---:|---:|
+| postgres | 93,8 | 512 |
+| identidad | 182,2 | 512 |
+| datos | 184,9 | 512 |
+| distributivo | 187,2 | 512 |
+| salida | 185,2 | 512 |
+| gateway | 168,3 | 384 |
+| **Total** | **1 001,6** (0,98 GiB) | 2 944 |
+
+Resultado: cumple (< 8 GiB). Sin alerta de R-19 (≤ 7 GiB).
+
+`deploy/medir_memoria.sh` terminó con código 0 en unos 60 s. Una medición anterior, con el commit `e13622c`, dio 989,6 MiB: la variación entre lecturas es de unos 10 MiB. En esta máquina cada JVM ve 12 núcleos; en el equipo de despliegue verá 4. Con más núcleos la JVM crea más hilos, así que la medición local tiende a dar un poco más que la del equipo de despliegue: el margen queda a favor. La medición no incluye JPA, Spring Security ni la generación de PDF, que llegan con las historias siguientes; B00-H03 vuelve a medir después de iniciar sesión (D-34).
+
+### Medición de referencia en GitHub Actions (T032)
+
+Pendiente: el workflow corre cuando el pull request quede listo para revisión.
+
 ## Escenario 3: un esquema por servicio
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Migración en el esquema de otro servicio (T033) | confirmada | Con `V2__intruso.sql` temporal en `servicios/normativa`: (1) `create table docentes.intruso(id int);` hace fallar `NormativaEsquemaIntegrationTest` en la migración, con `ERROR: schema "docentes" does not exist`, porque la base de la prueba solo tiene el esquema de `normativa`; (2) `create table public.intruso(id int);`, que sí se puede crear, hace fallar la comprobación: `Expecting all elements of: ["normativa.flyway_schema_history", "public.intruso"] to match given predicate but this element did not: "public.intruso"`. En ambos casos `:servicios:normativa:integrationTest` termina en `FAILED`; al borrar el archivo vuelve a pasar. | 2026-10-12 |
+| Consulta de esquemas en el perfil (T034) | confirmada | `docker compose exec postgres psql -U postgres -d mdd -c "select table_schema, table_name from information_schema.tables where table_schema not in ('pg_catalog','information_schema') order by 1,2;"` → 12 filas, una `flyway_schema_history` en cada esquema (`academico`, `cargas`, `dashboard`, `docentes`, `firma`, `generacion`, `normativa`, `notificaciones`, `reporting`, `roles`, `usuarios` y `validacionocs`), ninguna en `public`. | 2026-10-12 |
+| Permisos entre procesos (T035) | confirmada | Con `psql -h 127.0.0.1` y las claves de `.env.ejemplo`: como `identidad`, `create table normativa.intruso(id int);` → `ERROR: permission denied for schema normativa`, y `select count(*) from normativa.flyway_schema_history;` → `ERROR: permission denied for schema normativa`. Como `salida`, `create table firma.intruso(id int);` → `ERROR: permission denied for schema firma`, y `create table public.intruso(id int);` → `ERROR: permission denied for schema public`. Como `identidad`, leer su propio esquema (`usuarios.flyway_schema_history`) funciona. | 2026-10-12 |
+| Segunda ejecución (T036, SC-004) | confirmada | `docker compose down && docker compose up -d --wait` sobre el mismo volumen: los 6 contenedores `healthy`; en los registros, Flyway dice `Schema "…" is up to date. No migration necessary.` para los 12 esquemas (identidad 3, datos 4, distributivo 3, salida 2) y ninguna línea `Successfully applied`. Siguen las mismas 12 tablas. La primera vez, `up --wait` tardó 714 s porque el equipo se suspendió en medio (journal: `The system will suspend now!` a las 06:18:09 y reanudación a las 06:29:45); al repetirlo tardó 17 s (`down` 3 s). | 2026-10-12 |
 
 ## Notas
