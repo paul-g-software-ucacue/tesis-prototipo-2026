@@ -1,0 +1,32 @@
+// Convención de los 4 procesos (identidad, datos, distributivo y salida; ADR-006, ADR-012).
+// Cada proceso es una aplicación Spring Boot que ensambla sus servicios y verifica, con
+// Spring Modulith, que no usen las clases internas de otro (ModulosTest).
+plugins {
+    id 'mdd.java-conventions'
+    id 'org.springframework.boot'
+}
+
+dependencies {
+    // Lo mínimo para @SpringBootApplication; cada historia agrega lo que use su proceso.
+    implementation 'org.springframework.boot:spring-boot-starter'
+}
+
+testing {
+    suites {
+        test {
+            dependencies {
+                implementation 'org.springframework.modulith:spring-modulith-starter-test'
+            }
+        }
+    }
+}
+
+// La clase de arranque solo tiene main y ninguna prueba la ejecuta: no cuenta para la
+// cobertura del proceso (research §14).
+['jacocoTestReport', 'jacocoTestCoverageVerification'].each { nombre ->
+    tasks.named(nombre) {
+        classDirectories.setFrom(sourceSets.main.output.classesDirs.asFileTree.matching {
+            exclude '**/*Aplicacion.class'
+        })
+    }
+}

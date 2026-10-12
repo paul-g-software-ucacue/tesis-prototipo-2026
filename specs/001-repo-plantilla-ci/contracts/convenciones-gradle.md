@@ -45,6 +45,7 @@ Aplica `mdd.java-conventions` y `org.springframework.boot`.
 | Aspecto | Contrato |
 |---|---|
 | Plugin de Spring Boot | 4.1.1. La versión se lee de `backend/gradle.properties` (`versionSpringBoot`) en `buildSrc/build.gradle`, que es la única fuente de la versión. |
+| `implementation` | `org.springframework.boot:spring-boot-starter`, lo mínimo para `@SpringBootApplication` (agregado al implementar, T042) |
 | `testImplementation` | `org.springframework.modulith:spring-modulith-starter-test` para `ApplicationModules` |
 | JaCoCo | Excluye las clases `**/*Aplicacion.class` del informe y de la verificación |
 | `bootJar` | `apps/<proceso>/build/libs/<proceso>.jar`, que es lo que espera `cd.yml` (B00-H08) |

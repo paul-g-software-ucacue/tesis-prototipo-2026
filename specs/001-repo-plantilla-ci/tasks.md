@@ -178,34 +178,34 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
 
   Las dos reglas llevan `.allowEmptyShould(true)` y `because(...)` en español. T026 tiene que pasar.
 - [X] T031 [US2] Con T030 hecha, ejecutar `./gradlew :plataforma:arquitectura:build`. Tienen que pasar T026 y T028, `spotlessCheck` y `spotbugsMain`, y `jacocoTestCoverageVerification` con 60 % o más de líneas.
-- [ ] T032 [US2] Crear `backend/buildSrc/src/main/groovy/mdd.servicio.gradle`:
+- [X] T032 [US2] Crear `backend/buildSrc/src/main/groovy/mdd.servicio.gradle`:
   - `plugins { id 'java-library'; id 'mdd.java-conventions' }`;
   - `implementation 'org.springframework.modulith:spring-modulith-api'`;
   - `testImplementation project(':plataforma:arquitectura')`;
   - `testImplementation "com.tngtech.archunit:archunit-junit5:${versionArchUnit}"`, con `versionArchUnit` leído con `providers.gradleProperty`.
 
   Un comentario de cabecera dice que no agrega Spring Web, JPA ni Flyway ([contracts/convenciones-gradle.md](contracts/convenciones-gradle.md)).
-- [ ] T033 [US2] Eliminar `backend/buildSrc/src/main/groovy/mdd.servicio-central.gradle` con `git rm` (D-32, ADR-012). Comprobar con `grep -rn 'servicio-central' backend/ .github/` que no quedan referencias.
-- [ ] T034 [US2] Crear `backend/buildSrc/src/main/groovy/mdd.aplicacion.gradle`:
+- [X] T033 [US2] Eliminar `backend/buildSrc/src/main/groovy/mdd.servicio-central.gradle` con `git rm` (D-32, ADR-012). Comprobar con `grep -rn 'servicio-central' backend/ .github/` que no quedan referencias.
+- [X] T034 [US2] Crear `backend/buildSrc/src/main/groovy/mdd.aplicacion.gradle`:
   - `plugins { id 'mdd.java-conventions'; id 'org.springframework.boot' }`;
   - `testImplementation 'org.springframework.modulith:spring-modulith-starter-test'`;
   - excluir `**/*Aplicacion.class` del `classDirectories` de `jacocoTestReport` y de `jacocoTestCoverageVerification` (research §14).
-- [ ] T035 [P] [US2] Crear el esqueleto de servicio en `backend/plantillas/servicio/` según [contracts/plantilla-servicio.md](contracts/plantilla-servicio.md):
+- [X] T035 [P] [US2] Crear el esqueleto de servicio en `backend/plantillas/servicio/` según [contracts/plantilla-servicio.md](contracts/plantilla-servicio.md):
   - `build.gradle` con `plugins { id 'mdd.servicio' }`, que vale para todos los servicios, centrales o no (D-32);
   - un `src/main/java/ec/mdd/servicio/<capa>/package-info.java` en cada capa (`dominio`, `aplicacion`, `puertos/entrada`, `puertos/salida`, `adaptadores` e `infraestructura`), con el JavaDoc en español de lo que contiene la capa y lo que NO DEBE hacer, según la tabla del principio I. El de `puertos/entrada` lleva `@org.springframework.modulith.NamedInterface("api")` y dice que es la API publicada dentro del proceso;
   - `src/test/java/ec/mdd/servicio/ArquitecturaTest.java`, con `@AnalyzeClasses(packagesOf = ArquitecturaTest.class, importOptions = ImportOption.DoNotIncludeTests.class)` y dos campos `@ArchTest`: `ReglasCapas.SENTIDO_DE_LAS_CAPAS` y `ReglasCapas.DOMINIO_SIN_DETALLES`.
-- [ ] T036 [P] [US2] Crear el esqueleto de proceso en `backend/plantillas/aplicacion/`:
+- [X] T036 [P] [US2] Crear el esqueleto de proceso en `backend/plantillas/aplicacion/`:
   - `build.gradle` con `plugins { id 'mdd.aplicacion' }` y un comentario sobre cómo agregar `implementation project(':servicios:<servicio>')`;
   - `src/main/java/ec/mdd/ProcesoAplicacion.java` con `@SpringBootApplication` y `main`, más JavaDoc: la clase está en `ec.mdd` para que los módulos sean los `ec.mdd.<servicio>`;
   - `src/test/java/ec/mdd/ModulosTest.java`, que ejecuta `ApplicationModules.of(ProcesoAplicacion.class).verify()`.
-- [ ] T037 [P] [US2] Crear `backend/plantillas/README.md` con los pasos «Crear un servicio» y «Crear un proceso» de [contracts/plantilla-servicio.md](contracts/plantilla-servicio.md), con un enlace a ese contrato en lugar de copiar sus garantías.
-- [ ] T038 [US2] Validar los esqueletos en local, sin commit ([quickstart.md](quickstart.md) §3):
+- [X] T037 [P] [US2] Crear `backend/plantillas/README.md` con los pasos «Crear un servicio» y «Crear un proceso» de [contracts/plantilla-servicio.md](contracts/plantilla-servicio.md), con un enlace a ese contrato en lugar de copiar sus garantías.
+- [X] T038 [US2] Validar los esqueletos en local, sin commit ([quickstart.md](quickstart.md) §3):
   1. Copiar `plantillas/servicio` a `backend/servicios/prueba` y `plantillas/aplicacion` a `backend/apps/prueba`, renombrando el paquete y la clase.
   2. Incluirlos en `settings.gradle` y declarar el servicio como dependencia del proceso.
   3. `./gradlew build` tiene que pasar.
   4. Poner `org.springframework.stereotype.Component` en una clase de `servicios/prueba/.../dominio/`: `ArquitecturaTest` tiene que fallar.
   5. Revertir con `git checkout -- backend/settings.gradle` y borrar `backend/servicios/` y `backend/apps/`.
-- [ ] T039 [US2] Comprobar Modulith 2.1.1 con Boot 4.1.1 (FR-017): `./gradlew :plataforma:arquitectura:dependencies --configuration testRuntimeClasspath` tiene que resolver Spring Boot 4.1.1, Spring Modulith 2.1.1 y ArchUnit 1.4.2 sin conflictos, y T028 tiene que pasar. Registrar la fila `modulith21-boot41` en `specs/001-repo-plantilla-ci/evidencia.md`.
+- [X] T039 [US2] Comprobar Modulith 2.1.1 con Boot 4.1.1 (FR-017): `./gradlew :plataforma:arquitectura:dependencies --configuration testRuntimeClasspath` tiene que resolver Spring Boot 4.1.1, Spring Modulith 2.1.1 y ArchUnit 1.4.2 sin conflictos, y T028 tiene que pasar. Registrar la fila `modulith21-boot41` en `specs/001-repo-plantilla-ci/evidencia.md`.
 
 **Checkpoint**: las reglas están probadas y los esqueletos funcionan. Los escenarios 1 y 2 se demuestran en T046 y T047.
 
@@ -219,15 +219,15 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
 
 ### Implementation for User Story 3
 
-- [ ] T040 [US3] Comprobar en local que un servicio recién creado **sin clases** pasa `./gradlew :servicios:prueba:jacocoTestCoverageVerification`, usando una copia temporal de `plantillas/servicio` en `backend/servicios/prueba` (research §14). Si falla porque hay 0 de 0 líneas, ajustar `backend/buildSrc/src/main/groovy/mdd.java-conventions.gradle` para que la verificación no falle sin clases y anotarlo en `specs/001-repo-plantilla-ci/evidencia.md`. Después borrar la copia.
-- [ ] T041 [US3] Comprobar en local el umbral exacto:
+- [X] T040 [US3] Comprobar en local que un servicio recién creado **sin clases** pasa `./gradlew :servicios:prueba:jacocoTestCoverageVerification`, usando una copia temporal de `plantillas/servicio` en `backend/servicios/prueba` (research §14). Si falla porque hay 0 de 0 líneas, ajustar `backend/buildSrc/src/main/groovy/mdd.java-conventions.gradle` para que la verificación no falle sin clases y anotarlo en `specs/001-repo-plantilla-ci/evidencia.md`. Después borrar la copia.
+- [X] T041 [US3] Comprobar en local el umbral exacto:
   1. Crear una copia temporal de `plantillas/servicio` en `backend/servicios/pruebaumbral`.
   2. Agregar clases y pruebas de modo que el módulo quede con exactamente 60 % de líneas cubiertas: `jacocoTestCoverageVerification` tiene que pasar (caso límite «umbral exacto»).
   3. Agregar una línea sin cubrir para que quede por debajo del 60 %: la verificación tiene que fallar.
   4. Comprobar que no hay ninguna regla `PACKAGE` del 80 % en el informe de la verificación (D-32).
 
   Anotar los resultados en `specs/001-repo-plantilla-ci/evidencia.md` y borrar la copia.
-- [ ] T042 [US3] Comprobar en local que un proceso temporal creado desde `plantillas/aplicacion`, en `backend/apps/prueba`, pasa `jacocoTestCoverageVerification` aunque su única clase propia sea `ProcesoAplicacion`, porque la clase de arranque está excluida (T034). Anotarlo en `specs/001-repo-plantilla-ci/evidencia.md` y borrar la copia.
+- [X] T042 [US3] Comprobar en local que un proceso temporal creado desde `plantillas/aplicacion`, en `backend/apps/prueba`, pasa `jacocoTestCoverageVerification` aunque su única clase propia sea `ProcesoAplicacion`, porque la clase de arranque está excluida (T034). Anotarlo en `specs/001-repo-plantilla-ci/evidencia.md` y borrar la copia.
 
 **Checkpoint**: el umbral del 60 % está comprobado en local, incluido el valor exacto.
 
