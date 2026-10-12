@@ -64,3 +64,8 @@ Pendiente: el workflow corre cuando el pull request quede listo para revisión.
 | Segunda ejecución (T036, SC-004) | confirmada | `docker compose down && docker compose up -d --wait` sobre el mismo volumen: los 6 contenedores `healthy`; en los registros, Flyway dice `Schema "…" is up to date. No migration necessary.` para los 12 esquemas (identidad 3, datos 4, distributivo 3, salida 2) y ninguna línea `Successfully applied`. Siguen las mismas 12 tablas. La primera vez, `up --wait` tardó 714 s porque el equipo se suspendió en medio (journal: `The system will suspend now!` a las 06:18:09 y reanudación a las 06:29:45); al repetirlo tardó 17 s (`down` 3 s). | 2026-10-12 |
 
 ## Notas
+
+- **JavaDoc (T037):** todas las clases nuevas tienen JavaDoc en español y ninguna usa `@author`. `./gradlew javadoc` termina sin errores; solo hay avisos de *doclint* por el constructor por defecto, `main` y el método del bean, igual que en las clases de B00-H01. `spotlessCheck` pasa y `git status` no muestra archivos temporales.
+- **Gitleaks en local:** `gitleaks:v8.30.1 git` con `.gitleaks.toml` sobre un clon de la rama: 18 commits, `no leaks found`. `.env.ejemplo` no necesita excepción.
+- **SELinux en la máquina del autor:** el script de esquemas se monta con `:ro,z` para que el contenedor lo pueda leer. En Ubuntu, sin SELinux, la opción no tiene efecto.
+- **Lint:** actionlint 1.7.12 sobre todos los workflows y shellcheck sobre `deploy/medir_memoria.sh` y `deploy/postgres/01-esquemas.sh`, sin hallazgos. Las acciones de `perfil-consolidado.yml` reutilizan los SHA ya fijados con pinact en `ci.yml` (checkout v7.0.1 y upload-artifact v7.0.2).
