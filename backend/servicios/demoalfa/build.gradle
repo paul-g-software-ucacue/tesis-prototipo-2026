@@ -4,3 +4,7 @@
 plugins {
     id 'mdd.servicio'
 }
+
+dependencies {
+    implementation 'org.springframework:spring-context'
+}
