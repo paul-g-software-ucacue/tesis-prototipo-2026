@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { sparse-checkout: deploy/zap }
       - name: Escaneo completo con la cabecera del proxy
         env: { ACCESO: "${{ secrets.DEMO_ACCESO_BASIC }}" }
@@ -32,7 +32,7 @@ jobs:
             -e ZAP_AUTH_HEADER=Authorization -e ZAP_AUTH_HEADER_VALUE="$valor" \
             ghcr.io/zaproxy/zaproxy:stable zap-full-scan.py -t "$URL" -I -r zap-web.html -J zap-web.json
           bash deploy/zap/sin_altos.sh zap/zap-web.json
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with: { name: zap-web, path: zap/ }
 
@@ -46,7 +46,7 @@ jobs:
         # Solo los contratos de los servicios ya construidos al cerrar la ola.
         contrato: [identidad, cargas, academico, docentes, normativa]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: |
             contratos
@@ -65,7 +65,7 @@ jobs:
             ghcr.io/zaproxy/zaproxy:stable zap-api-scan.py -t ${{ matrix.contrato }}.yaml -f openapi -O "$URL" \
             -I -r zap-api.html -J zap-api.json
           bash deploy/zap/sin_altos.sh zap/zap-api.json
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with: { name: "zap-api-${{ matrix.contrato }}", path: zap/ }
 
@@ -74,17 +74,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { sparse-checkout: pruebas/k6 }
-      - uses: grafana/setup-k6-action@v1
-      - uses: grafana/run-k6-action@v1
+      - uses: grafana/setup-k6-action@43b9fc21641a76002687994433dd586f56e791b1 # v1.2.2
+      - uses: grafana/run-k6-action@4082a08c7e40cf6d65863911077dfb60ae0a4f04 # v1.5.0
         env:
           URL_BASE: ${{ env.URL }}
           K6_WEB_DASHBOARD: "true"
           K6_WEB_DASHBOARD_EXPORT: informe-k6.html
         with:
           path: pruebas/k6/nomina_base.js
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with: { name: k6, path: informe-k6.html }
 
@@ -97,14 +97,14 @@ jobs:
     permissions:
       contents: write   # solo este job crea la release
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with: { distribution: temurin, java-version: "${{ env.JAVA_VERSION }}" }
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
       - name: Cobertura y SBOM de la versión etiquetada
         working-directory: backend
         run: ./gradlew test jacocoTestReport cyclonedxDirectBom cyclonedxBom
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with: { path: informes }
       - name: Empaquetar y publicar la release
         env: { GH_TOKEN: "${{ github.token }}" }
