@@ -111,14 +111,14 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
 
   Si falla, no desactivar Spotless: se registra en las notas y se aplica T050.
 - [X] T019 [US1] Hacer commit y push en `001-repo-plantilla-ci`, y abrir el pull request hacia `main` **en borrador** con `gh pr create --draft`, usando `.github/pull_request_template.md`. Lleva `Refs #18` (la historia se cierra en T054), la carpeta `specs/001-repo-plantilla-ci/` y «Contrato OpenAPI cambiado: no».
-- [ ] T020 [US1] Comprobar el caso límite «Pull request en borrador»: con el pull request de T019 todavía en borrador, `2 · test-integracion`, `4 · sbom-backend`, `4 · sbom-frontend` y `4 · sca` quedan *skipped*. Marcarlo como listo con `gh pr ready` y, en el run nuevo, comprobar la tabla de [contracts/ci-y-regla-main.md](contracts/ci-y-regla-main.md):
+- [X] T020 [US1] Comprobar el caso límite «Pull request en borrador»: con el pull request de T019 todavía en borrador, `2 · test-integracion`, `4 · sbom-backend`, `4 · sbom-frontend` y `4 · sca` quedan *skipped*. Marcarlo como listo con `gh pr ready` y, en el run nuevo, comprobar la tabla de [contracts/ci-y-regla-main.md](contracts/ci-y-regla-main.md):
   - `0 · deteccion` en éxito con `frontend=false`;
   - `1 · lint-backend`, `2 · test-backend` y `2 · test-integracion` en éxito;
   - `1 · lint-frontend`, `2 · test-frontend` y `4 · sbom-frontend` en *skipped*;
   - `3 · secretos` y `4 · sbom-backend` en éxito, y `4 · sca` en éxito y **no** omitido.
 
   Registrar en `specs/001-repo-plantilla-ci/evidencia.md` los enlaces de los dos runs, el del borrador y el de listo para revisión.
-- [ ] T021 [US1] Crear `specs/001-repo-plantilla-ci/contracts/ruleset-main.json` con el JSON exacto de [contracts/ci-y-regla-main.md](contracts/ci-y-regla-main.md): 10 checks con `integration_id` 15368, `strict_required_status_checks_policy: true` y `allowed_merge_methods: ["squash"]`. Si en T020 falló `3 · secretos`, `4 · sbom-backend` o `4 · sca` por algo de B00-H07, quitar ese check del JSON y anotarlo en las notas de `evidencia.md` (excepción transitoria del contrato).
+- [X] T021 [US1] Crear `specs/001-repo-plantilla-ci/contracts/ruleset-main.json` con el JSON exacto de [contracts/ci-y-regla-main.md](contracts/ci-y-regla-main.md): 10 checks con `integration_id` 15368, `strict_required_status_checks_policy: true` y `allowed_merge_methods: ["squash"]`. Si en T020 falló `3 · secretos`, `4 · sbom-backend` o `4 · sca` por algo de B00-H07, quitar ese check del JSON y anotarlo en las notas de `evidencia.md` (excepción transitoria del contrato).
 - [ ] T022 [US1] Aplicar el ruleset con `gh api -X PUT repos/paul-g-software-ucacue/tesis-prototipo-2026/rulesets/24901935 --input specs/001-repo-plantilla-ci/contracts/ruleset-main.json`. Verificarlo con `gh api ... -q '.rules[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context'`, que tiene que listar los 10 checks, y con `gh api ... -q '{bypass: .bypass_actors, metodos: (.rules[]|select(.type=="pull_request")|.parameters.allowed_merge_methods)}'`, que tiene que devolver `{"bypass":[],"metodos":["squash"]}`. Comprobar también que sigue `require_extra_approval_for_unattributed_changes: true` (FR-009, D-31).
 - [ ] T023 [US1] En el pull request de T019, comprobar que GitHub muestra los checks como *Required* y que solo ofrece *Squash and merge*: `gh pr view --json mergeStateStatus,statusCheckRollup` y la página del pull request. Registrarlo en `specs/001-repo-plantilla-ci/evidencia.md`.
 
@@ -271,7 +271,7 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
 
 **Purpose**: demostrar en GitHub que cada escenario bloquea la fusión y cerrar la historia. Requiere que la regla esté activa (T022). Empieza fusionando B00-H01 (T046), porque los pull requests de demostración salen de `main`.
 
-- [ ] T046 Fusionar con *squash* el pull request de B00-H01, cuando todos sus checks estén en éxito o *skipped* y con la aprobación del autor (SC-002). Comprobar con `gh pr view --json mergeCommit` que `main` tiene un solo commit nuevo.
+- [ ] T046 Fusionar con *squash* el pull request de B00-H01, cuando todos sus checks estén en éxito o *skipped* y con la aprobación del autor (SC-002). Antes, comprobar en el último run que `2 · test-integracion`, `4 · sbom-backend` y `4 · sca` están en **éxito, no *skipped*** (carrera entre push y `ready_for_review`, ver notas de `evidencia.md`). Comprobar con `gh pr view --json mergeCommit` que `main` tiene un solo commit nuevo.
 - [ ] T047 Desde `main`, crear la rama `demo/b00-h01` con:
   - `backend/servicios/demoalfa` y `backend/servicios/demobeta`, copiados de `plantillas/servicio`. `demoalfa` tiene una interfaz en `puertos/entrada` y una clase en `aplicacion`, cada una con su prueba;
   - `backend/apps/demo`, copiado de `plantillas/aplicacion`, que depende de los dos servicios;

@@ -30,6 +30,8 @@ Registro de las comprobaciones de la sección 8 de la constitución (FR-018, SC-
 | Run | Estado del PR | Resultado | Enlace |
 |---|---|---|---|
 | 1 (commit `843c635`) | borrador | `0 · deteccion` (`frontend=false`: `1 · lint-frontend` quedó omitido), `1 · lint-backend`, `2 · test-backend` y `3 · secretos` pasan. `1 · lint-frontend`, `2 · test-frontend`, `2 · test-integracion`, `4 · sbom-backend`, `4 · sbom-frontend` y `4 · sca` quedan *skipped*, como corresponde a un borrador (caso límite «Pull request en borrador»). | [run 38195137742](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38195137742) |
+| 2 y 3 (commit `1006a2e`) | push y `gh pr ready` casi simultáneos | **Carrera:** el run de `ready_for_review` quedó cancelado por la concurrencia del workflow, y el que sobrevivió lo disparó el push mientras el PR era borrador. Por eso omitió `test-integracion`, `sbom-backend` y `sca`, aunque el PR ya estaba listo (ver notas). | [run 38195686451](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38195686451) (cancelado), [run 38195687927](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38195687927) |
+| 4 (commit `1006a2e`) | listo para revisión | Los 10 checks según el contrato: `0 · deteccion`, `1 · lint-backend`, `2 · test-backend`, `2 · test-integracion`, `3 · secretos`, `4 · sbom-backend` y `4 · sca` pasan. `4 · sca` corre aunque se omita `sbom-frontend` (caso límite «repositorio sin frontend»). Solo `1 · lint-frontend`, `2 · test-frontend` y `4 · sbom-frontend` quedan *skipped*. Secretos y SCA pasan, así que no hace falta la excepción transitoria de D-31. | [run 38195997188](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38195997188) |
 
 ## Pull requests de demostración
 
@@ -38,5 +40,7 @@ Registro de las comprobaciones de la sección 8 de la constitución (FR-018, SC-
 
 ## Notas
 
-- Excepciones (research §8 y §14): ninguna por ahora.
+- Excepciones (research §8 y §14): ninguna. Los 10 checks están en la regla.
+- **Ruleset pendiente (T022):** el `PUT` del ruleset 24901935 responde 404 porque `gh` está autenticado como Paul-SSD, colaborador con permiso de escritura (`admin: false`). En un repositorio de cuenta personal solo el dueño, `paul-g-software-ucacue`, puede cambiar los rulesets. El JSON está listo en `contracts/ruleset-main.json`.
+- **Carrera entre push y `ready_for_review`:** si se marca el PR como listo mientras corre un push, la concurrencia del workflow (`cancel-in-progress`) puede cancelar el run de `ready_for_review`. Entonces el último run de ese commit es el del borrador, y `2 · test-integracion`, `4 · sbom-backend` y `4 · sca` quedan *skipped*, que GitHub cuenta como aprobados. **Procedimiento:** marcar el PR como listo después de que termine el push y, antes de fusionar, comprobar que esos tres checks están en éxito y no *skipped* (T046). Si quedaron *skipped*, pasar el PR a borrador y de nuevo a listo (`gh pr ready --undo` y `gh pr ready`). Así se resolvió en el PR #74 (run 4).
 - **Decisión pendiente (constitución §8, FR-018):** palantir-java-format no soporta dos construcciones de Java 25, la importación de módulos (JEP 511) y los archivos fuente compactos (JEP 512). Mientras el autor no decida, se sigue con palantir: Spotless falla si aparece alguna de las dos, así que la CI ya impide que entren al código.
