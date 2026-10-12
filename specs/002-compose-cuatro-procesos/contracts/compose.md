@@ -41,7 +41,7 @@ No hace falta compilar antes ni copiar ningún archivo: `.env.ejemplo` ya trae v
 | `SPRING_DATASOURCE_URL` | procesos | `jdbc:postgresql://postgres:5432/mdd` |
 | `JAVA_TOOL_OPTIONS` | procesos y gateway | `-XX:MaxRAMPercentage=60` |
 
-- Cada proceso recibe `SPRING_DATASOURCE_USERNAME` (el nombre de su rol) y `SPRING_DATASOURCE_PASSWORD` (su `DB_CLAVE_*`), que se definen en su bloque `environment` de `compose.yaml`, sin interpolación.
+- Cada proceso define su usuario de base (el nombre de su rol) y lee su contraseña de su variable `DB_CLAVE_<PROCESO>` en su propio `application.yaml` (`spring.datasource.username: identidad`, `spring.datasource.password: ${DB_CLAVE_IDENTIDAD}`). `compose.yaml` no necesita interpolación: solo carga `.env.ejemplo` y el `.env` opcional en todos los contenedores.
 - `.env.ejemplo` no contiene secretos reales; la etapa `3 · secretos` de la CI pasa (SC-005).
 
 ## Garantías

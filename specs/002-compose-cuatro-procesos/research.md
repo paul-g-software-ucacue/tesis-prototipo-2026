@@ -83,6 +83,7 @@ Fuentes leídas: constitución 2.0.1, `docs/decisiones.md` (D-28 a D-35, ADR-012
   2. Obtiene los esquemas esperados de los beans `Flyway` del contexto.
   3. Consulta `information_schema.tables`: cada tabla de servicio está en el esquema de su servicio, cada esquema tiene su propio registro de migraciones y no hay tablas en `public` ni en otro esquema.
 - **Plantilla:** la prueba se agrega al esqueleto de aplicación, que es genérico porque toma los esquemas de los beans.
+- **Atribución por servicio:** dentro de un proceso, un mismo rol es dueño de los esquemas de todos sus servicios, así que la prueba del proceso no puede saber qué servicio creó una tabla. Por eso cada servicio tiene además `<Servicio>EsquemaIntegrationTest`: migra solo ese servicio contra una base vacía de Testcontainers, sin Spring, y comprueba que todas las tablas creadas están en su esquema. Agrega 12 contenedores efímeros al job de integración, aproximadamente un minuto.
 - **Qué no cubre:** los permisos de los roles por proceso (§3). Esos se comprueban con el perfil levantado (quickstart §4).
 
 ## 8. Límites de memoria (FR-006)
