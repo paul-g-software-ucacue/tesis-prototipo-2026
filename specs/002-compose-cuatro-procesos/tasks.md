@@ -184,8 +184,8 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
   - en los procesos, `depends_on: postgres: {condition: service_healthy}`;
   - en `postgres`, el volumen `datos-postgres` y el script montado en `/docker-entrypoint-initdb.d/01-esquemas.sh:ro`;
   - solo el gateway publica `8080:8080`.
-- [ ] T025 [US1] Construir las 5 imágenes con `time docker compose build` y anotar en `specs/002-compose-cuatro-procesos/evidencia.md` el tiempo y el tamaño de cada imagen (`docker image ls`). Así la medición de T026 (SC-001) parte de imágenes ya construidas.
-- [ ] T026 [US1] Validar el escenario 1 en un clon limpio, según el quickstart §2:
+- [X] T025 [US1] Construir las 5 imágenes con `time docker compose build` y anotar en `specs/002-compose-cuatro-procesos/evidencia.md` el tiempo y el tamaño de cada imagen (`docker image ls`). Así la medición de T026 (SC-001) parte de imágenes ya construidas.
+- [X] T026 [US1] Validar el escenario 1 en un clon limpio, según el quickstart §2:
   1. Hacer `git clone` de la rama en el directorio temporal de la sesión y ejecutar `docker compose up -d --wait`.
   2. Los 6 contenedores tienen que estar `healthy`.
   3. `curl localhost:8080/actuator/health/readiness` tiene que dar `UP`.
@@ -193,7 +193,7 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
   5. Con las imágenes construidas, `docker compose down && time docker compose up -d --wait` tiene que tardar 180 s o menos (SC-001).
 
   Registrar los resultados en `specs/002-compose-cuatro-procesos/evidencia.md`. Anotar también que el caso límite «un contenedor supera su límite de memoria» quedaría visible en `docker compose ps` como detenido o no sano; no se fuerza. Si un componente no queda sano, revisar `docker compose logs <componente>` y corregir antes de seguir.
-- [ ] T027 [US1] Comprobar el caso límite «falta el archivo de variables»: con `.env.ejemplo` renombrado temporalmente, `docker compose up` tiene que fallar con un mensaje que nombra el archivo. Restaurarlo y anotar el resultado.
+- [X] T027 [US1] Comprobar el caso límite «falta el archivo de variables»: con `.env.ejemplo` renombrado temporalmente, `docker compose up` tiene que fallar con un mensaje que nombra el archivo. Restaurarlo y anotar el resultado.
 
 **Checkpoint**: el perfil consolidado se levanta con un comando.
 
