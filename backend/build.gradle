@@ -7,6 +7,11 @@ plugins {
     id 'org.cyclonedx.bom' version '3.5.1'
 }
 
+// Paquete base y grupo de Gradle de todo el MDD (ADR-012).
+allprojects {
+    group = 'ec.mdd'
+}
+
 subprojects {
     tasks.withType(CyclonedxDirectTask).configureEach {
         includeConfigs = ['runtimeClasspath']   // lo que viaja en la imagen

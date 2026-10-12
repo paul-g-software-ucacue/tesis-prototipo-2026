@@ -1,0 +1,25 @@
+// Reglas de arquitectura compartidas por todos los servicios (ADR-012).
+// No es un servicio: no tiene contrato OpenAPI y solo se usa en las pruebas de los servicios.
+plugins {
+    id 'java-library'
+    id 'mdd.java-conventions'
+}
+
+dependencies {
+    api "com.tngtech.archunit:archunit:${versionArchUnit}"
+}
+
+testing {
+    suites {
+        test {
+            dependencies {
+                implementation "com.tngtech.archunit:archunit-junit5:${versionArchUnit}"
+                // Para las fixtures de límites entre servicios (ApplicationModules.verify()).
+                implementation 'org.springframework.modulith:spring-modulith-core'
+                implementation 'org.springframework.modulith:spring-modulith-api'
+                // Para la fixture de dominio que depende de JPA.
+                implementation 'jakarta.persistence:jakarta.persistence-api'
+            }
+        }
+    }
+}

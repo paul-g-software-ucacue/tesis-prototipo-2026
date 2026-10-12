@@ -21,9 +21,12 @@ repositories {
 }
 
 def versionSpringBoot = providers.gradleProperty('versionSpringBoot').get()
+def versionSpringModulith = providers.gradleProperty('versionSpringModulith').get()
 
 dependencies {
     implementation platform("org.springframework.boot:spring-boot-dependencies:${versionSpringBoot}")
+    // Spring Modulith 2.1 es la línea de Spring Boot 4.1; su BOM no viene en el de Boot (research §1).
+    implementation platform("org.springframework.modulith:spring-modulith-bom:${versionSpringModulith}")
     // Reglas de seguridad para SpotBugs: inyección SQL, XSS, XXE, criptografía débil, deserialización.
     spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0'
 }
@@ -35,7 +38,8 @@ testing {
             useJUnitJupiter()
             dependencies {
                 implementation platform("org.springframework.boot:spring-boot-dependencies:${versionSpringBoot}")
-                // JUnit 5, AssertJ y Mockito. Mockito solo en la capa de aplicación (DS-2).
+                implementation platform("org.springframework.modulith:spring-modulith-bom:${versionSpringModulith}")
+                // JUnit Jupiter 6 (D-28), AssertJ y Mockito. Mockito solo en la capa de aplicación (DS-2).
                 implementation 'org.springframework.boot:spring-boot-starter-test'
             }
         }
@@ -45,6 +49,7 @@ testing {
             dependencies {
                 implementation project()
                 implementation platform("org.springframework.boot:spring-boot-dependencies:${versionSpringBoot}")
+                implementation platform("org.springframework.modulith:spring-modulith-bom:${versionSpringModulith}")
                 implementation 'org.springframework.boot:spring-boot-starter-test'
                 implementation 'org.springframework.boot:spring-boot-testcontainers'
                 implementation 'org.testcontainers:testcontainers-postgresql'
@@ -70,7 +75,7 @@ tasks.named('jacocoTestReport') {
     }
 }
 
-// Piso de cobertura de cada módulo (DS-1). mdd.servicio-central agrega el 80 % del dominio.
+// Cobertura de cada módulo: 60 % de líneas, el único umbral, también en el dominio central (D-32).
 tasks.named('jacocoTestCoverageVerification') {
     dependsOn tasks.named('test')
     violationRules {
@@ -90,7 +95,8 @@ tasks.named('check') {
 spotless {
     java {
         target 'src/*/java/**/*.java'
-        palantirJavaFormat()
+        // Versión fijada para que la comprobación con Java 25 sea repetible (research §2).
+        palantirJavaFormat('2.102.0')
         removeUnusedImports()
         trimTrailingWhitespace()
         endWithNewline()
@@ -99,6 +105,8 @@ spotless {
 
 // Análisis estático del código propio (etapa 1). Solo el código de main: las pruebas no van a producción.
 spotbugs {
+    // SpotBugs 4.10.4 trae ASM 9.10.1, que lee las clases de Java 25 (research §3).
+    toolVersion = '4.10.4'
     ignoreFailures = false
     effort = Effort.valueOf('MAX')
     reportLevel = Confidence.valueOf('HIGH')   // falla solo con hallazgos de confianza alta
