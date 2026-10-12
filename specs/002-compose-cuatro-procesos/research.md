@@ -79,7 +79,7 @@ Fuentes leídas: constitución 2.0.1, `docs/decisiones.md` (D-28 a D-35, ADR-012
 
 ## 7. Comprobación automática de esquemas (FR-011)
 
-- **Decisión:** una prueba de integración por proceso, `EsquemasIntegrationTest` en la suite `integrationTest`, que corre en el job `2 · test-integracion` de la CI.
+- **Decisión:** dos pruebas de integración en la suite `integrationTest`, que corren en el job `2 · test-integracion` de la CI: `<Servicio>EsquemaIntegrationTest` por servicio (atribución, ver abajo) y `EsquemasIntegrationTest` por proceso. La del proceso:
   1. Levanta el contexto del proceso contra un PostgreSQL de Testcontainers con la misma imagen (`postgres:18.6-alpine`) y `@ServiceConnection`.
   2. Obtiene los esquemas esperados de los beans `Flyway` del contexto.
   3. Consulta `information_schema.tables`: cada tabla de servicio está en el esquema de su servicio, cada esquema tiene su propio registro de migraciones y no hay tablas en `public` ni en otro esquema.
@@ -111,6 +111,7 @@ Fuentes leídas: constitución 2.0.1, `docs/decisiones.md` (D-28 a D-35, ADR-012
   4. Suma el consumo, lo compara con 8 GiB (escenario) y con 7 GiB (disparador de R-19, D-36) e imprime una tabla Markdown con el consumo por contenedor, el total, los límites, la fecha y el commit, lista para pegar en `evidencia.md`.
 - **Entorno de referencia:** el workflow `perfil-consolidado.yml` en `ubuntu-latest`, con Docker. Se ejecuta a mano (`workflow_dispatch`) y en los pull requests que cambian el despliegue (filtro `paths`), porque GitHub solo deja ejecutar a mano un workflow que ya está en la rama principal. Desde un *checkout* limpio, que es un clon recién hecho, ejecuta `docker compose up -d --wait` y el script, y sube la tabla como artefacto y resumen del run. También demuestra el escenario 1 en un entorno limpio.
 - **Uso de memoria del anfitrión:** el consumo medido no depende de la RAM del anfitrión, porque cada contenedor tiene su límite y cada JVM se dimensiona con él.
+- **Cambios solo en `backend/**`:** no disparan la medición, aunque agreguen dependencias que suban la memoria. La medición se repite a mano al cerrar cada ola, y B00-H03 la repite después de iniciar sesión (D-34).
 - **No corre en todos los pull requests:** construir las 5 imágenes y levantar el perfil cuesta varios minutos. Solo corre en los que cambian `compose.yaml`, `.env.ejemplo`, `deploy/**` o el propio workflow, y a mano al cerrar la ola. No es un check obligatorio.
 - **Código de salida:** el paso de medición declara `shell: bash`, que en Actions agrega `pipefail`; sin eso, `tee` ocultaría un total de 8 GiB o más.
 - **En local:** Docker Engine y Docker Compose v2 de los paquetes de Fedora (`moby-engine`, `docker-compose` y `docker-buildx`), que el autor instala con `sudo`. Testcontainers usa el mismo Docker. La medición de referencia es la del workflow.

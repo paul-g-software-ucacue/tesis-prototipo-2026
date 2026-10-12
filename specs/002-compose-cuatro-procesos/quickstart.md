@@ -47,7 +47,7 @@ Además:
 - `curl -s localhost:8080/actuator/health/readiness` responde `UP`, porque el gateway es el único puerto publicado.
 - `docker compose port postgres 5432` no devuelve nada, porque PostgreSQL no está publicado.
 
-## 3. Cabe en la memoria de la VM (escenario 2)
+## 3. Cabe en la memoria del equipo (escenario 2, «Cabe en la memoria de la VM»)
 
 **Referencia:** el run de *perfil-consolidado* del pull request (corre cuando cambia el despliegue) o, ya en la rama principal, GitHub → Actions → *perfil-consolidado* → *Run workflow*. La tabla aparece en el resumen del run y en el artefacto `medicion-r19` ([contracts/medicion-r19.md](contracts/medicion-r19.md)).
 

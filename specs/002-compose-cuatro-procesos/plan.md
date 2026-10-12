@@ -61,7 +61,7 @@ Los detalles y sus alternativas están en [research.md](research.md); las decisi
 | II. DDD según el subdominio | Los servicios se crean sin lógica; la profundidad de DDD llega con cada historia. | ✅ N/A |
 | III. Lenguaje ubicuo | No hay términos de dominio nuevos. Los nombres de servicios, esquemas y procesos son los de ADR-006 y ADR-012; la clase técnica `<Servicio>FlywayConfig` sigue ADR-008. | ✅ |
 | IV. API primero | No hay endpoints de negocio. La salud de Actuator es operativa y no se publica por el gateway. | ✅ N/A |
-| V. Límites de servicio | Un esquema por servicio, una aplicación por proceso y un rol por proceso. `ModulosTest` y `EsquemasIntegrationTest` en cada proceso. | ✅ |
+| V. Límites de servicio | Un esquema por servicio, una aplicación por proceso y un rol por proceso. `ModulosTest` y `EsquemasIntegrationTest` en cada proceso, y `<Servicio>EsquemaIntegrationTest` en cada servicio. | ✅ |
 | VI y VII | Esta historia no tiene reglas ni datos de negocio. | ✅ N/A |
 | VIII. Pruebas | Prueba unitaria de Flyway y de integración de esquemas por servicio, y de integración de esquemas por proceso, con PostgreSQL real (Testcontainers). Cobertura del 60 % en cada módulo. | ✅ |
 | IX. Seguridad | `.env.ejemplo` con valores ficticios y `.env` ignorado. Roles de base por proceso, solo el gateway expuesto, ningún paquete extra en las imágenes y Gitleaks en verde. | ✅ |

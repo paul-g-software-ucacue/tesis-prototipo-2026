@@ -43,8 +43,8 @@ Resultado: <cumple (< 8 GiB) | falla (≥ 8 GiB)>. <Alerta R-19: más de 7 GiB |
 | Aspecto | Contrato |
 |---|---|
 | Disparador | `workflow_dispatch` (manual) y `pull_request` (tipos `opened`, `synchronize`, `reopened` y `ready_for_review`) con `paths: [compose.yaml, .env.ejemplo, 'deploy/**', '.github/workflows/perfil-consolidado.yml']`. No corre en borradores ni es un check obligatorio. El disparador de pull request hace falta porque GitHub solo ejecuta a mano los workflows que ya están en la rama principal. |
-| Permisos | `contents: read`; acciones fijadas por SHA (pinact) |
-| Pasos | *Checkout* limpio → `docker compose up -d --wait` (escenario 1 en un clon recién hecho) → `deploy/medir_memoria.sh`, en un paso con `shell: bash` para que `pipefail` conserve su código de salida → la tabla al resumen del run (`$GITHUB_STEP_SUMMARY`) y como artefacto `medicion-r19` (90 días) → `docker compose down -v` |
+| Permisos | `contents: read`; acciones fijadas por SHA (pinact); `timeout-minutes: 30` |
+| Pasos | *Checkout* limpio → `docker compose build`, con su tiempo → `docker compose up -d --wait`, con su tiempo (escenario 1 en un clon recién hecho y referencia de SC-001) → `deploy/medir_memoria.sh`, en un paso con `shell: bash` para que `pipefail` conserve su código de salida → la tabla al resumen del run (`$GITHUB_STEP_SUMMARY`) y como artefacto `medicion-r19` (90 días) → `docker compose down -v` |
 | Falla si | Algún contenedor no queda sano o el total es de 8 GiB o más |
 
 ## Garantías

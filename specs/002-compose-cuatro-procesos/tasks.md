@@ -174,7 +174,7 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
   - hace `REVOKE CREATE ON SCHEMA public FROM PUBLIC`.
 
   Valores de la tabla de convenciones y de [contracts/persistencia.md](contracts/persistencia.md).
-- [ ] T023 [P] [US1] Crear `.env.ejemplo` en la raíz. Lleva `POSTGRES_PASSWORD`, `POSTGRES_DB=mdd`, los cuatro `DB_CLAVE_*`, `SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mdd` y `JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=60`. Los valores son ficticios y obvios (`cambiar-en-local-…`), con un comentario de cabecera: «valores de ejemplo para local; no usar en el VPS».
+- [ ] T023 [P] [US1] Crear `.env.ejemplo` en la raíz. Lleva `POSTGRES_PASSWORD`, `POSTGRES_DB=mdd`, los cuatro `DB_CLAVE_*`, `SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mdd` y `JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=60`. Los valores son ficticios y obvios (`cambiar-en-local-…`), con un comentario de cabecera: «valores de ejemplo para local; no usar en el equipo de despliegue».
 - [ ] T024 [US1] Crear `compose.yaml` en la raíz según [contracts/compose.md](contracts/compose.md):
   - los 6 servicios, con `env_file: [{path: .env.ejemplo, required: true}, {path: .env, required: false}]`;
   - `build` con contexto `backend`, `dockerfile: ../deploy/docker/java.Dockerfile` y los `args` `MODULO` y `NOMBRE`;
@@ -199,7 +199,7 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
 
 ---
 
-## Phase 4: User Story 2 - El perfil consolidado cabe en la memoria de la VM (Priority: P1)
+## Phase 4: User Story 2 - El perfil consolidado cabe en la memoria del equipo (Priority: P1)
 
 **Goal**: medir la memoria después del calentamiento, comprobar que queda por debajo de 8 GiB (D-36) y registrarlo como evidencia de R-19 (escenario 2; FR-007 y FR-008; D-34).
 
@@ -217,15 +217,15 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
   Códigos de salida: 0 si el total es menor que 8 GiB, 1 si llega a 8 GiB o más, 2 si un componente no está sano.
 - [ ] T029 [US2] Crear `.github/workflows/perfil-consolidado.yml`:
   - `on`: `workflow_dispatch` y `pull_request` (tipos `opened`, `synchronize`, `reopened` y `ready_for_review`) con `paths: [compose.yaml, .env.ejemplo, 'deploy/**', '.github/workflows/perfil-consolidado.yml']`;
-  - el job con `if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false`, `permissions: contents: read` y `runs-on: ubuntu-latest`; no es un check obligatorio;
-  - pasos: `actions/checkout` → `docker compose up -d --wait` → `deploy/medir_memoria.sh | tee medicion.md`, en un paso con `shell: bash` para que `pipefail` conserve el código del script → `cat medicion.md >> "$GITHUB_STEP_SUMMARY"` → `actions/upload-artifact` con el nombre `medicion-r19` y 90 días de retención (`if: always()`) → `docker compose down -v` (`if: always()`).
+  - el job con `if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false`, `permissions: contents: read`, `runs-on: ubuntu-latest` y `timeout-minutes: 30`, como los jobs de la CI; no es un check obligatorio;
+  - pasos: `actions/checkout` → `time docker compose build` (tiempo de construcción) → `time docker compose up -d --wait`, ya sin construir, que es la referencia de SC-001 → `deploy/medir_memoria.sh | tee medicion.md`, en un paso con `shell: bash` para que `pipefail` conserve el código del script → `cat medicion.md >> "$GITHUB_STEP_SUMMARY"` → `actions/upload-artifact` con el nombre `medicion-r19` y 90 días de retención (`if: always()`) → `docker compose down -v` (`if: always()`).
 
   Fijar las acciones con `pinact run` y validar con actionlint, como en B00-H01.
 - [ ] T030 [P] [US2] Agregar a `.github/dependabot.yml` el ecosistema `docker-compose` con `directory: /` y `schedule: { interval: weekly }`, para que proponga las actualizaciones de `postgres:18.6-alpine`.
-- [ ] T031 [US2] Medir en local con el perfil de T026: `deploy/medir_memoria.sh | tee` a un archivo en el directorio temporal de la sesión, y pegar la tabla en `specs/002-compose-cuatro-procesos/evidencia.md` (entorno: Docker local). Según el total:
+- [ ] T031 [US2] Medir en local con el perfil de T026: `deploy/medir_memoria.sh | tee` a un archivo en el directorio temporal de la sesión, y pegar la tabla en `specs/002-compose-cuatro-procesos/evidencia.md` (entorno: Docker local). Anotar que en local cada JVM ve 12 núcleos y en el equipo de despliegue verá 4: con más hilos, la medición local sale algo más alta, así que la diferencia deja margen a favor. Según el total:
   - si es de 8 GiB o más, ajustar los límites o `JAVA_TOOL_OPTIONS` (research §8) y repetir;
   - si sigue sin caber, detenerse y proponer al autor una decisión nueva (alternativa de R-19: Nginx en lugar de Spring Cloud Gateway).
-- [ ] T032 [US2] Cuando el pull request quede listo para revisión (T038), esperar el run de `perfil-consolidado` (`gh run list --workflow perfil-consolidado.yml --branch 002-compose-cuatro-procesos`). `gh workflow run` no sirve antes de fusionar, porque GitHub solo ejecuta a mano los workflows que están en la rama principal. Pegar en `specs/002-compose-cuatro-procesos/evidencia.md` la tabla del resumen (entorno: Docker en `ubuntu-latest`) y el enlace al run. Es la medición de referencia de R-19 y, además, la prueba del escenario 1 en un clon limpio con Docker.
+- [ ] T032 [US2] Cuando el pull request quede listo para revisión (T038), esperar el run de `perfil-consolidado` (`gh run list --workflow perfil-consolidado.yml --branch 002-compose-cuatro-procesos`). `gh workflow run` no sirve antes de fusionar, porque GitHub solo ejecuta a mano los workflows que están en la rama principal. Pegar en `specs/002-compose-cuatro-procesos/evidencia.md` la tabla del resumen (entorno: Docker en `ubuntu-latest`), el enlace al run, el tiempo de construcción y el tiempo de `up --wait`. Este último es la referencia de SC-001 en un equipo más parecido al de despliegue que el local. Si la construcción en paralelo resulta lenta, construir una imagen a la vez. Es la medición de referencia de R-19 y, además, la prueba del escenario 1 en un clon limpio con Docker.
 
 **Checkpoint**: R-19 está medido y registrado.
 

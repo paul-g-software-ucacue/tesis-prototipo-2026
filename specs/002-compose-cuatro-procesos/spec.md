@@ -47,7 +47,7 @@ Escenario: Todo se levanta con un comando
 
 ---
 
-### User Story 2 - El perfil consolidado cabe en la memoria de la VM (Priority: P1)
+### User Story 2 - El perfil consolidado cabe en la memoria del equipo (Priority: P1)
 
 Como autor, quiero medir el consumo de memoria de los contenedores levantados con sus límites, y registrarlo como evidencia, para comprobar en la ola 0 que el perfil consolidado cabe en el equipo de despliegue de 8 GiB (R-19, RNF-POR-02, D-36).
 
