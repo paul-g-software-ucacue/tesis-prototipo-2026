@@ -1,6 +1,7 @@
 # Constitución del desarrollo del MDD
 
-- **Versión:** 1.0, ratificada el 11/10/2026. Cambios desde la 0.5: se cierran los pendientes de ratificación; el repositorio privado y el proyecto de GitHub Projects ya existen (pendiente 6), y las comprobaciones técnicas que quedaban pasan a ser criterios de las historias de la ola 0 (sección 8).
+- **Versión:** 1.0.1, enmienda de parche del 11/10/2026 (D-28): en la sección 3, «JUnit 5» pasa a «JUnit Jupiter 6», la versión que fija el BOM de Spring Boot (6.0.3 con Spring Boot 4.1.1). Se detectó al planificar B00-H01 y no cambia ningún principio.
+- **Versión 1.0:** ratificada el 11/10/2026. Cambios desde la 0.5: se cierran los pendientes de ratificación; el repositorio privado y el proyecto de GitHub Projects ya existen (pendiente 6), y las comprobaciones técnicas que quedaban pasan a ser criterios de las historias de la ola 0 (sección 8).
 - **Fecha:** 11/10/2026
 - **Autor:** el autor de la tesis
 - **Uso:** al iniciar el desarrollo con SDD (desarrollo guiado por especificaciones), este texto se copia como constitución del proyecto (por ejemplo, `.specify/memory/constitution.md` si se usa Spec Kit) y se ratifica según la sección 8.
@@ -234,7 +235,7 @@ Cada principio dice qué se debe hacer (**DEBE**), qué no (**NO DEBE**) y por q
 | Backend | Java 25 y Spring Boot 4.1.1, multiproyecto de Gradle con Groovy DSL (12 servicios y 4 aplicaciones) y plugins de convención, Spring Modulith 2.1, Spring Data JPA en los adaptadores, Flyway por módulo, Spring Security con JWT RS256 y Argon2id, Spring Cloud Gateway (2025.1.2 o posterior), registro persistente de publicaciones de eventos de Spring Modulith, openapi-generator 7.16 o posterior con `useSpringBoot4` y `useJackson3`. | D-20, ADR-008, ADR-009, ADR-011 |
 | Frontend | React con TypeScript y Vite, React Router, TanStack Query, React Hook Form con Zod, MUI en español, cliente generado desde OpenAPI; servido por Nginx. | D-20, ADR-008 |
 | Documentos y firma | OpenHTMLtoPDF con plantillas Thymeleaf para el PDF/A (verificado con veraPDF); Apache PDFBox y Bouncy Castle para validar PAdES; Apache Commons CSV y Apache POI para las cargas. | ADR-007, ADR-008 |
-| Pruebas | JUnit 5, AssertJ, Mockito, Testcontainers, ArchUnit, Spring Modulith, swagger-request-validator, JaCoCo (60 % por módulo y 80 % en el dominio central); Vitest, Testing Library, axe-core y Playwright; k6 y OWASP ZAP al cerrar cada ola. | ADR-008, ADR-011 |
+| Pruebas | JUnit Jupiter 6 (la versión del BOM de Spring Boot: 6.0.3 con Boot 4.1.1), AssertJ, Mockito, Testcontainers, ArchUnit, Spring Modulith, swagger-request-validator, JaCoCo (60 % por módulo y 80 % en el dominio central); Vitest, Testing Library, axe-core y Playwright; k6 y OWASP ZAP al cerrar cada ola. | ADR-008, ADR-011, D-28 |
 | Memoria | Límite explícito por JVM y por contenedor: cinco JVM y PostgreSQL deben caber en 4 GB (R-19), lo que se mide en la ola 0. | ADR-008 |
 | Repositorio y CI/CD | Un repositorio privado de GitHub (monorepo) con GitHub Actions; la rama principal solo recibe pull requests con los checks en verde. Pipeline de seis etapas: lint, pruebas, secretos, SCA, publicación en Docker Hub (repositorio privado) y despliegue en el VPS (`sdd/pipeline_cicd.md`). | D-24, ADR-011 |
 | Seguridad en el pipeline | Spotless, SpotBugs con FindSecBugs, Gitleaks, CycloneDX y Grype; acciones fijadas por SHA. | ADR-011 |
