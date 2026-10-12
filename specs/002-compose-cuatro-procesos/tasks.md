@@ -162,20 +162,20 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
 
 ### Implementation for User Story 1
 
-- [ ] T021 [US1] Reescribir `deploy/docker/java.Dockerfile` en tres etapas:
+- [X] T021 [US1] Reescribir `deploy/docker/java.Dockerfile` en tres etapas:
   1. `FROM eclipse-temurin:25-jdk AS compilacion`, con `ARG MODULO` y `ARG NOMBRE`, `WORKDIR /src`, `COPY . .` y `RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon :${MODULO}:bootJar`.
   2. `extraccion`: `COPY --from=compilacion /app.jar app.jar` y extrae las capas, como hoy.
   3. La imagen final queda igual: `eclipse-temurin:25-jre`, usuario 10001 y `JarLauncher`.
 
   Un `COPY` no puede transformar `MODULO`, así que la etapa 1 termina el mismo `RUN` con `cp "$(echo "${MODULO}" | tr : /)/build/libs/${NOMBRE}.jar" /app.jar`. Comentario de cabecera: «compila desde el código (ADR-013); B00-H08 adapta cd.yml».
-- [ ] T022 [P] [US1] Crear `deploy/postgres/01-esquemas.sh`, ejecutable, con `set -euo pipefail` y `psql -v ON_ERROR_STOP=1`:
+- [X] T022 [P] [US1] Crear `deploy/postgres/01-esquemas.sh`, ejecutable, con `set -euo pipefail` y `psql -v ON_ERROR_STOP=1`:
   - crea los 4 roles con `LOGIN` y su contraseña tomada de `DB_CLAVE_IDENTIDAD`, `DB_CLAVE_DATOS`, `DB_CLAVE_DISTRIBUTIVO` y `DB_CLAVE_SALIDA`;
   - crea los 12 esquemas con `AUTHORIZATION <rol de su proceso>`;
   - hace `REVOKE CREATE ON SCHEMA public FROM PUBLIC`.
 
   Valores de la tabla de convenciones y de [contracts/persistencia.md](contracts/persistencia.md).
-- [ ] T023 [P] [US1] Crear `.env.ejemplo` en la raíz. Lleva `POSTGRES_PASSWORD`, `POSTGRES_DB=mdd`, los cuatro `DB_CLAVE_*`, `SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mdd` y `JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=60`. Los valores son ficticios y obvios (`cambiar-en-local-…`), con un comentario de cabecera: «valores de ejemplo para local; no usar en el equipo de despliegue».
-- [ ] T024 [US1] Crear `compose.yaml` en la raíz según [contracts/compose.md](contracts/compose.md):
+- [X] T023 [P] [US1] Crear `.env.ejemplo` en la raíz. Lleva `POSTGRES_PASSWORD`, `POSTGRES_DB=mdd`, los cuatro `DB_CLAVE_*`, `SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mdd` y `JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=60`. Los valores son ficticios y obvios (`cambiar-en-local-…`), con un comentario de cabecera: «valores de ejemplo para local; no usar en el equipo de despliegue».
+- [X] T024 [US1] Crear `compose.yaml` en la raíz según [contracts/compose.md](contracts/compose.md):
   - los 6 servicios, con `env_file: [{path: .env.ejemplo, required: true}, {path: .env, required: false}]`;
   - `build` con contexto `backend`, `dockerfile: ../deploy/docker/java.Dockerfile` y los `args` `MODULO` y `NOMBRE`;
   - `deploy.resources.limits.memory`: 512m para `postgres` y cada proceso, y 384m para `gateway`, que suman 2 944 MiB;
