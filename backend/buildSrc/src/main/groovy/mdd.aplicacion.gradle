@@ -20,6 +20,13 @@ testing {
                 implementation 'org.springframework.modulith:spring-modulith-starter-test'
             }
         }
+        integrationTest {
+            dependencies {
+                // EsquemasIntegrationTest lee los esquemas de los beans Flyway de los servicios,
+                // que tienen Flyway como dependencia interna (implementation).
+                implementation 'org.flywaydb:flyway-core'
+            }
+        }
     }
 }
 

@@ -4,6 +4,11 @@ plugins {
 }
 
 dependencies {
+    // Servidor web para la salud de Actuator y un DataSource con el rol del proceso (ADR-013).
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    runtimeOnly 'org.postgresql:postgresql'
+
     // Un renglón por cada servicio que ensambla este proceso, por ejemplo:
     // implementation project(':servicios:normativa')
 }

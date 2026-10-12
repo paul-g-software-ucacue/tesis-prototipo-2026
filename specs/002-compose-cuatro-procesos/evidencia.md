@@ -16,6 +16,7 @@ Registro de las comprobaciones de los tres escenarios de la historia (issue #19)
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Plantillas (T016) | confirmada | Copias temporales `servicios/prueba` y `apps/procesoprueba`, creadas con los renombres del README: `spotlessApply build integrationTest` pasa. `PruebaFlywayConfigTest` 2, `ArquitecturaTest` 2, `PruebaEsquemaIntegrationTest` 1 (PostgreSQL 18.6 con Testcontainers sobre Docker 29.8.2), `ModulosTest` 1 y `EsquemasIntegrationTest` 1. Cobertura del servicio: 6 de 6 líneas; el proceso no tiene clases medibles (la de arranque está excluida). `EsquemasIntegrationTest` arranca aunque `DB_CLAVE_PROCESOPRUEBA` no tenga valor, porque `@ServiceConnection` tiene prioridad (hallazgo U4 del análisis). **Hallazgos:** (1) la suite `integrationTest` no veía las dependencias `implementation` del módulo; `mdd.java-conventions` ahora la hace extender `implementation` y `runtimeOnly`, como la suite `test`. (2) La prueba del proceso no veía `Flyway`, que el servicio tiene como dependencia interna; `mdd.aplicacion` agrega `flyway-core` a su suite `integrationTest`. (3) Dos nombres de prueba de la plantilla pasaban de 100 columnas; se acortaron. Copias borradas y `settings.gradle` restaurado. | 2026-10-12 |
 
 ## Escenario 1: todo se levanta con un comando
 

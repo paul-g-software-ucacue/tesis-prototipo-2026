@@ -75,17 +75,17 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
 
 ### Tests (primero) ⚠️
 
-- [ ] T008 [P] Crear `backend/plantillas/servicio/src/test/java/ec/mdd/servicio/ServicioFlywayConfigTest.java`. Sin base de datos, con un `DataSource` que no se conecta (por ejemplo, `DriverManagerDataSource` con una URL que nunca se usa), comprueba que el `Flyway` que devuelve `new ServicioFlywayConfig().flywayServicio(dataSource)` cumple:
+- [X] T008 [P] Crear `backend/plantillas/servicio/src/test/java/ec/mdd/servicio/ServicioFlywayConfigTest.java`. Sin base de datos, con un `DataSource` que no se conecta (por ejemplo, `DriverManagerDataSource` con una URL que nunca se usa), comprueba que el `Flyway` que devuelve `new ServicioFlywayConfig().flywayServicio(dataSource)` cumple:
   - `getConfiguration().getSchemas()` es exactamente `["servicio"]`;
   - `getConfiguration().getLocations()` es exactamente `classpath:db/migration/servicio`.
 
   Los nombres de los métodos van en estilo Dado–Cuando–Entonces.
-- [ ] T009 [P] Crear `backend/plantillas/servicio/src/integrationTest/java/ec/mdd/servicio/ServicioEsquemaIntegrationTest.java`, sin contexto de Spring:
+- [X] T009 [P] Crear `backend/plantillas/servicio/src/integrationTest/java/ec/mdd/servicio/ServicioEsquemaIntegrationTest.java`, sin contexto de Spring:
   1. levanta `postgres:18.6-alpine` con `PostgreSQLContainer` de Testcontainers;
   2. arma un `DataSource` con sus datos de conexión;
   3. ejecuta `new ServicioFlywayConfig().flywayServicio(ds).migrate()`;
   4. comprueba en `information_schema.tables` (sin `pg_catalog` ni `information_schema`) que todas las tablas están en el esquema `servicio` y que existe `servicio.flyway_schema_history` ([contracts/persistencia.md](contracts/persistencia.md)).
-- [ ] T010 [P] Crear `backend/plantillas/aplicacion/src/integrationTest/java/ec/mdd/EsquemasIntegrationTest.java`:
+- [X] T010 [P] Crear `backend/plantillas/aplicacion/src/integrationTest/java/ec/mdd/EsquemasIntegrationTest.java`:
   - `@SpringBootTest(webEnvironment = NONE)` con un `PostgreSQLContainer` (`postgres:18.6-alpine`) anotado `@ServiceConnection`;
   - obtiene los esquemas esperados de todos los beans `org.flywaydb.core.Flyway` del contexto;
   - comprueba en `information_schema.tables` que (1) cada esquema esperado tiene `flyway_schema_history`, (2) no hay tablas en `public` y (3) no hay tablas en esquemas que no estén en el conjunto esperado.
@@ -94,15 +94,15 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
 
 ### Plantillas
 
-- [ ] T011 Crear `backend/plantillas/servicio/src/main/java/ec/mdd/servicio/infraestructura/ServicioFlywayConfig.java`:
+- [X] T011 Crear `backend/plantillas/servicio/src/main/java/ec/mdd/servicio/infraestructura/ServicioFlywayConfig.java`:
   - un `@Configuration(proxyBeanMethods = false)` con `@Bean(initMethod = "migrate") public Flyway flywayServicio(DataSource dataSource)`;
   - devuelve `Flyway.configure().dataSource(dataSource).schemas("servicio").locations("classpath:db/migration/servicio").load()`;
   - JavaDoc en español: el servicio migra solo en su esquema y el registro de migraciones queda en ese esquema (ADR-013).
 
   Así T008 pasa.
-- [ ] T012 Crear `backend/plantillas/servicio/src/main/resources/db/migration/servicio/V1__esquema_servicio.sql`. Solo lleva comentarios SQL: «Esquema del servicio servicio (D-35). Las tablas de negocio llegan con sus historias, como V2 y siguientes.» No crea ninguna tabla.
-- [ ] T013 Modificar `backend/plantillas/aplicacion/build.gradle`: agregar `implementation 'org.springframework.boot:spring-boot-starter-webmvc'` y `implementation 'org.springframework.boot:spring-boot-starter-jdbc'`, y en tiempo de ejecución `runtimeOnly 'org.postgresql:postgresql'`.
-- [ ] T014 Crear `backend/plantillas/aplicacion/src/main/resources/application.yaml` con:
+- [X] T012 Crear `backend/plantillas/servicio/src/main/resources/db/migration/servicio/V1__esquema_servicio.sql`. Solo lleva comentarios SQL: «Esquema del servicio servicio (D-35). Las tablas de negocio llegan con sus historias, como V2 y siguientes.» No crea ninguna tabla.
+- [X] T013 Modificar `backend/plantillas/aplicacion/build.gradle`: agregar `implementation 'org.springframework.boot:spring-boot-starter-webmvc'` y `implementation 'org.springframework.boot:spring-boot-starter-jdbc'`, y en tiempo de ejecución `runtimeOnly 'org.postgresql:postgresql'`.
+- [X] T014 Crear `backend/plantillas/aplicacion/src/main/resources/application.yaml` con:
 
   ```yaml
   spring.application.name: proceso
@@ -116,10 +116,10 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
   ```
 
   `proceso` y `DB_CLAVE_PROCESO` son los marcadores que se reemplazan al copiar ([contracts/compose.md](contracts/compose.md)).
-- [ ] T015 Actualizar `backend/plantillas/README.md`.
+- [X] T015 Actualizar `backend/plantillas/README.md`.
   - **Crear un servicio:** renombrar `ServicioFlywayConfig`, `ServicioFlywayConfigTest` y `ServicioEsquemaIntegrationTest` a `<Servicio>…`, la carpeta `db/migration/servicio` a `db/migration/<servicio>`, el archivo `V1__esquema_servicio.sql` y los literales `"servicio"`.
   - **Crear un proceso:** reemplazar `proceso` y `DB_CLAVE_PROCESO` en `application.yaml`, y agregar el rol en `deploy/postgres/01-esquemas.sh`.
-- [ ] T016 Validar las plantillas con copias temporales, sin commit:
+- [X] T016 Validar las plantillas con copias temporales, sin commit:
   1. Copiar `servicios/prueba` y `apps/procesoprueba`, con todos los renombres de T015.
   2. Incluirlas en `settings.gradle` y declarar el servicio como dependencia del proceso.
   3. Ejecutar `./gradlew build integrationTest`; Testcontainers usa el Docker local.

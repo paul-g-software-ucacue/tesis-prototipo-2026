@@ -63,6 +63,13 @@ testing {
     }
 }
 
+// Igual que la suite test: las pruebas de integración ven las dependencias del módulo (Flyway,
+// JDBC), no solo su API.
+configurations {
+    integrationTestImplementation.extendsFrom implementation
+    integrationTestRuntimeOnly.extendsFrom runtimeOnly
+}
+
 jacoco {
     toolVersion = '0.8.15'
 }
