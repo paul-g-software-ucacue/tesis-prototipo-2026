@@ -3,6 +3,10 @@ plugins {
     id 'groovy-gradle-plugin'
 }
 
+// La versión de Spring Boot se lee de backend/gradle.properties, que es su única fuente.
+def propiedades = new Properties()
+file('../gradle.properties').withInputStream { propiedades.load(it) }
+
 repositories {
     gradlePluginPortal()
 }
@@ -11,4 +15,6 @@ dependencies {
     // Versiones verificadas el 11/10/2026; Dependabot las mantiene al día.
     implementation 'com.diffplug.spotless:spotless-plugin-gradle:8.10.4'
     implementation 'com.github.spotbugs.snom:spotbugs-gradle-plugin:6.5.12'
+    // Para mdd.aplicacion (ADR-012).
+    implementation "org.springframework.boot:spring-boot-gradle-plugin:${propiedades.getProperty('versionSpringBoot')}"
 }

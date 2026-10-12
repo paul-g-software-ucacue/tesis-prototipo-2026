@@ -1,0 +1,26 @@
+// Convención de los 12 servicios (ADR-012). Un servicio solo aplica este plugin y recibe
+// las reglas de las cinco capas, la cobertura del 60 % (D-32), Spotless y SpotBugs.
+// No agrega Spring Web, JPA ni Flyway: cada historia agrega lo que usa su servicio.
+plugins {
+    id 'java-library'
+    id 'mdd.java-conventions'
+}
+
+def versionArchUnit = providers.gradleProperty('versionArchUnit').get()
+
+dependencies {
+    // @NamedInterface("api") en puertos.entrada: la API publicada del servicio en su proceso.
+    implementation 'org.springframework.modulith:spring-modulith-api'
+}
+
+testing {
+    suites {
+        test {
+            dependencies {
+                // Reglas de las cinco capas, aplicadas desde ArquitecturaTest.
+                implementation project(':plataforma:arquitectura')
+                implementation "com.tngtech.archunit:archunit-junit5:${versionArchUnit}"
+            }
+        }
+    }
+}

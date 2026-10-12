@@ -20,6 +20,31 @@ env:
   NODE_VERSION: "24"
 
 jobs:
+  # ---------------------------------------------------------------- Detección
+  # Decide si corren los jobs de frontend (D-29): solo si existe frontend/package.json.
+  # Es un job y no hashFiles() porque el `if` de un job no admite esa función: todavía no hay
+  # espacio de trabajo. Es un check obligatorio: si fallara, los jobs de frontend quedarían
+  # omitidos y GitHub los contaría como aprobados.
+  deteccion:
+    name: "0 · deteccion"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      frontend: ${{ steps.frontend.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: frontend/package.json
+          sparse-checkout-cone-mode: false
+      - id: frontend
+        name: ¿Existe frontend/package.json?
+        run: |
+          if test -f frontend/package.json; then
+            echo "frontend=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "frontend=false" >> "$GITHUB_OUTPUT"
+          fi
+
   # ---------------------------------------------------------------- Etapa 1 · Lint
   lint-backend:
     name: "1 · lint-backend"
@@ -27,30 +52,33 @@ jobs:
     timeout-minutes: 15
     defaults: { run: { working-directory: backend } }
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with: { distribution: temurin, java-version: "${{ env.JAVA_VERSION }}" }
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
       - name: Formato de Java (Spotless)
         run: ./gradlew spotlessCheck
       - name: Análisis estático (SpotBugs con FindSecBugs)
         run: ./gradlew spotbugsMain
       - name: Informe de SpotBugs
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: spotbugs
           path: backend/**/build/reports/spotbugs/
           retention-days: 14
 
+  # ESLint, Prettier y TypeScript son criterios de B00-H06 (#23, D-29).
   lint-frontend:
     name: "1 · lint-frontend"
+    needs: deteccion
+    if: needs.deteccion.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults: { run: { working-directory: frontend } }
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "${{ env.NODE_VERSION }}"
           cache: npm
@@ -73,17 +101,17 @@ jobs:
     timeout-minutes: 20
     defaults: { run: { working-directory: backend } }
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with: { distribution: temurin, java-version: "${{ env.JAVA_VERSION }}" }
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
       - name: Unitarias, arquitectura y contrato, con cobertura
         # test: JUnit 5, AssertJ, Mockito, ArchUnit, Spring Modulith y swagger-request-validator.
-        # jacocoTestCoverageVerification: 60 % por módulo y 80 % en dominio de los servicios centrales.
+        # jacocoTestCoverageVerification: 60 % de líneas por módulo, también en el dominio central (D-32).
         run: ./gradlew test jacocoTestReport jacocoTestCoverageVerification
       - name: Informes de pruebas y de cobertura
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: informes-backend
           path: |
@@ -100,14 +128,14 @@ jobs:
     timeout-minutes: 25
     defaults: { run: { working-directory: backend } }
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with: { distribution: temurin, java-version: "${{ env.JAVA_VERSION }}" }
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
       - name: Adaptadores con PostgreSQL (Testcontainers)
         run: ./gradlew integrationTest
       - if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: informes-integracion
           path: backend/**/build/reports/tests/integrationTest/
@@ -120,8 +148,8 @@ jobs:
     timeout-minutes: 10
     defaults: { run: { working-directory: frontend } }
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "${{ env.NODE_VERSION }}"
           cache: npm
@@ -137,7 +165,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { fetch-depth: 0 }   # todo el historial, no solo el último commit
       - name: Gitleaks (reglas por defecto y de certificados, .gitleaks.toml)
         run: |
@@ -152,13 +180,13 @@ jobs:
     timeout-minutes: 10
     defaults: { run: { working-directory: backend } }
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with: { distribution: temurin, java-version: "${{ env.JAVA_VERSION }}" }
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
       - name: SBOM CycloneDX por módulo y agregado
         run: ./gradlew cyclonedxDirectBom cyclonedxBom
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: sbom-backend
           path: |
@@ -168,13 +196,14 @@ jobs:
 
   sbom-frontend:
     name: "4 · sbom-frontend"
-    if: github.event.pull_request.draft == false
+    needs: deteccion
+    if: github.event.pull_request.draft == false && needs.deteccion.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     defaults: { run: { working-directory: frontend } }
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "${{ env.NODE_VERSION }}"
           cache: npm
@@ -182,19 +211,22 @@ jobs:
       - run: npm ci
       - name: SBOM CycloneDX del frontend (@cyclonedx/cyclonedx-npm)
         run: npm run sbom   # cyclonedx-npm --omit dev --output-file sbom-frontend.json
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with: { name: sbom-frontend, path: frontend/sbom-frontend.json, retention-days: 14 }
 
   sca:
     name: "4 · sca"
     needs: [sbom-backend, sbom-frontend]
+    # Sin frontend, sbom-frontend queda omitido; sca igual revisa el SBOM del backend
+    # (caso límite «repositorio sin frontend»). En borradores, sbom-backend se omite y sca también.
+    if: ${{ !cancelled() && needs.sbom-backend.result == 'success' && contains(fromJSON('["success","skipped"]'), needs.sbom-frontend.result) }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with: { pattern: sbom-*, path: sboms }
       - id: grype
-        uses: anchore/scan-action/download-grype@v7
+        uses: anchore/scan-action/download-grype@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
       - name: Grype sobre cada SBOM (alta o crítica con versión corregida)
         run: |
           estado=0

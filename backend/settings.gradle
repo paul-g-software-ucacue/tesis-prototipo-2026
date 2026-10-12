@@ -1,0 +1,6 @@
+// Multiproyecto del MDD (ADR-011, ADR-012).
+// Los servicios se incluyen como 'servicios:<servicio>' y los procesos como 'apps:<proceso>'
+// cuando la historia correspondiente los crea a partir de backend/plantillas/.
+rootProject.name = 'mdd'
+
+include 'plataforma:arquitectura'
