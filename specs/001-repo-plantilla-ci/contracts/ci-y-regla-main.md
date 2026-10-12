@@ -1,5 +1,7 @@
 # Contrato: CI de cada pull request y regla de la rama principal
 
+Decisiones: D-29 (jobs de frontend condicionados) y D-31 (regla de la rama principal), en `docs/decisiones.md`.
+
 Este documento fija lo que la CI y el ruleset `main` garantizan después de B00-H01. Los jobs nuevos o los que cambian tienen que respetar exactamente estos nombres: el ruleset los usa como checks obligatorios. Si un nombre cambia, el pull request queda esperando un check que nunca llega.
 
 ## Jobs de `ci.yml`
@@ -9,7 +11,7 @@ Este documento fija lo que la CI y el ruleset `main` garantizan después de B00-
 | `0 · deteccion` | — | Siempre | No puede leer el repositorio | FR-008 | B00-H01 |
 | `1 · lint-backend` | Lint | Siempre | Spotless encuentra un archivo sin formato, o SpotBugs con FindSecBugs un hallazgo de confianza alta en el código de `main` | Escenarios 3 y 5; FR-007, FR-014 y FR-015 | B00-H01 |
 | `1 · lint-frontend` | Lint | `deteccion.frontend == 'true'` | ESLint, Prettier, TypeScript o el cliente generado fallan | Escenario «Lint del frontend» de #23 | B00-H06 |
-| `2 · test-backend` | Pruebas | Después de `lint-backend` | Falla una prueba unitaria, de arquitectura (ArchUnit o Modulith) o de contrato, o `jacocoTestCoverageVerification` (módulo < 60 % o dominio central < 80 %) | Escenarios 1 a 4; FR-004 a FR-006 y FR-012 | B00-H01 |
+| `2 · test-backend` | Pruebas | Después de `lint-backend` | Falla una prueba unitaria, de arquitectura (ArchUnit o Modulith) o de contrato, o `jacocoTestCoverageVerification` (módulo < 60 %, D-32) | Escenarios 1 a 4; FR-004 a FR-006 y FR-012 | B00-H01 |
 | `2 · test-integracion` | Pruebas | Después de `lint-backend`, si el PR no es borrador | Falla una prueba de `integrationTest` (Testcontainers) | Escenario 3; FR-007 | B00-H01 |
 | `2 · test-frontend` | Pruebas | Después de `lint-frontend` (se omite con él) | Falla Vitest | — | B00-H06 |
 | `3 · secretos` | Secretos | Siempre | Gitleaks encuentra un secreto o un certificado fuera de la CA de prueba | — | B00-H07 |
@@ -46,6 +48,7 @@ Este documento fija lo que la CI y el ruleset `main` garantizan después de B00-
   "name": "main",
   "target": "branch",
   "enforcement": "active",
+  "bypass_actors": [],
   "conditions": { "ref_name": { "include": ["~DEFAULT_BRANCH"], "exclude": [] } },
   "rules": [
     { "type": "deletion" },
@@ -58,7 +61,9 @@ Este documento fija lo que la CI y el ruleset `main` garantizan después de B00-
         "require_code_owner_review": false,
         "require_last_push_approval": false,
         "required_approving_review_count": 0,
-        "required_review_thread_resolution": false
+        "required_review_thread_resolution": false,
+        "require_extra_approval_for_unattributed_changes": true,
+        "required_reviewers": []
       }
     },
     {
@@ -89,7 +94,14 @@ Este documento fija lo que la CI y el ruleset `main` garantizan después de B00-
 1. **No se fusiona un pull request con un check obligatorio en `failure`**, `cancelled` o pendiente (escenarios 1, 3 y 4; FR-009).
 2. **El pull request tiene que estar al día con `main`** (política estricta). Junto con la fusión *squash*, esto hace que el commit de `main` sea el mismo código que pasó las etapas 1 a 4, que es lo que supone `cd.yml`.
 3. **`main` solo recibe cambios por pull request.** No se puede borrar ni reescribir su historial.
-4. **Sin excepciones:** el ruleset no tiene actores con permiso para saltárselo (`bypass_actors` vacío), así que la regla también vale para el dueño del repositorio.
+4. **Sin excepciones:** el ruleset no tiene actores con permiso para saltárselo (`bypass_actors: []`, enviado de forma explícita), así que la regla también vale para el dueño del repositorio. Se verifica después del `PUT`:
+
+   ```bash
+   gh api repos/paul-g-software-ucacue/tesis-prototipo-2026/rulesets/24901935 \
+     -q '{bypass: .bypass_actors, metodos: (.rules[]|select(.type=="pull_request")|.parameters.allowed_merge_methods)}'
+   # esperado: {"bypass":[],"metodos":["squash"]}
+   ```
 5. **Excepción transitoria:** si `3 · secretos`, `4 · sbom-backend` o `4 · sca` fallan en el pull request de B00-H01 por algo que es de B00-H07, se quitan de la lista, se anota en `evidencia.md` y B00-H07 los vuelve a agregar (research §8).
+6. **Se conservan las reglas que ya tenía:** prohibido borrar `main` o reescribir su historial, pull request obligatorio y `require_extra_approval_for_unattributed_changes: true`. El `PUT` reemplaza todas las reglas, así que el JSON las incluye todas.
 
 `integration_id` 15368 es la GitHub App de GitHub Actions. Así, un check con el mismo nombre publicado por otra fuente no satisface la regla.

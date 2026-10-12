@@ -9,10 +9,10 @@
 El multiproyecto de Gradle se completa para que pueda construirse: `settings.gradle` y Wrapper 9.8.1, con Java 25 y Spring Boot 4.1.1. La plantilla de servicio tiene tres partes:
 
 1. un subproyecto `plataforma:arquitectura` con las reglas ArchUnit de las cinco capas, probadas con *fixtures*;
-2. los plugins de convención `mdd.servicio`, `mdd.servicio-central` y `mdd.aplicacion`, que aplican sin configuración por servicio las reglas, la cobertura, Spotless y SpotBugs;
+2. los plugins de convención `mdd.servicio` y `mdd.aplicacion`, que aplican sin configuración por servicio las reglas, la cobertura del 60 %, Spotless y SpotBugs. Se elimina `mdd.servicio-central` (D-32);
 3. dos esqueletos para copiar, uno de servicio y otro de proceso. El de proceso trae `ApplicationModules.verify()` de Spring Modulith 2.1.1.
 
-En el `ci.yml` que ya existe, los jobs de frontend pasan a depender de que exista `frontend/package.json`, el job `sca` deja de omitirse cuando no hay frontend y las acciones se fijan por SHA con pinact. Al final, el ruleset `main` exige los checks con la política estricta y la fusión *squash*. Las tres comprobaciones de la sección 8 de la constitución quedan registradas con evidencia: palantir y SpotBugs con Java 25, Modulith 2.1 con Boot 4.1, y pinact. Los detalles y su evidencia previa están en [research.md](research.md).
+En el `ci.yml` que ya existe, los jobs de frontend pasan a depender de que exista `frontend/package.json`, el job `sca` deja de omitirse cuando no hay frontend y las acciones se fijan por SHA con pinact. Al final, el ruleset `main` exige los checks con la política estricta y la fusión *squash*. Las tres comprobaciones de la sección 8 de la constitución quedan registradas con evidencia: palantir y SpotBugs con Java 25, Modulith 2.1 con Boot 4.1, y pinact. Los detalles y su evidencia previa están en [research.md](research.md). Las decisiones de arquitectura están en ADR-012 y las demás en D-28 a D-32, todas en [`docs/decisiones.md`](../../docs/decisiones.md).
 
 ## Technical Context
 
@@ -45,7 +45,7 @@ En el `ci.yml` que ya existe, los jobs de frontend pasan a depender de que exist
 - No se crean servicios ni procesos reales; llegan con sus historias.
 
 **Scale/Scope**:
-- 1 subproyecto nuevo, 2 plugins de convención nuevos y 1 que cambia, y 2 esqueletos.
+- 1 subproyecto nuevo, 2 plugins de convención nuevos, 1 que se elimina (`mdd.servicio-central`, D-32) y 2 esqueletos.
 - 1 workflow que cambia, 1 ruleset que se actualiza y 10 checks obligatorios.
 - La plantilla sirve para los 12 servicios y los 4 procesos de ADR-006.
 
@@ -56,22 +56,22 @@ En el `ci.yml` que ya existe, los jobs de frontend pasan a depender de que exist
 | Principio | Cómo lo respeta el plan | Estado |
 |---|---|---|
 | I. Cinco capas, puertos y adaptadores | Las reglas de `plataforma:arquitectura` imponen el sentido de las cinco capas y prohíben al dominio Spring, JPA, HTTP y PDF. El esqueleto trae las cinco capas con su `package-info.java`. | ✅ |
-| II. DDD según el subdominio | `mdd.servicio-central` sigue exigiendo el 80 % solo en 5, 6, 10 y 12. La plantilla no impone agregados. | ✅ |
+| II. DDD según el subdominio | La plantilla no impone agregados: cada servicio decide la profundidad de DDD según su tipo. El tipo ya no cambia la cobertura (D-32). | ✅ |
 | III. Lenguaje ubicuo | No se agregan términos de dominio. Los paquetes de capa usan los nombres de ADR-009 en español sin tildes. Las clases técnicas siguen ADR-008. | ✅ |
 | IV. API primero | No hay API en esta historia y no cambia `contratos/`. `puertos.entrada` es la API publicada dentro del proceso, como lo pide el principio. | ✅ N/A |
-| V. Límites de servicio | `ApplicationModules.verify()` por proceso, ArchUnit por servicio, un subproyecto Gradle por servicio y una aplicación por proceso. | ✅ |
+| V. Límites de servicio | `ApplicationModules.verify()` por proceso, ArchUnit por servicio, un subproyecto Gradle por servicio y una aplicación por proceso. La API publicada es `puertos.entrada` (ADR-012). | ✅ |
 | VI. Reglas como datos | Esta historia no tiene reglas de negocio. | ✅ N/A |
 | VII. Inmutabilidad y trazabilidad | Esta historia no tiene datos. La evidencia de las comprobaciones queda en `evidencia.md`. | ✅ N/A |
-| VIII. Pruebas primero | Las reglas de arquitectura se escriben primero como pruebas con *fixtures* que deben fallar. JaCoCo aplica el 60 % y el 80 %. Los escenarios 3 a 5 se demuestran con pull requests. | ✅ |
+| VIII. Pruebas primero | Las reglas de arquitectura se escriben primero como pruebas con *fixtures* que deben fallar. JaCoCo aplica el 60 % en cada módulo, también en el dominio central (constitución 2.0.0, D-32). Los escenarios 3 a 5 se demuestran con pull requests. | ✅ |
 | IX. Seguridad y SSDLC | SpotBugs con FindSecBugs en confianza alta. Acciones por SHA, `contents: read` y ningún secreto nuevo. Gitleaks sigue en pre-commit y en CI. | ✅ |
 | X. Simplicidad y alcance | Solo lo que pide la historia. Ni servicios de ejemplo en producción, ni generadores, ni pasos de CI extra. | ✅ |
 | XI. Diseño pragmático | Una interfaz o abstracción solo donde marca un límite (los plugins evitan copiar reglas, FR-002). Las alternativas descartadas están en research §9, §10 y §17. | ✅ |
 | XII. JavaDoc | Las reglas de `plataforma:arquitectura` y los `package-info.java` del esqueleto llevan JavaDoc en español sobre el contrato de cada capa. | ✅ |
 | XIII. Errores | Esta historia no tiene errores HTTP; el modelo es de B00-H04. | ✅ N/A |
-| §3 Restricciones técnicas | Java 25, Boot 4.1.1, Gradle Groovy DSL, Modulith 2.1, Spotless, SpotBugs, FindSecBugs, JaCoCo 60/80 y JUnit Jupiter 6 (constitución 1.0.1, D-28). | ✅ |
+| §3 Restricciones técnicas | Java 25, Boot 4.1.1, Gradle Groovy DSL, Modulith 2.1, Spotless, SpotBugs, FindSecBugs, JaCoCo 60 % (D-32) y JUnit Jupiter 6 (D-28). | ✅ |
 | §8 Comprobaciones de la ola 0 | palantir y SpotBugs con Java 25, Modulith 2.1 con Boot 4.1 y pinact: tareas explícitas con evidencia en `evidencia.md`. | ✅ |
 
-**Resultado del gate antes de la fase 0:** pasa. La única desviación (JUnit 5 frente a JUnit Jupiter 6) se resolvió con la enmienda 1.0.1 de la constitución (D-28).
+**Resultado del gate antes de la fase 0:** pasa. La desviación de JUnit se resolvió con la enmienda 1.0.1 (D-28). Después del análisis, la constitución pasó a la 2.0.0 (D-32, cobertura única del 60 %), y las decisiones que afectan a varias features quedaron en ADR-012, como pide la sección 6, paso 4.
 
 **Revisión después de la fase 1:** pasa. El diseño de [data-model.md](data-model.md) y de [contracts/](contracts/) no agrega capas, servicios ni dependencias fuera de las listadas. Los contratos son de construcción y de CI, no de API, así que el principio IV sigue sin aplicar.
 
@@ -89,7 +89,8 @@ specs/001-repo-plantilla-ci/
 ├── contracts/
 │   ├── plantilla-servicio.md    # estructura y reglas que garantiza un servicio creado desde la plantilla
 │   ├── convenciones-gradle.md   # qué aplica cada plugin de convención
-│   └── ci-y-regla-main.md       # jobs, checks obligatorios y ruleset de main
+│   ├── ci-y-regla-main.md       # jobs, checks obligatorios y ruleset de main
+│   └── ruleset-main.json        # se crea al implementar (T021): JSON del PUT del ruleset
 ├── checklists/
 │   └── requirements.md
 ├── evidencia.md             # se crea al implementar: comprobaciones de §8 y PR de demostración
@@ -100,6 +101,8 @@ specs/001-repo-plantilla-ci/
 
 ```text
 .gitignore                                   # cambia: + backend/.gradle/, **/build/
+docs/
+└── decisiones.md                            # existe: registro de decisiones D-28+ y ADR-012+
 .github/
 └── workflows/
     ├── ci.yml                               # cambia: job 0 · deteccion, jobs de frontend condicionados, sca sin omitirse, SHA
@@ -115,7 +118,7 @@ backend/
 │   └── src/main/groovy/
 │       ├── mdd.java-conventions.gradle      # cambia: BOM de Modulith, toolVersion SpotBugs 4.10.4, palantir 2.102.0
 │       ├── mdd.servicio.gradle              # nuevo: java-library, spring-modulith-api, reglas de arquitectura en test
-│       ├── mdd.servicio-central.gradle      # cambia: aplica mdd.servicio en lugar de mdd.java-conventions
+│       ├── mdd.servicio-central.gradle      # se elimina (D-32)
 │       └── mdd.aplicacion.gradle            # nuevo: Spring Boot, Modulith en test, clase de arranque fuera de JaCoCo
 ├── config/spotbugs/excluir.xml              # existe
 ├── plataforma/
@@ -144,7 +147,7 @@ Los servicios irán en `backend/servicios/<servicio>` y los procesos en `backend
    - Después, las reglas, hasta que las pruebas pasen.
    - Cobertura ≥ 60 % en el subproyecto.
 3. **Convenciones y esqueletos:**
-   - `mdd.servicio`, `mdd.servicio-central` (reencadenado) y `mdd.aplicacion`.
+   - `mdd.servicio` y `mdd.aplicacion`; se elimina `mdd.servicio-central`.
    - `plantillas/servicio` y `plantillas/aplicacion`.
    - Prueba local: copiar los esqueletos a un directorio temporal, incluirlos y construir; después se revierte.
 4. **Comprobaciones de §8:**
@@ -158,11 +161,11 @@ Los servicios irán en `backend/servicios/<servicio>` y los procesos en `backend
    - `gh api -X PUT` del ruleset 24901935 con los checks obligatorios, la política estricta y solo *squash*, según [contracts/ci-y-regla-main.md](contracts/ci-y-regla-main.md).
    - Verificar que el pull request de B00-H01 queda sujeto a la regla.
 7. **Demostración (SC-001):**
-   - Rama `demo/b00-h01` y los 5 pull requests con una violación cada uno.
+   - Rama `demo/b00-h01`, 5 pull requests con una violación cada uno (uno por escenario) y 1 pull request que agrega `frontend/package.json` (caso límite «Llega el frontend», D-29).
    - Evidencia en `evidencia.md`; los pull requests se cierran sin fusionar.
 8. **Cierre:**
    - Fusionar el pull request de B00-H01 en verde (SC-002).
-   - Actualizar la sección 8 de la constitución solo si una comprobación falló, con una decisión D-28 o posterior.
+   - Actualizar la sección 8 de la constitución solo si una comprobación falló, con una decisión nueva en `docs/decisiones.md`.
 
 ## Complexity Tracking
 

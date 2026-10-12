@@ -4,6 +4,8 @@
 
 Fuentes leídas además de la constitución: ADR-008, ADR-009 y ADR-011, y `sdd/pipeline_cicd.md` v1.0 (copia local en `~/Downloads/MDD_artefactos_desarrollo/requerimientos_mdd/`). También el `ci.yml`, la convención de Gradle que ya está en el repositorio, el ruleset `main` del repositorio en GitHub y los POM publicados en Maven Central.
 
+Las decisiones que salieron de esta investigación están registradas en [`docs/decisiones.md`](../../docs/decisiones.md): D-28 (§6), D-29 (§7), D-30, D-31 (§8), D-32 (§18) y ADR-012 (§10, §12 y §13).
+
 En las comprobaciones de la sección 8 de la constitución, este documento solo registra la **evidencia previa**. La confirmación con código se hace al implementar y queda en `evidencia.md` (FR-018).
 
 ---
@@ -20,7 +22,7 @@ En las comprobaciones de la sección 8 de la constitución, este documento solo 
 - **Decisión:** fijar la versión del formateador en la convención, `palantirJavaFormat('2.102.0')` (la última en Maven Central el 11/10/2026), en lugar de depender de la versión por defecto de Spotless 8.10.4.
 - **Por qué:** se sabe de versiones antiguas de palantir que usan API del JDK que ya no existen en Java 25 ([OSGeo, «Exploring builds with Java 25»](https://discourse.osgeo.org/t/exploring-builds-with-java-25/149783)). Las notas de versión de palantir no nombran Java 25 de forma explícita ([releases](https://github.com/palantir/palantir-java-format/releases)). Fijar la versión hace que la comprobación sea repetible.
 - **Confirmación pendiente:** `spotlessCheck` y `spotlessApply` sobre un archivo que use sintaxis de Java 25: importación de módulos (`import module java.base;`), cuerpos de constructor flexibles y variables sin nombre (`_`). La prueba corre con el JDK 25 local y en CI.
-- **Si falla:** se registra una decisión D-28 o posterior, por ejemplo `googleJavaFormat()` o Eclipse JDT en Spotless, y se enmienda la constitución (sección 8). No se desactiva Spotless en silencio.
+- **Si falla:** se registra una decisión nueva en `docs/decisiones.md`, por ejemplo `googleJavaFormat()` o Eclipse JDT en Spotless, y se enmienda la constitución (sección 8). No se desactiva Spotless en silencio.
 
 ## 3. SpotBugs con clases de Java 25 (FR-016)
 
@@ -47,9 +49,11 @@ En las comprobaciones de la sección 8 de la constitución, este documento solo 
 - **Hallazgo:** el BOM de `spring-boot-dependencies:4.1.1` fija `junit-jupiter.version = 6.0.3` (JUnit 6), Mockito 5.23.0 y Testcontainers 2.0.5. La constitución 1.0 (sección 3) y ADR-008 y ADR-011 decían «JUnit 5».
 - **Decisión:** usar la versión que fija el BOM, como dice `sdd/pipeline_cicd.md` («Mockito, JUnit 5, AssertJ y Testcontainers no llevan versión propia: las fija el BOM de Spring Boot 4.1.1»). Forzar JUnit 5 contra el BOM sería una desviación sin beneficio.
 - **Acción propuesta:** enmienda de parche de la constitución, que cambia «JUnit 5» por «JUnit (Jupiter) 6, la del BOM de Spring Boot». Es una aclaración y no cambia ningún principio (ver «Complexity Tracking» en el plan).
-- **Confirmada por el autor (2026-10-11):** se usa JUnit Jupiter 6.0.3. La constitución se enmendó a la 1.0.1 (D-28) el mismo día. ADR-008 y ADR-011, fuera del repositorio, todavía dicen «JUnit 5».
+- **Confirmada por el autor (2026-10-11):** se usa JUnit Jupiter 6.0.3. Registrada como D-28; la constitución se enmendó a la 1.0.1 el mismo día. ADR-008 y ADR-011, fuera del repositorio, todavía dicen «JUnit 5».
 
 ## 7. Jobs de frontend condicionados a `frontend/package.json` (FR-008)
+
+Registrada como **D-29**.
 
 - **Decisión:** un job nuevo, `0 · deteccion`, hace un checkout disperso (*sparse*) solo de `frontend/package.json` y publica la salida `frontend=true|false`. `lint-frontend` y `sbom-frontend` usan `needs: deteccion` y `if: needs.deteccion.outputs.frontend == 'true'`. `test-frontend` ya depende de `lint-frontend` y se omite con él.
 - **Por qué un job y no `hashFiles()`:** en el `if` de un job, GitHub Actions solo admite los contextos `github`, `needs`, `vars` e `inputs`. `hashFiles()` no está disponible ahí porque todavía no hay espacio de trabajo.
@@ -63,6 +67,8 @@ En las comprobaciones de la sección 8 de la constitución, este documento solo 
   - quitar los jobs, que es la opción C que el autor descartó.
 
 ## 8. Regla de la rama principal (FR-009)
+
+Registrada como **D-31**. El JSON conserva las reglas que ya tenía el ruleset (incluida `require_extra_approval_for_unattributed_changes: true`) y fija `bypass_actors: []`, para que nadie pueda saltarse la regla.
 
 - **Estado actual, consultado con la API:** el ruleset `main` (id 24901935) está activo sobre `~DEFAULT_BRANCH`. Prohíbe borrar la rama y los *force-push*, y exige pull request con `allowed_merge_methods: [merge, squash, rebase]`. **No exige checks.**
 - **Decisión (confirmada por el autor el 2026-10-11):** actualizar el ruleset con `gh api -X PUT` según la sección 8 de `sdd/pipeline_cicd.md`:
@@ -83,9 +89,11 @@ En las comprobaciones de la sección 8 de la constitución, este documento solo 
 
 ## 10. Plantilla de servicio: qué es y dónde vive (FR-003 a FR-006)
 
+Registrada en **ADR-012**. En este documento, «plantilla» es el conjunto de reglas, plugins y esqueletos; «esqueleto» es solo la carpeta que se copia.
+
 - **Decisión:**
   1. **Reglas compartidas, compiladas y probadas:** el subproyecto `plataforma:arquitectura` contiene las reglas ArchUnit de las cinco capas y de las dependencias prohibidas del dominio. Sus pruebas usan *fixtures*: una correcta, que pasa, y una por cada violación, que falla. Esto prueba los escenarios 1 y 2 de forma automática en cada pull request.
-  2. **Plugins de convención:** `mdd.servicio` (nuevo), `mdd.servicio-central` (ya existe y ahora aplica `mdd.servicio`) y `mdd.aplicacion` (nuevo). Un servicio recibe las reglas, la cobertura, Spotless y SpotBugs con solo aplicar su plugin (FR-002, FR-013, SC-006).
+  2. **Plugins de convención:** `mdd.servicio` (nuevo) y `mdd.aplicacion` (nuevo). `mdd.servicio-central` se elimina, porque solo agregaba el umbral del 80 % (D-32). Un servicio recibe las reglas, la cobertura, Spotless y SpotBugs con solo aplicar su plugin (FR-002, FR-013, SC-006).
   3. **Esqueletos para copiar:** `backend/plantillas/servicio/` y `backend/plantillas/aplicacion/`. Cada uno trae un `build.gradle` con el plugin, un `package-info.java` por capa y una sola prueba de arquitectura (servicio) o de módulos (aplicación). No se incluyen en `settings.gradle`: se copian a `servicios/<nombre>` o a `apps/<proceso>` cuando una historia crea el servicio o el proceso.
 - **Por qué no compilar la plantilla como subproyecto:** necesitaría clases de ejemplo en las cinco capas (ArchUnit falla si no analiza ninguna clase, y JaCoCo mediría código que no es del producto). Eso es código que no pide la ERS (principio X) y términos fuera del glosario (principio III). Las *fixtures* de `plataforma:arquitectura` cumplen ese papel dentro de las pruebas.
 - **Por qué no crear ahora los servicios ni los procesos reales:** los servicios llegan con sus historias, la primera es F04-H01 (Normativa), y los 4 procesos con B00-H02. Esta historia entrega la plantilla y las reglas, no los módulos.
@@ -115,6 +123,8 @@ En las comprobaciones de la sección 8 de la constitución, este documento solo 
 
 ## 12. API publicada de un servicio y Spring Modulith (FR-006)
 
+Registrada en **ADR-012**.
+
 - **Decisión:** dentro de un proceso, la API publicada de un servicio es su paquete `puertos.entrada`, marcado con `@NamedInterface("api")` (de `spring-modulith-api`) en su `package-info.java`. Todo lo demás es interno.
 - **Por qué:** con el diseño de Modulith, el módulo es `ec.mdd.<servicio>` y sus subpaquetes son internos por defecto. Las cinco capas son subpaquetes, así que hay que publicar uno de forma explícita. El puerto de entrada es por definición «lo que ofrece el servicio» (principio I), y los servicios de un proceso se llaman por la interfaz de aplicación que refleja el contrato (principios IV y V).
 - **Servicios de soporte o genéricos sin puerto de entrada:** si otro servicio del mismo proceso necesita llamarlos, en esa historia se les agrega su `puertos.entrada`. Si nadie los llama, no lo necesitan.
@@ -124,7 +134,7 @@ En las comprobaciones de la sección 8 de la constitución, este documento solo 
 
 ## 13. Paquete base y nombres de los subproyectos
 
-- **Decisión (confirmada por el autor el 2026-10-11):**
+- **Decisión (confirmada por el autor el 2026-10-11; ADR-012):**
   - paquete base `ec.mdd` y grupo de Gradle `ec.mdd`;
   - un servicio usa `ec.mdd.<servicio>` (`ec.mdd.normativa`, `ec.mdd.validacionocs`…);
   - las rutas son `backend/servicios/<servicio>` (proyecto `:servicios:<servicio>`), `backend/apps/<proceso>` (`:apps:identidad`, `:apps:datos`, `:apps:distributivo` y `:apps:salida`, como ya supone `cd.yml`) y `backend/plataforma/arquitectura`.
@@ -153,10 +163,17 @@ En las comprobaciones de la sección 8 de la constitución, este documento solo 
 - **Escenarios 1 y 2:** se prueban de forma automática con las *fixtures* (sección 11 y sección 12) y, además, en los pull requests de demostración.
 - **Escenarios 3 a 5 (CI, cobertura y SpotBugs):** se prueban con **pull requests de demostración** contra `main`, cuando el ruleset ya exija los checks:
   1. Desde una rama base `demo/b00-h01`, se crea un servicio de prueba con la plantilla y se agrega a `settings.gradle`.
-  2. Se abren 5 pull requests, cada uno con una sola violación: dominio que importa Spring; uso de una clase interna de otro servicio del mismo proceso; cobertura bajo el 60 %; consulta SQL concatenada; prueba en rojo.
+  2. Se abren 5 pull requests, cada uno con una sola violación: dominio que importa Spring; uso de una clase interna de otro servicio del mismo proceso; cobertura bajo el 60 %; consulta SQL concatenada; prueba en rojo. Un sexto pull request agrega solo `frontend/package.json` para comprobar el caso límite «Llega el frontend» (D-29).
   3. En cada uno se registran el enlace, el check en rojo y el mensaje «Merging is blocked».
   4. Se cierran sin fusionar y se borran las ramas.
 
   La rama `demo/b00-h01` nunca se fusiona.
 - **SC-002:** el propio pull request de B00-H01, en verde, se fusiona.
 - **Alternativa considerada:** pruebas funcionales de los plugins de convención con Gradle TestKit. Darían una regresión automática de los escenarios 3 a 5, pero suman varios minutos de CI por pull request y la convención ya se probó así en `pipeline_cicd.md`. Se reconsidera si la convención cambia a menudo.
+
+## 18. Cobertura única del 60 % (FR-012, FR-013)
+
+- **Decisión (D-32, confirmada por el autor el 2026-10-11):** JaCoCo exige al menos 60 % de líneas en cada módulo, también en los servicios centrales. Se elimina `mdd.servicio-central` y su regla `PACKAGE` del 80 %.
+- **Efecto en la convención:** `mdd.java-conventions` ya tiene la regla del 60 % del módulo. Solo cambian dos comentarios: el de `mdd.java-conventions` que menciona el 80 % y el del paso de cobertura en `ci.yml`.
+- **Lo que no cambia:** el dominio central se sigue desarrollando guiado por pruebas, sin infraestructura ni dobles (principio VIII).
+- **Alternativa considerada:** mantener el 80 % en el dominio central, que conservaba RNF-MAN-02 tal como estaba en la ERS. El autor la descartó.

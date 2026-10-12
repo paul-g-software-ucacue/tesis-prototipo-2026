@@ -10,7 +10,7 @@
 
 **Origen**: issue #18 · B00-H01 · sub-issue de #2 (B00 · Base técnica de la ola 0) · milestone «Ola 0 · Base técnica» · etiquetas `tipo:historia`, `prioridad:must`, `modulo:transversal` · tamaño propuesto L.
 
-**Requerimientos que cubre**: ADR-008 · ADR-009 · ADR-011 · D-24 · D-27 · RNF-MAN-01 · RNF-MAN-02.
+**Requerimientos que cubre**: ADR-008 · ADR-009 · ADR-011 · D-24 · D-27 · RNF-MAN-01 · RNF-MAN-02 (modificado por D-32: 60 % por módulo). **Decisiones tomadas en esta historia** (`docs/decisiones.md`): D-28 a D-32 y ADR-012.
 
 **Historia (tal como está en el issue)**: Como autor, quiero un monorepo privado con Gradle (Groovy DSL, Java 25, Spring Boot 4.1.1), la plantilla de servicio en cinco capas y las etapas de lint y pruebas en cada pull request, para que cada historia se integre con las pruebas en verde y sin cruzar límites.
 
@@ -20,8 +20,12 @@
 
 ### Session 2026-10-11
 
-- Q: ¿Cómo se cumple ESLint en la etapa de lint antes de que exista la SPA de B00-H06? → A: Los jobs de frontend de la CI corren solo si existe `frontend/package.json`. ESLint sale de los criterios de esta historia y pasa a los de B00-H06 (#23).
-- Q: El repositorio es privado y el plan de la cuenta original no permitía reglas de rama. ¿Cómo se cumple «el pull request no se puede fusionar»? → A: El repositorio se transfirió a la cuenta `paul-g-software-ucacue`, que tiene GitHub Pro; sigue siendo privado y admite la regla de la rama principal.
+- Q: ¿Cómo se cumple ESLint en la etapa de lint antes de que exista la SPA de B00-H06? → A: Los jobs de frontend de la CI corren solo si existe `frontend/package.json`. ESLint sale de los criterios de esta historia y pasa a los de B00-H06 (#23). Registrada como D-29 en `docs/decisiones.md`.
+- Q: El repositorio es privado y el plan de la cuenta original no permitía reglas de rama. ¿Cómo se cumple «el pull request no se puede fusionar»? → A: El repositorio se transfirió a la cuenta `paul-g-software-ucacue`, que tiene GitHub Pro; sigue siendo privado y admite la regla de la rama principal. Registrada como D-30.
+
+### Session 2026-10-11 (revisión con /speckit-analyze)
+
+- Q: ¿Se mantiene el umbral del 80 % en los paquetes `dominio` de los servicios centrales? → A: No. El autor fija un solo umbral, el 60 % de líneas por módulo, también en el dominio central (D-32; constitución 2.0.0). Se edita el escenario «Cobertura mínima» del issue #18.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -45,7 +49,7 @@ Escenario: Integración continua en cada pull request
   Y la regla de la rama principal impide fusionarlo si algún check falla
 ```
 
-> **Cambio por la aclaración del 2026-10-11**: ESLint salió de la etapa de lint de este escenario y pasó a B00-H06 (#23), con el escenario «Lint del frontend en cada pull request». Los issues #18 y #23 ya están actualizados.
+> **Cambio por la aclaración del 2026-10-11**: ESLint salió de la etapa de lint de este escenario y pasó a B00-H06 (#23, D-29), con el escenario «Lint del frontend en cada pull request». Los issues #18 y #23 ya están actualizados.
 
 ---
 
@@ -76,21 +80,23 @@ Escenario: Un servicio no usa las clases internas de otro
 
 ### User Story 3 - Cobertura mínima en cada pull request (Priority: P2)
 
-Como autor, quiero que la etapa de pruebas rechace un módulo con menos de 60 % de líneas cubiertas, o un paquete dominio de un servicio central con menos de 80 %, para que el dominio central se mantenga guiado por pruebas (principio VIII, RNF-MAN-02).
+Como autor, quiero que la etapa de pruebas rechace un módulo con menos de 60 % de líneas cubiertas, para que todo el código, también el del dominio central, se mantenga guiado por pruebas (principio VIII, RNF-MAN-02, D-32).
 
 **Why this priority**: Depende de que existan la compuerta (historia 1) y un servicio creado desde la plantilla (historia 2) sobre el cual medir.
 
-**Independent Test**: En un módulo cualquiera, dejar la cobertura de líneas por debajo de 60 % y comprobar que la verificación de cobertura falla; en un servicio central, dejar su paquete dominio por debajo de 80 % (con el módulo por encima de 60 %) y comprobar que también falla.
+**Independent Test**: En un módulo cualquiera, dejar la cobertura de líneas por debajo de 60 % y comprobar que la verificación de cobertura falla; con exactamente 60 %, comprobar que pasa.
 
 **Acceptance Scenarios**:
 
 ```gherkin
 Escenario: Cobertura mínima
-  Dado un módulo con menos de 60 % de líneas cubiertas, o un paquete dominio de un servicio central con menos de 80 %
+  Dado un módulo con menos de 60 % de líneas cubiertas
   Cuando corre la etapa de pruebas
   Entonces jacocoTestCoverageVerification falla
   Y el pull request no se puede fusionar
 ```
+
+> **Cambio respecto del issue #18** (D-32, 2026-10-11): el escenario ya no exige el 80 % en los paquetes dominio de los servicios centrales. El issue #18 está actualizado.
 
 ---
 
@@ -116,15 +122,15 @@ Escenario: Hallazgo de análisis estático
 
 ### Edge Cases
 
-- **Umbral exacto de cobertura**: un módulo con exactamente 60 % de líneas cubiertas, o un paquete dominio central con exactamente 80 %, no falla; el escenario solo rechaza lo que queda «por debajo».
-- **Servicio de soporte o genérico**: el umbral de 80 % del paquete dominio solo se exige en los servicios centrales (5 Generación, 6 Validación OCS, 10 Firma y 12 Normativa); los demás solo deben cumplir el 60 % del módulo.
+- **Umbral exacto de cobertura**: un módulo con exactamente 60 % de líneas cubiertas no falla; el escenario solo rechaza lo que queda «por debajo».
+- **Servicio central**: los servicios 5 Generación, 6 Validación OCS, 10 Firma y 12 Normativa cumplen el mismo 60 % que los demás; no hay un umbral mayor para su paquete dominio (D-32).
 - **Pull request en borrador**: la etapa de integración no corre mientras el pull request es un borrador; al marcarlo como listo para revisión vuelve a ejecutarse y la regla de la rama principal exige su resultado antes de fusionar.
 - **Dependencia del dominio hacia otros detalles técnicos**: además de Spring, JPA y HTTP, la constitución (principio I) prohíbe que el dominio importe librerías de PDF; la prueba de arquitectura también debe fallar en ese caso.
 - **Dependencia entre servicios a través de la API publicada**: si un servicio usa solo lo que el otro publica, la verificación de módulos pasa; la regla no impide la colaboración, solo el uso de clases internas.
 - **Hallazgo de confianza media o baja**: no hace fallar el check; la constitución solo exige que no haya hallazgos altos.
 - **Repositorio sin frontend**: mientras no exista `frontend/package.json`, los jobs de frontend de la CI no corren y no hacen fallar el pull request. Los checks del backend siguen corriendo y siguen siendo obligatorios para fusionar: omitir los jobs de frontend no debe omitir ningún check del backend.
 - **Llega el frontend**: cuando un pull request agrega `frontend/package.json` (B00-H06), los jobs de frontend empiezan a correr en ese mismo pull request sin cambiar el workflow.
-- **Una comprobación de compatibilidad falla**: si palantir-java-format o SpotBugs no funcionan con Java 25, o Spring Modulith 2.1 no es la línea para Spring Boot 4.1, se registra una decisión nueva (D-28 en adelante) y se enmienda la constitución (sección 8), en lugar de desactivar la herramienta en silencio.
+- **Una comprobación de compatibilidad falla**: si palantir-java-format o SpotBugs no funcionan con Java 25, o Spring Modulith 2.1 no es la línea para Spring Boot 4.1, se registra una decisión nueva en `docs/decisiones.md` y se enmienda la constitución (sección 8), en lugar de desactivar la herramienta en silencio.
 
 ## Requirements *(mandatory)*
 
@@ -152,8 +158,8 @@ Escenario: Hallazgo de análisis estático
 
 **Cobertura**
 
-- **FR-012**: La etapa de pruebas DEBE ejecutar `jacocoTestCoverageVerification`, que DEBE fallar si un módulo tiene menos de 60 % de líneas cubiertas o si un paquete dominio de un servicio central (5, 6, 10 y 12) tiene menos de 80 % (escenario «Cobertura mínima», principio VIII, RNF-MAN-02).
-- **FR-013**: El umbral de 80 % DEBE aplicarse a un servicio por ser central, sin configuración adicional en cada servicio; los servicios de soporte y genéricos solo cumplen el 60 %.
+- **FR-012**: La etapa de pruebas DEBE ejecutar `jacocoTestCoverageVerification`, que DEBE fallar si un módulo tiene menos de 60 % de líneas cubiertas (escenario «Cobertura mínima», principio VIII, RNF-MAN-02, D-32).
+- **FR-013**: El umbral de 60 % DEBE aplicarse a todo módulo, también a los servicios centrales, por la convención común, sin configuración en cada servicio.
 
 **Análisis estático**
 
@@ -164,7 +170,7 @@ Escenario: Hallazgo de análisis estático
 
 - **FR-016**: DEBE comprobarse que palantir-java-format (vía Spotless) y SpotBugs funcionan con Java 25.
 - **FR-017**: DEBE comprobarse que Spring Modulith 2.1 es la línea compatible con Spring Boot 4.1.
-- **FR-018**: El resultado de cada comprobación (FR-010, FR-016, FR-017) DEBE quedar registrado; si alguna falla, DEBE registrarse una decisión nueva (D-28 en adelante) y enmendarse la constitución.
+- **FR-018**: El resultado de cada comprobación (FR-010, FR-016, FR-017) DEBE quedar registrado; si alguna falla, DEBE registrarse una decisión nueva en `docs/decisiones.md` y enmendarse la constitución.
 
 ### Key Entities
 
@@ -193,7 +199,8 @@ Escenario: Hallazgo de análisis estático
 - El repositorio vive ahora en `paul-g-software-ucacue/tesis-prototipo-2026`, cuenta con GitHub Pro, y sigue siendo privado (D-24 no cambia). Ya tiene una regla activa sobre la rama principal que exige pull request y prohíbe borrarla o reescribir su historial; todavía no exige checks, y eso es lo que agrega esta historia (FR-009).
 - El repositorio ya trae un borrador del workflow de CI (`.github/workflows/ci.yml`), la convención de Gradle (`backend/buildSrc`) y las plantillas de issue y de pull request; la «carpeta `github/plantillas/`» que cita el issue corresponde a lo que ya se copió al repositorio.
 - Para demostrar los escenarios de capas y de límites basta con servicios creados desde la plantilla dentro de un proceso; los servicios reales con su lógica de negocio llegan con sus propias historias (por ejemplo, F04-H01 para Normativa).
-- Las etapas de secretos y SCA del mismo workflow (Gitleaks, CycloneDX y Grype) son el alcance de B00-H07 (#24); esta historia no define su comportamiento, aunque sus checks, cuando existan, también cuentan para la regla de la rama principal.
+- Las etapas de secretos y SCA del mismo workflow (Gitleaks, CycloneDX y Grype) son el alcance de B00-H07 (#24); esta historia no define su comportamiento, aunque sus checks, cuando existan, también cuentan para la regla de la rama principal. Excepción transitoria (D-31): si alguno falla en el pull request de B00-H01 por algo que corresponde a B00-H07, se deja fuera de los checks obligatorios, se anota en la evidencia y B00-H07 lo vuelve a agregar.
 - El despliegue con Docker Compose (B00-H02), el modelo de errores (B00-H04) y la SPA base con su lint (ESLint) y sus pruebas (B00-H06) quedan fuera de esta historia.
 - El hallazgo de análisis estático solo se exige sobre el código de producción; el código de pruebas no viaja a producción.
 - Las pruebas usan solo datos ficticios (principio VIII y IX).
+- Todavía no hay pruebas de contrato, porque el primer contrato (el esquema `Error`) llega con B00-H04. La etapa de pruebas ya ejecuta la tarea donde vivirán, así que correrán en cuanto existan (research §15).

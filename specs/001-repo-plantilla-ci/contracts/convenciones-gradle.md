@@ -1,11 +1,12 @@
 # Contrato: plugins de convención de Gradle
 
+Decisiones: ADR-012 (plugins y paquete base) y D-32 (cobertura única del 60 %), en `docs/decisiones.md`.
+
 Viven en `backend/buildSrc/src/main/groovy/`. Un subproyecto solo aplica **un** plugin de convención; los demás se encadenan solos. Ningún subproyecto repite la configuración que da su plugin (FR-002).
 
 ```text
 mdd.java-conventions          (todos)
-├── mdd.servicio              (servicios de soporte y genéricos)
-│   └── mdd.servicio-central  (servicios 5, 6, 10 y 12)
+├── mdd.servicio              (los 12 servicios)
 ├── mdd.aplicacion            (los 4 procesos)
 └── plataforma:arquitectura   (lo aplica directamente, con java-library)
 ```
@@ -17,7 +18,7 @@ mdd.java-conventions          (todos)
 | Java | Toolchain 25 | — |
 | BOM | `spring-boot-dependencies` 4.1.1 en `implementation` y en las suites de prueba | **+** `spring-modulith-bom` 2.1.1 |
 | Suites | `test` (JUnit Jupiter, sin Docker) e `integrationTest` (Testcontainers, después de `test`) | — |
-| JaCoCo | 0.8.15. `check` depende de `jacocoTestCoverageVerification`. Regla `LINE ≥ 0.60` del módulo. | — |
+| JaCoCo | 0.8.15. `check` depende de `jacocoTestCoverageVerification`. Regla `LINE ≥ 0.60` del módulo; es el único umbral (D-32). | El comentario que mencionaba el 80 % de `mdd.servicio-central` pasa a decir que el 60 % es el único umbral |
 | Spotless | `src/*/java/**/*.java`, palantir-java-format, `removeUnusedImports`, espacios finales y salto de línea final | **Versión fijada:** `palantirJavaFormat('2.102.0')` |
 | SpotBugs | `effort MAX`, `reportLevel HIGH`, `ignoreFailures false`, FindSecBugs 1.14.0, solo `spotbugsMain`, exclusión de `build/generated` | **Versión fijada:** `toolVersion = '4.10.4'` |
 
@@ -33,12 +34,9 @@ Aplica `java-library` y `mdd.java-conventions`.
 
 No agrega Spring Web, JPA ni Flyway.
 
-## `mdd.servicio-central` (existe; cambia)
+## `mdd.servicio-central` (se elimina)
 
-| Aspecto | Contrato | Cambio |
-|---|---|---|
-| Base | Aplica `mdd.servicio`, así que hereda todo lo anterior | Antes aplicaba `mdd.java-conventions` directamente |
-| JaCoCo | Además, la regla `PACKAGE` con `includes ['*.dominio', '*.dominio.*']` y `LINE ≥ 0.80` | — |
+Solo agregaba la regla `PACKAGE` del 80 % en `*.dominio`. Con D-32 no aporta nada y se borra `backend/buildSrc/src/main/groovy/mdd.servicio-central.gradle` (principio XI).
 
 ## `mdd.aplicacion` (nuevo)
 

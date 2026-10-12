@@ -1,13 +1,14 @@
 # Constitución del desarrollo del MDD
 
-- **Versión:** 1.0.1, enmienda de parche del 11/10/2026 (D-28): en la sección 3, «JUnit 5» pasa a «JUnit Jupiter 6», la versión que fija el BOM de Spring Boot (6.0.3 con Spring Boot 4.1.1). Se detectó al planificar B00-H01 y no cambia ningún principio.
+- **Versión:** 2.0.0, enmienda mayor del 11/10/2026 (D-32): el principio VIII deja de exigir el 80 % de cobertura en el dominio central y queda un solo umbral, el 60 % por módulo. También se aclara que las decisiones desde D-28 y los ADR desde ADR-012 se registran en `docs/decisiones.md`.
+- **Versión 1.0.1:** enmienda de parche del 11/10/2026 (D-28): en la sección 3, «JUnit 5» pasa a «JUnit Jupiter 6», la versión que fija el BOM de Spring Boot (6.0.3 con Spring Boot 4.1.1). Se detectó al planificar B00-H01 y no cambia ningún principio.
 - **Versión 1.0:** ratificada el 11/10/2026. Cambios desde la 0.5: se cierran los pendientes de ratificación; el repositorio privado y el proyecto de GitHub Projects ya existen (pendiente 6), y las comprobaciones técnicas que quedaban pasan a ser criterios de las historias de la ola 0 (sección 8).
-- **Fecha:** 11/10/2026
+- **Fecha:** 11/10/2026 (versión 2.0.0)
 - **Autor:** el autor de la tesis
 - **Uso:** al iniciar el desarrollo con SDD (desarrollo guiado por especificaciones), este texto se copia como constitución del proyecto (por ejemplo, `.specify/memory/constitution.md` si se usa Spec Kit) y se ratifica según la sección 8.
-- **Fuentes:** ERS v2.1 (`ERS_MDD_Requerimientos.md`), anexo de firmas (`Diseno_firmas_cadena_aprobacion.md`), ADR-001 a ADR-011 (`lean_inception/adr/`), matriz de decisiones D-01 a D-27, estándares de ingeniería backend del autor (`sdd/fuentes/estandares_backend_autor.md`), modelo de dominio (`sdd/modelo_dominio.md`), metodología de desarrollo (`sdd/metodologia_desarrollo.md`), pipeline de CI/CD (`sdd/pipeline_cicd.md`) y paquete de entrada al Lean Inception (`paquete_lean_inception/`).
+- **Fuentes:** ERS v2.1 (`ERS_MDD_Requerimientos.md`), anexo de firmas (`Diseno_firmas_cadena_aprobacion.md`), ADR-001 a ADR-011 (`lean_inception/adr/`), matriz de decisiones D-01 a D-27 (copiada en el anexo A de `docs/decisiones.md`), registro de decisiones desde D-28 y ADR desde ADR-012 (`docs/decisiones.md`), estándares de ingeniería backend del autor (`sdd/fuentes/estandares_backend_autor.md`), modelo de dominio (`sdd/modelo_dominio.md`), metodología de desarrollo (`sdd/metodologia_desarrollo.md`), pipeline de CI/CD (`sdd/pipeline_cicd.md`) y paquete de entrada al Lean Inception (`paquete_lean_inception/`).
 
-> **Vigente.** Esta constitución prevalece sobre especificaciones y planes. Para cambiarla se registra primero una decisión nueva (D-28 en adelante) o un ADR (ADR-012 en adelante) y se sube la versión según la sección 7.
+> **Vigente.** Esta constitución prevalece sobre especificaciones y planes. Para cambiarla se registra primero una decisión nueva o un ADR en `docs/decisiones.md`, con el siguiente número libre, y se sube la versión según la sección 7.
 
 ## 1. Qué se construye
 
@@ -105,8 +106,8 @@ Cada principio dice qué se debe hacer (**DEBE**), qué no (**NO DEBE**) y por q
 ### VIII. Primero las pruebas en el dominio
 
 - Los criterios de aceptación de la ERS se escriben como escenarios Dado–Cuando–Entonces antes de implementar la feature.
-- El dominio central se desarrolla guiado por pruebas, con al menos un 80 % de cobertura de líneas en cada paquete `dominio` de los servicios 5, 6, 10 y 12 (RNF-MAN-02).
-- Todo módulo tiene al menos un 60 % de cobertura de líneas. JaCoCo verifica los dos umbrales en cada pull request y el pull request no se fusiona si alguno falla (ADR-011).
+- El dominio central (servicios 5, 6, 10 y 12) se desarrolla guiado por pruebas (RNF-MAN-02).
+- Todo módulo, también los del dominio central, tiene al menos un 60 % de cobertura de líneas. JaCoCo lo verifica en cada pull request y el pull request no se fusiona si falla (ADR-011, D-32).
 - Hay cuatro niveles de prueba:
   1. Unitarias del dominio.
   2. De contrato por cada API.
@@ -235,7 +236,7 @@ Cada principio dice qué se debe hacer (**DEBE**), qué no (**NO DEBE**) y por q
 | Backend | Java 25 y Spring Boot 4.1.1, multiproyecto de Gradle con Groovy DSL (12 servicios y 4 aplicaciones) y plugins de convención, Spring Modulith 2.1, Spring Data JPA en los adaptadores, Flyway por módulo, Spring Security con JWT RS256 y Argon2id, Spring Cloud Gateway (2025.1.2 o posterior), registro persistente de publicaciones de eventos de Spring Modulith, openapi-generator 7.16 o posterior con `useSpringBoot4` y `useJackson3`. | D-20, ADR-008, ADR-009, ADR-011 |
 | Frontend | React con TypeScript y Vite, React Router, TanStack Query, React Hook Form con Zod, MUI en español, cliente generado desde OpenAPI; servido por Nginx. | D-20, ADR-008 |
 | Documentos y firma | OpenHTMLtoPDF con plantillas Thymeleaf para el PDF/A (verificado con veraPDF); Apache PDFBox y Bouncy Castle para validar PAdES; Apache Commons CSV y Apache POI para las cargas. | ADR-007, ADR-008 |
-| Pruebas | JUnit Jupiter 6 (la versión del BOM de Spring Boot: 6.0.3 con Boot 4.1.1), AssertJ, Mockito, Testcontainers, ArchUnit, Spring Modulith, swagger-request-validator, JaCoCo (60 % por módulo y 80 % en el dominio central); Vitest, Testing Library, axe-core y Playwright; k6 y OWASP ZAP al cerrar cada ola. | ADR-008, ADR-011, D-28 |
+| Pruebas | JUnit Jupiter 6 (la versión del BOM de Spring Boot: 6.0.3 con Boot 4.1.1), AssertJ, Mockito, Testcontainers, ArchUnit, Spring Modulith, swagger-request-validator, JaCoCo (60 % de líneas por módulo, D-32); Vitest, Testing Library, axe-core y Playwright; k6 y OWASP ZAP al cerrar cada ola. | ADR-008, ADR-011, D-28, D-32 |
 | Memoria | Límite explícito por JVM y por contenedor: cinco JVM y PostgreSQL deben caber en 4 GB (R-19), lo que se mide en la ola 0. | ADR-008 |
 | Repositorio y CI/CD | Un repositorio privado de GitHub (monorepo) con GitHub Actions; la rama principal solo recibe pull requests con los checks en verde. Pipeline de seis etapas: lint, pruebas, secretos, SCA, publicación en Docker Hub (repositorio privado) y despliegue en el VPS (`sdd/pipeline_cicd.md`). | D-24, ADR-011 |
 | Seguridad en el pipeline | Spotless, SpotBugs con FindSecBugs, Gitleaks, CycloneDX y Grype; acciones fijadas por SHA. | ADR-011 |
@@ -291,6 +292,7 @@ El glosario está en la sección 7 de `sdd/modelo_dominio.md`, y los términos p
 - La constitución prevalece sobre cualquier especificación o plan. Si una especificación la contradice, se corrige la especificación o se enmienda la constitución, nunca se ignora.
 - Toda enmienda sube la versión: mayor si cambia o elimina un principio, menor si agrega uno y parche si solo aclara. Las enmiendas de arquitectura van acompañadas de un ADR.
 - Cada revisión de un plan comprueba que respeta los principios I a XIII.
+- Las decisiones (desde D-28) y los ADR (desde ADR-012) se registran en `docs/decisiones.md` antes de aplicarlos. Ese archivo es la fuente dentro del repositorio; los documentos externos pueden quedar desactualizados y, si contradicen al registro, prevalece el registro.
 
 ## 8. Comprobaciones de la ola 0
 

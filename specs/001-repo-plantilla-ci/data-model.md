@@ -11,15 +11,14 @@ Uno de los 12 servicios de la ERS 8.5, creado desde la plantilla.
 | Nombre | El de su etiqueta `modulo:NN-nombre`, sin número ni guiones: `usuarios`, `roles`, `cargas`, `docentes`, `generacion`, `validacionocs`, `notificaciones`, `reporting`, `dashboard`, `firma`, `academico` y `normativa`. |
 | Subproyecto Gradle | `:servicios:<nombre>`, en `backend/servicios/<nombre>` |
 | Paquete raíz | `ec.mdd.<nombre>`. Es el módulo de Spring Modulith. |
-| Tipo | `central` (5, 6, 10 y 12) o `soporte/genérico` (el resto). Lo determina el plugin que aplica: `mdd.servicio-central` o `mdd.servicio`. |
+| Tipo | `central` (5, 6, 10 y 12) o `soporte/genérico` (el resto). Decide la profundidad de DDD y si el puerto de entrada es obligatorio (principios I y II). Todos aplican el plugin `mdd.servicio` y tienen el mismo umbral de cobertura (D-32). |
 | Capas | Los subpaquetes `dominio`, `aplicacion`, `puertos` (`entrada` y `salida`), `adaptadores` e `infraestructura`. Todas son opcionales mientras no tengan clases. |
 | API publicada | `ec.mdd.<nombre>.puertos.entrada`, marcado como `@NamedInterface("api")` |
 
 **Validaciones:**
 
 - Las reglas de capas de ArchUnit pasan (ver «Regla de arquitectura» más abajo).
-- La cobertura de líneas del módulo es de al menos 60 %.
-- Si el servicio es central, cada paquete `*.dominio` o `*.dominio.*` tiene al menos 80 %.
+- La cobertura de líneas del módulo es de al menos 60 %, también en los servicios centrales (D-32).
 - Spotless no encuentra diferencias de formato.
 - SpotBugs no encuentra hallazgos de confianza alta en el código de `main`.
 
@@ -116,4 +115,4 @@ Registro en `evidencia.md` (FR-018).
 | Comprobación | `palantir-java25`, `spotbugs-java25`, `modulith21-boot41` o `pinact` |
 | Resultado | `confirmada` o `fallida` |
 | Evidencia | Comando, versión y salida resumida, o el enlace al run de CI |
-| Si falla | Una decisión D-28 o posterior y la enmienda de la sección 8 de la constitución |
+| Si falla | Una decisión nueva en `docs/decisiones.md` y la enmienda de la sección 8 de la constitución |

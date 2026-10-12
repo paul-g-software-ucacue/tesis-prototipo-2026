@@ -61,7 +61,7 @@ Abre el pull request de `001-repo-plantilla-ci` hacia `main` y comprueba:
 Aplica el JSON de [contracts/ci-y-regla-main.md](contracts/ci-y-regla-main.md):
 
 ```bash
-gh api -X PUT repos/paul-g-software-ucacue/tesis-prototipo-2026/rulesets/24901935 --input ruleset-main.json
+gh api -X PUT repos/paul-g-software-ucacue/tesis-prototipo-2026/rulesets/24901935 --input specs/001-repo-plantilla-ci/contracts/ruleset-main.json
 gh api repos/paul-g-software-ucacue/tesis-prototipo-2026/rulesets/24901935 \
   -q '.rules[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context'
 ```
@@ -79,6 +79,7 @@ Desde `main`, crea la rama `demo/b00-h01` con dos servicios de prueba del mismo 
 | 3 | Una prueba unitaria en rojo | `2 · test-backend` | 3 |
 | 4 | Un módulo con menos de 60 % de líneas cubiertas | `2 · test-backend` (`jacocoTestCoverageVerification`) | 4 |
 | 5 | Un adaptador arma una consulta SQL concatenando un parámetro | `1 · lint-backend` (SpotBugs, confianza alta) | 5 |
+| 6 | Solo agrega un `frontend/package.json` mínimo | Ninguno debe quedar *skipped*: `1 · lint-frontend` y `4 · sbom-frontend` corren (y fallan por falta de `package-lock.json`) | Caso límite «Llega el frontend» (D-29) |
 
 En cada pull request:
 
@@ -91,5 +92,5 @@ Al final, cierra y borra `demo/b00-h01`.
 ## 7. Cierre
 
 - El pull request de B00-H01, con todos sus checks en verde o como *skipped*, se fusiona con *squash* (SC-002).
-- `evidencia.md` tiene las 4 comprobaciones y los 5 pull requests de demostración (SC-001, SC-004 y SC-005).
-- Si alguna comprobación falló, hay una decisión D-28 o posterior y la sección 8 de la constitución está enmendada (FR-018).
+- `evidencia.md` tiene las 4 comprobaciones y los 6 pull requests de demostración (SC-001, SC-004 y SC-005).
+- Si alguna comprobación falló, hay una decisión nueva en `docs/decisiones.md` y la sección 8 de la constitución está enmendada (FR-018).

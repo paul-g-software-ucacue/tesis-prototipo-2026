@@ -35,3 +35,4 @@
 - Iteración 1 (2026-10-11): pendientes 2 aclaraciones; el resto pasa.
 - Iteración 2 (2026-10-11): Q1 → B (jobs de frontend solo si existe `frontend/package.json`; ESLint pasa a B00-H06). Q2 → A (repositorio transferido a `paul-g-software-ucacue`, con GitHub Pro). Requisitos renumerados FR-001 a FR-018. Todos los puntos pasan.
 - Issues alineados (2026-10-11): #18 quedó con «lint (Spotless y SpotBugs con FindSecBugs)» y #23 recibió el escenario «Lint del frontend en cada pull request».
+- Iteración 3 (2026-10-11, después de `/speckit-analyze`): D-32, cobertura única del 60 %; se elimina el umbral del 80 % del dominio central. US3, el escenario 4, los casos límite, FR-012, FR-013 y el issue #18 están actualizados. I2: excepción transitoria de secretos y SCA en las Assumptions. I4: las referencias a decisiones apuntan a `docs/decisiones.md`. Todos los puntos siguen pasando.

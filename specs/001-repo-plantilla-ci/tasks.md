@@ -11,6 +11,8 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
 
 **Tests**: se incluyen. El principio VIII de la constitución exige escribir primero las pruebas, y los escenarios de la especificación son pruebas. Las reglas de arquitectura (US2) se escriben primero como pruebas con *fixtures* que deben fallar. Los escenarios de CI, de cobertura y de SpotBugs (US1, US3 y US4) se demuestran con pull requests, según research §17.
 
+**Decisiones**: D-28 a D-32 y ADR-012, en [`docs/decisiones.md`](../../docs/decisiones.md). La cobertura es un solo umbral, 60 % por módulo, también en el dominio central (D-32, constitución 2.0.0).
+
 **Organization**: las tareas se agrupan por historia de usuario de la especificación: US1 CI y bloqueo de la fusión, US2 plantilla de cinco capas, US3 cobertura y US4 análisis estático.
 
 ## Format: `[ID] [P?] [Story] Description`
@@ -45,7 +47,8 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
   - leer `versionSpringModulith` con `providers.gradleProperty`;
   - agregar `implementation platform("org.springframework.modulith:spring-modulith-bom:${versionSpringModulith}")` en `dependencies` y dentro de las suites `test` e `integrationTest`;
   - en `spotless.java`, cambiar `palantirJavaFormat()` por `palantirJavaFormat('2.102.0')`;
-  - en el bloque `spotbugs`, agregar `toolVersion = '4.10.4'`.
+  - en el bloque `spotbugs`, agregar `toolVersion = '4.10.4'`;
+  - cambiar el comentario `// Piso de cobertura de cada módulo (DS-1). mdd.servicio-central agrega el 80 % del dominio.` por uno que diga que el 60 % de líneas por módulo es el único umbral, también en el dominio central (D-32).
 
   Las tres versiones tienen un comentario que remite a research §1 a §3.
 - [ ] T008 Ejecutar `./gradlew --version` (Gradle 9.8.1, launcher JVM 25) y `./gradlew build` en `backend/`. Ambos tienen que terminar sin errores con el proyecto raíz vacío.
@@ -97,7 +100,7 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
   - `test-frontend` no cambia, porque se omite junto con `lint-frontend`.
 
   Comentar que ESLint es un criterio de B00-H06 (#23).
-- [ ] T015 [US1] En el job `sca` de `.github/workflows/ci.yml`, agregar `if: ${{ !cancelled() && needs.sbom-backend.result == 'success' && contains(fromJSON('["success","skipped"]'), needs.sbom-frontend.result) }}` y un comentario sobre el caso límite «repositorio sin frontend» (research §7).
+- [ ] T015 [US1] En el job `sca` de `.github/workflows/ci.yml`, agregar `if: ${{ !cancelled() && needs.sbom-backend.result == 'success' && contains(fromJSON('["success","skipped"]'), needs.sbom-frontend.result) }}` y un comentario sobre el caso límite «repositorio sin frontend» (research §7). En el mismo archivo, en el paso de pruebas de `test-backend`, cambiar el comentario `# jacocoTestCoverageVerification: 60 % por módulo y 80 % en dominio de los servicios centrales.` por `# jacocoTestCoverageVerification: 60 % de líneas por módulo, también en el dominio central (D-32).`
 - [ ] T016 [US1] Validar `.github/workflows/ci.yml` y `.github/workflows/cierre-ola.yml` con `actionlint`, usando el binario de su release o `podman run --rm -v "$PWD:/repo" -w /repo docker.io/rhysd/actionlint:latest`. No puede haber errores, incluidos los de shellcheck.
 - [ ] T017 [US1] Instalar `pinact` desde el binario de su release en GitHub y ejecutar `pinact run` en la raíz. Así quedan fijadas por SHA de 40 caracteres, con la etiqueta como comentario, todas las líneas `uses:` de `.github/workflows/ci.yml` y `.github/workflows/cierre-ola.yml`. Después ejecutar `pinact run --check` y registrar la fila `pinact` en `specs/001-repo-plantilla-ci/evidencia.md` (FR-010, SC-004).
 - [ ] T018 [US1] Comprobar palantir-java-format con Java 25 (FR-016):
@@ -107,16 +110,16 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
   4. Registrar la fila `palantir-java25` en `specs/001-repo-plantilla-ci/evidencia.md`.
 
   Si falla, no desactivar Spotless: se registra en las notas y se aplica T050.
-- [ ] T019 [US1] Hacer commit y push en `001-repo-plantilla-ci`, y abrir el pull request hacia `main` con `gh pr create`, usando `.github/pull_request_template.md`. Lleva `Refs #18` (la historia se cierra en T051), la carpeta `specs/001-repo-plantilla-ci/` y «Contrato OpenAPI cambiado: no».
-- [ ] T020 [US1] En el run del pull request, comprobar la tabla de [contracts/ci-y-regla-main.md](contracts/ci-y-regla-main.md):
+- [ ] T019 [US1] Hacer commit y push en `001-repo-plantilla-ci`, y abrir el pull request hacia `main` **en borrador** con `gh pr create --draft`, usando `.github/pull_request_template.md`. Lleva `Refs #18` (la historia se cierra en T054), la carpeta `specs/001-repo-plantilla-ci/` y «Contrato OpenAPI cambiado: no».
+- [ ] T020 [US1] Comprobar el caso límite «Pull request en borrador»: con el pull request de T019 todavía en borrador, `2 · test-integracion`, `4 · sbom-backend`, `4 · sbom-frontend` y `4 · sca` quedan *skipped*. Marcarlo como listo con `gh pr ready` y, en el run nuevo, comprobar la tabla de [contracts/ci-y-regla-main.md](contracts/ci-y-regla-main.md):
   - `0 · deteccion` en éxito con `frontend=false`;
   - `1 · lint-backend`, `2 · test-backend` y `2 · test-integracion` en éxito;
   - `1 · lint-frontend`, `2 · test-frontend` y `4 · sbom-frontend` en *skipped*;
   - `3 · secretos` y `4 · sbom-backend` en éxito, y `4 · sca` en éxito y **no** omitido.
 
-  Registrar el enlace del run en `specs/001-repo-plantilla-ci/evidencia.md`.
+  Registrar en `specs/001-repo-plantilla-ci/evidencia.md` los enlaces de los dos runs, el del borrador y el de listo para revisión.
 - [ ] T021 [US1] Crear `specs/001-repo-plantilla-ci/contracts/ruleset-main.json` con el JSON exacto de [contracts/ci-y-regla-main.md](contracts/ci-y-regla-main.md): 10 checks con `integration_id` 15368, `strict_required_status_checks_policy: true` y `allowed_merge_methods: ["squash"]`. Si en T020 falló `3 · secretos`, `4 · sbom-backend` o `4 · sca` por algo de B00-H07, quitar ese check del JSON y anotarlo en las notas de `evidencia.md` (excepción transitoria del contrato).
-- [ ] T022 [US1] Aplicar el ruleset con `gh api -X PUT repos/paul-g-software-ucacue/tesis-prototipo-2026/rulesets/24901935 --input specs/001-repo-plantilla-ci/contracts/ruleset-main.json`. Verificarlo con `gh api ... -q '.rules[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context'` (FR-009).
+- [ ] T022 [US1] Aplicar el ruleset con `gh api -X PUT repos/paul-g-software-ucacue/tesis-prototipo-2026/rulesets/24901935 --input specs/001-repo-plantilla-ci/contracts/ruleset-main.json`. Verificarlo con `gh api ... -q '.rules[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context'`, que tiene que listar los 10 checks, y con `gh api ... -q '{bypass: .bypass_actors, metodos: (.rules[]|select(.type=="pull_request")|.parameters.allowed_merge_methods)}'`, que tiene que devolver `{"bypass":[],"metodos":["squash"]}`. Comprobar también que sigue `require_extra_approval_for_unattributed_changes: true` (FR-009, D-31).
 - [ ] T023 [US1] En el pull request de T019, comprobar que GitHub muestra los checks como *Required* y que solo ofrece *Squash and merge*: `gh pr view --json mergeStateStatus,statusCheckRollup` y la página del pull request. Registrarlo en `specs/001-repo-plantilla-ci/evidencia.md`.
 
 **Checkpoint**: la compuerta existe y el pull request de B00-H01 es el primero sujeto a ella. El escenario 3 se demuestra en T048.
@@ -182,13 +185,13 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
   - `testImplementation "com.tngtech.archunit:archunit-junit5:${versionArchUnit}"`, con `versionArchUnit` leído con `providers.gradleProperty`.
 
   Un comentario de cabecera dice que no agrega Spring Web, JPA ni Flyway ([contracts/convenciones-gradle.md](contracts/convenciones-gradle.md)).
-- [ ] T033 [US2] En `backend/buildSrc/src/main/groovy/mdd.servicio-central.gradle`, cambiar `id 'mdd.java-conventions'` por `id 'mdd.servicio'`. Se conserva igual la regla `PACKAGE` del 80 % en `*.dominio` y `*.dominio.*`.
+- [ ] T033 [US2] Eliminar `backend/buildSrc/src/main/groovy/mdd.servicio-central.gradle` con `git rm` (D-32, ADR-012). Comprobar con `grep -rn 'servicio-central' backend/ .github/` que no quedan referencias.
 - [ ] T034 [US2] Crear `backend/buildSrc/src/main/groovy/mdd.aplicacion.gradle`:
   - `plugins { id 'mdd.java-conventions'; id 'org.springframework.boot' }`;
   - `testImplementation 'org.springframework.modulith:spring-modulith-starter-test'`;
   - excluir `**/*Aplicacion.class` del `classDirectories` de `jacocoTestReport` y de `jacocoTestCoverageVerification` (research §14).
 - [ ] T035 [P] [US2] Crear el esqueleto de servicio en `backend/plantillas/servicio/` según [contracts/plantilla-servicio.md](contracts/plantilla-servicio.md):
-  - `build.gradle` con `plugins { id 'mdd.servicio' }` y un comentario: «usar `mdd.servicio-central` en 5, 6, 10 y 12»;
+  - `build.gradle` con `plugins { id 'mdd.servicio' }`, que vale para todos los servicios, centrales o no (D-32);
   - un `src/main/java/ec/mdd/servicio/<capa>/package-info.java` en cada capa (`dominio`, `aplicacion`, `puertos/entrada`, `puertos/salida`, `adaptadores` e `infraestructura`), con el JavaDoc en español de lo que contiene la capa y lo que NO DEBE hacer, según la tabla del principio I. El de `puertos/entrada` lleva `@org.springframework.modulith.NamedInterface("api")` y dice que es la API publicada dentro del proceso;
   - `src/test/java/ec/mdd/servicio/ArquitecturaTest.java`, con `@AnalyzeClasses(packagesOf = ArquitecturaTest.class, importOptions = ImportOption.DoNotIncludeTests.class)` y dos campos `@ArchTest`: `ReglasCapas.SENTIDO_DE_LAS_CAPAS` y `ReglasCapas.DOMINIO_SIN_DETALLES`.
 - [ ] T036 [P] [US2] Crear el esqueleto de proceso en `backend/plantillas/aplicacion/`:
@@ -210,23 +213,23 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
 
 ## Phase 5: User Story 3 - Cobertura mínima en cada pull request (Priority: P2)
 
-**Goal**: `jacocoTestCoverageVerification` rechaza un módulo con menos de 60 % de líneas cubiertas, o un paquete `dominio` de un servicio central con menos de 80 % (escenario «Cobertura mínima»; FR-012 y FR-013).
+**Goal**: `jacocoTestCoverageVerification` rechaza un módulo con menos de 60 % de líneas cubiertas, también en los servicios centrales (escenario «Cobertura mínima»; FR-012 y FR-013; D-32).
 
-**Independent Test**: en servicios temporales creados desde el esqueleto, provocar cada umbral y ver fallar la verificación. El caso del 60 % se demuestra en un pull request en T049.
+**Independent Test**: en servicios temporales creados desde el esqueleto, con 59 % la verificación falla y con exactamente 60 % pasa. Se demuestra en un pull request en T051.
 
 ### Implementation for User Story 3
 
 - [ ] T040 [US3] Comprobar en local que un servicio recién creado **sin clases** pasa `./gradlew :servicios:prueba:jacocoTestCoverageVerification`, usando una copia temporal de `plantillas/servicio` en `backend/servicios/prueba` (research §14). Si falla porque hay 0 de 0 líneas, ajustar `backend/buildSrc/src/main/groovy/mdd.java-conventions.gradle` para que la verificación no falle sin clases y anotarlo en `specs/001-repo-plantilla-ci/evidencia.md`. Después borrar la copia.
-- [ ] T041 [US3] Comprobar en local el umbral del dominio central:
-  1. Crear una copia temporal de `plantillas/servicio` con `id 'mdd.servicio-central'` en `backend/servicios/pruebacentral`.
-  2. Agregar dos clases en `dominio`, una probada y otra sin probar, y una clase probada fuera de `dominio`, de modo que el módulo quede en 60 % o más y `ec.mdd.pruebacentral.dominio` quede bajo el 80 %.
-  3. `jacocoTestCoverageVerification` tiene que fallar con la regla `PACKAGE`.
-  4. Con exactamente 80 % en el paquete, tiene que pasar (caso límite «umbral exacto»).
+- [ ] T041 [US3] Comprobar en local el umbral exacto:
+  1. Crear una copia temporal de `plantillas/servicio` en `backend/servicios/pruebaumbral`.
+  2. Agregar clases y pruebas de modo que el módulo quede con exactamente 60 % de líneas cubiertas: `jacocoTestCoverageVerification` tiene que pasar (caso límite «umbral exacto»).
+  3. Agregar una línea sin cubrir para que quede por debajo del 60 %: la verificación tiene que fallar.
+  4. Comprobar que no hay ninguna regla `PACKAGE` del 80 % en el informe de la verificación (D-32).
 
-  Anotar los dos resultados en `specs/001-repo-plantilla-ci/evidencia.md` y borrar la copia.
+  Anotar los resultados en `specs/001-repo-plantilla-ci/evidencia.md` y borrar la copia.
 - [ ] T042 [US3] Comprobar en local que un proceso temporal creado desde `plantillas/aplicacion`, en `backend/apps/prueba`, pasa `jacocoTestCoverageVerification` aunque su única clase propia sea `ProcesoAplicacion`, porque la clase de arranque está excluida (T034). Anotarlo en `specs/001-repo-plantilla-ci/evidencia.md` y borrar la copia.
 
-**Checkpoint**: los dos umbrales están comprobados en local.
+**Checkpoint**: el umbral del 60 % está comprobado en local, incluido el valor exacto.
 
 ---
 
@@ -239,6 +242,12 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
 ### Implementation for User Story 4
 
 - [ ] T043 [US4] Comprobar SpotBugs con clases de Java 25 (FR-016): `./gradlew :plataforma:arquitectura:spotbugsMain --info` tiene que analizar las clases compiladas con Java 25 (versión 69) sin `Unsupported class file major version`, con SpotBugs 4.10.4 según el log. Registrar la fila `spotbugs-java25` en `specs/001-repo-plantilla-ci/evidencia.md`.
+
+  Comprobar también el caso límite «Hallazgo de confianza media o baja»:
+  1. Crear una clase temporal en `backend/plataforma/arquitectura/src/main/java/ec/mdd/arquitectura/` con un patrón que SpotBugs reporte con confianza media.
+  2. Confirmarlo bajando a `MEDIUM`, solo en local, el `reportLevel` de `mdd.java-conventions.gradle`: el hallazgo tiene que aparecer.
+  3. Volver a `HIGH` y comprobar que `spotbugsMain` pasa.
+  4. Borrar la clase, revisar con `git diff` que la convención quedó como estaba y anotar el resultado.
 - [ ] T044 [US4] Comprobar el hallazgo en local:
   1. Crear un archivo temporal `backend/plataforma/arquitectura/src/main/java/ec/mdd/arquitectura/ConsultaTemporal.java` con un método que reciba un `String` y ejecute `java.sql.Statement.execute("SELECT * FROM t WHERE c = '" + parametro + "'")`.
   2. `./gradlew :plataforma:arquitectura:spotbugsMain` tiene que fallar con `SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE` o `SQL_INJECTION_JDBC` de confianza alta.
@@ -260,14 +269,27 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
 
 ## Phase 8: Demostración de los escenarios y cierre (SC-001, SC-002)
 
-**Purpose**: demostrar en GitHub que cada escenario bloquea la fusión y cerrar la historia. Requiere que la regla esté activa (T022) y que el pull request de B00-H01 esté fusionado, porque los pull requests de demostración salen de `main`.
+**Purpose**: demostrar en GitHub que cada escenario bloquea la fusión y cerrar la historia. Requiere que la regla esté activa (T022). Empieza fusionando B00-H01 (T046), porque los pull requests de demostración salen de `main`.
 
-- [ ] T046 [US2] Fusionar el pull request de B00-H01 con *squash*, una vez que esté en verde y con la aprobación del autor (SC-002). Desde `main`, crear la rama `demo/b00-h01` con `backend/servicios/demoalfa` y `backend/servicios/demobeta`, creados con `plantillas/servicio`, y `backend/apps/demo`, creado con `plantillas/aplicacion`, que depende de los dos. `demoalfa` tiene una interfaz en `puertos/entrada` y una clase en `aplicacion`. Abrirla como borrador para confirmar que está en verde y **no fusionarla**. Después, desde una rama `demo/b00-h01-dominio`, abrir un pull request hacia `main` en el que una clase de `demoalfa/.../dominio/` importa `org.springframework.stereotype.Component`. Registrar en `specs/001-repo-plantilla-ci/evidencia.md` el check `2 · test-backend` en rojo (`ArquitecturaTest`) y «Merging is blocked» (escenario 1).
-- [ ] T047 [P] [US2] Desde la rama `demo/b00-h01-interno`, que sale de `demo/b00-h01`, abrir un pull request hacia `main` en el que `demobeta` usa la clase de `demoalfa.aplicacion`. Registrar en `specs/001-repo-plantilla-ci/evidencia.md` el check `2 · test-backend` en rojo (`ModulosTest`, `Violations`) y «Merging is blocked» (escenario 2).
-- [ ] T048 [P] [US1] Desde la rama `demo/b00-h01-prueba`, que sale de `demo/b00-h01`, abrir un pull request hacia `main` con una prueba unitaria que falla en `demoalfa`. Registrar en `specs/001-repo-plantilla-ci/evidencia.md` el check `2 · test-backend` en rojo y «Merging is blocked» (escenario 3).
-- [ ] T049 [P] [US3] Desde la rama `demo/b00-h01-cobertura`, que sale de `demo/b00-h01`, abrir un pull request hacia `main` que agrega a `demobeta` una clase sin pruebas, para que el módulo quede bajo el 60 % de líneas. Registrar en `specs/001-repo-plantilla-ci/evidencia.md` el check `2 · test-backend` en rojo (`jacocoTestCoverageVerification`) y «Merging is blocked» (escenario 4).
-- [ ] T050 [P] [US4] Desde la rama `demo/b00-h01-sql`, que sale de `demo/b00-h01`, abrir un pull request hacia `main` que agrega en `demobeta/.../adaptadores/` una clase que concatena un parámetro en una consulta SQL ejecutada con `java.sql.Statement`. Registrar en `specs/001-repo-plantilla-ci/evidencia.md` el check `1 · lint-backend` en rojo, el patrón de FindSecBugs y «Merging is blocked» (escenario 5).
-- [ ] T051 Cerrar sin fusionar los 5 pull requests de demostración y el borrador de `demo/b00-h01`, y borrar sus 6 ramas en el remoto (`gh pr close --delete-branch`). Completar `specs/001-repo-plantilla-ci/evidencia.md`. Si alguna comprobación de la sección 8 quedó `fallida`, registrar una decisión nueva, D-29 o posterior (D-28 ya se usó), y enmendar la sección 8 de `.specify/memory/constitution.md` según su sección 7. Hacer commit de la evidencia en una rama `001-repo-plantilla-ci-evidencia` y fusionarla por pull request. Por último, cerrar el issue #18 con un comentario que enlace la evidencia y mover la tarjeta a «Hecho» en el tablero.
+- [ ] T046 Fusionar con *squash* el pull request de B00-H01, cuando todos sus checks estén en éxito o *skipped* y con la aprobación del autor (SC-002). Comprobar con `gh pr view --json mergeCommit` que `main` tiene un solo commit nuevo.
+- [ ] T047 Desde `main`, crear la rama `demo/b00-h01` con:
+  - `backend/servicios/demoalfa` y `backend/servicios/demobeta`, copiados de `plantillas/servicio`. `demoalfa` tiene una interfaz en `puertos/entrada` y una clase en `aplicacion`, cada una con su prueba;
+  - `backend/apps/demo`, copiado de `plantillas/aplicacion`, que depende de los dos servicios;
+  - los `include` correspondientes en `backend/settings.gradle`.
+
+  Abrirla como pull request **en borrador**, confirmar que sus checks están en verde y **no fusionarla**.
+- [ ] T048 [P] [US2] Desde la rama `demo/b00-h01-dominio`, que sale de `demo/b00-h01`, abrir un pull request hacia `main` en el que una clase de `demoalfa/.../dominio/` importa `org.springframework.stereotype.Component`. Registrar en `specs/001-repo-plantilla-ci/evidencia.md` el check `2 · test-backend` en rojo (`ArquitecturaTest`) y «Merging is blocked» (escenario 1).
+- [ ] T049 [P] [US2] Desde la rama `demo/b00-h01-interno`, que sale de `demo/b00-h01`, abrir un pull request hacia `main` en el que `demobeta` usa la clase de `demoalfa.aplicacion`. Registrar en `specs/001-repo-plantilla-ci/evidencia.md` el check `2 · test-backend` en rojo (`ModulosTest`, `Violations`) y «Merging is blocked» (escenario 2).
+- [ ] T050 [P] [US1] Desde la rama `demo/b00-h01-prueba`, que sale de `demo/b00-h01`, abrir un pull request hacia `main` con una prueba unitaria que falla en `demoalfa`. Registrar en `specs/001-repo-plantilla-ci/evidencia.md` el check `2 · test-backend` en rojo y «Merging is blocked» (escenario 3).
+- [ ] T051 [P] [US3] Desde la rama `demo/b00-h01-cobertura`, que sale de `demo/b00-h01`, abrir un pull request hacia `main` que agrega a `demobeta` una clase sin pruebas, para que el módulo quede bajo el 60 % de líneas. Registrar en `specs/001-repo-plantilla-ci/evidencia.md` el check `2 · test-backend` en rojo (`jacocoTestCoverageVerification`) y «Merging is blocked» (escenario 4).
+- [ ] T052 [P] [US4] Desde la rama `demo/b00-h01-sql`, que sale de `demo/b00-h01`, abrir un pull request hacia `main` que agrega en `demobeta/.../adaptadores/` una clase que concatena un parámetro en una consulta SQL ejecutada con `java.sql.Statement`. Registrar en `specs/001-repo-plantilla-ci/evidencia.md` el check `1 · lint-backend` en rojo, el patrón de FindSecBugs y «Merging is blocked» (escenario 5).
+- [ ] T053 [P] [US1] Desde la rama `demo/b00-h01-frontend`, que sale de `demo/b00-h01`, abrir un pull request hacia `main` que solo agrega un `frontend/package.json` mínimo (`{"name":"mdd-frontend","private":true}`). Comprobar que `0 · deteccion` da `frontend=true` y que `1 · lint-frontend` y `4 · sbom-frontend` **corren**, en lugar de quedar *skipped*. Fallarán por falta de `package-lock.json`, y eso demuestra que se ejecutan. Registrarlo en `specs/001-repo-plantilla-ci/evidencia.md` (caso límite «Llega el frontend», FR-008, D-29).
+- [ ] T054 Cerrar la historia:
+  1. Cerrar sin fusionar los 6 pull requests de demostración y el borrador de `demo/b00-h01`, y borrar sus 7 ramas en el remoto (`gh pr close --delete-branch`).
+  2. Completar `specs/001-repo-plantilla-ci/evidencia.md`.
+  3. Si alguna comprobación de la sección 8 quedó `fallida`, registrar una decisión nueva en `docs/decisiones.md`, con el siguiente número libre, y enmendar la sección 8 de `.specify/memory/constitution.md` según su sección 7.
+  4. Hacer commit de la evidencia en una rama `001-repo-plantilla-ci-evidencia` y fusionarla por pull request.
+  5. Cerrar el issue #18 con un comentario que enlace la evidencia y mover la tarjeta a «Hecho» en el tablero.
 
 ---
 
@@ -282,14 +304,14 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
 - **US3 (fase 5)**: depende de T032 a T035 (US2), porque usa los esqueletos y los plugins.
 - **US4 (fase 6)**: depende solo de la fase 2.
 - **Polish (fase 7)**: depende de US1 a US4.
-- **Demostración y cierre (fase 8)**: depende de la fase 7 y de T022 (regla activa). T046 fusiona B00-H01 y crea la rama base; T047 a T050 salen de ella. T051 va al final.
+- **Demostración y cierre (fase 8)**: depende de la fase 7 y de T022 (regla activa). Orden: T046 (fusión de B00-H01) → T047 (rama base) → T048 a T053 (en cualquier orden) → T054.
 
 ### User Story Dependencies
 
-- **US1 (P1)**: independiente. Su demostración (T048) usa los servicios de demostración de T046.
-- **US2 (P1)**: independiente de US1 para implementarse. Sus demostraciones (T046 y T047) necesitan la regla de US1.
-- **US3 (P2)**: necesita los plugins y los esqueletos de US2.
-- **US4 (P2)**: independiente. Su demostración (T050) necesita la regla de US1 y la rama base de T046.
+- **US1 (P1)**: independiente. Sus demostraciones (T050 y T053) usan la rama base de T047.
+- **US2 (P1)**: independiente de US1 para implementarse. Sus demostraciones (T048 y T049) necesitan la regla de US1.
+- **US3 (P2)**: necesita los plugins y los esqueletos de US2. Su demostración es T051.
+- **US4 (P2)**: independiente. Su demostración (T052) necesita la regla de US1 y la rama base de T047.
 
 ### Within Each User Story
 
@@ -303,7 +325,7 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
 - Fase 2: T011 en paralelo con T009 y T010.
 - Con la fase 2 terminada, US1 (CI), US2 (reglas) y US4 (SpotBugs) pueden avanzar en paralelo, porque tocan archivos distintos. US3 espera a T035.
 - US2: T024, T025 y T027 (*fixtures*) en paralelo; T035, T036 y T037 (esqueletos) en paralelo.
-- Fase 8: T047 a T050 en paralelo cuando T046 está hecha.
+- Fase 8: T048 a T053 en cualquier orden cuando T047 está hecha.
 
 ---
 
@@ -324,11 +346,13 @@ Task: "Instrucciones en backend/plantillas/README.md"
 ## Parallel Example: Demostración
 
 ```bash
-# Después de T046, cada pull request desde su rama de demo/b00-h01:
+# Después de T047, cada pull request desde su rama de demo/b00-h01:
+Task: "PR con el dominio importando Spring (escenario 1)"
 Task: "PR de uso interno entre servicios (escenario 2)"
 Task: "PR con una prueba en rojo (escenario 3)"
 Task: "PR con cobertura bajo el 60 % (escenario 4)"
 Task: "PR con SQL concatenado (escenario 5)"
+Task: "PR que agrega frontend/package.json (caso límite «Llega el frontend»)"
 ```
 
 ---
@@ -345,7 +369,7 @@ Task: "PR con SQL concatenado (escenario 5)"
 
 1. Con US1 hecha, ninguna historia posterior entra a `main` en rojo.
 2. US2: las reglas de capas y de módulos se prueban con *fixtures* y los esqueletos quedan listos para F04-H01 y B00-H02.
-3. US3 y US4: los umbrales y SpotBugs con Java 25 quedan comprobados en local.
+3. US3 y US4: el umbral del 60 % y SpotBugs con Java 25 quedan comprobados en local.
 4. Fases 7 y 8: B00-H01 se fusiona, los cinco escenarios se demuestran en GitHub y la historia se cierra.
 
 ### Una sola persona (D-22, límite de 1 en «Implementar»)
@@ -356,7 +380,7 @@ Las tareas [P] indican qué se puede hacer en cualquier orden, no trabajo simult
 
 ## Notes
 
-- Hay que registrar **D-28** (la enmienda 1.0.1 de la constitución sobre JUnit Jupiter 6) en la matriz de decisiones SCD (`lean_inception/gen_scd.py`), que está fuera del repositorio. ADR-008 y ADR-011 todavía dicen «JUnit 5».
+- Las decisiones de esta historia (D-28 a D-32 y ADR-012) están en `docs/decisiones.md`, que prevalece sobre los documentos externos. Esos documentos quedan desactualizados: la ERS (RNF-MAN-02 y D-27), la matriz SCD, ADR-008, ADR-011 y `pipeline_cicd.md`.
 - Los nombres de los checks (`0 · deteccion`…) son parte del contrato del ruleset; no se cambian sin actualizar `contracts/ruleset-main.json`.
 - Los archivos temporales de T018, T038, T040 a T042 y T044 nunca entran en un commit. Antes de cada commit hay que comprobar `git status`.
 - Hacer commit después de cada tarea o grupo lógico en `001-repo-plantilla-ci`, con `Refs #18`.

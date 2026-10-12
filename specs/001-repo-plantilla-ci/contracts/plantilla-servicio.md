@@ -1,12 +1,14 @@
 # Contrato: servicio y proceso creados desde la plantilla
 
+Decisión de arquitectura: ADR-012, en `docs/decisiones.md`.
+
 Este documento dice lo que garantiza un servicio o un proceso creado copiando `backend/plantillas/servicio/` o `backend/plantillas/aplicacion/`. Es lo que verá la primera historia que cree un servicio (F04-H01, Normativa) y la que cree los procesos (B00-H02).
 
 ## Crear un servicio
 
 1. Copiar `backend/plantillas/servicio/` a `backend/servicios/<servicio>/`.
 2. En la copia, cambiar el marcador `servicio` del paquete por el nombre real, en las rutas y en los `package` (`ec.mdd.<servicio>`).
-3. En `build.gradle`, dejar `id 'mdd.servicio-central'` si el servicio es 5, 6, 10 o 12, o `id 'mdd.servicio'` si no lo es.
+3. El `build.gradle` ya trae `id 'mdd.servicio'`; vale para todos los servicios, centrales o no (D-32).
 4. Agregar `include 'servicios:<servicio>'` en `backend/settings.gradle`.
 5. Agregar el servicio como dependencia de su proceso: `implementation project(':servicios:<servicio>')` en `apps/<proceso>/build.gradle`.
 
@@ -16,7 +18,7 @@ No hace falta ninguna otra configuración (SC-006).
 
 ```text
 servicios/<servicio>/
-├── build.gradle                         # plugins { id 'mdd.servicio' }  ó  id 'mdd.servicio-central'
+├── build.gradle                         # plugins { id 'mdd.servicio' }
 └── src/
     ├── main/java/ec/mdd/<servicio>/
     │   ├── dominio/package-info.java          # contrato de la capa (JavaDoc)
@@ -36,7 +38,7 @@ servicios/<servicio>/
 | Si una clase de `dominio` importa Spring, JPA, HTTP o PDF, `ArquitecturaTest` falla y el check `2 · test-backend` queda en rojo | Regla «dominio sin detalles» | Escenario 1, FR-004 |
 | Las dependencias entre capas respetan su sentido | Regla «sentido de las cinco capas» | FR-005 |
 | Los demás servicios del proceso solo pueden usar `puertos.entrada` | `ModulosTest` del proceso | Escenario 2, FR-006 |
-| El módulo exige 60 % de líneas cubiertas; si es central, además 80 % en cada paquete `dominio` | `jacocoTestCoverageVerification` | Escenario 4, FR-012 y FR-013 |
+| El módulo exige 60 % de líneas cubiertas, sea central o no | `jacocoTestCoverageVerification` | Escenario 4, FR-012 y FR-013 (D-32) |
 | El formato es el de palantir-java-format | `spotlessCheck` | FR-015 |
 | SpotBugs con FindSecBugs no encuentra hallazgos de confianza alta en `main` | `spotbugsMain` | Escenario 5, FR-014 |
 | Un servicio recién creado, sin clases o sin alguna capa, pasa las reglas de arquitectura | Capas opcionales y `should` vacío permitido | research §11 |
