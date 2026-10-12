@@ -35,6 +35,12 @@ Registro de las comprobaciones de la sección 8 de la constitución (FR-018, SC-
 | 5 (commit `8b8677a`) | listo para revisión | Los mismos 10 checks; `2 · test-integracion`, `4 · sbom-backend` y `4 · sca` corren y pasan. | [run 38196319071](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38196319071) |
 | 4 (commit `1006a2e`) | listo para revisión | Los 10 checks según el contrato: `0 · deteccion`, `1 · lint-backend`, `2 · test-backend`, `2 · test-integracion`, `3 · secretos`, `4 · sbom-backend` y `4 · sca` pasan. `4 · sca` corre aunque se omita `sbom-frontend` (caso límite «repositorio sin frontend»). Solo `1 · lint-frontend`, `2 · test-frontend` y `4 · sbom-frontend` quedan *skipped*. Secretos y SCA pasan, así que no hace falta la excepción transitoria de D-31. | [run 38195997188](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38195997188) |
 
+## Fusión del PR de B00-H01 (T046)
+
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| Fusión con *squash* | confirmada | [PR #74](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/pull/74) fusionado con *squash* el 2026-10-12 a las 03:17 UTC, commit `16d8237`, el único commit nuevo en `main`. Antes de fusionar: último commit `62d717d`, `mergeStateStatus: CLEAN`, y `2 · test-integracion`, `4 · sbom-backend` y `4 · sca` en éxito, no *skipped* ([run 38198744355](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38198744355)). | 2026-10-12 |
+
 ## Regla de la rama principal (T022, T023)
 
 | Comprobación | Resultado | Evidencia | Fecha |
@@ -46,6 +52,15 @@ Registro de las comprobaciones de la sección 8 de la constitución (FR-018, SC-
 
 | PR | Violación | Check en rojo | Mensaje | «Merging is blocked» |
 |---|---|---|---|---|
+| [#75](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/pull/75) | Rama base `demo/b00-h01` (borrador): servicios `demoalfa` y `demobeta` y proceso `demo`, creados desde los esqueletos | ninguno (en verde) | Sirve de base a los PR #76 a #81 (T047) | no aplica; no se fusiona |
+| [#76](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/pull/76) | Una clase de `demoalfa/.../dominio/` usa `@Component` de Spring (escenario 1) | `2 · test-backend` | `ArquitecturaTest > dominioSinDetalles FAILED` | sí (`BLOCKED`) |
+| [#77](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/pull/77) | `demobeta` usa `ServicioDemo` de `demoalfa.aplicacion` y no su `puertos.entrada` (escenario 2) | `2 · test-backend` | `ModulosTest > losServiciosDelProcesoSoloUsanLaApiPublicadaDeLosDemas() FAILED`, `org.springframework.modulith.core.Violations` | sí (`BLOCKED`) |
+| [#78](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/pull/78) | Una prueba unitaria que falla a propósito en `demoalfa` (escenario 3) | `2 · test-backend` | `PruebaEnRojoTest > dadoElServicio_cuandoSaluda_entoncesDiceAdios() FAILED` | sí (`BLOCKED`) |
+| [#79](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/pull/79) | `demobeta` con una clase sin pruebas (escenario 4) | `2 · test-backend` | `Rule violated for bundle demobeta: lines covered ratio is 0.00, but expected minimum is 0.60` | sí (`BLOCKED`) |
+| [#80](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/pull/80) | `demobeta/.../adaptadores/` arma una consulta SQL concatenando un parámetro (escenario 5) | `1 · lint-backend` | SpotBugs: `SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE` en `ConsultaInsegura.buscar(Connection, String)` (informe del artefacto `spotbugs`) | sí (`BLOCKED`) |
+| [#81](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/pull/81) | Solo agrega un `frontend/package.json` mínimo (caso límite «Llega el frontend», D-29) | `1 · lint-frontend` y `4 · sbom-frontend` **corren** (no quedan *skipped*) y fallan | `Some specified paths were not resolved, unable to cache dependencies.` (falta `package-lock.json`). `0 · deteccion` dio `frontend=true` | sí (`BLOCKED`) |
+
+Los 7 pull requests se cerraron sin fusionar y sus 7 ramas se borraron (T054). En cada demostración solo falló el check esperado; el resto de los checks obligatorios pasó o quedó omitido por depender del que falló.
 
 ## Notas
 
