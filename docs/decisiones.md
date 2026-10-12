@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-36 · ADR-014.
+- **Siguiente número libre:** D-37 · ADR-014.
 
 ## Índice
 
@@ -24,6 +24,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-34 | 2026-10-12 | Medición de R-19 en dos pasos: en B00-H02 tras un calentamiento y en B00-H03 tras iniciar sesión | Aceptada | Issue #19 (escenario de memoria), issue #20 |
 | D-35 | 2026-10-12 | B00-H02 crea los 12 servicios vacíos, cada uno con su esquema y una migración mínima | Aceptada | Issue #19 (alcance), ADR-012 (cuándo se crean los servicios) |
 | ADR-013 | 2026-10-12 | Persistencia por servicio y construcción de imágenes desde el código | Aceptada | `deploy/docker/java.Dockerfile` (B00-H08) |
+| D-36 | 2026-10-12 | La VM objetivo pasa a 4 vCPU y 8 GiB, y se duplican los límites de memoria | Aceptada | Constitución principio V, §3 y §8 (2.1.0), RNF-POR-02, R-19, ADR-006, ADR-008, issue #19 |
 
 ---
 
@@ -204,7 +205,7 @@ Se conservan las reglas que ya tenía: prohibido borrar `main` o reescribir su h
 
 **Decisión.**
 1. **Un Flyway por servicio.** Cada servicio tiene en su capa de infraestructura una configuración `<Servicio>FlywayConfig`, con un bean `Flyway` limitado a su esquema (`schemas=<servicio>`) y a su carpeta `db/migration/<servicio>`, que migra al arrancar el proceso. El nombre de la clase es único en el proyecto.
-2. **Un rol de base por proceso.** Hay una base `mdd`, un rol por proceso (identidad, datos, distributivo y salida) y 12 esquemas, cada uno a nombre del rol de su proceso. Cada proceso usa un solo `DataSource` con su rol. Un proceso no puede tocar los esquemas de otro; dentro de un proceso, el aislamiento entre servicios lo verifica `EsquemasIntegrationTest`.
+2. **Un rol de base por proceso.** Hay una base `mdd`, un rol por proceso (identidad, datos, distributivo y salida) y 12 esquemas, cada uno a nombre del rol de su proceso. Cada proceso usa un solo `DataSource` con su rol. Un proceso no puede tocar los esquemas de otro; dentro de un proceso, el aislamiento entre servicios lo verifica la prueba de integración de cada servicio, `<Servicio>EsquemaIntegrationTest`.
 3. **Imágenes construidas desde el código.** `java.Dockerfile` compila el módulo en una etapa con JDK 25 y una caché de Gradle compartida, y la imagen final usa el JRE 25. B00-H08 construye con la misma imagen o reutiliza su etapa de extracción.
 
 **Por qué.** Cumple el principio V a nivel de base sin un `DataSource` por servicio (12 *pools* de conexiones irían contra R-19) y con el mínimo privilegio del principio IX. Mantiene la configuración explícita y corta (principio XI). Permite el «un solo comando» de RNF-POR-01.
@@ -212,6 +213,31 @@ Se conservan las reglas que ya tenía: prohibido borrar `main` o reescribir su h
 **Alternativas.** Un rol único para todo; un rol y un `DataSource` por servicio; un Flyway por proceso con varios esquemas; compilar los JAR antes de `docker compose up`.
 
 **Consecuencias.** Las historias que agreguen tablas escriben `V2__…` y siguientes en la carpeta de su servicio. B00-H08 adapta `cd.yml` a la nueva etapa de compilación.
+
+---
+
+## D-36. La VM objetivo pasa a 4 vCPU y 8 GiB, y se duplican los límites de memoria
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-12 · **Decidido por:** autor de la tesis
+- **Origen:** análisis de B00-H02 (`/speckit-analyze`, hallazgo I2: la especificación decía «4 GB» y los contratos «4 GiB»). Al revisarlo, el autor decidió duplicar las limitaciones del hardware.
+- **Modifica a:** constitución, principio V, §3 (Infraestructura y Memoria) y §8 (versión 2.1.0); RNF-POR-02 y R-19 de la ERS; ADR-006 y ADR-008 (tamaño de la VM); issue #19 (historia y escenario de memoria); especificación, plan y tareas de B00-H02
+
+**Decisión.**
+1. La VM objetivo y el VPS de demostración pasan de 2 vCPU y 4 GB a **4 vCPU y 8 GiB**.
+2. **R-19:** el perfil consolidado debe consumir menos de 8 GiB después del calentamiento (D-34). La alerta pasa de 3,5 GiB a **7 GiB**. Se mide en GiB porque es la unidad de `docker stats`.
+3. **Los límites iniciales por contenedor se duplican:** PostgreSQL y cada proceso, 1 024 MiB; el gateway, 768 MiB. En total son 5 888 MiB, y quedan unos 2,25 GiB para el sistema operativo, la misma proporción que antes. Cada JVM se sigue dimensionando con `-XX:MaxRAMPercentage=60`.
+4. **Se mantienen los 4 procesos de ADR-006:** 12 JVM con el mismo límite sumarían 12 GiB y tampoco caben.
+
+**Por qué.** Lo decidió el autor. Además, deja margen para lo que la medición de la ola 0 todavía no incluye: JPA, Spring Security y la generación de PDF.
+
+**Alternativas.** Mantener 4 GB y medir en GiB (propuesta del análisis); mantener 4 GB con el umbral más estricto de 4 000 MB.
+
+**Consecuencias.**
+- La constitución pasa de 2.0.1 a 2.1.0. Se sube la versión menor porque cambia una restricción de la sección 3: no es una aclaración, aunque no cambie la regla de ningún principio.
+- La alternativa de R-19 (Nginx en lugar de Spring Cloud Gateway) queda para un consumo de 8 GiB o más.
+- El VPS de demostración tiene que ser de 8 GiB. La ERS (RNF-POR-02, R-19), ADR-006 y ADR-008, fuera del repositorio, quedan desactualizados en este punto; este registro prevalece.
+- El runner estándar de GitHub Actions de un repositorio privado tiene menos RAM que la VM. La medición de referencia sigue siendo válida mientras el consumo quede por debajo de la RAM del runner.
+- El issue #19 se edita con la aprobación del autor.
 
 ---
 

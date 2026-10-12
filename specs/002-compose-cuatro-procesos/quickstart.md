@@ -5,15 +5,18 @@ Guía para comprobar los tres escenarios. Las garantías están en [contracts/](
 ## Requisitos previos
 
 - JDK 25 y el Wrapper de Gradle, como en B00-H01. En local, Gradle corre con `-Dorg.gradle.java.home=/usr/lib/jvm/java-25`.
-- **Motor de contenedores con Docker Compose v2.24 o posterior:**
+- **Docker con Docker Compose v2.24 o posterior:**
   - En CI y en el VPS, Docker.
-  - En la máquina del autor, Podman: `podman compose` falla porque no hay proveedor de Compose. Hay que instalar el binario de Docker Compose v2 de su release en `~/.docker/cli-plugins/docker-compose` y activar el socket:
+  - En la máquina del autor, Docker Engine de los paquetes de Fedora, que el autor instala una vez con `sudo`:
 
     ```bash
-    systemctl --user enable --now podman.socket
-    export DOCKER_HOST="unix://$XDG_RUNTIME_DIR/podman/podman.sock"
-    export TESTCONTAINERS_RYUK_DISABLED=true     # para integrationTest con Testcontainers
+    sudo dnf install moby-engine docker-compose docker-buildx
+    sudo systemctl enable --now docker
+    sudo usermod -aG docker "$USER"     # el grupo docker equivale a root; vale después de volver a iniciar sesión
+    docker compose version              # 2.24 o posterior
     ```
+
+  - Testcontainers usa el mismo Docker, sin variables extra.
 
 ## 1. Construcción y pruebas
 
@@ -24,7 +27,7 @@ cd backend
 
 **Resultado esperado:**
 - todo en verde;
-- cada servicio con su `<Servicio>FlywayConfigTest`;
+- cada servicio con su `<Servicio>FlywayConfigTest` y su `<Servicio>EsquemaIntegrationTest`;
 - cada proceso con `ModulosTest` y `EsquemasIntegrationTest` (escenario 3, automático; [contracts/persistencia.md](contracts/persistencia.md));
 - cobertura del 60 % o más en cada módulo.
 
@@ -46,7 +49,7 @@ Además:
 
 ## 3. Cabe en la memoria de la VM (escenario 2)
 
-**Referencia:** GitHub → Actions → *perfil-consolidado* → *Run workflow* sobre la rama. La tabla aparece en el resumen del run y en el artefacto `medicion-r19` ([contracts/medicion-r19.md](contracts/medicion-r19.md)).
+**Referencia:** el run de *perfil-consolidado* del pull request (corre cuando cambia el despliegue) o, ya en la rama principal, GitHub → Actions → *perfil-consolidado* → *Run workflow*. La tabla aparece en el resumen del run y en el artefacto `medicion-r19` ([contracts/medicion-r19.md](contracts/medicion-r19.md)).
 
 **En local:**
 
@@ -54,7 +57,7 @@ Además:
 deploy/medir_memoria.sh | tee /tmp/medicion.md; echo "salida=$?"
 ```
 
-**Resultado esperado:** el total es menor que 4 GiB y el código de salida es 0. Copia la tabla a `evidencia.md`. Si pasa de 3,5 GiB, anota la alerta de R-19. Si llega a 4 GiB o más, ajusta los límites o las opciones de la JVM (research §8) y vuelve a medir. Si aun así no cabe, registra una decisión nueva (alternativa: Nginx en lugar de Spring Cloud Gateway).
+**Resultado esperado:** el total es menor que 8 GiB y el código de salida es 0. Copia la tabla a `evidencia.md`. Si pasa de 7 GiB, anota la alerta de R-19 (D-36). Si llega a 8 GiB o más, ajusta los límites o las opciones de la JVM (research §8) y vuelve a medir. Si aun así no cabe, registra una decisión nueva (alternativa: Nginx en lugar de Spring Cloud Gateway).
 
 ## 4. Un esquema por servicio (escenario 3, sobre el perfil levantado)
 

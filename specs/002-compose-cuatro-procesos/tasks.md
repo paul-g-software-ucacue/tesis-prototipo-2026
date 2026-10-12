@@ -11,7 +11,7 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
 
 **Tests**: se incluyen. El principio VIII exige escribir primero las pruebas, y los escenarios son pruebas. Las pruebas de Flyway y de esquemas se escriben antes que su configuración. Los escenarios 1 y 2 se demuestran levantando el perfil en local y en el workflow manual.
 
-**Decisiones**: D-34, D-35 y ADR-013 en [`docs/decisiones.md`](../../docs/decisiones.md).
+**Decisiones**: D-34, D-35, D-36 y ADR-013 en [`docs/decisiones.md`](../../docs/decisiones.md).
 
 **Organization**: por historia de usuario de la especificación: US1, todo se levanta con un comando; US2, cabe en la memoria; US3, un esquema por servicio.
 
@@ -63,7 +63,7 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
   - escenario 2 (mediciones de R-19, con el formato de [contracts/medicion-r19.md](contracts/medicion-r19.md));
   - escenario 3 (esquemas y permisos);
   - notas.
-- [ ] T007 Ejecutar `./gradlew build` en `backend/`; tiene que quedar en verde.
+- [ ] T007 Comprobar que Docker responde sin `sudo`: `docker version`, y `docker compose version` 2.24 o posterior. El autor lo instala antes con los paquetes de Fedora (quickstart, requisitos previos). Anotar las versiones en la sección «entorno» de `specs/002-compose-cuatro-procesos/evidencia.md`. Después ejecutar `./gradlew build` en `backend/`; tiene que quedar en verde.
 
 ---
 
@@ -122,8 +122,8 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
 - [ ] T016 Validar las plantillas con copias temporales, sin commit:
   1. Copiar `servicios/prueba` y `apps/procesoprueba`, con todos los renombres de T015.
   2. Incluirlas en `settings.gradle` y declarar el servicio como dependencia del proceso.
-  3. Ejecutar `./gradlew build integrationTest` con Testcontainers sobre Podman (`DOCKER_HOST` y `TESTCONTAINERS_RYUK_DISABLED=true`, quickstart).
-  4. Las tres pruebas nuevas tienen que pasar y la cobertura tiene que ser del 60 % o más.
+  3. Ejecutar `./gradlew build integrationTest`; Testcontainers usa el Docker local.
+  4. Las tres pruebas nuevas tienen que pasar y la cobertura tiene que ser del 60 % o más. `EsquemasIntegrationTest` tiene que arrancar aunque `DB_CLAVE_PROCESO` no tenga valor, porque `@ServiceConnection` tiene prioridad sobre `spring.datasource.*`.
   5. Revertir `settings.gradle` y borrar las copias.
 
 ### Servicios, procesos y gateway
@@ -164,10 +164,10 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
 
 - [ ] T021 [US1] Reescribir `deploy/docker/java.Dockerfile` en tres etapas:
   1. `FROM eclipse-temurin:25-jdk AS compilacion`, con `ARG MODULO` y `ARG NOMBRE`, `WORKDIR /src`, `COPY . .` y `RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon :${MODULO}:bootJar`.
-  2. `extraccion`: copia `/src/<ruta del módulo>/build/libs/${NOMBRE}.jar` a `app.jar` y extrae las capas, como hoy.
+  2. `extraccion`: `COPY --from=compilacion /app.jar app.jar` y extrae las capas, como hoy.
   3. La imagen final queda igual: `eclipse-temurin:25-jre`, usuario 10001 y `JarLauncher`.
 
-  La ruta se deriva de `MODULO` reemplazando `:` por `/`. Comentario de cabecera: «compila desde el código (ADR-013); B00-H08 adapta cd.yml».
+  Un `COPY` no puede transformar `MODULO`, así que la etapa 1 termina el mismo `RUN` con `cp "$(echo "${MODULO}" | tr : /)/build/libs/${NOMBRE}.jar" /app.jar`. Comentario de cabecera: «compila desde el código (ADR-013); B00-H08 adapta cd.yml».
 - [ ] T022 [P] [US1] Crear `deploy/postgres/01-esquemas.sh`, ejecutable, con `set -euo pipefail` y `psql -v ON_ERROR_STOP=1`:
   - crea los 4 roles con `LOGIN` y su contraseña tomada de `DB_CLAVE_IDENTIDAD`, `DB_CLAVE_DATOS`, `DB_CLAVE_DISTRIBUTIVO` y `DB_CLAVE_SALIDA`;
   - crea los 12 esquemas con `AUTHORIZATION <rol de su proceso>`;
@@ -178,12 +178,13 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
 - [ ] T024 [US1] Crear `compose.yaml` en la raíz según [contracts/compose.md](contracts/compose.md):
   - los 6 servicios, con `env_file: [{path: .env.ejemplo, required: true}, {path: .env, required: false}]`;
   - `build` con contexto `backend`, `dockerfile: ../deploy/docker/java.Dockerfile` y los `args` `MODULO` y `NOMBRE`;
-  - `deploy.resources.limits.memory`: 512m para `postgres` y cada proceso, y 384m para `gateway`;
+  - `deploy.resources.limits.memory`: 1024m para `postgres` y cada proceso, y 768m para `gateway`, que suman 5 888 MiB (D-36);
+  - en `postgres`, el *healthcheck* `pg_isready -h 127.0.0.1 -U postgres -d mdd`, por TCP, para que no quede sano con el servidor temporal de `01-esquemas.sh`;
   - los *healthchecks* del contrato, con `interval: 10s`, `timeout: 5s`, `retries: 12` y `start_period: 60s`;
   - en los procesos, `depends_on: postgres: {condition: service_healthy}`;
   - en `postgres`, el volumen `datos-postgres` y el script montado en `/docker-entrypoint-initdb.d/01-esquemas.sh:ro`;
   - solo el gateway publica `8080:8080`.
-- [ ] T025 [US1] Preparar el entorno local. **Antes de este paso, pedir permiso al autor.** Descargar el binario de Docker Compose v2 de su release en GitHub a `~/.docker/cli-plugins/docker-compose`, verificando su checksum, y activar `podman.socket` con `DOCKER_HOST` (quickstart). Comprobar que `docker compose version` muestra 2.24 o posterior.
+- [ ] T025 [US1] Construir las 5 imágenes con `time docker compose build` y anotar en `specs/002-compose-cuatro-procesos/evidencia.md` el tiempo y el tamaño de cada imagen (`docker image ls`). Así la medición de T026 (SC-001) parte de imágenes ya construidas.
 - [ ] T026 [US1] Validar el escenario 1 en un clon limpio, según el quickstart §2:
   1. Hacer `git clone` de la rama en el directorio temporal de la sesión y ejecutar `docker compose up -d --wait`.
   2. Los 6 contenedores tienen que estar `healthy`.
@@ -191,7 +192,7 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
   4. `docker compose port postgres 5432` no tiene que devolver nada.
   5. Con las imágenes construidas, `docker compose down && time docker compose up -d --wait` tiene que tardar 180 s o menos (SC-001).
 
-  Registrar los resultados en `specs/002-compose-cuatro-procesos/evidencia.md`. Si un componente no queda sano, revisar `docker compose logs <componente>` y corregir antes de seguir.
+  Registrar los resultados en `specs/002-compose-cuatro-procesos/evidencia.md`. Anotar también que el caso límite «un contenedor supera su límite de memoria» quedaría visible en `docker compose ps` como detenido o no sano; no se fuerza. Si un componente no queda sano, revisar `docker compose logs <componente>` y corregir antes de seguir.
 - [ ] T027 [US1] Comprobar el caso límite «falta el archivo de variables»: con `.env.ejemplo` renombrado temporalmente, `docker compose up` tiene que fallar con un mensaje que nombra el archivo. Restaurarlo y anotar el resultado.
 
 **Checkpoint**: el perfil consolidado se levanta con un comando.
@@ -200,30 +201,31 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
 
 ## Phase 4: User Story 2 - El perfil consolidado cabe en la memoria de la VM (Priority: P1)
 
-**Goal**: medir la memoria después del calentamiento, comprobar que queda por debajo de 4 GiB y registrarlo como evidencia de R-19 (escenario 2; FR-007 y FR-008; D-34).
+**Goal**: medir la memoria después del calentamiento, comprobar que queda por debajo de 8 GiB (D-36) y registrarlo como evidencia de R-19 (escenario 2; FR-007 y FR-008; D-34).
 
 **Independent Test**: `deploy/medir_memoria.sh` termina con código 0 e imprime la tabla de [contracts/medicion-r19.md](contracts/medicion-r19.md).
 
 ### Implementation for User Story 2
 
 - [ ] T028 [US2] Crear `deploy/medir_memoria.sh`, ejecutable, con `set -euo pipefail`, según [contracts/medicion-r19.md](contracts/medicion-r19.md):
-  1. `docker compose up -d --wait`.
+  1. `docker compose up -d --wait`; si falla, `exit 2`. Con `set -e`, ese paso va dentro de un `if !` para no salir con 1.
   2. Calentamiento: 20 llamadas a `/actuator/health/readiness` en `identidad`, `datos`, `distributivo`, `salida` y `gateway`, con `docker compose exec -T <c> bash -c '<comando del healthcheck>'`.
   3. `sleep 30`.
-  4. Una sola lectura de `docker stats --no-stream --format '{{.Name}};{{.MemUsage}}'`. Normalizar KiB, MiB y GiB a MiB.
-  5. La tabla Markdown con fecha ISO 8601, `git rev-parse --short HEAD`, el entorno (`docker version --format` o el de Podman), los límites, el total en MiB y GiB, el resultado y la alerta de R-19 si pasa de 3,5 GiB.
+  4. Una sola lectura de `docker stats --no-stream --format '{{.Name}};{{.MemUsage}}' $(docker compose ps -q)`, solo de los contenedores del proyecto. Traducir cada nombre a su servicio con `docker compose ps --format '{{.Name}};{{.Service}}'`. Normalizar KiB, MiB y GiB a MiB.
+  5. La tabla Markdown con fecha ISO 8601, `git rev-parse --short HEAD`, el entorno (`docker version --format '{{.Server.Version}}'`), los límites, el total en MiB y GiB, el resultado y la alerta de R-19 si pasa de 7 GiB.
 
-  Códigos de salida: 0 si el total es menor que 4 GiB, 1 si llega a 4 GiB o más, 2 si un componente no está sano.
+  Códigos de salida: 0 si el total es menor que 8 GiB, 1 si llega a 8 GiB o más, 2 si un componente no está sano.
 - [ ] T029 [US2] Crear `.github/workflows/perfil-consolidado.yml`:
-  - `on: workflow_dispatch`, `permissions: contents: read` y `runs-on: ubuntu-latest`;
-  - pasos: `actions/checkout` → `docker compose up -d --wait` → `deploy/medir_memoria.sh | tee medicion.md` → `cat medicion.md >> "$GITHUB_STEP_SUMMARY"` → `actions/upload-artifact` con el nombre `medicion-r19` y 90 días de retención (`if: always()`) → `docker compose down -v` (`if: always()`).
+  - `on`: `workflow_dispatch` y `pull_request` (tipos `opened`, `synchronize`, `reopened` y `ready_for_review`) con `paths: [compose.yaml, .env.ejemplo, 'deploy/**', '.github/workflows/perfil-consolidado.yml']`;
+  - el job con `if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false`, `permissions: contents: read` y `runs-on: ubuntu-latest`; no es un check obligatorio;
+  - pasos: `actions/checkout` → `docker compose up -d --wait` → `deploy/medir_memoria.sh | tee medicion.md`, en un paso con `shell: bash` para que `pipefail` conserve el código del script → `cat medicion.md >> "$GITHUB_STEP_SUMMARY"` → `actions/upload-artifact` con el nombre `medicion-r19` y 90 días de retención (`if: always()`) → `docker compose down -v` (`if: always()`).
 
   Fijar las acciones con `pinact run` y validar con actionlint, como en B00-H01.
 - [ ] T030 [P] [US2] Agregar a `.github/dependabot.yml` el ecosistema `docker-compose` con `directory: /` y `schedule: { interval: weekly }`, para que proponga las actualizaciones de `postgres:18.6-alpine`.
-- [ ] T031 [US2] Medir en local con el perfil de T026: `deploy/medir_memoria.sh | tee` a un archivo en el directorio temporal de la sesión, y pegar la tabla en `specs/002-compose-cuatro-procesos/evidencia.md` (entorno: Podman). Según el total:
-  - si es de 4 GiB o más, ajustar los límites o `JAVA_TOOL_OPTIONS` (research §8) y repetir;
+- [ ] T031 [US2] Medir en local con el perfil de T026: `deploy/medir_memoria.sh | tee` a un archivo en el directorio temporal de la sesión, y pegar la tabla en `specs/002-compose-cuatro-procesos/evidencia.md` (entorno: Docker local). Según el total:
+  - si es de 8 GiB o más, ajustar los límites o `JAVA_TOOL_OPTIONS` (research §8) y repetir;
   - si sigue sin caber, detenerse y proponer al autor una decisión nueva (alternativa de R-19: Nginx en lugar de Spring Cloud Gateway).
-- [ ] T032 [US2] Después del push de la rama, ejecutar el workflow con `gh workflow run perfil-consolidado.yml --ref 002-compose-cuatro-procesos`, esperar el run y pegar en `specs/002-compose-cuatro-procesos/evidencia.md` la tabla del resumen (entorno: Docker en `ubuntu-latest`) y el enlace al run. Es la medición de referencia de R-19 y, además, la prueba del escenario 1 en un clon limpio con Docker.
+- [ ] T032 [US2] Cuando el pull request quede listo para revisión (T038), esperar el run de `perfil-consolidado` (`gh run list --workflow perfil-consolidado.yml --branch 002-compose-cuatro-procesos`). `gh workflow run` no sirve antes de fusionar, porque GitHub solo ejecuta a mano los workflows que están en la rama principal. Pegar en `specs/002-compose-cuatro-procesos/evidencia.md` la tabla del resumen (entorno: Docker en `ubuntu-latest`) y el enlace al run. Es la medición de referencia de R-19 y, además, la prueba del escenario 1 en un clon limpio con Docker.
 
 **Checkpoint**: R-19 está medido y registrado.
 
@@ -264,9 +266,9 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
 - **Setup (fase 1)**: sin dependencias.
 - **Foundational (fase 2)**: depende de la fase 1. Las pruebas (T008 a T010) van antes de su configuración (T011 a T014). La validación T016 va antes de crear los servicios (T017 a T019), y T020 cierra la fase.
 - **US1 (fase 3)**: depende de la fase 2. T021 a T024 se pueden hacer en cualquier orden entre sí, salvo T024, que usa T021 a T023. T025 va antes de T026 y T027.
-- **US2 (fase 4)**: depende de US1, porque necesita el perfil levantado. T032 depende del push de la rama.
+- **US2 (fase 4)**: depende de US1, porque necesita el perfil levantado. T032 depende de T038, porque el workflow corre en el pull request listo para revisión.
 - **US3 (fase 5)**: T033 depende solo de la fase 2. T034 a T036 dependen de US1.
-- **Cierre (fase 6)**: depende de US1, US2 y US3.
+- **Cierre (fase 6)**: depende de US1, US2 (salvo T032) y US3. T032 se completa entre T038 y T039.
 
 ### Parallel Opportunities
 
@@ -306,7 +308,7 @@ Task: "EsquemasIntegrationTest en backend/plantillas/aplicacion/src/integrationT
 
 ## Notes
 
-- T025 instala una herramienta en tu máquina, así que pido permiso antes de hacerlo.
+- Docker Engine lo instala el autor con `sudo` antes de T007 (quickstart, requisitos previos).
 - La segunda medición de R-19, después de iniciar sesión, es de B00-H03 (D-34). Esta historia no la hace.
 - Los archivos temporales de T016, T027 y T033 nunca entran en un commit.
 - Hacer commit por tarea o por grupo lógico en `002-compose-cuatro-procesos`, con `Refs #19`.

@@ -10,15 +10,16 @@
 
 **Origen**: issue #19 · B00-H02 · sub-issue de #2 (B00 · Base técnica de la ola 0) · milestone «Ola 0 · Base técnica» · etiquetas `tipo:historia`, `prioridad:must`, `modulo:transversal` · tamaño propuesto M · depende de #18 (B00-H01, cerrada).
 
-**Requerimientos que cubre**: ADR-006 · ADR-008 · RNF-POR-01 · RNF-POR-02 · R-19. **Decisiones tomadas en esta historia** (`docs/decisiones.md`): D-34 y D-35.
+**Requerimientos que cubre**: ADR-006 · ADR-008 · RNF-POR-01 · RNF-POR-02 · R-19. **Decisiones tomadas en esta historia** (`docs/decisiones.md`): D-34, D-35 y D-36.
 
-**Historia (tal como está en el issue)**: Como autor, quiero levantar los 4 procesos, el API Gateway y PostgreSQL con un solo `docker compose up`, para comprobar desde el inicio que el perfil consolidado cabe en la VM de 4 GB.
+**Historia (del issue, con la VM de D-36)**: Como autor, quiero levantar los 4 procesos, el API Gateway y PostgreSQL con un solo `docker compose up`, para comprobar desde el inicio que el perfil consolidado cabe en la VM de 8 GiB.
 
 ## Clarifications
 
 ### Session 2026-10-12
 
 - Q: El inicio de sesión llega con B00-H03, que depende de esta historia. ¿Cómo se cumple la medición «después de iniciar sesión» en B00-H02? → A: B00-H02 mide con todo levantado y sano, después de un calentamiento que llama a la salud de cada proceso. La medición después de iniciar sesión pasa a B00-H03 (D-34). Los issues #19 y #20 se editaron.
+- Q: (análisis, hallazgo I2) La especificación decía «4 GB» y los contratos «4 GiB». ¿Qué umbral vale? → A: El autor duplicó las limitaciones del hardware: la VM pasa a 4 vCPU y 8 GiB, R-19 exige menos de 8 GiB con alerta en 7 GiB, y los límites por contenedor se duplican (D-36).
 - Q: Los 12 servicios todavía no existen. ¿Qué servicios aplican migraciones en B00-H02? → A: B00-H02 crea los 12 servicios desde la plantilla, sin lógica de negocio, cada uno con su esquema y una primera migración mínima sin tablas de negocio, y los 4 procesos los ensamblan según ADR-006 (D-35).
 
 > **Nota sobre el lenguaje de esta especificación.** Igual que B00-H01, es una historia de la base técnica: su usuario es el autor y su objeto es el despliegue que ya fijan la constitución (sección 3) y ADR-006. Los nombres de herramientas (Docker Compose, PostgreSQL, Flyway, `docker stats`) aparecen porque los trae la historia; la especificación no elige ninguna tecnología nueva.
@@ -48,11 +49,11 @@ Escenario: Todo se levanta con un comando
 
 ### User Story 2 - El perfil consolidado cabe en la memoria de la VM (Priority: P1)
 
-Como autor, quiero medir el consumo de memoria de los contenedores levantados con sus límites, y registrarlo como evidencia, para comprobar en la ola 0 que el perfil consolidado cabe en la VM de 4 GB (R-19, RNF-POR-02).
+Como autor, quiero medir el consumo de memoria de los contenedores levantados con sus límites, y registrarlo como evidencia, para comprobar en la ola 0 que el perfil consolidado cabe en la VM de 8 GiB (R-19, RNF-POR-02, D-36).
 
 **Why this priority**: R-19 es un riesgo abierto que puede cambiar la arquitectura: si no cabe, la alternativa prevista es reemplazar el API Gateway (ADR-008). Conviene saberlo antes de construir sobre esta base.
 
-**Independent Test**: Con todo levantado y después del calentamiento, medir con `docker stats` y comprobar que la suma queda por debajo de 4 GB; la medición queda registrada.
+**Independent Test**: Con todo levantado y después del calentamiento, medir con `docker stats` y comprobar que la suma queda por debajo de 8 GiB; la medición queda registrada.
 
 **Acceptance Scenarios**:
 
@@ -60,11 +61,13 @@ Como autor, quiero medir el consumo de memoria de los contenedores levantados co
 Escenario: Cabe en la memoria de la VM
   Dado los contenedores levantados con su límite de memoria
   Cuando se mide con docker stats después de un calentamiento que llama a la salud de cada proceso
-  Entonces el consumo total queda por debajo de 4 GB
+  Entonces el consumo total queda por debajo de 8 GiB
   Y la medición se registra como evidencia de R-19
 ```
 
-> **Cambio respecto del issue #19** (D-34, 2026-10-12): la medición «después de iniciar sesión» pasó a B00-H03 (#20), que crea el inicio de sesión. El issue #19 está actualizado.
+> **Cambios respecto del issue #19:**
+> - D-34 (2026-10-12): la medición «después de iniciar sesión» pasó a B00-H03 (#20), que crea el inicio de sesión. El issue #19 está actualizado.
+> - D-36 (2026-10-12): la VM pasa de 4 GB a 8 GiB y el umbral del escenario, de «4 GB» a «8 GiB». El issue #19 se edita con la aprobación del autor.
 
 ---
 
@@ -93,8 +96,8 @@ Escenario: Un esquema por servicio
 - **Falta el archivo de variables de entorno**: el comando falla con un mensaje que dice qué archivo falta, en lugar de levantar contenedores con valores vacíos.
 - **Segunda ejecución sobre datos existentes**: al volver a levantar todo, las migraciones ya aplicadas no se repiten y todo vuelve a quedar sano.
 - **Un contenedor supera su límite de memoria**: queda visible como no sano o reiniciado; no consume memoria de los demás sin control.
-- **Consumo entre 3,5 GB y 4 GB**: cumple el escenario, pero es el disparador de R-19 («más de 3,5 GB en uso»); se registra como alerta en la evidencia.
-- **Consumo de 4 GB o más**: el escenario falla; se registra una decisión nueva en `docs/decisiones.md` (la alternativa prevista en R-19 y ADR-008 es Nginx en lugar del API Gateway de Spring) y se enmienda la constitución si hace falta.
+- **Consumo entre 7 GiB y 8 GiB**: cumple el escenario, pero es el disparador de R-19 (más de 7 GiB en uso, D-36); se registra como alerta en la evidencia.
+- **Consumo de 8 GiB o más**: el escenario falla; se registra una decisión nueva en `docs/decisiones.md` (la alternativa prevista en R-19 y ADR-008 es Nginx en lugar del API Gateway de Spring) y se enmienda la constitución si hace falta.
 - **Una migración apunta al esquema de otro servicio**: la comprobación de esquemas lo detecta y falla.
 - **Medición antes de que exista el inicio de sesión**: B00-H02 mide después de un calentamiento; la medición con una sesión real es de B00-H03 (D-34).
 - **Servicio sin tablas de negocio**: su primera migración no crea tablas de negocio, pero el registro de migraciones del servicio queda en su propio esquema; la comprobación de esquemas lo verifica igual.
@@ -114,7 +117,7 @@ Escenario: Un esquema por servicio
 **Memoria (R-19)**
 
 - **FR-006**: Cada contenedor DEBE tener un límite de memoria explícito, y cada JVM su propio límite (constitución, sección 3; ADR-008).
-- **FR-007**: El consumo total de los contenedores, medido con `docker stats`, DEBE quedar por debajo de 4 GB (escenario «Cabe en la memoria de la VM»).
+- **FR-007**: El consumo total de los contenedores, medido con `docker stats`, DEBE quedar por debajo de 8 GiB (escenario «Cabe en la memoria de la VM»; D-36).
 - **FR-008**: La medición DEBE hacerse después de un calentamiento que llame a la salud de cada proceso (D-34) y registrarse como evidencia de R-19, con el consumo de cada contenedor, el total, los límites configurados, la fecha y el commit medido.
 
 **Esquemas**
@@ -141,7 +144,7 @@ Escenario: Un esquema por servicio
 ### Measurable Outcomes
 
 - **SC-001**: Desde un clon limpio, los 6 contenedores quedan sanos sin intervención manual, y lo hacen dentro de los 180 segundos que el despliegue del VPS espera a que un proceso quede sano (`deploy/desplegar.sh`), una vez construidas las imágenes.
-- **SC-002**: El consumo total medido queda por debajo de 4 GB, y la evidencia registra si queda por debajo o por encima de 3,5 GB (disparador de R-19).
+- **SC-002**: El consumo total medido queda por debajo de 8 GiB, y la evidencia registra si queda por debajo o por encima de 7 GiB (disparador de R-19).
 - **SC-003**: Después de las migraciones, el 100 % de las tablas de cada servicio está en su propio esquema y no hay tablas de servicios en ningún otro esquema.
 - **SC-004**: Una segunda ejecución del comando sobre los mismos datos deja los 6 contenedores sanos sin volver a aplicar migraciones.
 - **SC-005**: El archivo de variables de entorno de ejemplo no contiene secretos reales: la etapa de secretos de la CI pasa.
@@ -155,5 +158,6 @@ Escenario: Un esquema por servicio
 - Solo el API Gateway publica un puerto en la máquina anfitriona; los procesos y PostgreSQL solo son accesibles dentro de la red de Compose (mínimo privilegio, principio IX).
 - La SPA (B00-H06), el proxy HTTPS del VPS (`deploy/Caddyfile`), la publicación en Docker Hub y el despliegue en el VPS (B00-H08) quedan fuera de esta historia.
 - El almacenamiento de archivos separado de la base (RNF-POR-01) se agrega cuando una historia guarde archivos; en esta historia ningún servicio los guarda.
-- En la máquina del autor hay Podman en lugar de Docker; el comando se valida con un motor compatible con Docker Compose v2, y la medición de referencia de R-19 se hace en un entorno con Docker.
+- En la máquina del autor hay Docker Engine con Docker Compose v2 (paquetes de Fedora), además de Podman. El comando se valida allí, y la medición de referencia de R-19 se hace en GitHub Actions con Docker.
+- La VM y el VPS de demostración tienen 4 vCPU y 8 GiB (D-36). La memoria se mide en GiB (1 GiB = 1 024 MiB), la unidad en que la informa `docker stats`.
 - Las pruebas y el archivo de ejemplo usan solo datos ficticios (principios VIII y IX).

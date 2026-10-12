@@ -28,7 +28,7 @@ servicios/<servicio>/
 
 | Pieza | Contrato |
 |---|---|
-| Conexión | Un solo `DataSource` por proceso, con el rol del proceso (`SPRING_DATASOURCE_USERNAME`). |
+| Conexión | Un solo `DataSource` por proceso, con el rol del proceso (`spring.datasource.username` y `password` en el `application.yaml` del proceso; [compose.md](compose.md)). |
 | Arranque | Al iniciar, el proceso ejecuta el `migrate` de cada servicio que ensambla. |
 | `EsquemasIntegrationTest` (suite `integrationTest`) | Con un PostgreSQL 18.6 de Testcontainers, levanta el contexto completo del proceso, de modo que los servicios conviven y migran juntos. Toma los esquemas esperados de los beans `Flyway` y comprueba en `information_schema.tables` tres cosas: (1) cada esquema esperado tiene su `flyway_schema_history`; (2) no hay tablas en `public`; (3) no hay tablas en esquemas que no pertenezcan a un servicio del proceso. No puede atribuir una tabla a un servicio dentro del mismo proceso; eso lo hace la prueba de cada servicio. |
 
@@ -47,6 +47,6 @@ servicios/<servicio>/
 ## Garantías
 
 1. Después de arrancar, cada esquema contiene solo el registro de migraciones de su servicio, y nada más hasta que su historia agregue tablas (escenario 3, SC-003).
-2. Un proceso no puede crear ni leer tablas en los esquemas de otro proceso: lo impide la base.
+2. El rol de un proceso no puede crear ni leer tablas en los esquemas de otro proceso: lo impide la base. En el perfil local, las claves de todos los roles llegan a todos los contenedores (riesgo aceptado, [compose.md](compose.md)).
 3. Una migración de un servicio que cree una tabla en el esquema de otro servicio, sea del mismo proceso o no, hace fallar `<Servicio>EsquemaIntegrationTest` de ese servicio.
 4. Una segunda ejecución no vuelve a aplicar migraciones (SC-004).

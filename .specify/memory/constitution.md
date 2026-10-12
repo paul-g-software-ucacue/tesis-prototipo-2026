@@ -1,10 +1,11 @@
 # Constitución del desarrollo del MDD
 
-- **Versión:** 2.0.1, enmienda de parche del 11/10/2026 (D-33): en la sección 8, el formateador de Spotless pasa a ser google-java-format en estilo AOSP, porque palantir-java-format no soporta toda la sintaxis de Java 25. No cambia ningún principio.
+- **Versión:** 2.1.0, enmienda menor del 12/10/2026 (D-36): la VM objetivo y el VPS de demostración pasan de 2 vCPU y 4 GB a 4 vCPU y 8 GiB (principio V, secciones 3 y 8). Los límites de memoria por JVM y por contenedor siguen siendo obligatorios. No cambia la regla de ningún principio.
+- **Versión 2.0.1:** enmienda de parche del 11/10/2026 (D-33): en la sección 8, el formateador de Spotless pasa a ser google-java-format en estilo AOSP, porque palantir-java-format no soporta toda la sintaxis de Java 25. No cambia ningún principio.
 - **Versión 2.0.0:** enmienda mayor del 11/10/2026 (D-32): el principio VIII deja de exigir el 80 % de cobertura en el dominio central y queda un solo umbral, el 60 % por módulo. También se aclara que las decisiones desde D-28 y los ADR desde ADR-012 se registran en `docs/decisiones.md`.
 - **Versión 1.0.1:** enmienda de parche del 11/10/2026 (D-28): en la sección 3, «JUnit 5» pasa a «JUnit Jupiter 6», la versión que fija el BOM de Spring Boot (6.0.3 con Spring Boot 4.1.1). Se detectó al planificar B00-H01 y no cambia ningún principio.
 - **Versión 1.0:** ratificada el 11/10/2026. Cambios desde la 0.5: se cierran los pendientes de ratificación; el repositorio privado y el proyecto de GitHub Projects ya existen (pendiente 6), y las comprobaciones técnicas que quedaban pasan a ser criterios de las historias de la ola 0 (sección 8).
-- **Fecha:** 11/10/2026 (versión 2.0.1)
+- **Fecha:** 12/10/2026 (versión 2.1.0)
 - **Autor:** el autor de la tesis
 - **Uso:** al iniciar el desarrollo con SDD (desarrollo guiado por especificaciones), este texto se copia como constitución del proyecto (por ejemplo, `.specify/memory/constitution.md` si se usa Spec Kit) y se ratifica según la sección 8.
 - **Fuentes:** ERS v2.1 (`ERS_MDD_Requerimientos.md`), anexo de firmas (`Diseno_firmas_cadena_aprobacion.md`), ADR-001 a ADR-011 (`lean_inception/adr/`), matriz de decisiones D-01 a D-27 (copiada en el anexo A de `docs/decisiones.md`), registro de decisiones desde D-28 y ADR desde ADR-012 (`docs/decisiones.md`), estándares de ingeniería backend del autor (`sdd/fuentes/estandares_backend_autor.md`), modelo de dominio (`sdd/modelo_dominio.md`), metodología de desarrollo (`sdd/metodologia_desarrollo.md`), pipeline de CI/CD (`sdd/pipeline_cicd.md`) y paquete de entrada al Lean Inception (`paquete_lean_inception/`).
@@ -79,7 +80,7 @@ Cada principio dice qué se debe hacer (**DEBE**), qué no (**NO DEBE**) y por q
 ### V. Microservicios y límites de servicio
 
 - El backend es una arquitectura de microservicios. Cada uno de los **12 servicios** de la ERS 8.5 es un microservicio: tiene una capacidad de negocio, su contrato OpenAPI, su esquema en PostgreSQL y sus reglas, y se puede desplegar solo sin cambiar código (ADR-009).
-- En el prototipo se despliegan agrupados en 4 procesos, más el API Gateway: identidad (1, 2, 7), datos (3, 4, 11, 12), distributivo (5, 6, 10) y salida (8, 9). Ver ADR-006. No es una excepción a la regla: 12 JVM no caben en la VM de 4 GB (R-19), y distribuir sin una razón técnica es justo lo que este principio evita.
+- En el prototipo se despliegan agrupados en 4 procesos, más el API Gateway: identidad (1, 2, 7), datos (3, 4, 11, 12), distributivo (5, 6, 10) y salida (8, 9). Ver ADR-006. No es una excepción a la regla: 12 JVM con sus límites no caben en la VM de 8 GiB (R-19, D-36), y distribuir sin una razón técnica es justo lo que este principio evita.
 - Un servicio NO DEBE leer ni escribir tablas de otro, ni depender de sus clases internas, entidades de dominio o repositorios. Solo usa los DTO de su contrato, generados del OpenAPI. Los dos servicios de un mismo contexto delimitado (por ejemplo, Académico y Docentes) comparten los términos del glosario, no las clases.
 - Dentro de un proceso, los servicios se llaman por la interfaz de aplicación que refleja el contrato; entre procesos, por HTTP según ese contrato (ADR-006).
 - **Fallos entre procesos:**
@@ -227,7 +228,7 @@ Cada principio dice qué se debe hacer (**DEBE**), qué no (**NO DEBE**) y por q
 
 | Tema | Restricción | Fuente |
 |---|---|---|
-| Infraestructura | Docker Compose sobre Ubuntu Server, compatible con aaPanel, en una VM de 2 vCPU y 4 GB. Los 4 procesos, el gateway y PostgreSQL deben caber con límites de memoria. La demostración corre en un VPS del autor del mismo tamaño; el pipeline no despliega en la VM del IST. | RNF-POR-01, RNF-POR-02, ADR-006, ADR-011 |
+| Infraestructura | Docker Compose sobre Ubuntu Server, compatible con aaPanel, en una VM de 4 vCPU y 8 GiB (D-36). Los 4 procesos, el gateway y PostgreSQL deben caber con límites de memoria. La demostración corre en un VPS del autor del mismo tamaño; el pipeline no despliega en la VM del IST. | RNF-POR-01, RNF-POR-02, ADR-006, ADR-011, D-36 |
 | Base de datos | PostgreSQL, un esquema por módulo. Los archivos (PDF y evidencias) van fuera de la base. | ERS 8.5, RNF-POR-01 |
 | Frontend | SPA en español. Funciona en las dos últimas versiones de Chrome, Firefox y Edge, desde 1366 px de ancho, y cumple WCAG 2.1 AA en las pantallas principales. | RNF-COM-01, RNF-USA-01 |
 | Archivos de intercambio | CSV según RFC 4180, en UTF-8, con encabezado y fechas ISO 8601. También se aceptan XLSX en las cargas. | RNF-COM-02 |
@@ -238,7 +239,7 @@ Cada principio dice qué se debe hacer (**DEBE**), qué no (**NO DEBE**) y por q
 | Frontend | React con TypeScript y Vite, React Router, TanStack Query, React Hook Form con Zod, MUI en español, cliente generado desde OpenAPI; servido por Nginx. | D-20, ADR-008 |
 | Documentos y firma | OpenHTMLtoPDF con plantillas Thymeleaf para el PDF/A (verificado con veraPDF); Apache PDFBox y Bouncy Castle para validar PAdES; Apache Commons CSV y Apache POI para las cargas. | ADR-007, ADR-008 |
 | Pruebas | JUnit Jupiter 6 (la versión del BOM de Spring Boot: 6.0.3 con Boot 4.1.1), AssertJ, Mockito, Testcontainers, ArchUnit, Spring Modulith, swagger-request-validator, JaCoCo (60 % de líneas por módulo, D-32); Vitest, Testing Library, axe-core y Playwright; k6 y OWASP ZAP al cerrar cada ola. | ADR-008, ADR-011, D-28, D-32 |
-| Memoria | Límite explícito por JVM y por contenedor: cinco JVM y PostgreSQL deben caber en 4 GB (R-19), lo que se mide en la ola 0. | ADR-008 |
+| Memoria | Límite explícito por JVM y por contenedor: cinco JVM y PostgreSQL deben consumir menos de 8 GiB, con alerta en 7 GiB (R-19), lo que se mide en la ola 0. | ADR-008, D-36 |
 | Repositorio y CI/CD | Un repositorio privado de GitHub (monorepo) con GitHub Actions; la rama principal solo recibe pull requests con los checks en verde. Pipeline de seis etapas: lint, pruebas, secretos, SCA, publicación en Docker Hub (repositorio privado) y despliegue en el VPS (`sdd/pipeline_cicd.md`). | D-24, ADR-011 |
 | Seguridad en el pipeline | Spotless, SpotBugs con FindSecBugs, Gitleaks, CycloneDX y Grype; acciones fijadas por SHA. | ADR-011 |
 
@@ -302,7 +303,7 @@ La constitución se ratificó el 11/10/2026. Los pendientes 1 a 4, 6 y 8 de la v
 | Comprobación | Historia |
 |---|---|
 | PDFBox y Bouncy Castle validan un PDF/A firmado con FirmaEC (antes pendiente 5) | B00-S01 |
-| Cinco JVM y PostgreSQL caben en 4 GB (R-19, antes pendiente 5) | B00-H02 |
+| Cinco JVM y PostgreSQL caben en 8 GiB (R-19, antes pendiente 5; D-36) | B00-H02 |
 | El formateador de Spotless y SpotBugs funcionan con Java 25, y Spring Modulith 2.1 es la línea para Spring Boot 4.1 (ADR-011, antes pendiente 7). palantir-java-format falló en parte con Java 25 y se reemplazó por google-java-format en estilo AOSP (D-33). | B00-H01 |
 | El esquema `Error` común y el formato del catálogo de códigos están escritos en `contratos/` (principio XIII, antes pendiente 9) | B00-H04 |
 | Las acciones de GitHub están fijadas por SHA con pinact (antes pendiente 6) | B00-H01 |

@@ -11,7 +11,7 @@ Un `compose.yaml` en la raíz levanta, con un solo `docker compose up`, el perfi
 - los 4 procesos (identidad, datos, distributivo y salida), que ensamblan los 12 servicios de la ERS, creados vacíos desde la plantilla (D-35);
 - el API Gateway, con Spring Cloud Gateway 2025.1.3.
 
-Las imágenes se construyen desde el código con el `java.Dockerfile` de varias etapas. Cada contenedor tiene un *healthcheck* y un límite de memoria. Cada servicio migra con su propio Flyway en su esquema, y una prueba de integración por proceso comprueba que ninguna tabla queda fuera de su esquema. El script `deploy/medir_memoria.sh` y el workflow manual `perfil-consolidado.yml` miden la memoria después de un calentamiento (D-34) y dejan la evidencia de R-19.
+Las imágenes se construyen desde el código con el `java.Dockerfile` de varias etapas. Cada contenedor tiene un *healthcheck* y un límite de memoria. Cada servicio migra con su propio Flyway en su esquema. Una prueba de integración por servicio comprueba que sus tablas quedan solo en su esquema, y una por proceso comprueba el conjunto de esquemas del proceso. El script `deploy/medir_memoria.sh` y el workflow manual `perfil-consolidado.yml` miden la memoria después de un calentamiento (D-34) y dejan la evidencia de R-19.
 
 Los detalles y sus alternativas están en [research.md](research.md); las decisiones que afectan a varias features están en ADR-013, aprobado.
 
@@ -29,20 +29,20 @@ Los detalles y sus alternativas están en [research.md](research.md); las decisi
 **Testing**:
 - JUnit Jupiter 6, AssertJ, ArchUnit y Spring Modulith, como en B00-H01.
 - Una prueba unitaria de la configuración de Flyway por servicio.
-- `EsquemasIntegrationTest` por proceso, con Testcontainers 2.0.5 y PostgreSQL 18.6.
+- `<Servicio>EsquemaIntegrationTest` por servicio, sin Spring, y `EsquemasIntegrationTest` por proceso, con Testcontainers 2.0.5 y PostgreSQL 18.6.
 - Se repiten las pruebas de arquitectura existentes.
 
 **Target Platform**:
-- Docker Compose sobre Ubuntu Server, compatible con aaPanel (RNF-POR-01). La referencia es `ubuntu-latest` en GitHub Actions.
-- En local, Podman con el binario de Docker Compose v2.
+- Docker Compose sobre Ubuntu Server, compatible con aaPanel (RNF-POR-01), en una VM de 4 vCPU y 8 GiB (D-36). La referencia es `ubuntu-latest` en GitHub Actions.
+- En local, Docker Engine con Docker Compose v2, de los paquetes de Fedora.
 
 **Project Type**: monorepo web: multiproyecto Gradle en `backend/`, despliegue en `compose.yaml` y `deploy/`.
 
 **Performance Goals**: los 6 contenedores quedan sanos en 180 s o menos, ya construidas las imágenes (SC-001; es lo que espera `desplegar.sh`).
 
 **Constraints**:
-- Consumo total por debajo de 4 GiB después del calentamiento, con alerta en 3,5 GiB (R-19).
-- La suma de los límites iniciales es 2 944 MiB.
+- Consumo total por debajo de 8 GiB después del calentamiento, con alerta en 7 GiB (R-19, D-36).
+- La suma de los límites iniciales es 5 888 MiB.
 - Solo el gateway publica un puerto.
 - No hay secretos reales en el repositorio.
 - No hay JPA hasta que exista una entidad.
@@ -63,13 +63,13 @@ Los detalles y sus alternativas están en [research.md](research.md); las decisi
 | IV. API primero | No hay endpoints de negocio. La salud de Actuator es operativa y no se publica por el gateway. | ✅ N/A |
 | V. Límites de servicio | Un esquema por servicio, una aplicación por proceso y un rol por proceso. `ModulosTest` y `EsquemasIntegrationTest` en cada proceso. | ✅ |
 | VI y VII | Esta historia no tiene reglas ni datos de negocio. | ✅ N/A |
-| VIII. Pruebas | Prueba unitaria de Flyway por servicio y de integración de esquemas por proceso, con PostgreSQL real (Testcontainers). Cobertura del 60 % en cada módulo. | ✅ |
+| VIII. Pruebas | Prueba unitaria de Flyway y de integración de esquemas por servicio, y de integración de esquemas por proceso, con PostgreSQL real (Testcontainers). Cobertura del 60 % en cada módulo. | ✅ |
 | IX. Seguridad | `.env.ejemplo` con valores ficticios y `.env` ignorado. Roles de base por proceso, solo el gateway expuesto, ningún paquete extra en las imágenes y Gitleaks en verde. | ✅ |
 | X. Simplicidad | Ni colas, ni caché, ni un `DataSource` por servicio. JPA no entra todavía. El workflow de medición es manual. | ✅ |
 | XI. Diseño pragmático | Una configuración explícita de tres líneas por servicio en lugar de una abstracción compartida. Las alternativas descartadas están en research §1 a §4. | ✅ |
 | XII. JavaDoc | Las clases `<Servicio>FlywayConfig` y la prueba de esquemas del esqueleto llevan JavaDoc en español. | ✅ |
 | XIII. Errores | Esta historia no tiene errores de API. | ✅ N/A |
-| §3 Infraestructura y memoria | Docker Compose, un esquema por módulo, límites explícitos por JVM y por contenedor, y medición de R-19 en la ola 0. | ✅ |
+| §3 Infraestructura y memoria | Docker Compose en la VM de 4 vCPU y 8 GiB (constitución 2.1.0, D-36), un esquema por módulo, límites explícitos por JVM y por contenedor, y medición de R-19 en la ola 0. | ✅ |
 | §6.4 ADR | Las decisiones que afectan a varias features (persistencia por servicio, roles por proceso y construcción de imágenes) están en ADR-013, aprobado por el autor el 2026-10-12. | ✅ |
 
 **Resultado del gate antes de la fase 0:** pasa. ADR-013 quedó aprobado el 2026-10-12.
@@ -106,7 +106,7 @@ compose.yaml                                 # nuevo: postgres, identidad, datos
 .github/
 ├── dependabot.yml                           # cambia: + ecosistema docker-compose en /
 └── workflows/
-    └── perfil-consolidado.yml               # nuevo: workflow_dispatch; levanta el perfil y mide R-19
+    └── perfil-consolidado.yml               # nuevo: manual y en PR que cambian el despliegue; mide R-19
 deploy/
 ├── docker/java.Dockerfile                   # cambia: etapa de compilación desde el código (ARG MODULO, NOMBRE)
 ├── postgres/01-esquemas.sh                  # nuevo: 4 roles y 12 esquemas (docker-entrypoint-initdb.d)
@@ -144,8 +144,8 @@ backend/
 3. **Los 12 servicios y los 4 procesos** creados desde los esqueletos (D-35), más `settings.gradle`. `./gradlew build integrationTest` en verde.
 4. **Gateway:** `backend/gateway` con Spring Cloud 2025.1.3, solo salud.
 5. **Imágenes:** `java.Dockerfile` con la etapa de compilación y `backend/.dockerignore`.
-6. **Compose:** `compose.yaml`, `.env.ejemplo`, `deploy/postgres/01-esquemas.sh` y `.gitignore`. `docker compose up -d --wait` en local, con Podman y Docker Compose v2.
-7. **Medición:** `deploy/medir_memoria.sh`, `perfil-consolidado.yml` y Dependabot. Un run del workflow como evidencia de los escenarios 1 y 2.
+6. **Compose:** `compose.yaml`, `.env.ejemplo`, `deploy/postgres/01-esquemas.sh` y `.gitignore`. `docker compose up -d --wait` en local, con Docker Engine y Docker Compose v2.
+7. **Medición:** `deploy/medir_memoria.sh`, `perfil-consolidado.yml` (manual y en los pull requests que cambian el despliegue) y Dependabot. El run del pull request es la evidencia de los escenarios 1 y 2.
 8. **Esquemas y permisos:** comprobar en el perfil levantado que un rol no puede crear tablas en el esquema de otro proceso.
 9. **Cierre:** `evidencia.md`, pull request con la CI en verde, actualización de las plantillas en el README, y fusión con la aprobación del autor.
 

@@ -24,6 +24,7 @@ Fuentes leídas: constitución 2.0.1, `docs/decisiones.md` (D-28 a D-35, ADR-012
 - **Decisión:** `.env.ejemplo` versionado en la raíz, con valores ficticios. `compose.yaml` lo carga con `env_file` y, si existe, agrega encima un `.env` opcional (`required: false`, disponible desde Compose 2.24). `.env` se agrega a `.gitignore`.
 - **Por qué:** así el clon funciona sin editar ni copiar nada (FR-001) y quien quiera sus propios valores los pone en `.env`, que nunca entra al repositorio. Si falta `.env.ejemplo`, Compose falla con un mensaje claro (caso límite «falta el archivo»).
 - Las variables llegan a los contenedores por `env_file`; el `compose.yaml` no usa interpolación `${…}`, que solo leería `.env`.
+- **Riesgo aceptado en el perfil local:** todos los contenedores reciben las mismas variables, así que cada proceso ve también la clave del superusuario y las de los otros roles. Darle a cada contenedor solo las suyas, sin interpolación, obligaría a repartir `.env.ejemplo` en unos 6 archivos con claves repetidas y rompería el `.env` opcional (principio XI). Se acepta porque los valores son ficticios y los procesos no publican puertos. El `compose.vps.yml` de B00-H08 entrega a cada contenedor solo sus secretos.
 - **Gitleaks:** las contraseñas de ejemplo son ficticias y obvias (por ejemplo `cambiar-en-local-identidad`). Si Gitleaks las marca, se agrega una excepción acotada a `.env.ejemplo` en `.gitleaks.toml`, con su motivo.
 
 ## 3. PostgreSQL, esquemas y roles
@@ -69,7 +70,7 @@ Fuentes leídas: constitución 2.0.1, `docs/decisiones.md` (D-28 a D-35, ADR-012
 
 - **Procesos y gateway:** Actuator expone solo `health`, con sus grupos `liveness` y `readiness`. En los procesos, `readiness` incluye la base (`db`), así que un proceso no queda sano si no se conecta a PostgreSQL.
 - **Comando del *healthcheck*:** las imágenes de Temurin 25 (Ubuntu 26.04) **no traen curl ni wget**. El *healthcheck* usa bash con `/dev/tcp` para hacer un `GET /actuator/health/readiness` y busca `"status":"UP"`. No agrega paquetes a la imagen, que es una superficie de ataque menor, ni arranca una JVM por cada comprobación, lo que falsearía la medición de memoria.
-- **PostgreSQL:** `pg_isready -U postgres -d mdd`.
+- **PostgreSQL:** `pg_isready -h 127.0.0.1 -U postgres -d mdd`. Con `-h`, la comprobación va por TCP. Mientras corre `01-esquemas.sh`, la imagen levanta un servidor temporal que solo escucha por el socket; sin `-h`, `postgres` quedaría sano antes de tiempo y los procesos fallarían al migrar cuando el servidor se reinicia.
 - **Orden de arranque:** los procesos tienen `depends_on` de PostgreSQL con `condition: service_healthy`. El gateway no depende de los procesos, porque en esta historia no enruta.
 - **Puertos:** solo el gateway publica el `8080` en la máquina anfitriona. Los procesos y PostgreSQL quedan en la red interna de Compose.
 - **Alternativas consideradas:**
@@ -92,14 +93,14 @@ Fuentes leídas: constitución 2.0.1, `docs/decisiones.md` (D-28 a D-35, ADR-012
 
   | Contenedor | Límite |
   |---|---|
-  | `postgres` | 512 MiB |
-  | `identidad`, `datos`, `distributivo` y `salida` | 512 MiB cada uno |
-  | `gateway` | 384 MiB |
-  | **Total** | **2 944 MiB** (2,9 GiB) |
+  | `postgres` | 1 024 MiB |
+  | `identidad`, `datos`, `distributivo` y `salida` | 1 024 MiB cada uno |
+  | `gateway` | 768 MiB |
+  | **Total** | **5 888 MiB** (5,75 GiB) |
 
-  Quedan unos 1,1 GiB de los 4 GiB de la VM para el sistema operativo.
-- **JVM:** `JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=60`, como ya anticipaba `java.Dockerfile`. Con 2 vCPU y menos de 2 GiB por contenedor, la JVM usa SerialGC por defecto, que es la opción de menor consumo. No se agregan más ajustes hasta medir.
-- **Si la medición no cabe:** primero se ajustan los límites y las opciones de la JVM. Si aun así queda en 4 GiB o más, se aplica la alternativa de R-19 (Nginx en lugar de Spring Cloud Gateway), con una decisión nueva.
+  Quedan unos 2,25 GiB de los 8 GiB de la VM para el sistema operativo (D-36, que duplicó los límites de 512 y 384 MiB).
+- **JVM:** `JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=60`, como ya anticipaba `java.Dockerfile`. Con menos de 1 792 MiB por contenedor, la JVM elige SerialGC aunque la VM tenga 4 vCPU; es la opción de menor consumo. No se agregan más ajustes hasta medir.
+- **Si la medición no cabe:** primero se ajustan los límites y las opciones de la JVM. Si aun así queda en 8 GiB o más, se aplica la alternativa de R-19 (Nginx en lugar de Spring Cloud Gateway), con una decisión nueva.
 
 ## 9. Medición de R-19 (FR-007, FR-008, D-34)
 
@@ -107,11 +108,12 @@ Fuentes leídas: constitución 2.0.1, `docs/decisiones.md` (D-28 a D-35, ADR-012
   1. Espera a que todo esté sano (`docker compose up -d --wait`).
   2. Hace el **calentamiento**: llama 20 veces a la salud de cada proceso y del gateway, con `docker compose exec` y el mismo comando del *healthcheck*.
   3. Espera 30 segundos y toma `docker stats --no-stream`.
-  4. Suma el consumo, lo compara con 4 GiB (escenario) y con 3,5 GiB (disparador de R-19) e imprime una tabla Markdown con el consumo por contenedor, el total, los límites, la fecha y el commit, lista para pegar en `evidencia.md`.
-- **Entorno de referencia:** un workflow manual `perfil-consolidado.yml` (`workflow_dispatch`) en `ubuntu-latest`, con Docker. Desde un *checkout* limpio, que es un clon recién hecho, ejecuta `docker compose up -d --wait` y el script, y sube la tabla como artefacto y resumen del run. También demuestra el escenario 1 en un entorno limpio.
+  4. Suma el consumo, lo compara con 8 GiB (escenario) y con 7 GiB (disparador de R-19, D-36) e imprime una tabla Markdown con el consumo por contenedor, el total, los límites, la fecha y el commit, lista para pegar en `evidencia.md`.
+- **Entorno de referencia:** el workflow `perfil-consolidado.yml` en `ubuntu-latest`, con Docker. Se ejecuta a mano (`workflow_dispatch`) y en los pull requests que cambian el despliegue (filtro `paths`), porque GitHub solo deja ejecutar a mano un workflow que ya está en la rama principal. Desde un *checkout* limpio, que es un clon recién hecho, ejecuta `docker compose up -d --wait` y el script, y sube la tabla como artefacto y resumen del run. También demuestra el escenario 1 en un entorno limpio.
 - **Uso de memoria del anfitrión:** el consumo medido no depende de la RAM del anfitrión, porque cada contenedor tiene su límite y cada JVM se dimensiona con él.
-- **No corre en cada pull request:** construir las 5 imágenes y levantar el perfil cuesta varios minutos. Se ejecuta a mano para la evidencia y al cerrar la ola. Si después hace falta, se le agrega un filtro `paths` sobre `compose.yaml`, `deploy/**` y `backend/apps/**`.
-- **En local:** en la máquina del autor hay Podman sin proveedor de Compose (`podman compose` falla porque no encuentra `docker-compose`). Para validar en local hay que instalar el binario de Docker Compose v2 en `~/.docker/cli-plugins/` y activar `podman.socket`. La medición de referencia es la de Docker en el workflow.
+- **No corre en todos los pull requests:** construir las 5 imágenes y levantar el perfil cuesta varios minutos. Solo corre en los que cambian `compose.yaml`, `.env.ejemplo`, `deploy/**` o el propio workflow, y a mano al cerrar la ola. No es un check obligatorio.
+- **Código de salida:** el paso de medición declara `shell: bash`, que en Actions agrega `pipefail`; sin eso, `tee` ocultaría un total de 8 GiB o más.
+- **En local:** Docker Engine y Docker Compose v2 de los paquetes de Fedora (`moby-engine`, `docker-compose` y `docker-buildx`), que el autor instala con `sudo`. Testcontainers usa el mismo Docker. La medición de referencia es la del workflow.
 
 ## 10. Dependabot
 
