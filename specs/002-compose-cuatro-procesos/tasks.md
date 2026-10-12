@@ -207,7 +207,7 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
 
 ### Implementation for User Story 2
 
-- [ ] T028 [US2] Crear `deploy/medir_memoria.sh`, ejecutable, con `set -euo pipefail`, según [contracts/medicion-r19.md](contracts/medicion-r19.md):
+- [X] T028 [US2] Crear `deploy/medir_memoria.sh`, ejecutable, con `set -euo pipefail`, según [contracts/medicion-r19.md](contracts/medicion-r19.md):
   1. `docker compose up -d --wait`; si falla, `exit 2`. Con `set -e`, ese paso va dentro de un `if !` para no salir con 1.
   2. Calentamiento: 20 llamadas a `/actuator/health/readiness` en `identidad`, `datos`, `distributivo`, `salida` y `gateway`, con `docker compose exec -T <c> bash -c '<comando del healthcheck>'`.
   3. `sleep 30`.
@@ -215,13 +215,13 @@ description: "Tareas de B00-H02: despliegue con Docker Compose en 4 procesos"
   5. La tabla Markdown con fecha ISO 8601, `git rev-parse --short HEAD`, el entorno (`docker version --format '{{.Server.Version}}'`), los límites, el total en MiB y GiB, el resultado y la alerta de R-19 si pasa de 7 GiB.
 
   Códigos de salida: 0 si el total es menor que 8 GiB, 1 si llega a 8 GiB o más, 2 si un componente no está sano.
-- [ ] T029 [US2] Crear `.github/workflows/perfil-consolidado.yml`:
+- [X] T029 [US2] Crear `.github/workflows/perfil-consolidado.yml`:
   - `on`: `workflow_dispatch` y `pull_request` (tipos `opened`, `synchronize`, `reopened` y `ready_for_review`) con `paths: [compose.yaml, .env.ejemplo, 'deploy/**', '.github/workflows/perfil-consolidado.yml']`;
   - el job con `if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false`, `permissions: contents: read`, `runs-on: ubuntu-latest` y `timeout-minutes: 30`, como los jobs de la CI; no es un check obligatorio;
   - pasos: `actions/checkout` → `time docker compose build` (tiempo de construcción) → `time docker compose up -d --wait`, ya sin construir, que es la referencia de SC-001 → `deploy/medir_memoria.sh | tee medicion.md`, en un paso con `shell: bash` para que `pipefail` conserve el código del script → `cat medicion.md >> "$GITHUB_STEP_SUMMARY"` → `actions/upload-artifact` con el nombre `medicion-r19` y 90 días de retención (`if: always()`) → `docker compose down -v` (`if: always()`).
 
   Fijar las acciones con `pinact run` y validar con actionlint, como en B00-H01.
-- [ ] T030 [P] [US2] Agregar a `.github/dependabot.yml` el ecosistema `docker-compose` con `directory: /` y `schedule: { interval: weekly }`, para que proponga las actualizaciones de `postgres:18.6-alpine`.
+- [X] T030 [P] [US2] Agregar a `.github/dependabot.yml` el ecosistema `docker-compose` con `directory: /` y `schedule: { interval: weekly }`, para que proponga las actualizaciones de `postgres:18.6-alpine`.
 - [ ] T031 [US2] Medir en local con el perfil de T026: `deploy/medir_memoria.sh | tee` a un archivo en el directorio temporal de la sesión, y pegar la tabla en `specs/002-compose-cuatro-procesos/evidencia.md` (entorno: Docker local). Anotar que en local cada JVM ve 12 núcleos y en el equipo de despliegue verá 4: con más hilos, la medición local sale algo más alta, así que la diferencia deja margen a favor. Según el total:
   - si es de 8 GiB o más, ajustar los límites o `JAVA_TOOL_OPTIONS` (research §8) y repetir;
   - si sigue sin caber, detenerse y proponer al autor una decisión nueva (alternativa de R-19: Nginx en lugar de Spring Cloud Gateway).
