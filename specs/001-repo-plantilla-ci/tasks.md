@@ -241,14 +241,14 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
 
 ### Implementation for User Story 4
 
-- [ ] T043 [US4] Comprobar SpotBugs con clases de Java 25 (FR-016): `./gradlew :plataforma:arquitectura:spotbugsMain --info` tiene que analizar las clases compiladas con Java 25 (versión 69) sin `Unsupported class file major version`, con SpotBugs 4.10.4 según el log. Registrar la fila `spotbugs-java25` en `specs/001-repo-plantilla-ci/evidencia.md`.
+- [X] T043 [US4] Comprobar SpotBugs con clases de Java 25 (FR-016): `./gradlew :plataforma:arquitectura:spotbugsMain --info` tiene que analizar las clases compiladas con Java 25 (versión 69) sin `Unsupported class file major version`, con SpotBugs 4.10.4 según el log. Registrar la fila `spotbugs-java25` en `specs/001-repo-plantilla-ci/evidencia.md`.
 
   Comprobar también el caso límite «Hallazgo de confianza media o baja»:
   1. Crear una clase temporal en `backend/plataforma/arquitectura/src/main/java/ec/mdd/arquitectura/` con un patrón que SpotBugs reporte con confianza media.
   2. Confirmarlo bajando a `MEDIUM`, solo en local, el `reportLevel` de `mdd.java-conventions.gradle`: el hallazgo tiene que aparecer.
   3. Volver a `HIGH` y comprobar que `spotbugsMain` pasa.
   4. Borrar la clase, revisar con `git diff` que la convención quedó como estaba y anotar el resultado.
-- [ ] T044 [US4] Comprobar el hallazgo en local:
+- [X] T044 [US4] Comprobar el hallazgo en local:
   1. Crear un archivo temporal `backend/plataforma/arquitectura/src/main/java/ec/mdd/arquitectura/ConsultaTemporal.java` con un método que reciba un `String` y ejecute `java.sql.Statement.execute("SELECT * FROM t WHERE c = '" + parametro + "'")`.
   2. `./gradlew :plataforma:arquitectura:spotbugsMain` tiene que fallar con `SQL_NONCONSTANT_STRING_PASSED_TO_EXECUTE` o `SQL_INJECTION_JDBC` de confianza alta.
   3. Borrar el archivo.
@@ -263,7 +263,7 @@ description: "Tareas de B00-H01: repositorio, plantilla de servicio en cinco cap
 
 **Purpose**: dejar el pull request de B00-H01 listo para fusionar.
 
-- [ ] T045 Revisar el JavaDoc según el principio XII en `backend/plataforma/arquitectura/src/main/java/ec/mdd/arquitectura/ReglasCapas.java`, `backend/plataforma/arquitectura/src/main/java/ec/mdd/arquitectura/package-info.java` y los `package-info.java` y clases de `backend/plantillas/`. Tiene que estar en español, documentar el contrato y no repetir la firma; no usa `@author`. Luego ejecutar `./gradlew build` y hacer push a `001-repo-plantilla-ci`. Los 10 checks del pull request tienen que quedar en éxito o *skipped* según T020.
+- [X] T045 Revisar el JavaDoc según el principio XII en `backend/plataforma/arquitectura/src/main/java/ec/mdd/arquitectura/ReglasCapas.java`, `backend/plataforma/arquitectura/src/main/java/ec/mdd/arquitectura/package-info.java` y los `package-info.java` y clases de `backend/plantillas/`. Tiene que estar en español, documentar el contrato y no repetir la firma; no usa `@author`. Luego ejecutar `./gradlew build` y hacer push a `001-repo-plantilla-ci`. Los 10 checks del pull request tienen que quedar en éxito o *skipped* según T020.
 
 ---
 
