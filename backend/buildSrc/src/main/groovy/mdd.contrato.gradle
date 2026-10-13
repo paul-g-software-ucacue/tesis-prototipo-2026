@@ -1,0 +1,76 @@
+// Interfaces generadas desde contratos/ (principio IV, ADR-015). Lo aplica cada servicio con
+// contrato, junto con mdd.servicio: el controlador implementa la interfaz generada, así que si no
+// cumple contratos/<servicio>/openapi.yaml, no compila.
+plugins {
+    id 'org.openapi.generator'
+}
+
+def contratos = rootProject.file('../contratos')
+def generado = layout.buildDirectory.dir('generated/openapi')
+def paquete = "ec.mdd.${project.name}.adaptadores.entrada.api"
+
+openApiGenerate {
+    generatorName = 'spring'
+    inputSpec = new File(contratos, "${project.name}/openapi.yaml").absolutePath
+    outputDir = generado.get().asFile.absolutePath
+    apiPackage = paquete
+    modelPackage = paquete
+    validateSpec = true
+    generateApiTests = false
+    generateModelTests = false
+    generateApiDocumentation = false
+    generateModelDocumentation = false
+    configOptions = [
+            interfaceOnly        : 'true',
+            useSpringBoot4       : 'true',
+            useJackson3          : 'true',
+            skipDefaultInterface : 'true',
+            useTags              : 'true',
+            openApiNullable      : 'false',
+            // La validación de entrada y sus errores con detalles llegan con B00-H04 (research §5).
+            useBeanValidation    : 'false',
+            documentationProvider: 'none',
+            annotationLibrary    : 'none',
+    ]
+}
+
+tasks.named('openApiGenerate') {
+    // Los contratos referencian contratos/comun/: un cambio ahí también regenera.
+    inputs.dir(new File(contratos, 'comun'))
+}
+
+sourceSets.main.java.srcDir(generado.map { it.dir('src/main/java') })
+
+tasks.named('compileJava') {
+    dependsOn 'openApiGenerate'
+}
+
+dependencies {
+    implementation 'org.springframework:spring-web'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations'
+    implementation 'jakarta.annotation:jakarta.annotation-api'
+}
+
+testing {
+    suites {
+        test {
+            dependencies {
+                // Pruebas de contrato con MockMvc y el validador de plataforma:pruebas. La seguridad
+                // de los procesos da el 401 con el cuerpo NoAutenticado del contrato.
+                implementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+                implementation 'org.springframework.security:spring-security-test'
+                implementation project(':plataforma:pruebas')
+                implementation project(':plataforma:seguridad')
+            }
+        }
+    }
+}
+
+// El código generado no cuenta para la cobertura: lo garantiza el contrato, no las pruebas.
+['jacocoTestReport', 'jacocoTestCoverageVerification'].each { nombre ->
+    tasks.named(nombre) {
+        classDirectories.setFrom(sourceSets.main.output.classesDirs.asFileTree.matching {
+            exclude '**/adaptadores/entrada/api/**'
+        })
+    }
+}

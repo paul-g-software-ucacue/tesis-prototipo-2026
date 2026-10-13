@@ -1,0 +1,31 @@
+// Apoyo para las pruebas de los servicios, de plataforma:seguridad y del API Gateway (B00-H03):
+// llaves y tokens de prueba, un JWKS de prueba y el validador de contratos. Solo se usa en las
+// pruebas. No depende de servlet ni de WebFlux, para que lo use también el API Gateway.
+plugins {
+    id 'java-library'
+    id 'mdd.java-conventions'
+}
+
+def versionValidadorOpenApi = providers.gradleProperty('versionValidadorOpenApi').get()
+
+dependencies {
+    // Nimbus, para firmar los tokens de prueba.
+    api 'org.springframework.security:spring-security-oauth2-jose'
+    api "com.atlassian.oai:openapi-request-validator-core:${versionValidadorOpenApi}"
+    // MvcResult y los objetos simulados de servlet; cada prueba que usa ValidadorDeContrato ya
+    // los tiene.
+    compileOnly 'org.springframework:spring-test'
+    compileOnly 'jakarta.servlet:jakarta.servlet-api'
+}
+
+testing {
+    suites {
+        test {
+            dependencies {
+                // StubMvcResult, para probar ValidadorDeContrato sin levantar un contexto.
+                implementation 'org.springframework:spring-webmvc'
+                implementation 'jakarta.servlet:jakarta.servlet-api'
+            }
+        }
+    }
+}

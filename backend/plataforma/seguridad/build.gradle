@@ -1,0 +1,24 @@
+// Seguridad servlet compartida por los 4 procesos (ADR-014, research §6): servidor de recursos
+// con JWT RS256 validado contra el JWKS de Usuarios y el 401 uniforme del principio XIII. El API
+// Gateway, que es WebFlux, tiene su propia configuración.
+plugins {
+    id 'java-library'
+    id 'mdd.java-conventions'
+}
+
+dependencies {
+    api 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server'
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+}
+
+testing {
+    suites {
+        test {
+            dependencies {
+                implementation project(':plataforma:pruebas')
+                implementation 'org.springframework.security:spring-security-test'
+                implementation 'org.springframework.boot:spring-boot-starter-actuator'
+            }
+        }
+    }
+}

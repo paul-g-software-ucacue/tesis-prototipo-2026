@@ -91,7 +91,7 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
 
 ### Generación y módulos de plataforma
 
-- [ ] T011 Crear `backend/buildSrc/src/main/groovy/mdd.contrato.gradle`:
+- [X] T011 Crear `backend/buildSrc/src/main/groovy/mdd.contrato.gradle`:
   - aplica `org.openapi.generator`;
   - configura `openApiGenerate` con `generatorName 'spring'`, `inputSpec` en `${rootDir}/../contratos/${project.name}/openapi.yaml`, `outputDir` en `build/generated/openapi`, `apiPackage` y `modelPackage` en `ec.mdd.${project.name}.adaptadores.entrada.api`, y las `configOptions` de research §11;
   - agrega `build/generated/openapi/src/main/java` a `sourceSets.main` y hace que `compileJava` dependa de `openApiGenerate`;
@@ -100,7 +100,7 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
   - excluye `**/adaptadores/entrada/api/**` de `jacocoTestReport` y `jacocoTestCoverageVerification`.
 
   Comentario de cabecera: «interfaces generadas desde contratos/ (principio IV, ADR-015)».
-- [ ] T012 Crear `backend/plataforma/pruebas/` (`build.gradle` con `java-library` y `mdd.java-conventions`), un apoyo solo para pruebas, sin dependencias de servlet ni de WebFlux:
+- [X] T012 Crear `backend/plataforma/pruebas/` (`build.gradle` con `java-library` y `mdd.java-conventions`), un apoyo solo para pruebas, sin dependencias de servlet ni de WebFlux:
   - `api 'com.nimbusds:nimbus-jose-jwt'`, `api "com.atlassian.oai:openapi-request-validator-core:${versionValidadorOpenApi}"` y `compileOnly 'org.springframework:spring-test'`;
   - `src/main/java/ec/mdd/plataforma/pruebas/TokensDePrueba.java`: genera un par RSA en memoria y firma tokens válidos, vencidos, de otra llave, con otro emisor, HS256 y `alg: none`, más un token alterado (cambia un carácter de la firma);
   - `ServidorJwks.java`: sirve el JWKS de un `TokensDePrueba` con `com.sun.net.httpserver.HttpServer` en un puerto libre;
@@ -110,12 +110,12 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
   - `TokensDePrueba`: cada tipo de token tiene el algoritmo, el emisor y el vencimiento esperados;
   - `ServidorJwks`: el JWKS servido trae la llave pública y ninguna parte privada;
   - `ValidadorDeContrato`: una respuesta válida pasa y una inválida falla, contra un contrato pequeño de prueba en `src/test/resources`.
-- [ ] T013 [P] Crear `backend/plataforma/seguridad/build.gradle` (`java-library` y `mdd.java-conventions`):
+- [X] T013 [P] Crear `backend/plataforma/seguridad/build.gradle` (`java-library` y `mdd.java-conventions`):
   - `api 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server'` e `implementation 'org.springframework.boot:spring-boot-starter-webmvc'`;
   - en la suite `test`: `project(':plataforma:pruebas')` y `'org.springframework.security:spring-security-test'`.
 
   Comentario de cabecera: «seguridad servlet compartida por los 4 procesos (ADR-014, research §6)».
-- [ ] T014 Escribir primero `backend/plataforma/seguridad/src/test/java/ec/mdd/plataforma/seguridad/SeguridadProcesoTest.java`:
+- [X] T014 Escribir primero `backend/plataforma/seguridad/src/test/java/ec/mdd/plataforma/seguridad/SeguridadProcesoTest.java`:
   - `@SpringBootTest(webEnvironment = RANDOM_PORT)` con una aplicación de prueba en el mismo paquete, que tiene un controlador `GET /api/prueba/sesion` que devuelve el `sub` y las autoridades;
   - `ServidorJwks` como JWKS, por `@DynamicPropertySource`;
   - comprueba que sin token, encabezado mal formado, token mal formado, alterado, vencido, de otra llave, otro emisor, HS256 y `alg: none` dan 401 con **el mismo cuerpo, byte por byte**, `Content-Type: application/json` y `WWW-Authenticate` igual a `Bearer`;
@@ -123,7 +123,7 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
   - con `POST /api/prueba/sesion` como ruta pública, comprueba que `POST` pasa sin token y `GET` a la misma ruta responde 401.
 
   Al principio no compila: faltan las clases de T015.
-- [ ] T015 Implementar en `backend/plataforma/seguridad/src/main/java/ec/mdd/plataforma/seguridad/`:
+- [X] T015 Implementar en `backend/plataforma/seguridad/src/main/java/ec/mdd/plataforma/seguridad/`:
   - `PropiedadesSeguridad`, un `@ConfigurationProperties("mdd.seguridad")` con `emisor` (por defecto `mdd-usuarios`) y `rutasPublicas`. Cada ruta pública tiene el formato `MÉTODO /ruta`, con `*` para cualquier método (por ejemplo, `POST /api/usuarios/sesion`), porque en identidad la misma ruta es pública con `POST` y protegida con `GET`;
   - `RespuestaNoAutenticado`, un `AuthenticationEntryPoint` que escribe el cuerpo constante de contracts/autenticacion.md y `WWW-Authenticate: Bearer`, y registra la causa en DEBUG sin el token;
   - `SeguridadProcesoAutoConfiguracion`, un `@AutoConfiguration` con:
