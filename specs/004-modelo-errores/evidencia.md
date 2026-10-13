@@ -59,6 +59,48 @@ Registro de las comprobaciones de los tres escenarios de la historia (issue #21)
 | Perfil levantado (T025 a T027) | confirmada | `docker compose up -d --wait --build`: 6 contenedores sanos en 100 s. `deploy/probar_autenticacion.sh`: los 6 pasos en `OK` (SC-005). `deploy/probar_errores.sh`: datos vacíos → 400 con detalles de `usuario` y `clave`; ruta inexistente → 404; `DELETE` a la sesión → 405; proceso salida detenido → 503; ninguno con `timestamp`, `path`, `trace` ni `requestId`. shellcheck y actionlint sin hallazgos. | 2026-10-13 |
 | Base de datos detenida en el perfil (escenario 2) | confirmada | Con `postgres` detenido, el inicio de sesión responde a los 30 s (espera de Hikari) `{"titulo":"Error inesperado",…,"codigo":"COMUN_ERROR_INTERNO","idIncidente":"28b1ba01-…"}`. En `docker compose logs identidad`: `ERROR … RegistroDeIncidentes : Incidente 28b1ba01-…: POST /api/usuarios/sesion falló con org.springframework.dao.DataAccessResourceFailureException` y la traza («Unable to acquire JDBC Connection»). La contraseña de prueba no aparece en el registro. Al levantar `postgres`, todo vuelve a quedar sano y la autenticación de punta a punta sigue pasando. | 2026-10-13 |
 
+## CI del pull request de B00-H04 (T029)
+
+| Run | Estado del PR | Resultado | Enlace |
+|---|---|---|---|
+| 1 (commit `9115b1a`) | borrador | `0 · deteccion`, `1 · lint-backend`, `2 · test-backend` y `3 · secretos` pasan; los jobs pesados y `perfil-consolidado` quedan *skipped*. Se esperó a que terminara antes de marcar el PR como listo. | [ci 38351969411](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38351969411) |
+| 2 (commit `9115b1a`) | listo para revisión | `0 · deteccion`, `1 · lint-backend`, `2 · test-backend`, `2 · test-integracion`, `3 · secretos`, `4 · sbom-backend` y `4 · sca` pasan; Grype sin hallazgos; los tres jobs de frontend quedan *skipped* (D-29). `perfil-consolidado` pasa. | [ci 38352683021](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38352683021), [perfil-consolidado 38352683018](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38352683018) |
+
+**Medición de R-19 después de iniciar sesión en el PR** ([run 38352683018](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38352683018), commit medido `51f77c1`, el *merge* del PR con `main`; autenticación 6/6 y errores 4/4 de punta a punta; arranque en 39,4 s):
+
+| Contenedor | Consumo (MiB) | Límite (MiB) |
+|---|---:|---:|
+| postgres | 109,9 | 512 |
+| identidad | 372,2 | 512 |
+| datos | 181,5 | 512 |
+| distributivo | 171,5 | 512 |
+| salida | 174,2 | 512 |
+| gateway | 191,3 | 384 |
+| **Total** | **1 200,6** (1,17 GiB) | 2 944 |
+
+Son +73 MiB respecto de la medición de B00-H03 sobre `main` (1 127,6 MiB): Hibernate Validator y más llamadas en el calentamiento, porque las pruebas de errores corren antes de medir. Identidad está al 73 % de su límite.
+
+## Fusión del PR de B00-H04 (T030)
+
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| Fusión con *squash* | confirmada | [PR #88](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/pull/88) fusionado con *squash*, con la aprobación del autor, el 2026-10-13 a las 06:10 UTC: commit `2b96063` en `main`. Antes de fusionar: último commit `9115b1a`, `mergeStateStatus: CLEAN` y la CI completa en verde (run 2). Rama borrada. | 2026-10-13 |
+| Perfil consolidado sobre `main` | confirmada | `gh workflow run perfil-consolidado.yml --ref main` ([run 38355317747](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38355317747)): éxito. Las imágenes se construyeron desde cero en 3 min 43 s, todo quedó sano en 48,3 s, y la autenticación y los errores de punta a punta pasaron completos. | 2026-10-13 |
+
+**Medición de R-19 después de iniciar sesión sobre `main`** · 2026-10-13T06:17:28+00:00 · commit `2b96063` · entorno: ubuntu-latest (Docker 28.0.4)
+
+| Contenedor | Consumo (MiB) | Límite (MiB) |
+|---|---:|---:|
+| postgres | 111,8 | 512 |
+| identidad | 361,0 | 512 |
+| datos | 187,8 | 512 |
+| distributivo | 182,6 | 512 |
+| salida | 185,7 | 512 |
+| gateway | 189,7 | 384 |
+| **Total** | **1 218,6** (1,19 GiB) | 2 944 |
+
+Resultado: cumple (< 8 GiB). Sin alerta de R-19 (≤ 7 GiB). Es la referencia de R-19 después de B00-H04. Identidad está al 71 % de su límite.
+
 ## Notas
 
 - **Ruta pública con un token inválido:** si una petición a una ruta pública, como el inicio de sesión, trae un token inválido, la seguridad responde el 401 uniforme antes de llegar al controlador. Es el comportamiento normal del servidor de recursos de Spring Security, y coincide con ADR-014: un token inválido nunca se acepta.
