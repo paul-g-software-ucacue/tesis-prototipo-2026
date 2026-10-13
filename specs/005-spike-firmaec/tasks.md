@@ -36,9 +36,9 @@ description: "Tareas de B00-S01: prueba temprana de firma con FirmaEC y validaci
 
 ## Phase 1: Setup
 
-- [ ] T001 En `backend/gradle.properties`, agregar `versionPdfbox=3.0.8`, `versionOpenHtmlToPdf=1.1.87` y `versionVeraPdf=1.30.2`, cada una con su motivo (research §2). Bouncy Castle ya está en `versionBouncyCastle`.
-- [ ] T002 En `backend/servicios/firma/build.gradle`, agregar a la suite `test` las dependencias `org.apache.pdfbox:pdfbox`, `org.bouncycastle:bcpkix-jdk18on`, `io.github.openhtmltopdf:openhtmltopdf-pdfbox` y `org.verapdf:validation-model`, con sus versiones. Comentario: «solo en pruebas: spike B00-S01 (D-44)». Comprobar con `dependencies --configuration runtimeClasspath` que no entran al de ejecución. Además, reenviar a la JVM de las pruebas las propiedades del modo local (D-43): en `tasks.named('test')`, `systemProperty` de `mdd.firma.pdf0`, `mdd.firma.pdf1`, `mdd.firma.pdf2` y `mdd.firma.raiz`, leídas con `providers.systemProperty(...)` y solo si están definidas. Sin esto, `-D` llega a Gradle pero no a la prueba (hallazgo I1).
-- [ ] T003 [P] Crear `specs/005-spike-firmaec/evidencia.md` con estas secciones:
+- [X] T001 En `backend/gradle.properties`, agregar `versionPdfbox=3.0.8`, `versionOpenHtmlToPdf=1.1.87` y `versionVeraPdf=1.30.2`, cada una con su motivo (research §2). Bouncy Castle ya está en `versionBouncyCastle`.
+- [X] T002 En `backend/servicios/firma/build.gradle`, agregar a la suite `test` las dependencias `org.apache.pdfbox:pdfbox`, `org.bouncycastle:bcpkix-jdk18on`, `io.github.openhtmltopdf:openhtmltopdf-pdfbox` y `org.verapdf:validation-model`, con sus versiones. Comentario: «solo en pruebas: spike B00-S01 (D-44)». Comprobar con `dependencies --configuration runtimeClasspath` que no entran al de ejecución. Además, reenviar a la JVM de las pruebas las propiedades del modo local (D-43): en `tasks.named('test')`, `systemProperty` de `mdd.firma.pdf0`, `mdd.firma.pdf1`, `mdd.firma.pdf2` y `mdd.firma.raiz`, leídas con `providers.systemProperty(...)` y solo si están definidas. Sin esto, `-D` llega a Gradle pero no a la prueba (hallazgo I1).
+- [X] T003 [P] Crear `specs/005-spike-firmaec/evidencia.md` con estas secciones:
   - entorno, con la versión de FirmaEC y cómo se instaló;
   - escenario 1;
   - escenario 2;
@@ -51,8 +51,8 @@ description: "Tareas de B00-S01: prueba temprana de firma con FirmaEC y validaci
 
 ## Phase 2: Foundational
 
-- [ ] T004 [P] Agregar la fuente `F/resources/fuentes/DejaVuSans.ttf` con su licencia en `F/resources/fuentes/LICENSE-DejaVu.txt`. No está instalada en Fedora: descargar `dejavu-fonts-ttf-2.37.tar.bz2` de la versión publicada oficial (`github.com/dejavu-fonts/dejavu-fonts/releases`) en una carpeta nueva del scratchpad, verificar su SHA-256 y copiar solo `DejaVuSans.ttf` y `LICENSE`. Indicar el origen y el SHA-256 en la licencia. Si la descarga no es posible, usar Liberation Sans (instalada, OFL) y anotarlo.
-- [ ] T005 [P] Crear `F/resources/spike/plantilla-pdfa.html`: XHTML con título, metadatos (`<title>`, idioma `es`) y una tabla ficticia «Distributivo de prueba, periodo 2026-I», con la fuente DejaVu Sans. Sin datos personales.
+- [X] T004 [P] Agregar la fuente `F/resources/fuentes/DejaVuSans.ttf` con su licencia en `F/resources/fuentes/LICENSE-DejaVu.txt`. No está instalada en Fedora: descargar `dejavu-fonts-ttf-2.37.tar.bz2` de la versión publicada oficial (`github.com/dejavu-fonts/dejavu-fonts/releases`) en una carpeta nueva del scratchpad, verificar su SHA-256 y copiar solo `DejaVuSans.ttf` y `LICENSE`. Indicar el origen y el SHA-256 en la licencia. Si la descarga no es posible, usar Liberation Sans (instalada, OFL) y anotarlo.
+- [X] T005 [P] Crear `F/resources/spike/plantilla-pdfa.html`: XHTML con título, metadatos (`<title>`, idioma `es`) y una tabla ficticia «Distributivo de prueba, periodo 2026-I», con la fuente DejaVu Sans. Sin datos personales.
 
 ---
 
@@ -62,7 +62,7 @@ description: "Tareas de B00-S01: prueba temprana de firma con FirmaEC y validaci
 
 **Independent Test**: los tres `.p12` se abren con OpenSSL con la cadena correcta, y el resultado de FirmaEC queda anotado.
 
-- [ ] T006 [US1] Crear `F/resources/ca-prueba/generar.sh`, ejecutable, con `set -euo pipefail` y OpenSSL 3, según `data-model.md`:
+- [X] T006 [US1] Crear `F/resources/ca-prueba/generar.sh`, ejecutable, con `set -euo pipefail` y OpenSSL 3, según `data-model.md`:
   - la CA con RSA de 3072 bits, 10 años y sus extensiones;
   - tres firmantes con RSA de 2048 bits, 3 años, `digitalSignature` y `nonRepudiation`, y los CN de F1, F2 y F3;
   - `firmante-N.p12` con la contraseña `cambiar-en-local-firma` y la cadena incluida;
@@ -70,7 +70,7 @@ description: "Tareas de B00-S01: prueba temprana de firma con FirmaEC y validaci
   - una variante `firmante-N-legacy.p12` con el cifrado antiguo de PKCS #12 (`-legacy`: 3DES y MAC SHA-1), por si FirmaEC no lee el formato moderno de OpenSSL 3 (AES-256 y PBKDF2). Así un rechazo por formato no se confunde con un rechazo de la CA (hallazgo U1).
 
   Trabaja en un directorio temporal y borra la llave de la CA al terminar. Validar con shellcheck, sobre una copia.
-- [ ] T007 [US1] Ejecutar `generar.sh` y verificar con `openssl pkcs12` y `openssl verify -CAfile ca-prueba.crt` que los tres certificados se encadenan a la CA y tienen las extensiones esperadas. Correr Gitleaks local sobre un clon con los archivos, para confirmar que la carpeta `ca-prueba/` se acepta. Anotar en `evidencia.md`.
+- [X] T007 [US1] Ejecutar `generar.sh` y verificar con `openssl pkcs12` y `openssl verify -CAfile ca-prueba.crt` que los tres certificados se encadenan a la CA y tienen las extensiones esperadas. Correr Gitleaks local sobre un clon con los archivos, para confirmar que la carpeta `ca-prueba/` se acepta. Anotar en `evidencia.md`.
 - [ ] T008 [US1] (autor) **Después de T010**, firmar con FirmaEC una copia desechable de `pdfa-prueba.pdf` con cada uno de los tres certificados, según [contracts/procedimiento-firma.md](contracts/procedimiento-firma.md). Primero con la variante moderna y, si falla, con la `-legacy`. Las copias no se guardan en el repositorio. Anotar en la sección «escenario 1» de `evidencia.md`:
   - la versión de FirmaEC y cómo se instaló en Fedora;
   - si firma con cada certificado, con qué variante, y el mensaje exacto si no.
@@ -85,17 +85,17 @@ description: "Tareas de B00-S01: prueba temprana de firma con FirmaEC y validaci
 
 **Independent Test**: `pdfa-firmado-2.pdf` empieza con los bytes exactos de `pdfa-firmado-1.pdf` y tiene una firma más.
 
-- [ ] T009 [US2] Crear `F/java/ec/mdd/firma/spike/PdfaDePruebaTest.java`:
+- [X] T009 [US2] Crear `F/java/ec/mdd/firma/spike/PdfaDePruebaTest.java`:
   - genera el PDF desde `plantilla-pdfa.html` con OpenHTMLtoPDF, con `usePdfAConformance(PDFA_2_B)`, la fuente incrustada y el perfil sRGB de `ICC_Profile.getInstance(ColorSpace.CS_sRGB)`;
   - lo valida con veraPDF (`PDFAFlavour.PDFA_2_B`) y falla si no es conforme, con las reglas que no cumple;
   - escribe una copia en `backend/servicios/firma/build/spike-firma/pdfa-prueba.pdf` (ruta desde la raíz; la misma en research, el procedimiento y el quickstart).
-- [ ] T010 [US2] Ejecutar `PdfaDePruebaTest`, copiar el PDF a `F/resources/ca-prueba/pdfa-prueba.pdf` y anotar en `evidencia.md` el resultado de veraPDF, el tamaño y el SHA-256.
+- [X] T010 [US2] Ejecutar `PdfaDePruebaTest`, copiar el PDF a `F/resources/ca-prueba/pdfa-prueba.pdf` y anotar en `evidencia.md` el resultado de veraPDF, el tamaño y el SHA-256.
 - [ ] T011 [US2] (autor) Firmar con FirmaEC según el procedimiento:
   - `pdfa-prueba.pdf` con `firmante-1.p12` → `pdfa-firmado-1.pdf`;
   - ese resultado con `firmante-2.p12` → `pdfa-firmado-2.pdf`.
 
   Copiar los dos a `F/resources/ca-prueba/` y anotar las opciones y los avisos de FirmaEC. **Con certificado real (D-43):** firmar en una carpeta fuera del repositorio y no copiar nada a `ca-prueba/`.
-- [ ] T012 [US2] En `F/java/ec/mdd/firma/spike/FirmasFirmaecTest.java`, la parte del escenario 2:
+- [X] T012 [US2] En `F/java/ec/mdd/firma/spike/FirmasFirmaecTest.java`, la parte del escenario 2:
   - `pdfa-firmado-2.pdf` empieza con todos los bytes de `pdfa-firmado-1.pdf`, y este con los de `pdfa-prueba.pdf`;
   - cada uno tiene una firma más que el anterior (`PDDocument.getSignatureDictionaries`).
 
@@ -111,7 +111,7 @@ description: "Tareas de B00-S01: prueba temprana de firma con FirmaEC y validaci
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T013 [US3] Escribir primero `F/java/ec/mdd/firma/spike/CasosNegativosTest.java` y un apoyo `FirmadorDePrueba.java`, que firma un PDF con PDFBox y Bouncy Castle (CMS separado, SHA-256) con un certificado y una fecha dados. Los casos de [contracts/validacion.md](contracts/validacion.md):
+- [X] T013 [US3] Escribir primero `F/java/ec/mdd/firma/spike/CasosNegativosTest.java` y un apoyo `FirmadorDePrueba.java`, que firma un PDF con PDFBox y Bouncy Castle (CMS separado, SHA-256) con un certificado y una fecha dados. Los casos de [contracts/validacion.md](contracts/validacion.md):
   - un byte cambiado dentro del ByteRange da integridad no válida;
   - la validación contra otra raíz, una CA generada en la prueba, da cadena no válida;
   - un certificado vencido antes del momento de la firma da vigencia no válida.
@@ -120,7 +120,7 @@ description: "Tareas de B00-S01: prueba temprana de firma con FirmaEC y validaci
 
 ### Implementation for User Story 3
 
-- [ ] T014 [US3] Implementar `F/java/ec/mdd/firma/spike/ValidadorPadesDePrueba.java` y su registro `ResultadoFirma`, según research §6 y `contracts/validacion.md`:
+- [X] T014 [US3] Implementar `F/java/ec/mdd/firma/spike/ValidadorPadesDePrueba.java` y su registro `ResultadoFirma`, según research §6 y `contracts/validacion.md`:
   - ByteRange;
   - integridad con `CMSSignedData` y `JcaSimpleSignerInfoVerifierBuilder`;
   - cadena con `CertPathBuilder` PKIX, la raíz como único `TrustAnchor`, sin revocación y con la fecha de la firma;
@@ -128,7 +128,7 @@ description: "Tareas de B00-S01: prueba temprana de firma con FirmaEC y validaci
   - revisión cerrada: en `FirmasFirmaecTest`, el ByteRange `[0, a, b, c]` de la primera firma cumple `b + c` = longitud de `pdfa-firmado-1.pdf` (hallazgo U3).
 
   JavaDoc del contrato y de lo que no comprueba (orden, rol, sello de tiempo, LTV y DocMDP). Así pasa T013.
-- [ ] T015 [US3] En `FirmasFirmaecTest`, la parte del escenario 3: las 2 firmas de `pdfa-firmado-2.pdf` son íntegras, con cadena válida hasta `ca-prueba.crt` y vigentes; y los CN son los de F1 y F2. En modo local, la raíz sale de `-Dmdd.firma.raiz`, y la salida imprime cada comprobación sin el CN real.
+- [X] T015 [US3] En `FirmasFirmaecTest`, la parte del escenario 3: las 2 firmas de `pdfa-firmado-2.pdf` son íntegras, con cadena válida hasta `ca-prueba.crt` y vigentes; y los CN son los de F1 y F2. En modo local, la raíz sale de `-Dmdd.firma.raiz`, y la salida imprime cada comprobación sin el CN real.
 - [ ] T016 [US3] Ejecutar `./gradlew :servicios:firma:spotlessApply :servicios:firma:test`, o el modo local según D-43, y anotar en `evidencia.md`, secciones «escenario 2» y «escenario 3»:
   - la comparación de bytes;
   - la cantidad de firmas;

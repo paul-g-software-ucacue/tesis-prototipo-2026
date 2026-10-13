@@ -24,6 +24,23 @@ testing {
     }
 }
 
+// veraPDF usa JAXB 2.3 (javax.xml.bind); el BOM de Spring Boot sube jaxb-impl y jaxb-core a la
+// 4.x (jakarta) y veraPDF ya no carga sus perfiles. Solo en el classpath de las pruebas: la
+// jaxb-impl 2.3.9 ya incluye el núcleo, así que jaxb-core se excluye.
+configurations.named('testRuntimeClasspath') {
+    exclude group: 'com.sun.xml.bind', module: 'jaxb-core'
+    resolutionStrategy.eachDependency { detalle ->
+        if (detalle.requested.group == 'com.sun.xml.bind' && detalle.requested.name == 'jaxb-impl') {
+            detalle.useVersion '2.3.9'
+            detalle.because 'veraPDF necesita JAXB 2.3 (javax.xml.bind), no la 4.x del BOM'
+        }
+        if (detalle.requested.group == 'javax.xml.bind' && detalle.requested.name == 'jaxb-api') {
+            detalle.useVersion '2.3.1'
+            detalle.because 'la versión estable de la API de JAXB 2.3'
+        }
+    }
+}
+
 // Modo local de D-43: -D llega a la JVM de Gradle, no a la de las pruebas; se reenvían las rutas
 // de los PDF firmados y de la raíz solo si están definidas.
 tasks.named('test') {
