@@ -152,7 +152,7 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
 
 ### Tests for User Story 1 ⚠️
 
-- [ ] T019 [US1] Escribir primero `backend/gateway/src/test/java/ec/mdd/gateway/SeguridadGatewayTest.java`:
+- [X] T019 [US1] Escribir primero `backend/gateway/src/test/java/ec/mdd/gateway/SeguridadGatewayTest.java`:
   - `@SpringBootTest(webEnvironment = RANDOM_PORT)` y `WebTestClient`;
   - `ServidorJwks` como JWKS;
   - un *backend* falso (`HttpServer` del JDK) como destino de `/api/cargas/**`, que guarda el encabezado `Authorization` recibido.
@@ -164,15 +164,15 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
 
 ### Implementation for User Story 1
 
-- [ ] T020 [US1] En `backend/gateway/build.gradle`, agregar `implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server'` y, en la suite `test`, `project(':plataforma:pruebas')` y `'org.springframework.security:spring-security-test'`.
-- [ ] T021 [US1] Implementar en `backend/gateway/src/main/java/ec/mdd/gateway/`:
+- [X] T020 [US1] En `backend/gateway/build.gradle`, agregar `implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server'` y, en la suite `test`, `project(':plataforma:pruebas')` y `'org.springframework.security:spring-security-test'`.
+- [X] T021 [US1] Implementar en `backend/gateway/src/main/java/ec/mdd/gateway/`:
   - `RespuestaNoAutenticadoReactiva`, un `ServerAuthenticationEntryPoint` con el mismo cuerpo y encabezado que la versión servlet;
   - `SeguridadGatewayConfig`, con:
     - un `SecurityWebFilterChain` sin CSRF, con `permitAll` para `POST /api/usuarios/sesion` y `/actuator/health/**`, `authenticated` para `/api/**` y `denyAll` para lo demás;
     - un `ReactiveJwtDecoder` (`NimbusReactiveJwtDecoder.withJwkSetUri(...).jwsAlgorithm(RS256)`, con validación del emisor `mdd.seguridad.emisor`).
 
   JavaDoc del porqué de la doble validación (ADR-014).
-- [ ] T022 [US1] En `backend/gateway/src/main/resources/application.yaml`:
+- [X] T022 [US1] En `backend/gateway/src/main/resources/application.yaml`:
   - las rutas `spring.cloud.gateway.server.webflux.routes` de research §10, con destinos `${MDD_URI_IDENTIDAD:http://identidad:8080}`, `${MDD_URI_DATOS:http://datos:8080}`, `${MDD_URI_DISTRIBUTIVO:http://distributivo:8080}` y `${MDD_URI_SALIDA:http://salida:8080}`;
   - `jwk-set-uri` igual que los procesos, y `mdd.seguridad.emisor: mdd-usuarios`.
 

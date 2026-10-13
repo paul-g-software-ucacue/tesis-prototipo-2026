@@ -27,6 +27,7 @@ Registro de las comprobaciones de los cuatro escenarios de la historia (issue #2
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| API Gateway (T019 a T022) | confirmada | `SeguridadGatewayTest` con un servidor real, un JWKS de prueba y un proceso falso como destino: las 10 causas de rechazo de T014 dan 401 con el mismo cuerpo, `Content-Type: application/json` y `WWW-Authenticate: Bearer`, **sin llegar al proceso**; un token válido llega al proceso con el mismo encabezado `Authorization`; `POST /api/usuarios/sesion` pasa sin token y `GET` a la misma ruta da 401; la salud pasa sin token. 14 pruebas con `GatewayAplicacionTest`, 41 de 41 líneas. | 2026-10-13 |
 
 ## Escenario 2: token válido
 

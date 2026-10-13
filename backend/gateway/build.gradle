@@ -1,5 +1,6 @@
 // API Gateway del MDD (constitución §3, ADR-008). No ensambla servicios: no usa la plantilla de
-// proceso ni necesita ModulosTest (research §5).
+// proceso ni necesita ModulosTest (research §5). Enruta /api/** a los 4 procesos y valida el JWT
+// antes de reenviar (ADR-014).
 plugins {
     id 'mdd.aplicacion'
 }
@@ -9,4 +10,16 @@ def versionSpringCloud = providers.gradleProperty('versionSpringCloud').get()
 dependencies {
     implementation platform("org.springframework.cloud:spring-cloud-dependencies:${versionSpringCloud}")
     implementation 'org.springframework.cloud:spring-cloud-starter-gateway-server-webflux'
+    implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server'
+}
+
+testing {
+    suites {
+        test {
+            dependencies {
+                implementation project(':plataforma:pruebas')
+                implementation 'org.springframework.security:spring-security-test'
+            }
+        }
+    }
 }
