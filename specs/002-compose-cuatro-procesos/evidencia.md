@@ -52,7 +52,26 @@ Resultado: cumple (< 8 GiB). Sin alerta de R-19 (≤ 7 GiB).
 
 ### Medición de referencia en GitHub Actions (T032)
 
-Pendiente: el workflow corre cuando el pull request quede listo para revisión.
+Run [38245724258](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38245724258) de `perfil-consolidado`, al marcar el PR #83 como listo para revisión (cabeza `095fe9e`; el commit medido, `a34cd4d`, es el *merge* del PR con `main` que hace GitHub en los eventos `pull_request`). Resultado: éxito.
+
+**Medición de R-19** · 2026-10-12T11:58:47+00:00 · commit `a34cd4d` · entorno: ubuntu-latest (Docker 28.0.4)
+Calentamiento: 20 llamadas a la salud por componente y 30 s de espera.
+
+| Contenedor | Consumo (MiB) | Límite (MiB) |
+|---|---:|---:|
+| postgres | 110,1 | 512 |
+| identidad | 162,2 | 512 |
+| datos | 160,3 | 512 |
+| distributivo | 153,1 | 512 |
+| salida | 153,8 | 512 |
+| gateway | 169,6 | 384 |
+| **Total** | **909,1** (0,89 GiB) | 2 944 |
+
+Resultado: cumple (< 8 GiB). Sin alerta de R-19 (≤ 7 GiB).
+
+- **Escenario 1 en un clon limpio con Docker:** el *checkout* del runner, sin caché, construyó las 5 imágenes en 2 min 24 s (`time docker compose build`) y `docker compose up -d --wait` dejó los 6 contenedores sanos en **33,2 s**. Es la referencia de SC-001 (180 s como máximo), en un equipo más parecido al de despliegue que el local.
+- La medición del runner (909,1 MiB) es algo menor que la local (1 001,6 MiB), como se esperaba: en local cada JVM ve 12 núcleos.
+- El commit `af0b495` (Tomcat 11.0.27 y Jackson 3.1.7) no cambia `compose.yaml` ni `deploy/**`, así que el filtro `paths` no vuelve a ejecutar el workflow. La medición se repite al cerrar la ola y en B00-H03 (D-34).
 
 ## Escenario 3: un esquema por servicio
 
