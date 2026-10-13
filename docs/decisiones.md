@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-43 · ADR-017.
+- **Siguiente número libre:** D-46 · ADR-017.
 
 ## Índice
 
@@ -34,6 +34,9 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-41 | 2026-10-13 | El escenario «Error reconocido» se demuestra con un error de dominio de prueba y con credenciales inválidas | Aceptada | Alcance del issue #21 |
 | D-42 | 2026-10-13 | El inicio de sesión con datos vacíos responde 400 con detalles | Aceptada | B00-H03 (research §5), contrato de Usuarios |
 | ADR-016 | 2026-10-13 | Traducción de errores con catálogo por servicio | Aceptada | ADR-009 (detalle de la traducción de errores) |
+| D-43 | 2026-10-13 | Si FirmaEC no acepta la CA de prueba, el spike sigue con el certificado real solo en local | Aceptada | Alcance del issue #26 |
+| D-44 | 2026-10-13 | La validación del spike queda como prueba de integración del servicio Firma | Aceptada | Alcance del issue #26 |
+| D-45 | 2026-10-13 | El spike B00-S01 dura 2 días de trabajo | Aceptada | Alcance del issue #26 |
 
 ---
 
@@ -416,6 +419,54 @@ Se conservan las reglas que ya tenía: prohibido borrar `main` o reescribir su h
 **Alternativas.** Una superclase o anotación de la plataforma en las excepciones del dominio; un advice por servicio; un catálogo YAML leído al arrancar; registrar las excepciones sin sanear; duplicar el saneo en el API Gateway.
 
 **Consecuencias.** Cada historia con errores de negocio agrega su fila en `errores.md`, su entrada en `Errores<Servicio>` y la respuesta en su contrato. F05-H02 agrega el 403 en la seguridad; los errores entre procesos (502 y 504) llegan con la primera llamada HTTP entre servicios.
+
+---
+
+## D-43. Si FirmaEC no acepta la CA de prueba, el spike sigue con el certificado real solo en local
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-13 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q1 de la especificación de B00-S01 (`specs/005-spike-firmaec/spec.md`)
+- **Modifica a:** alcance del issue #26 (B00-S01)
+
+**Decisión.** Si FirmaEC no firma con los certificados de la CA de prueba, se registra el hallazgo y los escenarios «Firma incremental» y «Validación» se hacen con el certificado real del autor, solo en su equipo. Al repositorio no entran el certificado real ni los PDF firmados con él; solo el resultado y los datos públicos de la comprobación (bytes comparados, resultado de cada validación).
+
+**Por qué.** La pregunta del *spike* es si la validación de D-23 funciona con lo que FirmaEC escribe de verdad. Sin firmas reales de FirmaEC no hay respuesta. El principio IX prohíbe el certificado real en el repositorio, no usarlo en el equipo del autor.
+
+**Alternativas.** Cerrar el *spike* con el hallazgo; firmar con las librerías en lugar de FirmaEC (no prueba lo que FirmaEC escribe).
+
+**Consecuencias.** Si se usa este camino, la demo necesita otra salida para los certificados (por ejemplo, otra forma de confiar en la CA de prueba), que se registra como ADR al cerrar el *spike*.
+
+---
+
+## D-44. La validación del spike queda como prueba de integración del servicio Firma
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-13 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q2 de la especificación de B00-S01
+- **Modifica a:** alcance del issue #26 (B00-S01)
+
+**Decisión.** La validación con PDFBox y Bouncy Castle es una prueba de integración del servicio `firma` (servicio 10). La CA de prueba, sus certificados y los PDF firmados con ellos viven en `backend/servicios/firma/src/test/resources/ca-prueba/`, la carpeta que ya permite Gitleaks. El código de producción del servicio no cambia.
+
+**Por qué.** F14 (ola 3) parte de una prueba que ya funciona con firmas reales de FirmaEC, y la CI la sigue corriendo, sin adelantar el diseño del servicio (contratos, puertos y errores).
+
+**Alternativas.** Código desechable fuera del build; un adaptador de producción adelantado.
+
+**Consecuencias.** Las dependencias de PDFBox y Bouncy Castle entran solo en las pruebas del servicio `firma`.
+
+---
+
+## D-45. El spike B00-S01 dura 2 días de trabajo
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-13 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q3 de la especificación de B00-S01
+- **Modifica a:** alcance del issue #26 (B00-S01)
+
+**Decisión.** El tiempo fijo del *spike* es de 2 días de trabajo. Al cumplirse, se cierra con lo que se sabe y lo pendiente queda en el resultado.
+
+**Por qué.** Alcanza para la CA, el PDF/A, las dos firmas manuales y la validación, y evita que el *spike* se convierta en desarrollo.
+
+**Alternativas.** 1 día (muy justo si hay que instalar FirmaEC); una semana.
+
+**Consecuencias.** Ninguna sobre otras historias.
 
 ---
 
