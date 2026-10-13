@@ -70,7 +70,7 @@ Con el prefijo `COMUN_`, porque no son de un solo servicio (como `SEGURIDAD_`):
 | `COMUN_TIPO_NO_SOPORTADO` | 415 | El cuerpo viene en un tipo de contenido que la operación no acepta. |
 | `COMUN_SERVICIO_NO_DISPONIBLE` | 503 | El API Gateway no puede conectar con el proceso de la ruta (D-40). |
 
-Los títulos y las descripciones van en `errores.md`. Cada descripción dice qué puede hacer el usuario (RNF-USA-01): por ejemplo, «Revisa los campos marcados y vuelve a intentarlo» o «Intenta de nuevo en unos minutos; si el problema sigue, informa este código: <idIncidente>».
+Los títulos y las descripciones van en `errores.md`. Cada descripción dice qué puede hacer el usuario (RNF-USA-01): por ejemplo, «Revisa los campos marcados y vuelve a intentarlo» o «Intenta de nuevo en unos minutos; si el problema sigue, informa el identificador del incidente». El catálogo no lleva marcadores variables: el `idIncidente` va en su propio campo.
 
 ## 5. Errores del framework y la página `/error`
 
@@ -149,7 +149,7 @@ Los títulos y las descripciones van en `errores.md`. Cada descripción dice qu�
 
 - **`contratos/comun/errores.yaml`:** agrega las respuestas reutilizables `SolicitudInvalida` (400), `ErrorInterno` (500) y `ServicioNoDisponible` (503), todas con el esquema `Error`.
 - **Contratos de los servicios:**
-  - cada operación declara `500 ErrorInterno`;
+  - cada operación declara `500 ErrorInterno` y `503 ServicioNoDisponible`, que puede dar el API Gateway;
   - las que reciben cuerpo declaran también `400 SolicitudInvalida`, hoy solo el inicio de sesión;
   - el inicio de sesión agrega `minLength: 1`.
 - **Pruebas de contrato de Usuarios:** suman el 400 con `detalles` (usuario vacío y clave ausente, que dan 2 detalles) y el 500 (un doble del caso de uso que lanza una excepción técnica).

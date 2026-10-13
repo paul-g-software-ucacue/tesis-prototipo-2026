@@ -98,7 +98,7 @@ Escenario: Error de entrada
 - **401 por token ausente o inválido** (B00-H03): sigue igual, con el mismo cuerpo byte por byte; esta historia no lo cambia (ADR-014).
 - **Credenciales inválidas en el inicio de sesión**: dejan de traducirse en el controlador de Usuarios y pasan al mecanismo común, con el mismo código `USUARIOS_CREDENCIALES_INVALIDAS` y la misma respuesta (D-38). Con datos vacíos, el inicio de sesión responde 400 con `detalles` (D-42).
 - **Proceso que no responde detrás del API Gateway**: el API Gateway responde 503 con el modelo común; no reenvía el error de conexión ni la dirección interna del proceso (D-40).
-- **Mensaje original con datos sensibles** (por ejemplo, una contraseña o un token en una excepción): no aparece en la respuesta y se omite también del registro (principio XIII, RNF-SEG-06).
+- **Mensaje original con datos sensibles** (por ejemplo, una contraseña o un token en una excepción): no aparece en la respuesta, y en el registro los tokens y las contraseñas quedan ocultos (principio XIII, RNF-SEG-06). Un saneo automático no puede reconocer nombres ni cédulas; por eso las excepciones propias nunca los llevan en su mensaje.
 - **Dos errores técnicos simultáneos**: cada uno tiene su propio `idIncidente`, distinto e imposible de adivinar.
 - **Error de otro servicio**: se traduce al código y contexto del servicio que lo recibe, sin reenviar el cuerpo remoto (principio XIII); hoy los servicios no se llaman entre procesos, así que se aplica cuando llegue la primera llamada.
 
@@ -111,7 +111,6 @@ Escenario: Error de entrada
 - **FR-001**: Toda respuesta de error de las aplicaciones DEBE usar el esquema `Error` común de `contratos/comun/errores.yaml` (`titulo`, `descripcion` y `codigo` obligatorios; `detalles` solo en errores de entrada; `idIncidente` solo en errores técnicos), sin campos extra (principio XIII).
 - **FR-002**: DEBE existir un catálogo de códigos en `contratos/comun/errores.md` con, por cada código, su estado HTTP, su título, su descripción y cuándo se usa. Cada código es estable y lleva el prefijo de su servicio o el común. El catálogo DEBE incluir los códigos de B00-H03 sin cambios (D-38) y los códigos genéricos que crea esta historia: error técnico inesperado, error de entrada y los errores del framework antes del controlador.
 - **FR-003**: Cada aplicación DEBE tener un solo punto de traducción de errores a respuestas HTTP. Ningún controlador ni caso de uso DEBE repetir esa traducción (principio XIII).
-- **FR-012**: El API Gateway DEBE responder sus propios errores con el modelo común: ruta inexistente (404), proceso que no responde (503) y fallo técnico (500 con `idIncidente`), sin el formato por defecto del framework y sin reenviar detalles técnicos (D-40).
 
 **Errores reconocidos**
 
@@ -122,7 +121,7 @@ Escenario: Error de entrada
 
 - **FR-006**: Una excepción técnica no reconocida DEBE responder 500 con un código genérico, una descripción segura en español y un `idIncidente` único e impredecible.
 - **FR-007**: La respuesta de un error técnico NO DEBE contener trazas, nombres de clases, paquetes o métodos, SQL, el mensaje original de la excepción, credenciales, tokens ni direcciones internas.
-- **FR-008**: El registro de un error técnico DEBE guardar la causa original y la traza junto con el mismo `idIncidente`, sin contraseñas, tokens ni datos personales.
+- **FR-008**: El registro de un error técnico DEBE guardar la causa original y la traza junto con el mismo `idIncidente`, con los tokens y las contraseñas ocultos. Los datos personales se evitan porque ninguna excepción propia los incluye en su mensaje, y el prototipo solo usa datos ficticios (principio IX).
 
 **Errores de entrada**
 
@@ -132,6 +131,10 @@ Escenario: Error de entrada
 **Contratos**
 
 - **FR-011**: Los contratos de los servicios con API DEBEN declarar las respuestas de error que pueden dar (400, 500 y las de su catálogo), y las pruebas de contrato DEBEN cubrir esas respuestas (principios IV y VIII).
+
+**API Gateway**
+
+- **FR-012**: El API Gateway DEBE responder sus propios errores con el modelo común: ruta inexistente (404), proceso que no responde (503) y fallo técnico (500 con `idIncidente`), sin el formato por defecto del framework y sin reenviar detalles técnicos (D-40).
 
 ### Key Entities
 
@@ -157,4 +160,5 @@ Escenario: Error de entrada
 - «Aplicación» son los 4 procesos de ADR-006 (identidad, datos, distributivo y salida), que comparten el mecanismo de traducción, y el API Gateway, con su manejador reactivo (D-40); cada servicio registra sus propios códigos.
 - La clasificación de los errores (dominio, aplicación, infraestructura y entrada) y los estados HTTP son los del principio XIII.
 - Los errores entre procesos (502, 503 y 504) se traducen cuando llegue la primera llamada por HTTP entre procesos; hoy no existe.
+- El cuerpo del 403 con el modelo común llega con F05-H02 (matriz de permisos, «Acceso no autorizado»). Esta historia solo evita que una `AccessDeniedException` se convierta en 500; hoy ningún endpoint da 403.
 - Las respuestas y el registro usan solo datos ficticios (principios VIII y IX).

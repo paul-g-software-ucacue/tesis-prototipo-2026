@@ -25,7 +25,7 @@ VerificadorDeCatalogo.verificar(new ErroresUsuarios());      // en las pruebas d
 VerificadorDeCatalogo.verificar(CodigosComunes.TODOS);       // en las pruebas de plataforma:errores
 ```
 
-Lee la tabla de `errores.md` y, por cada entrada, falla si el código no está, o si el estado, el título o la descripción no son iguales a los de su fila.
+Recibe un catálogo de servicio o una lista de `DefinicionDeCodigo` (los códigos comunes no tienen excepción asociada). Lee la tabla de `errores.md` y, por cada código, falla si no está, o si el estado, el título o la descripción no son iguales a los de su fila.
 
 ## Garantías
 

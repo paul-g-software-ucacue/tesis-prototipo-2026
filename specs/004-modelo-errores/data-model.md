@@ -24,14 +24,22 @@ No hay datos persistidos. El modelo describe las piezas del modelo de errores (K
 | `campo` | Nombre del campo como en el JSON del contrato (por ejemplo, `usuario`). |
 | `descripcion` | «es obligatorio», «debe tener entre {min} y {max} caracteres», «no tiene el formato esperado» o «no es válido» (research §7). |
 
+## Definición de un código (`DefinicionDeCodigo`)
+
+| Campo | Regla |
+|---|---|
+| `codigo` | En mayúsculas con guion bajo. Prefijo del servicio (por ejemplo, `USUARIOS_`); `COMUN_` y `SEGURIDAD_` son solo de la plataforma. |
+| `estado` | Un 4xx o 5xx. 405, 406 y 415 solo en los códigos comunes del framework. |
+| `titulo` y `descripcion` | Iguales a su fila en `contratos/comun/errores.md`. |
+
+`CodigosComunes` es una lista de definiciones, sin excepción asociada. `VerificadorDeCatalogo` recibe definiciones.
+
 ## Entrada del catálogo (`EntradaCatalogo`)
 
 | Campo | Regla |
 |---|---|
 | `excepcion` | Clase de la excepción de dominio o de aplicación. Única en el proceso. |
-| `codigo` | Único en el proceso. Prefijo del servicio (por ejemplo, `USUARIOS_`); `COMUN_` y `SEGURIDAD_` son solo de la plataforma. |
-| `estado` | Uno de los estados del principio XIII: 400, 401, 403, 404, 409, 422 o 5xx. |
-| `titulo` y `descripcion` | Iguales a su fila en `contratos/comun/errores.md`. |
+| `definicion` | Una `DefinicionDeCodigo`. El código es único en el proceso. |
 
 **Validaciones:**
 - Al arrancar, un código o una excepción repetidos impiden que el proceso arranque.

@@ -68,7 +68,7 @@ description: "Tareas de B00-H04: modelo de errores común y catálogo de código
   Actualizar la nota final: los códigos `COMUN_` y `SEGURIDAD_` son de la plataforma.
 - [ ] T004 [P] En `contratos/comun/errores.yaml`, agregar en `components.responses` las respuestas `SolicitudInvalida` (400), `ErrorInterno` (500) y `ServicioNoDisponible` (503). Las tres usan el esquema `Error`, con su descripción y el código que llevan.
 - [ ] T005 En los contratos de `usuarios`, `cargas`, `generacion` y `dashboard`:
-  - cada operación declara `'500': $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'`;
+  - cada operación declara `'500': $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'` y `'503': $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'`, porque el API Gateway puede darlo en cualquiera (D-40);
   - en `contratos/usuarios/openapi.yaml`, `POST /api/usuarios/sesion` agrega `'400': $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'`, y `CredencialesSesion.usuario` y `clave` llevan `minLength: 1` (D-42).
 - [ ] T006 Validar los 7 archivos de `contratos/` con `openapitools/openapi-generator-cli:v7.25.0 validate --recommend`, sobre una copia en el directorio temporal. Anotar el resultado en la sección «contratos» de `specs/004-modelo-errores/evidencia.md`.
 
@@ -82,8 +82,12 @@ description: "Tareas de B00-H04: modelo de errores común y catálogo de código
 - [ ] T008 Implementar en `backend/plataforma/errores-nucleo/`:
   - `build.gradle`, con `java-library` y `mdd.java-conventions`, más `api 'com.fasterxml.jackson.core:jackson-annotations'`;
   - **el modelo:** `RespuestaError` (record con `@JsonInclude(NON_NULL)`) y `DetalleRespuesta` (record);
-  - **el catálogo:** `EntradaCatalogo` (record: `excepcion`, `codigo`, `estado`, `titulo` y `descripcion`, con validación del formato del código); `CatalogoDeErrores` (interfaz con `List<EntradaCatalogo> entradas()`); y `RegistroDeErrores`, que reúne los catálogos, valida los repetidos y busca por clase o superclase;
-  - `CodigosComunes`, con los 8 códigos `COMUN_` y `SEGURIDAD_NO_AUTENTICADO`, cada uno con su estado, título y descripción, y una lista `TODOS`;
+  - **el catálogo:**
+    - `DefinicionDeCodigo` (record: `codigo`, `estado`, `titulo` y `descripcion`, con validación del formato del código y de que el estado sea 4xx o 5xx);
+    - `EntradaCatalogo` (record: `excepcion` y `definicion`, con la fábrica `de(clase, codigo, estado, titulo, descripcion)`);
+    - `CatalogoDeErrores` (interfaz con `List<EntradaCatalogo> entradas()`);
+    - `RegistroDeErrores`, que reúne los catálogos, valida los repetidos y busca por clase o superclase;
+  - `CodigosComunes`, con las definiciones de los 8 códigos `COMUN_` y de `SEGURIDAD_NO_AUTENTICADO`, y una lista `TODOS`;
   - `SaneadorDeTrazas`, que convierte la excepción con sus causas a texto y la sanea;
   - `Incidentes`, que genera el `idIncidente`.
 
@@ -92,7 +96,7 @@ description: "Tareas de B00-H04: modelo de errores común y catálogo de código
 ### Verificación del catálogo y mecanismo de los procesos
 
 - [ ] T009 [P] Agregar en `backend/plataforma/pruebas/` la dependencia `api project(':plataforma:errores-nucleo')` y la clase `VerificadorDeCatalogo`:
-  - `verificar(CatalogoDeErrores)` y `verificar(List<EntradaCatalogo>)` leen la tabla de `contratos/comun/errores.md` y fallan si un código no está, o si su estado, título o descripción no coinciden;
+  - `verificar(CatalogoDeErrores)` y `verificar(List<DefinicionDeCodigo>)` leen la tabla de `contratos/comun/errores.md` y fallan si un código no está, o si su estado, título o descripción no coinciden;
   - tiene su prueba, con un `.md` de prueba en `src/test/resources`: una entrada que coincide pasa; una con otro título falla y nombra el código.
 - [ ] T010 Escribir primero las pruebas de `backend/plataforma/errores/src/test/java/ec/mdd/plataforma/errores/`:
   - `ManejadorDeErroresTest`: `@SpringBootTest(RANDOM_PORT)` con una aplicación de prueba sin seguridad, un controlador de prueba y `OutputCaptureExtension`. Comprueba que:
@@ -199,7 +203,7 @@ description: "Tareas de B00-H04: modelo de errores común y catálogo de código
 
 ### Implementation for User Story 3
 
-- [ ] T022 [US3] Quitar de `IniciarSesionServicio` el comentario sobre los datos vacíos, si dice que llegan al caso de uso. El caso de uso conserva su defensa ante nulos y vacíos (sus pruebas no cambian), porque la validación del contrato es del adaptador. Actualizar `specs/003-autenticacion-jwt/contracts/api.md` («datos vacíos dan el mismo 401») con una nota de D-42. Así pasa T021.
+- [ ] T022 [US3] Actualizar `specs/003-autenticacion-jwt/contracts/api.md` («datos vacíos dan el mismo 401») con una nota de D-42. `IniciarSesionServicio` y su JavaDoc no cambian: el caso de uso conserva su defensa ante nulos y vacíos, y sus pruebas siguen igual, porque la validación del contrato es del adaptador. T021 pasa con la validación de T013.
 
 **Checkpoint**: un error de entrada dice qué campo falló y qué le falta.
 
@@ -215,7 +219,7 @@ description: "Tareas de B00-H04: modelo de errores común y catálogo de código
   - sin token, la misma ruta sigue respondiendo el 401 de ADR-014;
   - ninguna respuesta tiene `timestamp`, `path`, `requestId` ni `error`.
 
-  Una prueba unitaria del manejador cubre el 500 con `idIncidente` ante una excepción cualquiera.
+  Una prueba unitaria del manejador cubre el 500 con `idIncidente` ante una excepción cualquiera. Otra compara el cuerpo del 401 de `RespuestaNoAutenticadoReactiva` con `CodigosComunes.SEGURIDAD_NO_AUTENTICADO`.
 - [ ] T024 Implementar `backend/gateway/src/main/java/ec/mdd/gateway/ManejadorDeErroresGateway.java`, un `ErrorWebExceptionHandler` con `@Order(-2)`, según research §10. Usa `RespuestaError`, `CodigosComunes`, `Incidentes` y `SaneadorDeTrazas` de `plataforma:errores-nucleo`; escribe el JSON con el `ObjectMapper` del contexto. Agregar `implementation project(':plataforma:errores-nucleo')` a `backend/gateway/build.gradle`. Así pasa T023, con el 60 % de cobertura.
 - [ ] T025 Crear `deploy/probar_errores.sh`, ejecutable, con el patrón `verificar`, contra el perfil levantado y a través del API Gateway:
   1. inicio de sesión con `{"usuario":""}`: 400 `COMUN_SOLICITUD_INVALIDA` con 2 `detalles`;
