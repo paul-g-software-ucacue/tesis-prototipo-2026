@@ -1,0 +1,32 @@
+# Contrato de generacion. En B00-H03 solo tiene la sesión actual, para probar la autenticación de
+# punta a punta (D-39); las operaciones de negocio llegan con sus historias.
+openapi: 3.0.3
+info:
+  title: MDD · generacion
+  version: 1.0.0
+servers:
+  - url: /
+security:
+  - bearer: []
+tags:
+  - name: Sesion
+    description: Sesión actual.
+paths:
+  /api/generacion/sesion:
+    get:
+      tags: [Sesion]
+      operationId: consultarSesion
+      summary: Devuelve el usuario y los roles del token.
+      responses:
+        '200':
+          description: Token válido.
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/seguridad.yaml#/components/schemas/SesionActual'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+components:
+  securitySchemes:
+    bearer:
+      $ref: '../comun/seguridad.yaml#/components/securitySchemes/bearer'

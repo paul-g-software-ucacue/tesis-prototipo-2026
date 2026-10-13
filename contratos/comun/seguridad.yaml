@@ -1,0 +1,43 @@
+# Piezas de seguridad comunes a los contratos de los servicios (ADR-014).
+openapi: 3.0.3
+info:
+  title: MDD · Seguridad común
+  version: 1.0.0
+paths: {}
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT RS256 que emite Usuarios en POST /api/usuarios/sesion.
+  schemas:
+    SesionActual:
+      description: Lo que el proceso sabe del usuario que hace la petición, obtenido del token.
+      type: object
+      required: [usuario, roles]
+      properties:
+        usuario:
+          type: string
+          description: Nombre de usuario (claim sub del token).
+          example: autor.prueba
+        roles:
+          type: array
+          description: Roles del usuario, ordenados alfabéticamente; vacía si no tiene.
+          items:
+            type: string
+          example: [COORDINADOR_CARRERA, DOCENTE]
+  responses:
+    NoAutenticado:
+      description: >-
+        Sin token o con un token inválido. El cuerpo es el mismo para todas las causas y no dice
+        qué falló (código SEGURIDAD_NO_AUTENTICADO).
+      headers:
+        WWW-Authenticate:
+          description: Siempre "Bearer", sin detalles.
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: './errores.yaml#/components/schemas/Error'

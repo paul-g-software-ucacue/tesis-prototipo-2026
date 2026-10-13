@@ -40,13 +40,13 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
 
 **Purpose**: versiones, módulos nuevos y archivo de evidencia.
 
-- [ ] T001 Agregar a `backend/gradle.properties`, cada una con su motivo:
+- [X] T001 Agregar a `backend/gradle.properties`, cada una con su motivo:
   - `versionBouncyCastle=1.86` («Argon2PasswordEncoder la necesita y no está en el BOM de Spring Boot; research §7»);
   - `versionOpenApiGenerator=7.25.0` («la 7.26.0 tiene una semana; research §11»);
   - `versionValidadorOpenApi=3.0.0` («openapi-request-validator-core, antes swagger-request-validator; research §11»).
-- [ ] T002 En `backend/buildSrc/build.gradle`, agregar `implementation "org.openapitools:openapi-generator-gradle-plugin:${propiedades.getProperty('versionOpenApiGenerator')}"`, que se resuelve desde `gradlePluginPortal()`, con un comentario «para mdd.contrato (ADR-015)».
-- [ ] T003 En `backend/settings.gradle`, agregar `include 'plataforma:seguridad', 'plataforma:pruebas'`, después de `plataforma:arquitectura`.
-- [ ] T004 [P] Crear `specs/003-autenticacion-jwt/evidencia.md` con estas secciones:
+- [X] T002 En `backend/buildSrc/build.gradle`, agregar `implementation "org.openapitools:openapi-generator-gradle-plugin:${propiedades.getProperty('versionOpenApiGenerator')}"`, que se resuelve desde `gradlePluginPortal()`, con un comentario «para mdd.contrato (ADR-015)».
+- [X] T003 En `backend/settings.gradle`, agregar `include 'plataforma:seguridad', 'plataforma:pruebas'`, después de `plataforma:arquitectura`.
+- [X] T004 [P] Crear `specs/003-autenticacion-jwt/evidencia.md` con estas secciones:
   - entorno;
   - contratos;
   - construcción y pruebas;
@@ -67,27 +67,27 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
 
 ### Contratos (principio IV: antes del código)
 
-- [ ] T005 [P] Crear `contratos/comun/errores.yaml` (OpenAPI 3.0.3, solo `components`):
+- [X] T005 [P] Crear `contratos/comun/errores.yaml` (OpenAPI 3.0.3, solo `components`):
   - `Error`, con `titulo`, `descripcion` y `codigo` obligatorios, y `detalles` (lista de `DetalleError`) e `idIncidente` opcionales;
   - `DetalleError`, con `campo` y `descripcion`.
 
   Cada campo lleva la descripción del principio XIII.
-- [ ] T006 [P] Crear `contratos/comun/errores.md`, el catálogo de códigos, con una tabla `Código | Estado | Título | Descripción | Cuándo`:
+- [X] T006 [P] Crear `contratos/comun/errores.md`, el catálogo de códigos, con una tabla `Código | Estado | Título | Descripción | Cuándo`:
   - `SEGURIDAD_NO_AUTENTICADO` y `USUARIOS_CREDENCIALES_INVALIDAS` (research §5);
   - una nota: «B00-H04 completa el catálogo y no renombra estos códigos (D-38)».
-- [ ] T007 [P] Crear `contratos/comun/seguridad.yaml` (OpenAPI 3.0.3, solo `components`):
+- [X] T007 [P] Crear `contratos/comun/seguridad.yaml` (OpenAPI 3.0.3, solo `components`):
   - `securitySchemes.bearer` (`type: http`, `scheme: bearer`, `bearerFormat: JWT`);
   - el esquema `SesionActual` (`usuario` texto y `roles` lista de textos, los dos obligatorios);
   - la respuesta `NoAutenticado` (401, con el encabezado `WWW-Authenticate` y el cuerpo `$ref: './errores.yaml#/components/schemas/Error'`).
-- [ ] T008 Crear `contratos/usuarios/openapi.yaml` según [contracts/api.md](contracts/api.md):
+- [X] T008 Crear `contratos/usuarios/openapi.yaml` según [contracts/api.md](contracts/api.md):
   - `security: [bearer: []]` global;
   - `POST /api/usuarios/sesion` (`iniciarSesion`, `security: []`, `CredencialesSesion` → `200 TokenSesion` y `401 Error`);
   - `GET /api/usuarios/sesion` (`consultarSesion` → `200 SesionActual` y `401 NoAutenticado`);
   - `GET /api/usuarios/jwks` (`consultarJwks`, `security: []` → `200 Jwks`).
 
   Tags `Sesion` y `Jwks`, y `$ref` a `../comun/*.yaml`.
-- [ ] T009 [P] Crear `contratos/cargas/openapi.yaml`, `contratos/generacion/openapi.yaml` y `contratos/dashboard/openapi.yaml`, cada uno con `GET /api/<servicio>/sesion` (`consultarSesion`, tag `Sesion` → `200 SesionActual` y `401 NoAutenticado`) y `security: [bearer: []]`.
-- [ ] T010 Validar los 7 archivos de `contratos/` con el CLI de openapi-generator 7.25.0, en contenedor (`openapitools/openapi-generator-cli:v7.25.0 validate -i …`). Montar una **copia** de `contratos/` en el directorio temporal de la sesión, nunca el repositorio con `:z` (memoria del proyecto). Anotar el resultado en la sección «contratos» de `specs/003-autenticacion-jwt/evidencia.md`.
+- [X] T009 [P] Crear `contratos/cargas/openapi.yaml`, `contratos/generacion/openapi.yaml` y `contratos/dashboard/openapi.yaml`, cada uno con `GET /api/<servicio>/sesion` (`consultarSesion`, tag `Sesion` → `200 SesionActual` y `401 NoAutenticado`) y `security: [bearer: []]`.
+- [X] T010 Validar los 7 archivos de `contratos/` con el CLI de openapi-generator 7.25.0, en contenedor (`openapitools/openapi-generator-cli:v7.25.0 validate -i …`). Montar una **copia** de `contratos/` en el directorio temporal de la sesión, nunca el repositorio con `:z` (memoria del proyecto). Anotar el resultado en la sección «contratos» de `specs/003-autenticacion-jwt/evidencia.md`.
 
 ### Generación y módulos de plataforma
 
