@@ -39,6 +39,8 @@ class RespuestaErrorTest {
 
     @Test
     void dadoUnEstadoHttp_cuandoSeBuscaSuCodigoComun_entoncesUsaLaCorrespondencia() {
+        assertThat(CodigosComunes.segunEstado(401))
+                .isEqualTo(CodigosComunes.SEGURIDAD_NO_AUTENTICADO);
         assertThat(CodigosComunes.segunEstado(404)).isEqualTo(CodigosComunes.RECURSO_NO_ENCONTRADO);
         assertThat(CodigosComunes.segunEstado(405)).isEqualTo(CodigosComunes.METODO_NO_PERMITIDO);
         assertThat(CodigosComunes.segunEstado(406)).isEqualTo(CodigosComunes.FORMATO_NO_ACEPTADO);

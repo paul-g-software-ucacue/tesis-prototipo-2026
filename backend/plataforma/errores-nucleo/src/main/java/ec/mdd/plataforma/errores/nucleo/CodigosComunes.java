@@ -104,6 +104,7 @@ public final class CodigosComunes {
      */
     public static DefinicionDeCodigo segunEstado(int estado) {
         return switch (estado) {
+            case 401 -> SEGURIDAD_NO_AUTENTICADO;
             case 404 -> RECURSO_NO_ENCONTRADO;
             case 405 -> METODO_NO_PERMITIDO;
             case 406 -> FORMATO_NO_ACEPTADO;

@@ -5,4 +5,11 @@
   <Match>
     <Source name="~.*/build/generated/.*" />
   </Match>
+  <!-- B00-H04 (ADR-016): la página /error propia responde al método de la petición original, como la
+       BasicErrorController de Spring Boot. No cambia estado, y la API es stateless con token bearer y
+       sin CSRF, así que el hallazgo de CSRF no aplica. Solo esta clase y este hallazgo. -->
+  <Match>
+    <Class name="ec.mdd.plataforma.errores.ControladorDeErrores" />
+    <Bug pattern="SPRING_CSRF_UNRESTRICTED_REQUEST_MAPPING" />
+  </Match>
 </FindBugsFilter>

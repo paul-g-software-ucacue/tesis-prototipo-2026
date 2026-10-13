@@ -98,7 +98,7 @@ description: "Tareas de B00-H04: modelo de errores común y catálogo de código
 - [X] T009 [P] Agregar en `backend/plataforma/pruebas/` la dependencia `api project(':plataforma:errores-nucleo')` y la clase `VerificadorDeCatalogo`:
   - `verificar(CatalogoDeErrores)` y `verificar(List<DefinicionDeCodigo>)` leen la tabla de `contratos/comun/errores.md` y fallan si un código no está, o si su estado, título o descripción no coinciden;
   - tiene su prueba, con un `.md` de prueba en `src/test/resources`: una entrada que coincide pasa; una con otro título falla y nombra el código.
-- [ ] T010 Escribir primero las pruebas de `backend/plataforma/errores/src/test/java/ec/mdd/plataforma/errores/`:
+- [X] T010 Escribir primero las pruebas de `backend/plataforma/errores/src/test/java/ec/mdd/plataforma/errores/`:
   - `ManejadorDeErroresTest`: `@SpringBootTest(RANDOM_PORT)` con una aplicación de prueba sin seguridad, un controlador de prueba y `OutputCaptureExtension`. Comprueba que:
     - el error de dominio de prueba `fixtures.dominio.HorasExcedidas`, registrado en un catálogo de prueba como `PRUEBA_HORAS_EXCEDIDAS` con 409 (D-41), responde 409 con su título, descripción y código, sin `detalles` ni `idIncidente`;
     - una subclase de una excepción registrada usa la entrada de la superclase;
@@ -111,7 +111,7 @@ description: "Tareas de B00-H04: modelo de errores común y catálogo de código
   - `ManejadorDeErroresSeguridadTest`: con `plataforma:seguridad` y `jwt()`, un controlador que lanza `AccessDeniedException` responde 403, no 500.
   - `ControladorDeErroresTest`: unitaria, con `MockHttpServletRequest` y los atributos `jakarta.servlet.error.*`: 404 → `COMUN_RECURSO_NO_ENCONTRADO`; 500 con una excepción → `COMUN_ERROR_INTERNO` con `idIncidente` y el incidente en el registro.
   - `CodigosComunesTest`: `VerificadorDeCatalogo.verificar(CodigosComunes.TODOS)` pasa.
-- [ ] T011 Implementar `backend/plataforma/errores/`:
+- [X] T011 Implementar `backend/plataforma/errores/`:
   - **`build.gradle`:** `java-library` y `mdd.java-conventions`, más:
     - `api project(':plataforma:errores-nucleo')`;
     - `implementation 'org.springframework.boot:spring-boot-starter-webmvc'` y `'org.springframework.boot:spring-boot-starter-validation'`;
