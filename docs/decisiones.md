@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-43 · ADR-016.
+- **Siguiente número libre:** D-43 · ADR-017.
 
 ## Índice
 
@@ -33,6 +33,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-40 | 2026-10-13 | El API Gateway responde sus propios errores con el modelo común | Aceptada | Alcance del issue #21 |
 | D-41 | 2026-10-13 | El escenario «Error reconocido» se demuestra con un error de dominio de prueba y con credenciales inválidas | Aceptada | Alcance del issue #21 |
 | D-42 | 2026-10-13 | El inicio de sesión con datos vacíos responde 400 con detalles | Aceptada | B00-H03 (research §5), contrato de Usuarios |
+| ADR-016 | 2026-10-13 | Traducción de errores con catálogo por servicio | Aceptada | ADR-009 (detalle de la traducción de errores) |
 
 ---
 
@@ -389,6 +390,32 @@ Se conservan las reglas que ya tenía: prohibido borrar `main` o reescribir su h
 **Alternativas.** Mantener el 401 como excepción a la validación de entrada.
 
 **Consecuencias.** El research de B00-H03 queda modificado en ese punto; las pruebas de contrato de Usuarios cubren el 400.
+
+---
+
+## ADR-016. Traducción de errores con catálogo por servicio
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-13 · **Decidido por:** autor de la tesis
+- **Origen:** plan de B00-H04 (`specs/004-modelo-errores/research.md`)
+- **Modifica a:** ADR-009, que fija el modelo de errores sin el detalle de cómo se traduce
+- **Relacionadas:** D-38, D-40 a D-42, ADR-014, ADR-015; principios I, IV, V, IX y XIII
+
+**Contexto.** El principio XIII fija el esquema `Error`, la clasificación, los estados y lo que nunca se expone. Falta decidir cómo se traduce cada error en las 4 aplicaciones y en el API Gateway sin que el dominio conozca HTTP, y cómo se mantiene el catálogo, para todas las historias con errores de negocio.
+
+**Decisión.**
+1. **Un solo `@RestControllerAdvice` por proceso**, en `plataforma:errores`, que extiende `ResponseEntityExceptionHandler` (errores del framework con el modelo común), más una página `/error` propia. No captura las excepciones de seguridad.
+2. **Catálogo por servicio:** cada servicio registra sus excepciones de dominio y de aplicación en un `CatalogoDeErrores` de sus adaptadores de entrada (excepción, código, estado, título y descripción). El dominio y la aplicación siguen siendo Java sin HTTP. Un código o una excepción repetidos impiden arrancar.
+3. **`contratos/comun/errores.md` es el catálogo normativo.** `VerificadorDeCatalogo` comprueba en las pruebas que cada entrada del código coincide con su fila.
+4. **Códigos comunes con el prefijo `COMUN_`** para los errores técnicos, de entrada y del framework.
+5. **Error técnico:** 500 `COMUN_ERROR_INTERNO` con un `idIncidente` aleatorio (UUID v4). El registro guarda la traza saneada (sin JWT, `Bearer`, `clave=` ni `password=`) con el mismo `idIncidente`. Una excepción de dominio o aplicación sin registrar se trata como técnica y se avisa en el registro.
+6. **Validación de entrada:** la generación de los contratos valida los cuerpos (`useBeanValidation`), y los errores responden 400 `COMUN_SOLICITUD_INVALIDA` con un `detalle` por campo, con descripciones propias en español.
+7. **API Gateway:** un `ErrorWebExceptionHandler` propio (404, 405, 503 sin conexión con el proceso, 500 con `idIncidente`). Lo común vive en `plataforma:errores-nucleo`, sin servlet ni WebFlux, que también usan los servicios para registrar su catálogo.
+
+**Por qué.** Cumple la traducción centralizada del principio XIII con un solo punto por aplicación, deja a cada servicio dueño de sus códigos (principio V), y el catálogo documentado no se desalinea del código. Las respuestas no filtran detalles (RNF-SEG-04) y el registro permite diagnosticar sin guardar secretos.
+
+**Alternativas.** Una superclase o anotación de la plataforma en las excepciones del dominio; un advice por servicio; un catálogo YAML leído al arrancar; registrar las excepciones sin sanear; duplicar el saneo en el API Gateway.
+
+**Consecuencias.** Cada historia con errores de negocio agrega su fila en `errores.md`, su entrada en `Errores<Servicio>` y la respuesta en su contrato. F05-H02 agrega el 403 en la seguridad; los errores entre procesos (502 y 504) llegan con la primera llamada HTTP entre servicios.
 
 ---
 
