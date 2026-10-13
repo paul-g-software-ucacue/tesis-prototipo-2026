@@ -245,20 +245,20 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
   Datos vacíos responden como credenciales inválidas (research §5). Así pasa T025.
 - [X] T034 [US2] `backend/servicios/usuarios/src/main/java/ec/mdd/usuarios/infraestructura/CargaUsuarioDePrueba.java`: un `ApplicationRunner`, activo solo con `mdd.usuarios.usuario-prueba.habilitado=true`, que crea `autor.prueba`, activo y con `DOCENTE` y `COORDINADOR_CARRERA`, si no existe, con la contraseña de `usuario-prueba.clave` en Argon2id. Si la contraseña está vacía, no crea nada y lo avisa. Nunca registra la contraseña. Prueba en `src/integrationTest/java/ec/mdd/usuarios/CargaUsuarioDePruebaIntegrationTest.java`: crea el usuario una sola vez y no lo duplica. Además, `src/test/java/ec/mdd/usuarios/infraestructura/CargaUsuarioDePruebaTest.java`, con un doble escrito a mano de `RepositorioUsuarios` (sin Mockito): deshabilitado no crea nada, con la contraseña vacía no crea nada, y habilitado crea el usuario una vez. También `ConfiguracionUsuariosTest`, que llama directamente a los métodos `@Bean`.
 - [X] T035 [P] [US2] `adaptadores/entrada/SesionControlador.java` en `cargas`, `generacion` y `dashboard`: implementa su `SesionApi` y lee el `Jwt` del `SecurityContext`. Así pasa T027.
-- [ ] T036 [US2] Configuración del proceso identidad en `backend/apps/identidad/src/main/resources/application.yaml`:
+- [X] T036 [US2] Configuración del proceso identidad en `backend/apps/identidad/src/main/resources/application.yaml`:
   - `jwk-set-uri: ${MDD_JWKS_URI:http://localhost:8080/api/usuarios/jwks}`;
   - `mdd.seguridad.rutas-publicas` con `POST /api/usuarios/sesion` y `GET /api/usuarios/jwks` (formato de T015);
   - `mdd.usuarios.usuario-prueba.habilitado: ${MDD_USUARIO_PRUEBA_HABILITADO:false}` y `mdd.usuarios.usuario-prueba.clave: ${MDD_USUARIO_PRUEBA_CLAVE:}`;
   - `mdd.usuarios.llave-privada: ${MDD_LLAVE_PRIVADA:}`;
   - `spring.jpa.hibernate.ddl-auto: validate` y `spring.jpa.open-in-view: false`.
-- [ ] T037 [US2] En `.env.ejemplo`, agregar `MDD_USUARIO_PRUEBA_HABILITADO=true` y `MDD_USUARIO_PRUEBA_CLAVE=cambiar-en-local-usuario-prueba`, con un comentario: «usuario de prueba autor.prueba; solo para local (research §8)».
-- [ ] T038 [US2] Crear `deploy/probar_autenticacion.sh`, ejecutable, con `set -euo pipefail`, según [contracts/medicion-r19-sesion.md](contracts/medicion-r19-sesion.md):
+- [X] T037 [US2] En `.env.ejemplo`, agregar `MDD_USUARIO_PRUEBA_HABILITADO=true` y `MDD_USUARIO_PRUEBA_CLAVE=cambiar-en-local-usuario-prueba`, con un comentario: «usuario de prueba autor.prueba; solo para local (research §8)».
+- [X] T038 [US2] Crear `deploy/probar_autenticacion.sh`, ejecutable, con `set -euo pipefail`, según [contracts/medicion-r19-sesion.md](contracts/medicion-r19-sesion.md):
   - los 6 pasos con `curl` y `jq`, con la contraseña tomada de `.env.ejemplo` y de `.env` si existe;
   - una línea `OK` o `FALLA` por paso, sin imprimir el token ni la contraseña;
   - código de salida 0 o 1.
 
   Validar con shellcheck, sobre una copia en el directorio temporal.
-- [ ] T039 [US2] Ejecutar `./gradlew spotlessApply build integrationTest` (todo en verde, 60 % por módulo). Después, `docker compose build && docker compose up -d --wait` y `deploy/probar_autenticacion.sh`, que tiene que dar los 6 `OK`. Anotar en `specs/003-autenticacion-jwt/evidencia.md` las pruebas por módulo, la cobertura y la salida del script, en las secciones de los escenarios 1 a 3. Revisar en especial la cobertura de `servicios:usuarios` y `plataforma:pruebas` (60 % o más con solo la suite `test`).
+- [X] T039 [US2] Ejecutar `./gradlew spotlessApply build integrationTest` (todo en verde, 60 % por módulo). Después, `docker compose build && docker compose up -d --wait` y `deploy/probar_autenticacion.sh`, que tiene que dar los 6 `OK`. Anotar en `specs/003-autenticacion-jwt/evidencia.md` las pruebas por módulo, la cobertura y la salida del script, en las secciones de los escenarios 1 a 3. Revisar en especial la cobertura de `servicios:usuarios` y `plataforma:pruebas` (60 % o más con solo la suite `test`).
 
 **Checkpoint**: la autenticación funciona de punta a punta en los 4 procesos.
 
