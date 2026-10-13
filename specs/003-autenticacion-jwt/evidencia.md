@@ -87,7 +87,29 @@ Resultado: cumple (< 8 GiB). Sin alerta de R-19 (≤ 7 GiB).
 
 ### Medición de referencia en GitHub Actions (T043)
 
-Pendiente: el workflow corre cuando el pull request quede listo para revisión.
+Run [38339003145](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38339003145) de `perfil-consolidado`, al marcar el PR #86 como listo para revisión (cabeza `fc2c739`; el commit medido, `fdc443b`, es el *merge* del PR con `main` que hace GitHub en los eventos `pull_request`). Resultado: éxito.
+
+- **Construcción y arranque:** las 5 imágenes se construyeron desde cero en 3 min 53 s, y `docker compose up -d --wait` dejó los 6 contenedores sanos en **54,5 s** (SC-006; en B00-H02 eran 38,7 s, ahora con Hibernate y Spring Security).
+- **`deploy/probar_autenticacion.sh`:** los 6 pasos en `OK` y salida 0. En el registro del run, GitHub enmascara con `***` una parte de la línea del paso 1, la que sigue a `WWW-Authenticate:`, porque parece un encabezado `Bearer`. El paso pasó.
+
+**Medición de R-19 después de iniciar sesión** · 2026-10-13T02:58:39+00:00 · commit `fdc443b` · entorno: ubuntu-latest (Docker 28.0.4)
+Calentamiento: inicio de sesión de autor.prueba, 20 llamadas a la salud y 20 a la sesión actual por componente, y 30 s de espera.
+
+| Contenedor | Consumo (MiB) | Límite (MiB) |
+|---|---:|---:|
+| postgres | 112,1 | 512 |
+| identidad | 319,9 | 512 |
+| datos | 176,5 | 512 |
+| distributivo | 173,2 | 512 |
+| salida | 166,1 | 512 |
+| gateway | 197,5 | 384 |
+| **Total** | **1 145,3** (1,12 GiB) | 2 944 |
+
+Resultado: cumple (< 8 GiB). Sin alerta de R-19 (≤ 7 GiB).
+
+- **Diferencia con la referencia de B00-H02** (931,6 MiB sobre `main`, mismo entorno): **+213,7 MiB**. Casi todo lo explica identidad (+157 MiB: Hibernate, Spring Security y Argon2id). Es la segunda medición de R-19 que pidió D-34.
+- **Identidad:** está al 62 % de su límite de 512 MiB.
+- **Jackson 2.21.7:** el commit `8b6eb71` no toca `compose.yaml`, `contratos/` ni `deploy/**`, así que el workflow no vuelve a medir. Se repite sobre `main` después de la fusión.
 
 ## Búsquedas de secretos
 

@@ -285,7 +285,7 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
 
   Validar con actionlint 1.7.12, sobre una copia.
 - [X] T042 [US3] Medir en local, `deploy/medir_memoria.sh --con-sesion`, y pegar la tabla en `specs/003-autenticacion-jwt/evidencia.md` con la diferencia respecto de los 931,6 MiB de B00-H02. Si identidad pasa del 85 % de su límite de 512 MiB, anotarlo y proponer al autor un ajuste de límites, que no requiere una decisión nueva (D-36).
-- [ ] T043 [US3] Cuando el pull request quede listo para revisión (T046), esperar el run de `perfil-consolidado` y pegar en `specs/003-autenticacion-jwt/evidencia.md` la salida de `probar_autenticacion.sh` y la tabla de la medición (entorno: `ubuntu-latest`), con el enlace al run.
+- [X] T043 [US3] Cuando el pull request quede listo para revisión (T046), esperar el run de `perfil-consolidado` y pegar en `specs/003-autenticacion-jwt/evidencia.md` la salida de `probar_autenticacion.sh` y la tabla de la medición (entorno: `ubuntu-latest`), con el enlace al run.
 
 **Checkpoint**: R-19 está medido después de iniciar sesión.
 
