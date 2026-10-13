@@ -19,7 +19,7 @@
 ### Session 2026-10-13
 
 - Q: Si FirmaEC no firma con certificados de la CA de prueba, ¿cómo siguen los escenarios 2 y 3? → A: Se registra el hallazgo y los escenarios 2 y 3 se hacen con el certificado real del autor, solo en su equipo. Al repositorio no entran ni el certificado ni los PDF firmados con él: solo el resultado y los datos públicos de la comprobación (D-43).
-- Q: ¿Dónde queda el código de la validación? → A: Como prueba de integración dentro del servicio `firma`, con la CA de prueba, sus certificados y los PDF firmados en `src/test/resources/ca-prueba/`; el código de producción no cambia (D-44).
+- Q: ¿Dónde queda el código de la validación? → A: Como prueba automática dentro del servicio `firma` (suite `test`), con la CA de prueba, sus certificados y los PDF firmados en `src/test/resources/ca-prueba/`; el código de producción no cambia (D-44).
 - Q: ¿Cuánto dura el tiempo fijo del *spike*? → A: 2 días de trabajo (D-45).
 
 > **Nota sobre esta especificación.** Es un *spike*: su resultado es conocimiento, no una funcionalidad para los usuarios del MDD. Su usuario es el autor y su objeto es comprobar, con las herramientas que ya fija la constitución (FirmaEC, OpenHTMLtoPDF, PDFBox y Bouncy Castle; sección 3), que la validación básica de D-23 es factible. Los nombres de esas herramientas aparecen porque los trae la historia.
@@ -134,7 +134,7 @@ Escenario: Resultado del spike
 
 - **FR-006**: Con las librerías de la constitución (PDFBox y Bouncy Castle), DEBE comprobarse para cada firma: la integridad sobre su ByteRange, la cadena hasta la CA de prueba y la vigencia del certificado en el momento de la firma.
 - **FR-007**: La validación DEBE detectar un PDF con un byte alterado dentro de una zona firmada, un certificado de otra CA y un certificado fuera de vigencia.
-- **FR-008**: La validación DEBE poder repetirse de forma automática sobre los PDF firmados del *spike*, sin intervención manual. La validación es una prueba de integración del servicio `firma` (servicio 10), con la CA de prueba, sus certificados y los PDF firmados con ellos en `src/test/resources/ca-prueba/`; el código de producción del servicio no cambia (D-44).
+- **FR-008**: La validación DEBE poder repetirse de forma automática sobre los PDF firmados del *spike*, sin intervención manual. La validación es una prueba automática del servicio `firma` (servicio 10, suite `test`), con la CA de prueba, sus certificados y los PDF firmados con ellos en `src/test/resources/ca-prueba/`; el código de producción del servicio no cambia (D-44).
 
 **Resultado**
 

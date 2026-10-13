@@ -35,7 +35,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-42 | 2026-10-13 | El inicio de sesión con datos vacíos responde 400 con detalles | Aceptada | B00-H03 (research §5), contrato de Usuarios |
 | ADR-016 | 2026-10-13 | Traducción de errores con catálogo por servicio | Aceptada | ADR-009 (detalle de la traducción de errores) |
 | D-43 | 2026-10-13 | Si FirmaEC no acepta la CA de prueba, el spike sigue con el certificado real solo en local | Aceptada | Alcance del issue #26 |
-| D-44 | 2026-10-13 | La validación del spike queda como prueba de integración del servicio Firma | Aceptada | Alcance del issue #26 |
+| D-44 | 2026-10-13 | La validación del spike queda como prueba automática del servicio Firma | Aceptada | Alcance del issue #26 |
 | D-45 | 2026-10-13 | El spike B00-S01 dura 2 días de trabajo | Aceptada | Alcance del issue #26 |
 
 ---
@@ -438,13 +438,13 @@ Se conservan las reglas que ya tenía: prohibido borrar `main` o reescribir su h
 
 ---
 
-## D-44. La validación del spike queda como prueba de integración del servicio Firma
+## D-44. La validación del spike queda como prueba automática del servicio Firma
 
 - **Estado:** Aceptada · **Fecha:** 2026-10-13 · **Decidido por:** autor de la tesis
 - **Origen:** aclaración Q2 de la especificación de B00-S01
 - **Modifica a:** alcance del issue #26 (B00-S01)
 
-**Decisión.** La validación con PDFBox y Bouncy Castle es una prueba de integración del servicio `firma` (servicio 10). La CA de prueba, sus certificados y los PDF firmados con ellos viven en `backend/servicios/firma/src/test/resources/ca-prueba/`, la carpeta que ya permite Gitleaks. El código de producción del servicio no cambia.
+**Decisión.** La validación con PDFBox y Bouncy Castle es una prueba automática del servicio `firma` (servicio 10), en su suite `test`: no necesita Docker y usa la carpeta que ya permite Gitleaks. La CA de prueba, sus certificados y los PDF firmados con ellos viven en `backend/servicios/firma/src/test/resources/ca-prueba/`. El código de producción del servicio no cambia.
 
 **Por qué.** F14 (ola 3) parte de una prueba que ya funciona con firmas reales de FirmaEC, y la CI la sigue corriendo, sin adelantar el diseño del servicio (contratos, puertos y errores).
 

@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [x] No [NEEDS CLARIFICATION] markers remain — las 3 se resolvieron con D-43 (certificado real solo en local si FirmaEC no acepta la CA de prueba), D-44 (prueba de integración en el servicio `firma`) y D-45 (2 días).
+- [x] No [NEEDS CLARIFICATION] markers remain — las 3 se resolvieron con D-43 (certificado real solo en local si FirmaEC no acepta la CA de prueba), D-44 (prueba automática en el servicio `firma`) y D-45 (2 días).
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
