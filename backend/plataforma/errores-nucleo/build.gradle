@@ -9,4 +9,6 @@ plugins {
 dependencies {
     // @JsonInclude en RespuestaError: los campos sin valor no se envían.
     api 'com.fasterxml.jackson.core:jackson-annotations'
+    // @NamedInterface: los servicios usan este paquete sin violar los límites de Spring Modulith.
+    implementation 'org.springframework.modulith:spring-modulith-api'
 }

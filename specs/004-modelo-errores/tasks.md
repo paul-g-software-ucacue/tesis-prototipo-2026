@@ -221,7 +221,7 @@ description: "Tareas de B00-H04: modelo de errores común y catálogo de código
 
   Una prueba unitaria del manejador cubre el 500 con `idIncidente` ante una excepción cualquiera. Otra compara el cuerpo del 401 de `RespuestaNoAutenticadoReactiva` con `CodigosComunes.SEGURIDAD_NO_AUTENTICADO`.
 - [X] T024 Implementar `backend/gateway/src/main/java/ec/mdd/gateway/ManejadorDeErroresGateway.java`, un `ErrorWebExceptionHandler` con `@Order(-2)`, según research §10. Usa `RespuestaError`, `CodigosComunes`, `Incidentes` y `SaneadorDeTrazas` de `plataforma:errores-nucleo`; escribe el JSON con el `ObjectMapper` del contexto. Agregar `implementation project(':plataforma:errores-nucleo')` a `backend/gateway/build.gradle`. Así pasa T023, con el 60 % de cobertura.
-- [ ] T025 Crear `deploy/probar_errores.sh`, ejecutable, con el patrón `verificar`, contra el perfil levantado y a través del API Gateway:
+- [X] T025 Crear `deploy/probar_errores.sh`, ejecutable, con el patrón `verificar`, contra el perfil levantado y a través del API Gateway:
   1. inicio de sesión con `{"usuario":""}`: 400 `COMUN_SOLICITUD_INVALIDA` con 2 `detalles`;
   2. con token, `GET /api/cargas/no-existe`: 404 `COMUN_RECURSO_NO_ENCONTRADO`;
   3. con token, `DELETE /api/cargas/sesion`: 405 `COMUN_METODO_NO_PERMITIDO`;
@@ -229,8 +229,8 @@ description: "Tareas de B00-H04: modelo de errores común y catálogo de código
   5. ninguna de estas respuestas tiene `timestamp`, `path`, `trace` ni `requestId`.
 
   Termina con 0 o 1 y no imprime el token. Validar con shellcheck, sobre una copia.
-- [ ] T026 En `.github/workflows/perfil-consolidado.yml`, agregar el paso «Errores de punta a punta» (`deploy/probar_errores.sh`, con `shell: bash`) después de la autenticación y antes de la medición. Validar con actionlint, sobre una copia.
-- [ ] T027 Ejecutar `./gradlew spotlessApply build integrationTest` (todo en verde) y `docker compose up -d --wait --build`. Después:
+- [X] T026 En `.github/workflows/perfil-consolidado.yml`, agregar el paso «Errores de punta a punta» (`deploy/probar_errores.sh`, con `shell: bash`) después de la autenticación y antes de la medición. Validar con actionlint, sobre una copia.
+- [X] T027 Ejecutar `./gradlew spotlessApply build integrationTest` (todo en verde) y `docker compose up -d --wait --build`. Después:
   - `deploy/probar_autenticacion.sh` sigue con los 6 pasos en `OK` (SC-005);
   - `deploy/probar_errores.sh` da todos los pasos en `OK`;
   - el escenario 2 del quickstart §2: con `postgres` detenido, el inicio de sesión responde 500 con `idIncidente`, y ese id aparece en `docker compose logs identidad` con la causa, sin el token ni la contraseña.

@@ -49,10 +49,16 @@ Registro de las comprobaciones de los tres escenarios de la historia (issue #21)
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Manejador reactivo (T023, T024, D-40) | confirmada | `ManejadorDeErroresGatewayTest` (servidor real): con token, una ruta sin destino responde 404 con exactamente el cuerpo de `COMUN_RECURSO_NO_ENCONTRADO`; con el proceso salida en un puerto cerrado, 503 `COMUN_SERVICIO_NO_DISPONIBLE` sin la dirección ni el puerto y sin `timestamp`, `path`, `requestId`, `error` ni `status`; sin token, el mismo 401 de ADR-014, cuyo cuerpo coincide con `CodigosComunes.SEGURIDAD_NO_AUTENTICADO`. Prueba unitaria: 500 con `idIncidente` y registro saneado; 405 con su código. 19 pruebas del API Gateway, 75/77 líneas. | 2026-10-13 |
 
 ## Punta a punta
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Build completo (T027) | confirmada | `./gradlew spotlessApply build integrationTest`: 173 pruebas unitarias, de arquitectura y de contrato, y 20 de integración, en verde. **Hallazgo:** Spring Modulith ve `ec.mdd.plataforma` como un módulo en cada proceso, y `ModulosTest` de identidad rechazó que `ErroresUsuarios` usara `errores.nucleo`; el paquete se publica como interfaz nombrada (`@NamedInterface("errores")`), igual que los `puertos.entrada` de los servicios. | 2026-10-13 |
+| Perfil levantado (T025 a T027) | confirmada | `docker compose up -d --wait --build`: 6 contenedores sanos en 100 s. `deploy/probar_autenticacion.sh`: los 6 pasos en `OK` (SC-005). `deploy/probar_errores.sh`: datos vacíos → 400 con detalles de `usuario` y `clave`; ruta inexistente → 404; `DELETE` a la sesión → 405; proceso salida detenido → 503; ninguno con `timestamp`, `path`, `trace` ni `requestId`. shellcheck y actionlint sin hallazgos. | 2026-10-13 |
+| Base de datos detenida en el perfil (escenario 2) | confirmada | Con `postgres` detenido, el inicio de sesión responde a los 30 s (espera de Hikari) `{"titulo":"Error inesperado",…,"codigo":"COMUN_ERROR_INTERNO","idIncidente":"28b1ba01-…"}`. En `docker compose logs identidad`: `ERROR … RegistroDeIncidentes : Incidente 28b1ba01-…: POST /api/usuarios/sesion falló con org.springframework.dao.DataAccessResourceFailureException` y la traza («Unable to acquire JDBC Connection»). La contraseña de prueba no aparece en el registro. Al levantar `postgres`, todo vuelve a quedar sano y la autenticación de punta a punta sigue pasando. | 2026-10-13 |
 
 ## Notas
+
+- **Ruta pública con un token inválido:** si una petición a una ruta pública, como el inicio de sesión, trae un token inválido, la seguridad responde el 401 uniforme antes de llegar al controlador. Es el comportamiento normal del servidor de recursos de Spring Security, y coincide con ADR-014: un token inválido nunca se acepta.
