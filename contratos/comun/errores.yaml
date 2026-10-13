@@ -1,0 +1,47 @@
+# Modelo público de error del MDD (principio XIII). Lo referencian los contratos de cada servicio.
+# B00-H04 completa el catálogo de códigos (errores.md) y la validación de entrada (D-38).
+openapi: 3.0.3
+info:
+  title: MDD · Errores comunes
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    Error:
+      description: >-
+        Error público que devuelve la API. Solo contiene información segura y estable: el
+        consumidor identifica el error por codigo, nunca por el texto.
+      type: object
+      required: [titulo, descripcion, codigo]
+      properties:
+        titulo:
+          type: string
+          description: Categoría breve del error.
+          example: Sesión no válida
+        descripcion:
+          type: string
+          description: Qué ocurrió y qué puede hacer el usuario, en español.
+          example: Inicia sesión de nuevo para continuar.
+        codigo:
+          type: string
+          description: Identificador estable del catálogo de errores (contratos/comun/errores.md).
+          example: SEGURIDAD_NO_AUTENTICADO
+        detalles:
+          type: array
+          description: Campos que no pasaron la validación; solo en errores de entrada.
+          items:
+            $ref: '#/components/schemas/DetalleError'
+        idIncidente:
+          type: string
+          description: Identificador para buscar el incidente en los registros; solo en errores técnicos.
+    DetalleError:
+      description: Un campo que no pasó la validación.
+      type: object
+      required: [campo, descripcion]
+      properties:
+        campo:
+          type: string
+          description: Nombre del campo en la solicitud.
+        descripcion:
+          type: string
+          description: Qué le falta o qué tiene mal el campo.

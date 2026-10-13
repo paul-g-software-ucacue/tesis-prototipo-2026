@@ -1,0 +1,7 @@
+# Contexto de construcción de deploy/docker/java.Dockerfile (ADR-015): solo backend/ y
+# contratos/, sin salidas de Gradle. Todo lo demás del repositorio queda fuera de la imagen.
+*
+!backend/
+!contratos/
+**/build/
+**/.gradle/

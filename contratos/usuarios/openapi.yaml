@@ -1,0 +1,132 @@
+# Contrato de Usuarios (servicio 01, proceso identidad). Inicio de sesión mínimo (D-37),
+# sesión actual (D-39) y llave pública para validar los tokens (ADR-014).
+openapi: 3.0.3
+info:
+  title: MDD · Usuarios
+  version: 1.0.0
+servers:
+  - url: /
+security:
+  - bearer: []
+tags:
+  - name: Sesion
+    description: Inicio de sesión y sesión actual.
+  - name: Jwks
+    description: Llave pública con la que el API Gateway y los procesos validan los tokens.
+paths:
+  /api/usuarios/sesion:
+    post:
+      tags: [Sesion]
+      operationId: iniciarSesion
+      summary: Inicia sesión y devuelve un token firmado.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CredencialesSesion'
+      responses:
+        '200':
+          description: Credenciales correctas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenSesion'
+        '401':
+          description: >-
+            Credenciales inválidas (USUARIOS_CREDENCIALES_INVALIDAS). La misma respuesta para un
+            usuario inexistente, inactivo, una contraseña incorrecta o datos vacíos.
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+    get:
+      tags: [Sesion]
+      operationId: consultarSesion
+      summary: Devuelve el usuario y los roles del token.
+      responses:
+        '200':
+          description: Token válido.
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/seguridad.yaml#/components/schemas/SesionActual'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+  /api/usuarios/jwks:
+    get:
+      tags: [Jwks]
+      operationId: consultarJwks
+      summary: Llave pública de Usuarios en formato JWKS (RFC 7517).
+      security: []
+      responses:
+        '200':
+          description: Llaves públicas vigentes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Jwks'
+components:
+  securitySchemes:
+    bearer:
+      $ref: '../comun/seguridad.yaml#/components/securitySchemes/bearer'
+  schemas:
+    CredencialesSesion:
+      type: object
+      required: [usuario, clave]
+      properties:
+        usuario:
+          type: string
+          description: Nombre de usuario.
+          example: autor.prueba
+        clave:
+          type: string
+          format: password
+          description: Contraseña del usuario.
+    TokenSesion:
+      type: object
+      required: [token, tipo, venceEn]
+      properties:
+        token:
+          type: string
+          description: JWT firmado con RS256.
+        tipo:
+          type: string
+          enum: [Bearer]
+          description: Tipo de token, para el encabezado Authorization.
+        venceEn:
+          type: string
+          format: date-time
+          description: Fecha y hora de vencimiento del token (ISO 8601).
+    Jwks:
+      type: object
+      required: [keys]
+      properties:
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/Jwk'
+    Jwk:
+      description: Llave pública RSA. Nunca contiene partes privadas.
+      type: object
+      required: [kty, kid, use, alg, n, e]
+      properties:
+        kty:
+          type: string
+          example: RSA
+        kid:
+          type: string
+          description: Huella SHA-256 de la llave pública, en Base64URL.
+        use:
+          type: string
+          example: sig
+        alg:
+          type: string
+          example: RS256
+        n:
+          type: string
+          description: Módulo RSA, en Base64URL.
+        e:
+          type: string
+          description: Exponente público RSA, en Base64URL.

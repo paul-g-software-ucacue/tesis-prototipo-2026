@@ -17,4 +17,6 @@ dependencies {
     implementation 'com.github.spotbugs.snom:spotbugs-gradle-plugin:6.5.12'
     // Para mdd.aplicacion (ADR-012).
     implementation "org.springframework.boot:spring-boot-gradle-plugin:${propiedades.getProperty('versionSpringBoot')}"
+    // Para mdd.contrato (ADR-015).
+    implementation "org.openapitools:openapi-generator-gradle-plugin:${propiedades.getProperty('versionOpenApiGenerator')}"
 }

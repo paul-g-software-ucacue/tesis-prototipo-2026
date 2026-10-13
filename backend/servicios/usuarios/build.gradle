@@ -3,4 +3,29 @@
 // SpotBugs. Vale para todos los servicios, centrales o no.
 plugins {
     id 'mdd.servicio'
+    id 'mdd.contrato'
+}
+
+def versionBouncyCastle = providers.gradleProperty('versionBouncyCastle').get()
+
+dependencies {
+    // Usuarios y sus roles en el esquema usuarios (research §7).
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    // Argon2id para las contraseñas; necesita BouncyCastle (research §7).
+    implementation 'org.springframework.security:spring-security-crypto'
+    implementation "org.bouncycastle:bcprov-jdk18on:${versionBouncyCastle}"
+    // Firma de los tokens RS256 y lectura del JWT en la sesión actual (ADR-014).
+    implementation 'org.springframework.security:spring-security-oauth2-jose'
+    implementation 'org.springframework.security:spring-security-oauth2-resource-server'
+}
+
+testing {
+    suites {
+        integrationTest {
+            dependencies {
+                // @DataJpaTest contra PostgreSQL de Testcontainers.
+                implementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+            }
+        }
+    }
 }

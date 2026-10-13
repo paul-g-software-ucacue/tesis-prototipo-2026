@@ -4,6 +4,21 @@ spring.datasource.username: identidad
 spring.datasource.password: ${DB_CLAVE_IDENTIDAD}
 spring.datasource.url: ${SPRING_DATASOURCE_URL}
 server.port: 8080
+# Llave pública de Usuarios para validar los tokens (ADR-014).
+# Identidad valida sus propios tokens con su JWKS, en el mismo contenedor (ADR-014).
+spring.security.oauth2.resourceserver.jwt.jwk-set-uri: http://localhost:8080/api/usuarios/jwks
+# Sin token: el inicio de sesión (D-37) y el JWKS, que piden el API Gateway y los demás procesos.
+mdd.seguridad.rutas-publicas:
+  - POST /api/usuarios/sesion
+  - GET /api/usuarios/jwks
+# Llave de firma: sin archivo, efímera (research §2); en el VPS, un PEM (B00-H08).
+mdd.usuarios.llave-privada: ${MDD_LLAVE_PRIVADA:}
+# Usuario de prueba autor.prueba, solo donde se habilita (research §8).
+mdd.usuarios.usuario-prueba.habilitado: ${MDD_USUARIO_PRUEBA_HABILITADO:false}
+mdd.usuarios.usuario-prueba.clave: ${MDD_USUARIO_PRUEBA_CLAVE:}
+# Flyway es el único que cambia el esquema; Hibernate solo lo valida.
+spring.jpa.hibernate.ddl-auto: validate
+spring.jpa.open-in-view: false
 # Solo la salud, con readiness que incluye la base: el proceso no queda sano sin PostgreSQL.
 management.endpoints.web.exposure.include: health
 management.endpoint.health.probes.enabled: true
