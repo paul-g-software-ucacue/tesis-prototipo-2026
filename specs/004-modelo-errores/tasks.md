@@ -213,14 +213,14 @@ description: "Tareas de B00-H04: modelo de errores común y catálogo de código
 
 **Purpose**: los errores propios del API Gateway con el modelo común, y la comprobación sobre el perfil levantado (FR-010, FR-012, SC-001, SC-005, SC-006).
 
-- [ ] T023 Escribir primero `backend/gateway/src/test/java/ec/mdd/gateway/ManejadorDeErroresGatewayTest.java`, como `SeguridadGatewayTest`:
+- [X] T023 Escribir primero `backend/gateway/src/test/java/ec/mdd/gateway/ManejadorDeErroresGatewayTest.java`, como `SeguridadGatewayTest`:
   - con un token válido, `GET /api/inexistente/x` responde 404 `COMUN_RECURSO_NO_ENCONTRADO`;
   - con `MDD_URI_SALIDA` apuntando a un puerto cerrado, `GET /api/dashboard/sesion` responde 503 `COMUN_SERVICIO_NO_DISPONIBLE`, sin la dirección ni el puerto;
   - sin token, la misma ruta sigue respondiendo el 401 de ADR-014;
   - ninguna respuesta tiene `timestamp`, `path`, `requestId` ni `error`.
 
   Una prueba unitaria del manejador cubre el 500 con `idIncidente` ante una excepción cualquiera. Otra compara el cuerpo del 401 de `RespuestaNoAutenticadoReactiva` con `CodigosComunes.SEGURIDAD_NO_AUTENTICADO`.
-- [ ] T024 Implementar `backend/gateway/src/main/java/ec/mdd/gateway/ManejadorDeErroresGateway.java`, un `ErrorWebExceptionHandler` con `@Order(-2)`, según research §10. Usa `RespuestaError`, `CodigosComunes`, `Incidentes` y `SaneadorDeTrazas` de `plataforma:errores-nucleo`; escribe el JSON con el `ObjectMapper` del contexto. Agregar `implementation project(':plataforma:errores-nucleo')` a `backend/gateway/build.gradle`. Así pasa T023, con el 60 % de cobertura.
+- [X] T024 Implementar `backend/gateway/src/main/java/ec/mdd/gateway/ManejadorDeErroresGateway.java`, un `ErrorWebExceptionHandler` con `@Order(-2)`, según research §10. Usa `RespuestaError`, `CodigosComunes`, `Incidentes` y `SaneadorDeTrazas` de `plataforma:errores-nucleo`; escribe el JSON con el `ObjectMapper` del contexto. Agregar `implementation project(':plataforma:errores-nucleo')` a `backend/gateway/build.gradle`. Así pasa T023, con el 60 % de cobertura.
 - [ ] T025 Crear `deploy/probar_errores.sh`, ejecutable, con el patrón `verificar`, contra el perfil levantado y a través del API Gateway:
   1. inicio de sesión con `{"usuario":""}`: 400 `COMUN_SOLICITUD_INVALIDA` con 2 `detalles`;
   2. con token, `GET /api/cargas/no-existe`: 404 `COMUN_RECURSO_NO_ENCONTRADO`;
