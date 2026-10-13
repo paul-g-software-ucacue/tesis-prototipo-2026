@@ -272,19 +272,19 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
 
 ### Implementation for User Story 3
 
-- [ ] T040 [US3] En `deploy/medir_memoria.sh`, agregar la opción `--con-sesion`:
+- [X] T040 [US3] En `deploy/medir_memoria.sh`, agregar la opción `--con-sesion`:
   - inicia sesión con el usuario de prueba a través del API Gateway, y si falla sale con 2;
   - suma al calentamiento 20 llamadas a la «sesión actual» de cada proceso;
   - el título pasa a «Medición de R-19 después de iniciar sesión».
 
   Sin la opción, el comportamiento no cambia. Validar con shellcheck, sobre una copia.
-- [ ] T041 [US3] En `.github/workflows/perfil-consolidado.yml`:
+- [X] T041 [US3] En `.github/workflows/perfil-consolidado.yml`:
   - agregar `contratos/**` al filtro `paths`;
   - después de `up --wait`, agregar el paso «Autenticación de punta a punta» (`deploy/probar_autenticacion.sh`, con `shell: bash`);
   - cambiar la medición a `deploy/medir_memoria.sh --con-sesion`.
 
   Validar con actionlint 1.7.12, sobre una copia.
-- [ ] T042 [US3] Medir en local, `deploy/medir_memoria.sh --con-sesion`, y pegar la tabla en `specs/003-autenticacion-jwt/evidencia.md` con la diferencia respecto de los 931,6 MiB de B00-H02. Si identidad pasa del 85 % de su límite de 512 MiB, anotarlo y proponer al autor un ajuste de límites, que no requiere una decisión nueva (D-36).
+- [X] T042 [US3] Medir en local, `deploy/medir_memoria.sh --con-sesion`, y pegar la tabla en `specs/003-autenticacion-jwt/evidencia.md` con la diferencia respecto de los 931,6 MiB de B00-H02. Si identidad pasa del 85 % de su límite de 512 MiB, anotarlo y proponer al autor un ajuste de límites, que no requiere una decisión nueva (D-36).
 - [ ] T043 [US3] Cuando el pull request quede listo para revisión (T046), esperar el run de `perfil-consolidado` y pegar en `specs/003-autenticacion-jwt/evidencia.md` la salida de `probar_autenticacion.sh` y la tabla de la medición (entorno: `ubuntu-latest`), con el enlace al run.
 
 **Checkpoint**: R-19 está medido después de iniciar sesión.

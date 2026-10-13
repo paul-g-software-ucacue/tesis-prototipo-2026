@@ -1,7 +1,8 @@
 # Perfil consolidado y medición de R-19 (B00-H02; contrato en
 # specs/002-compose-cuatro-procesos/contracts/medicion-r19.md).
 # Desde un checkout limpio levanta los 6 contenedores con un solo comando (escenario 1) y mide la
-# memoria después del calentamiento (escenario 2, D-34, D-36). No es un check obligatorio.
+# memoria después del calentamiento (escenario 2, D-34, D-36). Desde B00-H03 también prueba la
+# autenticación de punta a punta y mide después de iniciar sesión. No es un check obligatorio.
 # Corre en los pull requests que cambian el despliegue y a mano: GitHub solo ejecuta a mano los
 # workflows que ya están en la rama principal.
 name: perfil-consolidado
@@ -13,6 +14,7 @@ on:
     paths:
       - compose.yaml
       - .env.ejemplo
+      - "contratos/**"
       - "deploy/**"
       - .github/workflows/perfil-consolidado.yml
 
@@ -42,11 +44,17 @@ jobs:
         shell: bash
         run: time docker compose up -d --wait
 
+      # Escenarios 1 a 3 de B00-H03: sin token, token válido en los 4 procesos y token alterado.
+      - name: Autenticación de punta a punta
+        shell: bash
+        run: deploy/probar_autenticacion.sh
+
       # shell: bash agrega pipefail, así que tee no oculta el código de salida del script.
-      - name: Medición de R-19 (escenario 2)
+      # Después de iniciar sesión (D-34): la medición de referencia de R-19 desde B00-H03.
+      - name: Medición de R-19 después de iniciar sesión
         shell: bash
         run: |
-          deploy/medir_memoria.sh | tee medicion.md
+          deploy/medir_memoria.sh --con-sesion | tee medicion.md
           cat medicion.md >> "$GITHUB_STEP_SUMMARY"
 
       - if: always()

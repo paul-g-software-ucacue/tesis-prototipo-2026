@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # Medición de memoria de R-19 (D-34, D-36; specs/002-compose-cuatro-procesos/contracts/medicion-r19.md).
-# Uso, desde cualquier directorio: deploy/medir_memoria.sh > medicion.md
+# Uso, desde cualquier directorio: deploy/medir_memoria.sh [--con-sesion] > medicion.md
 #
 # Levanta el perfil si hace falta, hace el calentamiento (20 llamadas a la salud de cada componente
 # Java y 30 s de espera), toma una lectura de docker stats de los contenedores del proyecto e
 # imprime la tabla de evidencia en Markdown.
+# Con --con-sesion (B00-H03, D-34), antes del calentamiento inicia sesión con el usuario de prueba
+# a través del API Gateway y suma 20 llamadas a la sesión actual de cada proceso, con el token
+# (specs/003-autenticacion-jwt/contracts/medicion-r19-sesion.md). Nunca imprime el token.
 # Sale con 0 si el total es menor que 8 GiB, 1 si llega a 8 GiB o más y 2 si algo no está sano.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -17,6 +20,16 @@ readonly ORDEN=(postgres identidad datos distributivo salida gateway)
 readonly JAVA=(identidad datos distributivo salida gateway)
 # El mismo comando del healthcheck de compose.yaml.
 readonly SALUD="exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /actuator/health/readiness HTTP/1.0\r\nHost: localhost\r\n\r\n' >&3 && grep -q '\"status\":\"UP\"' <&3"
+readonly GATEWAY="${MDD_GATEWAY:-http://localhost:8080}"
+# Un servicio con «sesión actual» por proceso (D-39).
+readonly SESIONES=(usuarios cargas generacion dashboard)
+
+con_sesion=false
+case "${1:-}" in
+    --con-sesion) con_sesion=true ;;
+    "") ;;
+    *) echo "Uso: deploy/medir_memoria.sh [--con-sesion]" >&2; exit 2 ;;
+esac
 
 no_sano() {
     echo "No está sano: $1" >&2
@@ -42,11 +55,38 @@ if ! docker compose up -d --wait >&2; then
     no_sano "docker compose up --wait falló"
 fi
 
+# La contraseña del usuario de prueba: la de .env si existe, si no la de .env.ejemplo.
+clave_de_prueba() {
+    local archivo linea valor=""
+    for archivo in .env.ejemplo .env; do
+        [[ -f $archivo ]] || continue
+        linea=$(grep -E '^MDD_USUARIO_PRUEBA_CLAVE=' "$archivo" | tail -1 || true)
+        [[ -n $linea ]] && valor=${linea#*=}
+    done
+    printf '%s' "$valor"
+}
+
+token=""
+if [[ $con_sesion == true ]]; then
+    credenciales=$(jq -cn --arg c "$(clave_de_prueba)" '{usuario: "autor.prueba", clave: $c}')
+    token=$(curl -sf -H 'Content-Type: application/json' --data "$credenciales" \
+        "$GATEWAY/api/usuarios/sesion" | jq -r '.token // empty' || true)
+    [[ -n $token ]] || no_sano "inicio de sesión del usuario de prueba"
+fi
+
 for componente in "${JAVA[@]}"; do
     for _ in $(seq "$LLAMADAS"); do
         docker compose exec -T "$componente" bash -c "$SALUD" || no_sano "$componente (calentamiento)"
     done
 done
+if [[ $con_sesion == true ]]; then
+    for servicio in "${SESIONES[@]}"; do
+        for _ in $(seq "$LLAMADAS"); do
+            curl -sf -o /dev/null -H "Authorization: Bearer $token" "$GATEWAY/api/$servicio/sesion" \
+                || no_sano "sesión actual de $servicio (calentamiento)"
+        done
+    done
+fi
 sleep "$ESPERA"
 
 while read -r servicio salud; do
@@ -101,9 +141,16 @@ else
     alerta="Sin alerta de R-19 (≤ 7 GiB)."
 fi
 
+titulo="Medición de R-19"
+calentamiento="$LLAMADAS llamadas a la salud por componente y $ESPERA s de espera."
+if [[ $con_sesion == true ]]; then
+    titulo="Medición de R-19 después de iniciar sesión"
+    calentamiento="inicio de sesión de autor.prueba, $LLAMADAS llamadas a la salud y $LLAMADAS a la sesión actual por componente, y $ESPERA s de espera."
+fi
+
 cat <<EOF
-**Medición de R-19** · $(date --iso-8601=seconds) · commit \`$(git rev-parse --short=7 HEAD)\` · entorno: $entorno
-Calentamiento: $LLAMADAS llamadas a la salud por componente y $ESPERA s de espera.
+**$titulo** · $(date --iso-8601=seconds) · commit \`$(git rev-parse --short=7 HEAD)\` · entorno: $entorno
+Calentamiento: $calentamiento
 
 | Contenedor | Consumo (MiB) | Límite (MiB) |
 |---|---:|---:|

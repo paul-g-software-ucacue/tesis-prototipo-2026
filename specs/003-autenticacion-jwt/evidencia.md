@@ -60,6 +60,35 @@ Salida de `deploy/probar_autenticacion.sh` en local:
 
 Formato: [contracts/medicion-r19-sesion.md](contracts/medicion-r19-sesion.md).
 
+### Medición local (T042)
+
+**Medición de R-19 después de iniciar sesión** · 2026-10-12T21:41:32-05:00 · commit `395135e` · entorno: local (Docker 29.8.2)
+Calentamiento: inicio de sesión de autor.prueba, 20 llamadas a la salud y 20 a la sesión actual por componente, y 30 s de espera.
+
+| Contenedor | Consumo (MiB) | Límite (MiB) |
+|---|---:|---:|
+| postgres | 95,7 | 512 |
+| identidad | 366,5 | 512 |
+| datos | 182,5 | 512 |
+| distributivo | 231,5 | 512 |
+| salida | 195,7 | 512 |
+| gateway | 186,6 | 384 |
+| **Total** | **1 258,5** (1,23 GiB) | 2 944 |
+
+Resultado: cumple (< 8 GiB). Sin alerta de R-19 (≤ 7 GiB).
+
+- **Diferencia:**
+  - con la referencia de B00-H02 sobre `main` (931,6 MiB, runner): +326,9 MiB;
+  - con la última medición local de B00-H02 (1 001,6 MiB): +256,9 MiB, la comparación justa, mismo equipo.
+- **Por qué sube:** identidad pasa a 366,5 MiB (antes unos 182) por Hibernate, Spring Security y Argon2id, que usa 16 MiB por cada hash. Los demás procesos y el API Gateway suben entre 4 y 50 MiB por Spring Security.
+- **Límite de identidad:** está al 72 % de sus 512 MiB, por debajo del 85 % que pedía revisar los límites. No hace falta ajustarlo todavía (D-36).
+- **Sin la opción:** `deploy/medir_memoria.sh` sin `--con-sesion` sigue funcionando igual: 1 261,1 MiB con el perfil ya calentado.
+- **Lint:** shellcheck y actionlint 1.7.12 sin hallazgos en `medir_memoria.sh`, `probar_autenticacion.sh` y `perfil-consolidado.yml`.
+
+### Medición de referencia en GitHub Actions (T043)
+
+Pendiente: el workflow corre cuando el pull request quede listo para revisión.
+
 ## Búsquedas de secretos
 
 | Comprobación | Resultado | Evidencia | Fecha |
