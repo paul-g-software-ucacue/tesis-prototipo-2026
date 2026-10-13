@@ -12,7 +12,7 @@ Resultado de cada escenario: **funcionó**, **no funcionó** o **pendiente**. Na
 | OpenSSL | 3.5.9 (29/09/2026) |
 | JDK | 25 |
 | PDFBox / Bouncy Castle / OpenHTMLtoPDF / veraPDF | 3.0.8 / 1.86 / 1.1.87 / 1.30.2 |
-| FirmaEC | (T008: versión y cómo se instaló) |
+| FirmaEC | 5.3.0-1, paquete RPM oficial (`firmaec`, de firmadigital.gob.ec), instalado el 16/09/2026 en `/usr/share/firmaec`, con su propia JRE (Temurin 17.0.13). Lanzadores: «FirmaEC» (`firmador`) y «FirmaECTransversal» (`firmaec`). |
 
 ## Escenario 1 · Certificados de la demo
 
@@ -29,6 +29,11 @@ Resultado de cada escenario: **funcionó**, **no funcionó** o **pendiente**. Na
 - Gitleaks 8.30.1 con `.gitleaks.toml` sobre un clon: `no leaks found`. Control: sin la lista permitida, los mismos archivos dan 6 hallazgos, así que lo que los admite es la carpeta `ca-prueba/`.
 
 **Prueba en FirmaEC (T008):** pendiente del autor.
+
+**Qué cabe esperar, por la inspección del paquete** (sin ejecutarlo):
+- FirmaEC reconoce por el nombre del emisor a las entidades acreditadas (BCE, Security Data, ANF AC, Uanataca, Datil, Lazzate y otras) y tiene un caso «desconocido» para las demás.
+- Consulta en línea si el certificado está revocado (`/certificado/fechaRevocado`).
+- Con la CA de prueba, puede firmar tratándola como emisor desconocido, o rechazarla con `CertificadoInvalidoException`. Eso es lo que responde este escenario.
 
 | Certificado | Variante | ¿FirmaEC firma? | Mensaje |
 |---|---|---|---|
