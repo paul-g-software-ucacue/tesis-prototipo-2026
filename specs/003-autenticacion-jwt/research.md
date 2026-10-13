@@ -86,7 +86,7 @@ Las decisiones que afectan a varias features están en **ADR-014** (autenticaci�
 
 - El prefijo `SEGURIDAD_` es transversal: la autenticación no es de un solo servicio. Se registra en el catálogo como código común, igual que el código genérico de error técnico que creará B00-H04.
 - El catálogo vive en `contratos/comun/errores.md`, junto al esquema `Error` (`contratos/comun/errores.yaml`). B00-H04 lo completa y no renombra estos códigos (D-38).
-- **Datos vacíos en el inicio de sesión:** responden como credenciales inválidas (401), no como error de entrada (400). Los errores de entrada con `detalles` son de B00-H04, que activará la validación de los contratos.
+- **Datos vacíos en el inicio de sesión:** responden como credenciales inválidas (401), no como error de entrada (400). Los errores de entrada con `detalles` son de B00-H04, que activará la validación de los contratos. *Modificado por D-42 (B00-H04): con la validación activada, los datos vacíos responden 400 con `detalles`.*
 
 ## 6. Dónde vive la seguridad de los procesos
 

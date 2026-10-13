@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-40 · ADR-016.
+- **Siguiente número libre:** D-43 · ADR-016.
 
 ## Índice
 
@@ -30,6 +30,9 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-39 | 2026-10-13 | «Sesión actual» en un servicio de cada proceso para la prueba de punta a punta | Aceptada | Alcance del issue #20 |
 | ADR-014 | 2026-10-13 | Autenticación con JWT RS256 emitido por Usuarios | Aceptada | ADR-008 (detalle de la autenticación) |
 | ADR-015 | 2026-10-13 | Contratos OpenAPI en `contratos/` y generación por servicio | Aceptada | ADR-013 punto 3 (contexto de construcción de las imágenes) |
+| D-40 | 2026-10-13 | El API Gateway responde sus propios errores con el modelo común | Aceptada | Alcance del issue #21 |
+| D-41 | 2026-10-13 | El escenario «Error reconocido» se demuestra con un error de dominio de prueba y con credenciales inválidas | Aceptada | Alcance del issue #21 |
+| D-42 | 2026-10-13 | El inicio de sesión con datos vacíos responde 400 con detalles | Aceptada | B00-H03 (research §5), contrato de Usuarios |
 
 ---
 
@@ -338,6 +341,54 @@ Se conservan las reglas que ya tenía: prohibido borrar `main` o reescribir su h
 **Alternativas.** Controladores sin generación; un solo contrato para todo el sistema; `contratos/` dentro de `backend/`; el módulo MockMvc del validador (incompatible).
 
 **Consecuencias.** Cada historia con API escribe o cambia su `openapi.yaml` antes del código. B00-H04 completa `comun/` (catálogo y validación de entrada) y B00-H08 adapta `cd.yml` al nuevo contexto de construcción.
+
+---
+
+## D-40. El API Gateway responde sus propios errores con el modelo común
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-13 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q1 de la especificación de B00-H04 (`specs/004-modelo-errores/spec.md`)
+- **Modifica a:** alcance del issue #21 (B00-H04)
+
+**Decisión.** El API Gateway también responde con el esquema `Error` sus propios errores: ruta inexistente (404), proceso que no responde (503) y fallo técnico (500 con `idIncidente`). Como es WebFlux y no tiene controladores, lo hace con un manejador de errores reactivo y no con un `@RestControllerAdvice`. El 401 por token no cambia (ADR-014).
+
+**Por qué.** La historia pide que «todos los errores lleguen con el mismo formato». Sin esto, la SPA (B00-H06) vería el formato por defecto de Spring Cloud Gateway cuando falla la puerta de entrada, y ese formato incluye la ruta y detalles internos.
+
+**Alternativas.** Dejar el API Gateway para otra historia.
+
+**Consecuencias.** Los procesos detenidos o lentos detrás del API Gateway responden 503 con un código común; los errores entre procesos (502 y 504) se agregan cuando haya llamadas por HTTP entre procesos.
+
+---
+
+## D-41. El escenario «Error reconocido» se demuestra con un error de dominio de prueba y con credenciales inválidas
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-13 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q2 de la especificación de B00-H04
+- **Modifica a:** alcance del issue #21 (B00-H04)
+
+**Decisión.** Como los servicios todavía no tienen errores de dominio, el escenario se demuestra con un error de dominio de prueba que se registra en un catálogo de prueba y pasa por el mecanismo real de traducción. Además, las credenciales inválidas de Usuarios, que hoy traduce su controlador, pasan al mecanismo común como primer error real (D-38).
+
+**Por qué.** Así no se inventan reglas de negocio, y el mecanismo queda probado de punta a punta con un error real de aplicación. Es el mismo enfoque de B00-H01, que probó las reglas de capas con *fixtures*.
+
+**Alternativas.** Crear el primer error de dominio real en un servicio (sería inventar un requisito).
+
+**Consecuencias.** La primera historia con reglas de negocio registra sus errores de dominio en el catálogo con el mecanismo ya probado.
+
+---
+
+## D-42. El inicio de sesión con datos vacíos responde 400 con detalles
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-13 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q3 de la especificación de B00-H04
+- **Modifica a:** B00-H03 (`specs/003-autenticacion-jwt/research.md` §5: datos vacíos → 401) y el contrato de Usuarios (agrega la respuesta 400)
+
+**Decisión.** Al activar la validación de entrada, un inicio de sesión con usuario o contraseña vacíos responde 400 con `detalles`, como cualquier otro campo obligatorio vacío. Un usuario inexistente, inactivo o una contraseña incorrecta siguen respondiendo el mismo 401 `USUARIOS_CREDENCIALES_INVALIDAS`.
+
+**Por qué.** Es coherente con el escenario «Error de entrada», y decir que un campo vino vacío no revela qué usuarios existen ni qué dato falló entre usuario y contraseña.
+
+**Alternativas.** Mantener el 401 como excepción a la validación de entrada.
+
+**Consecuencias.** El research de B00-H03 queda modificado en ese punto; las pruebas de contrato de Usuarios cubren el 400.
 
 ---
 
