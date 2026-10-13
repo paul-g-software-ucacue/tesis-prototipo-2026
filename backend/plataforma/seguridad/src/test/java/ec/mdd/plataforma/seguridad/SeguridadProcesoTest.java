@@ -2,8 +2,11 @@ package ec.mdd.plataforma.seguridad;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ec.mdd.plataforma.errores.nucleo.CodigosComunes;
+import ec.mdd.plataforma.errores.nucleo.DefinicionDeCodigo;
 import ec.mdd.plataforma.pruebas.ServidorJwks;
 import ec.mdd.plataforma.pruebas.TokensDePrueba;
+import ec.mdd.plataforma.pruebas.VerificadorDeCatalogo;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
@@ -98,6 +101,30 @@ class SeguridadProcesoTest {
             throws Exception {
         assertThat(pedir("POST", "/api/prueba/sesion", "").statusCode()).isEqualTo(200);
         assertThat(pedir("GET", "/api/prueba/sesion", "").statusCode()).isEqualTo(401);
+    }
+
+    @Test
+    void dadoUnaPeticionDirectaAError_cuandoNoTraeToken_entoncesResponde401() throws Exception {
+        HttpResponse<String> respuesta = pedir("GET", "/error", "");
+
+        assertThat(respuesta.statusCode()).isEqualTo(401);
+        assertThat(respuesta.body()).isEqualTo(CUERPO_401);
+    }
+
+    @Test
+    void dadoElCuerpoDel401_cuandoSeComparaConElCatalogo_entoncesEsElDeSeguridadNoAutenticado() {
+        DefinicionDeCodigo codigo = CodigosComunes.SEGURIDAD_NO_AUTENTICADO;
+
+        assertThat(CUERPO_401)
+                .isEqualTo(
+                        "{\"titulo\":\""
+                                + codigo.titulo()
+                                + "\",\"descripcion\":\""
+                                + codigo.descripcion()
+                                + "\",\"codigo\":\""
+                                + codigo.codigo()
+                                + "\"}");
+        VerificadorDeCatalogo.verificar(java.util.List.of(codigo));
     }
 
     @Test

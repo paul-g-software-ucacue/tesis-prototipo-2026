@@ -29,8 +29,8 @@ openApiGenerate {
             skipDefaultInterface : 'true',
             useTags              : 'true',
             openApiNullable      : 'false',
-            // La validación de entrada y sus errores con detalles llegan con B00-H04 (research §5).
-            useBeanValidation    : 'false',
+            // Valida los cuerpos según el contrato; los errores responden 400 con detalles (ADR-016).
+            useBeanValidation    : 'true',
             documentationProvider: 'none',
             annotationLibrary    : 'none',
             // Los campos opcionales sin valor no se envían: el contrato no los declara nullable
@@ -56,8 +56,10 @@ dependencies {
     implementation 'org.springframework:spring-web'
     implementation 'com.fasterxml.jackson.core:jackson-annotations'
     implementation 'jakarta.annotation:jakarta.annotation-api'
-    // Los modelos marcan los campos obligatorios con @NotNull aunque la validación esté apagada.
-    implementation 'jakarta.validation:jakarta.validation-api'
+    // Restricciones de los modelos generados (@NotNull, @Size…) y su validación en ejecución.
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    // CatalogoDeErrores, para registrar los errores del servicio (ADR-016).
+    implementation project(':plataforma:errores-nucleo')
 }
 
 testing {
@@ -65,11 +67,12 @@ testing {
         test {
             dependencies {
                 // Pruebas de contrato con MockMvc y el validador de plataforma:pruebas. La seguridad
-                // de los procesos da el 401 con el cuerpo NoAutenticado del contrato.
+                // da el 401 del contrato y plataforma:errores, los demás errores.
                 implementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
                 implementation 'org.springframework.security:spring-security-test'
                 implementation project(':plataforma:pruebas')
                 implementation project(':plataforma:seguridad')
+                implementation project(':plataforma:errores')
             }
         }
     }

@@ -126,20 +126,20 @@ description: "Tareas de B00-H04: modelo de errores común y catálogo de código
   - **`ErroresAutoConfiguracion`:** `@AutoConfiguration` con `beforeName` de la autoconfiguración de errores de Spring Boot 4 (obtener el nombre del JAR, como en B00-H03). Arma el `RegistroDeErrores` con todos los `CatalogoDeErrores` del contexto, el advice y el controlador de errores. Se registra en `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
 
   JavaDoc del contrato. Así pasa T010.
-- [ ] T012 En `backend/plataforma/seguridad/`:
+- [X] T012 En `backend/plataforma/seguridad/`:
   - en `SeguridadProcesoAutoConfiguracion`, agregar `reglas.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()` antes de las demás reglas, con un comentario: la página de error se puede escribir; una petición directa a `/error` sigue pidiendo token;
   - en `SeguridadProcesoTest`, agregar:
     - un caso: `GET /error` directo sin token responde 401;
     - una prueba que compare el cuerpo del 401 con `CodigosComunes.SEGURIDAD_NO_AUTENTICADO`, y otra con `VerificadorDeCatalogo`;
   - agregar `testImplementation project(':plataforma:errores-nucleo')`.
-- [ ] T013 En `backend/buildSrc/src/main/groovy/mdd.contrato.gradle`:
+- [X] T013 En `backend/buildSrc/src/main/groovy/mdd.contrato.gradle`:
   - `useBeanValidation: 'true'`, y quitar el comentario que la dejaba para B00-H04;
   - `implementation 'org.springframework.boot:spring-boot-starter-validation'` y `implementation project(':plataforma:errores-nucleo')`;
   - en la suite `test`: `implementation project(':plataforma:errores')`.
 
   Regenerar y comprobar que `CredencialesSesion` tiene `@NotNull` y `@Size(min = 1)`.
-- [ ] T014 Agregar `implementation project(':plataforma:errores')` a `backend/plantillas/aplicacion/build.gradle` y a `backend/apps/{identidad,datos,distributivo,salida}/build.gradle`. En las pruebas de contrato de `cargas`, `generacion` y `dashboard`, agregar `ErroresAutoConfiguracion` al `@ImportAutoConfiguration`.
-- [ ] T015 Ejecutar `./gradlew spotlessApply build integrationTest`. Todo en verde, con el 60 % de cobertura en `plataforma:errores-nucleo` y `plataforma:errores`. Las pruebas de B00-H03 siguen pasando, salvo las de Usuarios que cambian en US1 a US3. Anotar en `specs/004-modelo-errores/evidencia.md`.
+- [X] T014 Agregar `implementation project(':plataforma:errores')` a `backend/plantillas/aplicacion/build.gradle` y a `backend/apps/{identidad,datos,distributivo,salida}/build.gradle`. En las pruebas de contrato de `cargas`, `generacion` y `dashboard`, agregar `ErroresAutoConfiguracion` al `@ImportAutoConfiguration`.
+- [X] T015 Ejecutar `./gradlew spotlessApply build integrationTest`. Todo en verde, con el 60 % de cobertura en `plataforma:errores-nucleo` y `plataforma:errores`. Las pruebas de B00-H03 siguen pasando, salvo las de Usuarios que cambian en US1 a US3. Anotar en `specs/004-modelo-errores/evidencia.md`.
 
 **Checkpoint**: el mecanismo funciona con el error de dominio de prueba, y los procesos lo tienen.
 

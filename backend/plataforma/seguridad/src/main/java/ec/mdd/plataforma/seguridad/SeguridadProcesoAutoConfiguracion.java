@@ -1,5 +1,6 @@
 package ec.mdd.plataforma.seguridad;
 
+import jakarta.servlet.DispatcherType;
 import java.util.Locale;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -93,6 +94,9 @@ public class SeguridadProcesoAutoConfiguracion {
                         sesion -> sesion.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(
                         reglas -> {
+                            // La página de error se puede escribir (B00-H04, ADR-016). Una petición
+                            // directa a /error es de tipo REQUEST y sigue pidiendo token.
+                            reglas.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll();
                             reglas.requestMatchers(ruta("* /actuator/health/**")).permitAll();
                             propiedades
                                     .rutasPublicas()

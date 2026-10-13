@@ -10,6 +10,8 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql'
     // JWT RS256 validado por el propio proceso y el 401 uniforme (ADR-014).
     implementation project(':plataforma:seguridad')
+    // Un solo @RestControllerAdvice por proceso y la página /error (ADR-016).
+    implementation project(':plataforma:errores')
 
     // Servicios que ensambla este proceso (ADR-006).
     implementation project(':servicios:usuarios')

@@ -5,7 +5,6 @@ import ec.mdd.plataforma.errores.nucleo.RegistroDeErrores;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.webmvc.error.ErrorController;
 import org.springframework.context.annotation.Bean;
 
@@ -17,11 +16,13 @@ import org.springframework.context.annotation.Bean;
  * ({@code ec.mdd}); esta autoconfiguración los agrega solo si faltan, por ejemplo en las pruebas
  * con {@code @WebMvcTest} de un servicio. Se aplica antes que la página de error de Spring Boot,
  * que se retira al encontrar otro {@link ErrorController}.
+ *
+ * <p>No depende de que el contexto tenga servidor web: en las pruebas sin servidor el escaneo igual
+ * encuentra el advice, y necesita el registro.
  */
 @AutoConfiguration(
         beforeName =
                 "org.springframework.boot.webmvc.autoconfigure.error.ErrorMvcAutoConfiguration")
-@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 public class ErroresAutoConfiguracion {
 
     /** Los catálogos de todos los servicios del proceso; falla si un código se repite. */
