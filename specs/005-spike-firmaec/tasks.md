@@ -37,7 +37,7 @@ description: "Tareas de B00-S01: prueba temprana de firma con FirmaEC y validaci
 ## Phase 1: Setup
 
 - [ ] T001 En `backend/gradle.properties`, agregar `versionPdfbox=3.0.8`, `versionOpenHtmlToPdf=1.1.87` y `versionVeraPdf=1.30.2`, cada una con su motivo (research §2). Bouncy Castle ya está en `versionBouncyCastle`.
-- [ ] T002 En `backend/servicios/firma/build.gradle`, agregar a la suite `test` las dependencias `org.apache.pdfbox:pdfbox`, `org.bouncycastle:bcpkix-jdk18on`, `io.github.openhtmltopdf:openhtmltopdf-pdfbox` y `org.verapdf:validation-model`, con sus versiones. Comentario: «solo en pruebas: spike B00-S01 (D-44)». Comprobar con `dependencies --configuration runtimeClasspath` que no entran al de ejecución.
+- [ ] T002 En `backend/servicios/firma/build.gradle`, agregar a la suite `test` las dependencias `org.apache.pdfbox:pdfbox`, `org.bouncycastle:bcpkix-jdk18on`, `io.github.openhtmltopdf:openhtmltopdf-pdfbox` y `org.verapdf:validation-model`, con sus versiones. Comentario: «solo en pruebas: spike B00-S01 (D-44)». Comprobar con `dependencies --configuration runtimeClasspath` que no entran al de ejecución. Además, reenviar a la JVM de las pruebas las propiedades del modo local (D-43): en `tasks.named('test')`, `systemProperty` de `mdd.firma.pdf0`, `mdd.firma.pdf1`, `mdd.firma.pdf2` y `mdd.firma.raiz`, leídas con `providers.systemProperty(...)` y solo si están definidas. Sin esto, `-D` llega a Gradle pero no a la prueba (hallazgo I1).
 - [ ] T003 [P] Crear `specs/005-spike-firmaec/evidencia.md` con estas secciones:
   - entorno, con la versión de FirmaEC y cómo se instaló;
   - escenario 1;
@@ -51,7 +51,7 @@ description: "Tareas de B00-S01: prueba temprana de firma con FirmaEC y validaci
 
 ## Phase 2: Foundational
 
-- [ ] T004 [P] Agregar la fuente `F/resources/fuentes/DejaVuSans.ttf` con su licencia en `F/resources/fuentes/LICENSE-DejaVu.txt`. Tomarla del paquete de DejaVu (licencia libre de Bitstream Vera) e indicar el origen en la licencia.
+- [ ] T004 [P] Agregar la fuente `F/resources/fuentes/DejaVuSans.ttf` con su licencia en `F/resources/fuentes/LICENSE-DejaVu.txt`. No está instalada en Fedora: descargar `dejavu-fonts-ttf-2.37.tar.bz2` de la versión publicada oficial (`github.com/dejavu-fonts/dejavu-fonts/releases`) en una carpeta nueva del scratchpad, verificar su SHA-256 y copiar solo `DejaVuSans.ttf` y `LICENSE`. Indicar el origen y el SHA-256 en la licencia. Si la descarga no es posible, usar Liberation Sans (instalada, OFL) y anotarlo.
 - [ ] T005 [P] Crear `F/resources/spike/plantilla-pdfa.html`: XHTML con título, metadatos (`<title>`, idioma `es`) y una tabla ficticia «Distributivo de prueba, periodo 2026-I», con la fuente DejaVu Sans. Sin datos personales.
 
 ---
@@ -66,13 +66,14 @@ description: "Tareas de B00-S01: prueba temprana de firma con FirmaEC y validaci
   - la CA con RSA de 3072 bits, 10 años y sus extensiones;
   - tres firmantes con RSA de 2048 bits, 3 años, `digitalSignature` y `nonRepudiation`, y los CN de F1, F2 y F3;
   - `firmante-N.p12` con la contraseña `cambiar-en-local-firma` y la cadena incluida;
-  - `ca-prueba.crt`.
+  - `ca-prueba.crt`;
+  - una variante `firmante-N-legacy.p12` con el cifrado antiguo de PKCS #12 (`-legacy`: 3DES y MAC SHA-1), por si FirmaEC no lee el formato moderno de OpenSSL 3 (AES-256 y PBKDF2). Así un rechazo por formato no se confunde con un rechazo de la CA (hallazgo U1).
 
   Trabaja en un directorio temporal y borra la llave de la CA al terminar. Validar con shellcheck, sobre una copia.
 - [ ] T007 [US1] Ejecutar `generar.sh` y verificar con `openssl pkcs12` y `openssl verify -CAfile ca-prueba.crt` que los tres certificados se encadenan a la CA y tienen las extensiones esperadas. Correr Gitleaks local sobre un clon con los archivos, para confirmar que la carpeta `ca-prueba/` se acepta. Anotar en `evidencia.md`.
-- [ ] T008 [US1] (autor) Abrir `firmante-1.p12`, `firmante-2.p12` y `firmante-3.p12` en FirmaEC según [contracts/procedimiento-firma.md](contracts/procedimiento-firma.md). Anotar en la sección «escenario 1» de `evidencia.md`:
+- [ ] T008 [US1] (autor) **Después de T010**, firmar con FirmaEC una copia desechable de `pdfa-prueba.pdf` con cada uno de los tres certificados, según [contracts/procedimiento-firma.md](contracts/procedimiento-firma.md). Primero con la variante moderna y, si falla, con la `-legacy`. Las copias no se guardan en el repositorio. Anotar en la sección «escenario 1» de `evidencia.md`:
   - la versión de FirmaEC y cómo se instaló en Fedora;
-  - si acepta cada certificado, y el mensaje exacto si no.
+  - si firma con cada certificado, con qué variante, y el mensaje exacto si no.
 
   Si no los acepta, seguir D-43 en US2 y US3.
 
@@ -87,7 +88,7 @@ description: "Tareas de B00-S01: prueba temprana de firma con FirmaEC y validaci
 - [ ] T009 [US2] Crear `F/java/ec/mdd/firma/spike/PdfaDePruebaTest.java`:
   - genera el PDF desde `plantilla-pdfa.html` con OpenHTMLtoPDF, con `usePdfAConformance(PDFA_2_B)`, la fuente incrustada y el perfil sRGB de `ICC_Profile.getInstance(ColorSpace.CS_sRGB)`;
   - lo valida con veraPDF (`PDFAFlavour.PDFA_2_B`) y falla si no es conforme, con las reglas que no cumple;
-  - escribe una copia en `backend/servicios/firma/build/spike-firma/pdfa-prueba.pdf`.
+  - escribe una copia en `backend/servicios/firma/build/spike-firma/pdfa-prueba.pdf` (ruta desde la raíz; la misma en research, el procedimiento y el quickstart).
 - [ ] T010 [US2] Ejecutar `PdfaDePruebaTest`, copiar el PDF a `F/resources/ca-prueba/pdfa-prueba.pdf` y anotar en `evidencia.md` el resultado de veraPDF, el tamaño y el SHA-256.
 - [ ] T011 [US2] (autor) Firmar con FirmaEC según el procedimiento:
   - `pdfa-prueba.pdf` con `firmante-1.p12` → `pdfa-firmado-1.pdf`;
@@ -98,7 +99,7 @@ description: "Tareas de B00-S01: prueba temprana de firma con FirmaEC y validaci
   - `pdfa-firmado-2.pdf` empieza con todos los bytes de `pdfa-firmado-1.pdf`, y este con los de `pdfa-prueba.pdf`;
   - cada uno tiene una firma más que el anterior (`PDDocument.getSignatureDictionaries`).
 
-  Si los PDF firmados no están en `ca-prueba/`, la prueba se salta con un mensaje (`Assumptions`). En modo local, usa las rutas de `-Dmdd.firma.pdf1`, `-Dmdd.firma.pdf2` y, opcionalmente, `-Dmdd.firma.pdf0`.
+  Si los PDF firmados no están en `ca-prueba/`, la prueba se salta con un mensaje (`Assumptions`). En modo local, usa las rutas de `-Dmdd.firma.pdf1`, `-Dmdd.firma.pdf2` y, opcionalmente, `-Dmdd.firma.pdf0`. Comprobar que el modo local de verdad lee las rutas: con `-Dmdd.firma.pdf1` apuntando a un archivo que no existe, la prueba falla (no se salta).
 
 ---
 
@@ -123,7 +124,8 @@ description: "Tareas de B00-S01: prueba temprana de firma con FirmaEC y validaci
   - ByteRange;
   - integridad con `CMSSignedData` y `JcaSimpleSignerInfoVerifierBuilder`;
   - cadena con `CertPathBuilder` PKIX, la raíz como único `TrustAnchor`, sin revocación y con la fecha de la firma;
-  - vigencia en el momento de la firma, tomado de `signingTime` o de `/M`.
+  - vigencia en el momento de la firma, tomado de `signingTime` o de `/M`;
+  - revisión cerrada: en `FirmasFirmaecTest`, el ByteRange `[0, a, b, c]` de la primera firma cumple `b + c` = longitud de `pdfa-firmado-1.pdf` (hallazgo U3).
 
   JavaDoc del contrato y de lo que no comprueba (orden, rol, sello de tiempo, LTV y DocMDP). Así pasa T013.
 - [ ] T015 [US3] En `FirmasFirmaecTest`, la parte del escenario 3: las 2 firmas de `pdfa-firmado-2.pdf` son íntegras, con cadena válida hasta `ca-prueba.crt` y vigentes; y los CN son los de F1 y F2. En modo local, la raíz sale de `-Dmdd.firma.raiz`, y la salida imprime cada comprobación sin el CN real.
@@ -143,7 +145,7 @@ description: "Tareas de B00-S01: prueba temprana de firma con FirmaEC y validaci
 
 - [ ] T017 [US4] Completar `specs/005-spike-firmaec/evidencia.md`: el estado de cada escenario (funcionó, no funcionó o pendiente), las tareas que quedaron pendientes si se cumplió el tiempo, y el tiempo usado.
 - [ ] T018 [US4] Según el resultado:
-  - **si los escenarios 2 y 3 funcionaron:** registrar D-46, «Comprobación de la sección 8: PDFBox y Bouncy Castle validan las firmas de FirmaEC», con los datos de la evidencia, y marcar esa fila de la sección 8 de la constitución como confirmada. Es una enmienda de parche (2.1.0 → 2.1.1). Si FirmaEC rechazó la CA de prueba, D-46 también dice cómo se resuelven los certificados de la demo, o abre un ADR para eso;
+  - **si los escenarios 2 y 3 funcionaron:** registrar D-46, «Comprobación de la sección 8: PDFBox y Bouncy Castle validan las firmas de FirmaEC», con los datos de la evidencia, y agregar a esa fila de la sección 8 de la constitución «Confirmada (D-46): …», como en la fila de B00-H01. Es una enmienda de parche (§7): versión 2.1.0 → 2.1.1, con su entrada en el historial de versiones al inicio, y la fecha actualizada. Si FirmaEC rechazó la CA de prueba, D-46 también dice cómo se resuelven los certificados de la demo, o abre un ADR para eso;
   - **si no funcionaron:** proponer al autor un ADR que cambie D-23 y registrarlo antes de cerrar (FR-010).
 - [ ] T019 [US4] **Con la aprobación del autor**, publicar en el issue #26 un comentario con el resumen del resultado por escenario y el enlace a `evidencia.md` (FR-009).
 
@@ -160,7 +162,7 @@ description: "Tareas de B00-S01: prueba temprana de firma con FirmaEC y validaci
 ## Dependencies & Execution Order
 
 - **Setup (fase 1)** y **Foundational (fase 2)**: sin dependencias.
-- **US1 (fase 3)**: depende de la fase 1. T008 (autor) depende de T007.
+- **US1 (fase 3)**: depende de la fase 1. T008 (autor) depende de T007 y de T010, porque firma una copia del PDF/A.
 - **US2 (fase 4)**: T009 depende de T004 y T005; T011 (autor) depende de T008 y T010.
 - **US3 (fase 5)**: T013 y T014 no dependen de FirmaEC y se pueden hacer mientras el autor firma; T015 y T016 dependen de T011.
 - **US4 (fase 6)**: depende del resultado de US1 a US3, o de que se cumpla el tiempo.
@@ -175,7 +177,7 @@ description: "Tareas de B00-S01: prueba temprana de firma con FirmaEC y validaci
 
 ## Implementation Strategy
 
-1. **Día 1:** fases 1 a 3, T009 y T010. El autor prueba los certificados (T008) y firma (T011). En paralelo, el validador y los casos negativos (T013 y T014).
+1. **Día 1:** fases 1 y 2, T006, T007, T009 y T010. El autor prueba los certificados (T008) y firma (T011). En paralelo, el validador y los casos negativos (T013 y T014).
 2. **Día 2:** validación de las firmas de FirmaEC (T015 y T016), resultado (fase 6) y cierre (fase 7).
 
 ---

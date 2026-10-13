@@ -24,10 +24,11 @@ Por cada firma del PDF, en el orden del documento:
 - **Con los PDF de `ca-prueba/` (CI):**
   - `pdfa-firmado-2.pdf` empieza con los bytes exactos de `pdfa-firmado-1.pdf`;
   - tiene una firma más que este;
+  - el ByteRange de la primera firma termina donde termina `pdfa-firmado-1.pdf`;
   - las 2 firmas son válidas en las cuatro comprobaciones contra `ca-prueba.crt`.
 
   Si los PDF no están (FirmaEC rechazó la CA de prueba, D-43), la prueba se salta y lo dice.
-- **Modo local (D-43):** `-Dmdd.firma.pdf1=<ruta> -Dmdd.firma.pdf2=<ruta> -Dmdd.firma.raiz=<ruta>`. Las mismas comprobaciones contra la raíz indicada; imprime el resultado por firma sin el CN real.
+- **Modo local (D-43):** `-Dmdd.firma.pdf1=<ruta> -Dmdd.firma.pdf2=<ruta> -Dmdd.firma.raiz=<ruta>`, reenviadas por Gradle a la JVM de las pruebas. Las mismas comprobaciones contra la raíz indicada; imprime el resultado por firma sin el CN real.
 
 ## `CasosNegativosTest` (FR-007)
 

@@ -20,7 +20,7 @@ No hay datos persistidos. El modelo describe los artefactos del *spike* (Key Ent
 | Llave | RSA de 2048 bits |
 | Vigencia | 3 años desde su emisión |
 | Extensiones | `keyUsage=critical,digitalSignature,nonRepudiation` |
-| Formato | `firmante-N.p12`, con la contraseña ficticia `cambiar-en-local-firma` |
+| Formato | `firmante-N.p12`, con la contraseña ficticia `cambiar-en-local-firma`, y la variante `firmante-N-legacy.p12` (PKCS #12 antiguo: 3DES y MAC SHA-1) |
 | Ubicación | Solo `backend/servicios/firma/src/test/resources/ca-prueba/` (Gitleaks) |
 
 ## PDF/A de prueba

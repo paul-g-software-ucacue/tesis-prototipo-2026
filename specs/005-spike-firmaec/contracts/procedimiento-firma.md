@@ -5,14 +5,14 @@ Es lo que hace el autor con FirmaEC y lo que anota (escenarios 1 y 2; FR-002, FR
 ## Antes de firmar
 
 - FirmaEC instalado. Anotar la versión y cómo se instaló en Fedora (paquete, distribución en Java u otro camino).
-- `backend/servicios/firma/src/test/resources/ca-prueba/` tiene `firmante-1.p12`, `firmante-2.p12`, `firmante-3.p12` y `ca-prueba.crt` (generados con `generar.sh`).
-- `build/spike-firma/pdfa-prueba.pdf` generado y validado como PDF/A-2b por `PdfaDePruebaTest`. Se copia a `ca-prueba/pdfa-prueba.pdf`.
+- `backend/servicios/firma/src/test/resources/ca-prueba/` tiene `firmante-1.p12`, `firmante-2.p12`, `firmante-3.p12`, sus variantes `-legacy` y `ca-prueba.crt` (generados con `generar.sh`).
+- `backend/servicios/firma/build/spike-firma/pdfa-prueba.pdf` generado y validado como PDF/A-2b por `PdfaDePruebaTest`. Se copia a `ca-prueba/pdfa-prueba.pdf`.
 
 ## Pasos
 
 | # | Acción en FirmaEC | Archivo de entrada | Certificado | Archivo de salida | Qué anotar |
 |---|---|---|---|---|---|
-| 1 | Abrir el certificado | — | `firmante-1.p12`, `firmante-2.p12` y `firmante-3.p12` | — | Si FirmaEC lo acepta; si no, el mensaje exacto (escenario 1) |
+| 1 | Firmar una copia desechable con cada certificado | copia de `pdfa-prueba.pdf` | `firmante-1.p12`, `firmante-2.p12` y `firmante-3.p12`; si alguno falla, su variante `-legacy` | (se descarta) | Si FirmaEC firma con cada uno y con qué variante; si no, el mensaje exacto (escenario 1) |
 | 2 | Firmar el documento | `pdfa-prueba.pdf` | `firmante-1.p12` | `pdfa-firmado-1.pdf` | Opciones ofrecidas (firma visible o invisible, página, posición) y las elegidas; algún aviso |
 | 3 | Firmar el documento ya firmado | `pdfa-firmado-1.pdf` | `firmante-2.p12` | `pdfa-firmado-2.pdf` | Ídem; si FirmaEC avisa que el PDF ya tiene una firma |
 | 4 | Copiar los dos PDF a `ca-prueba/` | — | — | — | — |

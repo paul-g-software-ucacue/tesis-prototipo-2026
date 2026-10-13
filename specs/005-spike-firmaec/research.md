@@ -47,7 +47,8 @@ El orden y el rol se construyen en F14 (spec, Assumptions).
     - «Firmante Uno Prueba (F1)»;
     - «Firmante Dos Prueba (F2)»;
     - «Firmante Tres Prueba (F3)»;
-  - para cada firmante, un `.p12` con la contraseña ficticia `cambiar-en-local-firma`, y `ca-prueba.crt` con la raíz pública.
+  - para cada firmante, un `.p12` con la contraseña ficticia `cambiar-en-local-firma`, y `ca-prueba.crt` con la raíz pública;
+  - una variante `firmante-N-legacy.p12` con el cifrado antiguo de PKCS #12 (`-legacy`). OpenSSL 3 usa por defecto AES-256 y PBKDF2, y una aplicación con librerías antiguas podría no leerlo; así, un rechazo por formato no se confunde con un rechazo de la CA.
 - **La llave privada de la CA no se guarda:** el script la usa y la borra. Para emitir más certificados se vuelve a generar todo. Así el repositorio solo tiene la raíz pública y los `.p12` de la demo.
 - **Por qué OpenSSL:** está instalado en la máquina del autor y en los runners, y el script deja documentado exactamente qué extensiones lleva cada certificado, que es justo lo que hay que registrar si FirmaEC lo rechaza.
 - **Riesgo conocido:** FirmaEC podría exigir una cadena de una entidad acreditada en Ecuador. Es la pregunta del escenario 1, y D-43 dice cómo seguir si ocurre.
@@ -57,9 +58,9 @@ El orden y el rol se construyen en F14 (spec, Assumptions).
 - **Decisión:** una prueba, `PdfaDePruebaTest`, genera `pdfa-prueba.pdf` con OpenHTMLtoPDF en modo PDF/A-2b a partir de una plantilla HTML con contenido ficticio, por ejemplo «Distributivo de prueba, periodo 2026-I». Para eso:
   - usa `usePdfAConformance(PDFA_2_B)`;
   - el perfil de color sRGB sale de `ICC_Profile.getInstance(ColorSpace.CS_sRGB)`, sin archivo;
-  - incrusta una fuente libre (DejaVu Sans, con su licencia), en `src/test/resources/fuentes/`.
+  - incrusta una fuente libre (DejaVu Sans 2.37, con su licencia), en `src/test/resources/fuentes/`. No viene instalada en Fedora: se descarga de la versión publicada oficial y se verifica su SHA-256.
 - **Comprobación:** la misma prueba lo valida con veraPDF (`PDFAFlavour.PDFA_2_B`) y falla si no cumple.
-- **Copia para firmar:** escribe una copia en `build/spike-firma/pdfa-prueba.pdf` para que el autor la firme. La versión exacta que se firmó se guarda en `ca-prueba/pdfa-prueba.pdf`, porque la generación agrega fechas y no es reproducible byte a byte.
+- **Copia para firmar:** escribe una copia en `backend/servicios/firma/build/spike-firma/pdfa-prueba.pdf` para que el autor la firme. La versión exacta que se firmó se guarda en `ca-prueba/pdfa-prueba.pdf`, porque la generación agrega fechas y no es reproducible byte a byte.
 
 ## 5. La firma con FirmaEC (manual, el autor)
 
@@ -85,7 +86,7 @@ El orden y el rol se construyen en F14 (spec, Assumptions).
 
 | Comprobación | Cómo |
 |---|---|
-| **ByteRange** | Cubre todo el archivo, salvo `/Contents`, hasta el final de su revisión. La última firma cubre hasta el final del archivo. |
+| **ByteRange** | Cubre todo el archivo, salvo `/Contents`, hasta el final de su revisión. La última firma cubre hasta el final del archivo; la primera, hasta el final de `pdfa-firmado-1.pdf` (`b + c` = su longitud). |
 | **Integridad** | `CMSSignedData` sobre `getSignedContent(bytes)`. Verificación del `SignerInformation` con el certificado del firmante: el *digest* firmado coincide con el contenido y la firma RSA es válida. |
 | **Cadena** | `CertPathBuilder` PKIX con la CA de prueba como único `TrustAnchor`, los certificados del CMS como intermedios, sin revocación (D-23 no la pide) y con fecha de validación igual al momento de la firma. |
 | **Vigencia** | `checkValidity` del certificado en el momento de la firma (atributo `signingTime` del CMS, o `/M` del diccionario si falta). |
@@ -94,7 +95,7 @@ El orden y el rol se construyen en F14 (spec, Assumptions).
 - el prefijo de bytes: el archivo con dos firmas empieza con los bytes exactos del archivo con una;
 - la cantidad de firmas: una más que el anterior.
 
-**Modo local (D-43):** la misma prueba se puede ejecutar con `-Dmdd.firma.pdf1=… -Dmdd.firma.pdf2=… -Dmdd.firma.raiz=…`. Así valida PDF que no están en el repositorio; sin esas propiedades, esa prueba se salta.
+**Modo local (D-43):** la misma prueba se puede ejecutar con `-Dmdd.firma.pdf1=… -Dmdd.firma.pdf2=… -Dmdd.firma.raiz=…`. El `build.gradle` del servicio reenvía esas propiedades a la JVM de las pruebas, porque `-D` solo llega a la de Gradle. Así valida PDF que no están en el repositorio; sin esas propiedades, esa prueba se salta.
 
 **Casos negativos (FR-007):**
 - un byte cambiado dentro del ByteRange de la primera firma;

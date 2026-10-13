@@ -11,11 +11,11 @@ Guía para hacer el *spike* de punta a punta en 2 días (D-45). Los pasos manual
 
 ```bash
 cd backend/servicios/firma/src/test/resources/ca-prueba
-./generar.sh            # crea ca-prueba.crt y firmante-{1,2,3}.p12; borra la llave de la CA
+./generar.sh            # crea ca-prueba.crt, firmante-{1,2,3}.p12 y sus variantes -legacy; borra la llave de la CA
 openssl pkcs12 -in firmante-1.p12 -passin pass:cambiar-en-local-firma -nokeys | openssl x509 -noout -subject -issuer -dates
 ```
 
-Después, abrir cada `.p12` en FirmaEC y anotar si lo acepta.
+Después del paso 2, firmar en FirmaEC una copia desechable del PDF/A con cada `.p12` (y con su variante `-legacy` si falla) y anotar el resultado.
 
 ## 2. PDF/A de prueba
 
@@ -46,7 +46,7 @@ cp servicios/firma/build/spike-firma/pdfa-prueba.pdf servicios/firma/src/test/re
 
 **Resultado esperado:** prefijo de bytes igual, una firma más, y las 2 firmas íntegras, con cadena válida hasta `ca-prueba.crt` y vigentes.
 
-**Con el certificado real (D-43), en local:**
+**Con el certificado real (D-43), en local** (el `build.gradle` reenvía las propiedades `mdd.firma.*` a la prueba):
 
 ```bash
 ./gradlew :servicios:firma:test --tests '*FirmasFirmaecTest' \
