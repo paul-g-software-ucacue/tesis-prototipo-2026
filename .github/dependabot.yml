@@ -15,3 +15,7 @@ updates:
   - package-ecosystem: docker
     directory: /deploy/docker
     schedule: { interval: weekly }
+  # Imagen de PostgreSQL en compose.yaml (B00-H02).
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule: { interval: weekly }

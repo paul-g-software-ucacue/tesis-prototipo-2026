@@ -22,11 +22,21 @@ repositories {
 
 def versionSpringBoot = providers.gradleProperty('versionSpringBoot').get()
 def versionSpringModulith = providers.gradleProperty('versionSpringModulith').get()
+def versionTomcat = providers.gradleProperty('versionTomcat').get()
+def versionJackson = providers.gradleProperty('versionJackson').get()
 
 dependencies {
     implementation platform("org.springframework.boot:spring-boot-dependencies:${versionSpringBoot}")
     // Spring Modulith 2.1 es la línea de Spring Boot 4.1; su BOM no viene en el de Boot (research §1).
     implementation platform("org.springframework.modulith:spring-modulith-bom:${versionSpringModulith}")
+    // Versiones corregidas por encima del BOM de Spring Boot (gradle.properties). Solo fijan la
+    // versión si el módulo ya usa la dependencia; no la agregan.
+    implementation platform("tools.jackson:jackson-bom:${versionJackson}")
+    constraints {
+        ['tomcat-embed-core', 'tomcat-embed-el', 'tomcat-embed-websocket'].each { modulo ->
+            implementation "org.apache.tomcat.embed:${modulo}:${versionTomcat}"
+        }
+    }
     // Reglas de seguridad para SpotBugs: inyección SQL, XSS, XXE, criptografía débil, deserialización.
     spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0'
 }
@@ -61,6 +71,13 @@ testing {
             }
         }
     }
+}
+
+// Igual que la suite test: las pruebas de integración ven las dependencias del módulo (Flyway,
+// JDBC), no solo su API.
+configurations {
+    integrationTestImplementation.extendsFrom implementation
+    integrationTestRuntimeOnly.extendsFrom runtimeOnly
 }
 
 jacoco {

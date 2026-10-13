@@ -9,6 +9,8 @@ plugins {
 dependencies {
     // Lo mínimo para @SpringBootApplication; cada historia agrega lo que use su proceso.
     implementation 'org.springframework.boot:spring-boot-starter'
+    // Salud de Actuator para los healthchecks (research §6).
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 }
 
 testing {
@@ -16,6 +18,13 @@ testing {
         test {
             dependencies {
                 implementation 'org.springframework.modulith:spring-modulith-starter-test'
+            }
+        }
+        integrationTest {
+            dependencies {
+                // EsquemasIntegrationTest lee los esquemas de los beans Flyway de los servicios,
+                // que tienen Flyway como dependencia interna (implementation).
+                implementation 'org.flywaydb:flyway-core'
             }
         }
     }

@@ -1,0 +1,12 @@
+// API Gateway del MDD (constitución §3, ADR-008). No ensambla servicios: no usa la plantilla de
+// proceso ni necesita ModulosTest (research §5).
+plugins {
+    id 'mdd.aplicacion'
+}
+
+def versionSpringCloud = providers.gradleProperty('versionSpringCloud').get()
+
+dependencies {
+    implementation platform("org.springframework.cloud:spring-cloud-dependencies:${versionSpringCloud}")
+    implementation 'org.springframework.cloud:spring-cloud-starter-gateway-server-webflux'
+}

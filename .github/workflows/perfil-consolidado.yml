@@ -1,0 +1,68 @@
+# Perfil consolidado y medición de R-19 (B00-H02; contrato en
+# specs/002-compose-cuatro-procesos/contracts/medicion-r19.md).
+# Desde un checkout limpio levanta los 6 contenedores con un solo comando (escenario 1) y mide la
+# memoria después del calentamiento (escenario 2, D-34, D-36). No es un check obligatorio.
+# Corre en los pull requests que cambian el despliegue y a mano: GitHub solo ejecuta a mano los
+# workflows que ya están en la rama principal.
+name: perfil-consolidado
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - compose.yaml
+      - .env.ejemplo
+      - "deploy/**"
+      - .github/workflows/perfil-consolidado.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: perfil-consolidado-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  medicion:
+    name: perfil-consolidado
+    # En borradores no corre, como la CI.
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Construcción de las imágenes
+        shell: bash
+        run: time docker compose build
+
+      # Ya sin construir: es la referencia de SC-001 (180 s como máximo).
+      - name: Todo se levanta con un comando (escenario 1)
+        shell: bash
+        run: time docker compose up -d --wait
+
+      # shell: bash agrega pipefail, así que tee no oculta el código de salida del script.
+      - name: Medición de R-19 (escenario 2)
+        shell: bash
+        run: |
+          deploy/medir_memoria.sh | tee medicion.md
+          cat medicion.md >> "$GITHUB_STEP_SUMMARY"
+
+      - if: always()
+        name: Estado de los contenedores
+        shell: bash
+        run: docker compose ps
+
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: medicion-r19
+          path: medicion.md
+          if-no-files-found: warn
+          retention-days: 90
+
+      - if: always()
+        name: Bajar el perfil
+        shell: bash
+        run: docker compose down -v

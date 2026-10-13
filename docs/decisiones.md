@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-34 · ADR-013.
+- **Siguiente número libre:** D-37 · ADR-014.
 
 ## Índice
 
@@ -19,8 +19,12 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-30 | 2026-10-11 | Repositorio en la cuenta `paul-g-software-ucacue` con GitHub Pro | Aceptada | — (D-24 se mantiene) |
 | D-31 | 2026-10-11 | Regla de la rama principal: 10 checks, estricta, solo *squash*, sin excepciones | Aceptada | — (aplica `pipeline_cicd.md` §8) |
 | D-32 | 2026-10-11 | Cobertura única del 60 % por módulo, también en el dominio central | Aceptada | Constitución principio VIII y §3 (2.0.0), RNF-MAN-02, D-27, ADR-011 punto 3, issue #18 (escenario 4) |
-| ADR-012 | 2026-10-11 | Plantilla de servicio: paquete base, API publicada y plugins de convención | Aceptada | ADR-011 punto 2 |
+| ADR-012 | 2026-10-11 | Plantilla de servicio: paquete base, API publicada y plugins de convención | Aceptada, modificada por D-35 (los 12 servicios se crean en B00-H02) | ADR-011 punto 2 |
 | D-33 | 2026-10-11 | google-java-format (estilo AOSP) en lugar de palantir-java-format | Aceptada | Constitución §8 (2.0.1), ADR-011 punto 4 (Spotless) |
+| D-34 | 2026-10-12 | Medición de R-19 en dos pasos: en B00-H02 tras un calentamiento y en B00-H03 tras iniciar sesión | Aceptada | Issue #19 (escenario de memoria), issue #20 |
+| D-35 | 2026-10-12 | B00-H02 crea los 12 servicios vacíos, cada uno con su esquema y una migración mínima | Aceptada | Issue #19 (alcance), ADR-012 (cuándo se crean los servicios) |
+| ADR-013 | 2026-10-12 | Persistencia por servicio y construcción de imágenes desde el código | Aceptada | `deploy/docker/java.Dockerfile` (B00-H08) |
+| D-36 | 2026-10-12 | El despliegue pasa a un servidor o PC de 4 núcleos y 8 GiB de RAM | Aceptada | Constitución principio V, §3 y §8 (2.1.0), RNF-POR-02, R-19, ADR-006, ADR-008, issue #19 |
 
 ---
 
@@ -158,6 +162,85 @@ Se conservan las reglas que ya tenía: prohibido borrar `main` o reescribir su h
 
 ---
 
+## D-34. Medición de R-19 en dos pasos
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-12 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q1 de la especificación de B00-H02 (`specs/002-compose-cuatro-procesos/spec.md`)
+- **Modifica a:** issue #19 (escenario «Cabe en la memoria de la VM») e issue #20, B00-H03 (recibe el escenario de la medición después de iniciar sesión)
+
+**Decisión.** B00-H02 mide la memoria con `docker stats` con todo levantado y sano, después de un calentamiento que llama a la salud de cada proceso. La medición «después de iniciar sesión» pasa a B00-H03, que es la historia que crea el inicio de sesión.
+
+**Por qué.** El escenario original de B00-H02 pedía medir después de iniciar sesión, pero el inicio de sesión llega con B00-H03, que depende de B00-H02. Así R-19 se conoce desde la ola 0 y se vuelve a medir con una sesión real.
+
+**Alternativas.** Medir solo en reposo, sin repetir; dejar la medición pendiente hasta B00-H03 (B00-H02 no podría cerrarse).
+
+**Consecuencias.** Los issues #19 y #20 se editaron el 2026-10-12. La evidencia de R-19 tiene dos mediciones.
+
+---
+
+## D-35. B00-H02 crea los 12 servicios vacíos
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-12 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q2 de la especificación de B00-H02
+- **Modifica a:** ADR-012 (decía que los servicios llegan con sus historias) y el alcance del issue #19
+
+**Decisión.** B00-H02 crea los 12 servicios desde `backend/plantillas/servicio`, sin lógica de negocio. Cada uno tiene su esquema en PostgreSQL y una primera migración de Flyway mínima, sin tablas de negocio. Los 4 procesos los ensamblan según ADR-006. Las tablas y la lógica de cada servicio llegan con sus historias.
+
+**Por qué.** El escenario «Un esquema por servicio» necesita servicios que apliquen migraciones, y la medición de R-19 es más realista si cada proceso carga sus módulos. Sin servicios, los procesos arrancarían vacíos.
+
+**Alternativas.** Demostrar la regla con un servicio de prueba y dejar los procesos vacíos; pasar el escenario de esquemas a la primera historia con datos (F04-H01).
+
+**Consecuencias.** La primera historia de cada servicio parte de un servicio ya creado y ensamblado en su proceso, en lugar de copiar la plantilla.
+
+---
+
+## ADR-013. Persistencia por servicio y construcción de imágenes desde el código
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-12 · **Decidido por:** autor de la tesis
+- **Origen:** plan de B00-H02 (`specs/002-compose-cuatro-procesos/research.md` §1, §3 y §4)
+- **Modifica a:** `deploy/docker/java.Dockerfile` y el `cd.yml` pendiente de B00-H08, que suponían un JAR compilado antes de construir la imagen
+- **Relacionadas:** ADR-006, ADR-012, D-35; principios V, IX y XI; constitución §3
+
+**Contexto.** B00-H02 levanta el perfil consolidado con un solo `docker compose up` desde un clon limpio, y crea los 12 servicios con su esquema (D-35). Esto obliga a fijar cómo migra cada servicio, con qué permisos se conecta cada proceso y cómo se construyen las imágenes, y esas tres cosas afectan a todas las features que tengan datos y al despliegue.
+
+**Decisión.**
+1. **Un Flyway por servicio.** Cada servicio tiene en su capa de infraestructura una configuración `<Servicio>FlywayConfig`, con un bean `Flyway` limitado a su esquema (`schemas=<servicio>`) y a su carpeta `db/migration/<servicio>`, que migra al arrancar el proceso. El nombre de la clase es único en el proyecto.
+2. **Un rol de base por proceso.** Hay una base `mdd`, un rol por proceso (identidad, datos, distributivo y salida) y 12 esquemas, cada uno a nombre del rol de su proceso. Cada proceso usa un solo `DataSource` con su rol. Un proceso no puede tocar los esquemas de otro; dentro de un proceso, el aislamiento entre servicios lo verifica la prueba de integración de cada servicio, `<Servicio>EsquemaIntegrationTest`.
+3. **Imágenes construidas desde el código.** `java.Dockerfile` compila el módulo en una etapa con JDK 25 y una caché de Gradle compartida, y la imagen final usa el JRE 25. B00-H08 construye con la misma imagen o reutiliza su etapa de extracción.
+
+**Por qué.** Cumple el principio V a nivel de base sin un `DataSource` por servicio (12 *pools* de conexiones irían contra R-19) y con el mínimo privilegio del principio IX. Mantiene la configuración explícita y corta (principio XI). Permite el «un solo comando» de RNF-POR-01.
+
+**Alternativas.** Un rol único para todo; un rol y un `DataSource` por servicio; un Flyway por proceso con varios esquemas; compilar los JAR antes de `docker compose up`.
+
+**Consecuencias.** Las historias que agreguen tablas escriben `V2__…` y siguientes en la carpeta de su servicio. B00-H08 adapta `cd.yml` a la nueva etapa de compilación.
+
+---
+
+## D-36. El despliegue pasa a un servidor o PC de 4 núcleos y 8 GiB de RAM
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-12 · **Decidido por:** autor de la tesis
+- **Origen:** análisis de B00-H02 (`/speckit-analyze`, hallazgo I2: la especificación decía «4 GB» y los contratos «4 GiB»). Al revisarlo, el autor decidió duplicar las limitaciones del hardware de despliegue.
+- **Modifica a:** constitución, principio V, §3 (Infraestructura y Memoria) y §8 (versión 2.1.0); RNF-POR-02 y R-19 de la ERS; ADR-006 y ADR-008 (tamaño de la VM); issue #19 (historia y escenario de memoria); especificación, plan y tareas de B00-H02
+
+**Decisión.**
+1. El perfil consolidado se despliega en un **servidor o PC de 4 núcleos y 8 GiB de RAM**, en lugar de una VM de 2 vCPU y 4 GB. La demostración usa un equipo del mismo tamaño.
+2. **R-19:** el perfil consolidado debe consumir menos de 8 GiB después del calentamiento (D-34). La alerta pasa de 3,5 GiB a **7 GiB**. Se mide en GiB porque es la unidad de `docker stats`.
+3. **Los límites por contenedor no cambian:** PostgreSQL y cada proceso, 512 MiB; el gateway, 384 MiB. En total son 2 944 MiB. El resto de la memoria queda para el sistema operativo y para lo que llegue en las olas siguientes. Si una medición lo pide, los límites se suben sin una decisión nueva, mientras el total quede por debajo del umbral de R-19.
+4. **Se mantienen los 4 procesos de ADR-006:** el principio V pide no distribuir sin una razón técnica, y con 12 JVM la medición de R-19 tendría mucho menos margen.
+
+**Por qué.** Lo decidió el autor: el equipo de despliegue tendrá 8 GB de RAM y 4 núcleos.
+
+**Alternativas.** Mantener 4 GB y medir en GiB (propuesta del análisis); mantener 4 GB con el umbral más estricto de 4 000 MB; duplicar también los límites por contenedor (se aplicó un momento y se revirtió al aclarar el autor que se refería al equipo).
+
+**Consecuencias.**
+- La constitución pasa de 2.0.1 a 2.1.0. Se sube la versión menor porque cambia una restricción de la sección 3: no es una aclaración, aunque no cambie la regla de ningún principio.
+- La alternativa de R-19 (Nginx en lugar de Spring Cloud Gateway) queda para un consumo de 8 GiB o más.
+- La ERS (RNF-POR-02, R-19), ADR-006 y ADR-008, fuera del repositorio, quedan desactualizados en este punto; este registro prevalece.
+- El runner estándar de GitHub Actions de un repositorio privado tiene menos RAM que el equipo de despliegue. La medición de referencia sigue siendo válida mientras el consumo quede por debajo de la RAM del runner.
+- El issue #19 se editó el 2026-10-12.
+
+---
+
 ## Anexo A. Decisiones anteriores (D-01 a D-27)
 
 Copia de la tabla de la ERS v2.1, sección 8.6, al 2026-10-11. El registro original es `lean_inception/Matriz_decisiones_SCD_MDD.xlsx`; las de arquitectura, integración y flujo tienen además un ADR (anexo B).
@@ -213,4 +296,4 @@ Estado al 2026-10-11. El texto completo está en `lean_inception/adr/`.
 | ADR-008 | Stack de desarrollo: Java con Spring Boot en el backend y React en el frontend | Aceptada, modificada por ADR-009, ADR-011 y D-28 |
 | ADR-009 | Estándares de ingeniería backend: microservicios en el perfil consolidado, cinco capas, errores y fallos entre procesos | Aceptada |
 | ADR-010 | El puntaje de afinidad se calcula en el servicio de Generación (contexto Distributivo) | Aceptada |
-| ADR-011 | Plataforma Java 25 con Spring Boot 4.1.1 y Gradle, y pipeline de DevSecOps | Aceptada, modificada por ADR-012 (punto 2), D-28, D-32 (punto 3) y D-33 (formateador de Spotless) |
+| ADR-011 | Plataforma Java 25 con Spring Boot 4.1.1 y Gradle, y pipeline de DevSecOps | Aceptada, modificada por ADR-012 (punto 2), D-28, D-32 (punto 3), D-33 (formateador de Spotless) y ADR-013 (construcción de imágenes) |

@@ -2,19 +2,23 @@
 
 Esqueletos que se copian cuando una historia crea un servicio o un proceso del MDD (ADR-012). No forman parte del build: no están en `settings.gradle`.
 
-Las garantías de cada esqueleto (reglas de las cinco capas, API publicada, cobertura del 60 %, Spotless y SpotBugs) están en el contrato [`specs/001-repo-plantilla-ci/contracts/plantilla-servicio.md`](../../specs/001-repo-plantilla-ci/contracts/plantilla-servicio.md).
+Las garantías de cada esqueleto (reglas de las cinco capas, API publicada, cobertura del 60 %, Spotless y SpotBugs) están en el contrato [`specs/001-repo-plantilla-ci/contracts/plantilla-servicio.md`](../../specs/001-repo-plantilla-ci/contracts/plantilla-servicio.md). La persistencia (un esquema y un Flyway por servicio, un rol por proceso) está en [`specs/002-compose-cuatro-procesos/contracts/persistencia.md`](../../specs/002-compose-cuatro-procesos/contracts/persistencia.md) (ADR-013).
 
 **Nombres únicos:** ningún servicio ni proceso puede repetir el nombre de otro subproyecto. Gradle los identifica por grupo (`ec.mdd`) y nombre, y dos con el mismo nombre crean una dependencia circular.
 
 ## Crear un servicio
 
 1. Copiar `plantillas/servicio/` a `servicios/<servicio>/`. El nombre va en español, sin número ni guiones (`normativa`, `validacionocs`).
-2. En la copia, cambiar el paquete `ec.mdd.servicio` por `ec.mdd.<servicio>`, en las carpetas y en las líneas `package`.
-3. Agregar `include 'servicios:<servicio>'` en `backend/settings.gradle`.
-4. Agregar `implementation project(':servicios:<servicio>')` en el `build.gradle` de su proceso.
+2. En la copia, cambiar el paquete `ec.mdd.servicio` por `ec.mdd.<servicio>`, en las carpetas y en las líneas `package` e `import`.
+3. Renombrar `ServicioFlywayConfig`, `ServicioFlywayConfigTest` y `ServicioEsquemaIntegrationTest` a `<Servicio>FlywayConfig`, `<Servicio>FlywayConfigTest` y `<Servicio>EsquemaIntegrationTest` (`NormativaFlywayConfig`, `ValidacionocsFlywayConfig`), y el método `flywayServicio` a `flyway<Servicio>`. Los nombres tienen que ser únicos en el proyecto.
+4. Renombrar la carpeta `db/migration/servicio` a `db/migration/<servicio>` y el archivo `V1__esquema_servicio.sql` a `V1__esquema_<servicio>.sql`, y reemplazar el literal `servicio` en las clases, las pruebas y el comentario de la migración.
+5. Agregar `include 'servicios:<servicio>'` en `backend/settings.gradle`.
+6. Agregar `implementation project(':servicios:<servicio>')` en el `build.gradle` de su proceso, y el esquema `<servicio>` a nombre del rol del proceso en `deploy/postgres/01-esquemas.sh`.
 
 ## Crear un proceso
 
 1. Copiar `plantillas/aplicacion/` a `apps/<proceso>/` (`identidad`, `datos`, `distributivo` o `salida`).
 2. Renombrar `ProcesoAplicacion` a `<Proceso>Aplicacion`, también en `ModulosTest`. La clase se queda en el paquete `ec.mdd`.
-3. Agregar `include 'apps:<proceso>'` en `backend/settings.gradle`.
+3. En `application.yaml`, reemplazar `proceso` por el nombre del proceso (nombre de la aplicación y usuario de la base) y `DB_CLAVE_PROCESO` por `DB_CLAVE_<PROCESO>`.
+4. Agregar `include 'apps:<proceso>'` en `backend/settings.gradle`.
+5. Agregar el rol del proceso en `deploy/postgres/01-esquemas.sh`, su clave en `.env.ejemplo` y su contenedor en `compose.yaml`.

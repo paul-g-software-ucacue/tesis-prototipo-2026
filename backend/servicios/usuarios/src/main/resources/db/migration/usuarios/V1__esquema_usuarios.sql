@@ -1,0 +1,2 @@
+-- Esquema del servicio usuarios (D-35).
+-- Las tablas de negocio llegan con sus historias, como V2 y siguientes.

@@ -1,0 +1,6 @@
+// Servicio validacionocs del MDD, creado desde backend/plantillas/servicio (ADR-012).
+// mdd.servicio aplica las reglas de las cinco capas, la cobertura del 60 % (D-32), Spotless y
+// SpotBugs. Vale para todos los servicios, centrales o no.
+plugins {
+    id 'mdd.servicio'
+}
