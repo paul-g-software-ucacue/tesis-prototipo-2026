@@ -26,6 +26,10 @@ paths:
                 $ref: '../comun/seguridad.yaml#/components/schemas/SesionActual'
         '401':
           $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
 components:
   securitySchemes:
     bearer:

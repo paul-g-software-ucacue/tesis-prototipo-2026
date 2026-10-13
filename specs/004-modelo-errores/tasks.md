@@ -39,8 +39,8 @@ description: "Tareas de B00-H04: modelo de errores común y catálogo de código
 
 ## Phase 1: Setup
 
-- [ ] T001 En `backend/settings.gradle`, agregar `'plataforma:errores-nucleo'` y `'plataforma:errores'` a la línea de `include` de `plataforma`.
-- [ ] T002 [P] Crear `specs/004-modelo-errores/evidencia.md` con estas secciones:
+- [X] T001 En `backend/settings.gradle`, agregar `'plataforma:errores-nucleo'` y `'plataforma:errores'` a la línea de `include` de `plataforma`.
+- [X] T002 [P] Crear `specs/004-modelo-errores/evidencia.md` con estas secciones:
   - entorno;
   - contratos;
   - construcción y pruebas;
@@ -61,16 +61,16 @@ description: "Tareas de B00-H04: modelo de errores común y catálogo de código
 
 ### Contratos (principio IV: antes del código)
 
-- [ ] T003 [P] En `contratos/comun/errores.md`, agregar las 8 filas `COMUN_` de research §4, con título, descripción accionable y cuándo:
+- [X] T003 [P] En `contratos/comun/errores.md`, agregar las 8 filas `COMUN_` de research §4, con título, descripción accionable y cuándo:
   - la descripción de `COMUN_ERROR_INTERNO` es «Ocurrió un error inesperado. Intenta de nuevo en unos minutos; si el problema sigue, informa el identificador del incidente.»;
   - la de `COMUN_SOLICITUD_INVALIDA` es «Revisa los campos marcados y vuelve a intentarlo.».
 
   Actualizar la nota final: los códigos `COMUN_` y `SEGURIDAD_` son de la plataforma.
-- [ ] T004 [P] En `contratos/comun/errores.yaml`, agregar en `components.responses` las respuestas `SolicitudInvalida` (400), `ErrorInterno` (500) y `ServicioNoDisponible` (503). Las tres usan el esquema `Error`, con su descripción y el código que llevan.
-- [ ] T005 En los contratos de `usuarios`, `cargas`, `generacion` y `dashboard`:
+- [X] T004 [P] En `contratos/comun/errores.yaml`, agregar en `components.responses` las respuestas `SolicitudInvalida` (400), `ErrorInterno` (500) y `ServicioNoDisponible` (503). Las tres usan el esquema `Error`, con su descripción y el código que llevan.
+- [X] T005 En los contratos de `usuarios`, `cargas`, `generacion` y `dashboard`:
   - cada operación declara `'500': $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'` y `'503': $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'`, porque el API Gateway puede darlo en cualquiera (D-40);
   - en `contratos/usuarios/openapi.yaml`, `POST /api/usuarios/sesion` agrega `'400': $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'`, y `CredencialesSesion.usuario` y `clave` llevan `minLength: 1` (D-42).
-- [ ] T006 Validar los 7 archivos de `contratos/` con `openapitools/openapi-generator-cli:v7.25.0 validate --recommend`, sobre una copia en el directorio temporal. Anotar el resultado en la sección «contratos» de `specs/004-modelo-errores/evidencia.md`.
+- [X] T006 Validar los 7 archivos de `contratos/` con `openapitools/openapi-generator-cli:v7.25.0 validate --recommend`, sobre una copia en el directorio temporal. Anotar el resultado en la sección «contratos» de `specs/004-modelo-errores/evidencia.md`.
 
 ### `plataforma:errores-nucleo`
 

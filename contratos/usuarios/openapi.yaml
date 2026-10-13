@@ -36,11 +36,17 @@ paths:
         '401':
           description: >-
             Credenciales inválidas (USUARIOS_CREDENCIALES_INVALIDAS). La misma respuesta para un
-            usuario inexistente, inactivo, una contraseña incorrecta o datos vacíos.
+            usuario inexistente, inactivo o una contraseña incorrecta.
           content:
             application/json:
               schema:
                 $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
     get:
       tags: [Sesion]
       operationId: consultarSesion
@@ -54,6 +60,10 @@ paths:
                 $ref: '../comun/seguridad.yaml#/components/schemas/SesionActual'
         '401':
           $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
   /api/usuarios/jwks:
     get:
       tags: [Jwks]
@@ -67,6 +77,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Jwks'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
 components:
   securitySchemes:
     bearer:
@@ -78,12 +92,14 @@ components:
       properties:
         usuario:
           type: string
-          description: Nombre de usuario.
+          minLength: 1
+          description: Nombre de usuario. Vacío responde 400 (D-42).
           example: autor.prueba
         clave:
           type: string
           format: password
-          description: Contraseña del usuario.
+          minLength: 1
+          description: Contraseña del usuario. Vacía responde 400 (D-42).
     TokenSesion:
       type: object
       required: [token, tipo, venceEn]

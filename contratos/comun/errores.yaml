@@ -1,11 +1,36 @@
 # Modelo público de error del MDD (principio XIII). Lo referencian los contratos de cada servicio.
-# B00-H04 completa el catálogo de códigos (errores.md) y la validación de entrada (D-38).
+# El catálogo de códigos está en errores.md (ADR-016).
 openapi: 3.0.3
 info:
   title: MDD · Errores comunes
   version: 1.0.0
 paths: {}
 components:
+  responses:
+    SolicitudInvalida:
+      description: >-
+        La solicitud no cumple el contrato (COMUN_SOLICITUD_INVALIDA, con detalles por campo) o su
+        cuerpo no se puede leer (COMUN_CUERPO_ILEGIBLE).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ErrorInterno:
+      description: >-
+        Error técnico inesperado (COMUN_ERROR_INTERNO). Trae idIncidente para buscarlo en los
+        registros; nunca trazas, clases, SQL ni el mensaje original.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ServicioNoDisponible:
+      description: >-
+        El API Gateway no puede conectar con el proceso de la ruta (COMUN_SERVICIO_NO_DISPONIBLE,
+        D-40).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
   schemas:
     Error:
       description: >-
