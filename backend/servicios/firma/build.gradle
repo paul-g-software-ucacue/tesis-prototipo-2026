@@ -4,3 +4,33 @@
 plugins {
     id 'mdd.servicio'
 }
+
+def versionBouncyCastle = providers.gradleProperty('versionBouncyCastle').get()
+def versionPdfbox = providers.gradleProperty('versionPdfbox').get()
+def versionOpenHtmlToPdf = providers.gradleProperty('versionOpenHtmlToPdf').get()
+def versionVeraPdf = providers.gradleProperty('versionVeraPdf').get()
+
+testing {
+    suites {
+        test {
+            dependencies {
+                // Solo en pruebas: spike B00-S01 (D-44). No entran al runtimeClasspath ni a la imagen.
+                implementation "org.apache.pdfbox:pdfbox:${versionPdfbox}"
+                implementation "org.bouncycastle:bcpkix-jdk18on:${versionBouncyCastle}"
+                implementation "io.github.openhtmltopdf:openhtmltopdf-pdfbox:${versionOpenHtmlToPdf}"
+                implementation "org.verapdf:validation-model:${versionVeraPdf}"
+            }
+        }
+    }
+}
+
+// Modo local de D-43: -D llega a la JVM de Gradle, no a la de las pruebas; se reenvían las rutas
+// de los PDF firmados y de la raíz solo si están definidas.
+tasks.named('test') {
+    ['mdd.firma.pdf0', 'mdd.firma.pdf1', 'mdd.firma.pdf2', 'mdd.firma.raiz'].each { nombre ->
+        def valor = providers.systemProperty(nombre)
+        if (valor.isPresent()) {
+            systemProperty nombre, valor.get()
+        }
+    }
+}
