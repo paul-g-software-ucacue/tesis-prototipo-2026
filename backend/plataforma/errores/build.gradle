@@ -1,0 +1,25 @@
+// Traducción de errores de los 4 procesos (ADR-016): el único @RestControllerAdvice de cada
+// proceso, la página /error propia y el catálogo de todos sus servicios. El API Gateway, que es
+// WebFlux, tiene su propio manejador y usa solo plataforma:errores-nucleo.
+plugins {
+    id 'java-library'
+    id 'mdd.java-conventions'
+}
+
+dependencies {
+    api project(':plataforma:errores-nucleo')
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+}
+
+testing {
+    suites {
+        test {
+            dependencies {
+                implementation project(':plataforma:pruebas')
+                implementation project(':plataforma:seguridad')
+                implementation 'org.springframework.security:spring-security-test'
+            }
+        }
+    }
+}

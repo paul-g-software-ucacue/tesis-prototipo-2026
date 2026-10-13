@@ -74,12 +74,12 @@ description: "Tareas de B00-H04: modelo de errores común y catálogo de código
 
 ### `plataforma:errores-nucleo`
 
-- [ ] T007 Escribir primero las pruebas de `backend/plataforma/errores-nucleo/src/test/java/ec/mdd/plataforma/errores/nucleo/`:
+- [X] T007 Escribir primero las pruebas de `backend/plataforma/errores-nucleo/src/test/java/ec/mdd/plataforma/errores/nucleo/`:
   - `SaneadorDeTrazasTest`: una traza con un JWT, `Bearer abc.def`, `clave=secreta` y `password=x` en el mensaje de la excepción y de su causa queda con `[oculto]` en los 4 lugares, y conserva la clase, las líneas de la traza y el `Caused by`;
   - `RegistroDeErroresTest`: encuentra la entrada por la clase y por su superclase registrada más cercana; da vacío si no hay; falla con un mensaje claro si dos catálogos registran el mismo código o la misma excepción;
   - `IncidentesTest`: dos identificadores seguidos son distintos y tienen forma de UUID v4;
   - `RespuestaErrorTest`: las fábricas `deCatalogo`, `conDetalles` y `deIncidente` dejan nulos los campos que no corresponden.
-- [ ] T008 Implementar en `backend/plataforma/errores-nucleo/`:
+- [X] T008 Implementar en `backend/plataforma/errores-nucleo/`:
   - `build.gradle`, con `java-library` y `mdd.java-conventions`, más `api 'com.fasterxml.jackson.core:jackson-annotations'`;
   - **el modelo:** `RespuestaError` (record con `@JsonInclude(NON_NULL)`) y `DetalleRespuesta` (record);
   - **el catálogo:**
@@ -95,7 +95,7 @@ description: "Tareas de B00-H04: modelo de errores común y catálogo de código
 
 ### Verificación del catálogo y mecanismo de los procesos
 
-- [ ] T009 [P] Agregar en `backend/plataforma/pruebas/` la dependencia `api project(':plataforma:errores-nucleo')` y la clase `VerificadorDeCatalogo`:
+- [X] T009 [P] Agregar en `backend/plataforma/pruebas/` la dependencia `api project(':plataforma:errores-nucleo')` y la clase `VerificadorDeCatalogo`:
   - `verificar(CatalogoDeErrores)` y `verificar(List<DefinicionDeCodigo>)` leen la tabla de `contratos/comun/errores.md` y fallan si un código no está, o si su estado, título o descripción no coinciden;
   - tiene su prueba, con un `.md` de prueba en `src/test/resources`: una entrada que coincide pasa; una con otro título falla y nombra el código.
 - [ ] T010 Escribir primero las pruebas de `backend/plataforma/errores/src/test/java/ec/mdd/plataforma/errores/`:
