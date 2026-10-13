@@ -53,6 +53,7 @@ deploy/medir_memoria.sh --con-sesion | tee "$TMPDIR/medicion-sesion.md"; echo "s
 ```bash
 docker compose logs | grep -c "$TOKEN"                  # 0
 docker compose logs | grep -ci 'cambiar-en-local-usuario-prueba'   # 0
+docker compose logs | grep -c 'PRIVATE KEY'           # 0
 git grep -n 'BEGIN .*PRIVATE KEY'                      # sin resultados
 ```
 

@@ -113,7 +113,7 @@ Escenario: Cabe en la memoria del equipo después de iniciar sesión
 
 **Emisión del token**
 
-- **FR-001**: Usuarios DEBE emitir, a un usuario de prueba que inicia sesión con credenciales correctas, un token JWT firmado con RS256 que contiene el identificador del usuario, sus roles y una fecha de vencimiento (RF-01, ADR-008). El inicio de sesión de esta historia es mínimo: solo para usuarios de prueba ficticios, sin pantalla ni gestión de usuarios, que son de F05-H01 (D-37).
+- **FR-001**: Usuarios DEBE emitir, a un usuario de prueba que inicia sesión con credenciales correctas, un token JWT firmado con RS256 que contiene el nombre de usuario como identificador, sus roles y una fecha de vencimiento (RF-01, ADR-008). El inicio de sesión de esta historia es mínimo: solo para usuarios de prueba ficticios, sin pantalla ni gestión de usuarios, que son de F05-H01 (D-37).
 - **FR-002**: Solo Usuarios DEBE poder firmar tokens. El API Gateway y los procesos DEBEN validar con la llave pública, sin tener acceso a la llave privada. La llave privada NO DEBE entrar al repositorio (principio IX).
 
 **Validación**

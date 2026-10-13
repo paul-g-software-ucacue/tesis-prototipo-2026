@@ -96,7 +96,7 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
   - configura `openApiGenerate` con `generatorName 'spring'`, `inputSpec` en `${rootDir}/../contratos/${project.name}/openapi.yaml`, `outputDir` en `build/generated/openapi`, `apiPackage` y `modelPackage` en `ec.mdd.${project.name}.adaptadores.entrada.api`, y las `configOptions` de research §11;
   - agrega `build/generated/openapi/src/main/java` a `sourceSets.main` y hace que `compileJava` dependa de `openApiGenerate`;
   - en `dependencies`: `implementation 'org.springframework:spring-web'` y `'com.fasterxml.jackson.core:jackson-annotations'`;
-  - en la suite `test`: `implementation 'org.springframework.boot:spring-boot-starter-webmvc-test'`, `'org.springframework.security:spring-security-test'` y `project(':plataforma:pruebas')`;
+  - en la suite `test`: `implementation 'org.springframework.boot:spring-boot-starter-webmvc-test'`, `'org.springframework.security:spring-security-test'`, `project(':plataforma:pruebas')` y `project(':plataforma:seguridad')`. Así las pruebas de contrato tienen el 401 con el cuerpo `NoAutenticado`: el `@WebMvcTest` importa `SeguridadProcesoAutoConfiguracion` y usa un `jwk-set-uri` ficticio, que no se llama porque los tokens vienen de `jwt()`;
   - excluye `**/adaptadores/entrada/api/**` de `jacocoTestReport` y `jacocoTestCoverageVerification`.
 
   Comentario de cabecera: «interfaces generadas desde contratos/ (principio IV, ADR-015)».
@@ -106,7 +106,10 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
   - `ServidorJwks.java`: sirve el JWKS de un `TokensDePrueba` con `com.sun.net.httpserver.HttpServer` en un puerto libre;
   - `ValidadorDeContrato.java`: convierte un `MvcResult` en `SimpleRequest` y `SimpleResponse` y lo valida con `OpenApiInteractionValidator` contra `contratos/<servicio>/openapi.yaml`; falla con el informe del validador.
 
-  JavaDoc en las tres clases, y una prueba propia de `TokensDePrueba` en `src/test/java` para cumplir el 60 %.
+  JavaDoc en las tres clases. Para cumplir el 60 %, una prueba propia de cada clase en `src/test/java`:
+  - `TokensDePrueba`: cada tipo de token tiene el algoritmo, el emisor y el vencimiento esperados;
+  - `ServidorJwks`: el JWKS servido trae la llave pública y ninguna parte privada;
+  - `ValidadorDeContrato`: una respuesta válida pasa y una inválida falla, contra un contrato pequeño de prueba en `src/test/resources`.
 - [ ] T013 [P] Crear `backend/plataforma/seguridad/build.gradle` (`java-library` y `mdd.java-conventions`):
   - `api 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server'` e `implementation 'org.springframework.boot:spring-boot-starter-webmvc'`;
   - en la suite `test`: `project(':plataforma:pruebas')` y `'org.springframework.security:spring-security-test'`.
@@ -116,11 +119,12 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
   - `@SpringBootTest(webEnvironment = RANDOM_PORT)` con una aplicación de prueba en el mismo paquete, que tiene un controlador `GET /api/prueba/sesion` que devuelve el `sub` y las autoridades;
   - `ServidorJwks` como JWKS, por `@DynamicPropertySource`;
   - comprueba que sin token, encabezado mal formado, token mal formado, alterado, vencido, de otra llave, otro emisor, HS256 y `alg: none` dan 401 con **el mismo cuerpo, byte por byte**, `Content-Type: application/json` y `WWW-Authenticate` igual a `Bearer`;
-  - comprueba que un token válido llega con autoridades `ROLE_COORDINADOR_CARRERA` y `ROLE_DOCENTE`, y que `/actuator/health` y una ruta agregada a `mdd.seguridad.rutas-publicas` pasan sin token.
+  - comprueba que un token válido llega con autoridades `ROLE_COORDINADOR_CARRERA` y `ROLE_DOCENTE`, y que `/actuator/health` y una ruta agregada a `mdd.seguridad.rutas-publicas` pasan sin token;
+  - con `POST /api/prueba/sesion` como ruta pública, comprueba que `POST` pasa sin token y `GET` a la misma ruta responde 401.
 
   Al principio no compila: faltan las clases de T015.
 - [ ] T015 Implementar en `backend/plataforma/seguridad/src/main/java/ec/mdd/plataforma/seguridad/`:
-  - `PropiedadesSeguridad`, un `@ConfigurationProperties("mdd.seguridad")` con `emisor` (por defecto `mdd-usuarios`) y `rutasPublicas`;
+  - `PropiedadesSeguridad`, un `@ConfigurationProperties("mdd.seguridad")` con `emisor` (por defecto `mdd-usuarios`) y `rutasPublicas`. Cada ruta pública tiene el formato `MÉTODO /ruta`, con `*` para cualquier método (por ejemplo, `POST /api/usuarios/sesion`), porque en identidad la misma ruta es pública con `POST` y protegida con `GET`;
   - `RespuestaNoAutenticado`, un `AuthenticationEntryPoint` que escribe el cuerpo constante de contracts/autenticacion.md y `WWW-Authenticate: Bearer`, y registra la causa en DEBUG sin el token;
   - `SeguridadProcesoAutoConfiguracion`, un `@AutoConfiguration` con:
     - `JwtDecoder` (`NimbusJwtDecoder.withJwkSetUri(...).jwsAlgorithm(RS256)` con `JwtValidators.createDefaultWithIssuer(emisor)`, `@ConditionalOnMissingBean`);
@@ -134,7 +138,7 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
   - en `deploy/docker/java.Dockerfile`: `COPY backend/ /src/backend/` y `COPY contratos/ /src/contratos/`, `WORKDIR /src/backend` y el mismo `RUN` de compilación, con el comentario actualizado;
   - en `compose.yaml`: `context: .` y `dockerfile: deploy/docker/java.Dockerfile` en los 5 componentes Java.
 - [ ] T017 Agregar `implementation project(':plataforma:seguridad')` a `backend/plantillas/aplicacion/build.gradle` y a `backend/apps/{identidad,datos,distributivo,salida}/build.gradle`. En sus `application.yaml`, agregar `spring.security.oauth2.resourceserver.jwt.jwk-set-uri: ${MDD_JWKS_URI:http://identidad:8080/api/usuarios/jwks}`. Actualizar `backend/plantillas/README.md` (crear un proceso: la seguridad viene de `plataforma:seguridad`).
-- [ ] T018 Ejecutar `./gradlew spotlessApply build integrationTest`. Todo tiene que quedar en verde, incluidos los `EsquemasIntegrationTest` con la seguridad en el contexto y la cobertura del 60 % en `plataforma:seguridad` y `plataforma:pruebas`. Después, `docker compose up -d --wait`: los 6 contenedores sanos sin token (FR-008, SC-006). Anotar los dos resultados en `specs/003-autenticacion-jwt/evidencia.md`.
+- [ ] T018 Ejecutar `./gradlew spotlessApply build integrationTest`. Todo tiene que quedar en verde, incluidos los `EsquemasIntegrationTest` con la seguridad en el contexto y la cobertura del 60 % en `plataforma:seguridad` y `plataforma:pruebas`. Después, `docker compose up -d --wait --build`, para construir con el contexto nuevo y no reutilizar las imágenes de B00-H02: los 6 contenedores sanos sin token (FR-008, SC-006). Anotar los dos resultados en `specs/003-autenticacion-jwt/evidencia.md`.
 
 **Checkpoint**: los contratos están escritos, el código se genera, los procesos rechazan peticiones sin un token válido y el perfil sigue levantándose con un comando.
 
@@ -191,15 +195,15 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
   - `aplicacion/IniciarSesionServicioTest`, con Mockito en los 3 puertos de salida: credenciales correctas emiten un token; usuario inexistente, inactivo o contraseña incorrecta lanzan `CredencialesInvalidas`; con un usuario inexistente, igual se llama al verificador.
 - [ ] T024 [P] [US2] Escribir primero `backend/servicios/usuarios/src/test/java/ec/mdd/usuarios/adaptadores/salida/`:
   - `VerificadorArgon2Test`: el hash no es la contraseña y la verifica; otra contraseña no;
-  - `EmisorJwtTest`, con un `Clock` fijo y un par de llaves de `TokensDePrueba`: RS256, `kid`, `iss`, `sub`, `roles` y `exp = iat + vigencia`.
+  - `EmisorJwtTest`, con un `Clock` fijo y un par de llaves de `TokensDePrueba`: RS256, `kid`, `iss`, `sub`, `roles` y `exp = iat + vigencia`; un usuario sin roles da `roles: []`.
 
   Y `infraestructura/LlavesDeFirmaTest`: sin archivo, genera una llave RSA de 2048 bits; con un PEM escrito por la prueba en un directorio temporal, lo carga; el JWKS no contiene partes privadas.
-- [ ] T025 [P] [US2] Escribir primero `backend/servicios/usuarios/src/test/java/ec/mdd/usuarios/adaptadores/entrada/SesionContratoTest.java`, con `@WebMvcTest` y el filtro de seguridad de prueba. Valida con `ValidadorDeContrato` contra `contratos/usuarios/openapi.yaml`:
-  - inicio de sesión 200 y 401, con el puerto `IniciarSesion` simulado;
+- [ ] T025 [P] [US2] Escribir primero `backend/servicios/usuarios/src/test/java/ec/mdd/usuarios/adaptadores/entrada/SesionContratoTest.java`, con `@WebMvcTest` y `SeguridadProcesoAutoConfiguracion` importada, con las rutas públicas de identidad (T011). Valida con `ValidadorDeContrato` contra `contratos/usuarios/openapi.yaml`:
+  - inicio de sesión 200 y 401, con `IniciarSesionDePrueba`: un doble escrito a mano que implementa el puerto `IniciarSesion`, sin Mockito, porque el principio VIII solo admite Mockito en la capa de aplicación;
   - sesión actual 200 (`jwt()` de spring-security-test con roles) y 401;
   - JWKS 200.
 - [ ] T026 [P] [US2] Escribir primero `backend/servicios/usuarios/src/integrationTest/java/ec/mdd/usuarios/RepositorioUsuariosJpaIntegrationTest.java`, con PostgreSQL 18.6 de Testcontainers y el Flyway de Usuarios: guarda y lee un usuario con sus roles, y `nombre_usuario` es único. `UsuariosEsquemaIntegrationTest` sigue pasando, ahora con las tablas de V2 en el esquema `usuarios`.
-- [ ] T027 [P] [US2] Escribir primero `SesionContratoTest` en `backend/servicios/{cargas,generacion,dashboard}/src/test/java/ec/mdd/<servicio>/adaptadores/entrada/`: sesión actual 200 con `jwt()` (roles ordenados) y 401, validados contra el contrato de su servicio.
+- [ ] T027 [P] [US2] Escribir primero `SesionContratoTest` en `backend/servicios/{cargas,generacion,dashboard}/src/test/java/ec/mdd/<servicio>/adaptadores/entrada/`, con `@WebMvcTest` y `SeguridadProcesoAutoConfiguracion` importada (T011): sesión actual 200 con `jwt()` (roles ordenados), 200 con un usuario sin roles (`roles: []`) y 401, validados contra el contrato de su servicio.
 
 ### Implementation for User Story 2
 
@@ -222,6 +226,8 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
   - `adaptadores/salida/UsuarioJpa.java` (`@Entity`, `@Table(schema = "usuarios", name = "usuario")`, roles con `@ElementCollection` en `usuario_rol`), `UsuarioJpaRepositorio.java` (Spring Data) y `RepositorioUsuariosJpa.java`, que implementa el puerto y traduce a `Usuario`.
 
   Si Hibernate valida el esquema antes de que corra `flywayUsuarios`, agregar en la infraestructura un `EntityManagerFactoryDependsOnPostProcessor` hacia ese bean. Así pasa T026.
+
+  JaCoCo solo cuenta la suite `test` (`ci.yml`). Por eso, agregar `adaptadores/salida/UsuarioJpaTest`, una prueba unitaria pura de la conversión `UsuarioJpa` ↔ `Usuario`, sin simular el repositorio (principio VIII).
 - [ ] T032 [US2] Adaptadores de salida de seguridad de Usuarios:
   - `adaptadores/salida/VerificadorArgon2.java`, que recibe un `PasswordEncoder`;
   - `adaptadores/salida/EmisorJwt.java`, que recibe `JwtEncoder`, `Clock`, `Duration vigencia`, `String emisor` y `String kid`.
@@ -237,16 +243,14 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
   - `JwksControlador.java`, que implementa `JwksApi` con el `JWKSet` público.
 
   Datos vacíos responden como credenciales inválidas (research §5). Así pasa T025.
-- [ ] T034 [US2] `backend/servicios/usuarios/src/main/java/ec/mdd/usuarios/infraestructura/CargaUsuarioDePrueba.java`: un `ApplicationRunner`, activo solo con `mdd.usuarios.usuario-prueba.habilitado=true`, que crea `autor.prueba`, activo y con `DOCENTE` y `COORDINADOR_CARRERA`, si no existe, con la contraseña de `usuario-prueba.clave` en Argon2id. Si la contraseña está vacía, no crea nada y lo avisa. Nunca registra la contraseña. Prueba en `src/integrationTest/java/ec/mdd/usuarios/CargaUsuarioDePruebaIntegrationTest.java`: crea el usuario una sola vez y no lo duplica.
+- [ ] T034 [US2] `backend/servicios/usuarios/src/main/java/ec/mdd/usuarios/infraestructura/CargaUsuarioDePrueba.java`: un `ApplicationRunner`, activo solo con `mdd.usuarios.usuario-prueba.habilitado=true`, que crea `autor.prueba`, activo y con `DOCENTE` y `COORDINADOR_CARRERA`, si no existe, con la contraseña de `usuario-prueba.clave` en Argon2id. Si la contraseña está vacía, no crea nada y lo avisa. Nunca registra la contraseña. Prueba en `src/integrationTest/java/ec/mdd/usuarios/CargaUsuarioDePruebaIntegrationTest.java`: crea el usuario una sola vez y no lo duplica. Además, `src/test/java/ec/mdd/usuarios/infraestructura/CargaUsuarioDePruebaTest.java`, con un doble escrito a mano de `RepositorioUsuarios` (sin Mockito): deshabilitado no crea nada, con la contraseña vacía no crea nada, y habilitado crea el usuario una vez. También `ConfiguracionUsuariosTest`, que llama directamente a los métodos `@Bean`.
 - [ ] T035 [P] [US2] `adaptadores/entrada/SesionControlador.java` en `cargas`, `generacion` y `dashboard`: implementa su `SesionApi` y lee el `Jwt` del `SecurityContext`. Así pasa T027.
 - [ ] T036 [US2] Configuración del proceso identidad en `backend/apps/identidad/src/main/resources/application.yaml`:
   - `jwk-set-uri: ${MDD_JWKS_URI:http://localhost:8080/api/usuarios/jwks}`;
-  - `mdd.seguridad.rutas-publicas` con `POST /api/usuarios/sesion` y `GET /api/usuarios/jwks`;
+  - `mdd.seguridad.rutas-publicas` con `POST /api/usuarios/sesion` y `GET /api/usuarios/jwks` (formato de T015);
   - `mdd.usuarios.usuario-prueba.habilitado: ${MDD_USUARIO_PRUEBA_HABILITADO:false}` y `mdd.usuarios.usuario-prueba.clave: ${MDD_USUARIO_PRUEBA_CLAVE:}`;
   - `mdd.usuarios.llave-privada: ${MDD_LLAVE_PRIVADA:}`;
   - `spring.jpa.hibernate.ddl-auto: validate` y `spring.jpa.open-in-view: false`.
-
-  Si `rutas-publicas` necesita distinguir el método, ampliar `PropiedadesSeguridad` con un formato `MÉTODO /ruta` y su prueba en T014.
 - [ ] T037 [US2] En `.env.ejemplo`, agregar `MDD_USUARIO_PRUEBA_HABILITADO=true` y `MDD_USUARIO_PRUEBA_CLAVE=cambiar-en-local-usuario-prueba`, con un comentario: «usuario de prueba autor.prueba; solo para local (research §8)».
 - [ ] T038 [US2] Crear `deploy/probar_autenticacion.sh`, ejecutable, con `set -euo pipefail`, según [contracts/medicion-r19-sesion.md](contracts/medicion-r19-sesion.md):
   - los 6 pasos con `curl` y `jq`, con la contraseña tomada de `.env.ejemplo` y de `.env` si existe;
@@ -254,7 +258,7 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
   - código de salida 0 o 1.
 
   Validar con shellcheck, sobre una copia en el directorio temporal.
-- [ ] T039 [US2] Ejecutar `./gradlew spotlessApply build integrationTest` (todo en verde, 60 % por módulo). Después, `docker compose build && docker compose up -d --wait` y `deploy/probar_autenticacion.sh`, que tiene que dar los 6 `OK`. Anotar en `specs/003-autenticacion-jwt/evidencia.md` las pruebas por módulo, la cobertura y la salida del script, en las secciones de los escenarios 1 a 3.
+- [ ] T039 [US2] Ejecutar `./gradlew spotlessApply build integrationTest` (todo en verde, 60 % por módulo). Después, `docker compose build && docker compose up -d --wait` y `deploy/probar_autenticacion.sh`, que tiene que dar los 6 `OK`. Anotar en `specs/003-autenticacion-jwt/evidencia.md` las pruebas por módulo, la cobertura y la salida del script, en las secciones de los escenarios 1 a 3. Revisar en especial la cobertura de `servicios:usuarios` y `plataforma:pruebas` (60 % o más con solo la suite `test`).
 
 **Checkpoint**: la autenticación funciona de punta a punta en los 4 procesos.
 
@@ -289,7 +293,7 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
 
 ## Phase 6: Polish & cierre
 
-- [ ] T044 Búsquedas de secretos (quickstart §4) sobre el perfil levantado, después de `probar_autenticacion.sh`. En `docker compose logs`, 0 apariciones del token obtenido y 0 de la contraseña de prueba. `git grep -n 'BEGIN .*PRIVATE KEY'` no debe dar resultados. Gitleaks local con `.gitleaks.toml`, sobre un clon en el directorio temporal: `no leaks found`. Anotar en `specs/003-autenticacion-jwt/evidencia.md`.
+- [ ] T044 Búsquedas de secretos (quickstart §4) sobre el perfil levantado, después de `probar_autenticacion.sh`. En `docker compose logs`, 0 apariciones del token obtenido, 0 de la contraseña de prueba y 0 de `PRIVATE KEY`. `git grep -n 'BEGIN .*PRIVATE KEY'` no debe dar resultados. Gitleaks local con `.gitleaks.toml`, sobre un clon en el directorio temporal: `no leaks found`. Anotar en `specs/003-autenticacion-jwt/evidencia.md`.
 - [ ] T045 Revisar el JavaDoc (principio XII) de `plataforma/seguridad`, `plataforma/pruebas`, la configuración del API Gateway, y el dominio, los puertos y la infraestructura de Usuarios. Además:
   - en `backend/plantillas/README.md`, explicar cómo agregar un contrato a un servicio (`id 'mdd.contrato'` y `contratos/<servicio>/openapi.yaml`);
   - ejecutar `spotlessApply`;

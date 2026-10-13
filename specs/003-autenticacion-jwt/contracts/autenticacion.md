@@ -26,7 +26,7 @@ Si una falla, la respuesta es el 401 de abajo. Si pasan todas, el usuario es el 
 |---|---|---|
 | `spring.security.oauth2.resourceserver.jwt.jwk-set-uri` | `http://identidad:8080/api/usuarios/jwks`; en identidad, `http://localhost:8080/api/usuarios/jwks` | API Gateway y procesos |
 | `mdd.seguridad.emisor` | `mdd-usuarios` | API Gateway, procesos y Usuarios |
-| `mdd.seguridad.rutas-publicas` | `/actuator/health/**` y, en identidad, las dos rutas de Usuarios | procesos |
+| `mdd.seguridad.rutas-publicas` | vacía, más `/actuator/health/**`, que siempre es pública; en identidad, `POST /api/usuarios/sesion` y `GET /api/usuarios/jwks`. Formato `MÉTODO /ruta`, con `*` para cualquier método. | procesos |
 | `mdd.usuarios.token.vigencia` | `PT30M` | Usuarios |
 | `mdd.usuarios.llave-privada` | sin valor, así que la llave es efímera | Usuarios |
 | `mdd.usuarios.usuario-prueba.habilitado` | `false`; `true` en `.env.ejemplo` | Usuarios |
