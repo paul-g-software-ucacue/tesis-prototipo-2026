@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 import com.nimbusds.jose.jwk.JWKSet;
+import ec.mdd.plataforma.errores.ErroresAutoConfiguracion;
 import ec.mdd.plataforma.pruebas.TokensDePrueba;
 import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
 import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
@@ -32,8 +33,9 @@ import org.springframework.test.web.servlet.MvcResult;
  * admite Mockito en la capa de aplicación.
  */
 @WebMvcTest
-@ImportAutoConfiguration(SeguridadProcesoAutoConfiguracion.class)
-@Import(SesionContratoTest.Dobles.class)
+@ImportAutoConfiguration({SeguridadProcesoAutoConfiguracion.class, ErroresAutoConfiguracion.class})
+// @WebMvcTest no escanea los @Component comunes: el catálogo del servicio se importa.
+@Import({SesionContratoTest.Dobles.class, ErroresUsuarios.class})
 @TestPropertySource(
         properties = {
             "spring.security.oauth2.resourceserver.jwt.jwk-set-uri=http://127.0.0.1:9/jwks",
@@ -64,6 +66,43 @@ class SesionContratoTest {
         assertThat(resultado.getResponse().getStatus()).isEqualTo(401);
         assertThat(resultado.getResponse().getContentAsString())
                 .contains("USUARIOS_CREDENCIALES_INVALIDAS");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnFalloTecnico_cuandoIniciaSesion_entonces500ConIncidenteSegunElContrato()
+            throws Exception {
+        MvcResult resultado = iniciar("explota");
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(500);
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("\"codigo\":\"COMUN_ERROR_INTERNO\"")
+                .contains("\"idIncidente\":")
+                .doesNotContain("eyJ")
+                .doesNotContain("IllegalStateException");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoDatosVacios_cuandoIniciaSesion_entonces400ConUnDetallePorCampo() throws Exception {
+        MvcResult resultado = iniciarCon("{\"usuario\":\"\"}");
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(400);
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("\"codigo\":\"COMUN_SOLICITUD_INVALIDA\"")
+                .contains("{\"campo\":\"usuario\",\"descripcion\":\"es obligatorio\"}")
+                .contains("{\"campo\":\"clave\",\"descripcion\":\"es obligatorio\"}");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoLaClaveVacia_cuandoIniciaSesion_entonces400ConUnSoloDetalle() throws Exception {
+        MvcResult resultado = iniciarCon("{\"usuario\":\"autor.prueba\",\"clave\":\"\"}");
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(400);
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("{\"campo\":\"clave\",\"descripcion\":\"es obligatorio\"}")
+                .doesNotContain("\"campo\":\"usuario\"");
         contrato.validar(resultado);
     }
 
@@ -128,13 +167,14 @@ class SesionContratoTest {
     }
 
     private MvcResult iniciar(String clave) throws Exception {
+        return iniciarCon("{\"usuario\":\"autor.prueba\",\"clave\":\"" + clave + "\"}");
+    }
+
+    private MvcResult iniciarCon(String cuerpo) throws Exception {
         return mvc.perform(
                         post("/api/usuarios/sesion")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(
-                                        "{\"usuario\":\"autor.prueba\",\"clave\":\""
-                                                + clave
-                                                + "\"}"))
+                                .content(cuerpo))
                 .andReturn();
     }
 
@@ -162,6 +202,10 @@ class SesionContratoTest {
 
         @Override
         public TokenEmitido iniciar(String usuario, String clave) {
+            if ("explota".equals(clave)) {
+                throw new IllegalStateException(
+                        "fallo técnico con eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJ4In0.firma");
+            }
             if ("correcta".equals(clave)) {
                 return new TokenEmitido(
                         "cabecera.cuerpo.firma", Instant.parse("2026-10-13T12:00:00Z"));

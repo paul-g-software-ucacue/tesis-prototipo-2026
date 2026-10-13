@@ -153,13 +153,13 @@ description: "Tareas de B00-H04: modelo de errores común y catálogo de código
 
 ### Tests for User Story 1 ⚠️
 
-- [ ] T016 [US1] Escribir primero, en `backend/servicios/usuarios/src/test/java/ec/mdd/usuarios/adaptadores/entrada/`:
+- [X] T016 [US1] Escribir primero, en `backend/servicios/usuarios/src/test/java/ec/mdd/usuarios/adaptadores/entrada/`:
   - `ErroresUsuariosTest`: `VerificadorDeCatalogo.verificar(new ErroresUsuarios())` pasa, y la entrada de `CredencialesInvalidas` tiene 401;
   - en `SesionContratoTest`, agregar `ErroresAutoConfiguracion` al `@ImportAutoConfiguration`; el caso de credenciales inválidas sigue respondiendo 401 `USUARIOS_CREDENCIALES_INVALIDAS` y pasa la validación del contrato.
 
 ### Implementation for User Story 1
 
-- [ ] T017 [US1] Crear `backend/servicios/usuarios/src/main/java/ec/mdd/usuarios/adaptadores/entrada/ErroresUsuarios.java`, con `@Component` e implementando `CatalogoDeErrores`, que registra `CredencialesInvalidas` con los textos de `errores.md`. Borrar el `@ExceptionHandler` de `SesionControlador` y la parte de su JavaDoc que lo explicaba. Así pasa T016.
+- [X] T017 [US1] Crear `backend/servicios/usuarios/src/main/java/ec/mdd/usuarios/adaptadores/entrada/ErroresUsuarios.java`, con `@Component` e implementando `CatalogoDeErrores`, que registra `CredencialesInvalidas` con los textos de `errores.md`. Borrar el `@ExceptionHandler` de `SesionControlador` y la parte de su JavaDoc que lo explicaba. Así pasa T016.
 
 **Checkpoint**: un error reconocido llega con su código del catálogo, sin traducciones en los controladores.
 
@@ -173,15 +173,15 @@ description: "Tareas de B00-H04: modelo de errores común y catálogo de código
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T018 [P] [US2] En `SesionContratoTest` de Usuarios, agregar un caso: el doble del caso de uso lanza una excepción técnica con un JWT en el mensaje, y la respuesta es 500 `COMUN_ERROR_INTERNO` con `idIncidente`, sin el JWT ni el nombre de la clase, y pasa la validación del contrato.
-- [ ] T019 [US2] Crear `backend/apps/identidad/src/integrationTest/java/ec/mdd/ErrorTecnicoIntegrationTest.java`:
+- [X] T018 [P] [US2] En `SesionContratoTest` de Usuarios, agregar un caso: el doble del caso de uso lanza una excepción técnica con un JWT en el mensaje, y la respuesta es 500 `COMUN_ERROR_INTERNO` con `idIncidente`, sin el JWT ni el nombre de la clase, y pasa la validación del contrato.
+- [X] T019 [US2] Crear `backend/apps/identidad/src/integrationTest/java/ec/mdd/ErrorTecnicoIntegrationTest.java`:
   - `@SpringBootTest(RANDOM_PORT)` con PostgreSQL 18.6 de Testcontainers (`@ServiceConnection`), `spring.datasource.hikari.connection-timeout=2000` y `OutputCaptureExtension`;
   - detiene el contenedor y hace `POST /api/usuarios/sesion` con credenciales completas;
   - comprueba un 500 `COMUN_ERROR_INTERNO` con `idIncidente`, un cuerpo sin «SQL», «Exception», «org.» ni «jdbc», y que el registro tiene el mismo `idIncidente` y la causa de conexión.
 
 ### Implementation for User Story 2
 
-- [ ] T020 [US2] Si T018 o T019 encuentran un hueco en el mecanismo (por ejemplo, una excepción de acceso a datos que Spring traduce antes de llegar al advice), corregirlo en `plataforma:errores` con su prueba. Si no hay nada que corregir, anotar en `specs/004-modelo-errores/evidencia.md` que el escenario pasa sin cambios.
+- [X] T020 [US2] Si T018 o T019 encuentran un hueco en el mecanismo (por ejemplo, una excepción de acceso a datos que Spring traduce antes de llegar al advice), corregirlo en `plataforma:errores` con su prueba. Si no hay nada que corregir, anotar en `specs/004-modelo-errores/evidencia.md` que el escenario pasa sin cambios.
 
 **Checkpoint**: un fallo técnico no filtra detalles y se puede rastrear por su `idIncidente`.
 
@@ -195,7 +195,7 @@ description: "Tareas de B00-H04: modelo de errores común y catálogo de código
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T021 [US3] En `SesionContratoTest` de Usuarios, agregar dos casos:
+- [X] T021 [US3] En `SesionContratoTest` de Usuarios, agregar dos casos:
   - `{"usuario":""}` responde 400 `COMUN_SOLICITUD_INVALIDA` con 2 `detalles`: `usuario` y `clave`, los dos «es obligatorio»;
   - `{"usuario":"autor.prueba","clave":""}` responde 400 con 1 detalle.
 
@@ -203,7 +203,7 @@ description: "Tareas de B00-H04: modelo de errores común y catálogo de código
 
 ### Implementation for User Story 3
 
-- [ ] T022 [US3] Actualizar `specs/003-autenticacion-jwt/contracts/api.md` («datos vacíos dan el mismo 401») con una nota de D-42. `IniciarSesionServicio` y su JavaDoc no cambian: el caso de uso conserva su defensa ante nulos y vacíos, y sus pruebas siguen igual, porque la validación del contrato es del adaptador. T021 pasa con la validación de T013.
+- [X] T022 [US3] Actualizar `specs/003-autenticacion-jwt/contracts/api.md` («datos vacíos dan el mismo 401») con una nota de D-42. `IniciarSesionServicio` y su JavaDoc no cambian: el caso de uso conserva su defensa ante nulos y vacíos, y sus pruebas siguen igual, porque la validación del contrato es del adaptador. T021 pasa con la validación de T013.
 
 **Checkpoint**: un error de entrada dice qué campo falló y qué le falta.
 

@@ -27,16 +27,23 @@ Registro de las comprobaciones de los tres escenarios de la historia (issue #21)
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Error de dominio de prueba (D-41) | confirmada | `ManejadorDeErroresTest` (servidor real): `HorasExcedidas`, registrada como `PRUEBA_HORAS_EXCEDIDAS` con 409, responde 409 con exactamente `{"titulo","descripcion","codigo"}` del catálogo y `Content-Type: application/json`; su subclase `HorasExcedidasEnFeriado` usa la misma entrada; `ReglaSinCatalogo` responde 500 y el registro dice «sin código en el catálogo». | 2026-10-13 |
+| Credenciales inválidas por el mecanismo común (T016, T017) | confirmada | `ErroresUsuarios` registra `CredencialesInvalidas` (401 `USUARIOS_CREDENCIALES_INVALIDAS`) y coincide con `errores.md` (`VerificadorDeCatalogo`). `SesionControlador` ya no tiene `@ExceptionHandler`. La prueba de contrato sigue dando 401 válido contra el contrato. **Hallazgo:** `@WebMvcTest` no escanea los `@Component` comunes, así que la prueba de contrato importa `ErroresUsuarios`; en los procesos lo encuentra el escaneo. | 2026-10-13 |
 
 ## Escenario 2: error técnico
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Error técnico en el mecanismo | confirmada | `ManejadorDeErroresTest`: un `IllegalStateException` con un JWT y `clave=secreta` en el mensaje responde 500 `COMUN_ERROR_INTERNO` con `idIncidente`, sin la clase, `ec.mdd`, el JWT ni la clave. El registro tiene `Incidente <id>`, la clase, la traza y `[oculto]` en lugar de los secretos. Dos fallos seguidos tienen identificadores distintos. | 2026-10-13 |
+| Contrato de Usuarios (T018) | confirmada | Un fallo técnico en el inicio de sesión responde 500 con `idIncidente`, sin el JWT ni la clase, y la respuesta pasa la validación contra `contratos/usuarios/openapi.yaml`. | 2026-10-13 |
+| Base de datos detenida en identidad (T019, T020) | confirmada | `ErrorTecnicoIntegrationTest`: con PostgreSQL detenido, `POST /api/usuarios/sesion` responde 500 `COMUN_ERROR_INTERNO` con `idIncidente`, sin «sql», «Exception», «org.», «jdbc» ni la contraseña. El registro: `Incidente d6a57f95-…: POST /api/usuarios/sesion falló con org.springframework.dao.DataAccessResourceFailureException` y la traza («Unable to acquire JDBC Connection»). No hizo falta corregir el mecanismo (T020). | 2026-10-13 |
 
 ## Escenario 3: error de entrada
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Validación en el mecanismo | confirmada | `ManejadorDeErroresTest`: un cuerpo con 3 campos inválidos responde 400 `COMUN_SOLICITUD_INVALIDA` con 3 `detalles` (`es obligatorio`, `debe tener entre 3 y 10 caracteres`, `no tiene el formato esperado`). Un JSON mal formado responde 400 `COMUN_CUERPO_ILEGIBLE` sin el mensaje del analizador. | 2026-10-13 |
+| Inicio de sesión con datos vacíos (T021, T022, D-42) | confirmada | `{"usuario":""}` responde 400 con 2 `detalles` (`usuario` y `clave`, «es obligatorio»); `{"usuario":"autor.prueba","clave":""}`, con 1. Las respuestas pasan la validación del contrato. El contrato de B00-H03 tiene la nota de D-42. | 2026-10-13 |
 
 ## API Gateway
 
