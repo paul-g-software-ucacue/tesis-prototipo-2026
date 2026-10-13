@@ -73,6 +73,25 @@ Resultado: cumple (< 8 GiB). Sin alerta de R-19 (≤ 7 GiB).
 - La medición del runner (909,1 MiB) es algo menor que la local (1 001,6 MiB), como se esperaba: en local cada JVM ve 12 núcleos.
 - El commit `af0b495` (Tomcat 11.0.27 y Jackson 3.1.7) no cambia `compose.yaml` ni `deploy/**`, así que el filtro `paths` no vuelve a ejecutar el workflow. La medición se repite al cerrar la ola y en B00-H03 (D-34).
 
+### Medición sobre `main` después de la fusión
+
+**Medición de R-19** · 2026-10-13T00:28:20+00:00 · commit `3203f51` · entorno: ubuntu-latest (Docker 28.0.4)
+Calentamiento: 20 llamadas a la salud por componente y 30 s de espera.
+
+| Contenedor | Consumo (MiB) | Límite (MiB) |
+|---|---:|---:|
+| postgres | 109,7 | 512 |
+| identidad | 162,5 | 512 |
+| datos | 158,0 | 512 |
+| distributivo | 169,0 | 512 |
+| salida | 164,4 | 512 |
+| gateway | 168,0 | 384 |
+| **Total** | **931,6** (0,91 GiB) | 2 944 |
+
+Resultado: cumple (< 8 GiB). Sin alerta de R-19 (≤ 7 GiB).
+
+Es la medición de referencia de R-19 para la ola 0: el commit final, con Tomcat 11.0.27 y Jackson 3.1.7, en el entorno de referencia ([run 38327028020](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38327028020)). Está 22,5 MiB por encima de la del PR (909,1 MiB), dentro de la variación entre lecturas.
+
 ## Escenario 3: un esquema por servicio
 
 | Comprobación | Resultado | Evidencia | Fecha |
@@ -81,6 +100,21 @@ Resultado: cumple (< 8 GiB). Sin alerta de R-19 (≤ 7 GiB).
 | Consulta de esquemas en el perfil (T034) | confirmada | `docker compose exec postgres psql -U postgres -d mdd -c "select table_schema, table_name from information_schema.tables where table_schema not in ('pg_catalog','information_schema') order by 1,2;"` → 12 filas, una `flyway_schema_history` en cada esquema (`academico`, `cargas`, `dashboard`, `docentes`, `firma`, `generacion`, `normativa`, `notificaciones`, `reporting`, `roles`, `usuarios` y `validacionocs`), ninguna en `public`. | 2026-10-12 |
 | Permisos entre procesos (T035) | confirmada | Con `psql -h 127.0.0.1` y las claves de `.env.ejemplo`: como `identidad`, `create table normativa.intruso(id int);` → `ERROR: permission denied for schema normativa`, y `select count(*) from normativa.flyway_schema_history;` → `ERROR: permission denied for schema normativa`. Como `salida`, `create table firma.intruso(id int);` → `ERROR: permission denied for schema firma`, y `create table public.intruso(id int);` → `ERROR: permission denied for schema public`. Como `identidad`, leer su propio esquema (`usuarios.flyway_schema_history`) funciona. | 2026-10-12 |
 | Segunda ejecución (T036, SC-004) | confirmada | `docker compose down && docker compose up -d --wait` sobre el mismo volumen: los 6 contenedores `healthy`; en los registros, Flyway dice `Schema "…" is up to date. No migration necessary.` para los 12 esquemas (identidad 3, datos 4, distributivo 3, salida 2) y ninguna línea `Successfully applied`. Siguen las mismas 12 tablas. La primera vez, `up --wait` tardó 714 s porque el equipo se suspendió en medio (journal: `The system will suspend now!` a las 06:18:09 y reanudación a las 06:29:45); al repetirlo tardó 17 s (`down` 3 s). | 2026-10-12 |
+
+## CI del pull request de B00-H02 (T038)
+
+| Run | Estado del PR | Resultado | Enlace |
+|---|---|---|---|
+| 1 (commit `095fe9e`) | borrador | `0 · deteccion`, `1 · lint-backend`, `2 · test-backend` y `3 · secretos` pasan; los jobs pesados y `perfil-consolidado` quedan *skipped*, como corresponde a un borrador. Se esperó a que terminara antes de marcar el PR como listo, para evitar la carrera de B00-H01. | [ci 38243774537](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38243774537), [perfil-consolidado 38243774693](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38243774693) |
+| 2 (commit `095fe9e`) | listo para revisión | `perfil-consolidado` pasa (medición de referencia, T032). En la CI fallan `4 · sca` (Grype: Tomcat 11.0.24 y Jackson 3.1.5) y `2 · test-integracion` (504 al descargar Gradle, transitorio). | [ci 38245724621](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38245724621), [perfil-consolidado 38245724258](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38245724258) |
+| 3 (commit `d2f87d0`) | listo para revisión | Con Tomcat 11.0.27 y Jackson 3.1.7: `0 · deteccion`, `1 · lint-backend`, `2 · test-backend`, `2 · test-integracion`, `3 · secretos`, `4 · sbom-backend` y `4 · sca` pasan; `2 · test-integracion`, `4 · sbom-backend` y `4 · sca` corren, no quedan *skipped*. Solo los tres jobs de frontend quedan *skipped* (D-29). | [ci 38325499283](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38325499283) |
+
+## Fusión del PR de B00-H02 (T039)
+
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| Fusión con *squash* | confirmada | [PR #83](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/pull/83) fusionado con *squash*, con la aprobación del autor, el 2026-10-13 a las 00:23 UTC: commit `3203f51` en `main`. Antes de fusionar: último commit `d2f87d0`, `mergeStateStatus: CLEAN` y la CI completa en verde (run 3). Rama borrada. | 2026-10-13 |
+| Perfil consolidado sobre `main` | confirmada | Con el workflow ya en `main`, `gh workflow run perfil-consolidado.yml --ref main` ([run 38327028020](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38327028020)): éxito. Construcción de las 5 imágenes desde cero en 2 min 56 s y `docker compose up -d --wait` en **38,7 s** (SC-001). La medición, en el escenario 2, incluye Tomcat 11.0.27 y Jackson 3.1.7. | 2026-10-13 |
 
 ## Notas
 
