@@ -16,6 +16,7 @@ testing {
         test {
             dependencies {
                 implementation project(':plataforma:pruebas')
+                implementation project(':plataforma:errores-nucleo')
                 implementation 'org.springframework.security:spring-security-test'
                 implementation 'org.springframework.boot:spring-boot-starter-actuator'
             }

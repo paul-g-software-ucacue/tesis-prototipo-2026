@@ -11,6 +11,8 @@ dependencies {
     implementation platform("org.springframework.cloud:spring-cloud-dependencies:${versionSpringCloud}")
     implementation 'org.springframework.cloud:spring-cloud-starter-gateway-server-webflux'
     implementation 'org.springframework.boot:spring-boot-starter-security-oauth2-resource-server'
+    // Modelo de errores, códigos comunes y saneo, sin servlet (D-40, ADR-016).
+    implementation project(':plataforma:errores-nucleo')
 }
 
 testing {

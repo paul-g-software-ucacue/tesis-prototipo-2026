@@ -25,7 +25,7 @@ Los contratos de servicio declaran `security: [bearer: []]` de forma global y lo
 | `GET /api/generacion/sesion` | Sí | — | `200 SesionActual` · `401 NoAutenticado` |
 | `GET /api/dashboard/sesion` | Sí | — | `200 SesionActual` · `401 NoAutenticado` |
 
-- **Inicio de sesión:** datos vacíos, usuario inexistente, usuario inactivo y contraseña incorrecta dan el mismo 401 (research §5). Los errores de entrada con `detalles` llegan con B00-H04.
+- **Inicio de sesión:** datos vacíos, usuario inexistente, usuario inactivo y contraseña incorrecta dan el mismo 401 (research §5). Los errores de entrada con `detalles` llegan con B00-H04. *Modificado por D-42 (B00-H04): con la validación activada, los datos vacíos responden 400 `COMUN_SOLICITUD_INVALIDA` con `detalles`; usuario inexistente, inactivo o contraseña incorrecta siguen dando el mismo 401.*
 - **`operationId`:** `iniciarSesion`, `consultarSesion` y `consultarJwks`. Con `useTags`, cada servicio genera una interfaz `SesionApi`, más `JwksApi` en Usuarios.
 
 ## Pruebas de contrato

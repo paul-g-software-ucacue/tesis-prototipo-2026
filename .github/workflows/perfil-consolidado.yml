@@ -49,6 +49,11 @@ jobs:
         shell: bash
         run: deploy/probar_autenticacion.sh
 
+      # B00-H04: errores con el modelo común (400 con detalles, 404, 405 y 503 con un proceso detenido).
+      - name: Errores de punta a punta
+        shell: bash
+        run: deploy/probar_errores.sh
+
       # shell: bash agrega pipefail, así que tee no oculta el código de salida del script.
       # Después de iniciar sesión (D-34): la medición de referencia de R-19 desde B00-H03.
       - name: Medición de R-19 después de iniciar sesión

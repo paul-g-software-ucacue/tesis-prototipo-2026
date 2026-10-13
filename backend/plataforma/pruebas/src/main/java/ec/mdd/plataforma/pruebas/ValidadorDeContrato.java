@@ -6,7 +6,6 @@ import com.atlassian.oai.validator.model.SimpleResponse;
 import com.atlassian.oai.validator.report.SimpleValidationReportFormat;
 import com.atlassian.oai.validator.report.ValidationReport;
 import java.io.UnsupportedEncodingException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -39,7 +38,7 @@ public final class ValidadorDeContrato {
      * @throws IllegalStateException si no encuentra la carpeta {@code contratos/}
      */
     public static ValidadorDeContrato para(String servicio) {
-        return desdeArchivo(buscarContratos().resolve(servicio).resolve("openapi.yaml"));
+        return desdeArchivo(CarpetaDeContratos.buscar().resolve(servicio).resolve("openapi.yaml"));
     }
 
     /** Validador para un archivo de contrato cualquiera. */
@@ -78,18 +77,5 @@ public final class ValidadorDeContrato {
                     "La respuesta no cumple el contrato:\n"
                             + SimpleValidationReportFormat.getInstance().apply(informe));
         }
-    }
-
-    // Busca contratos/ subiendo desde el directorio de trabajo de la prueba (el del módulo).
-    private static Path buscarContratos() {
-        Path directorio = Path.of("").toAbsolutePath();
-        while (directorio != null) {
-            Path contratos = directorio.resolve("contratos");
-            if (Files.isDirectory(contratos.resolve("comun"))) {
-                return contratos;
-            }
-            directorio = directorio.getParent();
-        }
-        throw new IllegalStateException("No se encontró la carpeta contratos/");
     }
 }

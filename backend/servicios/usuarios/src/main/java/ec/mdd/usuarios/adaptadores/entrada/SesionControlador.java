@@ -1,21 +1,17 @@
 package ec.mdd.usuarios.adaptadores.entrada;
 
 import ec.mdd.usuarios.adaptadores.entrada.api.CredencialesSesion;
-import ec.mdd.usuarios.adaptadores.entrada.api.Error;
 import ec.mdd.usuarios.adaptadores.entrada.api.SesionActual;
 import ec.mdd.usuarios.adaptadores.entrada.api.SesionApi;
 import ec.mdd.usuarios.adaptadores.entrada.api.TokenSesion;
-import ec.mdd.usuarios.aplicacion.CredencialesInvalidas;
 import ec.mdd.usuarios.puertos.entrada.IniciarSesion;
 import ec.mdd.usuarios.puertos.entrada.TokenEmitido;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -24,9 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
  * <p>El inicio de sesión no pide token (D-37). La sesión actual devuelve el usuario y los roles del
  * token, que la seguridad del proceso ya validó (D-39).
  *
- * <p>Las credenciales inválidas se traducen aquí a 401 con {@code USUARIOS_CREDENCIALES_INVALIDAS},
- * porque todavía no hay un {@code @RestControllerAdvice}; B00-H04 lo crea y absorbe esta traducción
- * (D-38).
+ * <p>Las credenciales inválidas las traduce el mecanismo común de errores, con {@code
+ * USUARIOS_CREDENCIALES_INVALIDAS} registrado en {@link ErroresUsuarios} (D-38, ADR-016).
  */
 @RestController
 class SesionControlador implements SesionApi {
@@ -57,15 +52,5 @@ class SesionControlador implements SesionApi {
                 new SesionActual(
                         autenticacion.getToken().getSubject(),
                         roles == null ? List.of() : roles.stream().sorted().toList()));
-    }
-
-    @ExceptionHandler(CredencialesInvalidas.class)
-    ResponseEntity<Error> credencialesInvalidas() {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(
-                        new Error(
-                                "Credenciales inválidas",
-                                "El usuario o la contraseña no son correctos.",
-                                "USUARIOS_CREDENCIALES_INVALIDAS"));
     }
 }

@@ -12,6 +12,8 @@ dependencies {
     // Nimbus, para firmar los tokens de prueba.
     api 'org.springframework.security:spring-security-oauth2-jose'
     api "com.atlassian.oai:openapi-request-validator-core:${versionValidadorOpenApi}"
+    // Definiciones de códigos, para VerificadorDeCatalogo (ADR-016).
+    api project(':plataforma:errores-nucleo')
     // MvcResult y los objetos simulados de servlet; cada prueba que usa ValidadorDeContrato ya
     // los tiene.
     compileOnly 'org.springframework:spring-test'
