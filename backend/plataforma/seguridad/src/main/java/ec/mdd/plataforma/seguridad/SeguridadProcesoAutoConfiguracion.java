@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
@@ -44,6 +45,9 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
         })
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 @EnableConfigurationProperties(PropiedadesSeguridad.class)
+// Activa la seguridad web aunque no esté la autoconfiguración de Spring Boot que lo hace, por
+// ejemplo en las pruebas con @WebMvcTest.
+@EnableWebSecurity
 public class SeguridadProcesoAutoConfiguracion {
 
     private static final String JWKS = "spring.security.oauth2.resourceserver.jwt.jwk-set-uri";

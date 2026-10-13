@@ -190,45 +190,45 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T023 [P] [US2] Escribir primero las pruebas unitarias de Usuarios en `backend/servicios/usuarios/src/test/java/ec/mdd/usuarios/`:
+- [X] T023 [P] [US2] Escribir primero las pruebas unitarias de Usuarios en `backend/servicios/usuarios/src/test/java/ec/mdd/usuarios/`:
   - `dominio/UsuarioTest`: un usuario activo puede iniciar sesión y uno inactivo no;
   - `aplicacion/IniciarSesionServicioTest`, con Mockito en los 3 puertos de salida: credenciales correctas emiten un token; usuario inexistente, inactivo o contraseña incorrecta lanzan `CredencialesInvalidas`; con un usuario inexistente, igual se llama al verificador.
-- [ ] T024 [P] [US2] Escribir primero `backend/servicios/usuarios/src/test/java/ec/mdd/usuarios/adaptadores/salida/`:
+- [X] T024 [P] [US2] Escribir primero `backend/servicios/usuarios/src/test/java/ec/mdd/usuarios/adaptadores/salida/`:
   - `VerificadorArgon2Test`: el hash no es la contraseña y la verifica; otra contraseña no;
   - `EmisorJwtTest`, con un `Clock` fijo y un par de llaves de `TokensDePrueba`: RS256, `kid`, `iss`, `sub`, `roles` y `exp = iat + vigencia`; un usuario sin roles da `roles: []`.
 
   Y `infraestructura/LlavesDeFirmaTest`: sin archivo, genera una llave RSA de 2048 bits; con un PEM escrito por la prueba en un directorio temporal, lo carga; el JWKS no contiene partes privadas.
-- [ ] T025 [P] [US2] Escribir primero `backend/servicios/usuarios/src/test/java/ec/mdd/usuarios/adaptadores/entrada/SesionContratoTest.java`, con `@WebMvcTest` y `SeguridadProcesoAutoConfiguracion` importada, con las rutas públicas de identidad (T011). Valida con `ValidadorDeContrato` contra `contratos/usuarios/openapi.yaml`:
+- [X] T025 [P] [US2] Escribir primero `backend/servicios/usuarios/src/test/java/ec/mdd/usuarios/adaptadores/entrada/SesionContratoTest.java`, con `@WebMvcTest` y `SeguridadProcesoAutoConfiguracion` importada, con las rutas públicas de identidad (T011). Valida con `ValidadorDeContrato` contra `contratos/usuarios/openapi.yaml`:
   - inicio de sesión 200 y 401, con `IniciarSesionDePrueba`: un doble escrito a mano que implementa el puerto `IniciarSesion`, sin Mockito, porque el principio VIII solo admite Mockito en la capa de aplicación;
   - sesión actual 200 (`jwt()` de spring-security-test con roles) y 401;
   - JWKS 200.
-- [ ] T026 [P] [US2] Escribir primero `backend/servicios/usuarios/src/integrationTest/java/ec/mdd/usuarios/RepositorioUsuariosJpaIntegrationTest.java`, con PostgreSQL 18.6 de Testcontainers y el Flyway de Usuarios: guarda y lee un usuario con sus roles, y `nombre_usuario` es único. `UsuariosEsquemaIntegrationTest` sigue pasando, ahora con las tablas de V2 en el esquema `usuarios`.
-- [ ] T027 [P] [US2] Escribir primero `SesionContratoTest` en `backend/servicios/{cargas,generacion,dashboard}/src/test/java/ec/mdd/<servicio>/adaptadores/entrada/`, con `@WebMvcTest` y `SeguridadProcesoAutoConfiguracion` importada (T011): sesión actual 200 con `jwt()` (roles ordenados), 200 con un usuario sin roles (`roles: []`) y 401, validados contra el contrato de su servicio.
+- [X] T026 [P] [US2] Escribir primero `backend/servicios/usuarios/src/integrationTest/java/ec/mdd/usuarios/RepositorioUsuariosJpaIntegrationTest.java`, con PostgreSQL 18.6 de Testcontainers y el Flyway de Usuarios: guarda y lee un usuario con sus roles, y `nombre_usuario` es único. `UsuariosEsquemaIntegrationTest` sigue pasando, ahora con las tablas de V2 en el esquema `usuarios`.
+- [X] T027 [P] [US2] Escribir primero `SesionContratoTest` en `backend/servicios/{cargas,generacion,dashboard}/src/test/java/ec/mdd/<servicio>/adaptadores/entrada/`, con `@WebMvcTest` y `SeguridadProcesoAutoConfiguracion` importada (T011): sesión actual 200 con `jwt()` (roles ordenados), 200 con un usuario sin roles (`roles: []`) y 401, validados contra el contrato de su servicio.
 
 ### Implementation for User Story 2
 
-- [ ] T028 [US2] En `backend/servicios/usuarios/build.gradle`, agregar `id 'mdd.contrato'`, `implementation 'org.springframework.boot:spring-boot-starter-data-jpa'`, `'org.springframework.security:spring-security-crypto'`, `'org.springframework.security:spring-security-oauth2-jose'`, `'org.springframework.security:spring-security-oauth2-resource-server'` y `"org.bouncycastle:bcprov-jdk18on:${versionBouncyCastle}"`.
+- [X] T028 [US2] En `backend/servicios/usuarios/build.gradle`, agregar `id 'mdd.contrato'`, `implementation 'org.springframework.boot:spring-boot-starter-data-jpa'`, `'org.springframework.security:spring-security-crypto'`, `'org.springframework.security:spring-security-oauth2-jose'`, `'org.springframework.security:spring-security-oauth2-resource-server'` y `"org.bouncycastle:bcprov-jdk18on:${versionBouncyCastle}"`.
 
   En `cargas`, `generacion` y `dashboard`, agregar `id 'mdd.contrato'` e `implementation 'org.springframework.security:spring-security-oauth2-resource-server'`.
-- [ ] T029 [US2] Dominio y puertos de Usuarios:
+- [X] T029 [US2] Dominio y puertos de Usuarios:
   - `dominio/Usuario.java`: `nombreUsuario`, `claveHash`, `activo` y `roles` (inmutable), con `puedeIniciarSesion()`;
   - `puertos/entrada/IniciarSesion.java`: `TokenEmitido iniciar(String usuario, String clave)`, con los registros `TokenEmitido(String valor, Instant venceEn)`;
   - `puertos/salida/RepositorioUsuarios.java` (`Optional<Usuario> buscarPorNombre`, `void guardar`), `VerificadorDeClaves.java` (`boolean coincide`, `String calcularHash`) y `EmisorDeTokens.java` (`TokenEmitido emitir(Usuario)`).
 
   JavaDoc del contrato de cada uno. Así compila T023.
-- [ ] T030 [US2] Aplicación de Usuarios:
+- [X] T030 [US2] Aplicación de Usuarios:
   - `aplicacion/CredencialesInvalidas.java`, error de aplicación sin HTTP y sin decir qué falló;
   - `aplicacion/IniciarSesionServicio.java`, que implementa `IniciarSesion`. Si el usuario no existe, calcula igual un hash con `VerificadorDeClaves`, para que el tiempo de respuesta no revele qué usuarios existen.
 
   Así pasa T023.
-- [ ] T031 [US2] Persistencia de Usuarios:
+- [X] T031 [US2] Persistencia de Usuarios:
   - `src/main/resources/db/migration/usuarios/V2__usuarios.sql`, con las tablas de data-model.md;
   - `adaptadores/salida/UsuarioJpa.java` (`@Entity`, `@Table(schema = "usuarios", name = "usuario")`, roles con `@ElementCollection` en `usuario_rol`), `UsuarioJpaRepositorio.java` (Spring Data) y `RepositorioUsuariosJpa.java`, que implementa el puerto y traduce a `Usuario`.
 
   Si Hibernate valida el esquema antes de que corra `flywayUsuarios`, agregar en la infraestructura un `EntityManagerFactoryDependsOnPostProcessor` hacia ese bean. Así pasa T026.
 
   JaCoCo solo cuenta la suite `test` (`ci.yml`). Por eso, agregar `adaptadores/salida/UsuarioJpaTest`, una prueba unitaria pura de la conversión `UsuarioJpa` ↔ `Usuario`, sin simular el repositorio (principio VIII).
-- [ ] T032 [US2] Adaptadores de salida de seguridad de Usuarios:
+- [X] T032 [US2] Adaptadores de salida de seguridad de Usuarios:
   - `adaptadores/salida/VerificadorArgon2.java`, que recibe un `PasswordEncoder`;
   - `adaptadores/salida/EmisorJwt.java`, que recibe `JwtEncoder`, `Clock`, `Duration vigencia`, `String emisor` y `String kid`.
 
@@ -238,13 +238,13 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
   - `infraestructura/ConfiguracionUsuarios.java`, con los `@Bean` de `Clock`, `Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8()`, `JwtEncoder` (`NimbusJwtEncoder`), `JWKSet` y los adaptadores y el servicio.
 
   Así pasa T024.
-- [ ] T033 [US2] Adaptadores de entrada de Usuarios:
+- [X] T033 [US2] Adaptadores de entrada de Usuarios:
   - `adaptadores/entrada/SesionControlador.java`, que implementa la `SesionApi` generada. Inicio de sesión: llama a `IniciarSesion`; con `CredencialesInvalidas`, responde 401 con el `Error` generado y `USUARIOS_CREDENCIALES_INVALIDAS`. Sesión actual: lee el `Jwt` del `SecurityContext` y devuelve el usuario y los roles ordenados.
   - `JwksControlador.java`, que implementa `JwksApi` con el `JWKSet` público.
 
   Datos vacíos responden como credenciales inválidas (research §5). Así pasa T025.
-- [ ] T034 [US2] `backend/servicios/usuarios/src/main/java/ec/mdd/usuarios/infraestructura/CargaUsuarioDePrueba.java`: un `ApplicationRunner`, activo solo con `mdd.usuarios.usuario-prueba.habilitado=true`, que crea `autor.prueba`, activo y con `DOCENTE` y `COORDINADOR_CARRERA`, si no existe, con la contraseña de `usuario-prueba.clave` en Argon2id. Si la contraseña está vacía, no crea nada y lo avisa. Nunca registra la contraseña. Prueba en `src/integrationTest/java/ec/mdd/usuarios/CargaUsuarioDePruebaIntegrationTest.java`: crea el usuario una sola vez y no lo duplica. Además, `src/test/java/ec/mdd/usuarios/infraestructura/CargaUsuarioDePruebaTest.java`, con un doble escrito a mano de `RepositorioUsuarios` (sin Mockito): deshabilitado no crea nada, con la contraseña vacía no crea nada, y habilitado crea el usuario una vez. También `ConfiguracionUsuariosTest`, que llama directamente a los métodos `@Bean`.
-- [ ] T035 [P] [US2] `adaptadores/entrada/SesionControlador.java` en `cargas`, `generacion` y `dashboard`: implementa su `SesionApi` y lee el `Jwt` del `SecurityContext`. Así pasa T027.
+- [X] T034 [US2] `backend/servicios/usuarios/src/main/java/ec/mdd/usuarios/infraestructura/CargaUsuarioDePrueba.java`: un `ApplicationRunner`, activo solo con `mdd.usuarios.usuario-prueba.habilitado=true`, que crea `autor.prueba`, activo y con `DOCENTE` y `COORDINADOR_CARRERA`, si no existe, con la contraseña de `usuario-prueba.clave` en Argon2id. Si la contraseña está vacía, no crea nada y lo avisa. Nunca registra la contraseña. Prueba en `src/integrationTest/java/ec/mdd/usuarios/CargaUsuarioDePruebaIntegrationTest.java`: crea el usuario una sola vez y no lo duplica. Además, `src/test/java/ec/mdd/usuarios/infraestructura/CargaUsuarioDePruebaTest.java`, con un doble escrito a mano de `RepositorioUsuarios` (sin Mockito): deshabilitado no crea nada, con la contraseña vacía no crea nada, y habilitado crea el usuario una vez. También `ConfiguracionUsuariosTest`, que llama directamente a los métodos `@Bean`.
+- [X] T035 [P] [US2] `adaptadores/entrada/SesionControlador.java` en `cargas`, `generacion` y `dashboard`: implementa su `SesionApi` y lee el `Jwt` del `SecurityContext`. Así pasa T027.
 - [ ] T036 [US2] Configuración del proceso identidad en `backend/apps/identidad/src/main/resources/application.yaml`:
   - `jwk-set-uri: ${MDD_JWKS_URI:http://localhost:8080/api/usuarios/jwks}`;
   - `mdd.seguridad.rutas-publicas` con `POST /api/usuarios/sesion` y `GET /api/usuarios/jwks` (formato de T015);

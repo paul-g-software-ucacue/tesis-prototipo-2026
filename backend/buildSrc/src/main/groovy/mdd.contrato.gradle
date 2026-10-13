@@ -16,6 +16,8 @@ openApiGenerate {
     apiPackage = paquete
     modelPackage = paquete
     validateSpec = true
+    // Solo interfaces y modelos: ApiUtil y los demás archivos de soporte no hacen falta.
+    globalProperties = [apis: '', models: '']
     generateApiTests = false
     generateModelTests = false
     generateApiDocumentation = false
@@ -31,6 +33,11 @@ openApiGenerate {
             useBeanValidation    : 'false',
             documentationProvider: 'none',
             annotationLibrary    : 'none',
+            // Los campos opcionales sin valor no se envían: el contrato no los declara nullable
+            // (por ejemplo, detalles e idIncidente en un 401).
+            containerDefaultToNull       : 'true',
+            additionalModelTypeAnnotations:
+                    '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)',
     ]
 }
 
@@ -49,6 +56,8 @@ dependencies {
     implementation 'org.springframework:spring-web'
     implementation 'com.fasterxml.jackson.core:jackson-annotations'
     implementation 'jakarta.annotation:jakarta.annotation-api'
+    // Los modelos marcan los campos obligatorios con @NotNull aunque la validación esté apagada.
+    implementation 'jakarta.validation:jakarta.validation-api'
 }
 
 testing {

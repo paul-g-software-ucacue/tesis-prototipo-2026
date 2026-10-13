@@ -3,4 +3,11 @@
 // SpotBugs. Vale para todos los servicios, centrales o no.
 plugins {
     id 'mdd.servicio'
+    id 'mdd.contrato'
+}
+
+dependencies {
+    // Lectura del JWT ya validado en la sesión actual (D-39).
+    implementation 'org.springframework.security:spring-security-oauth2-resource-server'
+    implementation 'org.springframework.security:spring-security-oauth2-jose'
 }
