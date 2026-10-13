@@ -298,8 +298,8 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
   - en `backend/plantillas/README.md`, explicar cómo agregar un contrato a un servicio (`id 'mdd.contrato'` y `contratos/<servicio>/openapi.yaml`);
   - ejecutar `spotlessApply`;
   - comprobar con `git status` que no hay archivos temporales.
-- [ ] T046 Hacer commit y push, y abrir el pull request de `003-autenticacion-jwt` hacia `main` **en borrador**, con la plantilla y `Refs #20`. Esperar a que terminen los runs del borrador y recién entonces marcarlo como listo. Comprobar que `2 · test-integracion`, `4 · sbom-backend` y `4 · sca` corren y pasan, y que `3 · secretos` y `perfil-consolidado` pasan. Si Grype marca una dependencia nueva, como BouncyCastle o Nimbus, con versión corregida, fijar esa versión como en B00-H02 y anotarlo.
-- [ ] T047 Completar `specs/003-autenticacion-jwt/evidencia.md` y la «Definición de terminado» del pull request. Fusionarlo con *squash* **con la aprobación del autor**. Después, ejecutar `perfil-consolidado` sobre `main` y abrir un pull request de evidencia con `Closes #20`, como en B00-H02. Borrar las ramas fusionadas.
+- [X] T046 Hacer commit y push, y abrir el pull request de `003-autenticacion-jwt` hacia `main` **en borrador**, con la plantilla y `Refs #20`. Esperar a que terminen los runs del borrador y recién entonces marcarlo como listo. Comprobar que `2 · test-integracion`, `4 · sbom-backend` y `4 · sca` corren y pasan, y que `3 · secretos` y `perfil-consolidado` pasan. Si Grype marca una dependencia nueva, como BouncyCastle o Nimbus, con versión corregida, fijar esa versión como en B00-H02 y anotarlo.
+- [X] T047 Completar `specs/003-autenticacion-jwt/evidencia.md` y la «Definición de terminado» del pull request. Fusionarlo con *squash* **con la aprobación del autor**. Después, ejecutar `perfil-consolidado` sobre `main` y abrir un pull request de evidencia con `Closes #20`, como en B00-H02. Borrar las ramas fusionadas.
 
 ---
 
