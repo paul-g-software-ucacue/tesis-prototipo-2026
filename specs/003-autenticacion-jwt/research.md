@@ -186,7 +186,7 @@ Usuarios es un servicio de un subdominio genérico (constitución §4), así que
   - Spotless, SpotBugs (`config/spotbugs/excluir.xml` ya excluye `build/generated`) y JaCoCo no analizan el código generado.
 - **Pruebas de contrato:** con `com.atlassian.oai:openapi-request-validator-core` **3.0.0**, antes llamado swagger-request-validator.
   - Su módulo para MockMvc usa `javax.servlet` y no funciona con Spring 7, así que se usa solo el núcleo, con un adaptador de unas 30 líneas que convierte el `MvcResult` en `SimpleRequest` y `SimpleResponse`.
-  - Vive en `plataforma/seguridad` (fixtures de prueba, `testFixtures`) para que lo usen los 4 servicios.
+  - Vive en `plataforma/pruebas`, un módulo solo para pruebas, junto con las llaves y tokens de prueba y un JWKS de prueba, para que lo usen los servicios, `plataforma/seguridad` y el API Gateway. No va como *fixtures* de `plataforma/seguridad`, porque arrastrarían Spring MVC a las pruebas del API Gateway, que es WebFlux.
   - El núcleo usa Jackson 2, que convive con Jackson 3 porque los paquetes son distintos y solo está en las pruebas.
 - **Contexto de construcción de las imágenes:** hoy es `backend/`, y `contratos/` está en la raíz. El contexto pasa a la raíz del repositorio, con un `.dockerignore` raíz que solo deja pasar `backend/` y `contratos/`, sin salidas de compilación. `java.Dockerfile` copia los dos y compila en `/src/backend`. Esto cambia un detalle de ADR-013 y se registra en ADR-015.
 - **Alternativas consideradas:**

@@ -52,7 +52,7 @@ Los detalles y sus alternativas están en [research.md](research.md). Las decisi
 **Scale/Scope**:
 - 1 servicio con dominio (Usuarios), 4 endpoints de «sesión actual», 1 inicio de sesión y 1 JWKS;
 - 4 contratos de servicio y 3 archivos comunes;
-- 1 módulo de plataforma, 1 plugin de convención y 2 scripts.
+- 2 módulos de plataforma (uno solo para pruebas), 1 plugin de convención y 2 scripts.
 
 ## Constitution Check
 
@@ -120,7 +120,8 @@ backend/
 ├── buildSrc/
 │   ├── build.gradle                          # cambia: + plugin org.openapi.generator
 │   └── src/main/groovy/mdd.contrato.gradle   # nuevo
-├── plataforma/seguridad/                     # nuevo: servidor de recursos servlet, 401 y validador de contratos (testFixtures)
+├── plataforma/seguridad/                     # nuevo: servidor de recursos servlet y 401 de los procesos
+├── plataforma/pruebas/                       # nuevo: solo para pruebas: llaves y tokens de prueba, JWKS y validador de contratos
 ├── plantillas/aplicacion/                    # cambia: + plataforma:seguridad y propiedades del JWKS
 ├── apps/{identidad,datos,distributivo,salida}/  # cambia: + plataforma:seguridad y propiedades
 ├── gateway/                                  # cambia: rutas, seguridad reactiva y 401

@@ -330,7 +330,7 @@ Se conservan las reglas que ya tenía: prohibido borrar `main` o reescribir su h
 **Decisión.**
 1. **Organización:** `contratos/comun/` (esquema `Error`, catálogo de códigos y piezas de seguridad) y un `contratos/<servicio>/openapi.yaml` por servicio con API, que referencia a `comun/`.
 2. **Generación:** el plugin de convención `mdd.contrato` aplica openapi-generator 7.25.0 (generador `spring`, `interfaceOnly`, `useSpringBoot4`, `useJackson3`, sin validación de beans hasta B00-H04). Las interfaces y los modelos van a `ec.mdd.<servicio>.adaptadores.entrada.api`, en `build/generated`, fuera de Spotless, SpotBugs y JaCoCo.
-3. **Pruebas de contrato:** el núcleo de openapi-request-validator 3.0.0 (antes swagger-request-validator), con un adaptador propio para MockMvc en los *fixtures* de prueba de `plataforma/seguridad`, porque su módulo MockMvc no funciona con Spring 7.
+3. **Pruebas de contrato:** el núcleo de openapi-request-validator 3.0.0 (antes swagger-request-validator), con un adaptador propio para MockMvc en `plataforma/pruebas`, un módulo solo para pruebas, porque su módulo MockMvc no funciona con Spring 7.
 4. **Imágenes:** el contexto de construcción pasa a la raíz del repositorio, con un `.dockerignore` que solo deja `backend/` y `contratos/`.
 
 **Por qué.** Cumple el principio IV con un contrato por módulo. Cada servicio genera sus propios modelos (principio V), y la SPA de B00-H06 lee los mismos archivos.

@@ -30,7 +30,7 @@ Los contratos de servicio declaran `security: [bearer: []]` de forma global y lo
 
 ## Pruebas de contrato
 
-Por cada servicio con contrato: una prueba con MockMvc que hace cada petición y valida la respuesta (200 y 401) contra su `openapi.yaml` con el validador de `plataforma/seguridad`. Una respuesta que no cumple el contrato hace fallar la prueba.
+Por cada servicio con contrato: una prueba con MockMvc que hace cada petición y valida la respuesta (200 y 401) contra su `openapi.yaml` con el validador de `plataforma/pruebas`. Una respuesta que no cumple el contrato hace fallar la prueba.
 
 ## Garantías
 
