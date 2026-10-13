@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-40 · ADR-014.
+- **Siguiente número libre:** D-40 · ADR-016.
 
 ## Índice
 
@@ -23,11 +23,13 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-33 | 2026-10-11 | google-java-format (estilo AOSP) en lugar de palantir-java-format | Aceptada | Constitución §8 (2.0.1), ADR-011 punto 4 (Spotless) |
 | D-34 | 2026-10-12 | Medición de R-19 en dos pasos: en B00-H02 tras un calentamiento y en B00-H03 tras iniciar sesión | Aceptada | Issue #19 (escenario de memoria), issue #20 |
 | D-35 | 2026-10-12 | B00-H02 crea los 12 servicios vacíos, cada uno con su esquema y una migración mínima | Aceptada | Issue #19 (alcance), ADR-012 (cuándo se crean los servicios) |
-| ADR-013 | 2026-10-12 | Persistencia por servicio y construcción de imágenes desde el código | Aceptada | `deploy/docker/java.Dockerfile` (B00-H08) |
+| ADR-013 | 2026-10-12 | Persistencia por servicio y construcción de imágenes desde el código | Aceptada, modificada por ADR-015 (contexto de construcción) | `deploy/docker/java.Dockerfile` (B00-H08) |
 | D-36 | 2026-10-12 | El despliegue pasa a un servidor o PC de 4 núcleos y 8 GiB de RAM | Aceptada | Constitución principio V, §3 y §8 (2.1.0), RNF-POR-02, R-19, ADR-006, ADR-008, issues #19 y #20 |
 | D-37 | 2026-10-13 | B00-H03 incluye un inicio de sesión mínimo para usuarios de prueba | Aceptada | Alcance de los issues #20 y #43 (F05-H01) |
 | D-38 | 2026-10-13 | El 401 de B00-H03 usa el modelo de error del principio XIII antes de B00-H04 | Aceptada | Alcance de los issues #20 y #21 (B00-H04) |
 | D-39 | 2026-10-13 | «Sesión actual» en un servicio de cada proceso para la prueba de punta a punta | Aceptada | Alcance del issue #20 |
+| ADR-014 | 2026-10-13 | Autenticación con JWT RS256 emitido por Usuarios | Aceptada | ADR-008 (detalle de la autenticación) |
+| ADR-015 | 2026-10-13 | Contratos OpenAPI en `contratos/` y generación por servicio | Aceptada | ADR-013 punto 3 (contexto de construcción de las imágenes) |
 
 ---
 
@@ -289,6 +291,53 @@ Se conservan las reglas que ya tenía: prohibido borrar `main` o reescribir su h
 **Alternativas.** Solo Usuarios con endpoint y pruebas internas en los demás procesos; un endpoint técnico sin contrato (va contra el principio IV).
 
 **Consecuencias.** Hay 4 contratos pequeños desde la ola 0. Las historias de cada servicio pueden reutilizar o retirar su «sesión actual».
+
+---
+
+## ADR-014. Autenticación con JWT RS256 emitido por Usuarios
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-13 · **Decidido por:** autor de la tesis
+- **Origen:** plan de B00-H03 (`specs/003-autenticacion-jwt/research.md` §1 a §6)
+- **Modifica a:** ADR-008, que fija JWT RS256 y Argon2id sin el detalle de llaves y validación
+- **Relacionadas:** D-37, D-38, D-39; principios V, IX, XI y XIII; constitución §3
+
+**Contexto.** Todas las historias con endpoints parten de un usuario autenticado. Hay que fijar qué lleva el token, quién lo firma, cómo validan el API Gateway y los procesos, y cómo se responde cuando falla, de forma que sirva igual en local, en la CI y en el VPS.
+
+**Decisión.**
+1. **Token:** JWT RS256 con `iss` (`mdd-usuarios`), `sub` (nombre de usuario), `roles`, `iat` y `exp` (30 min por defecto), y `kid` en el encabezado.
+2. **Llaves:** solo Usuarios tiene la llave privada (RSA de 2048 bits). Viene de un archivo PEM configurado (`mdd.usuarios.llave-privada`) o, si no hay, es efímera y se genera al arrancar. La pública se publica como JWKS en `GET /api/usuarios/jwks`.
+3. **Doble validación:** el API Gateway valida toda `/api/**` y reenvía el token; cada proceso lo vuelve a validar (solo RS256, firma por `kid`, emisor y vencimiento) con el JWKS en caché.
+4. **401 uniforme:** estado, `WWW-Authenticate: Bearer` sin detalles y el cuerpo del principio XIII con `SEGURIDAD_NO_AUTENTICADO`, idénticos para todas las causas. La causa solo va al registro, en DEBUG y sin el token.
+5. **`plataforma/seguridad`:** la configuración servlet del servidor de recursos y el 401, compartidos por los 4 procesos; el API Gateway tiene su versión reactiva.
+
+**Por qué.** La llave que firma no sale de un proceso ni entra al repositorio (principio IX), y el «un solo comando» sigue funcionando sin generar archivos. Un proceso no depende del API Gateway para su seguridad, y validar no cuesta una llamada de red por petición. El 401 uniforme cumple el escenario «Token alterado o vencido».
+
+**Alternativas.** HS256 con un secreto compartido; token opaco con introspección; llave pública repartida a mano o par de llaves en volúmenes; configuración copiada en cada proceso.
+
+**Consecuencias.** Con la llave efímera, reiniciar identidad invalida los tokens (en local basta con volver a iniciar sesión). B00-H08 configura la llave persistente del VPS. F05-H01 y F05-H02 construyen sobre el inicio de sesión y los roles del token.
+
+---
+
+## ADR-015. Contratos OpenAPI en `contratos/` y generación por servicio
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-13 · **Decidido por:** autor de la tesis
+- **Origen:** plan de B00-H03 (`specs/003-autenticacion-jwt/research.md` §11)
+- **Modifica a:** ADR-013 punto 3, que construía las imágenes con `backend/` como contexto
+- **Relacionadas:** principios IV, V y XIII; ADR-008, ADR-012; constitución §3
+
+**Contexto.** B00-H03 trae los primeros endpoints. El principio IV pide contratos OpenAPI 3.0.3 en `contratos/` antes del código, interfaces generadas y pruebas de contrato, y eso hay que organizarlo para todas las historias con API y para la SPA.
+
+**Decisión.**
+1. **Organización:** `contratos/comun/` (esquema `Error`, catálogo de códigos y piezas de seguridad) y un `contratos/<servicio>/openapi.yaml` por servicio con API, que referencia a `comun/`.
+2. **Generación:** el plugin de convención `mdd.contrato` aplica openapi-generator 7.25.0 (generador `spring`, `interfaceOnly`, `useSpringBoot4`, `useJackson3`, sin validación de beans hasta B00-H04). Las interfaces y los modelos van a `ec.mdd.<servicio>.adaptadores.entrada.api`, en `build/generated`, fuera de Spotless, SpotBugs y JaCoCo.
+3. **Pruebas de contrato:** el núcleo de openapi-request-validator 3.0.0 (antes swagger-request-validator), con un adaptador propio para MockMvc en los *fixtures* de prueba de `plataforma/seguridad`, porque su módulo MockMvc no funciona con Spring 7.
+4. **Imágenes:** el contexto de construcción pasa a la raíz del repositorio, con un `.dockerignore` que solo deja `backend/` y `contratos/`.
+
+**Por qué.** Cumple el principio IV con un contrato por módulo. Cada servicio genera sus propios modelos (principio V), y la SPA de B00-H06 lee los mismos archivos.
+
+**Alternativas.** Controladores sin generación; un solo contrato para todo el sistema; `contratos/` dentro de `backend/`; el módulo MockMvc del validador (incompatible).
+
+**Consecuencias.** Cada historia con API escribe o cambia su `openapi.yaml` antes del código. B00-H04 completa `comun/` (catálogo y validación de entrada) y B00-H08 adapta `cd.yml` al nuevo contexto de construcción.
 
 ---
 

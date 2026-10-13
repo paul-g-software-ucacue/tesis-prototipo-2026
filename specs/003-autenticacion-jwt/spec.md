@@ -118,7 +118,7 @@ Escenario: Cabe en la memoria del equipo después de iniciar sesión
 
 **Validación**
 
-- **FR-003**: El API Gateway DEBE rechazar con 401 toda petición a la API (`/api`) que no traiga un token válido, antes de reenviarla a un proceso.
+- **FR-003**: El API Gateway DEBE rechazar con 401 toda petición a la API (`/api`) que no traiga un token válido, antes de reenviarla a un proceso. La única excepción es el inicio de sesión, que por definición se hace sin token (D-37).
 - **FR-004**: Cada uno de los 4 procesos DEBE validar por su cuenta la firma RS256 y el vencimiento del token de cada petición a su API, aunque la petición haya pasado por el API Gateway, y DEBE obtener del token el identificador del usuario y sus roles.
 - **FR-005**: Un token sin firma válida, vencido, mal formado o con un algoritmo distinto de RS256 DEBE rechazarse con 401. Todas las causas DEBEN responder con el mismo código y la misma descripción, que no dice qué falló.
 - **FR-006**: Toda respuesta 401 DEBE usar el modelo de error común del principio XIII (`titulo`, `descripcion` y `codigo`), con un código estable del catálogo y una descripción que dice qué puede hacer el usuario (iniciar sesión de nuevo). Los códigos que crea esta historia son los primeros del catálogo; B00-H04 arma el catálogo completo y los absorbe (D-38).
