@@ -241,7 +241,7 @@ description: "Tareas de B00-H04: modelo de errores común y catálogo de código
 
 ## Phase 7: Polish & cierre
 
-- [ ] T028 Revisar el JavaDoc de `plataforma:errores-nucleo`, `plataforma:errores`, `ManejadorDeErroresGateway` y `ErroresUsuarios`. En `backend/plantillas/README.md`, explicar cómo registrar un error de un servicio (contracts/catalogo.md). Ejecutar `spotlessApply` y comprobar con `git status` que no hay archivos temporales. Correr Gitleaks local sobre un clon: `no leaks found`.
+- [X] T028 Revisar el JavaDoc de `plataforma:errores-nucleo`, `plataforma:errores`, `ManejadorDeErroresGateway` y `ErroresUsuarios`. En `backend/plantillas/README.md`, explicar cómo registrar un error de un servicio (contracts/catalogo.md). Ejecutar `spotlessApply` y comprobar con `git status` que no hay archivos temporales. Correr Gitleaks local sobre un clon: `no leaks found`.
 - [ ] T029 Hacer commit y push, y abrir el pull request de `004-modelo-errores` hacia `main` **en borrador**, con `Refs #21`. Esperar a que terminen los runs del borrador y recién entonces marcarlo como listo. Comprobar que `2 · test-integracion`, `4 · sbom-backend`, `4 · sca` y `perfil-consolidado` corren y pasan; si Grype marca una dependencia nueva con versión corregida (por ejemplo, de Hibernate Validator), fijarla como en B00-H02 y anotarlo. Pegar en la evidencia la medición de R-19 del run.
 - [ ] T030 Completar `specs/004-modelo-errores/evidencia.md` y la «Definición de terminado» del pull request. Fusionarlo con *squash* **con la aprobación del autor**. Después, ejecutar `perfil-consolidado` sobre `main` y abrir el pull request de evidencia con `Closes #21`, como en B00-H03. Borrar las ramas fusionadas.
 

@@ -62,3 +62,4 @@ Registro de las comprobaciones de los tres escenarios de la historia (issue #21)
 ## Notas
 
 - **Ruta pública con un token inválido:** si una petición a una ruta pública, como el inicio de sesión, trae un token inválido, la seguridad responde el 401 uniforme antes de llegar al controlador. Es el comportamiento normal del servidor de recursos de Spring Security, y coincide con ADR-014: un token inválido nunca se acepta.
+- **JavaDoc y lint (T028):** todas las clases nuevas de `plataforma:errores-nucleo`, `plataforma:errores`, el API Gateway y `ErroresUsuarios` tienen JavaDoc en español, sin `@author`. `spotlessCheck` pasa. El README de las plantillas explica cómo registrar un error de un servicio. Gitleaks v8.30.1 sobre un clon de la rama: `no leaks found`.

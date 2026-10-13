@@ -34,3 +34,15 @@ Cuando la historia de un servicio agrega su primera API (principio IV, ADR-015):
 3. En el `build.gradle` del servicio, agregar `id 'mdd.contrato'`. Las interfaces y los modelos se generan en `ec.mdd.<servicio>.adaptadores.entrada.api`.
 4. El controlador, en `adaptadores/entrada`, implementa la interfaz generada; si no cumple el contrato, no compila.
 5. Por cada operación, una prueba de contrato con `@WebMvcTest`, `@ImportAutoConfiguration(SeguridadProcesoAutoConfiguracion.class)` y `ValidadorDeContrato.para("<servicio>")` de `plataforma:pruebas`, que valide cada respuesta (por ejemplo, `servicios/cargas/.../SesionContratoTest`).
+
+## Registrar un error de un servicio
+
+Cuando una historia agrega un error de dominio o de aplicación (principio XIII, ADR-016; `specs/004-modelo-errores/contracts/catalogo.md`):
+
+1. La excepción vive en el dominio o en la aplicación, como clase Java común, sin HTTP. Su mensaje no lleva datos personales, tokens ni contraseñas.
+2. Agregar su fila en `contratos/comun/errores.md`, con un código con el prefijo del servicio.
+3. Registrarla en `adaptadores/entrada/Errores<Servicio>.java` (`@Component`, implementa `CatalogoDeErrores`) con `EntradaCatalogo.de(...)` y los mismos textos de la fila.
+4. Declarar la respuesta en el contrato de la operación que puede producirla.
+5. Pruebas: `VerificadorDeCatalogo.verificar(new Errores<Servicio>())`, y la respuesta en la prueba de contrato. `@WebMvcTest` no escanea los `@Component` comunes, así que la prueba de contrato importa `Errores<Servicio>` (`@Import`).
+
+El advice único de cada proceso (`plataforma:errores`) traduce la excepción con su código; ningún controlador ni caso de uso repite esa traducción.
