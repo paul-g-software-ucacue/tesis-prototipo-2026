@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-37 · ADR-014.
+- **Siguiente número libre:** D-40 · ADR-014.
 
 ## Índice
 
@@ -24,7 +24,10 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-34 | 2026-10-12 | Medición de R-19 en dos pasos: en B00-H02 tras un calentamiento y en B00-H03 tras iniciar sesión | Aceptada | Issue #19 (escenario de memoria), issue #20 |
 | D-35 | 2026-10-12 | B00-H02 crea los 12 servicios vacíos, cada uno con su esquema y una migración mínima | Aceptada | Issue #19 (alcance), ADR-012 (cuándo se crean los servicios) |
 | ADR-013 | 2026-10-12 | Persistencia por servicio y construcción de imágenes desde el código | Aceptada | `deploy/docker/java.Dockerfile` (B00-H08) |
-| D-36 | 2026-10-12 | El despliegue pasa a un servidor o PC de 4 núcleos y 8 GiB de RAM | Aceptada | Constitución principio V, §3 y §8 (2.1.0), RNF-POR-02, R-19, ADR-006, ADR-008, issue #19 |
+| D-36 | 2026-10-12 | El despliegue pasa a un servidor o PC de 4 núcleos y 8 GiB de RAM | Aceptada | Constitución principio V, §3 y §8 (2.1.0), RNF-POR-02, R-19, ADR-006, ADR-008, issues #19 y #20 |
+| D-37 | 2026-10-13 | B00-H03 incluye un inicio de sesión mínimo para usuarios de prueba | Aceptada | Alcance de los issues #20 y #43 (F05-H01) |
+| D-38 | 2026-10-13 | El 401 de B00-H03 usa el modelo de error del principio XIII antes de B00-H04 | Aceptada | Alcance de los issues #20 y #21 (B00-H04) |
+| D-39 | 2026-10-13 | «Sesión actual» en un servicio de cada proceso para la prueba de punta a punta | Aceptada | Alcance del issue #20 |
 
 ---
 
@@ -220,7 +223,7 @@ Se conservan las reglas que ya tenía: prohibido borrar `main` o reescribir su h
 
 - **Estado:** Aceptada · **Fecha:** 2026-10-12 · **Decidido por:** autor de la tesis
 - **Origen:** análisis de B00-H02 (`/speckit-analyze`, hallazgo I2: la especificación decía «4 GB» y los contratos «4 GiB»). Al revisarlo, el autor decidió duplicar las limitaciones del hardware de despliegue.
-- **Modifica a:** constitución, principio V, §3 (Infraestructura y Memoria) y §8 (versión 2.1.0); RNF-POR-02 y R-19 de la ERS; ADR-006 y ADR-008 (tamaño de la VM); issue #19 (historia y escenario de memoria); especificación, plan y tareas de B00-H02
+- **Modifica a:** constitución, principio V, §3 (Infraestructura y Memoria) y §8 (versión 2.1.0); RNF-POR-02 y R-19 de la ERS; ADR-006 y ADR-008 (tamaño de la VM); issue #19 (historia y escenario de memoria); issue #20 (escenario de memoria de B00-H03); especificación, plan y tareas de B00-H02
 
 **Decisión.**
 1. El perfil consolidado se despliega en un **servidor o PC de 4 núcleos y 8 GiB de RAM**, en lugar de una VM de 2 vCPU y 4 GB. La demostración usa un equipo del mismo tamaño.
@@ -237,7 +240,55 @@ Se conservan las reglas que ya tenía: prohibido borrar `main` o reescribir su h
 - La alternativa de R-19 (Nginx en lugar de Spring Cloud Gateway) queda para un consumo de 8 GiB o más.
 - La ERS (RNF-POR-02, R-19), ADR-006 y ADR-008, fuera del repositorio, quedan desactualizados en este punto; este registro prevalece.
 - El runner estándar de GitHub Actions de un repositorio privado tiene menos RAM que el equipo de despliegue. La medición de referencia sigue siendo válida mientras el consumo quede por debajo de la RAM del runner.
-- El issue #19 se editó el 2026-10-12.
+- El issue #19 se editó el 2026-10-12. El issue #20 se editó el 2026-10-13.
+
+---
+
+## D-37. B00-H03 incluye un inicio de sesión mínimo para usuarios de prueba
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-13 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q1 de la especificación de B00-H03 (`specs/003-autenticacion-jwt/spec.md`)
+- **Modifica a:** alcance del issue #20 (B00-H03) y del issue #43 (F05-H01, Iniciar sesión)
+
+**Decisión.** Usuarios expone en B00-H03 un inicio de sesión mínimo: recibe usuario y contraseña de un usuario de prueba ficticio, con la contraseña guardada con Argon2id, y devuelve el token JWT firmado con RS256. La pantalla de inicio de sesión, la redirección, la gestión de usuarios y los mensajes para el usuario final siguen en F05-H01.
+
+**Por qué.** La historia dice que el token lo «emite Usuarios» y su escenario parte de «un usuario de prueba que inició sesión»; D-34 pide medir R-19 después de un inicio de sesión real. F05-H01 depende de B00-H03 y es de la ola 1.
+
+**Alternativas.** Generar tokens solo en las pruebas, con una llave de prueba (Usuarios no emitiría nada y la medición no tendría inicio de sesión); adelantar todo F05-H01 a la ola 0.
+
+**Consecuencias.** F05-H01 parte de un inicio de sesión que ya emite tokens y agrega la pantalla, los usuarios reales de la demo y los mensajes.
+
+---
+
+## D-38. El 401 de B00-H03 usa el modelo de error del principio XIII antes de B00-H04
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-13 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q2 de la especificación de B00-H03
+- **Modifica a:** alcance del issue #20 (B00-H03) y del issue #21 (B00-H04, que recibe los códigos ya creados)
+
+**Decisión.** B00-H03 responde los 401 con el formato del principio XIII (`titulo`, `descripcion` y `codigo`) y registra los primeros códigos del catálogo, como el de «sin sesión o token inválido». B00-H04 arma después el catálogo completo y el `@RestControllerAdvice` de cada aplicación, y absorbe esos códigos sin cambiarlos.
+
+**Por qué.** El escenario «Petición sin token» pide el modelo de error común, que ya está fijado en la constitución. El 401 lo produce la capa de seguridad antes de llegar a un controlador, así que no depende del advice. Se mantiene el orden de las historias de la ola 0.
+
+**Alternativas.** Hacer primero B00-H04 y que B00-H03 dependa de ella; un formato provisional que B00-H04 corrija (va contra el escenario).
+
+**Consecuencias.** Los códigos son estables desde B00-H03: B00-H04 no puede renombrarlos.
+
+---
+
+## D-39. «Sesión actual» en un servicio de cada proceso para la prueba de punta a punta
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-13 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q3 de la especificación de B00-H03
+- **Modifica a:** alcance del issue #20 (B00-H03)
+
+**Decisión.** Un servicio de cada uno de los 4 procesos ofrece la consulta «sesión actual», que solo responde a peticiones autenticadas y devuelve el usuario y los roles obtenidos del token. Cada una tiene su contrato OpenAPI mínimo, escrito antes de implementarla (principio IV). En identidad, el servicio es Usuarios; el plan elige el de datos, distributivo y salida.
+
+**Por qué.** El escenario «Token válido» pide llamar a «un servicio de cualquier proceso», y los procesos todavía no tienen endpoints de negocio. Así la prueba recorre el API Gateway y los 4 procesos.
+
+**Alternativas.** Solo Usuarios con endpoint y pruebas internas en los demás procesos; un endpoint técnico sin contrato (va contra el principio IV).
+
+**Consecuencias.** Hay 4 contratos pequeños desde la ola 0. Las historias de cada servicio pueden reutilizar o retirar su «sesión actual».
 
 ---
 
