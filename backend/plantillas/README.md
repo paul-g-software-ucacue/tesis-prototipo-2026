@@ -22,3 +22,5 @@ Las garantías de cada esqueleto (reglas de las cinco capas, API publicada, cobe
 3. En `application.yaml`, reemplazar `proceso` por el nombre del proceso (nombre de la aplicación y usuario de la base) y `DB_CLAVE_PROCESO` por `DB_CLAVE_<PROCESO>`.
 4. Agregar `include 'apps:<proceso>'` en `backend/settings.gradle`.
 5. Agregar el rol del proceso en `deploy/postgres/01-esquemas.sh`, su clave en `.env.ejemplo` y su contenedor en `compose.yaml`.
+
+La seguridad (JWT RS256 contra el JWKS de Usuarios y el 401 uniforme) viene de `plataforma:seguridad`, que la plantilla ya declara (ADR-014). Las rutas que el proceso atiende sin token van en `mdd.seguridad.rutas-publicas`, con el formato `MÉTODO /ruta`; la salud de Actuator siempre es pública.

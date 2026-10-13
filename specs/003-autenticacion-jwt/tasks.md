@@ -132,13 +132,13 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
     - un `SecurityFilterChain` *stateless*, sin CSRF, con `permitAll` para `/actuator/health/**` y `rutasPublicas`, `authenticated` para lo demás, y `oauth2ResourceServer` con el punto de entrada propio.
 
   Registrar la autoconfiguración en `src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`. JavaDoc del contrato y del porqué del 401 uniforme. Así T014 pasa.
-- [ ] T016 Contexto de construcción en la raíz del repositorio (ADR-015):
+- [X] T016 Contexto de construcción en la raíz del repositorio (ADR-015):
   - crear `.dockerignore` en la raíz, que excluye todo (`*`) y deja pasar `backend/` y `contratos/`, salvo `**/build/` y `**/.gradle/`;
   - borrar `backend/.dockerignore`;
   - en `deploy/docker/java.Dockerfile`: `COPY backend/ /src/backend/` y `COPY contratos/ /src/contratos/`, `WORKDIR /src/backend` y el mismo `RUN` de compilación, con el comentario actualizado;
   - en `compose.yaml`: `context: .` y `dockerfile: deploy/docker/java.Dockerfile` en los 5 componentes Java.
-- [ ] T017 Agregar `implementation project(':plataforma:seguridad')` a `backend/plantillas/aplicacion/build.gradle` y a `backend/apps/{identidad,datos,distributivo,salida}/build.gradle`. En sus `application.yaml`, agregar `spring.security.oauth2.resourceserver.jwt.jwk-set-uri: ${MDD_JWKS_URI:http://identidad:8080/api/usuarios/jwks}`. Actualizar `backend/plantillas/README.md` (crear un proceso: la seguridad viene de `plataforma:seguridad`).
-- [ ] T018 Ejecutar `./gradlew spotlessApply build integrationTest`. Todo tiene que quedar en verde, incluidos los `EsquemasIntegrationTest` con la seguridad en el contexto y la cobertura del 60 % en `plataforma:seguridad` y `plataforma:pruebas`. Después, `docker compose up -d --wait --build`, para construir con el contexto nuevo y no reutilizar las imágenes de B00-H02: los 6 contenedores sanos sin token (FR-008, SC-006). Anotar los dos resultados en `specs/003-autenticacion-jwt/evidencia.md`.
+- [X] T017 Agregar `implementation project(':plataforma:seguridad')` a `backend/plantillas/aplicacion/build.gradle` y a `backend/apps/{identidad,datos,distributivo,salida}/build.gradle`. En sus `application.yaml`, agregar `spring.security.oauth2.resourceserver.jwt.jwk-set-uri: ${MDD_JWKS_URI:http://identidad:8080/api/usuarios/jwks}`. Actualizar `backend/plantillas/README.md` (crear un proceso: la seguridad viene de `plataforma:seguridad`).
+- [X] T018 Ejecutar `./gradlew spotlessApply build integrationTest`. Todo tiene que quedar en verde, incluidos los `EsquemasIntegrationTest` con la seguridad en el contexto y la cobertura del 60 % en `plataforma:seguridad` y `plataforma:pruebas`. Después, `docker compose up -d --wait --build`, para construir con el contexto nuevo y no reutilizar las imágenes de B00-H02: los 6 contenedores sanos sin token (FR-008, SC-006). Anotar los dos resultados en `specs/003-autenticacion-jwt/evidencia.md`.
 
 **Checkpoint**: los contratos están escritos, el código se genera, los procesos rechazan peticiones sin un token válido y el perfil sigue levantándose con un comando.
 

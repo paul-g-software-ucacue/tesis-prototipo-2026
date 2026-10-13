@@ -8,6 +8,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     runtimeOnly 'org.postgresql:postgresql'
+    // JWT RS256 validado por el propio proceso y el 401 uniforme (ADR-014).
+    implementation project(':plataforma:seguridad')
 
     // Servicios que ensambla este proceso (ADR-006).
     implementation project(':servicios:usuarios')

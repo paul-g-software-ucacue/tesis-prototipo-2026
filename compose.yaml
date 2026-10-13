@@ -60,37 +60,37 @@ services:
   identidad:
     <<: *proceso
     build:
-      context: backend
-      dockerfile: ../deploy/docker/java.Dockerfile
+      context: .
+      dockerfile: deploy/docker/java.Dockerfile
       args: { MODULO: "apps:identidad", NOMBRE: identidad }
 
   datos:
     <<: *proceso
     build:
-      context: backend
-      dockerfile: ../deploy/docker/java.Dockerfile
+      context: .
+      dockerfile: deploy/docker/java.Dockerfile
       args: { MODULO: "apps:datos", NOMBRE: datos }
 
   distributivo:
     <<: *proceso
     build:
-      context: backend
-      dockerfile: ../deploy/docker/java.Dockerfile
+      context: .
+      dockerfile: deploy/docker/java.Dockerfile
       args: { MODULO: "apps:distributivo", NOMBRE: distributivo }
 
   salida:
     <<: *proceso
     build:
-      context: backend
-      dockerfile: ../deploy/docker/java.Dockerfile
+      context: .
+      dockerfile: deploy/docker/java.Dockerfile
       args: { MODULO: "apps:salida", NOMBRE: salida }
 
   # Único puerto publicado en el anfitrión. En B00-H02 no enruta, así que no depende de los procesos.
   gateway:
     <<: *java
     build:
-      context: backend
-      dockerfile: ../deploy/docker/java.Dockerfile
+      context: .
+      dockerfile: deploy/docker/java.Dockerfile
       args: { MODULO: gateway, NOMBRE: gateway }
     ports:
       - "8080:8080"

@@ -1,14 +1,16 @@
 # Imagen de un proceso Spring Boot (identidad, datos, distributivo, salida o gateway).
 # Compila desde el código (ADR-013), así que un clon limpio se levanta con un solo
-# `docker compose up`; B00-H08 adapta cd.yml a esta etapa. El contexto es backend/.
+# `docker compose up`; B00-H08 adapta cd.yml a esta etapa. El contexto es la raíz del
+# repositorio, porque la compilación necesita backend/ y contratos/ (ADR-015).
 # Ejemplo: docker build -f deploy/docker/java.Dockerfile --build-arg MODULO=apps:identidad \
-#          --build-arg NOMBRE=identidad backend
+#          --build-arg NOMBRE=identidad .
 
 FROM eclipse-temurin:25-jdk AS compilacion
 ARG MODULO
 ARG NOMBRE
-WORKDIR /src
-COPY . .
+COPY backend/ /src/backend/
+COPY contratos/ /src/contratos/
+WORKDIR /src/backend
 # La caché de Gradle se comparte entre las cinco imágenes y entre construcciones. sharing=locked
 # las construye de a una: Gradle no puede coordinar el bloqueo de su caché entre contenedores.
 # Un COPY no puede transformar MODULO, así que el JAR se deja en una ruta fija (/app.jar).

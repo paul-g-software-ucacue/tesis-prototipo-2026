@@ -4,6 +4,8 @@ spring.datasource.username: salida
 spring.datasource.password: ${DB_CLAVE_SALIDA}
 spring.datasource.url: ${SPRING_DATASOURCE_URL}
 server.port: 8080
+# Llave pública de Usuarios para validar los tokens (ADR-014).
+spring.security.oauth2.resourceserver.jwt.jwk-set-uri: ${MDD_JWKS_URI:http://identidad:8080/api/usuarios/jwks}
 # Solo la salud, con readiness que incluye la base: el proceso no queda sano sin PostgreSQL.
 management.endpoints.web.exposure.include: health
 management.endpoint.health.probes.enabled: true
