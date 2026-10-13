@@ -111,12 +111,46 @@ Resultado: cumple (< 8 GiB). Sin alerta de R-19 (≤ 7 GiB).
 - **Identidad:** está al 62 % de su límite de 512 MiB.
 - **Jackson 2.21.7:** el commit `8b6eb71` no toca `compose.yaml`, `contratos/` ni `deploy/**`, así que el workflow no vuelve a medir. Se repite sobre `main` después de la fusión.
 
+### Medición sobre `main` después de la fusión
+
+**Medición de R-19 después de iniciar sesión** · 2026-10-13T03:57:40+00:00 · commit `70656c6` · entorno: ubuntu-latest (Docker 28.0.4)
+Calentamiento: inicio de sesión de autor.prueba, 20 llamadas a la salud y 20 a la sesión actual por componente, y 30 s de espera.
+
+| Contenedor | Consumo (MiB) | Límite (MiB) |
+|---|---:|---:|
+| postgres | 111,7 | 512 |
+| identidad | 313,5 | 512 |
+| datos | 184,5 | 512 |
+| distributivo | 165,7 | 512 |
+| salida | 165,6 | 512 |
+| gateway | 186,6 | 384 |
+| **Total** | **1 127,6** (1,10 GiB) | 2 944 |
+
+Resultado: cumple (< 8 GiB). Sin alerta de R-19 (≤ 7 GiB).
+
+Es la medición de referencia de R-19 después de iniciar sesión para la ola 0 ([run 38343802408](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38343802408)): el commit final, con Jackson 2.21.7. Son +196,0 MiB respecto de la de B00-H02 sobre `main` (931,6 MiB), e identidad queda al 61 % de su límite. En el mismo run, `deploy/probar_autenticacion.sh` dio los 6 pasos en `OK`, las imágenes se construyeron desde cero en 2 min 56 s, y todo quedó sano en 38,4 s.
+
 ## Búsquedas de secretos
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
 | Registros del perfil (T044) | confirmada | Después de iniciar sesión con `autor.prueba` y usar el token: en los 228 líneas de `docker compose logs`, 0 apariciones del token, 0 de su firma, 0 de la contraseña de prueba y 0 de `PRIVATE KEY`. Solo constan el aviso de llave efímera y la creación del usuario de prueba, sin datos sensibles. | 2026-10-13 |
 | Repositorio (T044) | confirmada | `git grep -nE -e '-----BEGIN [A-Z ]*PRIVATE KEY-----'` → sin resultados. La búsqueda de la tarea (`'BEGIN .*PRIVATE KEY'`) daba 4 falsos positivos (la armadura partida de `LlavesDeFirmaTest`, su comentario y las dos líneas que documentan la búsqueda), así que el quickstart y la tarea usan ahora la armadura completa. Gitleaks v8.30.1 con `.gitleaks.toml` sobre un clon de la rama: 18 commits, `no leaks found`. | 2026-10-13 |
+
+## CI del pull request de B00-H03 (T046)
+
+| Run | Estado del PR | Resultado | Enlace |
+|---|---|---|---|
+| 1 (commit `fc2c739`) | borrador | `0 · deteccion`, `1 · lint-backend`, `2 · test-backend` y `3 · secretos` pasan; los jobs pesados y `perfil-consolidado` quedan *skipped*. Se esperó a que terminara antes de marcar el PR como listo. | [ci 38338287455](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38338287455) |
+| 2 (commit `fc2c739`) | listo para revisión | `perfil-consolidado` pasa (T043). En la CI falla `4 · sca` por Jackson 2.21.5 en `plataforma:pruebas`; los demás jobs pasan. | [ci 38339003134](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38339003134), [perfil-consolidado 38339003145](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38339003145) |
+| 3 (commit `76be128`) | listo para revisión | Con Jackson 2.21.7: `0 · deteccion`, `1 · lint-backend`, `2 · test-backend`, `2 · test-integracion`, `3 · secretos`, `4 · sbom-backend` y `4 · sca` pasan; los tres jobs de frontend quedan *skipped* (D-29). | [ci 38340485634](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38340485634) |
+
+## Fusión del PR de B00-H03 (T047)
+
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| Fusión con *squash* | confirmada | [PR #86](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/pull/86) fusionado con *squash*, con la aprobación del autor, el 2026-10-13 a las 03:52 UTC: commit `70656c6` en `main`. Antes de fusionar: último commit `76be128`, `mergeStateStatus: CLEAN` y la CI completa en verde (run 3). Rama borrada. | 2026-10-13 |
+| Perfil consolidado sobre `main` | confirmada | `gh workflow run perfil-consolidado.yml --ref main` ([run 38343802408](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38343802408)): éxito, con la autenticación de punta a punta y la medición de abajo. | 2026-10-13 |
 
 ## Notas
 
