@@ -93,5 +93,11 @@ Pendiente: el workflow corre cuando el pull request quede listo para revisión.
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Registros del perfil (T044) | confirmada | Después de iniciar sesión con `autor.prueba` y usar el token: en los 228 líneas de `docker compose logs`, 0 apariciones del token, 0 de su firma, 0 de la contraseña de prueba y 0 de `PRIVATE KEY`. Solo constan el aviso de llave efímera y la creación del usuario de prueba, sin datos sensibles. | 2026-10-13 |
+| Repositorio (T044) | confirmada | `git grep -nE -e '-----BEGIN [A-Z ]*PRIVATE KEY-----'` → sin resultados. La búsqueda de la tarea (`'BEGIN .*PRIVATE KEY'`) daba 4 falsos positivos (la armadura partida de `LlavesDeFirmaTest`, su comentario y las dos líneas que documentan la búsqueda), así que el quickstart y la tarea usan ahora la armadura completa. Gitleaks v8.30.1 con `.gitleaks.toml` sobre un clon de la rama: 18 commits, `no leaks found`. | 2026-10-13 |
 
 ## Notas
+
+- **JavaDoc (T045):** todas las clases nuevas de `plataforma/seguridad`, `plataforma/pruebas`, el API Gateway y los servicios tienen JavaDoc en español, y ninguna usa `@author`. `spotlessCheck` pasa y `git status` no muestra archivos temporales. El README de las plantillas explica cómo agregar un contrato a un servicio.
+- **Controladores con `@RestController`:** las tareas pedían que la infraestructura creara todos los adaptadores con `@Bean`. Los controladores sí se detectan por escaneo, porque solo dependen de puertos y de `JWKSet`, no de la infraestructura. Los adaptadores de salida sí los crea la infraestructura.
+- **Herramientas en contenedor:** actionlint, shellcheck, Gitleaks y el CLI de openapi-generator corrieron sobre copias en el directorio temporal de la sesión, nunca montando el repositorio con `:z`.

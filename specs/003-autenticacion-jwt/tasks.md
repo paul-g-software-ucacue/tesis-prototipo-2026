@@ -293,8 +293,8 @@ description: "Tareas de B00-H03: autenticación JWT de punta a punta"
 
 ## Phase 6: Polish & cierre
 
-- [ ] T044 Búsquedas de secretos (quickstart §4) sobre el perfil levantado, después de `probar_autenticacion.sh`. En `docker compose logs`, 0 apariciones del token obtenido, 0 de la contraseña de prueba y 0 de `PRIVATE KEY`. `git grep -n 'BEGIN .*PRIVATE KEY'` no debe dar resultados. Gitleaks local con `.gitleaks.toml`, sobre un clon en el directorio temporal: `no leaks found`. Anotar en `specs/003-autenticacion-jwt/evidencia.md`.
-- [ ] T045 Revisar el JavaDoc (principio XII) de `plataforma/seguridad`, `plataforma/pruebas`, la configuración del API Gateway, y el dominio, los puertos y la infraestructura de Usuarios. Además:
+- [X] T044 Búsquedas de secretos (quickstart §4) sobre el perfil levantado, después de `probar_autenticacion.sh`. En `docker compose logs`, 0 apariciones del token obtenido, 0 de la contraseña de prueba y 0 de `PRIVATE KEY`. `git grep -nE -e '-----BEGIN [A-Z ]*PRIVATE KEY-----'` no debe dar resultados. Gitleaks local con `.gitleaks.toml`, sobre un clon en el directorio temporal: `no leaks found`. Anotar en `specs/003-autenticacion-jwt/evidencia.md`.
+- [X] T045 Revisar el JavaDoc (principio XII) de `plataforma/seguridad`, `plataforma/pruebas`, la configuración del API Gateway, y el dominio, los puertos y la infraestructura de Usuarios. Además:
   - en `backend/plantillas/README.md`, explicar cómo agregar un contrato a un servicio (`id 'mdd.contrato'` y `contratos/<servicio>/openapi.yaml`);
   - ejecutar `spotlessApply`;
   - comprobar con `git status` que no hay archivos temporales.
