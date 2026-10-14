@@ -4,3 +4,50 @@
 plugins {
     id 'mdd.servicio'
 }
+
+def versionBouncyCastle = providers.gradleProperty('versionBouncyCastle').get()
+def versionPdfbox = providers.gradleProperty('versionPdfbox').get()
+def versionOpenHtmlToPdf = providers.gradleProperty('versionOpenHtmlToPdf').get()
+def versionVeraPdf = providers.gradleProperty('versionVeraPdf').get()
+
+testing {
+    suites {
+        test {
+            dependencies {
+                // Solo en pruebas: spike B00-S01 (D-44). No entran al runtimeClasspath ni a la imagen.
+                implementation "org.apache.pdfbox:pdfbox:${versionPdfbox}"
+                implementation "org.bouncycastle:bcpkix-jdk18on:${versionBouncyCastle}"
+                implementation "io.github.openhtmltopdf:openhtmltopdf-pdfbox:${versionOpenHtmlToPdf}"
+                implementation "org.verapdf:validation-model:${versionVeraPdf}"
+            }
+        }
+    }
+}
+
+// veraPDF usa JAXB 2.3 (javax.xml.bind); el BOM de Spring Boot sube jaxb-impl y jaxb-core a la
+// 4.x (jakarta) y veraPDF ya no carga sus perfiles. Solo en el classpath de las pruebas: la
+// jaxb-impl 2.3.9 ya incluye el núcleo, así que jaxb-core se excluye.
+configurations.named('testRuntimeClasspath') {
+    exclude group: 'com.sun.xml.bind', module: 'jaxb-core'
+    resolutionStrategy.eachDependency { detalle ->
+        if (detalle.requested.group == 'com.sun.xml.bind' && detalle.requested.name == 'jaxb-impl') {
+            detalle.useVersion '2.3.9'
+            detalle.because 'veraPDF necesita JAXB 2.3 (javax.xml.bind), no la 4.x del BOM'
+        }
+        if (detalle.requested.group == 'javax.xml.bind' && detalle.requested.name == 'jaxb-api') {
+            detalle.useVersion '2.3.1'
+            detalle.because 'la versión estable de la API de JAXB 2.3'
+        }
+    }
+}
+
+// Modo local de D-43: -D llega a la JVM de Gradle, no a la de las pruebas; se reenvían las rutas
+// de los PDF firmados y de la raíz solo si están definidas.
+tasks.named('test') {
+    ['mdd.firma.pdf0', 'mdd.firma.pdf1', 'mdd.firma.pdf2', 'mdd.firma.raiz'].each { nombre ->
+        def valor = providers.systemProperty(nombre)
+        if (valor.isPresent()) {
+            systemProperty nombre, valor.get()
+        }
+    }
+}
