@@ -71,7 +71,7 @@ description: "Tareas de B00-S01: prueba temprana de firma con FirmaEC y validaci
 
   Trabaja en un directorio temporal y borra la llave de la CA al terminar. Validar con shellcheck, sobre una copia.
 - [X] T007 [US1] Ejecutar `generar.sh` y verificar con `openssl pkcs12` y `openssl verify -CAfile ca-prueba.crt` que los tres certificados se encadenan a la CA y tienen las extensiones esperadas. Correr Gitleaks local sobre un clon con los archivos, para confirmar que la carpeta `ca-prueba/` se acepta. Anotar en `evidencia.md`.
-- [ ] T008 [US1] (autor) **Después de T010**, firmar con FirmaEC una copia desechable de `pdfa-prueba.pdf` con cada uno de los tres certificados, según [contracts/procedimiento-firma.md](contracts/procedimiento-firma.md). Primero con la variante moderna y, si falla, con la `-legacy`. Las copias no se guardan en el repositorio. Anotar en la sección «escenario 1» de `evidencia.md`:
+- [X] T008 [US1] (autor) **Después de T010**, firmar con FirmaEC una copia desechable de `pdfa-prueba.pdf` con cada uno de los tres certificados, según [contracts/procedimiento-firma.md](contracts/procedimiento-firma.md). Primero con la variante moderna y, si falla, con la `-legacy`. Las copias no se guardan en el repositorio. Anotar en la sección «escenario 1» de `evidencia.md`:
   - la versión de FirmaEC y cómo se instaló en Fedora;
   - si firma con cada certificado, con qué variante, y el mensaje exacto si no.
 
@@ -90,7 +90,7 @@ description: "Tareas de B00-S01: prueba temprana de firma con FirmaEC y validaci
   - lo valida con veraPDF (`PDFAFlavour.PDFA_2_B`) y falla si no es conforme, con las reglas que no cumple;
   - escribe una copia en `backend/servicios/firma/build/spike-firma/pdfa-prueba.pdf` (ruta desde la raíz; la misma en research, el procedimiento y el quickstart).
 - [X] T010 [US2] Ejecutar `PdfaDePruebaTest`, copiar el PDF a `F/resources/ca-prueba/pdfa-prueba.pdf` y anotar en `evidencia.md` el resultado de veraPDF, el tamaño y el SHA-256.
-- [ ] T011 [US2] (autor) Firmar con FirmaEC según el procedimiento:
+- [X] T011 [US2] (autor) Firmar con FirmaEC según el procedimiento:
   - `pdfa-prueba.pdf` con `firmante-1.p12` → `pdfa-firmado-1.pdf`;
   - ese resultado con `firmante-2.p12` → `pdfa-firmado-2.pdf`.
 
@@ -129,7 +129,7 @@ description: "Tareas de B00-S01: prueba temprana de firma con FirmaEC y validaci
 
   JavaDoc del contrato y de lo que no comprueba (orden, rol, sello de tiempo, LTV y DocMDP). Así pasa T013.
 - [X] T015 [US3] En `FirmasFirmaecTest`, la parte del escenario 3: las 2 firmas de `pdfa-firmado-2.pdf` son íntegras, con cadena válida hasta `ca-prueba.crt` y vigentes; y los CN son los de F1 y F2. En modo local, la raíz sale de `-Dmdd.firma.raiz`, y la salida imprime cada comprobación sin el CN real.
-- [ ] T016 [US3] Ejecutar `./gradlew :servicios:firma:spotlessApply :servicios:firma:test`, o el modo local según D-43, y anotar en `evidencia.md`, secciones «escenario 2» y «escenario 3»:
+- [X] T016 [US3] Ejecutar `./gradlew :servicios:firma:spotlessApply :servicios:firma:test`, o el modo local según D-43, y anotar en `evidencia.md`, secciones «escenario 2» y «escenario 3»:
   - la comparación de bytes;
   - la cantidad de firmas;
   - el resultado por firma;

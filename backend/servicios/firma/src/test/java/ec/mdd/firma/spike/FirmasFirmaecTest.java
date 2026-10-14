@@ -86,11 +86,13 @@ class FirmasFirmaecTest {
     }
 
     @Test
-    void escenario2LaPrimeraFirmaEsUnaRevisionCerrada() throws IOException {
-        int[] primera = ValidadorPadesDePrueba.byteRanges(dosFirmas).getFirst();
-        int[] ultima = ValidadorPadesDePrueba.byteRanges(dosFirmas).getLast();
+    void escenario2LaFirmaAnteriorEsUnaRevisionCerrada() throws IOException {
+        // La penúltima firma es la que trae el primer archivo: su ByteRange termina donde termina.
+        List<int[]> rangos = ValidadorPadesDePrueba.byteRanges(dosFirmas);
+        int[] anterior = rangos.get(rangos.size() - 2);
+        int[] ultima = rangos.getLast();
 
-        assertThat((long) primera[2] + primera[3]).isEqualTo(unaFirma.length);
+        assertThat((long) anterior[2] + anterior[3]).isEqualTo(unaFirma.length);
         assertThat((long) ultima[2] + ultima[3]).isEqualTo(dosFirmas.length);
     }
 
@@ -99,8 +101,9 @@ class FirmasFirmaecTest {
         List<ResultadoFirma> resultados = validador.validar(dosFirmas, raiz, intermedios);
 
         resultados.forEach(r -> System.out.println(modoLocal ? r.resumenSinFirmante() : r));
+        // En la CI son 2 (F1 y F2, ver abajo); en modo local, todas las del documento.
         assertThat(resultados)
-                .hasSize(2)
+                .hasSize(ValidadorPadesDePrueba.cantidadDeFirmas(dosFirmas))
                 .allSatisfy(
                         r ->
                                 assertThat(r.esValida())
