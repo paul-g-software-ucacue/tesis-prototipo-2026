@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-46 · ADR-017.
+- **Siguiente número libre:** D-47 · ADR-018.
 
 ## Índice
 
@@ -37,6 +37,8 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-43 | 2026-10-13 | Si FirmaEC no acepta la CA de prueba, el spike sigue con el certificado real solo en local | Aceptada | Alcance del issue #26 |
 | D-44 | 2026-10-13 | La validación del spike queda como prueba automática del servicio Firma | Aceptada | Alcance del issue #26 |
 | D-45 | 2026-10-13 | El spike B00-S01 dura 2 días de trabajo | Aceptada | Alcance del issue #26 |
+| D-46 | 2026-10-13 | Comprobación de la sección 8: PDFBox y Bouncy Castle validan las firmas de FirmaEC | Aceptada | Constitución, sección 8 (2.1.0 → 2.1.1) |
+| ADR-017 | 2026-10-13 | Firmantes y confianza por entorno: un solo firmante real en las pruebas del autor | Aceptada | D-23 (detalle de la configuración); ADR-004 (árbol de firmas, sin cambios en producción) |
 
 ---
 
@@ -467,6 +469,77 @@ Se conservan las reglas que ya tenía: prohibido borrar `main` o reescribir su h
 **Alternativas.** 1 día (muy justo si hay que instalar FirmaEC); una semana.
 
 **Consecuencias.** Ninguna sobre otras historias.
+
+---
+
+## D-46. Comprobación de la sección 8: PDFBox y Bouncy Castle validan las firmas de FirmaEC
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-13 · **Decidido por:** autor de la tesis
+- **Origen:** resultado del spike B00-S01 (`specs/005-spike-firmaec/evidencia.md`, issue #26)
+- **Modifica a:** constitución, sección 8 (enmienda de parche 2.1.0 → 2.1.1)
+- **Relacionadas:** D-23, D-43 a D-45, ADR-007, ADR-017
+
+**Decisión.** La comprobación «PDFBox y Bouncy Castle validan un PDF/A firmado con FirmaEC» queda **confirmada**. D-23 se mantiene sin cambios.
+
+**Por qué.** Con FirmaEC 5.3.0 y el certificado real del autor (BCE), por el camino de D-43, se firmó tres veces de forma incremental el PDF/A-2b de prueba. Un validador de prueba hecho con PDFBox 3.0.8 y Bouncy Castle 1.86 comprobó:
+- el prefijo de bytes;
+- que hay una firma más en cada revisión y que la revisión anterior queda cerrada;
+- la integridad sobre cada ByteRange;
+- la cadena hasta la raíz del BCE, tomada de un archivo;
+- la vigencia.
+
+Con otra raíz, la cadena se rechaza, y los casos negativos (byte alterado, otra raíz, certificado vencido) se detectan.
+
+**Hallazgos que pasan a F14:**
+1. FirmaEC solo firma con certificados de entidades acreditadas que conoce: rechaza la CA de prueba con «Entidad Certificadora no reconocida».
+2. FirmaEC usa `adbe.pkcs7.detached`, con un `/Contents` de 16 384 bytes y la cadena completa dentro del CMS.
+3. Bouncy Castle 1.86 rechaza el relleno de ceros que queda después del CMS en `/Contents`: hay que leer un solo objeto ASN.1.
+4. La integridad se verifica con la llave pública. Si se verifica con el certificado, Bouncy Castle también exige que esté vigente y mezcla las dos comprobaciones.
+5. veraPDF necesita JAXB 2.3, y el BOM de Spring Boot 4.1 trae la 4.x.
+
+**Alternativas.** Registrar la comprobación como fallida y cambiar D-23, que no hizo falta.
+
+**Consecuencias.**
+- La sección 8 de la constitución marca la fila como confirmada.
+- El validador y las pruebas de `ec.mdd.firma.spike` quedan como punto de partida de F14 (D-44).
+- Cómo firman la demo y las pruebas lo decide ADR-017.
+
+---
+
+## ADR-017. Firmantes y confianza por entorno: un solo firmante real en las pruebas del autor
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-13 · **Decidido por:** autor de la tesis
+- **Origen:** resultado del spike B00-S01 (escenario 1, issue #26)
+- **Modifica a:** D-23 y ADR-004 solo en el detalle de su configuración; las reglas no cambian
+- **Relacionadas:** D-19, D-23, D-43, D-46, ADR-004, ADR-007; principios VI y IX; constitución, sección 3
+
+**Contexto.**
+- FirmaEC rechaza la CA de prueba, así que los firmantes ficticios de la demo no pueden firmar con FirmaEC.
+- El autor tiene un solo certificado real, y el flujo pide tres roles de firma (F1, F2 y F3).
+- Una prueba automática de punta a punta no puede manejar FirmaEC, que es una aplicación de escritorio.
+
+Hay que poder probar el flujo completo de creación del distributivo sin debilitar la validación de D-23.
+
+**Decisión.**
+1. **La validación de D-23 no cambia en ningún entorno:** prefijo de bytes, una sola firma nueva, orden, rol, integridad, vigencia, cadena contra raíces en un archivo e identidad por el CN. No se agrega ningún interruptor para apagarla.
+2. **Una misma persona puede ocupar F1, F2 y F3.** Ni D-19, ni D-23, ni la constitución exigen personas distintas. Exigen los roles, el orden y que el CN del certificado coincida con el usuario asignado al rol. En la instalación de pruebas del autor, el árbol de firmas asigna los tres roles al autor, y él firma tres veces con su certificado real con FirmaEC. El spike comprobó que FirmaEC firma tres veces seguidas con el mismo certificado y que la validación acepta las tres firmas.
+3. **Esa asignación no se versiona.** El CN real es un dato personal (principio IX), así que los usuarios reales y su asignación a los roles se cargan desde un archivo local fuera del repositorio, como los secretos. En el repositorio solo hay usuarios y certificados ficticios.
+4. **La confianza depende del entorno**, a través del archivo de raíces de D-23:
+   - en la instalación de pruebas del autor y en la demo con FirmaEC, las raíces de las entidades acreditadas que se usen (por ejemplo, la del BCE);
+   - en la CI y en las pruebas automáticas de punta a punta, la CA de prueba (`ca-prueba.crt`). En ese caso firma el código de prueba (`FirmadorDePrueba`) con los certificados ficticios F1, F2 y F3, cuyos CN coinciden con los usuarios de prueba;
+   - en producción, las raíces de las entidades acreditadas, y el árbol con las personas reales de cada rol.
+
+**Por qué.** Permite probar a mano el flujo completo con un solo certificado real y deja las pruebas automáticas sin depender de FirmaEC, sin ninguna excepción en la validación: lo que cambia por entorno son datos (principio VI). No guarda datos personales en el repositorio (principio IX).
+
+**Alternativas.**
+- Un interruptor que apague la validación del firmante en demo y en pruebas: descartado, porque las pruebas dejarían de cubrir la identidad y el interruptor podría quedar encendido en producción.
+- Conseguir tres certificados reales de personas distintas: depende de terceros, y las pruebas automáticas seguirían sin poder manejar FirmaEC.
+- Darle a la CA de prueba el nombre de una entidad acreditada: descartado, porque sería suplantar a una organización real.
+
+**Consecuencias.**
+- F14 lee el archivo de raíces y el árbol de firmas de la configuración de cada entorno, y carga desde un archivo local no versionado los usuarios reales de la instalación del autor.
+- Las pruebas de punta a punta firman con `FirmadorDePrueba` y la CA de prueba.
+- La guía de instalación de la demo explica cómo asignar los tres roles al certificado del autor.
 
 ---
 

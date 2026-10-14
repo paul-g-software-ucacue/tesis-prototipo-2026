@@ -1,11 +1,12 @@
 # Constitución del desarrollo del MDD
 
-- **Versión:** 2.1.0, enmienda menor del 12/10/2026 (D-36): el despliegue pasa de una VM de 2 vCPU y 4 GB a un servidor o PC de 4 núcleos y 8 GiB de RAM (principio V, secciones 3 y 8). Los límites de memoria por JVM y por contenedor siguen siendo obligatorios. No cambia la regla de ningún principio.
+- **Versión:** 2.1.1, enmienda de parche del 13/10/2026 (D-46): en la sección 8, la comprobación «PDFBox y Bouncy Castle validan un PDF/A firmado con FirmaEC» queda confirmada por el spike B00-S01; D-23 no cambia. Cómo firman la demo y las pruebas lo fija ADR-017.
+- **Versión 2.1.0:** enmienda menor del 12/10/2026 (D-36): el despliegue pasa de una VM de 2 vCPU y 4 GB a un servidor o PC de 4 núcleos y 8 GiB de RAM (principio V, secciones 3 y 8). Los límites de memoria por JVM y por contenedor siguen siendo obligatorios. No cambia la regla de ningún principio.
 - **Versión 2.0.1:** enmienda de parche del 11/10/2026 (D-33): en la sección 8, el formateador de Spotless pasa a ser google-java-format en estilo AOSP, porque palantir-java-format no soporta toda la sintaxis de Java 25. No cambia ningún principio.
 - **Versión 2.0.0:** enmienda mayor del 11/10/2026 (D-32): el principio VIII deja de exigir el 80 % de cobertura en el dominio central y queda un solo umbral, el 60 % por módulo. También se aclara que las decisiones desde D-28 y los ADR desde ADR-012 se registran en `docs/decisiones.md`.
 - **Versión 1.0.1:** enmienda de parche del 11/10/2026 (D-28): en la sección 3, «JUnit 5» pasa a «JUnit Jupiter 6», la versión que fija el BOM de Spring Boot (6.0.3 con Spring Boot 4.1.1). Se detectó al planificar B00-H01 y no cambia ningún principio.
 - **Versión 1.0:** ratificada el 11/10/2026. Cambios desde la 0.5: se cierran los pendientes de ratificación; el repositorio privado y el proyecto de GitHub Projects ya existen (pendiente 6), y las comprobaciones técnicas que quedaban pasan a ser criterios de las historias de la ola 0 (sección 8).
-- **Fecha:** 12/10/2026 (versión 2.1.0)
+- **Fecha:** 13/10/2026 (versión 2.1.1)
 - **Autor:** el autor de la tesis
 - **Uso:** al iniciar el desarrollo con SDD (desarrollo guiado por especificaciones), este texto se copia como constitución del proyecto (por ejemplo, `.specify/memory/constitution.md` si se usa Spec Kit) y se ratifica según la sección 8.
 - **Fuentes:** ERS v2.1 (`ERS_MDD_Requerimientos.md`), anexo de firmas (`Diseno_firmas_cadena_aprobacion.md`), ADR-001 a ADR-011 (`lean_inception/adr/`), matriz de decisiones D-01 a D-27 (copiada en el anexo A de `docs/decisiones.md`), registro de decisiones desde D-28 y ADR desde ADR-012 (`docs/decisiones.md`), estándares de ingeniería backend del autor (`sdd/fuentes/estandares_backend_autor.md`), modelo de dominio (`sdd/modelo_dominio.md`), metodología de desarrollo (`sdd/metodologia_desarrollo.md`), pipeline de CI/CD (`sdd/pipeline_cicd.md`) y paquete de entrada al Lean Inception (`paquete_lean_inception/`).
@@ -302,7 +303,7 @@ La constitución se ratificó el 11/10/2026. Los pendientes 1 a 4, 6 y 8 de la v
 
 | Comprobación | Historia |
 |---|---|
-| PDFBox y Bouncy Castle validan un PDF/A firmado con FirmaEC (antes pendiente 5) | B00-S01 |
+| PDFBox y Bouncy Castle validan un PDF/A firmado con FirmaEC (antes pendiente 5). Confirmada (D-46): tres firmas incrementales de FirmaEC 5.3.0 pasan el prefijo de bytes, la integridad, la cadena contra una raíz en un archivo y la vigencia. FirmaEC no acepta la CA de prueba; la demo y las pruebas firman según ADR-017. | B00-S01 |
 | Cinco JVM y PostgreSQL caben en 8 GiB (R-19, antes pendiente 5; D-36) | B00-H02 |
 | El formateador de Spotless y SpotBugs funcionan con Java 25, y Spring Modulith 2.1 es la línea para Spring Boot 4.1 (ADR-011, antes pendiente 7). palantir-java-format falló en parte con Java 25 y se reemplazó por google-java-format en estilo AOSP (D-33). | B00-H01 |
 | El esquema `Error` común y el formato del catálogo de códigos están escritos en `contratos/` (principio XIII, antes pendiente 9) | B00-H04 |

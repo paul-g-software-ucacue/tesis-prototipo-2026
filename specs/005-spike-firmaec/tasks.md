@@ -143,8 +143,8 @@ description: "Tareas de B00-S01: prueba temprana de firma con FirmaEC y validaci
 
 **Independent Test**: el issue #26 tiene el comentario con el resultado; la sección 8 dice «confirmada», o hay un ADR.
 
-- [ ] T017 [US4] Completar `specs/005-spike-firmaec/evidencia.md`: el estado de cada escenario (funcionó, no funcionó o pendiente), las tareas que quedaron pendientes si se cumplió el tiempo, y el tiempo usado.
-- [ ] T018 [US4] Según el resultado:
+- [X] T017 [US4] Completar `specs/005-spike-firmaec/evidencia.md`: el estado de cada escenario (funcionó, no funcionó o pendiente), las tareas que quedaron pendientes si se cumplió el tiempo, y el tiempo usado.
+- [X] T018 [US4] Según el resultado:
   - **si los escenarios 2 y 3 funcionaron:** registrar D-46, «Comprobación de la sección 8: PDFBox y Bouncy Castle validan las firmas de FirmaEC», con los datos de la evidencia, y agregar a esa fila de la sección 8 de la constitución «Confirmada (D-46): …», como en la fila de B00-H01. Es una enmienda de parche (§7): versión 2.1.0 → 2.1.1, con su entrada en el historial de versiones al inicio, y la fecha actualizada. Si FirmaEC rechazó la CA de prueba, D-46 también dice cómo se resuelven los certificados de la demo, o abre un ADR para eso;
   - **si no funcionaron:** proponer al autor un ADR que cambie D-23 y registrarlo antes de cerrar (FR-010).
 - [ ] T019 [US4] **Con la aprobación del autor**, publicar en el issue #26 un comentario con el resumen del resultado por escenario y el enlace a `evidencia.md` (FR-009).

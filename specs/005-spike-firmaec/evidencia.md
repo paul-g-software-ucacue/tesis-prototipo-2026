@@ -113,11 +113,30 @@ Esto confirma que la CA, los `.p12` (moderno y legacy), el PDF/A y el validador 
 
 ## Escenario 4 · Resultado del spike
 
-**Estado:** pendiente
+**Estado:** **funcionó**.
+
+| Escenario | Resultado |
+|---|---|
+| 1 · Certificados de la demo | **No funcionó:** FirmaEC rechaza la CA de prueba («Entidad Certificadora no reconocida») |
+| 2 · Firma incremental | **Funcionó** con el certificado real (D-43): cada archivo empieza con los bytes exactos del anterior |
+| 3 · Validación con PDFBox y Bouncy Castle | **Funcionó:** integridad, cadena hasta la raíz del BCE y vigencia de las 3 firmas; los casos negativos se detectan |
+
+- **D-23 no cambia.** La comprobación de la sección 8 de la constitución queda confirmada (D-46, enmienda 2.1.1).
+- **ADR-017 resuelve el escenario 1:**
+  - la validación es la misma en todos los entornos;
+  - en la instalación de pruebas del autor, una misma persona ocupa F1, F2 y F3 con su certificado real, y esa asignación se carga desde un archivo local no versionado;
+  - la CI y las pruebas de punta a punta firman con `FirmadorDePrueba` y la CA de prueba.
+- **Hallazgos para F14:** en D-46 (relleno de `/Contents`, verificación con la llave pública, JAXB para veraPDF, formato de las firmas de FirmaEC).
 
 ## Tiempo usado
 
 | Día | Trabajo |
 |---|---|
+| 13/10/2026 | Especificación, plan, tareas y análisis; CA de prueba, PDF/A y validador; prueba en FirmaEC; firmas reales y validación; cierre |
+
+Dentro del tiempo fijo de 2 días (D-45, SC-005): se cerró en 1 día calendario. No quedaron tareas pendientes del spike.
 
 ## Notas
+
+- Las tres firmas reales son del mismo certificado, porque el autor tiene uno solo. Es la desviación prevista en D-43, y ADR-017 la adopta para las pruebas del autor.
+- No se comprobó si el PDF sigue cumpliendo PDF/A-2b después de firmarlo con FirmaEC. No estaba en el alcance del spike y queda como pregunta para F13 y F14.
