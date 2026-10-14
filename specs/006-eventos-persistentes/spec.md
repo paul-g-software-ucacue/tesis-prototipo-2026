@@ -163,7 +163,7 @@ Escenario: Entrega repetida
 - **SC-003**: Después de que el proceso de identidad vuelve, el 100 % de las publicaciones pendientes quedan registradas y completadas en menos de dos ciclos de la tarea programada.
 - **SC-004**: Un mismo evento entregado N veces, seguidas o simultáneas, queda registrado exactamente una vez, y las N entregas se confirman.
 - **SC-005**: Ninguna transacción que se revierte deja una publicación, comprobado con al menos un caso automático.
-- **SC-006**: Una entrega sin token, con un token vencido o con el token de un usuario responde 401 o 403 y no registra el evento; la ruta del receptor responde 404 a través del API Gateway.
+- **SC-006**: Una entrega sin token, con un token vencido o con el token de un usuario responde 401 o 403 y no registra el evento; a través del API Gateway, la ruta del receptor nunca llega al proceso: responde 401 sin token y 403 con token.
 - **SC-007**: La memoria del perfil consolidado sigue por debajo de la alerta de 7 GiB de R-19 con el mecanismo activo (D-36).
 
 ## Assumptions
