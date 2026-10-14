@@ -2,7 +2,7 @@
 
 **Issue:** #26 · **Rama:** `005-spike-firmaec` · **Tiempo fijo:** 2 días de trabajo (D-45)
 
-Resultado de cada escenario: **funcionó**, **no funcionó** o **pendiente**. Nada de lo que aparece aquí proviene de un certificado real; si se usó el camino de D-43, solo se registran la comparación de bytes y el resultado de la validación, sin el CN real.
+Resultado de cada escenario: **funcionó**, **no funcionó** o **pendiente**. Aquí no hay datos personales. Los escenarios 2 y 3 siguieron el camino de D-43 con el certificado real del autor: se registran solo los tamaños, la comparación de bytes, el resultado de la validación y los datos públicos de la entidad emisora, nunca el CN del titular. Los PDF firmados y el certificado quedan fuera del repositorio.
 
 ## Entorno
 
@@ -16,7 +16,7 @@ Resultado de cada escenario: **funcionó**, **no funcionó** o **pendiente**. Na
 
 ## Escenario 1 · Certificados de la demo
 
-**Estado:** pendiente (falta la prueba en FirmaEC, T008)
+**Estado:** **no funcionó**: FirmaEC rechaza la CA de prueba con «Entidad Certificadora no reconocida».
 
 **Preparación (T006 y T007).** `generar.sh` creó la CA «CA de Prueba MDD Demo» (RSA 3072, vigente hasta el 10/10/2036, `CA:TRUE`, `keyCertSign, cRLSign`) y tres firmantes ficticios (RSA 2048, vigentes hasta el 12/10/2029, `digitalSignature, nonRepudiation`). La llave de la CA se borró al terminar.
 
@@ -28,22 +28,43 @@ Resultado de cada escenario: **funcionó**, **no funcionó** o **pendiente**. Na
 - Shellcheck sobre una copia de `generar.sh`: sin observaciones.
 - Gitleaks 8.30.1 con `.gitleaks.toml` sobre un clon: `no leaks found`. Control: sin la lista permitida, los mismos archivos dan 6 hallazgos, así que lo que los admite es la carpeta `ca-prueba/`.
 
-**Prueba en FirmaEC (T008):** pendiente del autor.
-
 **Qué cabe esperar, por la inspección del paquete** (sin ejecutarlo):
 - FirmaEC reconoce por el nombre del emisor a las entidades acreditadas (BCE, Security Data, ANF AC, Uanataca, Datil, Lazzate y otras) y tiene un caso «desconocido» para las demás.
 - Consulta en línea si el certificado está revocado (`/certificado/fechaRevocado`).
 - Con la CA de prueba, puede firmar tratándola como emisor desconocido, o rechazarla con `CertificadoInvalidoException`. Eso es lo que responde este escenario.
 
-| Certificado | Variante | ¿FirmaEC firma? | Mensaje |
-|---|---|---|---|
-| F1 | | | |
-| F2 | | | |
-| F3 | | | |
+**Prueba en FirmaEC 5.3.0 (T008, 13/10/2026):** «Firmar Documento» → «Certificado en: Archivo» → `.p12` de la CA de prueba con su contraseña → diálogo de error **«Entidad Certificadora no reconocida»** (captura del autor).
+
+- FirmaEC pudo abrir el archivo, porque leyó el emisor, así que no es un problema de formato y la variante `-legacy` no cambia nada.
+- Los tres certificados tienen el mismo emisor, por lo que el resultado es el mismo para F1, F2 y F3.
+- Se confirma lo que mostraba la inspección: FirmaEC solo acepta las entidades acreditadas que conoce.
+- Descartado: poner a la CA de prueba el nombre de una entidad acreditada. Sería suplantar a una organización real, y además FirmaEC consulta la revocación en línea.
+
+**Consecuencia:** los firmantes ficticios de la demo no pueden firmar con FirmaEC. Se decide en el escenario 4 (ADR).
 
 ## Escenario 2 · Firma incremental
 
-**Estado:** pendiente (falta firmar con FirmaEC, T011)
+**Estado:** **funcionó**, por el camino de D-43: con el certificado real del autor, solo en local y fuera del repositorio.
+
+**Firma con FirmaEC (T011, 13/10/2026).** El autor firmó tres veces seguidas con su certificado, cada vez sobre el resultado anterior. Desviación: las tres firmas son del mismo certificado, porque el autor tiene uno solo.
+- **Opciones:** firma visible con código QR y el texto «Firmado electrónicamente por…», en tres posiciones de la página (abajo a la izquierda, abajo a la derecha y abajo al centro).
+- **Firma:** `SubFilter /adbe.pkcs7.detached`; `/Contents` reservado de 16 384 bytes, con un CMS de 11 039 bytes que incluye la cadena completa (raíz y AC del BCE).
+- **Emisor:** AC BANCO CENTRAL DEL ECUADOR.
+
+| Archivo (fuera del repositorio) | Tamaño | Firmas |
+|---|---|---|
+| `pdfa-prueba.pdf` (original) | 18 742 bytes | 0 |
+| `firmado-1.pdf` | 73 667 bytes | 1 |
+| `firmado-2.pdf` | 128 448 bytes | 2 |
+| `firmado-3.pdf` | 183 236 bytes | 3 |
+
+**Resultado de `FirmasFirmaecTest` en modo local (T016)**, en dos tramos: original → 1 → 2 y 1 → 2 → 3. En cada tramo, 4 de 4 pruebas en verde:
+- cada archivo empieza con los bytes exactos del anterior;
+- cada archivo tiene una firma más;
+- el ByteRange de la firma anterior termina justo donde termina el archivo anterior (revisión cerrada);
+- la última firma cubre hasta el final del archivo.
+
+**Los PDF firmados se guardaron primero por error dentro del repositorio** (`ca-prueba/` y `resources/spike/`). Nunca se agregaron a Git y se movieron a `~/spike/` antes de cualquier commit.
 
 **PDF/A de prueba (T009 y T010).** `PdfaDePruebaTest` lo genera con OpenHTMLtoPDF 1.1.87 (PDF 1.6, DejaVu Sans incrustada, perfil sRGB, XMP con `pdfaid:part=2` y `pdfaid:conformance=B`), y veraPDF 1.30.2 lo da **conforme a PDF/A-2b**. Control: un PDF común de PDFBox no pasa.
 
@@ -61,7 +82,20 @@ Esto confirma que la CA, los `.p12` (moderno y legacy), el PDF/A y el validador 
 
 ## Escenario 3 · Validación con las librerías del stack
 
-**Estado:** pendiente (validador listo; falta correrlo sobre las firmas de FirmaEC, T016)
+**Estado:** **funcionó**.
+
+**Firmas reales de FirmaEC (T016, modo local, D-43).**
+- **Ancla de confianza:** la raíz del BCE que trae FirmaEC (`CaCertBce`), no la que viene en el PDF; la AC del BCE va como intermedio. Huellas SHA-256, que coinciden con las del CMS:
+  - raíz «AUTORIDAD DE CERTIFICACION RAIZ DEL BANCO CENTRAL DEL ECUADOR»: `11:C7:C5:9B:E9:D2:1D:21:6F:0E:81:51:37:8D:53:D0:3B:31:40:60:55:9A:DC:49:DA:16:1E:C4:F7:82:9B:EC`;
+  - «AC BANCO CENTRAL DEL ECUADOR» (2019-2029): `FA:E2:44:1B:47:0F:ED:69:CC:E8:62:98:48:94:1C:D7:93:0A:86:F3:5F:6A:D9:A6:8D:7F:A7:17:A2:6E:E2:D1`.
+
+| Firma | Momento (UTC) | ByteRange | Integridad | Cadena hasta la raíz del BCE | Vigencia |
+|---|---|---|---|---|---|
+| 1 | 2026-10-14 03:22:51 | válida | válida | válida | válida |
+| 2 | 2026-10-14 03:24:01 | válida | válida | válida | válida |
+| 3 | 2026-10-14 03:25:44 | válida | válida | válida | válida |
+
+**Control:** con `ca-prueba.crt` como raíz, las mismas firmas dan «cadena no válida» y el resto sigue válido. El CN del titular no se imprime ni se registra.
 
 **Casos negativos (T013 y T014), con firmas generadas en la prueba:**
 
