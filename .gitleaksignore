@@ -1,0 +1,5 @@
+# Falsos positivos ya revisados (formato: commit:archivo:regla:línea).
+# B00-S01: la regla generic-api-key toma «PrivateKey llave, X509Certificate» (declaración de un
+# record de prueba) como un secreto. Se corrigió el orden de los componentes en un commit
+# posterior; esta entrada solo cubre la historia de la rama 005-spike-firmaec.
+cd9dd0ef03daa2e31b37706a4c71d6626f33d6b8:backend/servicios/firma/src/test/java/ec/mdd/firma/spike/FirmadorDePrueba.java:generic-api-key:57

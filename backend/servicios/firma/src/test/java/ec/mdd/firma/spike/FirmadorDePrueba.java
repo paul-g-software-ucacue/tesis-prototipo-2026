@@ -54,7 +54,7 @@ final class FirmadorDePrueba {
     private static final AtomicLong SERIE = new AtomicLong(System.currentTimeMillis());
 
     /** Una llave con su certificado y la cadena que lo acompaña en el CMS. */
-    record Identidad(PrivateKey llave, X509Certificate certificado, List<X509Certificate> cadena) {}
+    record Identidad(X509Certificate certificado, PrivateKey llave, List<X509Certificate> cadena) {}
 
     private FirmadorDePrueba() {}
 
@@ -146,7 +146,7 @@ final class FirmadorDePrueba {
                         ahora.minus(Duration.ofDays(1)),
                         ahora.plus(Duration.ofDays(3650)),
                         true);
-        return new Identidad(par.getPrivate(), certificado, List.of(certificado));
+        return new Identidad(certificado, par.getPrivate(), List.of(certificado));
     }
 
     /**
@@ -173,7 +173,7 @@ final class FirmadorDePrueba {
                         desde,
                         hasta,
                         false);
-        return new Identidad(par.getPrivate(), certificado, List.of(certificado, ca.certificado()));
+        return new Identidad(certificado, par.getPrivate(), List.of(certificado, ca.certificado()));
     }
 
     private static KeyPair llaves() throws GeneralSecurityException {
