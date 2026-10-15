@@ -1,6 +1,6 @@
 # Contrato: interfaz de la SPA base
 
-Lo que garantiza la SPA en esta historia (escenarios 1 a 3; FR-001 a FR-012; D-50 y D-51). Las decisiones están en `research.md`.
+Lo que garantiza la SPA en esta historia (escenarios 1 a 3; FR-001 a FR-013; D-50 y D-51). Las decisiones están en `research.md`.
 
 ## Rutas
 

@@ -86,7 +86,7 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
 
 ## Phase 2: Foundational (bloquea a todas las historias)
 
-**Purpose**: la base de la SPA de ADR-019: cliente, traductor de errores, sesión en memoria, rutas protegidas, pantallas y marco (FR-001 a FR-011, D-50, D-51).
+**Purpose**: la base de la SPA de ADR-019: cliente, traductor de errores, sesión en memoria, rutas protegidas, pantallas y marco (FR-004 a FR-012, D-50, D-51).
 
 **⚠️ CRITICAL**: ninguna historia puede empezar sin esta fase.
 
@@ -179,7 +179,7 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
 
 ## Phase 4: User Story 2 - El usuario ve los errores en español y sin detalles técnicos (Priority: P1)
 
-**Goal**: todas las respuestas de error se muestran con el `titulo` y la `descripcion` en español y sin texto técnico, en la SPA construida (escenario 2; FR-009 a FR-011; SC-002).
+**Goal**: todas las respuestas de error se muestran con el `titulo` y la `descripcion` en español y sin texto técnico, en la SPA construida (escenario 2; FR-010 a FR-012; SC-002).
 
 **Independent Test**: `npx playwright test e2e/errores.spec.ts` en verde.
 
@@ -192,7 +192,7 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
 
 ## Phase 5: User Story 3 - La pantalla de inicio de sesión es accesible (Priority: P1)
 
-**Goal**: la pantalla de inicio de sesión no tiene fallas de WCAG 2.1 AA según axe-core, en un navegador real (escenario 3; FR-012; SC-003).
+**Goal**: la pantalla de inicio de sesión no tiene fallas de WCAG 2.1 AA según axe-core, en un navegador real (escenario 3; FR-013; SC-003).
 
 **Independent Test**: `npx playwright test e2e/accesibilidad.spec.ts` en verde.
 
@@ -216,7 +216,7 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
 
 ## Phase 6: User Story 4 - ESLint bloquea la fusión de un pull request con errores (Priority: P2)
 
-**Goal**: el check `1 · lint-frontend` corre ESLint y un error bloquea la fusión (escenario 4; FR-013 a FR-015; SC-004).
+**Goal**: el check `1 · lint-frontend` corre ESLint y un error bloquea la fusión (escenario 4; FR-014 a FR-016; SC-004).
 
 **Independent Test**: en el pull request, un commit con un error de ESLint deja `1 · lint-frontend` en rojo y la fusión bloqueada; su reversión lo deja en verde.
 
@@ -229,7 +229,7 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
 
 ## Phase 7: Transversal - imagen, perfil consolidado y Node (D-52, D-53)
 
-**Purpose**: la SPA en el perfil consolidado detrás de Nginx, medida en R-19, y Node 24 LTS en todos lados (FR-016 a FR-018; SC-005, SC-009).
+**Purpose**: la SPA en el perfil consolidado detrás de Nginx, medida en R-19, y Node 24 LTS en todos lados (FR-017 y FR-018; SC-005, SC-009).
 
 - [ ] T023 [P] Escribir `frontend/nginx.conf` como plantilla (`/etc/nginx/templates/default.conf.template`, con `MDD_URI_GATEWAY`), según contracts/perfil.md:
   - `/api/` al API Gateway, con un plazo de 30 s y las cabeceras `X-Forwarded-*`;

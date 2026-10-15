@@ -63,7 +63,7 @@ frontend/
 
 Cada historia agrega sus pantallas en `pantallas/` y sus entradas del menú en `navegacion/`.
 
-**Por qué.** Es la base común que pide la historia, con una sola carpeta por responsabilidad: sesión, errores y navegación no se repiten en cada pantalla (FR-011).
+**Por qué.** Es la base común que pide la historia, con una sola carpeta por responsabilidad: sesión, errores y navegación no se repiten en cada pantalla (FR-012).
 
 ## 3. Cliente generado (escenario 1)
 
@@ -94,7 +94,7 @@ Cada historia agrega sus pantallas en `pantallas/` y sus entradas del menú en `
 
 Los dos textos genéricos son los de `contratos/comun/errores.md`, copiados en `src/errores/mensajes.ts`, y una prueba los compara con el archivo. `AvisoDeError` (una `Alert` de MUI con `role="alert"`) muestra el título y la descripción, y el `idIncidente` como «Identificador del incidente: …». Los `detalles` se pasan a React Hook Form (`setError(campo, …)`) para mostrarlos junto a su campo. Ninguna pantalla lee el cuerpo de un error por su cuenta.
 
-**Por qué.** Es la contraparte del advice único del backend (ADR-016): el `codigo` sirve a la SPA para decidir, pero no se muestra. Así nunca aparece un estado HTTP, una traza ni el texto de una excepción (FR-009 a FR-011).
+**Por qué.** Es la contraparte del advice único del backend (ADR-016): el `codigo` sirve a la SPA para decidir, pero no se muestra. Así nunca aparece un estado HTTP, una traza ni el texto de una excepción (FR-010 a FR-012).
 
 **Alternativas.** Mostrar `error.message` de JavaScript (filtra textos técnicos); traducir por `codigo` en cada pantalla (repite y se desalinea del catálogo).
 
