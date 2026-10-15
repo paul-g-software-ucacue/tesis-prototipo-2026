@@ -69,5 +69,10 @@ Registro de las comprobaciones de los tres escenarios de la historia (issue #22)
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
 | Medición después de iniciar sesión (SC-007, T041) | confirmada | [perfil-consolidado, run 38684272539](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38684272539), sobre el PR #91, con los tres scripts de punta a punta en `OK` (autenticación 6/6, errores 4/4 y eventos 6/6). Postgres 110,6; identidad 312,3; datos 178,5; distributivo 195,7; salida 181,1; API Gateway 191,6. **Total: 1 169,8 MiB (1,14 GiB)**, sin alerta (≤ 7 GiB). En B00-H04 fueron 1 200,6 MiB: el registro de publicaciones, la tarea de reenvío y el pool asíncrono de distributivo no suben la memoria de forma medible. | 2026-10-15 |
+| Medición sobre `main` (T042) | confirmada | [perfil-consolidado, run 38687857267](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38687857267), a mano sobre `954d6fc`: autenticación, errores y eventos de punta a punta, todos en `OK`. Postgres 111,9; identidad 270,8; datos 182,4; distributivo 194,6; salida 185,7; API Gateway 197,1. **Total: 1 142,5 MiB (1,12 GiB)** de 8 GiB, sin alerta (≤ 7 GiB). | 2026-10-15 |
 
 ## Notas
+
+- **Fusión (T042):** el PR #91 se fusionó con *squash* como `954d6fc` en `main`, con la aprobación del autor, después de la CI en verde sobre `66e43a9` (run 38685401274) y de `perfil-consolidado` en verde (run 38684272539). La rama `006-eventos-persistentes` se borró.
+- **Volumen local:** los esquemas `eventos_<proceso>` solo aparecen en un volumen nuevo de PostgreSQL (`docker compose down -v` una vez). La CI y el VPS (B00-H08) parten de un volumen nuevo.
+- **B00-S01:** en este mismo PR se marcan T019 a T022 de `specs/005-spike-firmaec/tasks.md`, que quedaron sin marcar al cerrar el spike.

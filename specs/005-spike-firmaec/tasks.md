@@ -147,15 +147,15 @@ description: "Tareas de B00-S01: prueba temprana de firma con FirmaEC y validaci
 - [X] T018 [US4] Según el resultado:
   - **si los escenarios 2 y 3 funcionaron:** registrar D-46, «Comprobación de la sección 8: PDFBox y Bouncy Castle validan las firmas de FirmaEC», con los datos de la evidencia, y agregar a esa fila de la sección 8 de la constitución «Confirmada (D-46): …», como en la fila de B00-H01. Es una enmienda de parche (§7): versión 2.1.0 → 2.1.1, con su entrada en el historial de versiones al inicio, y la fecha actualizada. Si FirmaEC rechazó la CA de prueba, D-46 también dice cómo se resuelven los certificados de la demo, o abre un ADR para eso;
   - **si no funcionaron:** proponer al autor un ADR que cambie D-23 y registrarlo antes de cerrar (FR-010).
-- [ ] T019 [US4] **Con la aprobación del autor**, publicar en el issue #26 un comentario con el resumen del resultado por escenario y el enlace a `evidencia.md` (FR-009).
+- [X] T019 [US4] **Con la aprobación del autor**, publicar en el issue #26 un comentario con el resumen del resultado por escenario y el enlace a `evidencia.md` (FR-009).
 
 ---
 
 ## Phase 7: Polish & cierre
 
-- [ ] T020 Revisar el JavaDoc de las clases de `ec.mdd.firma.spike` y ejecutar `spotlessApply`. Comprobar con `git status` que no hay archivos temporales ni un PDF o certificado fuera de `ca-prueba/`. Correr Gitleaks local sobre un clon: `no leaks found`.
-- [ ] T021 Hacer commit y push, y abrir el pull request de `005-spike-firmaec` **en borrador**, con `Closes #26`. Esperar a que terminen los runs del borrador y recién entonces marcarlo como listo. Comprobar que `3 · secretos` acepta los `.p12` de `ca-prueba/`, que la suite `test` del servicio `firma` pasa en la CI, y que `4 · sca` sigue en verde, porque las dependencias son solo de prueba.
-- [ ] T022 Marcar la «Definición de terminado» del pull request y fusionarlo con *squash* **con la aprobación del autor**. Borrar la rama.
+- [X] T020 Revisar el JavaDoc de las clases de `ec.mdd.firma.spike` y ejecutar `spotlessApply`. Comprobar con `git status` que no hay archivos temporales ni un PDF o certificado fuera de `ca-prueba/`. Correr Gitleaks local sobre un clon: `no leaks found`.
+- [X] T021 Hacer commit y push, y abrir el pull request de `005-spike-firmaec` **en borrador**, con `Closes #26`. Esperar a que terminen los runs del borrador y recién entonces marcarlo como listo. Comprobar que `3 · secretos` acepta los `.p12` de `ca-prueba/`, que la suite `test` del servicio `firma` pasa en la CI, y que `4 · sca` sigue en verde, porque las dependencias son solo de prueba.
+- [X] T022 Marcar la «Definición de terminado» del pull request y fusionarlo con *squash* **con la aprobación del autor**. Borrar la rama.
 
 ---
 
