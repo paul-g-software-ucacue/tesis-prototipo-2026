@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-50 · ADR-019.
+- **Siguiente número libre:** D-53 · ADR-019.
 
 ## Índice
 
@@ -43,6 +43,9 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-48 | 2026-10-14 | El evento de prueba se publica con un endpoint de prueba apagado por defecto y un script de punta a punta | Aceptada | Alcance del issue #22 |
 | D-49 | 2026-10-14 | Las entregas entre procesos se autentican con un token de proceso que emite Usuarios | Aceptada | ADR-014 (agrega el token de proceso), alcance del issue #22 |
 | ADR-018 | 2026-10-14 | Eventos entre procesos: registro por proceso, sobre común, rutas internas y token de proceso | Aceptada | ADR-014 (agrega el token de proceso), ADR-009 (detalle de los fallos entre procesos) |
+| D-50 | 2026-10-15 | La SPA base protege las rutas internas | Aceptada | Alcance de los issues #23 (B00-H06) y #43 (F05-H01) |
+| D-51 | 2026-10-15 | La SPA guarda el token solo en memoria | Aceptada | Alcance del issue #23 |
+| D-52 | 2026-10-15 | La SPA entra al perfil consolidado en B00-H06 | Aceptada | Alcance de los issues #23 y #25 (B00-H08) |
 
 ---
 
@@ -660,6 +663,54 @@ Hay que poder probar el flujo completo de creación del distributivo sin debilit
 - F17-H01 y F16-H01 agregan sus tipos de evento y sus receptores sobre este mecanismo. Pueden retirar el receptor y el evento de prueba (D-47).
 - B00-H08 configura las claves de proceso en el VPS y no enciende el endpoint de prueba.
 - Las publicaciones completadas crecen sin purga; si hace falta, una historia futura la agrega.
+
+---
+
+## D-50. La SPA base protege las rutas internas
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-15 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q1 de la especificación de B00-H06
+- **Modifica a:** alcance de los issues #23 (B00-H06) y #43 (F05-H01)
+
+**Decisión.** La base de la SPA protege las rutas internas: quien abre una sin sesión, o recibe un 401 durante la navegación, vuelve al inicio de sesión, y después de iniciarla, a la ruta que pidió. F05-H01 comprueba su escenario «Acceso sin sesión» sobre esta protección y agrega lo suyo (usuarios reales y permisos por rol).
+
+**Por qué.** Las pantallas de F01-H01, F03-H01 y las siguientes nacen protegidas, sin que cada historia repita la protección. Es parte de la navegación común que pide la historia.
+
+**Alternativas.** Dejar la protección para F05-H01: las pantallas de las historias anteriores quedarían abiertas hasta entonces.
+
+**Consecuencias.** F05-H01 no construye la redirección; la verifica y agrega los permisos.
+
+---
+
+## D-51. La SPA guarda el token solo en memoria
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-15 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q2 de la especificación de B00-H06
+- **Modifica a:** alcance del issue #23 (B00-H06); detalla ADR-014 en el frontend
+
+**Decisión.** La SPA guarda el token del usuario solo en memoria. No lo escribe en `localStorage`, `sessionStorage`, cookies ni en la URL. Al recargar la página, el usuario vuelve a iniciar sesión.
+
+**Por qué.** Es lo que recomienda OWASP para un token *bearer*: no queda en el navegador para un ataque XSS persistente ni para otra pestaña. El token dura 30 minutos (ADR-014), así que volver a iniciar sesión tras una recarga cuesta poco.
+
+**Alternativas.** `sessionStorage` (sobrevive a una recarga, pero un XSS puede leerlo); una cookie `HttpOnly` (cambia el backend y ADR-014, y pide protección CSRF).
+
+**Consecuencias.** Una recarga o una pestaña nueva piden iniciar sesión. Si hace falta renovar el token sin volver a iniciar sesión, lo decide una historia futura.
+
+---
+
+## D-52. La SPA entra al perfil consolidado en B00-H06
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-15 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q3 de la especificación de B00-H06
+- **Modifica a:** alcance de los issues #23 (B00-H06) y #25 (B00-H08, que solo publica la imagen)
+
+**Decisión.** La SPA entra a `compose.yaml` como un contenedor más, con Nginx sirviendo la SPA y enviando `/api` al API Gateway en el mismo origen. Queda accesible en local con el mismo comando que levanta el perfil, y su memoria entra en la medición de R-19.
+
+**Por qué.** Así la SPA se prueba de punta a punta con el perfil real desde la ola 0, y B00-H08 solo publica y despliega su imagen, igual que las de los procesos.
+
+**Alternativas.** Construir solo la imagen en la CI y usar el servidor de desarrollo en local, con la SPA en el perfil desde B00-H08.
+
+**Consecuencias.** El perfil pasa a 7 contenedores. El API Gateway sigue siendo el único destino de `/api`; en el VPS, Caddy hace la misma división (`deploy/Caddyfile`).
 
 ---
 
