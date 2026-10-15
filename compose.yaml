@@ -1,9 +1,10 @@
-# Perfil consolidado del MDD (ADR-006, ADR-013): PostgreSQL, los 4 procesos y el API Gateway.
+# Perfil consolidado del MDD (ADR-006, ADR-013): PostgreSQL, los 4 procesos, el API Gateway y,
+# desde B00-H06, la SPA detrás de Nginx (D-52).
 # Uso: docker compose up -d --wait   (contrato: specs/002-compose-cuatro-procesos/contracts/compose.md)
 #
 # Las variables llegan por env_file: .env.ejemplo, versionado y con valores ficticios, y encima un
 # .env opcional que Git ignora. No hay interpolación ${…} en este archivo.
-# Límites de memoria iniciales: 2 944 MiB en total, en un equipo de 8 GiB (R-19, D-36).
+# Límites de memoria: 3 008 MiB en total para los 7 contenedores, en un equipo de 8 GiB (R-19, D-36).
 
 x-variables: &variables
   env_file:
@@ -98,6 +99,29 @@ services:
       resources:
         limits:
           memory: 384m
+
+  # La SPA (B00-H06, D-52): Nginx sirve la interfaz y envía /api al API Gateway en el mismo origen.
+  # El API Gateway sigue en el 8080 para los scripts de punta a punta; la SPA, en el 8081.
+  frontend:
+    <<: *variables
+    build:
+      context: .
+      dockerfile: deploy/docker/frontend.Dockerfile
+    ports:
+      - "8081:8080"
+    depends_on:
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/salud"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 64m
 
 volumes:
   datos-postgres:

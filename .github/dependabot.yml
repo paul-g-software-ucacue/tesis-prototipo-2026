@@ -15,6 +15,11 @@ updates:
   - package-ecosystem: docker
     directory: /deploy/docker
     schedule: { interval: weekly }
+    # Node se queda en la LTS, la misma en la CI y en la imagen (D-53): el paso a la próxima versión
+    # mayor se hace a mano en los dos lugares. Las menores y los parches siguen llegando.
+    ignore:
+      - dependency-name: node
+        update-types: [version-update:semver-major]
   # Imagen de PostgreSQL en compose.yaml (B00-H02).
   - package-ecosystem: docker-compose
     directory: /

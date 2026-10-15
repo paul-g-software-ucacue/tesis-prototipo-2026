@@ -33,7 +33,8 @@ Calentamiento: 20 llamadas a la salud por componente y 30 s de espera.
 | distributivo | … | 512 |
 | salida | … | 512 |
 | gateway | … | 384 |
-| **Total** | **…** (… GiB) | 2 944 |
+| frontend | … | 64 |
+| **Total** | **…** (… GiB) | 3 008 |
 
 Resultado: <cumple (< 8 GiB) | falla (≥ 8 GiB)>. <Alerta R-19: más de 7 GiB | Sin alerta de R-19 (≤ 7 GiB)>.
 ```
@@ -42,7 +43,7 @@ Resultado: <cumple (< 8 GiB) | falla (≥ 8 GiB)>. <Alerta R-19: más de 7 GiB |
 
 | Aspecto | Contrato |
 |---|---|
-| Disparador | `workflow_dispatch` (manual) y `pull_request` (tipos `opened`, `synchronize`, `reopened` y `ready_for_review`) con `paths: [compose.yaml, .env.ejemplo, 'deploy/**', '.github/workflows/perfil-consolidado.yml']`. No corre en borradores ni es un check obligatorio. El disparador de pull request hace falta porque GitHub solo ejecuta a mano los workflows que ya están en la rama principal. |
+| Disparador | `workflow_dispatch` (manual) y `pull_request` (tipos `opened`, `synchronize`, `reopened` y `ready_for_review`) con `paths: [compose.yaml, .env.ejemplo, 'contratos/**', 'deploy/**', 'frontend/**', '.github/workflows/perfil-consolidado.yml']`. No corre en borradores ni es un check obligatorio. El disparador de pull request hace falta porque GitHub solo ejecuta a mano los workflows que ya están en la rama principal. |
 | Permisos | `contents: read`; acciones fijadas por SHA (pinact); `timeout-minutes: 30` |
 | Pasos | *Checkout* limpio → `docker compose build`, con su tiempo → `docker compose up -d --wait`, con su tiempo (escenario 1 en un clon recién hecho y referencia de SC-001) → `deploy/medir_memoria.sh`, en un paso con `shell: bash` para que `pipefail` conserve su código de salida → la tabla al resumen del run (`$GITHUB_STEP_SUMMARY`) y como artefacto `medicion-r19` (90 días) → `docker compose down -v` |
 | Falla si | Algún contenedor no queda sano o el total es de 8 GiB o más |
@@ -52,3 +53,5 @@ Resultado: <cumple (< 8 GiB) | falla (≥ 8 GiB)>. <Alerta R-19: más de 7 GiB |
 1. La medición se hace siempre después del mismo calentamiento, así que las mediciones se pueden comparar entre sí y con la de B00-H03.
 2. La evidencia de R-19 dice el consumo por contenedor, el total, los límites, la fecha, el commit y el entorno (FR-008).
 3. Un total de más de 7 GiB queda marcado como alerta de R-19, aunque cumpla el escenario (D-36).
+
+Desde B00-H06 (D-52), el perfil tiene 7 contenedores: se suma `frontend` (Nginx con la SPA, 64 MiB), que no es una JVM y no entra al calentamiento.
