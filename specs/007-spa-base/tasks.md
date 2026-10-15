@@ -222,7 +222,7 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
 **Independent Test**: en el pull request, un commit con un error de ESLint deja `1 · lint-frontend` en rojo y la fusión bloqueada; su reversión lo deja en verde.
 
 - [X] T021 [US4] Comprobar en local que un error de ESLint (por ejemplo, `localStorage.setItem` en `src/`) hace fallar `npm run lint` con el mensaje de la regla, y que se revierte. Comprobar que `ci.yml` (job `1 · lint-frontend`) ya corre `generar:api`, `lint`, `formato:verificar` y `tipos`, y que `gh api repos/{owner}/{repo}/branches/main/protection` exige `1 · lint-frontend`. Si algo falta, ajustarlo sin renombrar los checks (D-31).
-- [ ] T022 [US4] En el pull request (después de T029), con la aprobación del autor, empujar un commit que agrega un error de ESLint en `frontend/src/`. Comprobar que `1 · lint-frontend` falla y que `gh pr view` muestra la fusión bloqueada (`mergeStateStatus` `BLOCKED`). Después, revertirlo con otro commit y comprobar que el check vuelve a verde. Anotar los dos runs en el escenario 4 de la evidencia.
+- [X] T022 [US4] En el pull request (después de T029), con la aprobación del autor, empujar un commit que agrega un error de ESLint en `frontend/src/`. Comprobar que `1 · lint-frontend` falla y que `gh pr view` muestra la fusión bloqueada (`mergeStateStatus` `BLOCKED`). Después, revertirlo con otro commit y comprobar que el check vuelve a verde. Anotar los dos runs en el escenario 4 de la evidencia.
 
 **Checkpoint**: el frontend tiene el mismo control de calidad que el backend.
 
@@ -274,7 +274,7 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
 ## Phase 8: Polish & cierre
 
 - [X] T030 Revisar los comentarios de propósito de `src/`, `frontend/README.md` (cómo generar, probar y agregar una pantalla, ADR-019) y `backend/plantillas/README.md` (una línea que remita a `frontend/README.md` para las pantallas). Comprobar con `git status` que no hay archivos temporales. Correr Gitleaks local sobre un clon: `no leaks found`.
-- [ ] T031 Hacer commit y push, y abrir el pull request de `007-spa-base` hacia `main` **en borrador**, con `Refs #23`. Esperar a que terminen los runs del borrador y recién entonces marcarlo como listo. Comprobar que corren y pasan, por primera vez con frontend:
+- [X] T031 Hacer commit y push, y abrir el pull request de `007-spa-base` hacia `main` **en borrador**, con `Refs #23`. Esperar a que terminen los runs del borrador y recién entonces marcarlo como listo. Comprobar que corren y pasan, por primera vez con frontend:
   - `1 · lint-frontend`, `2 · test-frontend` y `4 · sbom-frontend`;
   - `4 · sca`. Si Grype marca una dependencia del frontend con versión corregida, actualizarla y anotarlo;
   - `perfil-consolidado`. Pegar en la evidencia la medición de R-19 del run.
