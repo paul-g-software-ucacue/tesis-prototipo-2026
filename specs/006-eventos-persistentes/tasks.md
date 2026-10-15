@@ -389,7 +389,7 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
   - `2 · test-integracion`;
   - `4 · sbom-backend` y `4 · sca`. Si Grype marca una dependencia nueva de Spring Modulith con versión corregida, fijarla como en B00-H02 y anotarlo;
   - `perfil-consolidado`. Pegar en la evidencia la medición de R-19 del run (SC-007).
-- [ ] T042 Completar `specs/006-eventos-persistentes/evidencia.md` y la «Definición de terminado» del pull request. Fusionarlo con *squash* **con la aprobación del autor**. Después:
+- [X] T042 Completar `specs/006-eventos-persistentes/evidencia.md` y la «Definición de terminado» del pull request. Fusionarlo con *squash* **con la aprobación del autor**. Después:
   - ejecutar `perfil-consolidado` sobre `main` y abrir el pull request de evidencia con `Closes #22`, como en B00-H04;
   - borrar las ramas fusionadas;
   - en el mismo pull request de evidencia, marcar T019 a T022 en `specs/005-spike-firmaec/tasks.md`, que quedaron sin marcar en B00-S01.
