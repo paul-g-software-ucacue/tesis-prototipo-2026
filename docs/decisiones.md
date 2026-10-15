@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-53 · ADR-019.
+- **Siguiente número libre:** D-54 · ADR-020.
 
 ## Índice
 
@@ -46,6 +46,8 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-50 | 2026-10-15 | La SPA base protege las rutas internas | Aceptada | Alcance de los issues #23 (B00-H06) y #43 (F05-H01) |
 | D-51 | 2026-10-15 | La SPA guarda el token solo en memoria | Aceptada | Alcance del issue #23 |
 | D-52 | 2026-10-15 | La SPA entra al perfil consolidado en B00-H06 | Aceptada | Alcance de los issues #23 y #25 (B00-H08) |
+| D-53 | 2026-10-15 | Node 24 LTS en la CI y en la imagen; se cierra el PR #73 | Propuesta | PR #73 de Dependabot, `.github/dependabot.yml` |
+| ADR-019 | 2026-10-15 | Base del frontend: cliente generado, errores, sesión en memoria y mismo origen | Propuesta | ADR-008 (detalle del frontend) |
 
 ---
 
@@ -711,6 +713,70 @@ Hay que poder probar el flujo completo de creación del distributivo sin debilit
 **Alternativas.** Construir solo la imagen en la CI y usar el servidor de desarrollo en local, con la SPA en el perfil desde B00-H08.
 
 **Consecuencias.** El perfil pasa a 7 contenedores. El API Gateway sigue siendo el único destino de `/api`; en el VPS, Caddy hace la misma división (`deploy/Caddyfile`).
+
+---
+
+## D-53. Node 24 LTS en la CI y en la imagen; se cierra el PR #73
+
+- **Estado:** Propuesta · **Fecha:** 2026-10-15 · **Decidido por:** pendiente de la aprobación del autor de la tesis
+- **Origen:** plan de B00-H06 (`specs/007-spa-base/research.md` §12)
+- **Modifica a:** el PR #73 de Dependabot (Node 24 → 26 en `deploy/docker/frontend.Dockerfile`) y `.github/dependabot.yml`
+
+**Decisión.** El frontend usa Node 24, la LTS activa, en la CI (`NODE_VERSION`), en `frontend.Dockerfile` y en `frontend/.nvmrc`. El PR #73 se cierra con un comentario. En `.github/dependabot.yml`, el ecosistema `docker` ignora los cambios de versión mayor de `node`; el paso a la próxima LTS se hace a mano, en la CI y en la imagen a la vez.
+
+**Por qué.** Node 26 todavía es «Current», no LTS. La CI y la imagen deben usar la misma versión, y fusionar el #73 dejaría Node 26 en la imagen y Node 24 en la CI. Vite 8, Vitest 5 y React Router 8 funcionan con Node 24.
+
+**Alternativas.** Fusionar el #73 y subir la CI a Node 26 (sale de LTS); dejar el #73 abierto (Dependabot lo seguiría reabriendo).
+
+**Consecuencias.** Las versiones menores y de parche de Node 24 siguen llegando por Dependabot.
+
+---
+
+## ADR-019. Base del frontend: cliente generado, errores, sesión en memoria y mismo origen
+
+- **Estado:** Propuesta · **Fecha:** 2026-10-15 · **Decidido por:** pendiente de la aprobación del autor de la tesis
+- **Origen:** plan de B00-H06 (`specs/007-spa-base/research.md` §2 a §11)
+- **Modifica a:** ADR-008, que fija el stack del frontend sin el detalle de su base
+- **Relacionadas:** D-29, D-31, D-50, D-51, D-52, ADR-014, ADR-015, ADR-016; principios IV, VIII, IX y XIII; constitución §3
+
+**Contexto.** Todas las historias con pantallas parten de la misma SPA. Hay que fijar cómo llama a la API, cómo muestra los errores, dónde guarda la sesión, por dónde llega al backend y cómo se prueba la accesibilidad, para que cada pantalla no lo resuelva a su manera.
+
+**Decisión.**
+1. **Estructura:** `frontend/` con `src/api` (cliente), `src/sesion`, `src/errores`, `src/navegacion` y `src/pantallas`. Cada historia agrega sus pantallas y sus entradas del menú.
+2. **Cliente generado:**
+   - los tipos salen de `contratos/<servicio>/openapi.yaml` con openapi-typescript, antes de cada compilación, y no se versionan;
+   - el cliente es openapi-fetch con esos tipos, sin código generado;
+   - `npm run verificar:ruptura` demuestra en cada pull request que un cambio de contrato rompe la compilación.
+3. **Errores:**
+   - un solo traductor muestra `titulo` y `descripcion`, los `detalles` junto a su campo y el `idIncidente`, y nunca el `codigo`, el estado HTTP ni texto técnico;
+   - sin el esquema `Error`, o sin conexión, usa los textos de `COMUN_ERROR_INTERNO` y `COMUN_SERVICIO_NO_DISPONIBLE` del catálogo.
+4. **Sesión:**
+   - el token vive solo en memoria y una regla de ESLint prohíbe `localStorage`, `sessionStorage` y `document.cookie`;
+   - las rutas internas están protegidas, con vuelta al destino solo si es una ruta interna;
+   - un 401 o el vencimiento cierran la sesión.
+5. **Mismo origen:** la SPA llama a `/api` en su mismo origen. Nginx (en el perfil) o Caddy (en el VPS) envían `/api` al API Gateway. Nginx agrega una CSP sin `unsafe-inline` en los scripts.
+6. **Pruebas:**
+   - Vitest con Testing Library (60 % de líneas);
+   - Playwright con axe-core en Chromium, con las reglas WCAG 2.1 AA, para las pantallas principales;
+   - ESLint con jsx-a11y.
+
+**Por qué.**
+- Repite en el frontend lo que ya hace el backend: contrato primero (ADR-015) y errores traducidos en un solo lugar (ADR-016).
+- Sigue lo que recomienda OWASP para el token (D-51).
+- Con el mismo origen no hace falta CORS.
+- axe-core en un navegador real cubre el contraste, que jsdom no calcula.
+
+**Alternativas.**
+- openapi-generator `typescript-fetch`, que genera código de runtime.
+- Traducir los errores en cada pantalla.
+- El token en `sessionStorage` o en una cookie (D-51).
+- CORS entre la SPA y el API Gateway.
+- axe-core solo en jsdom.
+
+**Consecuencias.**
+- Cada historia con pantallas agrega su contrato a `generar:api`, sus rutas protegidas y su prueba de accesibilidad con Playwright.
+- F05-H01 construye sobre la sesión y las rutas protegidas (D-50).
+- B00-H08 publica la imagen de Nginx y Caddy mantiene la división de `/api`.
 
 ---
 
