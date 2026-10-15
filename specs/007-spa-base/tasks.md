@@ -280,7 +280,7 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
   - `perfil-consolidado`. Pegar en la evidencia la medición de R-19 del run.
 
   Después, T022.
-- [ ] T032 Completar `specs/007-spa-base/evidencia.md` y la «Definición de terminado» del pull request. Fusionarlo con *squash* **con la aprobación del autor**. Después:
+- [X] T032 Completar `specs/007-spa-base/evidencia.md` y la «Definición de terminado» del pull request. Fusionarlo con *squash* **con la aprobación del autor**. Después:
   - ejecutar `perfil-consolidado` sobre `main` y abrir el pull request de evidencia con `Closes #23`, como en B00-H05;
   - borrar las ramas fusionadas.
 

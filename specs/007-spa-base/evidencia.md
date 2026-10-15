@@ -62,8 +62,11 @@ Registro de las comprobaciones de los cuatro escenarios de la historia (issue #2
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
 | Medición en el pull request (T031, FR-018, SC-009) | confirmada | [perfil-consolidado, run 38697471266](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38697471266): postgres 109,0; identidad 323,6; datos 180,9; distributivo 194,0; salida 191,4; gateway 200,5; **frontend 4,1 de 64**. **Total: 1 203,5 MiB (1,18 GiB)** de 3 008 MiB de límites, sin alerta. Con B00-H05 sobre `main` fueron 1 142,5 MiB: la SPA suma unos pocos MiB. | 2026-10-15 |
+| Medición sobre `main` (T032) | confirmada | [perfil-consolidado, run 38726828062](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38726828062), a mano sobre `ea8c2bc`: autenticación, errores, eventos y SPA de punta a punta, todos en `OK`. Postgres 109,4; identidad 326,2; datos 187,6; distributivo 196,5; salida 187,3; API Gateway 190,8; **frontend 3,9 de 64**. **Total: 1 201,7 MiB (1,17 GiB)** de 8 GiB, sin alerta (≤ 7 GiB). | 2026-10-15 |
 | Medición local (T029) | confirmada | `deploy/medir_memoria.sh --con-sesion`, local (Docker 29.8.2), después de las cuatro pruebas de punta a punta: postgres 102,8; identidad 360,2; datos 214,0; distributivo 222,4; salida 213,7; gateway 199,2; **frontend 11,6 de 64**. **Total: 1 323,9 MiB (1,29 GiB)** de 3 008 MiB de límites, sin alerta. | 2026-10-15 |
 
 ## Notas
 
 - **PR #73 (D-53, T028):** cerrado el 2026-10-15 con la aprobación del autor y un comentario que cita D-53. `.github/dependabot.yml` ignora las versiones mayores de `node` en el ecosistema `docker`.
+- **Fusión (T032):** el PR #93 se fusionó con *squash* como `ea8c2bc` en `main`, con la aprobación del autor, después de los 10 checks en verde sobre `1713426` (run 38725325629) y de `perfil-consolidado` en verde. La rama `007-spa-base` se borró. Los dos commits de la demostración del escenario 4 (`7ca3220` y su reversión `1c6ba76`) se anulan en el *squash*: `frontend/src/demostracionLint.ts` no llega a `main`.
+- **Revisión manual (SC-005):** queda para el autor en su navegador (quickstart §3); el mismo recorrido pasó en Chromium sin interfaz contra el perfil local.
