@@ -385,7 +385,7 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
 ## Phase 7: Polish & cierre
 
 - [X] T040 Revisar el JavaDoc de `plataforma:eventos`, de la separación de tokens, del token de proceso, del receptor y del evento de prueba. Comprobar con `git status` que no hay archivos temporales. Correr Gitleaks local sobre un clon: `no leaks found`.
-- [ ] T041 Hacer commit y push, y abrir el pull request de `006-eventos-persistentes` hacia `main` **en borrador**, con `Refs #22`. Esperar a que terminen los runs del borrador y recién entonces marcarlo como listo. Comprobar que corren y pasan:
+- [X] T041 Hacer commit y push, y abrir el pull request de `006-eventos-persistentes` hacia `main` **en borrador**, con `Refs #22`. Esperar a que terminen los runs del borrador y recién entonces marcarlo como listo. Comprobar que corren y pasan:
   - `2 · test-integracion`;
   - `4 · sbom-backend` y `4 · sca`. Si Grype marca una dependencia nueva de Spring Modulith con versión corregida, fijarla como en B00-H02 y anotarlo;
   - `perfil-consolidado`. Pegar en la evidencia la medición de R-19 del run (SC-007).

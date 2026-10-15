@@ -61,11 +61,13 @@ Registro de las comprobaciones de los tres escenarios de la historia (issue #22)
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| CI del pull request (T041) | confirmada | [ci, run 38684272606](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38684272606) sobre `e7c36c1`: `lint-backend`, `test-backend`, `test-integracion`, `secretos`, `sbom-backend` y `sca` (Grype) en verde; los jobs de frontend, omitidos por no haber cambios (D-29). Grype no marcó ninguna dependencia nueva de Spring Modulith. | 2026-10-15 |
 | Perfil desde un volumen nuevo (T039) | confirmada | `docker compose down -v`, `docker compose build` y `docker compose up -d --wait`. `deploy/probar_autenticacion.sh` y `deploy/probar_errores.sh`: todos los pasos en `OK`. `deploy/probar_eventos.sh`: pasos 0 a 5 en `OK`, en 67 s. | 2026-10-14 |
 
 ## Memoria (R-19)
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Medición después de iniciar sesión (SC-007, T041) | confirmada | [perfil-consolidado, run 38684272539](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38684272539), sobre el PR #91, con los tres scripts de punta a punta en `OK` (autenticación 6/6, errores 4/4 y eventos 6/6). Postgres 110,6; identidad 312,3; datos 178,5; distributivo 195,7; salida 181,1; API Gateway 191,6. **Total: 1 169,8 MiB (1,14 GiB)**, sin alerta (≤ 7 GiB). En B00-H04 fueron 1 200,6 MiB: el registro de publicaciones, la tarea de reenvío y el pool asíncrono de distributivo no suben la memoria de forma medible. | 2026-10-15 |
 
 ## Notas
