@@ -78,13 +78,13 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
 
   Con `additionalProperties: false` en el sobre y la descripción de cada campo. La de `contenido` dice «sin contraseñas ni tokens».
 - [ ] T004 [P] En `contratos/comun/errores.md`, agregar la fila `COMUN_EVENTO_NO_RECONOCIDO` (400, «Evento no reconocido», «El receptor no admite este tipo de evento.») con el «cuándo» de contracts/entrega.md.
-- [ ] T005 En `contratos/usuarios/openapi.yaml`, agregar el tag `Eventos` y dos operaciones según contracts/entrega.md:
+- [ ] T005 En `contratos/usuarios/openapi.yaml`, agregar los tags `TokenProceso` y `Eventos`, uno por operación, y dos operaciones según contracts/entrega.md. Van con tags distintos porque, con `useTags` y `skipDefaultInterface`, cada tag genera una interfaz con todos sus métodos abstractos, y cada operación tiene su propio controlador:
   - `POST /interno/usuarios/token-proceso`:
-    - `operationId: emitirTokenDeProceso`, `security: []`;
+    - tag `TokenProceso`, `operationId: emitirTokenDeProceso`, `security: []`;
     - cuerpo `CredencialesProceso`: `proceso` con `pattern: '^[a-z]+$'` y `clave` con `format: password`, los dos obligatorios y con `minLength: 1`;
     - respuestas 200 `TokenSesion`, 401 `Error` (`USUARIOS_CREDENCIALES_INVALIDAS`), 400 `SolicitudInvalida`, 500 y 503.
   - `POST /interno/usuarios/eventos`:
-    - `operationId: recibirEvento`, con `bearer`;
+    - tag `Eventos`, `operationId: recibirEvento`, con `bearer`;
     - cuerpo `$ref: '../comun/eventos.yaml#/components/schemas/EventoEntreProcesos'`;
     - respuestas 204, 400 (`SolicitudInvalida` y la descripción de `COMUN_EVENTO_NO_RECONOCIDO`), 401 `NoAutenticado`, 403 sin cuerpo («hasta F05-H02»), 500 y 503.
 
@@ -133,7 +133,7 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
   - **el caso de uso** `aplicacion/EmitirTokenDeProcesoServicio`;
   - **la configuración:** en `PropiedadesUsuarios`, `procesos` (mapa de nombre a clave) y `tokenProceso.vigencia` (`PT5M`);
   - **el emisor:** en `puertos/salida/EmisorDeTokens` y en `EmisorJwt`, `emitirParaProceso(String proceso)` con la vigencia propia;
-  - **el controlador** `adaptadores/entrada/TokenProcesoControlador`, que implementa la interfaz generada `EventosApi#emitirTokenDeProceso`;
+  - **el controlador** `adaptadores/entrada/TokenProcesoControlador`, que implementa la interfaz generada `TokenProcesoApi`;
   - **el cableado** en `ConfiguracionUsuarios`.
 
   En `backend/apps/identidad/src/main/resources/application.yaml`:
@@ -147,7 +147,8 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
 - [ ] T015 Escribir primero, en `backend/plataforma/eventos/src/test/java/ec/mdd/plataforma/eventos/`:
   - `EventoEntreProcesosTest`:
     - `nuevo(tipo, origen, destino, contenido, reloj)` genera un UUID v4 y valida los patrones de `tipo` y `origen`;
-    - el JSON de Jackson del sobre, sin `destino`, valida contra `contratos/comun/eventos.yaml` (con `ValidadorDeContrato` o con el esquema).
+    - el sobre serializado con el `JsonMapper` del registro y leído de vuelta conserva todos sus campos, incluido `destino` (lo necesita cada reenvío);
+    - el cuerpo HTTP que arma `ClienteDeEventos` no tiene `destino` y valida contra `contratos/comun/eventos.yaml` (con `ValidadorDeContrato` o con el esquema).
   - `ProveedorDeTokenDeProcesoTest`, contra el servidor HTTP del JDK:
     - pide el token una vez y lo reutiliza;
     - lo renueva cuando le queda menos de 1 minuto;
@@ -159,15 +160,17 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
     - con 400, 500, un plazo vencido (el servidor no responde), conexión rechazada o host desconocido, lanza `EntregaFallida`;
     - con 401, descarta el token y reintenta una vez: si el reintento da 204, termina; si da 401, lanza `EntregaFallida`;
     - el cuerpo enviado es el sobre sin `destino`, con `Authorization: Bearer`;
-    - un destino sin URL configurada lanza `EntregaFallida`.
+    - un destino sin URL configurada lanza `EntregaFallida`;
+    - con `mdd.eventos.clave` vacía no pide el token: lanza `EntregaFallida` y registra un WARN «sin clave de proceso».
   - `PropiedadesEventosTest`: el esquema `eventos_distributivo` pasa; `public`, `generacion` o vacío fallan al arrancar con un mensaje claro.
 - [ ] T016 Implementar `backend/plataforma/eventos/`:
   - **`build.gradle`:** `java-library` y `mdd.java-conventions`, más:
     - `api 'org.springframework.modulith:spring-modulith-events-api'`;
     - `implementation 'org.springframework.modulith:spring-modulith-events-jdbc'` y `'org.springframework.modulith:spring-modulith-events-jackson'`, sin el *starter* (research §1);
     - `implementation 'org.springframework:spring-web'`, `'org.springframework.boot:spring-boot-starter-jdbc'`, `'org.springframework.boot:spring-boot-starter-flyway'` y `runtimeOnly 'org.flywaydb:flyway-database-postgresql'`;
-    - en la suite `test`: `project(':plataforma:pruebas')`.
-  - **`EventoEntreProcesos`:** record con `idEvento`, `tipo`, `origen`, `destino` (`@JsonIgnore` en el cuerpo HTTP; sí se guarda en el registro), `momento` y `contenido` (`Map<String, Object>`).
+    - en la suite `test`: `project(':plataforma:pruebas')`;
+    - excluir `org.slf4j:jcl-over-slf4j`, que trae `spring-modulith-events-core` y repite las clases de `commons-logging` que usa Spring 7. Comprobarlo con `./gradlew :plataforma:eventos:dependencies --configuration runtimeClasspath` y anotarlo en la evidencia (research §1).
+  - **`EventoEntreProcesos`:** record con `idEvento`, `tipo`, `origen`, `destino`, `momento` y `contenido` (`Map<String, Object>`), sin `@JsonIgnore`: el registro guarda el sobre completo. `ClienteDeEventos` envía un cuerpo aparte (`CuerpoEvento`, sin `destino`), con la forma de `comun/eventos.yaml`.
   - **`PropiedadesEventos`:** `mdd.eventos` con `plazo` (`PT5S`), `reenvio.intervalo` (`PT30S`), `destinos`, `tokenProceso` (URL), `proceso` y `clave`. Valida el nombre del esquema de `spring.modulith.events.jdbc.schema` con `^eventos_[a-z]+$`.
   - **`EntregaFallida`:** la excepción de una entrega que no se confirmó.
   - **`ProveedorDeTokenDeProceso`** y **`ClienteDeEventos`:** `RestClient` sobre `JdkClientHttpRequestFactory`, con los plazos de conexión y de lectura.
@@ -178,7 +181,7 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
   - el bean `flywayEventos` (`@Bean(initMethod = "migrate")`), limitado al esquema `spring.modulith.events.jdbc.schema` y a `db/migration/eventos`, como `UsuariosFlywayConfig`;
   - `PropiedadesEventos`, `ProveedorDeTokenDeProceso` y `ClienteDeEventos`.
 
-  Escribir primero `EventosAutoConfiguracionTest` con `ApplicationContextRunner`: arma los beans con la configuración mínima y falla sin el esquema o con uno inválido.
+  Escribir primero `EventosAutoConfiguracionTest` con `ApplicationContextRunner`: arma los beans con la configuración mínima, también con la clave vacía (el proceso arranca y las entregas fallan, data-model.md), y falla sin el esquema o con uno inválido.
 
 **Checkpoint**: los contratos están validados, los tokens separados, Usuarios emite tokens de proceso y el núcleo del emisor está probado contra un receptor simulado.
 
@@ -213,7 +216,7 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
 
     Las respuestas pasan `ValidadorDeContrato`.
 - [ ] T020 [US1] Escribir primero `backend/plataforma/eventos/src/integrationTest/java/ec/mdd/plataforma/eventos/EntregaIntegrationTest.java`:
-  - `@SpringBootTest` con una aplicación de prueba, PostgreSQL 18.6 de Testcontainers con el esquema `eventos_prueba` creado al iniciar el contenedor, y el receptor simulado;
+  - `@SpringBootTest` con una aplicación de prueba, PostgreSQL 18.6 de Testcontainers con el esquema `eventos_prueba` creado al iniciar el contenedor, y el receptor simulado, que atiende los dos endpoints: el del token de proceso y el de los eventos;
   - un servicio de prueba transaccional inserta una fila y publica un `EventoEntreProcesos`;
   - comprueba que:
     - el receptor recibe el sobre una vez, con el token;
@@ -259,12 +262,14 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
     - `mdd.generacion.eventos-prueba.habilitado: ${MDD_EVENTOS_PRUEBA_HABILITADO:false}`;
   - **las pruebas del proceso:**
     - `ModulosTest` sigue pasando;
-    - en `EsquemasIntegrationTest`, comprobar que existe `eventos_distributivo.event_publication`, con el esquema creado como en `01-esquemas.sh`;
+    - en `EsquemasIntegrationTest`, comprobar que existe `eventos_distributivo.event_publication` (con el superusuario de Testcontainers, `flywayEventos` crea el esquema solo);
   - **el arranque:** que no consulta `event_publication` antes de la migración (research §2, riesgo comprobado).
 - [ ] T025 [US1] Crear `deploy/probar_eventos.sh`, ejecutable, con el patrón `verificar` de `deploy/probar_errores.sh`, con los pasos 0 y 1 de contracts/demostracion.md:
   - inicia sesión;
   - publica;
   - con `docker compose exec -T postgres psql -U postgres -d mdd -tAc`, comprueba en menos de 10 s 1 fila en `usuarios.evento_recibido` y la publicación `COMPLETED`.
+
+  Una función del script, que usan todos los pasos, busca la publicación de un `idEvento` en `eventos_distributivo.event_publication` por `serialized_event LIKE '%<idEvento>%'`.
 
   El `idEvento` se valida con una expresión regular de UUID antes de usarlo en el SQL. Validar con shellcheck, sobre una copia.
 
@@ -290,8 +295,9 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
     - el registro tiene el WARN con el `idEvento`;
   - **receptor de vuelta:** en menos de 2 ciclos la publicación queda `COMPLETED` y el receptor la recibió;
   - **varias pendientes:** 3 publicaciones con el receptor detenido quedan todas `COMPLETED` cuando vuelve;
-  - **atascada:** una publicación `PROCESSING` vieja, insertada a mano, pasa a `FAILED` y después se completa;
-  - **token rechazado:** si el receptor responde 401 al token guardado y 204 al nuevo, la entrega se completa en el mismo intento.
+  - **atascadas:** una publicación `PROCESSING` vieja (el emisor se cayó a mitad de la entrega) y una `PUBLISHED` vieja (se cayó justo después de confirmar, antes de que corriera el oyente), insertadas a mano, pasan a `FAILED` y después se completan (FR-005);
+  - **token rechazado:** si el receptor responde 401 al token guardado y 204 al nuevo, la entrega se completa en el mismo intento;
+  - **Usuarios sin poder emitir el token:** si el endpoint del token responde 503, la publicación queda `FAILED`, y se completa cuando vuelve a responder (FR-011).
 
 ### Implementation for User Story 2
 
@@ -301,7 +307,7 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
   - `spring.modulith.events.republish-outstanding-events-on-restart: false`;
   - `spring.modulith.events.completion-mode: update`.
 - [ ] T030 [US2] Extender `deploy/probar_eventos.sh` con los pasos 2 y 3 de contracts/demostracion.md:
-  - `docker compose stop identidad` y publicar con el token del paso 0;
+  - `docker compose stop identidad` y publicar con el token del paso 0, que el API Gateway y distributivo validan con el JWKS en caché (contracts/demostracion.md); si responde 401, el script lo dice;
   - comprobar la fila en `generacion.evento_prueba` y la publicación no `COMPLETED`;
   - `docker compose start identidad` y esperar a que esté sano;
   - en menos de 75 s, comprobar 1 fila en `evento_recibido` y la publicación `COMPLETED`.
@@ -330,7 +336,7 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
 
 - [ ] T033 [US3] Si T031 o T032 encuentran un hueco (por ejemplo, una carrera entre la inserción y el efecto), corregirlo en `RepositorioEventosRecibidosJdbc` o en `RegistrarEventoRecibidoServicio` con su prueba. Si no hay nada que corregir, anotar en la evidencia que el escenario pasa sin cambios.
 - [ ] T034 [US3] Extender `deploy/probar_eventos.sh` con el paso 4 de contracts/demostracion.md:
-  - `UPDATE eventos_distributivo.event_publication SET status = 'FAILED', completion_date = NULL` en la publicación del paso 1, buscándola por su `idEvento` en `serialized_event`;
+  - `UPDATE eventos_distributivo.event_publication SET status = 'FAILED', completion_date = NULL` en la publicación del paso 1, buscándola con la función de T025;
   - en menos de 75 s, comprobar la publicación `COMPLETED` y 1 sola fila en `evento_recibido`.
 
   Validar con shellcheck, sobre una copia.

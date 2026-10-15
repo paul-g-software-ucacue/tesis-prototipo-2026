@@ -13,7 +13,7 @@ Lo publica un servicio en su transacción y viaja por HTTP al receptor. Clase `E
 | `origen` | texto | Obligatorio. Nombre del servicio que publica, con el patrón `^[a-z]+$`. |
 | `momento` | fecha y hora (ISO 8601, UTC) | Obligatorio. Instante de la publicación. |
 | `contenido` | objeto JSON | Obligatorio; puede estar vacío (`{}`). Lo define cada tipo. NO DEBE llevar contraseñas ni tokens (FR-002). |
-| `destino` | texto | Solo en el emisor: elige la URL de `mdd.eventos.destinos.<destino>`. No viaja en el cuerpo. |
+| `destino` | texto | Solo en el emisor: elige la URL de `mdd.eventos.destinos.<destino>`. Se guarda con el sobre en el registro de publicaciones, para que cada reenvío sepa a dónde ir, pero no viaja en el cuerpo HTTP: `ClienteDeEventos` arma un cuerpo aparte sin él. |
 
 ## Publicación (emisor)
 
@@ -90,7 +90,7 @@ JWT RS256 que emite Usuarios con la misma llave y el mismo formato de ADR-014.
 | `roles` | `["PROCESO"]` |
 | `iat`, `exp` | Vigencia de `mdd.usuarios.token-proceso.vigencia`, 5 min por defecto |
 
-**Credencial del proceso:** `mdd.usuarios.procesos.<proceso>.clave` en identidad, y `mdd.eventos.proceso` con `mdd.eventos.clave` en el emisor. Las dos salen de `MDD_CLAVE_PROCESO_<PROCESO>`. Un proceso sin clave configurada no puede pedir tokens.
+**Credencial del proceso:** `mdd.usuarios.procesos.<proceso>.clave` en identidad, y `mdd.eventos.proceso` con `mdd.eventos.clave` en el emisor. Las dos salen de `MDD_CLAVE_PROCESO_<PROCESO>`. Un proceso sin clave configurada no puede pedir tokens. En el emisor, una clave vacía no impide arrancar: cada entrega falla con un WARN «sin clave de proceso» y la publicación queda `FAILED` hasta que se configure.
 
 ## Configuración nueva
 

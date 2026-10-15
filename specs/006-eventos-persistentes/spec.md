@@ -20,7 +20,7 @@
 
 ### Session 2026-10-14
 
-- Q: ¿El receptor es un receptor de prueba en Usuarios o se adelanta un receptor mínimo real de la bitácora o de las notificaciones? → A: Un receptor de prueba en Usuarios, el servicio dueño de la bitácora, declarado en su contrato. El mecanismo común (publicación, entrega, reenvío y recepción idempotente) queda listo para que F17-H01 y F16-H01 lo usen; esta historia no adelanta reglas de la bitácora ni de las notificaciones (D-47).
+- Q: ¿El receptor es un receptor de prueba en Usuarios o se adelanta un receptor mínimo real de la bitácora o de las notificaciones? → A: Un receptor de prueba en Usuarios, el servicio dueño de la bitácora, declarado en su contrato. El mecanismo común (publicación, entrega y reenvío, y la forma común de la recepción idempotente, FR-008) queda listo para que F17-H01 y F16-H01 lo usen; esta historia no adelanta reglas de la bitácora ni de las notificaciones (D-47).
 - Q: ¿Cómo se publica el evento de prueba? → A: Con un endpoint de prueba en un servicio del proceso distributivo, apagado por defecto y encendido solo en el entorno de prueba, más pruebas automáticas y un script de punta a punta que detiene y vuelve a arrancar el proceso de identidad, como `deploy/probar_autenticacion.sh` y `deploy/probar_errores.sh` (D-48).
 - Q: ¿Cómo se autentica el proceso que entrega ante el receptor? → A: Con un token de proceso que emite Usuarios para cada proceso, con la credencial del proceso en una variable de entorno, un rol que solo sirve para el receptor y una vida corta. La ruta del receptor no pasa por el API Gateway (D-49, con ADR-014).
 
@@ -129,7 +129,7 @@ Escenario: Entrega repetida
 **Recepción idempotente**
 
 - **FR-007**: El receptor DEBE registrar cada evento una sola vez por su identificador. Si el evento llega otra vez con el mismo identificador, incluso en dos entregas simultáneas, DEBE confirmar la entrega sin registrarlo de nuevo (principio V).
-- **FR-008**: La publicación, la entrega, el reenvío y la recepción idempotente DEBEN ser un mecanismo común, que F17-H01 (bitácora) y F16-H01 (notificaciones) usen sin repetirlo.
+- **FR-008**: La publicación, la entrega y el reenvío DEBEN ser un mecanismo común, que F17-H01 (bitácora) y F16-H01 (notificaciones) usen sin repetirlo. La recepción idempotente DEBE seguir una forma común y documentada, igual en cada receptor: el mismo sobre del contrato, una tabla de eventos recibidos en el esquema del servicio con el identificador como clave, el registro en la misma transacción que el efecto del evento y una ruta entre procesos protegida por el token de proceso. El registro de cada receptor queda en su servicio, porque va en su transacción y en su esquema (principio V).
 
 **Demostración**
 
@@ -174,5 +174,5 @@ Escenario: Entrega repetida
 - El intervalo de la tarea programada y el plazo de espera son parámetros de configuración con un valor por defecto; el plan fija los valores.
 - Los reenvíos no tienen un número máximo de intentos: una publicación pendiente se reenvía hasta que el receptor la confirma.
 - Hoy no hay llamadas HTTP entre procesos; esta historia trae la primera. Como la entrega ocurre fuera de la petición del usuario, un fallo de entrega no llega al usuario como error: deja la publicación pendiente. Los errores 502 y 504 entre procesos que dejaron pendientes ADR-016 y D-40 llegan con la primera llamada que responda a un usuario.
-- La credencial de cada proceso es un secreto del entorno, como las claves de la base: en local y en la CI se genera o viene de una variable, y en el VPS la configura B00-H08 (principio IX). Cómo se emite el token de proceso lo detalla el plan sobre ADR-014.
+- La credencial de cada proceso es un secreto del entorno, como las claves de la base: en local y en la CI viene de `.env.ejemplo`, con un valor ficticio, y en el VPS la configura B00-H08 (principio IX). Cómo se emite el token de proceso lo detalla el plan sobre ADR-014.
 - Solo se usan datos ficticios (principios VIII y IX).

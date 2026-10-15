@@ -32,6 +32,8 @@ Se enciende con `MDD_EVENTOS_PRUEBA_HABILITADO=true`: está en `.env.ejemplo`, e
 
 Las consultas a la base usan `docker compose exec -T postgres psql -U postgres -d mdd -tAc`, con el `idEvento` validado como UUID antes de usarlo en el SQL.
 
+En el paso 2, con identidad detenido, el token de usuario lo validan el API Gateway y distributivo con el JWKS que ya tienen en caché (5 min por defecto). El paso 2 corre segundos después del 1, dentro de ese caché; si responde 401, la causa es que el caché se renovó con identidad caído.
+
 Después del paso 3, el token de usuario del paso 0 deja de valer, porque identidad arrancó con una llave efímera nueva (ADR-014). El paso 5 vuelve a iniciar sesión.
 
 ## `perfil-consolidado`

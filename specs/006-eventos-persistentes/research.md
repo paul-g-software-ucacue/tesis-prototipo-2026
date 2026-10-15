@@ -9,7 +9,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 - `spring-modulith-events-jackson` (serializa el evento con el Jackson 3 del proceso);
 - `spring-modulith-events-api` (`@ApplicationModuleListener`, `FailedEventPublications`).
 
-`spring-modulith-starter-jdbc` arrastra `spring-modulith-starter-core`, y con él `spring-modulith-core` y ArchUnit en el *runtime* de la imagen, que solo hacen falta en las pruebas (`ModulosTest`). Los tres módulos elegidos dependen solo de Spring, Spring Boot, SLF4J y JSpecify.
+`spring-modulith-starter-jdbc` arrastra `spring-modulith-starter-core`, y con él `spring-modulith-core` y ArchUnit en el *runtime* de la imagen, que solo hacen falta en las pruebas (`ModulosTest`). Los tres módulos elegidos dependen solo de Spring, Spring Boot, SLF4J y JSpecify. `spring-modulith-events-core` trae además `jcl-over-slf4j` en *runtime*; Spring 7 ya usa `commons-logging`, así que se excluye `org.slf4j:jcl-over-slf4j` para no tener clases `org.apache.commons.logging` repetidas en el classpath (se comprueba con `dependencies`).
 
 La configuración del registro:
 - `spring.modulith.events.jdbc.schema: eventos_<proceso>`: el registro vive en un esquema propio del proceso, no en el de un servicio (§2);
@@ -55,7 +55,7 @@ La configuración del registro:
 - `momento` (instante de la publicación);
 - `contenido` (objeto JSON del tipo; sin contraseñas ni tokens).
 
-El esquema público es `EventoEntreProcesos` en `contratos/comun/eventos.yaml`, sin `destino`, que solo sirve al emisor para elegir la URL. El servicio no conoce HTTP: publica por su puerto de salida `PublicadorDeEventos`, cuyo adaptador usa el `ApplicationEventPublisher` de Spring.
+El esquema público es `EventoEntreProcesos` en `contratos/comun/eventos.yaml`, sin `destino`, que solo sirve al emisor para elegir la URL. `destino` sí se guarda con el sobre en el registro de publicaciones (que lo serializa con Jackson), porque cada reenvío lo necesita; por eso el record no lo marca con `@JsonIgnore`, y `ClienteDeEventos` arma un cuerpo aparte sin él. El servicio no conoce HTTP: publica por su puerto de salida `PublicadorDeEventos`, cuyo adaptador usa el `ApplicationEventPublisher` de Spring.
 
 **Por qué.**
 - El identificador lo genera quien publica. Así es el mismo en cada reenvío, que es lo que necesita el receptor idempotente (FR-007).
@@ -103,7 +103,7 @@ El esquema público es `EventoEntreProcesos` en `contratos/comun/eventos.yaml`, 
   - el código común `COMUN_EVENTO_NO_RECONOCIDO`;
   - la forma de la tabla y su prueba, documentadas en `backend/plantillas/README.md`.
 
-  El SQL de cada receptor vive en su adaptador, porque debe ir en la transacción de su servicio y en su esquema.
+  El SQL de cada receptor vive en su adaptador, porque debe ir en la transacción de su servicio y en su esquema. Así lo dice FR-008: la entrega es código común y la recepción, una forma común.
 
 **Por qué.**
 - La clave primaria hace la idempotencia atómica, también con dos entregas simultáneas (SC-004), sin bloqueos explícitos ni lecturas previas.

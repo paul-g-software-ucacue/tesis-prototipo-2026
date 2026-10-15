@@ -553,7 +553,7 @@ Hay que poder probar el flujo completo de creación del distributivo sin debilit
 - **Origen:** aclaración Q1 de la especificación de B00-H05
 - **Modifica a:** alcance del issue #22 (B00-H05)
 
-**Decisión.** Los escenarios de B00-H05 se demuestran con un evento de prueba y un receptor de prueba en Usuarios, el servicio dueño de la bitácora, declarado en su contrato (principio IV) y con sus eventos recibidos en el esquema de Usuarios. La publicación, la entrega, el reenvío y la recepción idempotente quedan como mecanismo común.
+**Decisión.** Los escenarios de B00-H05 se demuestran con un evento de prueba y un receptor de prueba en Usuarios, el servicio dueño de la bitácora, declarado en su contrato (principio IV) y con sus eventos recibidos en el esquema de Usuarios. La publicación, la entrega y el reenvío quedan como mecanismo común, y la recepción idempotente como una forma común documentada (ADR-018, punto 4).
 
 **Por qué.** La bitácora (F17-H01) y las notificaciones (F16-H01) son de la ola 3 y tienen sus propias reglas. Así no se inventan requisitos, y el mecanismo queda probado de punta a punta. Es el mismo enfoque de D-41.
 
