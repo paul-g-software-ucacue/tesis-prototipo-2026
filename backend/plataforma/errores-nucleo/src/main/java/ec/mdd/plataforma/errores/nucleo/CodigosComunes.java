@@ -75,6 +75,14 @@ public final class CodigosComunes {
                     "Servicio no disponible",
                     "El servicio no está disponible en este momento. Intenta de nuevo en unos minutos.");
 
+    /** 400: un receptor de eventos recibe un tipo sin manejador (ADR-018). */
+    public static final DefinicionDeCodigo EVENTO_NO_RECONOCIDO =
+            new DefinicionDeCodigo(
+                    "COMUN_EVENTO_NO_RECONOCIDO",
+                    400,
+                    "Evento no reconocido",
+                    "El receptor no admite este tipo de evento.");
+
     /** 401: sin token o con un token inválido (ADR-014). */
     public static final DefinicionDeCodigo SEGURIDAD_NO_AUTENTICADO =
             new DefinicionDeCodigo(
@@ -94,6 +102,7 @@ public final class CodigosComunes {
                     FORMATO_NO_ACEPTADO,
                     TIPO_NO_SOPORTADO,
                     SERVICIO_NO_DISPONIBLE,
+                    EVENTO_NO_RECONOCIDO,
                     SEGURIDAD_NO_AUTENTICADO);
 
     private CodigosComunes() {}

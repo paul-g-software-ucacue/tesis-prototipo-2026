@@ -1,0 +1,44 @@
+// Eventos entre procesos (principio V, ADR-018): el registro persistente de publicaciones de
+// Spring Modulith en el esquema eventos_<proceso>, el oyente que entrega por HTTP con el token de
+// proceso, y la tarea programada que reenvía lo que falló. Lo aplica cada proceso que publica.
+plugins {
+    id 'java-library'
+    id 'mdd.java-conventions'
+}
+
+dependencies {
+    // @ApplicationModuleListener y FailedEventPublications. Sin el starter: arrastraría
+    // spring-modulith-core y ArchUnit a la imagen, que solo hacen falta en ModulosTest (research §1).
+    api 'org.springframework.modulith:spring-modulith-events-api'
+    implementation 'org.springframework.modulith:spring-modulith-events-jdbc'
+    implementation 'org.springframework.modulith:spring-modulith-events-jackson'
+    // RestClient sobre el HttpClient del JDK, con plazos de espera.
+    implementation 'org.springframework:spring-web'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    // Migración del registro en el esquema del proceso (flywayEventos).
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
+    runtimeOnly 'org.flywaydb:flyway-database-postgresql'
+}
+
+configurations.configureEach {
+    // spring-modulith-events-core trae jcl-over-slf4j, que repite las clases de commons-logging
+    // que ya usa Spring 7 (research §1).
+    exclude group: 'org.slf4j', module: 'jcl-over-slf4j'
+}
+
+testing {
+    suites {
+        test {
+            dependencies {
+                implementation project(':plataforma:pruebas')
+                implementation 'org.springframework.boot:spring-boot-starter-json'
+            }
+        }
+        integrationTest {
+            dependencies {
+                implementation 'org.springframework.boot:spring-boot-starter-json'
+                runtimeOnly 'org.postgresql:postgresql'
+            }
+        }
+    }
+}

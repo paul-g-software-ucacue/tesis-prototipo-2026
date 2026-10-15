@@ -5,6 +5,8 @@
 #
 # Un rol por proceso, dueño de los esquemas de sus servicios: un proceso no puede crear ni leer
 # tablas en los esquemas de otro. Las claves llegan por las variables DB_CLAVE_<PROCESO>.
+# Cada proceso tiene además eventos_<proceso>, con su registro de publicaciones (ADR-018). En un
+# volumen existente, los esquemas nuevos solo aparecen recreándolo: docker compose down -v.
 set -euo pipefail
 
 : "${DB_CLAVE_IDENTIDAD:?falta DB_CLAVE_IDENTIDAD}"
@@ -27,21 +29,29 @@ CREATE ROLE salida LOGIN PASSWORD :'clave_salida';
 CREATE SCHEMA usuarios AUTHORIZATION identidad;
 CREATE SCHEMA roles AUTHORIZATION identidad;
 CREATE SCHEMA notificaciones AUTHORIZATION identidad;
+-- registro de publicaciones del proceso (ADR-018)
+CREATE SCHEMA eventos_identidad AUTHORIZATION identidad;
 
 -- datos: cargas, docentes, academico y normativa
 CREATE SCHEMA cargas AUTHORIZATION datos;
 CREATE SCHEMA docentes AUTHORIZATION datos;
 CREATE SCHEMA academico AUTHORIZATION datos;
 CREATE SCHEMA normativa AUTHORIZATION datos;
+-- registro de publicaciones del proceso (ADR-018)
+CREATE SCHEMA eventos_datos AUTHORIZATION datos;
 
 -- distributivo: generacion, validacionocs y firma
 CREATE SCHEMA generacion AUTHORIZATION distributivo;
 CREATE SCHEMA validacionocs AUTHORIZATION distributivo;
 CREATE SCHEMA firma AUTHORIZATION distributivo;
+-- registro de publicaciones del proceso (ADR-018)
+CREATE SCHEMA eventos_distributivo AUTHORIZATION distributivo;
 
 -- salida: reporting y dashboard
 CREATE SCHEMA reporting AUTHORIZATION salida;
 CREATE SCHEMA dashboard AUTHORIZATION salida;
+-- registro de publicaciones del proceso (ADR-018)
+CREATE SCHEMA eventos_salida AUTHORIZATION salida;
 
 -- Ya es así desde PostgreSQL 15; se deja explícito.
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;

@@ -49,6 +49,6 @@ class RespuestaErrorTest {
         assertThat(CodigosComunes.segunEstado(503))
                 .isEqualTo(CodigosComunes.SERVICIO_NO_DISPONIBLE);
         assertThat(CodigosComunes.segunEstado(502)).isEqualTo(CodigosComunes.ERROR_INTERNO);
-        assertThat(CodigosComunes.TODOS).hasSize(9);
+        assertThat(CodigosComunes.TODOS).hasSize(10);
     }
 }

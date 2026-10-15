@@ -2,7 +2,7 @@
 // backend/plantillas/ en B00-H02 (D-35); cada proceso ensambla sus servicios según ADR-006.
 rootProject.name = 'mdd'
 
-include 'plataforma:arquitectura', 'plataforma:seguridad', 'plataforma:pruebas', 'plataforma:errores-nucleo', 'plataforma:errores'
+include 'plataforma:arquitectura', 'plataforma:seguridad', 'plataforma:pruebas', 'plataforma:errores-nucleo', 'plataforma:errores', 'plataforma:eventos'
 
 // Servicios, agrupados por el proceso que los ensambla.
 include 'servicios:usuarios', 'servicios:roles', 'servicios:notificaciones'

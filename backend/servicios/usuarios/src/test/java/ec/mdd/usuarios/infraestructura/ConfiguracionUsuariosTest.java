@@ -7,6 +7,7 @@ import ec.mdd.usuarios.puertos.entrada.TokenEmitido;
 import ec.mdd.usuarios.puertos.salida.EmisorDeTokens;
 import ec.mdd.usuarios.puertos.salida.VerificadorDeClaves;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 
@@ -18,7 +19,13 @@ class ConfiguracionUsuariosTest {
             new PropiedadesUsuarios(
                     new PropiedadesUsuarios.Token(Duration.ofMinutes(5)),
                     null,
-                    new PropiedadesUsuarios.UsuarioPrueba(false, null));
+                    new PropiedadesUsuarios.UsuarioPrueba(false, null),
+                    Map.of(
+                            "distributivo",
+                            new PropiedadesUsuarios.Proceso("clave-de-prueba"),
+                            "salida",
+                            new PropiedadesUsuarios.Proceso("")),
+                    new PropiedadesUsuarios.TokenProceso(Duration.ofMinutes(5)));
 
     @Test
     void dadoLaConfiguracion_cuandoSeArmanLasPiezas_entoncesFirmanYVerifican() {
@@ -35,5 +42,20 @@ class ConfiguracionUsuariosTest {
         assertThat(configuracion.iniciarSesion(null, verificador, emisor)).isNotNull();
         assertThat(configuracion.cargaUsuarioDePrueba(null, verificador, propiedades)).isNotNull();
         assertThat(propiedades.usuarioPrueba().toString()).doesNotContain("clave=");
+    }
+
+    @Test
+    void dadoUnProcesoConLaClaveVacia_cuandoSeArmaElTokenDeProceso_entoncesNoQuedaHabilitado() {
+        LlavesDeFirma llaves = configuracion.llavesDeFirma(propiedades);
+        EmisorDeTokens emisor = configuracion.emisorDeTokens(llaves, propiedades, "mdd-usuarios");
+
+        var servicio =
+                (ec.mdd.usuarios.aplicacion.EmitirTokenDeProcesoServicio)
+                        configuracion.emitirTokenDeProceso(propiedades, emisor);
+
+        assertThat(servicio.procesosHabilitados()).containsExactly("distributivo");
+        assertThat(servicio.emitir("distributivo", "clave-de-prueba").valor()).isNotBlank();
+        assertThat(propiedades.procesos().get("distributivo").toString())
+                .doesNotContain("clave-de-prueba");
     }
 }

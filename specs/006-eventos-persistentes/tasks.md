@@ -46,8 +46,8 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
 
 ## Phase 1: Setup
 
-- [ ] T001 En `backend/settings.gradle`, agregar `'plataforma:eventos'` a la línea de `include` de `plataforma`.
-- [ ] T002 [P] Crear `specs/006-eventos-persistentes/evidencia.md` con estas secciones:
+- [X] T001 En `backend/settings.gradle`, agregar `'plataforma:eventos'` a la línea de `include` de `plataforma`.
+- [X] T002 [P] Crear `specs/006-eventos-persistentes/evidencia.md` con estas secciones:
   - entorno;
   - contratos;
   - construcción y pruebas;
@@ -69,7 +69,7 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
 
 ### Contratos (principio IV: antes del código)
 
-- [ ] T003 [P] Crear `contratos/comun/eventos.yaml` con el esquema `EventoEntreProcesos` de data-model.md. Los cinco campos son obligatorios:
+- [X] T003 [P] Crear `contratos/comun/eventos.yaml` con el esquema `EventoEntreProcesos` de data-model.md. Los cinco campos son obligatorios:
   - `idEvento`: `format: uuid`;
   - `tipo`: `pattern: '^[a-z]+\.[A-Z][A-Za-z]+$'`;
   - `origen`: `pattern: '^[a-z]+$'`;
@@ -77,8 +77,8 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
   - `contenido`: `type: object`, con `additionalProperties: true`.
 
   Con `additionalProperties: false` en el sobre y la descripción de cada campo. La de `contenido` dice «sin contraseñas ni tokens».
-- [ ] T004 [P] En `contratos/comun/errores.md`, agregar la fila `COMUN_EVENTO_NO_RECONOCIDO` (400, «Evento no reconocido», «El receptor no admite este tipo de evento.») con el «cuándo» de contracts/entrega.md.
-- [ ] T005 En `contratos/usuarios/openapi.yaml`, agregar los tags `TokenProceso` y `Eventos`, uno por operación, y dos operaciones según contracts/entrega.md. Van con tags distintos porque, con `useTags` y `skipDefaultInterface`, cada tag genera una interfaz con todos sus métodos abstractos, y cada operación tiene su propio controlador:
+- [X] T004 [P] En `contratos/comun/errores.md`, agregar la fila `COMUN_EVENTO_NO_RECONOCIDO` (400, «Evento no reconocido», «El receptor no admite este tipo de evento.») con el «cuándo» de contracts/entrega.md.
+- [X] T005 En `contratos/usuarios/openapi.yaml`, agregar los tags `TokenProceso` y `Eventos`, uno por operación, y dos operaciones según contracts/entrega.md. Van con tags distintos porque, con `useTags` y `skipDefaultInterface`, cada tag genera una interfaz con todos sus métodos abstractos, y cada operación tiene su propio controlador:
   - `POST /interno/usuarios/token-proceso`:
     - tag `TokenProceso`, `operationId: emitirTokenDeProceso`, `security: []`;
     - cuerpo `CredencialesProceso`: `proceso` con `pattern: '^[a-z]+$'` y `clave` con `format: password`, los dos obligatorios y con `minLength: 1`;
@@ -89,30 +89,30 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
     - respuestas 204, 400 (`SolicitudInvalida` y la descripción de `COMUN_EVENTO_NO_RECONOCIDO`), 401 `NoAutenticado`, 403 sin cuerpo («hasta F05-H02»), 500 y 503.
 
   Actualizar el comentario de cabecera del contrato con D-47 y D-49.
-- [ ] T006 [P] En `contratos/generacion/openapi.yaml`, agregar el tag `EventosPrueba` y `POST /api/generacion/eventos-prueba`:
+- [X] T006 [P] En `contratos/generacion/openapi.yaml`, agregar el tag `EventosPrueba` y `POST /api/generacion/eventos-prueba`:
   - `operationId: publicarEventoDePrueba`, sin cuerpo;
   - respuestas 202 con `EventoPublicado` (`idEvento`, `format: uuid`, obligatorio), 401 `NoAutenticado`, 404 (`Error`, «apagado por defecto», D-48), 500 y 503.
-- [ ] T007 Validar los 8 archivos de `contratos/` con `openapitools/openapi-generator-cli:v7.25.0 validate --recommend`, sobre una copia en el directorio temporal. Anotar el resultado en la sección «contratos» de `specs/006-eventos-persistentes/evidencia.md`.
+- [X] T007 Validar los 8 archivos de `contratos/` con `openapitools/openapi-generator-cli:v7.25.0 validate --recommend`, sobre una copia en el directorio temporal. Anotar el resultado en la sección «contratos» de `specs/006-eventos-persistentes/evidencia.md`.
 
 ### Esquemas y configuración del entorno
 
-- [ ] T008 En `deploy/postgres/01-esquemas.sh`, agregar en cada bloque de proceso `CREATE SCHEMA eventos_<proceso> AUTHORIZATION <proceso>;` (`eventos_identidad`, `eventos_datos`, `eventos_distributivo` y `eventos_salida`). El comentario dice: «registro de publicaciones del proceso (ADR-018)». Actualizar el comentario de cabecera: hace falta `docker compose down -v` para aplicarlo en un volumen existente.
-- [ ] T009 [P] En `.env.ejemplo`, agregar con su comentario:
+- [X] T008 En `deploy/postgres/01-esquemas.sh`, agregar en cada bloque de proceso `CREATE SCHEMA eventos_<proceso> AUTHORIZATION <proceso>;` (`eventos_identidad`, `eventos_datos`, `eventos_distributivo` y `eventos_salida`). El comentario dice: «registro de publicaciones del proceso (ADR-018)». Actualizar el comentario de cabecera: hace falta `docker compose down -v` para aplicarlo en un volumen existente.
+- [X] T009 [P] En `.env.ejemplo`, agregar con su comentario:
   - `MDD_CLAVE_PROCESO_DISTRIBUTIVO=cambiar-en-local-proceso-distributivo`, para el token de proceso (D-49, ADR-018);
   - `MDD_EVENTOS_PRUEBA_HABILITADO=true`, para el endpoint de prueba, solo en local y en la CI (D-48).
 
   Comprobar con Gitleaks local, sobre un clon, que no hay hallazgos.
-- [ ] T010 [P] En `backend/plataforma/errores-nucleo/`, agregar `COMUN_EVENTO_NO_RECONOCIDO` a `CodigosComunes` y a `TODOS`. `CodigosComunesTest` (con `VerificadorDeCatalogo`) sigue pasando con la fila de T004.
+- [X] T010 [P] En `backend/plataforma/errores-nucleo/`, agregar `COMUN_EVENTO_NO_RECONOCIDO` a `CodigosComunes` y a `TODOS`. `CodigosComunesTest` (con `VerificadorDeCatalogo`) sigue pasando con la fila de T004.
 
 ### Separación de tokens (`plataforma:seguridad`)
 
-- [ ] T011 Escribir primero, en `backend/plataforma/seguridad/src/test/java/ec/mdd/plataforma/seguridad/SeguridadProcesoTest.java`, con dos rutas de prueba en `AplicacionDePrueba` (`POST /interno/prueba/eventos` y `GET /api/prueba/recurso`) y `TokensDePrueba`, la tabla de contracts/entrega.md («Separación de tokens»):
+- [X] T011 Escribir primero, en `backend/plataforma/seguridad/src/test/java/ec/mdd/plataforma/seguridad/SeguridadProcesoTest.java`, con dos rutas de prueba en `AplicacionDePrueba` (`POST /interno/prueba/eventos` y `GET /api/prueba/recurso`) y `TokensDePrueba`, la tabla de contracts/entrega.md («Separación de tokens»):
   - token con `roles: [PROCESO]` en `/interno/**`: 2xx;
   - token de usuario en `/interno/**`: 403;
   - token de proceso en `/api/prueba/recurso`: 403;
   - token de usuario en `/api/prueba/recurso`: 2xx;
   - sin token o con un token vencido en `/interno/**`: el 401 uniforme (`SEGURIDAD_NO_AUTENTICADO`).
-- [ ] T012 En `SeguridadProcesoAutoConfiguracion`, después de las reglas de las rutas públicas:
+- [X] T012 En `SeguridadProcesoAutoConfiguracion`, después de las reglas de las rutas públicas:
   - `reglas.requestMatchers("/interno/**").hasRole("PROCESO")`;
   - `reglas.anyRequest()` con un `AuthorizationManager` que exige estar autenticado y no tener `ROLE_PROCESO`.
 
@@ -120,7 +120,7 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
 
 ### Token de proceso (Usuarios, D-49)
 
-- [ ] T013 Escribir primero, en `backend/servicios/usuarios/src/test/java/ec/mdd/usuarios/`:
+- [X] T013 Escribir primero, en `backend/servicios/usuarios/src/test/java/ec/mdd/usuarios/`:
   - `aplicacion/EmitirTokenDeProcesoServicioTest`:
     - con la clave correcta emite, con `sub` = `proceso:distributivo` y `roles` = `[PROCESO]`;
     - con una clave incorrecta, o con un proceso sin clave configurada, lanza `CredencialesInvalidas`;
@@ -128,7 +128,7 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
   - `adaptadores/salida/EmisorJwtTest`: agregar un caso: el token de proceso dura `mdd.usuarios.token-proceso.vigencia` (5 min por defecto) y lleva el `kid`;
   - `adaptadores/entrada/TokenProcesoContratoTest`: 200 con `TokenSesion`, 401 `USUARIOS_CREDENCIALES_INVALIDAS` (igual con una clave incorrecta y con un proceso desconocido) y 400 con `detalles` con los campos vacíos. Todas las respuestas pasan `ValidadorDeContrato`, y el registro no tiene la clave ni el token;
   - `infraestructura/ConfiguracionUsuariosTest`: `mdd.usuarios.procesos.<proceso>.clave` vacía no habilita el proceso.
-- [ ] T014 Implementar en Usuarios:
+- [X] T014 Implementar en Usuarios:
   - **el puerto de entrada** `puertos/entrada/EmitirTokenDeProceso` (`TokenEmitido emitir(String proceso, String clave)`);
   - **el caso de uso** `aplicacion/EmitirTokenDeProcesoServicio`;
   - **la configuración:** en `PropiedadesUsuarios`, `procesos` (mapa de nombre a clave) y `tokenProceso.vigencia` (`PT5M`);
@@ -144,7 +144,7 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
 
 ### Núcleo de `plataforma:eventos`
 
-- [ ] T015 Escribir primero, en `backend/plataforma/eventos/src/test/java/ec/mdd/plataforma/eventos/`:
+- [X] T015 Escribir primero, en `backend/plataforma/eventos/src/test/java/ec/mdd/plataforma/eventos/`:
   - `EventoEntreProcesosTest`:
     - `nuevo(tipo, origen, destino, contenido, reloj)` genera un UUID v4 y valida los patrones de `tipo` y `origen`;
     - el sobre serializado con el `JsonMapper` del registro y leído de vuelta conserva todos sus campos, incluido `destino` (lo necesita cada reenvío);
@@ -163,7 +163,7 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
     - un destino sin URL configurada lanza `EntregaFallida`;
     - con `mdd.eventos.clave` vacía no pide el token: lanza `EntregaFallida` y registra un WARN «sin clave de proceso».
   - `PropiedadesEventosTest`: el esquema `eventos_distributivo` pasa; `public`, `generacion` o vacío fallan al arrancar con un mensaje claro.
-- [ ] T016 Implementar `backend/plataforma/eventos/`:
+- [X] T016 Implementar `backend/plataforma/eventos/`:
   - **`build.gradle`:** `java-library` y `mdd.java-conventions`, más:
     - `api 'org.springframework.modulith:spring-modulith-events-api'`;
     - `implementation 'org.springframework.modulith:spring-modulith-events-jdbc'` y `'org.springframework.modulith:spring-modulith-events-jackson'`, sin el *starter* (research §1);
@@ -177,7 +177,7 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
   - **La migración** `src/main/resources/db/migration/eventos/V1__registro_de_publicaciones.sql`: el DDL v2 de PostgreSQL de Spring Modulith 2.1.1 (`event_publication` y sus dos índices), con un comentario de su origen.
 
   Así pasa T015.
-- [ ] T017 Agregar a `plataforma:eventos` la autoconfiguración `EventosAutoConfiguracion`, registrada en `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`, con:
+- [X] T017 Agregar a `plataforma:eventos` la autoconfiguración `EventosAutoConfiguracion`, registrada en `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`, con:
   - el bean `flywayEventos` (`@Bean(initMethod = "migrate")`), limitado al esquema `spring.modulith.events.jdbc.schema` y a `db/migration/eventos`, como `UsuariosFlywayConfig`;
   - `PropiedadesEventos`, `ProveedorDeTokenDeProceso` y `ClienteDeEventos`.
 
@@ -285,7 +285,7 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T026 [P] [US2] Escribir primero `backend/plataforma/eventos/src/test/java/ec/mdd/plataforma/eventos/ReenvioDePublicacionesTest`. Con un `FailedEventPublications` escrito a mano, comprueba que:
+- [X] T026 [P] [US2] Escribir primero `backend/plataforma/eventos/src/test/java/ec/mdd/plataforma/eventos/ReenvioDePublicacionesTest`. Con un `FailedEventPublications` escrito a mano, comprueba que:
   - cada ejecución llama a `resubmit` con las opciones por defecto;
   - el filtro registra en INFO cada publicación con `idEvento` y `tipo`, sin el contenido.
 - [ ] T027 [US2] Escribir primero `backend/plataforma/eventos/src/integrationTest/java/ec/mdd/plataforma/eventos/ReenvioIntegrationTest.java`, con la misma base de T020, `mdd.eventos.reenvio.intervalo=PT2S` y la vigilancia de atascadas en pocos segundos. Comprueba que:

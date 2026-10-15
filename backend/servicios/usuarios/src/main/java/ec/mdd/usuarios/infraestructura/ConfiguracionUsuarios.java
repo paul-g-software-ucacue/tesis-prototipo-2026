@@ -6,12 +6,16 @@ import ec.mdd.usuarios.adaptadores.salida.EmisorJwt;
 import ec.mdd.usuarios.adaptadores.salida.RepositorioUsuariosJpa;
 import ec.mdd.usuarios.adaptadores.salida.UsuarioJpaRepositorio;
 import ec.mdd.usuarios.adaptadores.salida.VerificadorArgon2;
+import ec.mdd.usuarios.aplicacion.EmitirTokenDeProcesoServicio;
 import ec.mdd.usuarios.aplicacion.IniciarSesionServicio;
+import ec.mdd.usuarios.puertos.entrada.EmitirTokenDeProceso;
 import ec.mdd.usuarios.puertos.entrada.IniciarSesion;
 import ec.mdd.usuarios.puertos.salida.EmisorDeTokens;
 import ec.mdd.usuarios.puertos.salida.RepositorioUsuarios;
 import ec.mdd.usuarios.puertos.salida.VerificadorDeClaves;
 import java.time.Clock;
+import java.util.HashMap;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -61,6 +65,7 @@ public class ConfiguracionUsuarios {
                 new NimbusJwtEncoder(new ImmutableJWKSet<>(new JWKSet(llaves.llave()))),
                 Clock.systemUTC(),
                 propiedades.token().vigencia(),
+                propiedades.tokenProceso().vigencia(),
                 emisor,
                 llaves.llave().getKeyID());
     }
@@ -71,6 +76,15 @@ public class ConfiguracionUsuarios {
             VerificadorDeClaves verificador,
             EmisorDeTokens emisor) {
         return new IniciarSesionServicio(repositorio, verificador, emisor);
+    }
+
+    /** Token de proceso con las claves de {@code mdd.usuarios.procesos} (D-49, ADR-018). */
+    @Bean
+    public EmitirTokenDeProceso emitirTokenDeProceso(
+            PropiedadesUsuarios propiedades, EmisorDeTokens emisor) {
+        Map<String, String> claves = new HashMap<>();
+        propiedades.procesos().forEach((proceso, datos) -> claves.put(proceso, datos.clave()));
+        return new EmitirTokenDeProcesoServicio(claves, emisor);
     }
 
     @Bean

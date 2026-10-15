@@ -32,5 +32,15 @@ class AplicacionDePrueba {
         String iniciar() {
             return "publica";
         }
+
+        @PostMapping("/interno/prueba/eventos")
+        String recibirEvento(Authentication autenticacion) {
+            return "interno|" + autenticacion.getName();
+        }
+
+        @GetMapping("/api/prueba/recurso")
+        String recurso() {
+            return "recurso";
+        }
     }
 }

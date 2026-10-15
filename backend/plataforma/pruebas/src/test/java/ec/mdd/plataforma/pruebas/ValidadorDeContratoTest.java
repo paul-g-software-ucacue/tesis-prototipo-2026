@@ -45,6 +45,24 @@ class ValidadorDeContratoTest {
         assertThatCode(() -> ValidadorDeContrato.para("usuarios")).doesNotThrowAnyException();
     }
 
+    @Test
+    void dadoUnCuerpoDePeticion_cuandoSeValidaContraElContrato_entoncesPasaOFallaConElInforme() {
+        ValidadorDeContrato usuarios = ValidadorDeContrato.para("usuarios");
+        String valido = "{\"proceso\":\"distributivo\",\"clave\":\"x\"}";
+
+        assertThatCode(
+                        () ->
+                                usuarios.validarPeticion(
+                                        "POST", "/interno/usuarios/token-proceso", valido))
+                .doesNotThrowAnyException();
+        assertThatThrownBy(
+                        () ->
+                                usuarios.validarPeticion(
+                                        "POST", "/interno/usuarios/token-proceso", "{}"))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("proceso");
+    }
+
     @RestController
     static class Saludo {
 

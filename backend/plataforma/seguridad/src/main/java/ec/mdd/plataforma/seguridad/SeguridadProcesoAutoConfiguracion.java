@@ -9,10 +9,16 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationTrustResolver;
+import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
+import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
@@ -20,6 +26,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
@@ -31,6 +38,10 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
  * un vencimiento que no pasó. Los roles salen del claim {@code roles} como autoridades {@code
  * ROLE_<rol>}. Sin un token válido, solo se atienden la salud de Actuator y las rutas de {@link
  * PropiedadesSeguridad#rutasPublicas()}; lo demás responde con {@link RespuestaNoAutenticado}.
+ *
+ * <p>Los tokens de usuario y los de proceso no se mezclan (ADR-018): las rutas entre procesos
+ * ({@code /interno/**}) solo admiten el rol {@code PROCESO}, y un token con ese rol no sirve en
+ * ninguna otra ruta. En los dos casos el rechazo es un 403.
  *
  * <p>Se aplica antes que la seguridad por defecto de Spring Boot, que se retira al encontrar esta
  * cadena de filtros y este decodificador.
@@ -52,6 +63,12 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 public class SeguridadProcesoAutoConfiguracion {
 
     private static final String JWKS = "spring.security.oauth2.resourceserver.jwt.jwk-set-uri";
+
+    /** Rol de los tokens de proceso que emite Usuarios (D-49, ADR-018). */
+    static final String ROL_PROCESO = "PROCESO";
+
+    private static final AuthenticationTrustResolver CONFIANZA =
+            new AuthenticationTrustResolverImpl();
 
     /** Decodificador RS256 con el JWKS de Usuarios y la validación del emisor y del vencimiento. */
     @Bean
@@ -77,7 +94,10 @@ public class SeguridadProcesoAutoConfiguracion {
         return conversor;
     }
 
-    /** Cadena de filtros sin sesión: rutas públicas, el resto autenticado con el token. */
+    /**
+     * Cadena de filtros sin sesión: rutas públicas, rutas internas con el token de proceso y el
+     * resto con el token de un usuario.
+     */
     @Bean
     public SecurityFilterChain cadenaDeSeguridad(
             HttpSecurity http,
@@ -101,7 +121,10 @@ public class SeguridadProcesoAutoConfiguracion {
                             propiedades
                                     .rutasPublicas()
                                     .forEach(r -> reglas.requestMatchers(ruta(r)).permitAll());
-                            reglas.anyRequest().authenticated();
+                            // Rutas entre procesos: solo con el token de proceso (ADR-018). El
+                            // API Gateway no las enruta.
+                            reglas.requestMatchers(ruta("* /interno/**")).hasRole(ROL_PROCESO);
+                            reglas.anyRequest().access(soloUsuarios());
                         })
                 .oauth2ResourceServer(
                         servidor ->
@@ -109,6 +132,23 @@ public class SeguridadProcesoAutoConfiguracion {
                                         .authenticationEntryPoint(respuesta401))
                 .exceptionHandling(errores -> errores.authenticationEntryPoint(respuesta401));
         return http.build();
+    }
+
+    /**
+     * Autenticado y sin el rol de proceso: un token de proceso no sirve fuera de {@code
+     * /interno/**}. Sin autenticación, el rechazo pasa por el punto de entrada y responde el 401
+     * uniforme.
+     */
+    static AuthorizationManager<RequestAuthorizationContext> soloUsuarios() {
+        return (autenticacion, contexto) -> {
+            Authentication actual = autenticacion.get();
+            boolean usuario =
+                    CONFIANZA.isAuthenticated(actual)
+                            && actual.getAuthorities().stream()
+                                    .map(GrantedAuthority::getAuthority)
+                                    .noneMatch(("ROLE_" + ROL_PROCESO)::equals);
+            return new AuthorizationDecision(usuario);
+        };
     }
 
     // «MÉTODO /ruta», con * para cualquier método.

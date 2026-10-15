@@ -128,6 +128,53 @@ class SeguridadProcesoTest {
     }
 
     @Test
+    void dadoUnTokenDeProceso_cuandoLlegaAUnaRutaInterna_entoncesPasa() throws Exception {
+        String token = TOKENS.valido("proceso:distributivo", List.of("PROCESO"));
+
+        HttpResponse<String> respuesta =
+                pedir("POST", "/interno/prueba/eventos", "Bearer " + token);
+
+        assertThat(respuesta.statusCode()).isEqualTo(200);
+        assertThat(respuesta.body()).isEqualTo("interno|proceso:distributivo");
+    }
+
+    @Test
+    void dadoUnTokenDeUsuario_cuandoLlegaAUnaRutaInterna_entoncesResponde403() throws Exception {
+        String token = TOKENS.valido("autor.prueba", List.of("DOCENTE"));
+
+        assertThat(pedir("POST", "/interno/prueba/eventos", "Bearer " + token).statusCode())
+                .isEqualTo(403);
+    }
+
+    @Test
+    void dadoUnTokenDeProceso_cuandoLlegaAUnaRutaDeLaApi_entoncesResponde403() throws Exception {
+        String token = TOKENS.valido("proceso:distributivo", List.of("PROCESO"));
+
+        assertThat(pedir("GET", "/api/prueba/recurso", "Bearer " + token).statusCode())
+                .isEqualTo(403);
+        assertThat(pedir("GET", "/api/prueba/sesion", "Bearer " + token).statusCode())
+                .isEqualTo(403);
+    }
+
+    @Test
+    void dadoUnTokenDeUsuario_cuandoLlegaAUnaRutaDeLaApi_entoncesPasa() throws Exception {
+        String token = TOKENS.valido("autor.prueba", List.of("DOCENTE"));
+
+        assertThat(pedir("GET", "/api/prueba/recurso", "Bearer " + token).statusCode())
+                .isEqualTo(200);
+    }
+
+    @ParameterizedTest
+    @MethodSource("autorizacionesInvalidas")
+    void dadoUnTokenAusenteOInvalido_cuandoLlegaAUnaRutaInterna_entoncesResponde401SiempreIgual(
+            String autorizacion) throws Exception {
+        HttpResponse<String> respuesta = pedir("POST", "/interno/prueba/eventos", autorizacion);
+
+        assertThat(respuesta.statusCode()).isEqualTo(401);
+        assertThat(respuesta.body()).isEqualTo(CUERPO_401);
+    }
+
+    @Test
     void dadoLaSaludDelProceso_cuandoSeLlamaSinToken_entoncesResponde() throws Exception {
         assertThat(pedir("GET", "/actuator/health", "").statusCode()).isEqualTo(200);
     }
