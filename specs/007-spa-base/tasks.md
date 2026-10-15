@@ -71,10 +71,10 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
   - **`vite.config.ts`:** el *plugin* de React y, en desarrollo, el proxy de `/api` a `http://localhost:8080`;
   - **`vitest.config.ts`:**
     - jsdom, `setupFiles` con `@testing-library/jest-dom`;
-    - cobertura v8 con `thresholds.lines: 60`;
+    - cobertura v8 de `src/**` (`coverage.include`), con `thresholds.lines: 60`;
     - fuera de la cobertura: `src/api/generado/**`, `src/main.tsx` y `e2e/**`;
   - **`playwright.config.ts`:**
-    - solo Chromium, con `viewport` de 1366 × 768;
+    - dos proyectos con `viewport` de 1366 × 768: `chromium` (todas las pruebas) y `firefox` (`sesion.spec.ts` y `errores.spec.ts`; la accesibilidad, solo en Chromium). Edge usa el motor de Chromium (FR-009);
     - `webServer` con `npm run build && npm run preview -- --port 4173`;
     - `baseURL` `http://localhost:4173`;
   - **`eslint.config.js`:** según research §9, con `no-restricted-globals` y `no-restricted-properties` para `localStorage`, `sessionStorage` y `document.cookie`, y `no-console` en `src/`;
@@ -168,7 +168,8 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
   2. copia `contratos/` a una carpeta temporal del sistema;
   3. **primer cambio:** renombra `token` por `jwt` en `TokenSesion`, genera con openapi-typescript sobre `usuarios.d.ts`, corre `tsc --noEmit` y exige que falle con un error que nombre `token`;
   4. **segundo cambio:** cambia `venceEn` a `type: integer` y exige otra vez el fallo;
-  5. restaura los tipos del contrato real y exige que `tsc` pase, también si un paso intermedio falla (`finally`).
+  5. **campo que la SPA no usa:** renombra `kty` en `Jwk` (la SPA no lee el JWKS) y exige que `tsc` **pase** (caso límite de la especificación);
+  6. restaura los tipos del contrato real y exige que `tsc` pase, también si un paso intermedio falla (`finally`).
 
   Imprime una línea por paso (`OK`/`FALLA`) y termina con 0 o 1. Para que el primer cambio rompa la compilación, la SPA tiene que leer `token` y `venceEn` con sus tipos (T012).
 - [ ] T015 [US1] En `.github/workflows/ci.yml`, job `2 · test-frontend`, agregar el paso «Un cambio de contrato rompe la compilación» (`npm run verificar:ruptura`) después de Vitest. Validar con actionlint, sobre una copia. Anotar la salida local en el escenario 1 de la evidencia.
@@ -183,8 +184,8 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
 
 **Independent Test**: `npx playwright test e2e/errores.spec.ts` en verde.
 
-- [ ] T016 [P] [US2] Escribir `frontend/e2e/simulacion.ts`, con `page.route` para `/api/usuarios/sesion`: respuesta correcta, 401 de credenciales, 400 con `detalles`, 500 con `idIncidente`, 503 del API Gateway, HTML de un proxy y fallo de red (`route.abort()`).
-- [ ] T017 [US2] Escribir `frontend/e2e/errores.spec.ts`: por cada respuesta de T016, el inicio de sesión muestra el título y la descripción esperados (contracts/interfaz.md «Errores»). La página no contiene el estado (`401`, `500`…), `COMUN_`, `USUARIOS_`, «Exception», «Error:» ni texto en inglés del navegador. El 500 muestra el `idIncidente`. Si encuentra un hueco en el traductor, corregirlo en `src/errores/` con su prueba unitaria.
+- [ ] T016 [P] [US2] Escribir `frontend/e2e/simulacion.ts`, con `page.route` para `/api/usuarios/sesion`: respuesta correcta, 401 de credenciales, 400 con `detalles`, 500 con `idIncidente`, 503 del API Gateway, HTML de un proxy y fallo de red (`route.abort()`); y para `GET /api/usuarios/sesion`, un 404 `COMUN_RECURSO_NO_ENCONTRADO` (SC-002).
+- [ ] T017 [US2] Escribir `frontend/e2e/errores.spec.ts`: por cada respuesta de T016, el inicio de sesión muestra el título y la descripción esperados (contracts/interfaz.md «Errores»). La página no contiene el estado (`401`, `500`…), `COMUN_`, `USUARIOS_`, «Exception», «Error:» ni texto en inglés del navegador. El 500 muestra el `idIncidente`, y el 404 de la sesión actual se muestra en Inicio con su título y su descripción. Si encuentra un hueco en el traductor, corregirlo en `src/errores/` con su prueba unitaria.
 
 **Checkpoint**: ningún error llega al usuario con texto técnico.
 
@@ -208,7 +209,7 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
   - la recarga vuelve al inicio de sesión;
   - un 401 cierra la sesión;
   - el ancho de 1366 px sin desplazamiento horizontal.
-- [ ] T020 [US3] En `.github/workflows/ci.yml`, job `2 · test-frontend`, agregar antes de `verificar:ruptura` los pasos `npx playwright install --with-deps chromium` y «Accesibilidad y flujos (Playwright)» (`npm run test:e2e`), y subir `frontend/playwright-report/` como artefacto `if: failure()`. Validar con actionlint, sobre una copia. Anotar en la evidencia el resultado de los tres análisis.
+- [ ] T020 [US3] En `.github/workflows/ci.yml`, job `2 · test-frontend`, agregar antes de `verificar:ruptura` los pasos `npx playwright install --with-deps chromium firefox` y «Accesibilidad y flujos (Playwright)» (`npm run test:e2e`), y subir `frontend/playwright-report/` como artefacto `if: failure()`. Validar con actionlint, sobre una copia. Anotar en la evidencia el resultado de los tres análisis.
 
 **Checkpoint**: la base cumple WCAG 2.1 AA y los flujos de sesión están probados en un navegador.
 
@@ -240,11 +241,11 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
   - `server_tokens off`.
 - [ ] T024 Cambiar `deploy/docker/frontend.Dockerfile` a contexto en la raíz:
   - `FROM node:24-alpine` (sin cambiar de versión mayor, D-53);
-  - copia `frontend/package*.json` y `npm ci`; después `frontend/` y `contratos/`, y `npm run build`;
+  - `WORKDIR /app/frontend`: copia `frontend/package*.json` y `npm ci`; después `frontend/` en `/app/frontend` y `contratos/` en `/app/contratos`, para que `generar:api` encuentre `../contratos/`, y `npm run build`;
   - `nginxinc/nginx-unprivileged:stable-alpine` con `dist/` y la plantilla;
   - comentario de cabecera con el ejemplo de `docker build -f deploy/docker/frontend.Dockerfile .`.
 
-  Agregar `frontend/node_modules`, `frontend/dist` y `frontend/coverage` al `.dockerignore` de la raíz. Construirla en local y comprobar con `docker run` que `/salud` responde 200 y `/` trae la CSP.
+  En el `.dockerignore` de la raíz, que hoy solo admite `backend/` y `contratos/`, agregar `!frontend/` y excluir `frontend/node_modules/`, `frontend/dist/`, `frontend/coverage/`, `frontend/test-results/` y `frontend/playwright-report/`; actualizar su comentario (sirve a las dos imágenes). Construirla en local y comprobar con `docker run` que `/salud` responde 200 y `/` trae la CSP.
 - [ ] T025 En `compose.yaml`, agregar el servicio `frontend` de contracts/perfil.md:
   - `build`, `8081:8080`, 64 MiB;
   - `depends_on: gateway: condition: service_healthy`;
@@ -256,7 +257,7 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
 - [ ] T027 Crear `deploy/probar_spa.sh`, ejecutable, con los 5 pasos de contracts/perfil.md y el patrón `verificar`, sin imprimir el token. Validar con shellcheck, sobre una copia. En `.github/workflows/perfil-consolidado.yml`, agregar el paso «SPA de punta a punta» después de «Eventos de punta a punta» y antes de la medición; agregar `frontend/**` a sus `paths`. Validar con actionlint, sobre una copia.
 - [ ] T028 Node (D-53):
   - en `.github/dependabot.yml`, ecosistema `docker`, agregar `ignore: [{ dependency-name: node, update-types: [version-update:semver-major] }]` con su comentario;
-  - **con la aprobación del autor**, cerrar el PR #73 con un comentario que cite D-53 (`gh pr close 73 --comment …`);
+  - el PR #73 ya está cerrado: se cerró el 2026-10-15, con la aprobación del autor y un comentario que cita D-53;
   - anotarlo en las notas de la evidencia.
 - [ ] T029 Correr todo:
   - `npm run lint`, `formato:verificar`, `tipos`, `test -- --run --coverage`, `test:e2e`, `verificar:ruptura` y `npm audit --omit dev`;

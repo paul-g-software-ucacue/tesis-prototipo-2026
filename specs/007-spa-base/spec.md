@@ -186,9 +186,8 @@ Escenario: Lint del frontend en cada pull request
 
 - El inicio de sesión de esta historia es el mínimo de B00-H03 (D-37), con el usuario de prueba. Las reglas de F05-H01 (usuarios reales, permisos por rol, matriz de permisos) quedan para esa historia y sus siguientes.
 - La SPA llama solo a operaciones que ya existen: el inicio de sesión y la sesión actual de Usuarios. No hay contratos nuevos.
-- La SPA llama a la API en el mismo origen, bajo `/api` (en el VPS, Caddy envía `/api/*` al API Gateway y lo demás a la SPA, `deploy/Caddyfile`).
-- En el VPS, Caddy ya envía `/api/*` al API Gateway y lo demás a `frontend:8080` (`deploy/Caddyfile`); en local, el Nginx de la SPA hace lo mismo con `/api` (D-52).
+- La SPA llama a la API en el mismo origen, bajo `/api`. En el VPS, Caddy ya envía `/api/*` al API Gateway y lo demás a `frontend:8080` (`deploy/Caddyfile`); en local, el Nginx de la SPA hace lo mismo con `/api` (D-52).
 - Los jobs de frontend de `ci.yml` (`lint-frontend`, `test-frontend` y `sbom-frontend`) y `deploy/docker/frontend.Dockerfile` ya existen desde B00-H01; esta historia los activa y los ajusta solo si hace falta.
 - El análisis de accesibilidad de esta historia cubre la pantalla de inicio de sesión, como dice el escenario; las demás pantallas principales se analizan en sus historias.
-- La versión de Node es la que fija la CI; qué hacer con el pull request #73 de Dependabot (Node 24 → 26) se decide en el plan.
+- La versión de Node es Node 24 LTS, la que fija la CI, también en la imagen; el pull request #73 de Dependabot (Node 24 → 26) se cerró (D-53).
 - Solo se usan datos ficticios (principios VIII y IX).

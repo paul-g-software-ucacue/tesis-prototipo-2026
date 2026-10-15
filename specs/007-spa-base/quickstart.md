@@ -14,15 +14,15 @@ cd frontend
 npm ci
 npm run lint && npm run formato:verificar && npm run tipos
 npm run test -- --run --coverage     # umbral de 60 % de líneas
-npx playwright install chromium
+npx playwright install chromium firefox
 npm run test:e2e                     # accesibilidad (axe-core) y flujos con la API simulada
-npm run verificar:ruptura            # escenario 1: dos cambios de contrato rompen la compilación
+npm run verificar:ruptura            # escenario 1: dos cambios rompen la compilación; uno sin uso, no
 ```
 
 Resultado esperado:
 - todo en verde;
 - axe-core sin fallas en `/iniciar-sesion`, en sus tres estados;
-- `verificar:ruptura` dice que los dos cambios rompieron la compilación y que el contrato real compila.
+- `verificar:ruptura` dice que los dos cambios rompieron la compilación, que el cambio en un campo sin uso no la rompió y que el contrato real compila.
 
 ## 2. Con el perfil
 

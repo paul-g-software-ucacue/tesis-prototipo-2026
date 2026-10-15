@@ -33,6 +33,8 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 | globals, @types/node | 17.12.0, 24.19.0 | |
 | @cyclonedx/cyclonedx-npm | 6.0.1 | SBOM del frontend (`ci.yml`) |
 
+Playwright corre en Chromium (todas las pruebas) y en Firefox (los flujos y los errores); Edge usa el motor de Chromium (FR-009).
+
 Las versiones se fijan exactas en `package.json` (sin `^`) y `package-lock.json` se versiona. Dependabot ya está configurado para `/frontend`.
 
 **Alternativas.** TypeScript 6 o 7, que romperían typescript-eslint y openapi-typescript; ESLint 10 sin jsx-a11y, que perdería las reglas de accesibilidad en el lint.
@@ -76,7 +78,8 @@ Cada historia agrega sus pantallas en `pantallas/` y sus entradas del menú en `
   2. genera los tipos de esa copia sobre `src/api/generado/usuarios.d.ts`;
   3. corre `tsc --noEmit` y exige que falle, mencionando `token`;
   4. repite con un cambio de tipo (`venceEn` de `string` a `integer`);
-  5. restaura los tipos del contrato real y exige que `tsc` pase.
+  5. cambia un campo que la SPA no usa (`Jwk.kty`) y exige que `tsc` pase;
+  6. restaura los tipos del contrato real y exige que `tsc` pase.
 
   Corre en el job `2 · test-frontend`.
 - `generar:api` corre antes de `tipos`, `build`, `test` y `dev` (`pre`-scripts de npm), en la CI (ya está en `ci.yml`) y en la imagen (ya está en `frontend.Dockerfile`) (FR-003).
@@ -231,4 +234,4 @@ La base del frontend fija cómo construyen sus pantallas todas las historias con
 - el mismo origen con `/api` a través de Nginx o Caddy;
 - la accesibilidad con Playwright y axe-core.
 
-Es una decisión que afecta a varias features, así que se registra como **ADR-019** (constitución §6, paso 4), propuesto hasta que el autor lo apruebe. D-53 (Node 24 y el #73) es una decisión de alcance, no de arquitectura.
+Es una decisión que afecta a varias features, así que se registra como **ADR-019** (constitución §6, paso 4), aprobada por el autor el 2026-10-15. D-53 (Node 24 y el #73) es una decisión de alcance, no de arquitectura.

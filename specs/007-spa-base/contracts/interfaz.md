@@ -52,7 +52,7 @@ En ningún caso se muestran el `codigo`, el estado HTTP, trazas ni el texto de u
 | `formato:verificar` | `prettier --check .` | `1 · lint-frontend` |
 | `tipos` | `tsc --noEmit` | `1 · lint-frontend` |
 | `test` | Vitest (con `--run --coverage` en la CI; umbral de 60 % de líneas) | `2 · test-frontend` |
-| `test:e2e` | Playwright en Chromium sobre `vite preview` | `2 · test-frontend` |
-| `verificar:ruptura` | El escenario 1 con dos cambios de contrato (research §3) | `2 · test-frontend` |
+| `test:e2e` | Playwright sobre `vite preview`: todo en Chromium, y los flujos y los errores también en Firefox | `2 · test-frontend` |
+| `verificar:ruptura` | El escenario 1: dos cambios de contrato rompen la compilación y uno en un campo que la SPA no usa no la rompe (research §3) | `2 · test-frontend` |
 | `sbom` | `cyclonedx-npm --omit dev --output-file sbom-frontend.json` | `4 · sbom-frontend` |
 | `build`, `dev`, `preview` | Vite | Imagen y desarrollo local |

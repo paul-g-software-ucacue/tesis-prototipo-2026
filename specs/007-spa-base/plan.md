@@ -14,7 +14,7 @@
 - **Pantallas:** inicio de sesión, inicio con el usuario y sus roles, marco con menú y «Cerrar sesión», y «no encontrada».
 - **Pruebas:**
   - Vitest con Testing Library, con el 60 % de líneas;
-  - Playwright con axe-core en Chromium para WCAG 2.1 AA (también el contraste) y para los flujos con la API simulada;
+  - Playwright con axe-core en Chromium para WCAG 2.1 AA (también el contraste), y Playwright en Chromium y Firefox para los flujos con la API simulada;
   - ESLint con jsx-a11y y una regla que prohíbe guardar el token en el navegador.
 - **Despliegue:** la imagen de Nginx (contexto en la raíz, con CSP) entra a `compose.yaml` en el puerto 8081 y envía `/api` al API Gateway (D-52). `deploy/probar_spa.sh` se suma a `perfil-consolidado`, y R-19 mide el contenedor nuevo.
 - **Node:** se queda Node 24 LTS y se cierra el PR #73 (D-53).
@@ -33,7 +33,7 @@ Los detalles y las alternativas están en [research.md](research.md). La decisi�
 
 **Testing**:
 - Vitest 5 con jsdom y Testing Library (cobertura v8, 60 % de líneas);
-- Playwright 1.63 con @axe-core/playwright 4.13 en Chromium;
+- Playwright 1.63 con @axe-core/playwright 4.13 en Chromium, y los flujos también en Firefox;
 - `scripts/verificar-ruptura.mjs` (escenario 1);
 - ESLint 9 (jsx-a11y) y Prettier;
 - `deploy/probar_spa.sh` sobre el perfil.
@@ -124,6 +124,7 @@ deploy/
 ├── medir_memoria.sh             # cambia: + frontend
 └── probar_spa.sh                # nuevo
 compose.yaml                     # cambia: + servicio frontend (8081:8080, 64 MiB)
+.dockerignore                    # cambia: + !frontend/, sin node_modules ni salidas
 .github/workflows/ci.yml         # cambia: test-frontend + Playwright y verificar:ruptura
 .github/workflows/perfil-consolidado.yml   # cambia: + paso «SPA de punta a punta»
 .github/dependabot.yml           # cambia: docker ignora versiones mayores de node (D-53)
@@ -142,12 +143,12 @@ specs/002-compose-cuatro-procesos/contracts/medicion-r19.md   # cambia: + fronte
 6. **Accesibilidad y flujos:** Playwright con axe-core (escenario 3) y los flujos de sesión.
 7. **CI (escenario 4):** `test-frontend` con Playwright y `verificar:ruptura`, y la prueba del check con un error de ESLint en el pull request.
 8. **Imagen y perfil:** `frontend.Dockerfile`, `nginx.conf`, el servicio en `compose.yaml`, `medir_memoria.sh`, `probar_spa.sh` y su paso en `perfil-consolidado`.
-9. **Node (D-53):** `.nvmrc`, `dependabot.yml` y el cierre del PR #73 con la aprobación del autor.
+9. **Node (D-53):** `.nvmrc` y `dependabot.yml`; el PR #73 ya se cerró el 2026-10-15, con la aprobación del autor.
 10. **Cierre:** `evidencia.md`, el pull request con los 10 checks en verde, la fusión con la aprobación del autor y el PR de evidencia con `perfil-consolidado` sobre `main`.
 
 ## Complexity Tracking
 
 | Pieza | Por qué hace falta | Alternativa más simple descartada porque |
 |---|---|---|
-| Playwright en el job `test-frontend` (con Chromium) | axe-core necesita un navegador real para el contraste de color, que es parte de WCAG 2.1 AA | axe-core en jsdom no calcula el contraste, y el escenario 3 quedaría a medias. |
+| Playwright en el job `test-frontend` (con Chromium y Firefox) | axe-core necesita un navegador real para el contraste de color, que es parte de WCAG 2.1 AA | axe-core en jsdom no calcula el contraste, y el escenario 3 quedaría a medias. |
 | `verificar:ruptura` (un script propio) | El escenario 1 pide demostrar que un cambio de contrato rompe la compilación, y la CI debe repetirlo | Comprobarlo una vez a mano no detectaría si un día los tipos dejan de generarse desde el contrato. |
