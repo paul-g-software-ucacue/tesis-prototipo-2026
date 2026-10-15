@@ -1,0 +1,9 @@
+# Dependencias y salidas (B00-H06).
+node_modules/
+dist/
+coverage/
+test-results/
+playwright-report/
+sbom-frontend.json
+# Tipos generados desde contratos/ en cada compilación (ADR-019).
+src/api/generado/

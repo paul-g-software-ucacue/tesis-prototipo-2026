@@ -42,8 +42,8 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
 
 ## Phase 1: Setup
 
-- [ ] T001 Dejar Node 24 disponible sin `sudo` (research §13): el binario oficial de la última 24.x con más de dos semanas (comprobado con `SHASUMS256.txt` de nodejs.org) en `~/.local/node-24`, agregado al `PATH` solo en los comandos de esta historia. Si no se puede, usar `node:24-alpine` sobre una copia en el scratchpad. Anotar la versión en el «entorno» de la evidencia.
-- [ ] T002 [P] Crear `specs/007-spa-base/evidencia.md` con estas secciones:
+- [X] T001 Dejar Node 24 disponible sin `sudo` (research §13): el binario oficial de la última 24.x con más de dos semanas (comprobado con `SHASUMS256.txt` de nodejs.org) en `~/.local/node-24`, agregado al `PATH` solo en los comandos de esta historia. Si no se puede, usar `node:24-alpine` sobre una copia en el scratchpad. Anotar la versión en el «entorno» de la evidencia.
+- [X] T002 [P] Crear `specs/007-spa-base/evidencia.md` con estas secciones:
   - entorno;
   - construcción y pruebas;
   - escenario 1 (cambio de contrato);
@@ -53,7 +53,7 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
   - perfil y punta a punta;
   - memoria (R-19);
   - notas.
-- [ ] T003 Crear `frontend/package.json` (`"private": true`, `"type": "module"`, `engines.node` `>=24 <25`) con las dependencias y versiones exactas de research §1, y estos scripts:
+- [X] T003 Crear `frontend/package.json` (`"private": true`, `"type": "module"`, `engines.node` `>=24 <25`) con las dependencias y versiones exactas de research §1, y estos scripts:
   - `generar:api`: openapi-typescript desde `../contratos/usuarios/openapi.yaml` a `src/api/generado/usuarios.d.ts`;
   - `pretipos`, `prebuild`, `pretest` y `predev`: `npm run generar:api`;
   - `lint`: `eslint . --max-warnings 0`;
@@ -65,7 +65,7 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
   - `dev`, `build` (`tsc --noEmit && vite build`) y `preview`.
 
   Correr `npm install` para crear `package-lock.json`, y `npm audit --omit dev` sin altas ni críticas. Agregar `frontend/.nvmrc` (`24`) y `frontend/.gitignore`.
-- [ ] T004 Agregar la configuración de `frontend/`:
+- [X] T004 Agregar la configuración de `frontend/`:
   - **`tsconfig.json`:** estricto, `noUncheckedIndexedAccess`, `jsx: react-jsx` y `moduleResolution: bundler`; más `tsconfig.node.json` para los archivos de configuración;
   - **`index.html`:** `<html lang="es">` y el título «MDD · Distributivo docente»;
   - **`vite.config.ts`:** el *plugin* de React y, en desarrollo, el proxy de `/api` a `http://localhost:8080`;
@@ -92,7 +92,7 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
 
 ### Cliente y errores
 
-- [ ] T005 [P] Escribir primero `frontend/src/errores/traducir.test.ts` (data-model «Mensaje de error»):
+- [X] T005 [P] Escribir primero `frontend/src/errores/traducir.test.ts` (data-model «Mensaje de error»):
   - un cuerpo `Error` da su `titulo` y su `descripcion`, y nunca su `codigo`;
   - con `detalles`, los conserva por campo; con `idIncidente`, lo conserva;
   - un cuerpo HTML, vacío o con otra forma da el mensaje de `COMUN_ERROR_INTERNO`, sin `idIncidente`;
@@ -100,27 +100,27 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
   - ningún resultado contiene el estado HTTP, «Error:», «Exception», «at » ni el texto del `TypeError`.
 
   Y `frontend/src/errores/mensajes.test.ts`: los textos de `mensajes.ts` coinciden con las filas de `COMUN_ERROR_INTERNO` y `COMUN_SERVICIO_NO_DISPONIBLE` de `contratos/comun/errores.md`, leídas del archivo.
-- [ ] T006 Implementar en `frontend/src/errores/`:
+- [X] T006 Implementar en `frontend/src/errores/`:
   - `mensajes.ts`, con los dos textos genéricos del catálogo;
   - `traducir.ts`, con `traducirError(fallo): MensajeDeError` y el esquema Zod del tipo `Error` generado;
   - `AvisoDeError.tsx`, una `Alert` de MUI con `role="alert"`, el título, la descripción e «Identificador del incidente: …» si viene.
 
   Así pasa T005.
-- [ ] T007 [P] Escribir primero `frontend/src/api/cliente.test.ts`, con `apiSimulada`:
+- [X] T007 [P] Escribir primero `frontend/src/api/cliente.test.ts`, con `apiSimulada`:
   - con un token, la petición lleva `Authorization: Bearer <token>`; sin token, no lleva la cabecera;
   - un 401 llama al cierre de sesión registrado;
   - las rutas y los cuerpos usan los tipos generados (una prueba de tipos con `expectTypeOf` sobre `paths['/api/usuarios/sesion']`).
-- [ ] T008 Implementar `frontend/src/api/cliente.ts`: `createClient<paths>({ baseUrl: '/' })` de openapi-fetch, con un *middleware* que lee el token de la sesión en memoria (§5) y que, ante un 401, llama a `alCerrarSesion`. Así pasa T007.
+- [X] T008 Implementar `frontend/src/api/cliente.ts`: `createClient<paths>({ baseUrl: '/' })` de openapi-fetch, con un *middleware* que lee el token de la sesión en memoria (§5) y que, ante un 401, llama a `alCerrarSesion`. Así pasa T007.
 
 ### Sesión y rutas
 
-- [ ] T009 [P] Escribir primero `frontend/src/sesion/sesion.test.tsx`:
+- [X] T009 [P] Escribir primero `frontend/src/sesion/sesion.test.tsx`:
   - `iniciar(token, venceEn)` deja la sesión activa y `cerrar()` la borra, junto con la caché de TanStack Query;
   - el vencimiento cierra la sesión (con temporizadores falsos de Vitest);
   - después de iniciar sesión, `localStorage`, `sessionStorage` y `document.cookie` siguen vacíos;
   - `RutaProtegida` sin sesión redirige a `/iniciar-sesion?destino=<ruta>`, y con sesión muestra la ruta;
   - `destinoSeguro` acepta `/inicio` y rechaza `https://otro`, `//otro` y `javascript:` (vuelve `/`).
-- [ ] T010 Implementar en `frontend/src/sesion/`:
+- [X] T010 Implementar en `frontend/src/sesion/`:
   - `SesionProvider.tsx` y `useSesion`, con el token y `venceEn` en memoria y el temporizador de vencimiento;
   - `RutaProtegida.tsx`;
   - `destinoSeguro.ts`.
@@ -129,7 +129,7 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
 
 ### Pantallas y marco
 
-- [ ] T011 [P] Escribir primero, con `apiSimulada` y `MemoryRouter`:
+- [X] T011 [P] Escribir primero, con `apiSimulada` y `MemoryRouter`:
   - `frontend/src/pantallas/IniciarSesion.test.tsx`:
     - los campos tienen etiqueta;
     - vacíos, muestran «Ingresa tu usuario.» e «Ingresa tu contraseña.» sin llamar a la API;
@@ -141,7 +141,7 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
   - `frontend/src/navegacion/Marco.test.tsx`: tiene el encabezado con el usuario, el menú con «Inicio» y «Cerrar sesión», que vuelve al inicio de sesión;
   - `frontend/src/pantallas/NoEncontrada.test.tsx`: tiene el título y el enlace a Inicio;
   - `frontend/src/App.test.tsx`: `/` sin sesión termina en el inicio de sesión; un 401 de la sesión actual cierra la sesión y lleva al inicio de sesión con el aviso.
-- [ ] T012 Implementar:
+- [X] T012 Implementar:
   - `frontend/src/tema.ts`: MUI con `esES` y Roboto de `@fontsource/roboto`;
   - `frontend/src/pantallas/IniciarSesion.tsx`: React Hook Form con Zod (data-model «Formulario»), `AvisoDeError` y `setError` para los `detalles`;
   - `frontend/src/pantallas/Inicio.tsx`: TanStack Query sobre la sesión actual;
@@ -151,7 +151,7 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
   - `frontend/src/App.tsx` y `frontend/src/main.tsx`: proveedores de tema, TanStack Query y sesión.
 
   Cada pantalla con un `h1`, una región `main` y su `document.title`. Así pasa T011.
-- [ ] T013 Correr `npm run lint`, `npm run formato:verificar`, `npm run tipos` y `npm run test -- --run --coverage`: todo en verde, con al menos el 60 % de líneas. Anotar la cobertura en la evidencia.
+- [X] T013 Correr `npm run lint`, `npm run formato:verificar`, `npm run tipos` y `npm run test -- --run --coverage`: todo en verde, con al menos el 60 % de líneas. Anotar la cobertura en la evidencia.
 
 **Checkpoint**: la SPA inicia sesión contra la API simulada, protege sus rutas y muestra los errores en español.
 
