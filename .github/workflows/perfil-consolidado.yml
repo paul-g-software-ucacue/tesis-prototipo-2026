@@ -3,7 +3,7 @@
 # Desde un checkout limpio levanta los 6 contenedores con un solo comando (escenario 1) y mide la
 # memoria después del calentamiento (escenario 2, D-34, D-36). Desde B00-H03 también prueba la
 # autenticación de punta a punta y mide después de iniciar sesión; desde B00-H04, los errores, y
-# desde B00-H05, los eventos entre procesos. No es un check obligatorio.
+# desde B00-H05, los eventos entre procesos, y desde B00-H06, la SPA. No es un check obligatorio.
 # Corre en los pull requests que cambian el despliegue y a mano: GitHub solo ejecuta a mano los
 # workflows que ya están en la rama principal.
 name: perfil-consolidado
@@ -17,6 +17,7 @@ on:
       - .env.ejemplo
       - "contratos/**"
       - "deploy/**"
+      - "frontend/**"
       - .github/workflows/perfil-consolidado.yml
 
 permissions:
@@ -60,6 +61,11 @@ jobs:
       - name: Eventos de punta a punta
         shell: bash
         run: deploy/probar_eventos.sh
+
+      # B00-H06: la SPA detrás de Nginx, con /api hacia el API Gateway en el mismo origen (D-52).
+      - name: SPA de punta a punta
+        shell: bash
+        run: deploy/probar_spa.sh
 
       # shell: bash agrega pipefail, así que tee no oculta el código de salida del script.
       # Después de iniciar sesión (D-34): la medición de referencia de R-19 desde B00-H03.

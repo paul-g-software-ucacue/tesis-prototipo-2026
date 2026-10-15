@@ -1,5 +1,7 @@
 # Plantillas de servicio y de proceso
 
+Las pantallas de la SPA no usan estas plantillas: cómo agregar una está en `frontend/README.md` (ADR-019).
+
 Esqueletos que se copian cuando una historia crea un servicio o un proceso del MDD (ADR-012). No forman parte del build: no están en `settings.gradle`.
 
 Las garantías de cada esqueleto (reglas de las cinco capas, API publicada, cobertura del 60 %, Spotless y SpotBugs) están en el contrato [`specs/001-repo-plantilla-ci/contracts/plantilla-servicio.md`](../../specs/001-repo-plantilla-ci/contracts/plantilla-servicio.md). La persistencia (un esquema y un Flyway por servicio, un rol por proceso) está en [`specs/002-compose-cuatro-procesos/contracts/persistencia.md`](../../specs/002-compose-cuatro-procesos/contracts/persistencia.md) (ADR-013).

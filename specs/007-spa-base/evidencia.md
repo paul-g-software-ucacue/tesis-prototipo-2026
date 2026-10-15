@@ -14,6 +14,8 @@ Registro de las comprobaciones de los cuatro escenarios de la historia (issue #2
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Corrida completa del frontend (T029) | confirmada | `lint`, `formato:verificar` y `tipos` en verde; Vitest 46 pruebas, 100 % de líneas; Playwright 33 pruebas (Chromium y Firefox); `verificar:ruptura` con los 4 pasos en `OK`; `npm audit --omit dev`: 0 vulnerabilidades. `./gradlew build` del backend, sin cambios, en verde. | 2026-10-15 |
+| Herramientas (T026, T027, T030) | confirmada | ShellCheck sin hallazgos en `deploy/probar_spa.sh` y `deploy/medir_memoria.sh`; actionlint sin hallazgos en los workflows; Gitleaks v8.30.1 sobre un clon con los cambios: `no leaks found`. Todo sobre copias en el scratchpad. | 2026-10-15 |
 | Dependencias (T003) | confirmada | `npm install` con las versiones exactas de research §1: 607 paquetes y `npm audit --omit dev` → `found 0 vulnerabilities`. npm 11.19 bloquea los scripts de instalación que no se aprobaron: el único es `libxmljs2` (opcional en `@cyclonedx/cyclonedx-npm`, que solo valida XML; el SBOM es JSON), denegado en `allowScripts`. | 2026-10-15 |
 | Configuración (T004) | confirmada | Tres proyectos de TypeScript (`tsconfig.app.json` para `src/`, `tsconfig.pruebas.json` para las pruebas con los tipos de Node, y `tsconfig.node.json` para la configuración, `e2e/` y `scripts/`), así los tipos de Node no llegan al código de la SPA. ESLint con tipos (`projectService`), jsx-a11y y la regla del almacenamiento (D-51); en los archivos JavaScript, sin reglas con tipos. | 2026-10-15 |
 | Base de la SPA (T005 a T013) | confirmada | Vitest: 45 pruebas en 9 archivos (traductor, mensajes del catálogo, cliente, sesión, rutas protegidas, inicio de sesión, inicio, marco, página no encontrada y la aplicación). Cobertura de `src/`: 122/122 líneas (100 %), ramas 96,4 %. `tipos`, `lint` y `formato:verificar` en verde. **Hallazgo:** con un vencimiento a más de 24,8 días, `setTimeout` desborda (2³¹ − 1 ms) y cerraba la sesión de inmediato; el cierre ahora se programa en tramos, con su prueba. | 2026-10-15 |
@@ -49,12 +51,16 @@ Registro de las comprobaciones de los cuatro escenarios de la historia (issue #2
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Imagen de la SPA (T023, T024) | confirmada | `docker build -f deploy/docker/frontend.Dockerfile .` desde la raíz (el `.dockerignore` admite `frontend/` sin `node_modules` ni salidas). En un contenedor solo: `/salud` 200; `/` y una ruta de la SPA responden `index.html` con `no-cache`; `/assets/*.js` con `public, max-age=31536000, immutable`; la CSP, `nosniff` y `Server: nginx` sin la versión. **Hallazgo:** con `proxy_pass http://gateway:8080`, Nginx no arrancaba si no podía resolver `gateway` (`host not found in upstream`); ahora resuelve en cada petición con el DNS del contenedor (`NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1`, `resolver` y `proxy_pass` con variable): arranca igual y, sin API Gateway, `/api` responde 502. | 2026-10-15 |
+| Perfil con la SPA (T025, T029) | confirmada | `docker compose down -v`, `build` y `up -d --wait`: los 7 contenedores `healthy`, también `frontend`. `probar_autenticacion.sh`, `probar_errores.sh`, `probar_eventos.sh` y `probar_spa.sh`: todos los pasos en `OK`. `probar_spa.sh`: la SPA con la CSP y sin la versión de Nginx, una ruta de la SPA, el inicio de sesión a través de la SPA (200 con token), la sesión actual con el token (`autor.prueba` y sus roles) y sin token (401 `SEGURIDAD_NO_AUTENTICADO`). | 2026-10-15 |
+| Recorrido real (SC-005) | confirmada | Chromium sin interfaz contra `http://localhost:8081`, a 1366 × 768: `/` → inicio de sesión → `autor.prueba` → «Hola, autor.prueba» con `COORDINADOR_CARRERA` y `DOCENTE` → «Cerrar sesión», en 0,6 s; `localStorage` y `sessionStorage` vacíos y sin cookies. Con una clave incorrecta: «Credenciales inválidas — El usuario o la contraseña no son correctos.». Queda la revisión manual del autor en su navegador (quickstart §3). | 2026-10-15 |
 
 ## Memoria (R-19)
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Medición local (T029) | confirmada | `deploy/medir_memoria.sh --con-sesion`, local (Docker 29.8.2), después de las cuatro pruebas de punta a punta: postgres 102,8; identidad 360,2; datos 214,0; distributivo 222,4; salida 213,7; gateway 199,2; **frontend 11,6 de 64**. **Total: 1 323,9 MiB (1,29 GiB)** de 3 008 MiB de límites, sin alerta. | 2026-10-15 |
 
 ## Notas
 
-- **PR #73 (D-53):** cerrado el 2026-10-15 con la aprobación del autor y un comentario que cita D-53.
+- **PR #73 (D-53, T028):** cerrado el 2026-10-15 con la aprobación del autor y un comentario que cita D-53. `.github/dependabot.yml` ignora las versiones mayores de `node` en el ecosistema `docker`.

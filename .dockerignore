@@ -1,7 +1,16 @@
-# Contexto de construcción de deploy/docker/java.Dockerfile (ADR-015): solo backend/ y
-# contratos/, sin salidas de Gradle. Todo lo demás del repositorio queda fuera de la imagen.
+# Contexto de construcción de las imágenes (ADR-015): deploy/docker/java.Dockerfile usa backend/ y
+# contratos/, y deploy/docker/frontend.Dockerfile usa frontend/ y contratos/ (B00-H06). Todo lo
+# demás del repositorio queda fuera, también las salidas de Gradle y de npm.
 *
 !backend/
 !contratos/
+!frontend/
 **/build/
 **/.gradle/
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/test-results/
+frontend/playwright-report/
+frontend/src/api/generado/
+frontend/sbom-frontend.json

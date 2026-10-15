@@ -232,34 +232,34 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
 
 **Purpose**: la SPA en el perfil consolidado detrás de Nginx, medida en R-19, y Node 24 LTS en todos lados (FR-017 y FR-018; SC-005, SC-009).
 
-- [ ] T023 [P] Escribir `frontend/nginx.conf` como plantilla (`/etc/nginx/templates/default.conf.template`, con `MDD_URI_GATEWAY`), según contracts/perfil.md:
+- [X] T023 [P] Escribir `frontend/nginx.conf` como plantilla (`/etc/nginx/templates/default.conf.template`, con `MDD_URI_GATEWAY`), según contracts/perfil.md:
   - `/api/` al API Gateway, con un plazo de 30 s y las cabeceras `X-Forwarded-*`;
   - `/salud`;
   - `/assets/` con caché larga e `index.html` sin caché;
   - `try_files $uri /index.html`;
   - la CSP y las cabeceras de seguridad;
   - `server_tokens off`.
-- [ ] T024 Cambiar `deploy/docker/frontend.Dockerfile` a contexto en la raíz:
+- [X] T024 Cambiar `deploy/docker/frontend.Dockerfile` a contexto en la raíz:
   - `FROM node:24-alpine` (sin cambiar de versión mayor, D-53);
   - `WORKDIR /app/frontend`: copia `frontend/package*.json` y `npm ci`; después `frontend/` en `/app/frontend` y `contratos/` en `/app/contratos`, para que `generar:api` encuentre `../contratos/`, y `npm run build`;
   - `nginxinc/nginx-unprivileged:stable-alpine` con `dist/` y la plantilla;
   - comentario de cabecera con el ejemplo de `docker build -f deploy/docker/frontend.Dockerfile .`.
 
   En el `.dockerignore` de la raíz, que hoy solo admite `backend/` y `contratos/`, agregar `!frontend/` y excluir `frontend/node_modules/`, `frontend/dist/`, `frontend/coverage/`, `frontend/test-results/` y `frontend/playwright-report/`; actualizar su comentario (sirve a las dos imágenes). Construirla en local y comprobar con `docker run` que `/salud` responde 200 y `/` trae la CSP.
-- [ ] T025 En `compose.yaml`, agregar el servicio `frontend` de contracts/perfil.md:
+- [X] T025 En `compose.yaml`, agregar el servicio `frontend` de contracts/perfil.md:
   - `build`, `8081:8080`, 64 MiB;
   - `depends_on: gateway: condition: service_healthy`;
   - *healthcheck* con `wget`, con `interval` y `retries` como los demás;
   - `MDD_URI_GATEWAY` desde `.env.ejemplo` (`http://gateway:8080`).
 
   Actualizar el comentario de cabecera: 7 contenedores y 3 008 MiB de límites (R-19, D-36).
-- [ ] T026 [P] En `deploy/medir_memoria.sh`, agregar `frontend` a `ORDEN` (no a `JAVA`), y actualizar `specs/002-compose-cuatro-procesos/contracts/medicion-r19.md` con el contenedor nuevo. Validar con shellcheck, sobre una copia.
-- [ ] T027 Crear `deploy/probar_spa.sh`, ejecutable, con los 5 pasos de contracts/perfil.md y el patrón `verificar`, sin imprimir el token. Validar con shellcheck, sobre una copia. En `.github/workflows/perfil-consolidado.yml`, agregar el paso «SPA de punta a punta» después de «Eventos de punta a punta» y antes de la medición; agregar `frontend/**` a sus `paths`. Validar con actionlint, sobre una copia.
-- [ ] T028 Node (D-53):
+- [X] T026 [P] En `deploy/medir_memoria.sh`, agregar `frontend` a `ORDEN` (no a `JAVA`), y actualizar `specs/002-compose-cuatro-procesos/contracts/medicion-r19.md` con el contenedor nuevo. Validar con shellcheck, sobre una copia.
+- [X] T027 Crear `deploy/probar_spa.sh`, ejecutable, con los 5 pasos de contracts/perfil.md y el patrón `verificar`, sin imprimir el token. Validar con shellcheck, sobre una copia. En `.github/workflows/perfil-consolidado.yml`, agregar el paso «SPA de punta a punta» después de «Eventos de punta a punta» y antes de la medición; agregar `frontend/**` a sus `paths`. Validar con actionlint, sobre una copia.
+- [X] T028 Node (D-53):
   - en `.github/dependabot.yml`, ecosistema `docker`, agregar `ignore: [{ dependency-name: node, update-types: [version-update:semver-major] }]` con su comentario;
   - el PR #73 ya está cerrado: se cerró el 2026-10-15, con la aprobación del autor y un comentario que cita D-53;
   - anotarlo en las notas de la evidencia.
-- [ ] T029 Correr todo:
+- [X] T029 Correr todo:
   - `npm run lint`, `formato:verificar`, `tipos`, `test -- --run --coverage`, `test:e2e`, `verificar:ruptura` y `npm audit --omit dev`;
   - `./gradlew build` sin cambios en el backend;
   - `docker compose down -v && docker compose up -d --build --wait`;
@@ -273,7 +273,7 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
 
 ## Phase 8: Polish & cierre
 
-- [ ] T030 Revisar los comentarios de propósito de `src/`, `frontend/README.md` (cómo generar, probar y agregar una pantalla, ADR-019) y `backend/plantillas/README.md` (una línea que remita a `frontend/README.md` para las pantallas). Comprobar con `git status` que no hay archivos temporales. Correr Gitleaks local sobre un clon: `no leaks found`.
+- [X] T030 Revisar los comentarios de propósito de `src/`, `frontend/README.md` (cómo generar, probar y agregar una pantalla, ADR-019) y `backend/plantillas/README.md` (una línea que remita a `frontend/README.md` para las pantallas). Comprobar con `git status` que no hay archivos temporales. Correr Gitleaks local sobre un clon: `no leaks found`.
 - [ ] T031 Hacer commit y push, y abrir el pull request de `007-spa-base` hacia `main` **en borrador**, con `Refs #23`. Esperar a que terminen los runs del borrador y recién entonces marcarlo como listo. Comprobar que corren y pasan, por primera vez con frontend:
   - `1 · lint-frontend`, `2 · test-frontend` y `4 · sbom-frontend`;
   - `4 · sca`. Si Grype marca una dependencia del frontend con versión corregida, actualizarla y anotarlo;

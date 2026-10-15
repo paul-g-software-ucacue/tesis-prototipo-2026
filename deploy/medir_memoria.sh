@@ -16,7 +16,8 @@ readonly UMBRAL_MIB=8192   # 8 GiB: el equipo de despliegue (D-36)
 readonly ALERTA_MIB=7168   # 7 GiB: disparador de R-19
 readonly LLAMADAS=20
 readonly ESPERA=30
-readonly ORDEN=(postgres identidad datos distributivo salida gateway)
+# frontend (Nginx con la SPA) desde B00-H06 (D-52); no es una JVM.
+readonly ORDEN=(postgres identidad datos distributivo salida gateway frontend)
 readonly JAVA=(identidad datos distributivo salida gateway)
 # El mismo comando del healthcheck de compose.yaml.
 readonly SALUD="exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /actuator/health/readiness HTTP/1.0\r\nHost: localhost\r\n\r\n' >&3 && grep -q '\"status\":\"UP\"' <&3"
