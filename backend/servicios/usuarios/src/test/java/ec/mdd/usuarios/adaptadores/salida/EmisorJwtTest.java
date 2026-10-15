@@ -29,6 +29,7 @@ class EmisorJwtTest {
                     new NimbusJwtEncoder(new ImmutableJWKSet<>(new JWKSet(llaves.llave()))),
                     Clock.fixed(ahora, ZoneOffset.UTC),
                     Duration.ofMinutes(30),
+                    Duration.ofMinutes(5),
                     "mdd-usuarios",
                     llaves.llave().getKeyID());
 
@@ -55,6 +56,24 @@ class EmisorJwtTest {
         assertThat(jwt.getExpiresAt()).isEqualTo(ahora.plus(Duration.ofMinutes(30)));
         assertThat(token.venceEn()).isEqualTo(jwt.getExpiresAt());
         assertThat(token.toString()).doesNotContain(token.valor());
+    }
+
+    @Test
+    void dadoUnProceso_cuandoSeEmiteSuToken_entoncesLlevaElRolDeProcesoYVidaCorta()
+            throws Exception {
+        TokenEmitido token = emisor.emitirParaProceso("distributivo");
+
+        assertThat(SignedJWT.parse(token.valor()).getHeader().getKeyID())
+                .isEqualTo(llaves.llave().getKeyID());
+        Jwt jwt =
+                NimbusJwtDecoder.withPublicKey(llaves.llave().toRSAPublicKey())
+                        .build()
+                        .decode(token.valor());
+        assertThat(jwt.getClaimAsString("iss")).isEqualTo("mdd-usuarios");
+        assertThat(jwt.getSubject()).isEqualTo("proceso:distributivo");
+        assertThat(jwt.getClaimAsStringList("roles")).containsExactly("PROCESO");
+        assertThat(jwt.getExpiresAt()).isEqualTo(ahora.plus(Duration.ofMinutes(5)));
+        assertThat(token.venceEn()).isEqualTo(jwt.getExpiresAt());
     }
 
     @Test

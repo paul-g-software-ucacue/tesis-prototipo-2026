@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-47 · ADR-018.
+- **Siguiente número libre:** D-50 · ADR-019.
 
 ## Índice
 
@@ -39,6 +39,10 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-45 | 2026-10-13 | El spike B00-S01 dura 2 días de trabajo | Aceptada | Alcance del issue #26 |
 | D-46 | 2026-10-13 | Comprobación de la sección 8: PDFBox y Bouncy Castle validan las firmas de FirmaEC | Aceptada | Constitución, sección 8 (2.1.0 → 2.1.1) |
 | ADR-017 | 2026-10-13 | Firmantes y confianza por entorno: un solo firmante real en las pruebas del autor | Aceptada | D-23 (detalle de la configuración); ADR-004 (árbol de firmas, sin cambios en producción) |
+| D-47 | 2026-10-14 | Los eventos persistentes se demuestran con un receptor de prueba en Usuarios | Aceptada | Alcance del issue #22 |
+| D-48 | 2026-10-14 | El evento de prueba se publica con un endpoint de prueba apagado por defecto y un script de punta a punta | Aceptada | Alcance del issue #22 |
+| D-49 | 2026-10-14 | Las entregas entre procesos se autentican con un token de proceso que emite Usuarios | Aceptada | ADR-014 (agrega el token de proceso), alcance del issue #22 |
+| ADR-018 | 2026-10-14 | Eventos entre procesos: registro por proceso, sobre común, rutas internas y token de proceso | Aceptada | ADR-014 (agrega el token de proceso), ADR-009 (detalle de los fallos entre procesos) |
 
 ---
 
@@ -540,6 +544,122 @@ Hay que poder probar el flujo completo de creación del distributivo sin debilit
 - F14 lee el archivo de raíces y el árbol de firmas de la configuración de cada entorno, y carga desde un archivo local no versionado los usuarios reales de la instalación del autor.
 - Las pruebas de punta a punta firman con `FirmadorDePrueba` y la CA de prueba.
 - La guía de instalación de la demo explica cómo asignar los tres roles al certificado del autor.
+
+---
+
+## D-47. Los eventos persistentes se demuestran con un receptor de prueba en Usuarios
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-14 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q1 de la especificación de B00-H05
+- **Modifica a:** alcance del issue #22 (B00-H05)
+
+**Decisión.** Los escenarios de B00-H05 se demuestran con un evento de prueba y un receptor de prueba en Usuarios, el servicio dueño de la bitácora, declarado en su contrato (principio IV) y con sus eventos recibidos en el esquema de Usuarios. La publicación, la entrega y el reenvío quedan como mecanismo común, y la recepción idempotente como una forma común documentada (ADR-018, punto 4).
+
+**Por qué.** La bitácora (F17-H01) y las notificaciones (F16-H01) son de la ola 3 y tienen sus propias reglas. Así no se inventan requisitos, y el mecanismo queda probado de punta a punta. Es el mismo enfoque de D-41.
+
+**Alternativas.** Un receptor mínimo real de la bitácora (adelanta F17-H01 y su tabla que no se puede borrar); receptores de prueba en Usuarios y en Notificaciones (demuestra lo mismo dos veces).
+
+**Consecuencias.** F17-H01 y F16-H01 agregan sus receptores reales sobre el mecanismo común y pueden retirar el receptor de prueba.
+
+---
+
+## D-48. El evento de prueba se publica con un endpoint de prueba apagado por defecto y un script de punta a punta
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-14 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q2 de la especificación de B00-H05
+- **Modifica a:** alcance del issue #22 (B00-H05)
+
+**Decisión.** Un servicio del proceso distributivo ofrece un endpoint de prueba, declarado en su contrato, que publica el evento de prueba en su transacción. Está apagado por defecto y solo se enciende en el entorno de prueba; apagado, responde como una ruta inexistente. Además de las pruebas automáticas, un script en `deploy/` recorre los tres escenarios con los procesos levantados, deteniendo y volviendo a arrancar el proceso de identidad.
+
+**Por qué.** El escenario «Receptor caído» habla de detener el proceso de identidad, y eso se demuestra mejor con los procesos reales, como en `probar_autenticacion.sh` y `probar_errores.sh`. Apagado por defecto, no queda una ruta de prueba abierta en producción. Es el mismo enfoque de D-39.
+
+**Alternativas.** Solo pruebas automáticas que simulan el proceso de identidad (sin demostración con los procesos reales); un endpoint siempre activo protegido por un rol (ruta de prueba abierta en producción).
+
+**Consecuencias.** El plan elige el servicio de distributivo y la forma de encender el endpoint. B00-H08 no lo enciende en el VPS.
+
+---
+
+## D-49. Las entregas entre procesos se autentican con un token de proceso que emite Usuarios
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-14 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q3 de la especificación de B00-H05
+- **Modifica a:** ADR-014, que solo emite tokens de usuarios; alcance del issue #22 (B00-H05)
+
+**Decisión.** Las entregas y los reenvíos de eventos ocurren fuera de la petición de un usuario, así que el proceso que entrega se autentica con un token de proceso que emite Usuarios. Cada proceso tiene su credencial, guardada fuera del repositorio. El token tiene un rol que solo permite entregar eventos al receptor y una vida corta. El receptor valida el token como cualquier otro (ADR-014) y su ruta no pasa por el API Gateway.
+
+**Por qué.** Reutiliza la firma RS256 y la validación de ADR-014 sin un segundo mecanismo de autenticación, y respeta el mínimo privilegio (principio IX): un contenedor cualquiera de la red no puede escribir en la bitácora, y un token de proceso no sirve para otras rutas.
+
+**Alternativas.** Una ruta interna sin token que el API Gateway no expone (confía solo en la red de Docker); un secreto compartido en una cabecera (segundo mecanismo de autenticación).
+
+**Consecuencias.** El plan detalla cómo se emite el token de proceso y cómo se guardan las credenciales, con un ADR si cambia ADR-014 más allá de este punto. B00-H08 configura las credenciales en el VPS.
+
+---
+
+## ADR-018. Eventos entre procesos: registro por proceso, sobre común, rutas internas y token de proceso
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-14 · **Decidido por:** autor de la tesis
+- **Origen:** plan de B00-H05 (`specs/006-eventos-persistentes/research.md` §1 a §7)
+- **Modifica a:**
+  - ADR-014, que solo emite tokens de usuarios: agrega el token de proceso;
+  - ADR-009, que fija los fallos entre procesos sin el detalle de cómo se entregan los eventos.
+- **Relacionadas:** D-47, D-48, D-49, ADR-006, ADR-013, ADR-016; principios V, IX, X y XIII; constitución §3
+
+**Contexto.**
+- La constitución pide que lo que no puede perderse (la bitácora y las notificaciones) se publique como evento en la transacción del servicio.
+- Ese evento lo guarda el registro de Spring Modulith, lo entrega un oyente del mismo proceso, una tarea programada lo reenvía si falla, y el receptor lo registra una sola vez por su identificador.
+- F16, F17 y cualquier evento futuro van a usar el mismo camino, así que hay que fijar dónde vive el registro, qué viaja, por dónde entra y cómo se autentica una entrega que no tiene un usuario detrás.
+
+**Decisión.**
+1. **Registro por proceso.**
+   - Usa los módulos `spring-modulith-events-api`, `-events-jdbc` y `-events-jackson`, sin el *starter*.
+   - Vive en el esquema `eventos_<proceso>`, con el rol del proceso como dueño. `deploy/postgres/01-esquemas.sh` crea los cuatro.
+   - Lo migra el Flyway de `plataforma:eventos`.
+   - Las publicaciones completadas se conservan (`completion-mode: update`).
+2. **Sobre común.**
+   - Un servicio publica un `EventoEntreProcesos` (`idEvento`, `tipo`, `origen`, `momento` y `contenido`) por su puerto de salida.
+   - El esquema público está en `contratos/comun/eventos.yaml`.
+   - `idEvento` lo genera quien publica, no cambia en los reenvíos y es la clave de idempotencia.
+   - El contenido nunca lleva contraseñas ni tokens.
+3. **Entrega y reenvío.**
+   - Un oyente común (`@ApplicationModuleListener`) entrega por HTTP con plazo de espera. Con 2xx, la publicación queda completada; con cualquier otra cosa, `FAILED`.
+   - Una tarea programada reenvía las `FAILED` cada 30 s (configurable), sin máximo de intentos.
+   - El monitor de publicaciones atascadas de Spring Modulith pasa a `FAILED` las que quedaron a medias por una caída del emisor.
+4. **Recepción idempotente.**
+   - Cada servicio receptor tiene `evento_recibido` en su esquema, con `id_evento` como clave primaria.
+   - Registra con `INSERT … ON CONFLICT DO NOTHING` en la misma transacción que el efecto del evento.
+   - Responde 204 también a un evento repetido. Un tipo sin manejador responde 400 `COMUN_EVENTO_NO_RECONOCIDO`.
+5. **Rutas internas.**
+   - Las operaciones entre procesos usan `/interno/<servicio>/…`.
+   - El API Gateway no las enruta, y su seguridad ya niega todo lo que no es `/api/**`.
+6. **Token de proceso.**
+   - Usuarios emite, en `POST /interno/usuarios/token-proceso`, un JWT RS256 con la misma llave de ADR-014: `sub` = `proceso:<proceso>`, `roles` = `[PROCESO]` y 5 minutos de vigencia.
+   - Lo emite contra la clave de cada proceso, que viene del entorno (`MDD_CLAVE_PROCESO_<PROCESO>`) y se compara en tiempo constante.
+   - `plataforma:seguridad` solo admite `PROCESO` en `/interno/**` y lo rechaza (403) en cualquier otra ruta. Un token de usuario en `/interno/**` también responde 403.
+   - El emisor guarda el token en memoria. Ante un 401, pide otro y reintenta una sola vez.
+
+**Por qué.**
+- Es el mecanismo de la constitución sin colas ni broker (principio X).
+- Cada proceso guarda su registro en un esquema propio, como pide ADR-013.
+- El receptor es idempotente sin bloqueos.
+- El token de proceso reutiliza la firma y la validación de ADR-014 con el mínimo privilegio (principio IX): un contenedor cualquiera de la red no puede escribir en la bitácora, y un token de proceso no sirve para otras rutas.
+
+**Alternativas.**
+- El *starter* de Spring Modulith: suma `spring-modulith-core` y ArchUnit en producción.
+- El registro en el esquema de un servicio: rompe el principio V.
+- Una tabla de salida propia: repite Spring Modulith.
+- Reintentos dentro del oyente: no sobreviven a un reinicio.
+- Una ruta interna sin token: confía solo en la red.
+- Un secreto compartido en una cabecera: es un segundo mecanismo de autenticación.
+- OAuth2 *client credentials* con un servidor de autorización: es un servidor nuevo para un solo caso.
+- Usuarios técnicos en la tabla de usuarios: mezcla cuentas técnicas con personas.
+
+**Consecuencias.**
+- Los volúmenes locales de PostgreSQL se recrean una vez (`docker compose down -v`).
+- Cada proceso que publique agrega `plataforma:eventos` y su clave de proceso.
+- Cada receptor agrega su tabla `evento_recibido` y su ruta `/interno/<servicio>/eventos`.
+- F17-H01 y F16-H01 agregan sus tipos de evento y sus receptores sobre este mecanismo. Pueden retirar el receptor y el evento de prueba (D-47).
+- B00-H08 configura las claves de proceso en el VPS y no enciende el endpoint de prueba.
+- Las publicaciones completadas crecen sin purga; si hace falta, una historia futura la agrega.
 
 ---
 

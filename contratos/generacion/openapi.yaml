@@ -1,5 +1,6 @@
 # Contrato de generacion. En B00-H03 solo tiene la sesión actual, para probar la autenticación de
-# punta a punta (D-39); las operaciones de negocio llegan con sus historias.
+# punta a punta (D-39); las operaciones de negocio llegan con sus historias. Desde B00-H05, el
+# evento de prueba, apagado por defecto (D-48).
 openapi: 3.0.3
 info:
   title: MDD · generacion
@@ -11,6 +12,8 @@ security:
 tags:
   - name: Sesion
     description: Sesión actual.
+  - name: EventosPrueba
+    description: Evento de prueba entre procesos, solo en el entorno de prueba (D-48).
 paths:
   /api/generacion/sesion:
     get:
@@ -30,7 +33,43 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/generacion/eventos-prueba:
+    post:
+      tags: [EventosPrueba]
+      operationId: publicarEventoDePrueba
+      summary: Publica un evento de prueba hacia Usuarios en una transacción de Generación.
+      description: >-
+        Apagado por defecto: solo existe con MDD_EVENTOS_PRUEBA_HABILITADO=true (D-48). Guarda una
+        fila y publica generacion.EventoDePrueba en la misma transacción; la entrega ocurre después.
+      responses:
+        '202':
+          description: Evento publicado; la entrega queda a cargo del registro de publicaciones.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventoPublicado'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '404':
+          description: El endpoint de prueba está apagado (COMUN_RECURSO_NO_ENCONTRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
 components:
+  schemas:
+    EventoPublicado:
+      type: object
+      required: [idEvento]
+      properties:
+        idEvento:
+          type: string
+          format: uuid
+          description: Identificador del evento publicado.
   securitySchemes:
     bearer:
       $ref: '../comun/seguridad.yaml#/components/securitySchemes/bearer'

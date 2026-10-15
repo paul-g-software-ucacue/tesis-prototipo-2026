@@ -14,6 +14,7 @@ Cada código es estable y no depende del texto ni del mensaje de una excepción 
 | `COMUN_FORMATO_NO_ACEPTADO` | 406 | Formato no disponible | La respuesta no está disponible en el formato solicitado. | El cliente pide un formato (`Accept`) que la operación no produce. |
 | `COMUN_TIPO_NO_SOPORTADO` | 415 | Tipo de contenido no soportado | El contenido enviado está en un tipo que esta operación no acepta. | El cuerpo viene con un `Content-Type` que la operación no acepta. |
 | `COMUN_SERVICIO_NO_DISPONIBLE` | 503 | Servicio no disponible | El servicio no está disponible en este momento. Intenta de nuevo en unos minutos. | El API Gateway no puede conectar con el proceso de la ruta (D-40). |
+| `COMUN_EVENTO_NO_RECONOCIDO` | 400 | Evento no reconocido | El receptor no admite este tipo de evento. | Un receptor de eventos entre procesos (`/interno/<servicio>/eventos`) recibe un evento cuyo `tipo` no tiene manejador. No lo registra, y el emisor deja la publicación pendiente (ADR-018). |
 
 - Los prefijos `COMUN_` y `SEGURIDAD_` son de la plataforma: los usan todos los procesos y el API Gateway. Los demás códigos llevan el prefijo de su servicio.
 - Un código no se renombra ni se reutiliza. Cada fila coincide con el catálogo del código (`CodigosComunes` o `Errores<Servicio>`), y una prueba lo comprueba (ADR-016).

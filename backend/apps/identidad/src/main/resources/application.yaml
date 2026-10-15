@@ -7,10 +7,14 @@ server.port: 8080
 # Llave pública de Usuarios para validar los tokens (ADR-014).
 # Identidad valida sus propios tokens con su JWKS, en el mismo contenedor (ADR-014).
 spring.security.oauth2.resourceserver.jwt.jwk-set-uri: http://localhost:8080/api/usuarios/jwks
-# Sin token: el inicio de sesión (D-37) y el JWKS, que piden el API Gateway y los demás procesos.
+# Sin token: el inicio de sesión (D-37), el JWKS, que piden el API Gateway y los demás procesos,
+# y el token de proceso, que piden los procesos que entregan eventos (D-49, ADR-018).
 mdd.seguridad.rutas-publicas:
   - POST /api/usuarios/sesion
   - GET /api/usuarios/jwks
+  - POST /interno/usuarios/token-proceso
+# Claves de los procesos que pueden pedir un token de proceso (D-49). Vacía, el proceso no puede.
+mdd.usuarios.procesos.distributivo.clave: ${MDD_CLAVE_PROCESO_DISTRIBUTIVO:}
 # Llave de firma: sin archivo, efímera (research §2); en el VPS, un PEM (B00-H08).
 mdd.usuarios.llave-privada: ${MDD_LLAVE_PRIVADA:}
 # Usuario de prueba autor.prueba, solo donde se habilita (research §8).

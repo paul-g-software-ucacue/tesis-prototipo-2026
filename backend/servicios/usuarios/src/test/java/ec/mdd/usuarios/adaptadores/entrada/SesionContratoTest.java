@@ -32,7 +32,7 @@ import org.springframework.test.web.servlet.MvcResult;
  * seguridad de los procesos y un doble del caso de uso escrito a mano: el principio VIII solo
  * admite Mockito en la capa de aplicación.
  */
-@WebMvcTest
+@WebMvcTest({SesionControlador.class, JwksControlador.class})
 @ImportAutoConfiguration({SeguridadProcesoAutoConfiguracion.class, ErroresAutoConfiguracion.class})
 // @WebMvcTest no escanea los @Component comunes: el catálogo del servicio se importa.
 @Import({SesionContratoTest.Dobles.class, ErroresUsuarios.class})

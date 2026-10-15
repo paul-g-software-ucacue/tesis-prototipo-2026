@@ -40,7 +40,8 @@ class GeneracionEsquemaIntegrationTest {
             new GeneracionFlywayConfig().flywayGeneracion(dataSource).migrate();
 
             List<String> tablas = tablasDeUsuario(dataSource);
-            assertThat(tablas).contains("generacion.flyway_schema_history");
+            assertThat(tablas)
+                    .contains("generacion.flyway_schema_history", "generacion.evento_prueba");
             assertThat(tablas).allMatch(tabla -> tabla.startsWith("generacion."));
         }
     }

@@ -1,0 +1,43 @@
+# Sobre de los eventos entre procesos (principio V, ADR-018). Lo referencian los contratos de los
+# servicios que reciben eventos en /interno/<servicio>/eventos.
+openapi: 3.0.3
+info:
+  title: MDD · Eventos entre procesos
+  version: 1.0.0
+paths: {}
+components:
+  schemas:
+    EventoEntreProcesos:
+      description: >-
+        Evento que un servicio publica en su transacción y que el registro de publicaciones de su
+        proceso entrega al receptor de otro proceso. El receptor lo registra una sola vez por
+        idEvento, aunque llegue varias veces por los reenvíos.
+      type: object
+      additionalProperties: false
+      required: [idEvento, tipo, origen, momento, contenido]
+      properties:
+        idEvento:
+          type: string
+          format: uuid
+          description: >-
+            Identificador único del evento (UUID v4). Lo genera quien publica y no cambia en los
+            reenvíos: es la clave de idempotencia del receptor.
+        tipo:
+          type: string
+          pattern: '^[a-z]+\.[A-Z][A-Za-z]+$'
+          description: Tipo del evento, como <servicio>.<NombreDelEvento>.
+          example: generacion.EventoDePrueba
+        origen:
+          type: string
+          pattern: '^[a-z]+$'
+          description: Servicio que publicó el evento.
+          example: generacion
+        momento:
+          type: string
+          format: date-time
+          description: Instante de la publicación (ISO 8601, UTC).
+        contenido:
+          type: object
+          additionalProperties: true
+          description: >-
+            Datos del evento, según su tipo; puede estar vacío. Sin contraseñas ni tokens.

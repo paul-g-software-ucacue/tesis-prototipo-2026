@@ -2,6 +2,7 @@ package ec.mdd.plataforma.pruebas;
 
 import com.atlassian.oai.validator.OpenApiInteractionValidator;
 import com.atlassian.oai.validator.model.Request;
+import com.atlassian.oai.validator.model.SimpleRequest;
 import com.atlassian.oai.validator.model.SimpleResponse;
 import com.atlassian.oai.validator.report.SimpleValidationReportFormat;
 import com.atlassian.oai.validator.report.ValidationReport;
@@ -18,7 +19,8 @@ import org.springframework.test.web.servlet.MvcResult;
  * <p>Usa el núcleo de openapi-request-validator con un adaptador propio, porque su módulo para
  * MockMvc depende de {@code javax.servlet} y no funciona con Spring 7 (ADR-015). Solo valida la
  * respuesta: así una petición sin token, que no cumple el esquema de seguridad, sigue sirviendo
- * para comprobar que el 401 cumple el contrato.
+ * para comprobar que el 401 cumple el contrato. Para un cliente, como el que entrega eventos entre
+ * procesos (ADR-018), {@link #validarPeticion} valida el cuerpo que envía.
  */
 public final class ValidadorDeContrato {
 
@@ -75,6 +77,30 @@ public final class ValidadorDeContrato {
         if (informe.hasErrors()) {
             throw new AssertionError(
                     "La respuesta no cumple el contrato:\n"
+                            + SimpleValidationReportFormat.getInstance().apply(informe));
+        }
+    }
+
+    /**
+     * Comprueba que el cuerpo JSON que envía un cliente cumple el contrato de la operación. La
+     * petición lleva un {@code Authorization} de relleno, porque aquí solo interesa el cuerpo.
+     *
+     * @param metodo método HTTP, por ejemplo {@code POST}
+     * @param ruta ruta de la operación, por ejemplo {@code /interno/usuarios/eventos}
+     * @param cuerpo cuerpo JSON de la petición
+     * @throws AssertionError con el informe del validador si el cuerpo no cumple el contrato
+     */
+    public void validarPeticion(String metodo, String ruta, String cuerpo) {
+        SimpleRequest peticion =
+                new SimpleRequest.Builder(metodo.toUpperCase(Locale.ROOT), ruta)
+                        .withContentType("application/json")
+                        .withHeader("Authorization", "Bearer relleno")
+                        .withBody(cuerpo)
+                        .build();
+        ValidationReport informe = validador.validateRequest(peticion);
+        if (informe.hasErrors()) {
+            throw new AssertionError(
+                    "La petición no cumple el contrato:\n"
                             + SimpleValidationReportFormat.getInstance().apply(informe));
         }
     }

@@ -1,5 +1,7 @@
 # Contrato de Usuarios (servicio 01, proceso identidad). Inicio de sesión mínimo (D-37),
-# sesión actual (D-39) y llave pública para validar los tokens (ADR-014).
+# sesión actual (D-39) y llave pública para validar los tokens (ADR-014). Desde B00-H05, las
+# operaciones entre procesos en /interno/: el token de proceso (D-49) y el receptor de eventos de
+# prueba (D-47), que el API Gateway no expone (ADR-018).
 openapi: 3.0.3
 info:
   title: MDD · Usuarios
@@ -13,6 +15,10 @@ tags:
     description: Inicio de sesión y sesión actual.
   - name: Jwks
     description: Llave pública con la que el API Gateway y los procesos validan los tokens.
+  - name: TokenProceso
+    description: Token de proceso para las entregas de eventos entre procesos (D-49).
+  - name: Eventos
+    description: Receptor de eventos de otros procesos, idempotente por idEvento (ADR-018).
 paths:
   /api/usuarios/sesion:
     post:
@@ -81,6 +87,76 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /interno/usuarios/token-proceso:
+    post:
+      tags: [TokenProceso]
+      operationId: emitirTokenDeProceso
+      summary: Emite un token de proceso de vida corta para entregar eventos.
+      description: >-
+        Solo entre procesos: el API Gateway no enruta /interno/. El token lleva sub proceso:<proceso>
+        y el rol PROCESO, que solo sirve en /interno/ (ADR-018).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CredencialesProceso'
+      responses:
+        '200':
+          description: Clave correcta.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenSesion'
+        '401':
+          description: >-
+            Credenciales inválidas (USUARIOS_CREDENCIALES_INVALIDAS). La misma respuesta para una
+            clave incorrecta y para un proceso sin clave configurada.
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /interno/usuarios/eventos:
+    post:
+      tags: [Eventos]
+      operationId: recibirEvento
+      summary: Registra un evento de otro proceso una sola vez por idEvento.
+      description: >-
+        Receptor de prueba de B00-H05 (D-47): solo admite generacion.EventoDePrueba. Solo con un
+        token de proceso (rol PROCESO). Un evento ya registrado también responde 204, sin
+        registrarlo de nuevo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../comun/eventos.yaml#/components/schemas/EventoEntreProcesos'
+      responses:
+        '204':
+          description: Evento registrado, o ya registrado antes.
+        '400':
+          description: >-
+            El cuerpo no cumple el contrato (COMUN_SOLICITUD_INVALIDA, con detalles) o el tipo no
+            tiene manejador (COMUN_EVENTO_NO_RECONOCIDO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          description: El token no es de proceso. Sin cuerpo hasta F05-H02.
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
 components:
   securitySchemes:
     bearer:
@@ -100,6 +176,21 @@ components:
           format: password
           minLength: 1
           description: Contraseña del usuario. Vacía responde 400 (D-42).
+    CredencialesProceso:
+      type: object
+      required: [proceso, clave]
+      properties:
+        proceso:
+          type: string
+          minLength: 1
+          pattern: '^[a-z]+$'
+          description: Nombre del proceso que pide el token.
+          example: distributivo
+        clave:
+          type: string
+          format: password
+          minLength: 1
+          description: Clave del proceso (MDD_CLAVE_PROCESO_<PROCESO>).
     TokenSesion:
       type: object
       required: [token, tipo, venceEn]
