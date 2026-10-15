@@ -19,7 +19,7 @@
 - **Despliegue:** la imagen de Nginx (contexto en la raíz, con CSP) entra a `compose.yaml` en el puerto 8081 y envía `/api` al API Gateway (D-52). `deploy/probar_spa.sh` se suma a `perfil-consolidado`, y R-19 mide el contenedor nuevo.
 - **Node:** se queda Node 24 LTS y se cierra el PR #73 (D-53).
 
-Los detalles y las alternativas están en [research.md](research.md). La decisión que afecta a todas las historias con interfaz es **ADR-019**, propuesta en `docs/decisiones.md`. **Necesita la aprobación del autor antes de implementar.**
+Los detalles y las alternativas están en [research.md](research.md). La decisión que afecta a todas las historias con interfaz es **ADR-019**, aprobada por el autor el 2026-10-15 junto con D-53 (`docs/decisiones.md`).
 
 ## Technical Context
 
@@ -75,9 +75,9 @@ Los detalles y las alternativas están en [research.md](research.md). La decisi�
 | XII. JavaDoc | No aplica al frontend; los módulos llevan su comentario de propósito en español. | ✅ |
 | XIII. Errores | La contraparte del advice único: muestra `titulo` y `descripcion` y nunca el `codigo` ni texto técnico; los genéricos salen del catálogo y una prueba los compara con `errores.md`. | ✅ |
 | §3 Restricciones técnicas | SPA en español con WCAG 2.1 AA desde 1366 px; React con TypeScript y Vite, React Router, TanStack Query, React Hook Form con Zod, MUI en español, cliente desde OpenAPI y Nginx; Vitest, Testing Library, axe-core y Playwright. | ✅ |
-| §6.4 ADR | ADR-019 y D-53 quedan propuestos; necesitan la aprobación del autor. | ⏳ |
+| §6.4 ADR | ADR-019 y D-53, aprobados por el autor el 2026-10-15. | ✅ |
 
-**Resultado del gate antes de la fase 0:** pasa. La única condición abierta es la aprobación de ADR-019, que se pide antes de `/speckit-tasks`.
+**Resultado del gate antes de la fase 0:** pasa. ADR-019 y D-53 quedaron aprobados el 2026-10-15.
 
 **Revisión después de la fase 1:** pasa. [data-model.md](data-model.md) y [contracts/](contracts/) solo agregan lo listado.
 
@@ -134,7 +134,7 @@ specs/002-compose-cuatro-procesos/contracts/medicion-r19.md   # cambia: + fronte
 
 ## Fases de implementación (guía para /speckit-tasks)
 
-1. **ADR-019 y D-53:** la aprobación del autor (`docs/decisiones.md`).
+1. **ADR-019 y D-53:** aprobados el 2026-10-15 (`docs/decisiones.md`).
 2. **Preparación:** Node 24 local (research §13), `frontend/` con `package.json` y las versiones exactas, la configuración de TypeScript, Vite, ESLint, Prettier, Vitest y Playwright, y `generar:api`.
 3. **Cliente y errores**, con sus pruebas primero: el traductor y sus mensajes comparados con `errores.md`, y el cliente openapi-fetch con su *middleware*. Después `verificar:ruptura` (escenario 1).
 4. **Sesión y rutas**, con sus pruebas primero: `SesionProvider`, `RutaProtegida`, el 401 y el vencimiento.

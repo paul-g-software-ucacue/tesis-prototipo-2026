@@ -46,8 +46,8 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-50 | 2026-10-15 | La SPA base protege las rutas internas | Aceptada | Alcance de los issues #23 (B00-H06) y #43 (F05-H01) |
 | D-51 | 2026-10-15 | La SPA guarda el token solo en memoria | Aceptada | Alcance del issue #23 |
 | D-52 | 2026-10-15 | La SPA entra al perfil consolidado en B00-H06 | Aceptada | Alcance de los issues #23 y #25 (B00-H08) |
-| D-53 | 2026-10-15 | Node 24 LTS en la CI y en la imagen; se cierra el PR #73 | Propuesta | PR #73 de Dependabot, `.github/dependabot.yml` |
-| ADR-019 | 2026-10-15 | Base del frontend: cliente generado, errores, sesión en memoria y mismo origen | Propuesta | ADR-008 (detalle del frontend) |
+| D-53 | 2026-10-15 | Node 24 LTS en la CI y en la imagen; se cierra el PR #73 | Aceptada | PR #73 de Dependabot, `.github/dependabot.yml` |
+| ADR-019 | 2026-10-15 | Base del frontend: cliente generado, errores, sesión en memoria y mismo origen | Aceptada | ADR-008 (detalle del frontend) |
 
 ---
 
@@ -718,7 +718,7 @@ Hay que poder probar el flujo completo de creación del distributivo sin debilit
 
 ## D-53. Node 24 LTS en la CI y en la imagen; se cierra el PR #73
 
-- **Estado:** Propuesta · **Fecha:** 2026-10-15 · **Decidido por:** pendiente de la aprobación del autor de la tesis
+- **Estado:** Aceptada · **Fecha:** 2026-10-15 · **Decidido por:** autor de la tesis
 - **Origen:** plan de B00-H06 (`specs/007-spa-base/research.md` §12)
 - **Modifica a:** el PR #73 de Dependabot (Node 24 → 26 en `deploy/docker/frontend.Dockerfile`) y `.github/dependabot.yml`
 
@@ -734,7 +734,7 @@ Hay que poder probar el flujo completo de creación del distributivo sin debilit
 
 ## ADR-019. Base del frontend: cliente generado, errores, sesión en memoria y mismo origen
 
-- **Estado:** Propuesta · **Fecha:** 2026-10-15 · **Decidido por:** pendiente de la aprobación del autor de la tesis
+- **Estado:** Aceptada · **Fecha:** 2026-10-15 · **Decidido por:** autor de la tesis
 - **Origen:** plan de B00-H06 (`specs/007-spa-base/research.md` §2 a §11)
 - **Modifica a:** ADR-008, que fija el stack del frontend sin el detalle de su base
 - **Relacionadas:** D-29, D-31, D-50, D-51, D-52, ADR-014, ADR-015, ADR-016; principios IV, VIII, IX y XIII; constitución §3
