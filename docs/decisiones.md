@@ -42,7 +42,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-47 | 2026-10-14 | Los eventos persistentes se demuestran con un receptor de prueba en Usuarios | Aceptada | Alcance del issue #22 |
 | D-48 | 2026-10-14 | El evento de prueba se publica con un endpoint de prueba apagado por defecto y un script de punta a punta | Aceptada | Alcance del issue #22 |
 | D-49 | 2026-10-14 | Las entregas entre procesos se autentican con un token de proceso que emite Usuarios | Aceptada | ADR-014 (agrega el token de proceso), alcance del issue #22 |
-| ADR-018 | 2026-10-14 | Eventos entre procesos: registro por proceso, sobre común, rutas internas y token de proceso | Propuesta | ADR-014 (agrega el token de proceso), ADR-009 (detalle de los fallos entre procesos) |
+| ADR-018 | 2026-10-14 | Eventos entre procesos: registro por proceso, sobre común, rutas internas y token de proceso | Aceptada | ADR-014 (agrega el token de proceso), ADR-009 (detalle de los fallos entre procesos) |
 
 ---
 
@@ -597,7 +597,7 @@ Hay que poder probar el flujo completo de creación del distributivo sin debilit
 
 ## ADR-018. Eventos entre procesos: registro por proceso, sobre común, rutas internas y token de proceso
 
-- **Estado:** Propuesta · **Fecha:** 2026-10-14 · **Decidido por:** pendiente de la aprobación del autor de la tesis
+- **Estado:** Aceptada · **Fecha:** 2026-10-14 · **Decidido por:** autor de la tesis
 - **Origen:** plan de B00-H05 (`specs/006-eventos-persistentes/research.md` §1 a §7)
 - **Modifica a:**
   - ADR-014, que solo emite tokens de usuarios: agrega el token de proceso;

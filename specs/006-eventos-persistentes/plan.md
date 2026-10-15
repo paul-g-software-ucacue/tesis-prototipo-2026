@@ -18,7 +18,7 @@ La demostración (D-48) son dos piezas:
 - `POST /api/generacion/eventos-prueba`, apagado por defecto, que inserta una fila y publica en una transacción;
 - `deploy/probar_eventos.sh`, que recorre los tres escenarios deteniendo y volviendo a arrancar identidad.
 
-Los detalles y las alternativas están en [research.md](research.md). La decisión que afecta a varias features es **ADR-018**, propuesta en `docs/decisiones.md`. **Necesita la aprobación del autor antes de implementar.**
+Los detalles y las alternativas están en [research.md](research.md). La decisión que afecta a varias features es **ADR-018**, aprobada por el autor el 2026-10-14 (`docs/decisiones.md`).
 
 ## Technical Context
 
@@ -88,9 +88,9 @@ No se agregan dependencias fuera de los BOM.
 | XII. JavaDoc | Todo el código nuevo, en español. | ✅ |
 | XIII. Errores | Un código común nuevo (`COMUN_EVENTO_NO_RECONOCIDO`) en `errores.md` y en `CodigosComunes`. Los fallos de entrega no llegan al usuario: dejan la publicación pendiente. | ✅ |
 | §3 Restricciones técnicas | Es el «registro persistente de publicaciones de eventos de Spring Modulith» de la tabla del backend. | ✅ |
-| §6.4 ADR | ADR-018 queda propuesto; necesita la aprobación del autor. | ⏳ |
+| §6.4 ADR | ADR-018, aprobado por el autor el 2026-10-14. | ✅ |
 
-**Resultado del gate antes de la fase 0:** pasa. La única condición abierta es la aprobación de ADR-018, que se pide antes de `/speckit-tasks`.
+**Resultado del gate antes de la fase 0:** pasa. ADR-018 quedó aprobado el 2026-10-14.
 
 **Revisión después de la fase 1:** pasa. [data-model.md](data-model.md) y [contracts/](contracts/) solo agregan lo listado. El SC-006 de la especificación se ajustó a lo que ya hace el API Gateway (`denyAll` fuera de `/api/**`: 401 o 403, nunca llega al proceso).
 
@@ -151,7 +151,7 @@ backend/
 
 ## Fases de implementación (guía para /speckit-tasks)
 
-1. **ADR-018:** aprobación del autor (`docs/decisiones.md`).
+1. **ADR-018:** aprobado el 2026-10-14 (`docs/decisiones.md`).
 2. **Contratos primero:**
    - `comun/eventos.yaml`;
    - las operaciones de Usuarios y Generación;
