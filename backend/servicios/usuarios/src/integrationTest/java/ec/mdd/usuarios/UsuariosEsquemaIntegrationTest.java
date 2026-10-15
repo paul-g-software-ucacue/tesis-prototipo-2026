@@ -40,7 +40,8 @@ class UsuariosEsquemaIntegrationTest {
             new UsuariosFlywayConfig().flywayUsuarios(dataSource).migrate();
 
             List<String> tablas = tablasDeUsuario(dataSource);
-            assertThat(tablas).contains("usuarios.flyway_schema_history");
+            assertThat(tablas)
+                    .contains("usuarios.flyway_schema_history", "usuarios.evento_recibido");
             assertThat(tablas).allMatch(tabla -> tabla.startsWith("usuarios."));
         }
     }

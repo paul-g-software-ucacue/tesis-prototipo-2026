@@ -3,14 +3,18 @@ package ec.mdd.usuarios.infraestructura;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import ec.mdd.usuarios.adaptadores.salida.EmisorJwt;
+import ec.mdd.usuarios.adaptadores.salida.RepositorioEventosRecibidosJdbc;
 import ec.mdd.usuarios.adaptadores.salida.RepositorioUsuariosJpa;
 import ec.mdd.usuarios.adaptadores.salida.UsuarioJpaRepositorio;
 import ec.mdd.usuarios.adaptadores.salida.VerificadorArgon2;
 import ec.mdd.usuarios.aplicacion.EmitirTokenDeProcesoServicio;
 import ec.mdd.usuarios.aplicacion.IniciarSesionServicio;
+import ec.mdd.usuarios.aplicacion.RegistrarEventoRecibidoServicio;
 import ec.mdd.usuarios.puertos.entrada.EmitirTokenDeProceso;
 import ec.mdd.usuarios.puertos.entrada.IniciarSesion;
+import ec.mdd.usuarios.puertos.entrada.RegistrarEventoRecibido;
 import ec.mdd.usuarios.puertos.salida.EmisorDeTokens;
+import ec.mdd.usuarios.puertos.salida.RepositorioEventosRecibidos;
 import ec.mdd.usuarios.puertos.salida.RepositorioUsuarios;
 import ec.mdd.usuarios.puertos.salida.VerificadorDeClaves;
 import java.time.Clock;
@@ -20,6 +24,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 
@@ -85,6 +90,19 @@ public class ConfiguracionUsuarios {
         Map<String, String> claves = new HashMap<>();
         propiedades.procesos().forEach((proceso, datos) -> claves.put(proceso, datos.clave()));
         return new EmitirTokenDeProcesoServicio(claves, emisor);
+    }
+
+    @Bean
+    public RepositorioEventosRecibidos repositorioEventosRecibidos(JdbcClient jdbc) {
+        return new RepositorioEventosRecibidosJdbc(jdbc);
+    }
+
+    /** Receptor de eventos de prueba: solo {@code generacion.EventoDePrueba} (D-47). */
+    @Bean
+    public RegistrarEventoRecibido registrarEventoRecibido(
+            RepositorioEventosRecibidos repositorio) {
+        return new RegistrarEventoRecibidoServicio(
+                repositorio, RegistrarEventoRecibidoServicio.manejadoresDePrueba());
     }
 
     @Bean

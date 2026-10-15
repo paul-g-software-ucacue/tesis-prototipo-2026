@@ -2,7 +2,8 @@
 # specs/002-compose-cuatro-procesos/contracts/medicion-r19.md).
 # Desde un checkout limpio levanta los 6 contenedores con un solo comando (escenario 1) y mide la
 # memoria después del calentamiento (escenario 2, D-34, D-36). Desde B00-H03 también prueba la
-# autenticación de punta a punta y mide después de iniciar sesión. No es un check obligatorio.
+# autenticación de punta a punta y mide después de iniciar sesión; desde B00-H04, los errores, y
+# desde B00-H05, los eventos entre procesos. No es un check obligatorio.
 # Corre en los pull requests que cambian el despliegue y a mano: GitHub solo ejecuta a mano los
 # workflows que ya están en la rama principal.
 name: perfil-consolidado
@@ -53,6 +54,12 @@ jobs:
       - name: Errores de punta a punta
         shell: bash
         run: deploy/probar_errores.sh
+
+      # B00-H05: eventos entre procesos (entrega normal, identidad detenido y su vuelta, entrega
+      # repetida y receptor fuera del API Gateway). Detiene y vuelve a levantar identidad.
+      - name: Eventos de punta a punta
+        shell: bash
+        run: deploy/probar_eventos.sh
 
       # shell: bash agrega pipefail, así que tee no oculta el código de salida del script.
       # Después de iniciar sesión (D-34): la medición de referencia de R-19 desde B00-H03.

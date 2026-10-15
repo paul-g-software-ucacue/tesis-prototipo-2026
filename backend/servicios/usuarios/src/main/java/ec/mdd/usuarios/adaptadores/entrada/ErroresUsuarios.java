@@ -1,8 +1,10 @@
 package ec.mdd.usuarios.adaptadores.entrada;
 
 import ec.mdd.plataforma.errores.nucleo.CatalogoDeErrores;
+import ec.mdd.plataforma.errores.nucleo.CodigosComunes;
 import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
 import ec.mdd.usuarios.aplicacion.CredencialesInvalidas;
+import ec.mdd.usuarios.aplicacion.EventoNoReconocido;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
@@ -21,6 +23,9 @@ class ErroresUsuarios implements CatalogoDeErrores {
                         "USUARIOS_CREDENCIALES_INVALIDAS",
                         401,
                         "Credenciales inválidas",
-                        "El usuario o la contraseña no son correctos."));
+                        "El usuario o la contraseña no son correctos."),
+                // Código común del receptor de eventos (ADR-018), con su definición de la
+                // plataforma.
+                new EntradaCatalogo(EventoNoReconocido.class, CodigosComunes.EVENTO_NO_RECONOCIDO));
     }
 }

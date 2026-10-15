@@ -1,13 +1,18 @@
 package ec.mdd.plataforma.eventos;
 
 import java.time.Clock;
+import java.util.concurrent.Executor;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
+import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 import org.springframework.modulith.events.FailedEventPublications;
+import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
@@ -21,11 +26,17 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * <p>Una clave de proceso vacía no impide arrancar: cada entrega falla con un aviso y la
  * publicación queda pendiente hasta que se configure.
  */
+// Antes que la ejecución de tareas de Spring Boot: su AsyncConfigurer se retira si hay otro, y el
+// de esta configuración usa igual su ejecutor (applicationTaskExecutor).
 @AutoConfiguration(
-        afterName = "org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration")
+        afterName = "org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration",
+        beforeName = "org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration")
 @EnableConfigurationProperties(PropiedadesEventos.class)
 @EnableScheduling
 public class EventosAutoConfiguracion {
+
+    // El ejecutor que Spring Boot crea para las tareas asíncronas de la aplicación.
+    static final String EJECUTOR_DE_SPRING_BOOT = "applicationTaskExecutor";
 
     /**
      * Migra el registro de publicaciones solo en el esquema de eventos del proceso, con su propio
@@ -61,6 +72,28 @@ public class EventosAutoConfiguracion {
     @Bean
     public OyenteEntreProcesos oyenteEntreProcesos(ClienteDeEventos cliente) {
         return new OyenteEntreProcesos(cliente);
+    }
+
+    /**
+     * Las entregas fallidas no repiten su traza en ERROR (ver {@link FallosAsincronos}), con el
+     * ejecutor de Spring Boot. Solo si el proceso no configuró su propio manejo asíncrono.
+     */
+    @Bean
+    @ConditionalOnMissingBean(AsyncConfigurer.class)
+    public AsyncConfigurer configuracionAsincronaDeEventos(BeanFactory fabrica) {
+        return new AsyncConfigurer() {
+            @Override
+            public Executor getAsyncExecutor() {
+                return fabrica.containsBean(EJECUTOR_DE_SPRING_BOOT)
+                        ? fabrica.getBean(EJECUTOR_DE_SPRING_BOOT, Executor.class)
+                        : null;
+            }
+
+            @Override
+            public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
+                return new FallosAsincronos();
+            }
+        };
     }
 
     @Bean

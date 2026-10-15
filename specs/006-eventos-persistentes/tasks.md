@@ -195,7 +195,7 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
 
 ### Tests for User Story 1 ⚠️
 
-- [ ] T018 [P] [US1] Escribir primero, en Usuarios:
+- [X] T018 [P] [US1] Escribir primero, en Usuarios:
   - `aplicacion/RegistrarEventoRecibidoServicioTest`:
     - un evento `generacion.EventoDePrueba` nuevo se registra una vez y aplica su manejador;
     - un tipo sin manejador lanza `EventoNoReconocido` y no registra nada;
@@ -208,14 +208,14 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
 
     Las respuestas con cuerpo pasan `ValidadorDeContrato`.
   - `ErroresUsuariosTest`: `EventoNoReconocido` tiene el código `COMUN_EVENTO_NO_RECONOCIDO` y 400.
-- [ ] T019 [P] [US1] Escribir primero, en Generación:
+- [X] T019 [P] [US1] Escribir primero, en Generación:
   - `aplicacion/PublicarEventoDePruebaServicioTest`: guarda la fila y publica un sobre con `tipo` = `generacion.EventoDePrueba`, `origen` = `generacion`, `destino` = `usuarios`, el mismo `idEvento` y el contenido ficticio de data-model.md;
   - `adaptadores/entrada/EventosPruebaContratoTest`:
     - con `mdd.generacion.eventos-prueba.habilitado=true`: 202 con `idEvento`, y 401 sin token;
     - sin la propiedad: 404 `COMUN_RECURSO_NO_ENCONTRADO`.
 
     Las respuestas pasan `ValidadorDeContrato`.
-- [ ] T020 [US1] Escribir primero `backend/plataforma/eventos/src/integrationTest/java/ec/mdd/plataforma/eventos/EntregaIntegrationTest.java`:
+- [X] T020 [US1] Escribir primero `backend/plataforma/eventos/src/integrationTest/java/ec/mdd/plataforma/eventos/EntregaIntegrationTest.java`:
   - `@SpringBootTest` con una aplicación de prueba, PostgreSQL 18.6 de Testcontainers con el esquema `eventos_prueba` creado al iniciar el contenedor, y el receptor simulado, que atiende los dos endpoints: el del token de proceso y el de los eventos;
   - un servicio de prueba transaccional inserta una fila y publica un `EventoEntreProcesos`;
   - comprueba que:
@@ -226,8 +226,8 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
 
 ### Implementation for User Story 1
 
-- [ ] T021 [US1] Implementar en `plataforma:eventos` el `OyenteEntreProcesos` (`@ApplicationModuleListener void entregar(EventoEntreProcesos)`), que llama a `ClienteDeEventos`. Ante `EntregaFallida`, registra WARN con `idEvento`, `tipo`, `destino` y la causa resumida, y vuelve a lanzar la excepción para que la publicación quede `FAILED`. Agregarlo a `EventosAutoConfiguracion` y documentar en su JavaDoc por qué es asíncrono y transaccional. Así pasa T020.
-- [ ] T022 [US1] Implementar el receptor en Usuarios:
+- [X] T021 [US1] Implementar en `plataforma:eventos` el `OyenteEntreProcesos` (`@ApplicationModuleListener void entregar(EventoEntreProcesos)`), que llama a `ClienteDeEventos`. Ante `EntregaFallida`, registra WARN con `idEvento`, `tipo`, `destino` y la causa resumida, y vuelve a lanzar la excepción para que la publicación quede `FAILED`. Agregarlo a `EventosAutoConfiguracion` y documentar en su JavaDoc por qué es asíncrono y transaccional. Así pasa T020.
+- [X] T022 [US1] Implementar el receptor en Usuarios:
   - **la migración** `src/main/resources/db/migration/usuarios/V3__evento_recibido.sql`, con la tabla de data-model.md y un comentario: «nadie la modifica ni la borra»;
   - **el puerto de entrada** `puertos/entrada/RegistrarEventoRecibido`, con el record `EventoRecibido`;
   - **el puerto de salida** `puertos/salida/RepositorioEventosRecibidos` (`boolean registrarSiEsNuevo(EventoRecibido)`);
@@ -239,7 +239,7 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
   - **el cableado** en `ConfiguracionUsuarios`.
 
   Así pasa T018. En `UsuariosEsquemaIntegrationTest`, comprobar que existe `usuarios.evento_recibido` con su clave primaria.
-- [ ] T023 [US1] Implementar el evento de prueba en Generación:
+- [X] T023 [US1] Implementar el evento de prueba en Generación:
   - **la migración** `src/main/resources/db/migration/generacion/V2__evento_prueba.sql`;
   - **el puerto de entrada** `puertos/entrada/PublicarEventoDePrueba`;
   - **los puertos de salida** `puertos/salida/RepositorioEventosDePrueba` y `PublicadorDeEventos`;
@@ -253,7 +253,7 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
   - `implementation 'org.springframework.boot:spring-boot-starter-jdbc'`.
 
   Así pasa T019. En `GeneracionEsquemaIntegrationTest`, comprobar que existe `generacion.evento_prueba`.
-- [ ] T024 [US1] Ensamblar en distributivo:
+- [X] T024 [US1] Ensamblar en distributivo:
   - **`backend/apps/distributivo/build.gradle`:** `implementation project(':plataforma:eventos')`;
   - **`application.yaml`:** las propiedades de data-model.md («Configuración nueva»):
     - `spring.modulith.events.jdbc.schema`;
@@ -264,7 +264,7 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
     - `ModulosTest` sigue pasando;
     - en `EsquemasIntegrationTest`, comprobar que existe `eventos_distributivo.event_publication` (con el superusuario de Testcontainers, `flywayEventos` crea el esquema solo);
   - **el arranque:** que no consulta `event_publication` antes de la migración (research §2, riesgo comprobado).
-- [ ] T025 [US1] Crear `deploy/probar_eventos.sh`, ejecutable, con el patrón `verificar` de `deploy/probar_errores.sh`, con los pasos 0 y 1 de contracts/demostracion.md:
+- [X] T025 [US1] Crear `deploy/probar_eventos.sh`, ejecutable, con el patrón `verificar` de `deploy/probar_errores.sh`, con los pasos 0 y 1 de contracts/demostracion.md:
   - inicia sesión;
   - publica;
   - con `docker compose exec -T postgres psql -U postgres -d mdd -tAc`, comprueba en menos de 10 s 1 fila en `usuarios.evento_recibido` y la publicación `COMPLETED`.
@@ -288,7 +288,7 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
 - [X] T026 [P] [US2] Escribir primero `backend/plataforma/eventos/src/test/java/ec/mdd/plataforma/eventos/ReenvioDePublicacionesTest`. Con un `FailedEventPublications` escrito a mano, comprueba que:
   - cada ejecución llama a `resubmit` con las opciones por defecto;
   - el filtro registra en INFO cada publicación con `idEvento` y `tipo`, sin el contenido.
-- [ ] T027 [US2] Escribir primero `backend/plataforma/eventos/src/integrationTest/java/ec/mdd/plataforma/eventos/ReenvioIntegrationTest.java`, con la misma base de T020, `mdd.eventos.reenvio.intervalo=PT2S` y la vigilancia de atascadas en pocos segundos. Comprueba que:
+- [X] T027 [US2] Escribir primero `backend/plataforma/eventos/src/integrationTest/java/ec/mdd/plataforma/eventos/ReenvioIntegrationTest.java`, con la misma base de T020, `mdd.eventos.reenvio.intervalo=PT2S` y la vigilancia de atascadas en pocos segundos. Comprueba que:
   - **receptor detenido:**
     - la transacción se confirma (la fila existe);
     - la publicación queda `FAILED`;
@@ -301,12 +301,12 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
 
 ### Implementation for User Story 2
 
-- [ ] T028 [US2] Implementar `ReenvioDePublicaciones` en `plataforma:eventos`: `@Scheduled(fixedDelayString = "${mdd.eventos.reenvio.intervalo:PT30S}")`, que llama a `FailedEventPublications.resubmit(ResubmissionOptions.defaults().withFilter(…))`. Agregar `@EnableScheduling` a `EventosAutoConfiguracion`. Así pasan T026 y T027.
-- [ ] T029 [US2] En `backend/apps/distributivo/src/main/resources/application.yaml`, agregar con su comentario:
+- [X] T028 [US2] Implementar `ReenvioDePublicaciones` en `plataforma:eventos`: `@Scheduled(fixedDelayString = "${mdd.eventos.reenvio.intervalo:PT30S}")`, que llama a `FailedEventPublications.resubmit(ResubmissionOptions.defaults().withFilter(…))`. Agregar `@EnableScheduling` a `EventosAutoConfiguracion`. Así pasan T026 y T027.
+- [X] T029 [US2] En `backend/apps/distributivo/src/main/resources/application.yaml`, agregar con su comentario:
   - `spring.modulith.events.staleness.published`, `.processing` y `.resubmitted`, en `PT2M`;
   - `spring.modulith.events.republish-outstanding-events-on-restart: false`;
   - `spring.modulith.events.completion-mode: update`.
-- [ ] T030 [US2] Extender `deploy/probar_eventos.sh` con los pasos 2 y 3 de contracts/demostracion.md:
+- [X] T030 [US2] Extender `deploy/probar_eventos.sh` con los pasos 2 y 3 de contracts/demostracion.md:
   - `docker compose stop identidad` y publicar con el token del paso 0, que el API Gateway y distributivo validan con el JWKS en caché (contracts/demostracion.md); si responde 401, el script lo dice;
   - comprobar la fila en `generacion.evento_prueba` y la publicación no `COMPLETED`;
   - `docker compose start identidad` y esperar a que esté sano;
@@ -326,16 +326,16 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T031 [P] [US3] Escribir primero `backend/servicios/usuarios/src/integrationTest/java/ec/mdd/usuarios/RepositorioEventosRecibidosJdbcIntegrationTest.java`, contra PostgreSQL de Testcontainers con las migraciones de Usuarios:
+- [X] T031 [P] [US3] Escribir primero `backend/servicios/usuarios/src/integrationTest/java/ec/mdd/usuarios/RepositorioEventosRecibidosJdbcIntegrationTest.java`, contra PostgreSQL de Testcontainers con las migraciones de Usuarios:
   - el mismo evento registrado 5 veces seguidas da `true` una vez y `false` 4 veces, y queda 1 fila;
   - 2 hilos que lo registran a la vez, sincronizados con un `CountDownLatch`, dan exactamente un `true` y 1 fila;
   - la fila conserva el `recibido_en` de la primera vez.
-- [ ] T032 [P] [US3] En `RegistrarEventoRecibidoServicioTest`, agregar un caso: un evento repetido no vuelve a aplicar el manejador. En `EventosContratoTest`, agregar otro: el repetido también responde 204.
+- [X] T032 [P] [US3] En `RegistrarEventoRecibidoServicioTest`, agregar un caso: un evento repetido no vuelve a aplicar el manejador. En `EventosContratoTest`, agregar otro: el repetido también responde 204.
 
 ### Implementation for User Story 3
 
-- [ ] T033 [US3] Si T031 o T032 encuentran un hueco (por ejemplo, una carrera entre la inserción y el efecto), corregirlo en `RepositorioEventosRecibidosJdbc` o en `RegistrarEventoRecibidoServicio` con su prueba. Si no hay nada que corregir, anotar en la evidencia que el escenario pasa sin cambios.
-- [ ] T034 [US3] Extender `deploy/probar_eventos.sh` con el paso 4 de contracts/demostracion.md:
+- [X] T033 [US3] Si T031 o T032 encuentran un hueco (por ejemplo, una carrera entre la inserción y el efecto), corregirlo en `RepositorioEventosRecibidosJdbc` o en `RegistrarEventoRecibidoServicio` con su prueba. Si no hay nada que corregir, anotar en la evidencia que el escenario pasa sin cambios.
+- [X] T034 [US3] Extender `deploy/probar_eventos.sh` con el paso 4 de contracts/demostracion.md:
   - `UPDATE eventos_distributivo.event_publication SET status = 'FAILED', completion_date = NULL` en la publicación del paso 1, buscándola con la función de T025;
   - en menos de 75 s, comprobar la publicación `COMPLETED` y 1 sola fila en `evento_recibido`.
 
@@ -349,19 +349,19 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
 
 **Purpose**: el receptor no se alcanza desde fuera, y los tres escenarios pasan sobre el perfil levantado (FR-011, FR-012, SC-006, SC-007).
 
-- [ ] T035 Escribir primero, en `backend/gateway/src/test/java/ec/mdd/gateway/SeguridadGatewayTest.java`, dos casos más:
+- [X] T035 Escribir primero, en `backend/gateway/src/test/java/ec/mdd/gateway/SeguridadGatewayTest.java`, dos casos más:
   - `POST /interno/usuarios/eventos` sin token responde el 401 uniforme;
   - con un token válido responde 403, y el destino simulado no recibe la petición.
 
   Si ya pasan sin cambios (por `denyAll`), anotarlo en la evidencia.
-- [ ] T036 Extender `deploy/probar_eventos.sh` con el paso 5 de contracts/demostracion.md:
+- [X] T036 Extender `deploy/probar_eventos.sh` con el paso 5 de contracts/demostracion.md:
   - vuelve a iniciar sesión, porque el token del paso 0 dejó de valer cuando identidad se reinició;
   - `POST /interno/usuarios/eventos` a través del API Gateway, sin token y con el de usuario: 401 y 403;
   - `usuarios.evento_recibido` no cambia.
 
   Validar con shellcheck, sobre una copia.
-- [ ] T037 En `.github/workflows/perfil-consolidado.yml`, agregar el paso «Eventos de punta a punta» (`deploy/probar_eventos.sh`, con `shell: bash`) después de «Errores de punta a punta» y antes de la medición. Validar con actionlint, sobre una copia.
-- [ ] T038 En `backend/plantillas/README.md`, agregar dos secciones:
+- [X] T037 En `.github/workflows/perfil-consolidado.yml`, agregar el paso «Eventos de punta a punta» (`deploy/probar_eventos.sh`, con `shell: bash`) después de «Errores de punta a punta» y antes de la medición. Validar con actionlint, sobre una copia.
+- [X] T038 En `backend/plantillas/README.md`, agregar dos secciones:
   - **«Publicar un evento hacia otro proceso»:**
     - el puerto `PublicadorDeEventos` y el sobre;
     - `plataforma:eventos` en el proceso, con su esquema y su clave de proceso;
@@ -373,7 +373,7 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
     - la prueba de entregas repetidas y simultáneas.
 
   Con referencias a ADR-018 y a contracts/entrega.md.
-- [ ] T039 Ejecutar `./gradlew spotlessApply build integrationTest`: todo en verde, con el 60 % de cobertura en `plataforma:eventos`, `plataforma:seguridad`, Usuarios y Generación. Después, desde un volumen nuevo, `docker compose down -v && docker compose up -d --wait --build`, y comprobar que:
+- [X] T039 Ejecutar `./gradlew spotlessApply build integrationTest`: todo en verde, con el 60 % de cobertura en `plataforma:eventos`, `plataforma:seguridad`, Usuarios y Generación. Después, desde un volumen nuevo, `docker compose down -v && docker compose up -d --wait --build`, y comprobar que:
   - `deploy/probar_autenticacion.sh` y `deploy/probar_errores.sh` siguen todo en `OK`;
   - `deploy/probar_eventos.sh` da los pasos 0 a 5 en `OK`;
   - `docker compose logs distributivo` tiene los WARN de la caída con `idEvento` y sin el contenido, la clave ni el token.
@@ -384,7 +384,7 @@ La seguridad del receptor a través del API Gateway y el cierre de punta a punta
 
 ## Phase 7: Polish & cierre
 
-- [ ] T040 Revisar el JavaDoc de `plataforma:eventos`, de la separación de tokens, del token de proceso, del receptor y del evento de prueba. Comprobar con `git status` que no hay archivos temporales. Correr Gitleaks local sobre un clon: `no leaks found`.
+- [X] T040 Revisar el JavaDoc de `plataforma:eventos`, de la separación de tokens, del token de proceso, del receptor y del evento de prueba. Comprobar con `git status` que no hay archivos temporales. Correr Gitleaks local sobre un clon: `no leaks found`.
 - [ ] T041 Hacer commit y push, y abrir el pull request de `006-eventos-persistentes` hacia `main` **en borrador**, con `Refs #22`. Esperar a que terminen los runs del borrador y recién entonces marcarlo como listo. Comprobar que corren y pasan:
   - `2 · test-integracion`;
   - `4 · sbom-backend` y `4 · sca`. Si Grype marca una dependencia nueva de Spring Modulith con versión corregida, fijarla como en B00-H02 y anotarlo;

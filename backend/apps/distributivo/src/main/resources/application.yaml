@@ -10,3 +10,24 @@ spring.security.oauth2.resourceserver.jwt.jwk-set-uri: ${MDD_JWKS_URI:http://ide
 management.endpoints.web.exposure.include: health
 management.endpoint.health.probes.enabled: true
 management.endpoint.health.group.readiness.include: readinessState,db
+# Eventos hacia otros procesos (principio V, ADR-018): el registro de publicaciones vive en
+# eventos_distributivo y lo migra flywayEventos; la creación de Spring Modulith queda apagada.
+spring.modulith.events.jdbc.schema: eventos_distributivo
+spring.modulith.events.jdbc.schema-initialization.enabled: false
+# Las completadas se conservan con su completion_date; el reenvío lo hace la tarea programada,
+# también después de un reinicio.
+spring.modulith.events.completion-mode: update
+spring.modulith.events.republish-outstanding-events-on-restart: false
+# Publicaciones atascadas por una caída a mitad de una entrega: pasan a FAILED y se reenvían.
+spring.modulith.events.staleness.published: PT2M
+spring.modulith.events.staleness.processing: PT2M
+spring.modulith.events.staleness.resubmitted: PT2M
+mdd.eventos.plazo: PT5S
+mdd.eventos.reenvio.intervalo: PT30S
+mdd.eventos.destinos.usuarios: ${MDD_URI_IDENTIDAD:http://identidad:8080}/interno/usuarios/eventos
+mdd.eventos.token-proceso: ${MDD_URI_IDENTIDAD:http://identidad:8080}/interno/usuarios/token-proceso
+mdd.eventos.proceso: distributivo
+# Clave del proceso (D-49); vacía, el proceso arranca y las entregas fallan hasta configurarla.
+mdd.eventos.clave: ${MDD_CLAVE_PROCESO_DISTRIBUTIVO:}
+# Evento de prueba de Generación, apagado por defecto; solo en local y en la CI (D-48).
+mdd.generacion.eventos-prueba.habilitado: ${MDD_EVENTOS_PRUEBA_HABILITADO:false}

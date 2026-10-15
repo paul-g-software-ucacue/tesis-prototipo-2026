@@ -41,6 +41,8 @@ class ConfiguracionUsuariosTest {
         assertThat(configuracion.repositorioUsuarios(null)).isNotNull();
         assertThat(configuracion.iniciarSesion(null, verificador, emisor)).isNotNull();
         assertThat(configuracion.cargaUsuarioDePrueba(null, verificador, propiedades)).isNotNull();
+        assertThat(configuracion.repositorioEventosRecibidos(null)).isNotNull();
+        assertThat(configuracion.registrarEventoRecibido(null)).isNotNull();
         assertThat(propiedades.usuarioPrueba().toString()).doesNotContain("clave=");
     }
 

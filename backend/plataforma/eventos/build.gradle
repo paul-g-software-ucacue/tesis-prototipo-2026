@@ -10,6 +10,8 @@ dependencies {
     // @ApplicationModuleListener y FailedEventPublications. Sin el starter: arrastraría
     // spring-modulith-core y ArchUnit a la imagen, que solo hacen falta en ModulosTest (research §1).
     api 'org.springframework.modulith:spring-modulith-events-api'
+    // @NamedInterface("eventos"): el sobre es la API que la plataforma publica a los servicios.
+    implementation 'org.springframework.modulith:spring-modulith-api'
     implementation 'org.springframework.modulith:spring-modulith-events-jdbc'
     implementation 'org.springframework.modulith:spring-modulith-events-jackson'
     // RestClient sobre el HttpClient del JDK, con plazos de espera.
@@ -36,6 +38,8 @@ testing {
         }
         integrationTest {
             dependencies {
+                // ReceptorSimulado, el receptor y el token de proceso simulados.
+                implementation project(':plataforma:pruebas')
                 implementation 'org.springframework.boot:spring-boot-starter-json'
                 runtimeOnly 'org.postgresql:postgresql'
             }

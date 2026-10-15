@@ -111,6 +111,29 @@ class SeguridadGatewayTest {
     }
 
     @Test
+    void dadoUnaRutaEntreProcesos_cuandoLlegaAlGateway_entoncesNoSeReenviaConNingunToken()
+            throws Exception {
+        // ADR-018: el API Gateway no enruta /interno/**; su seguridad lo niega (401 o 403).
+        HttpResponse<String> sinToken = pedir("POST", "/interno/usuarios/eventos", "");
+        HttpResponse<String> conToken =
+                pedir(
+                        "POST",
+                        "/interno/usuarios/eventos",
+                        "Bearer " + TOKENS.valido("autor.prueba", List.of("DOCENTE")));
+        HttpResponse<String> deProceso =
+                pedir(
+                        "POST",
+                        "/interno/usuarios/token-proceso",
+                        "Bearer " + TOKENS.valido("proceso:distributivo", List.of("PROCESO")));
+
+        assertThat(sinToken.statusCode()).isEqualTo(401);
+        assertThat(sinToken.body()).isEqualTo(CUERPO_401);
+        assertThat(conToken.statusCode()).isEqualTo(403);
+        assertThat(deProceso.statusCode()).isEqualTo(403);
+        assertThat(AUTORIZACION_RECIBIDA.get()).isNull();
+    }
+
+    @Test
     void dadoLaSaludDelGateway_cuandoSeLlamaSinToken_entoncesResponde() throws Exception {
         assertThat(pedir("GET", "/actuator/health/readiness", "").statusCode()).isEqualTo(200);
     }
@@ -129,6 +152,14 @@ class SeguridadGatewayTest {
     private static HttpServer procesoFalso() throws IOException {
         HttpServer servidor =
                 HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
+        // Si el API Gateway reenviara una ruta entre procesos, el proceso falso la anotaría.
+        servidor.createContext(
+                "/interno",
+                intercambio -> {
+                    AUTORIZACION_RECIBIDA.set("reenviada a /interno");
+                    intercambio.sendResponseHeaders(204, -1);
+                    intercambio.close();
+                });
         servidor.createContext(
                 "/api",
                 intercambio -> {

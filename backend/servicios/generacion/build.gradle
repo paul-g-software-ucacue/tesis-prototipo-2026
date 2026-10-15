@@ -10,4 +10,8 @@ dependencies {
     // Lectura del JWT ya validado en la sesión actual (D-39).
     implementation 'org.springframework.security:spring-security-oauth2-resource-server'
     implementation 'org.springframework.security:spring-security-oauth2-jose'
+    // El sobre de los eventos entre procesos, para el evento de prueba (D-48, ADR-018).
+    implementation project(':plataforma:eventos')
+    // La fila del evento de prueba en generacion.evento_prueba, en la transacción que publica.
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 }
