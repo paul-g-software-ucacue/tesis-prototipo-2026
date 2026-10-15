@@ -22,21 +22,28 @@ Registro de las comprobaciones de los cuatro escenarios de la historia (issue #2
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| `verificar:ruptura` (T014) | confirmada | `OK 1. Renombrar TokenSesion.token rompe la compilación` · `OK 2. Cambiar TokenSesion.venceEn a entero rompe la compilación` · `OK 3. Renombrar Jwk.kty, que la SPA no usa, no rompe la compilación` · `OK 4. Con el contrato real, la compilación pasa`. Trabaja sobre una copia de `contratos/` en una carpeta temporal; `git status contratos` queda limpio. **Hallazgo:** `new Date(token.venceEn)` también acepta un número, así que el segundo cambio no rompía nada; la SPA ahora lee `venceEn` con `Date.parse`, que solo acepta texto. | 2026-10-15 |
+| En la CI (T015) | pendiente | Paso «Un cambio de contrato rompe la compilación» en `2 · test-frontend`. | — |
 
 ## Escenario 2: errores
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Playwright (T016, T017) | confirmada | `e2e/errores.spec.ts`, en Chromium y Firefox: 401 de credenciales, 400 con `detalles`, 500 con `idIncidente`, 503, HTML de un proxy y sin conexión al iniciar sesión, y 404 de la sesión actual en Inicio. Cada uno muestra su título y su descripción; ninguna página contiene un estado 4xx o 5xx, `COMUN_`, `USUARIOS_`, `SEGURIDAD_`, «Exception», «Error:», «Failed to fetch», «NetworkError» ni «Bad Gateway». | 2026-10-15 |
 
 ## Escenario 3: accesibilidad
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| axe-core en Chromium (T018) | confirmada | `e2e/accesibilidad.spec.ts` con `wcag2a`, `wcag2aa`, `wcag21a` y `wcag21aa`: 0 fallas en `/iniciar-sesion` en su estado inicial, con el error de credenciales inválidas y con los dos errores de campo vacío. T019 no tuvo nada que corregir en el tema ni en las pantallas. | 2026-10-15 |
+| Flujos de sesión (T019) | confirmada | `e2e/sesion.spec.ts`, en Chromium y Firefox: redirección con `destino=%2F` y vuelta a Inicio; después de iniciar sesión, `localStorage`, `sessionStorage`, `document.cookie` y las cookies del contexto vacíos, y el token fuera de la URL (SC-008); la recarga vuelve al inicio de sesión; un 401 cierra la sesión con el aviso; «Cerrar sesión» vuelve sin aviso; a 1366 px no hay desplazamiento horizontal. Playwright: 33 pruebas en verde. **Hallazgos:** (1) al cerrar la sesión, `RutaProtegida` redirigía con `destino` antes de que llegara la navegación del botón, porque React Router 8 navega en una transición; el cierre voluntario tiene ahora su motivo (`cierre`) y la ruta protegida va al inicio de sesión sin destino ni aviso. (2) `@axe-core/playwright` instalaba `playwright-core` 1.64.1 (un día de antigüedad) para su dependencia *peer*, con tipos distintos de los de `@playwright/test`; `overrides` fija la 1.63.0. | 2026-10-15 |
+| En la CI (T020) | pendiente | `test-frontend` instala Chromium y Firefox y corre `test:e2e`; sube `playwright-report/` si falla. Su `timeout-minutes` pasa de 10 a 20. | — |
 
 ## Escenario 4: ESLint
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| En local y en la regla (T021) | confirmada | Un `localStorage.setItem` agregado a `src/pantallas/Inicio.tsx` hace fallar `npm run lint` con `Unexpected use of 'localStorage'. El token vive solo en memoria (D-51)…`; revertido, pasa. `1 · lint-frontend` corre `generar:api`, `lint`, `formato:verificar` y `tipos`. La regla de la rama principal es un *ruleset* (`gh api repos/…/rules/branches/main`) y exige los 10 checks, también `1 · lint-frontend`. | 2026-10-15 |
 
 ## Perfil y punta a punta
 

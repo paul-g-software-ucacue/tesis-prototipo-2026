@@ -2,8 +2,11 @@
 // nunca en localStorage, sessionStorage, cookies ni la URL. Al recargar la página, se pierden. Los
 // componentes se suscriben con SesionProvider; el cliente de la API lee el token de aquí.
 
-/** Por qué se cerró la sesión: lo muestra el inicio de sesión. */
-export type MotivoDeCierre = 'sesion-terminada';
+/**
+ * Por qué se cerró la sesión: «sesion-terminada» (un 401 o el vencimiento) lo explica el inicio de
+ * sesión; «cierre» es el usuario que pidió salir, y se vuelve al inicio de sesión sin aviso.
+ */
+export type MotivoDeCierre = 'sesion-terminada' | 'cierre';
 
 export interface EstadoDeSesion {
   activa: boolean;

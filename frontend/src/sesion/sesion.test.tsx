@@ -113,6 +113,14 @@ describe('RutaProtegida (D-50)', () => {
     expect(screen.getByText('contenido interno')).toBeInTheDocument();
   });
 
+  it('si el usuario cerró la sesión, va al inicio de sesión sin destino', () => {
+    iniciarSesion('cabecera.cuerpo.firma', new Date(Date.now() + 60_000));
+    cerrarSesion('cierre');
+    montar('/interna');
+
+    expect(screen.getByText('/iniciar-sesion')).toBeInTheDocument();
+  });
+
   it('si la sesión terminó, lo dice al redirigir', () => {
     iniciarSesion('cabecera.cuerpo.firma', new Date(Date.now() + 60_000));
     cerrarSesion('sesion-terminada');

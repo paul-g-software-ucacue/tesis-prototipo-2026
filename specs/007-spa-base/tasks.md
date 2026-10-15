@@ -163,7 +163,7 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
 
 **Independent Test**: `npm run verificar:ruptura` en verde.
 
-- [ ] T014 [US1] Escribir `frontend/scripts/verificar-ruptura.mjs` (research §3):
+- [X] T014 [US1] Escribir `frontend/scripts/verificar-ruptura.mjs` (research §3):
   1. respalda `src/api/generado/usuarios.d.ts`;
   2. copia `contratos/` a una carpeta temporal del sistema;
   3. **primer cambio:** renombra `token` por `jwt` en `TokenSesion`, genera con openapi-typescript sobre `usuarios.d.ts`, corre `tsc --noEmit` y exige que falle con un error que nombre `token`;
@@ -172,7 +172,7 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
   6. restaura los tipos del contrato real y exige que `tsc` pase, también si un paso intermedio falla (`finally`).
 
   Imprime una línea por paso (`OK`/`FALLA`) y termina con 0 o 1. Para que el primer cambio rompa la compilación, la SPA tiene que leer `token` y `venceEn` con sus tipos (T012).
-- [ ] T015 [US1] En `.github/workflows/ci.yml`, job `2 · test-frontend`, agregar el paso «Un cambio de contrato rompe la compilación» (`npm run verificar:ruptura`) después de Vitest. Validar con actionlint, sobre una copia. Anotar la salida local en el escenario 1 de la evidencia.
+- [X] T015 [US1] En `.github/workflows/ci.yml`, job `2 · test-frontend`, agregar el paso «Un cambio de contrato rompe la compilación» (`npm run verificar:ruptura`) después de Vitest. Validar con actionlint, sobre una copia. Anotar la salida local en el escenario 1 de la evidencia.
 
 **Checkpoint**: un cambio de contrato no pasa desapercibido.
 
@@ -184,8 +184,8 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
 
 **Independent Test**: `npx playwright test e2e/errores.spec.ts` en verde.
 
-- [ ] T016 [P] [US2] Escribir `frontend/e2e/simulacion.ts`, con `page.route` para `/api/usuarios/sesion`: respuesta correcta, 401 de credenciales, 400 con `detalles`, 500 con `idIncidente`, 503 del API Gateway, HTML de un proxy y fallo de red (`route.abort()`); y para `GET /api/usuarios/sesion`, un 404 `COMUN_RECURSO_NO_ENCONTRADO` (SC-002).
-- [ ] T017 [US2] Escribir `frontend/e2e/errores.spec.ts`: por cada respuesta de T016, el inicio de sesión muestra el título y la descripción esperados (contracts/interfaz.md «Errores»). La página no contiene el estado (`401`, `500`…), `COMUN_`, `USUARIOS_`, «Exception», «Error:» ni texto en inglés del navegador. El 500 muestra el `idIncidente`, y el 404 de la sesión actual se muestra en Inicio con su título y su descripción. Si encuentra un hueco en el traductor, corregirlo en `src/errores/` con su prueba unitaria.
+- [X] T016 [P] [US2] Escribir `frontend/e2e/simulacion.ts`, con `page.route` para `/api/usuarios/sesion`: respuesta correcta, 401 de credenciales, 400 con `detalles`, 500 con `idIncidente`, 503 del API Gateway, HTML de un proxy y fallo de red (`route.abort()`); y para `GET /api/usuarios/sesion`, un 404 `COMUN_RECURSO_NO_ENCONTRADO` (SC-002).
+- [X] T017 [US2] Escribir `frontend/e2e/errores.spec.ts`: por cada respuesta de T016, el inicio de sesión muestra el título y la descripción esperados (contracts/interfaz.md «Errores»). La página no contiene el estado (`401`, `500`…), `COMUN_`, `USUARIOS_`, «Exception», «Error:» ni texto en inglés del navegador. El 500 muestra el `idIncidente`, y el 404 de la sesión actual se muestra en Inicio con su título y su descripción. Si encuentra un hueco en el traductor, corregirlo en `src/errores/` con su prueba unitaria.
 
 **Checkpoint**: ningún error llega al usuario con texto técnico.
 
@@ -197,19 +197,19 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
 
 **Independent Test**: `npx playwright test e2e/accesibilidad.spec.ts` en verde.
 
-- [ ] T018 [US3] Escribir `frontend/e2e/accesibilidad.spec.ts` con `@axe-core/playwright` y `withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])` sobre `/iniciar-sesion`, en tres estados:
+- [X] T018 [US3] Escribir `frontend/e2e/accesibilidad.spec.ts` con `@axe-core/playwright` y `withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])` sobre `/iniciar-sesion`, en tres estados:
   - inicial;
   - con el error de credenciales inválidas;
   - con los dos errores de campo vacío.
 
   Exigir `violations` vacío y, si falla, imprimir el `id`, el impacto y el nodo de cada falla.
-- [ ] T019 [US3] Corregir lo que T018 encuentre (contraste del tema, etiquetas, foco, el `role="alert"`) en `src/tema.ts` o en las pantallas, sin desactivar reglas. Escribir `frontend/e2e/sesion.spec.ts` con los flujos de research §8:
+- [X] T019 [US3] Corregir lo que T018 encuentre (contraste del tema, etiquetas, foco, el `role="alert"`) en `src/tema.ts` o en las pantallas, sin desactivar reglas. Escribir `frontend/e2e/sesion.spec.ts` con los flujos de research §8:
   - redirección y vuelta al destino;
   - el token fuera del almacenamiento del navegador (SC-008);
   - la recarga vuelve al inicio de sesión;
   - un 401 cierra la sesión;
   - el ancho de 1366 px sin desplazamiento horizontal.
-- [ ] T020 [US3] En `.github/workflows/ci.yml`, job `2 · test-frontend`, agregar antes de `verificar:ruptura` los pasos `npx playwright install --with-deps chromium firefox` y «Accesibilidad y flujos (Playwright)» (`npm run test:e2e`), y subir `frontend/playwright-report/` como artefacto `if: failure()`. Validar con actionlint, sobre una copia. Anotar en la evidencia el resultado de los tres análisis.
+- [X] T020 [US3] En `.github/workflows/ci.yml`, job `2 · test-frontend`, agregar antes de `verificar:ruptura` los pasos `npx playwright install --with-deps chromium firefox` y «Accesibilidad y flujos (Playwright)» (`npm run test:e2e`), y subir `frontend/playwright-report/` como artefacto `if: failure()`. Validar con actionlint, sobre una copia. Anotar en la evidencia el resultado de los tres análisis.
 
 **Checkpoint**: la base cumple WCAG 2.1 AA y los flujos de sesión están probados en un navegador.
 
@@ -221,7 +221,7 @@ La imagen, el perfil consolidado y Node (D-52, D-53) van en una fase transversal
 
 **Independent Test**: en el pull request, un commit con un error de ESLint deja `1 · lint-frontend` en rojo y la fusión bloqueada; su reversión lo deja en verde.
 
-- [ ] T021 [US4] Comprobar en local que un error de ESLint (por ejemplo, `localStorage.setItem` en `src/`) hace fallar `npm run lint` con el mensaje de la regla, y que se revierte. Comprobar que `ci.yml` (job `1 · lint-frontend`) ya corre `generar:api`, `lint`, `formato:verificar` y `tipos`, y que `gh api repos/{owner}/{repo}/branches/main/protection` exige `1 · lint-frontend`. Si algo falta, ajustarlo sin renombrar los checks (D-31).
+- [X] T021 [US4] Comprobar en local que un error de ESLint (por ejemplo, `localStorage.setItem` en `src/`) hace fallar `npm run lint` con el mensaje de la regla, y que se revierte. Comprobar que `ci.yml` (job `1 · lint-frontend`) ya corre `generar:api`, `lint`, `formato:verificar` y `tipos`, y que `gh api repos/{owner}/{repo}/branches/main/protection` exige `1 · lint-frontend`. Si algo falta, ajustarlo sin renombrar los checks (D-31).
 - [ ] T022 [US4] En el pull request (después de T029), con la aprobación del autor, empujar un commit que agrega un error de ESLint en `frontend/src/`. Comprobar que `1 · lint-frontend` falla y que `gh pr view` muestra la fusión bloqueada (`mergeStateStatus` `BLOCKED`). Después, revertirlo con otro commit y comprobar que el check vuelve a verde. Anotar los dos runs en el escenario 4 de la evidencia.
 
 **Checkpoint**: el frontend tiene el mismo control de calidad que el backend.

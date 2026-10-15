@@ -9,7 +9,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
-import { NavLink, Outlet, useNavigate } from 'react-router';
+import { NavLink, Outlet } from 'react-router';
 import { cerrarSesion } from '../sesion/almacen';
 import { useSesionActual } from '../sesion/useSesionActual';
 
@@ -19,13 +19,10 @@ const ANCHO_DEL_MENU = 240;
 const ENTRADAS = [{ ruta: '/', texto: 'Inicio' }];
 
 export function Marco() {
-  const navegar = useNavigate();
   const sesion = useSesionActual();
 
-  const salir = () => {
-    cerrarSesion();
-    void navegar('/iniciar-sesion', { replace: true });
-  };
+  // La ruta protegida lleva al inicio de sesión sin destino ni aviso (motivo «cierre»).
+  const salir = () => cerrarSesion('cierre');
 
   return (
     <Box sx={{ display: 'flex' }}>

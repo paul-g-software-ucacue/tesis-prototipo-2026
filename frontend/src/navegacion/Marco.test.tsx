@@ -36,8 +36,9 @@ describe('Marco', () => {
 
     await userEvent.setup().click(screen.getByRole('button', { name: 'Cerrar sesión' }));
 
-    await waitFor(() => expect(enrutador.state.location.pathname).toBe('/iniciar-sesion'));
-    expect(obtenerToken()).toBeNull();
+    await waitFor(() => expect(obtenerToken()).toBeNull());
+    expect(enrutador.state.location.pathname).toBe('/iniciar-sesion');
+    expect(enrutador.state.location.search).toBe('');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });

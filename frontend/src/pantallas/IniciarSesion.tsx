@@ -49,7 +49,9 @@ export function IniciarSesion() {
     setAviso(null);
     try {
       const token = await llamar(api.POST('/api/usuarios/sesion', { body: credenciales }));
-      iniciarSesion(token.token, new Date(token.venceEn));
+      // venceEn es texto ISO 8601 en el contrato; Date.parse solo acepta texto, así que un cambio de
+      // tipo en el contrato rompe la compilación (escenario 1).
+      iniciarSesion(token.token, new Date(Date.parse(token.venceEn)));
       await navegar(destinoSeguro(parametros.get('destino')), { replace: true });
     } catch (fallo) {
       const mensaje = traducirError(fallo);
