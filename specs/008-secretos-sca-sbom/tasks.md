@@ -222,7 +222,7 @@ description: "Tareas de B00-H07: Etapas de secretos y SCA con SBOM por módulo"
   4. con una excepción de 31 días, `4 · sca` falla por excepción inválida.
 
   Cerrarlo sin fusionar, borrar la rama y anotar los runs en la evidencia.
-- [ ] T027 Completar `specs/008-secretos-sca-sbom/evidencia.md` y la «Definición de terminado» del pull request. Fusionarlo con *squash* **con la aprobación del autor**. Después:
+- [X] T027 Completar `specs/008-secretos-sca-sbom/evidencia.md` y la «Definición de terminado» del pull request. Fusionarlo con *squash* **con la aprobación del autor**. Después:
   - comprobar que Dependabot cerró el PR #84 (`download-grype` 7.4.0 → 7.4.2) porque `main` ya lo tiene; si no, cerrarlo con un comentario que cite esta historia;
   - abrir el pull request de evidencia con `Closes #24`, como en B00-H06;
   - borrar las ramas fusionadas.
