@@ -38,7 +38,7 @@ description: "Tareas de B00-H07: Etapas de secretos y SCA con SBOM por módulo"
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear `specs/008-secretos-sca-sbom/evidencia.md` con estas secciones:
+- [X] T001 Crear `specs/008-secretos-sca-sbom/evidencia.md` con estas secciones:
   - entorno (versiones de Gitleaks, Grype, pre-commit, yq y Docker);
   - escenario 1 (secreto en un commit);
   - escenario 2 (certificado fuera de la CA de prueba);
@@ -46,19 +46,19 @@ description: "Tareas de B00-H07: Etapas de secretos y SCA con SBOM por módulo"
   - escenario 4 (dependencia vulnerable) y excepciones (D-54);
   - alcance del historial (FR-002);
   - notas.
-- [ ] T002 [P] Preparar las herramientas locales en el *scratchpad*: un clon de la rama con `git clone --no-local`; las imágenes `ghcr.io/gitleaks/gitleaks:v8.30.1`, `anchore/grype:v0.120.1` y `mikefarah/yq:4`; y pre-commit 4.x en un entorno virtual (o el del sistema, si el autor lo instala). Anotar las versiones en el «entorno» de la evidencia.
+- [X] T002 [P] Preparar las herramientas locales en el *scratchpad*: un clon de la rama con `git clone --no-local`; las imágenes `ghcr.io/gitleaks/gitleaks:v8.30.1`, `anchore/grype:v0.120.1` y `mikefarah/yq:4`; y pre-commit 4.x en un entorno virtual (o el del sistema, si el autor lo instala). Anotar las versiones en el «entorno» de la evidencia.
 
 ---
 
 ## Phase 2: Foundational (bloquea a US1 y US2)
 
-- [ ] T003 En `.github/workflows/ci.yml`, job `secretos` (contracts/secretos.md):
+- [X] T003 En `.github/workflows/ci.yml`, job `secretos` (contracts/secretos.md):
   - la imagen pasa a `ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f` (FR-014);
   - el comando agrega `--log-opts="--text HEAD"`, con un comentario que explica las dos partes: `--text` para que Gitleaks vea los binarios (research §3), y `HEAD` para revisar solo `main` y los commits del pull request (FR-002, research §2).
 
   Nada más cambia: ni el nombre, ni el `fetch-depth: 0`, ni el límite de 5 minutos.
-- [ ] T004 [P] En `.gitleaksignore`, borrar la entrada de `cd9dd0e…:FirmadorDePrueba.java:generic-api-key:57` y su comentario. Antes, comprobar con `git merge-base --is-ancestor cd9dd0e main` que ese commit no llega desde `main` (research §11). Conservar el comentario del formato (`commit:archivo:regla:línea`) y agregar: «cada entrada lleva encima un comentario que dice por qué no es un secreto» (FR-007).
-- [ ] T005 [P] En `.pre-commit-config.yaml`, fijar el hook de Gitleaks por SHA: `rev: 83d9cd684c87d95d656c1458ef04895a7f1cbd8e  # frozen: v8.30.1` (FR-005, FR-014). Comprobar en el *scratchpad* que `pre-commit install-hooks` lo instala y que `gitleaks version` responde.
+- [X] T004 [P] En `.gitleaksignore`, borrar la entrada de `cd9dd0e…:FirmadorDePrueba.java:generic-api-key:57` y su comentario. Antes, comprobar con `git merge-base --is-ancestor cd9dd0e main` que ese commit no llega desde `main` (research §11). Conservar el comentario del formato (`commit:archivo:regla:línea`) y agregar: «cada entrada lleva encima un comentario que dice por qué no es un secreto» (FR-007).
+- [X] T005 [P] En `.pre-commit-config.yaml`, fijar el hook de Gitleaks por SHA: `rev: 83d9cd684c87d95d656c1458ef04895a7f1cbd8e  # frozen: v8.30.1` (FR-005, FR-014). Comprobar en el *scratchpad* que `pre-commit install-hooks` lo instala y que `gitleaks version` responde.
 
 **Checkpoint**: la etapa de secretos revisa binarios y solo el historial del pull request.
 
@@ -70,7 +70,7 @@ description: "Tareas de B00-H07: Etapas de secretos y SCA con SBOM por módulo"
 
 **Independent Test**: en local, el hook rechaza el commit; en un pull request de demostración, `3 · secretos` falla sin mostrar el valor; sobre `main`, 0 hallazgos.
 
-- [ ] T006 [US1] Prueba primero, en un repositorio de prueba del *scratchpad*: preparar estos casos y comprobar que, con el `.gitleaks.toml` actual, ninguno de los cuatro primeros se detecta:
+- [X] T006 [US1] Prueba primero, en un repositorio de prueba del *scratchpad*: preparar estos casos y comprobar que, con el `.gitleaks.toml` actual, ninguno de los cuatro primeros se detecta:
   - un `.yaml` con `spring.datasource.password: clave123` y `mdd.usuarios.clave: Prueba2026`;
   - un `.properties` con `password=hunter2`;
   - un `.env` con `DB_PASSWORD=supersecreta`;
@@ -79,7 +79,7 @@ description: "Tareas de B00-H07: Etapas de secretos y SCA con SBOM por módulo"
   - un secreto agregado y borrado: un commit agrega `password=hunter2` a un `.properties` y el siguiente lo borra.
 
   Anotar en la evidencia que los cuatro primeros no se detectaban (research §5).
-- [ ] T007 [US1] Agregar a `.gitleaks.toml` la regla `clave-en-configuracion` de contracts/secretos.md y research §5:
+- [X] T007 [US1] Agregar a `.gitleaks.toml` la regla `clave-en-configuracion` de contracts/secretos.md y research §5:
   - `path = '''(?i)(\.(ya?ml|properties|env|conf|cfg|ini|toml)|(^|/)\.env[^/]*)$'''`;
   - `regex = '''(?im)^[ \t]*(?:export[ \t]+)?["']?[a-z0-9_.-]*(?:passw(?:or)?d|pwd|secret|clave|contrase(?:n|ñ)a)[a-z0-9_.-]*["']?[ \t]*[:=][ \t]*["']?([^\s"'#]{4,})'''`;
   - `secretGroup = 1`;
@@ -87,8 +87,8 @@ description: "Tareas de B00-H07: Etapas de secretos y SCA con SBOM por módulo"
   - una lista permitida propia con `regexes = ['''^\$\{''', '''^cambiar-en-local-''']`.
 
   Agregar un comentario en español con lo que detecta y lo que permite. Actualizar el comentario de cabecera del archivo.
-- [ ] T008 [US1] Repetir los casos de T006 con la regla nueva y `--log-opts="--text HEAD"`: los cuatro primeros se detectan con `clave-en-configuracion`, el valor sale como `REDACTED` y las referencias y la línea de `$PWD` no se reportan. El secreto agregado y borrado sigue haciendo fallar la etapa, y el hallazgo señala el commit que lo agregó. Después, correr la etapa como en la CI (quickstart §2, con `--log-opts="--text HEAD"`) sobre el clon de la rama: `no leaks found` (SC-003). Si aparece un falso positivo, ajustar la regla, no `.gitleaksignore`. Anotar los resultados en el escenario 1 de la evidencia.
-- [ ] T009 [US1] Comprobar el hook en el repositorio de prueba (quickstart §1): con `pre-commit install`, el commit del `application-demo.yaml` con `mdd.usuarios.clave: Prueba2026` falla, y la salida no muestra el valor. Anotarlo en la evidencia.
+- [X] T008 [US1] Repetir los casos de T006 con la regla nueva y `--log-opts="--text HEAD"`: los cuatro primeros se detectan con `clave-en-configuracion`, el valor sale como `REDACTED` y las referencias y la línea de `$PWD` no se reportan. El secreto agregado y borrado sigue haciendo fallar la etapa, y el hallazgo señala el commit que lo agregó. Después, correr la etapa como en la CI (quickstart §2, con `--log-opts="--text HEAD"`) sobre el clon de la rama: `no leaks found` (SC-003). Si aparece un falso positivo, ajustar la regla, no `.gitleaksignore`. Anotar los resultados en el escenario 1 de la evidencia.
+- [X] T009 [US1] Comprobar el hook en el repositorio de prueba (quickstart §1): con `pre-commit install`, el commit del `application-demo.yaml` con `mdd.usuarios.clave: Prueba2026` falla, y la salida no muestra el valor. Anotarlo en la evidencia.
 
 **Checkpoint**: una contraseña escrita en la configuración ya no pasa ni en local ni en la CI. El pull request de demostración va en la fase final (T024).
 
@@ -100,19 +100,19 @@ description: "Tareas de B00-H07: Etapas de secretos y SCA con SBOM por módulo"
 
 **Independent Test**: un `.p12` binario ficticio fuera de la CA de prueba hace fallar el hook y `3 · secretos` con `certificado-o-llave`; los 6 `.p12` de `ca-prueba/` no aparecen.
 
-- [ ] T010 [US2] Prueba primero, en el repositorio de prueba: un `.p12` binario ficticio en `pruebas/certificado-autor.p12` (generado con `keytool -genkeypair … -storetype PKCS12 -dname "CN=Ficticio"`), otro en `backend/servicios/firma/src/test/resources/ca-prueba/` y una llave ficticia `pruebas/llave-demo.pem` (`openssl genpkey -algorithm RSA`). Comprobar que con la configuración actual y sin `--text` el de fuera no se detecta (research §3), y que con `--text` la regla `pkcs12-file` reporta también el de `ca-prueba/` (research §4). Anotar las dos comprobaciones en la evidencia.
-- [ ] T011 [US2] En `.gitleaks.toml`:
+- [X] T010 [US2] Prueba primero, en el repositorio de prueba: un `.p12` binario ficticio en `pruebas/certificado-autor.p12` (generado con `keytool -genkeypair … -storetype PKCS12 -dname "CN=Ficticio"`), otro en `backend/servicios/firma/src/test/resources/ca-prueba/` y una llave ficticia `pruebas/llave-demo.pem` (`openssl genpkey -algorithm RSA`). Comprobar que con la configuración actual y sin `--text` el de fuera no se detecta (research §3), y que con `--text` la regla `pkcs12-file` reporta también el de `ca-prueba/` (research §4). Anotar las dos comprobaciones en la evidencia.
+- [X] T011 [US2] En `.gitleaks.toml`:
   - mover la lista permitida de la CA de prueba a un `[[allowlists]]` global con `targetRules = ["certificado-o-llave", "pkcs12-file"]` y las mismas rutas (`^backend/.+/src/test/resources/ca-prueba/` y `^pruebas/ca-prueba/`);
   - borrar la lista propia de `certificado-o-llave`;
   - agregar a esa regla un comentario que diga que su expresión se repite en `.pre-commit-config.yaml` y que se cambian juntas.
-- [ ] T012 [US2] En `.pre-commit-config.yaml`, agregar el hook local `certificado-o-llave` de contracts/secretos.md:
+- [X] T012 [US2] En `.pre-commit-config.yaml`, agregar el hook local `certificado-o-llave` de contracts/secretos.md:
   - `repo: local`, `language: fail`;
   - `entry: "Certificado o llave fuera de la CA de prueba; el certificado real no entra al repositorio:"`;
   - `files: '(?i)\.(p12|pfx|pem|key|jks|keystore|crt|cer)$'`;
   - `exclude: '^(backend/.+/src/test/resources/ca-prueba/|pruebas/ca-prueba/)'`.
 
   Agregar un comentario que explique que el hook de Gitleaks no ve los binarios preparados para el commit (research §6).
-- [ ] T013 [US2] Repetir T010 con la configuración nueva:
+- [X] T013 [US2] Repetir T010 con la configuración nueva:
   - en la etapa como en la CI, el `.p12` de fuera falla con `certificado-o-llave` y `pkcs12-file`, la llave `.pem` con `certificado-o-llave` y la regla por defecto `private-key`, y el `.p12` de `ca-prueba/` no aparece;
   - en el hook, `git commit` del `.p12` de fuera y de la llave `.pem` falla, y el de `ca-prueba/` pasa;
   - sobre el clon de la rama: `no leaks found`, con los 6 `.p12` de la CA sin reportar (SC-002).

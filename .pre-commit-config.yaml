@@ -1,6 +1,21 @@
-# Hook local: Gitleaks revisa cada commit antes de crearlo (pre-commit install).
+# Hooks locales de secretos (B00-H07): revisan cada commit antes de crearlo (pre-commit install).
+# La CI (3 · secretos) es la barrera que no se puede saltar; estos hooks avisan antes de subir nada.
 repos:
+  # Gitleaks fijado por SHA (FR-014): pre-commit lo compila desde este commit, la misma versión
+  # que la imagen de la CI, y usa el mismo .gitleaks.toml (FR-005).
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.30.1
+    rev: 83d9cd684c87d95d656c1458ef04895a7f1cbd8e  # frozen: v8.30.1
     hooks:
       - id: gitleaks
+
+  # El hook de Gitleaks no ve los archivos binarios preparados para el commit (git diff --staged
+  # los salta), así que un .p12 real pasaría. Este hook los rechaza por su nombre, con la misma
+  # expresión que la regla certificado-o-llave de .gitleaks.toml: se cambian juntas (research §6).
+  - repo: local
+    hooks:
+      - id: certificado-o-llave
+        name: certificado o llave fuera de la CA de prueba
+        language: fail
+        entry: "Certificado o llave fuera de la CA de prueba; el certificado real no entra al repositorio:"
+        files: '(?i)\.(p12|pfx|pem|key|jks|keystore|crt|cer)$'
+        exclude: '^(backend/.+/src/test/resources/ca-prueba/|pruebas/ca-prueba/)'
