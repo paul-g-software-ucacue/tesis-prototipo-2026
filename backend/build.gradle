@@ -1,5 +1,7 @@
-// Raíz del multiproyecto. CycloneDX registra cyclonedxDirectBom en cada subproyecto
-// y cyclonedxBom (agregado) aquí.
+// Raíz del multiproyecto. CycloneDX registra cyclonedxDirectBom en cada proyecto: solo los
+// subproyectos con código (plugin java) generan su SBOM, uno por módulo (B00-H07, research §7).
+// La raíz y los contenedores (apps, servicios, plataforma) no; tampoco se usa el agregado
+// cyclonedxBom, que repetía todos los componentes y duplicaba cada hallazgo de Grype.
 import org.cyclonedx.gradle.CyclonedxDirectTask
 import org.gradle.api.file.RegularFile
 
@@ -7,18 +9,16 @@ plugins {
     id 'org.cyclonedx.bom' version '3.5.1'
 }
 
-// Paquete base y grupo de Gradle de todo el MDD (ADR-012).
 allprojects {
+    // Paquete base y grupo de Gradle de todo el MDD (ADR-012).
     group = 'ec.mdd'
-}
 
-subprojects {
     tasks.withType(CyclonedxDirectTask).configureEach {
+        enabled = false
         includeConfigs = ['runtimeClasspath']   // lo que viaja en la imagen
         xmlOutput.convention((RegularFile) null)  // solo JSON
     }
-}
-
-tasks.named('cyclonedxBom') {
-    xmlOutput.convention((RegularFile) null)
+    plugins.withId('java') {
+        tasks.withType(CyclonedxDirectTask).configureEach { enabled = true }
+    }
 }

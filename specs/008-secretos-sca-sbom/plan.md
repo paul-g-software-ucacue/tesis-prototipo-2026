@@ -103,6 +103,7 @@ specs/008-secretos-sca-sbom/
 .grype.yaml                      # nuevo: excepciones de Grype (D-54), vacío
 deploy/sca/
 ├── excepciones.sh               # nuevo: valida y filtra .grype.yaml
+├── verificar_sbom.sh            # nuevo: un SBOM por módulo, ninguno vacío (lo usan la CI y el quickstart)
 ├── probar_excepciones.sh        # nuevo: casos de D-54
 └── casos/                       # nuevo: archivos de ejemplo de la prueba
 backend/build.gradle             # cambia: SBOM solo en subproyectos con java; sin el agregado

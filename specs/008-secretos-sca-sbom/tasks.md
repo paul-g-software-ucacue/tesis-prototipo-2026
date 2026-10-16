@@ -129,18 +129,18 @@ description: "Tareas de B00-H07: Etapas de secretos y SCA con SBOM por módulo"
 
 **Independent Test**: en el pull request, los artefactos tienen un SBOM por cada módulo de Gradle con código (hoy 23) y 1 del frontend, ninguno vacío y cada uno con el nombre de su módulo.
 
-- [ ] T014 [US3] En `backend/build.gradle`:
+- [X] T014 [US3] En `backend/build.gradle`:
   - `cyclonedxDirectBom` corre solo en los subproyectos con el plugin `java`; en la raíz y en `apps`, `servicios` y `plataforma` queda desactivado (por ejemplo, `onlyIf { project.plugins.hasPlugin('java') }` o `enabled` según el plugin);
   - el bloque de `cyclonedxBom` se quita, si ya no hace falta para que el plugin funcione.
 
   Actualizar el comentario de cabecera: un SBOM por módulo, sin agregado (research §7).
-- [ ] T015 [US3] Comprobar en local, con `./gradlew cyclonedxDirectBom` en `backend/`:
+- [X] T015 [US3] Comprobar en local, con `./gradlew cyclonedxDirectBom` en `backend/`:
   - cada directorio de `backend/` con su propio `build.gradle` (sin la raíz, `buildSrc/` ni `plantillas/`; hoy 23) tiene su `build/reports/cyclonedx-direct/bom.json`, y no hay otros (ni en `apps/`, `servicios/`, `plataforma/` ni en la raíz);
   - ninguno tiene `components` vacío;
   - `identidad` sigue incluyendo `tomcat-embed-core` y `jackson-databind` (transitivas) y no incluye `junit`.
 
   Si el entorno local no puede compilar, hacerlo en el run del pull request (T023). Anotar la lista de módulos con su número de componentes en el escenario 3 de la evidencia.
-- [ ] T016 [US3] En `.github/workflows/ci.yml`, job `sbom-backend`:
+- [X] T016 [US3] En `.github/workflows/ci.yml`, job `sbom-backend`:
   - el comando pasa a `./gradlew cyclonedxDirectBom`;
   - un paso nuevo arma la lista de módulos esperados (los directorios de `backend/` con su propio `build.gradle`, sin la raíz, `buildSrc/` ni `plantillas/`) y comprueba con `jq` que cada uno tiene su SBOM y que ninguno tiene `components` vacío; si no, falla con un mensaje que dice cuál falta o cuál está vacío. Sin un número fijo: un módulo nuevo entra solo (contracts/sca.md);
   - el artefacto `sbom-backend` sube solo `backend/**/build/reports/cyclonedx-direct/bom.json`.

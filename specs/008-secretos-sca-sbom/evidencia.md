@@ -35,6 +35,9 @@ Registro de las comprobaciones de los cuatro escenarios de la historia (issue #2
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| SBOM de B00-H01 (research §7) | confirmada: sobraban 5 | Artefactos del run [38727862750](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38727862750) (PR #99): 23 SBOM de módulos, 3 vacíos (`apps`, `servicios`, `plataforma`), el «directo» de la raíz (solo los subproyectos) y el agregado (226 componentes que repiten los de los módulos). | 2026-10-15 |
+| Un SBOM por módulo en local (T014, T015) | confirmada | `./gradlew cyclonedxDirectBom` y `deploy/sca/verificar_sbom.sh`: `23 módulos esperados, 23 SBOM encontrados`, de 6 (`arquitectura`) a 118 componentes (`identidad`). `identidad` incluye `tomcat-embed-core` y `jackson-databind` (transitivas) y ningún `junit`. Sin SBOM en la raíz ni en los contenedores. | 2026-10-15 |
+| Casos de falla de `verificar_sbom.sh` (T015) | confirmada | Sin el SBOM de `servicios/roles` y con uno vacío en `apps/`: `FALTA  servicios/roles…`, `SOBRA  apps…`, `Fallan 2 comprobaciones de SBOM.`, código 1. | 2026-10-15 |
 
 ## Escenario 4: dependencia vulnerable y excepciones (D-54)
 

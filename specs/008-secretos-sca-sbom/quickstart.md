@@ -46,10 +46,7 @@ Resultado esperado sobre `main`: `no leaks found` (SC-003).
 
 ```bash
 cd backend && ./gradlew cyclonedxDirectBom
-find . -path '*/cyclonedx-direct/bom.json' | wc -l                     # uno por módulo con build.gradle (hoy 23)
-for f in $(find . -path '*/cyclonedx-direct/bom.json'); do
-  printf '%s %s\n' "$(jq -r .metadata.component.name "$f")" "$(jq '.components|length' "$f")"
-done                                                                   # ninguno con 0
+../deploy/sca/verificar_sbom.sh                                        # un OK por módulo (hoy 23); código 0
 cd ../frontend && npm ci && npm run sbom                               # el 24.º
 ```
 

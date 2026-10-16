@@ -12,7 +12,7 @@
 |---|---|
 | Corre | Si el PR no es borrador (sin cambios) |
 | Comando | `./gradlew cyclonedxDirectBom` |
-| Comprueba | Que cada módulo esperado tenga su SBOM y que ninguno tenga `components` vacío; si no, falla y dice cuál falta o cuál está vacío. Los módulos esperados son los directorios de `backend/` con su propio `build.gradle`, sin la raíz, `buildSrc/` ni `plantillas/` (hoy 23, todos con `src/main`). Un módulo nuevo entra solo, sin tocar la CI |
+| Comprueba | `deploy/sca/verificar_sbom.sh`: que cada módulo esperado tenga su SBOM y que ninguno tenga `components` vacío; si no, falla y dice cuál falta o cuál está vacío. Los módulos esperados son los directorios de `backend/` con su propio `build.gradle`, sin la raíz, `buildSrc/` ni `plantillas/` (hoy 23, todos con `src/main`). Un módulo nuevo entra solo, sin tocar la CI |
 | Artefacto | `sbom-backend`: `backend/**/build/reports/cyclonedx-direct/bom.json`, 14 días |
 
 ## Job `4 · sbom-frontend`

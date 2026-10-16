@@ -200,14 +200,15 @@ jobs:
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with: { distribution: temurin, java-version: "${{ env.JAVA_VERSION }}" }
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
-      - name: SBOM CycloneDX por módulo y agregado
-        run: ./gradlew cyclonedxDirectBom cyclonedxBom
+      - name: SBOM CycloneDX por módulo (solo los subproyectos con código)
+        run: ./gradlew cyclonedxDirectBom
+      # Cada módulo con build.gradle tiene su SBOM y ninguno está vacío; sin un número fijo (B00-H07).
+      - name: Un SBOM por módulo
+        run: ../deploy/sca/verificar_sbom.sh
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: sbom-backend
-          path: |
-            backend/**/build/reports/cyclonedx-direct/bom.json
-            backend/build/reports/cyclonedx/bom.json
+          path: backend/**/build/reports/cyclonedx-direct/bom.json
           retention-days: 14
 
   sbom-frontend:
