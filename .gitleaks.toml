@@ -1,15 +1,37 @@
-# Gitleaks del MDD: reglas por defecto más una regla de certificados y llaves.
-# El certificado real del autor no se sube nunca al repositorio.
+# Gitleaks del MDD: reglas por defecto, una regla de certificados y llaves y una de claves escritas
+# en archivos de configuración (B00-H07). El certificado real del autor no se sube nunca al repositorio.
+# La CI lo corre con --log-opts="--text HEAD" (research §2 y §3 de specs/008-secretos-sca-sbom).
 title = "Gitleaks del MDD"
 
 [extend]
 useDefault = true
 
+# CA de prueba: ni la regla propia ni la regla por defecto pkcs12-file rechazan sus certificados.
+# Las demás reglas siguen revisando esas carpetas (research §4).
+[[allowlists]]
+description = "CA de prueba y certificados ficticios de los firmantes de la demo"
+targetRules = ["certificado-o-llave", "pkcs12-file"]
+paths = ['''^backend/.+/src/test/resources/ca-prueba/''', '''^pruebas/ca-prueba/''']
+
+# Certificados y llaves por su extensión, fuera de la CA de prueba. La misma expresión está en el
+# hook certificado-o-llave de .pre-commit-config.yaml: se cambian juntas.
 [[rules]]
 id = "certificado-o-llave"
 description = "Certificado o llave privada fuera de la CA de prueba"
 path = '''(?i)\.(p12|pfx|pem|key|jks|keystore|crt|cer)$'''
 
+# Contraseñas y claves escritas como valor literal en archivos de configuración, también con poca
+# entropía (clave123), que las reglas por defecto no detectan (research §5). La clave tiene que estar
+# al inicio de la línea, en inglés o en español. No se reportan las referencias a variables de entorno
+# (${DB_CLAVE}, ${{ secrets.X }}) ni los valores ficticios de .env.ejemplo (cambiar-en-local-…).
+[[rules]]
+id = "clave-en-configuracion"
+description = "Contraseña o clave escrita como valor literal en un archivo de configuración"
+path = '''(?i)(\.(ya?ml|properties|env|conf|cfg|ini|toml)|(^|/)\.env[^/]*)$'''
+regex = '''(?im)^[ \t]*(?:export[ \t]+)?["']?[a-z0-9_.-]*(?:passw(?:or)?d|pwd|secret|clave|contrase(?:n|ñ)a)[a-z0-9_.-]*["']?[ \t]*[:=][ \t]*["']?([^\s"'#]{4,})'''
+secretGroup = 1
+keywords = ["pass", "pwd", "secret", "clave", "contrase"]
+
 [[rules.allowlists]]
-description = "CA de prueba y certificados ficticios de los firmantes de la demo"
-paths = ['''^backend/.+/src/test/resources/ca-prueba/''', '''^pruebas/ca-prueba/''']
+description = "Referencias a variables de entorno y valores ficticios documentados de .env.ejemplo"
+regexes = ['''^\$\{''', '''^cambiar-en-local-''']

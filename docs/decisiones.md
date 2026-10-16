@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-54 · ADR-020.
+- **Siguiente número libre:** D-55 · ADR-020.
 
 ## Índice
 
@@ -48,6 +48,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-52 | 2026-10-15 | La SPA entra al perfil consolidado en B00-H06 | Aceptada | Alcance de los issues #23 y #25 (B00-H08) |
 | D-53 | 2026-10-15 | Node 24 LTS en la CI y en la imagen; se cierra el PR #73 | Aceptada | PR #73 de Dependabot, `.github/dependabot.yml` |
 | ADR-019 | 2026-10-15 | Base del frontend: cliente generado, errores, sesión en memoria y mismo origen | Aceptada | ADR-008 (detalle del frontend) |
+| D-54 | 2026-10-15 | Excepciones de Grype solo temporales, con motivo y vencimiento | Aceptada | Constitución principio IX (2.1.2), alcance del issue #24 (B00-H07) |
 
 ---
 
@@ -777,6 +778,22 @@ Hay que poder probar el flujo completo de creación del distributivo sin debilit
 - Cada historia con pantallas agrega su contrato a `generar:api`, sus rutas protegidas y su prueba de accesibilidad con Playwright.
 - F05-H01 construye sobre la sesión y las rutas protegidas (D-50).
 - B00-H08 publica la imagen de Nginx y Caddy mantiene la división de `/api`.
+
+---
+
+## D-54. Excepciones de Grype solo temporales, con motivo y vencimiento
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-15 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q1 de la especificación de B00-H07
+- **Modifica a:** principio IX de la constitución (2.1.1 → 2.1.2: la entrega admite la excepción temporal); alcance del issue #24 (B00-H07)
+
+**Decisión.** Si Grype encuentra una vulnerabilidad alta o crítica con versión corregida que todavía no se puede aplicar (por ejemplo, el arreglo exige una versión mayor que rompe el proyecto), se acepta una excepción temporal. Cada excepción es una entrada versionada en la configuración de Grype del repositorio, con el identificador de la vulnerabilidad, el paquete, el motivo y la fecha en que vence, como máximo 30 días después de agregarla. La entrada se agrega en un pull request que la explica. Al vencer, el check `4 · sca` vuelve a fallar por esa vulnerabilidad.
+
+**Por qué.** Sin excepciones, una sola dependencia sin arreglo aplicable bloquearía todas las historias. Sin vencimiento, una excepción quedaría olvidada.
+
+**Alternativas.** Excepción sin vencimiento, revisada al cerrar cada ola; ninguna excepción, con el check fallando hasta corregir la dependencia.
+
+**Consecuencias.** El plan de B00-H07 define dónde viven las excepciones y cómo se comprueba el vencimiento. Renovar una excepción vencida es un pull request nuevo con su motivo.
 
 ---
 

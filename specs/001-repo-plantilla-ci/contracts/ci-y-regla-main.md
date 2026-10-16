@@ -14,10 +14,10 @@ Este documento fija lo que la CI y el ruleset `main` garantizan después de B00-
 | `2 · test-backend` | Pruebas | Después de `lint-backend` | Falla una prueba unitaria, de arquitectura (ArchUnit o Modulith) o de contrato, o `jacocoTestCoverageVerification` (módulo < 60 %, D-32) | Escenarios 1 a 4; FR-004 a FR-006 y FR-012 | B00-H01 |
 | `2 · test-integracion` | Pruebas | Después de `lint-backend`, si el PR no es borrador | Falla una prueba de `integrationTest` (Testcontainers) | Escenario 3; FR-007 | B00-H01 |
 | `2 · test-frontend` | Pruebas | Después de `lint-frontend` (se omite con él) | Falla Vitest | — | B00-H06 |
-| `3 · secretos` | Secretos | Siempre | Gitleaks encuentra un secreto o un certificado fuera de la CA de prueba | — | B00-H07 |
-| `4 · sbom-backend` | SCA | Si el PR no es borrador | No se pueden generar los SBOM | — | B00-H07 |
+| `3 · secretos` | Secretos | Siempre | Gitleaks encuentra un secreto o un certificado fuera de la CA de prueba | — | B00-H07 (detalle en `specs/008-secretos-sca-sbom/contracts/secretos.md`) |
+| `4 · sbom-backend` | SCA | Si el PR no es borrador | No se pueden generar los SBOM, o falta o está vacío el de un módulo | — | B00-H07 (detalle en `specs/008-secretos-sca-sbom/contracts/sca.md`) |
 | `4 · sbom-frontend` | SCA | `deteccion.frontend == 'true'` y el PR no es borrador | No se puede generar el SBOM del frontend | — | B00-H06 y B00-H07 |
-| `4 · sca` | SCA | `sbom-backend` termina en éxito **y** `sbom-frontend` termina en éxito u omitido | Grype encuentra una vulnerabilidad alta o crítica con versión corregida | Caso límite «repositorio sin frontend» | B00-H07 |
+| `4 · sca` | SCA | `sbom-backend` termina en éxito **y** `sbom-frontend` termina en éxito u omitido | Grype encuentra una vulnerabilidad alta o crítica con versión corregida, sin una excepción vigente (D-54) | Caso límite «repositorio sin frontend» | B00-H07 (detalle en `specs/008-secretos-sca-sbom/contracts/sca.md`) |
 
 ### Garantías
 

@@ -1,0 +1,7 @@
+# Vence el mismo día de la prueba: todavía vigente (hoy ≤ vence).
+ignore:
+  - vulnerability: GHSA-r5fr-rjxr-66jc
+    package: { name: lodash }
+    reason: "Caso de prueba: vence hoy"
+    desde: 2026-09-15
+    vence: 2026-10-15

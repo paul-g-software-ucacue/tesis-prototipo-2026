@@ -1,0 +1,7 @@
+# Inválida: 31 días entre desde y vence (D-54 admite 30 como máximo).
+ignore:
+  - vulnerability: GHSA-35jh-r3h4-6jhm
+    package: { name: lodash }
+    reason: "Caso de prueba: demasiado larga"
+    desde: 2026-10-01
+    vence: 2026-11-01
