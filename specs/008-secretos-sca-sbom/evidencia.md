@@ -69,3 +69,5 @@ Registro de las comprobaciones de los cuatro escenarios de la historia (issue #2
 - **Paso 2 de T026 y la fecha:** las demostraciones corrieron el 2026-10-16 en UTC (la noche del 15 en Ecuador); `excepciones.sh` usa la fecha UTC del runner.
 
 - **`.gitleaksignore` (T004):** se borró la entrada de `cd9dd0e` (B00-S01): `git merge-base --is-ancestor cd9dd0e main` confirma que ese commit no llega desde `main`, y con `HEAD` ya no se revisa.
+- **Fusión (T027):** el PR #100 se fusionó con *squash* como `486a32d` en `main` el 2026-10-16, con la aprobación del autor, después de los 10 checks y `perfil-consolidado` en verde sobre `340da91` ([ci, run 38848022963](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/38848022963)). La rama `008-secretos-sca-sbom` se borró. Los commits de las demostraciones (PR #101 a #103) nunca estuvieron en esa rama y no llegan a `main`.
+- **PR #84 (T027):** Dependabot no lo había cerrado después de la fusión; se cerró a mano con un comentario que cita el #100, porque `main` ya usa `download-grype` v7.4.2, y se borró su rama.
