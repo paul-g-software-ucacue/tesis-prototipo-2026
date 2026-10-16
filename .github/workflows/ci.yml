@@ -264,6 +264,9 @@ jobs:
       - name: Grype sobre cada SBOM
         env:
           GRYPE: ${{ steps.grype.outputs.cmd }}
+        # shell: bash agrega pipefail, así que tee no oculta el código de salida de resumen.sh
+        # (el shell por defecto de Actions es «bash -e», sin pipefail).
+        shell: bash
         run: |
           mkdir -p "$RUNNER_TEMP/grype"
           estado=0
