@@ -203,19 +203,19 @@ description: "Tareas de B00-H07: Etapas de secretos y SCA con SBOM por módulo"
 
 ## Phase 7: Polish, demostraciones y cierre
 
-- [ ] T023 Actualizar `specs/001-repo-plantilla-ci/contracts/ci-y-regla-main.md`: en las filas de `3 · secretos`, `4 · sbom-backend` y `4 · sca`, una nota que remita a `specs/008-secretos-sca-sbom/contracts/`. Comprobar con `git status` que no hay archivos temporales. Hacer commit y push, y abrir el pull request de `008-secretos-sca-sbom` hacia `main` **en borrador**, con `Refs #24`. Esperar a que terminen los runs del borrador y recién entonces marcarlo como listo. Comprobar:
+- [X] T023 Actualizar `specs/001-repo-plantilla-ci/contracts/ci-y-regla-main.md`: en las filas de `3 · secretos`, `4 · sbom-backend` y `4 · sca`, una nota que remita a `specs/008-secretos-sca-sbom/contracts/`. Comprobar con `git status` que no hay archivos temporales. Hacer commit y push, y abrir el pull request de `008-secretos-sca-sbom` hacia `main` **en borrador**, con `Refs #24`. Esperar a que terminen los runs del borrador y recién entonces marcarlo como listo. Comprobar:
   - los 10 checks en verde: `3 · secretos` con `no leaks found` (SC-003) y `4 · sca` sin hallazgos (SC-006);
   - los artefactos: un SBOM por cada módulo de Gradle con código en `sbom-backend` (hoy 23) y 1 en `sbom-frontend` (escenario 3, SC-004). Descargarlos con `gh run download` y anotar la lista en la evidencia;
   - el resumen de `4 · sca`: dice 24 SBOM revisados, sin hallazgos que bloquean, y lista las altas sin arreglo, si las hay;
   - las duraciones de `3 · secretos` (< 5 min) y de `4 · sca` (< 10 min) (SC-009);
   - con `gh api repos/{owner}/{repo}/rules/branches/main`, que los 4 checks siguen exigidos (FR-015, D-31).
-- [ ] T024 [US1] Pull request de demostración del escenario 1, **con la aprobación del autor**:
+- [X] T024 [US1] Pull request de demostración del escenario 1, **con la aprobación del autor**:
   - rama `demo-h07-secreto` desde `008-secretos-sca-sbom`, con el `application-demo.yaml` del quickstart §1;
   - commit con `--no-verify`, pull request hacia `main` listo para revisión.
 
   Comprobar que `3 · secretos` falla con `clave-en-configuracion`, que el log muestra `REDACTED` y no el valor, y que la fusión queda bloqueada (`mergeStateStatus` `BLOCKED`). **Mientras está abierto**, volver a correr `3 · secretos` del pull request de la historia (`gh run rerun --job`) y comprobar que sigue en verde (FR-002). Cerrarlo sin fusionar, borrar la rama y anotar los runs en la evidencia.
-- [ ] T025 [US2] Pull request de demostración del escenario 2, **con la aprobación del autor**: rama `demo-h07-certificado` con el `.p12` ficticio de T010 en `pruebas/certificado-autor.p12`, con `--no-verify`. Comprobar que `3 · secretos` falla con `certificado-o-llave` y `pkcs12-file`, que los 6 `.p12` de `ca-prueba/` no aparecen en el log y que la fusión queda bloqueada. Cerrarlo sin fusionar, borrar la rama y anotarlo.
-- [ ] T026 [US4] Pull request de demostración del escenario 4 y de D-54, **con la aprobación del autor**: rama `demo-h07-vulnerable` con `npm install lodash@4.17.20 --save-exact` en `frontend/`. Comprobar, uno por commit:
+- [X] T025 [US2] Pull request de demostración del escenario 2, **con la aprobación del autor**: rama `demo-h07-certificado` con el `.p12` ficticio de T010 en `pruebas/certificado-autor.p12`, con `--no-verify`. Comprobar que `3 · secretos` falla con `certificado-o-llave` y `pkcs12-file`, que los 6 `.p12` de `ca-prueba/` no aparecen en el log y que la fusión queda bloqueada. Cerrarlo sin fusionar, borrar la rama y anotarlo.
+- [X] T026 [US4] Pull request de demostración del escenario 4 y de D-54, **con la aprobación del autor**: rama `demo-h07-vulnerable` con `npm install lodash@4.17.20 --save-exact` en `frontend/`. Comprobar, uno por commit:
   1. `4 · sca` falla, su resumen dice `mdd-frontend`, `lodash`, `4.17.20`, la versión corregida, el identificador y `High` (SC-005), y `gh pr view` muestra `mergeStateStatus` `BLOCKED` (SC-007);
   2. con una excepción vigente en `.grype.yaml` por cada alta de `lodash` (`desde` hoy, `vence` dentro de 30 días), `4 · sca` pasa y el resumen la lista como suprimida;
   3. con `vence` en el pasado, `4 · sca` vuelve a fallar con el aviso de la excepción vencida (SC-008);
