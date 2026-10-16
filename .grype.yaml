@@ -2,9 +2,9 @@
 ignore:
   - vulnerability: GHSA-35jh-r3h4-6jhm
     package: { name: lodash }
-    reason: "Demostración de D-54: excepción vigente"
-    desde: 2026-10-16
-    vence: 2026-11-14
+    reason: "Demostración de D-54: excepción vencida"
+    desde: 2026-09-10
+    vence: 2026-10-10
   - vulnerability: GHSA-r5fr-rjxr-66jc
     package: { name: lodash }
     reason: "Demostración de D-54: excepción vigente"
