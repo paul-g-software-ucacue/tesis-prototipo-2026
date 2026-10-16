@@ -1,12 +1,12 @@
-# Excepciones temporales de Grype (D-54; specs/008-secretos-sca-sbom/contracts/sca.md).
-# Solo para una vulnerabilidad alta o crítica con versión corregida que todavía no se puede aplicar.
-# Cada una con su motivo y un vencimiento de 30 días como máximo después de desde; al vencer,
-# deploy/sca/excepciones.sh la quita y el check 4 · sca vuelve a fallar. Se agrega en un pull
-# request que explica el motivo.
-#
-#  - vulnerability: GHSA-xxxx-xxxx-xxxx
-#    package: { name: <dependencia> }
-#    reason: "Por qué no se puede actualizar todavía"
-#    desde: 2026-10-15
-#    vence: 2026-11-14
-ignore: []
+# Excepciones temporales de Grype (D-54). Demostración de B00-H07 (PR que no se fusiona).
+ignore:
+  - vulnerability: GHSA-35jh-r3h4-6jhm
+    package: { name: lodash }
+    reason: "Demostración de D-54: excepción vigente"
+    desde: 2026-10-16
+    vence: 2026-11-14
+  - vulnerability: GHSA-r5fr-rjxr-66jc
+    package: { name: lodash }
+    reason: "Demostración de D-54: excepción vigente"
+    desde: 2026-10-16
+    vence: 2026-11-14
