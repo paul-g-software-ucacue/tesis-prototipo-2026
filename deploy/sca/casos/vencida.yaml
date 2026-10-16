@@ -1,0 +1,7 @@
+# Vencida el 2026-10-15.
+ignore:
+  - vulnerability: GHSA-29mw-wpgm-hmr9
+    package: { name: lodash }
+    reason: "Caso de prueba: vencida"
+    desde: 2026-09-01
+    vence: 2026-10-01

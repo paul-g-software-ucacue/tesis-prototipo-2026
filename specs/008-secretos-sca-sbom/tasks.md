@@ -157,7 +157,7 @@ description: "Tareas de B00-H07: Etapas de secretos y SCA con SBOM por módulo"
 
 **Independent Test**: `deploy/sca/probar_excepciones.sh` pasa; en un pull request de demostración con `lodash@4.17.20`, `4 · sca` falla y su resumen dice `mdd-frontend`, `lodash`, 4.17.20 y la versión corregida.
 
-- [ ] T017 [P] [US4] Prueba primero: crear los casos de `deploy/sca/casos/` (contracts/sca.md y data-model.md). Cada uno es un `.grype.yaml` de ejemplo:
+- [X] T017 [P] [US4] Prueba primero: crear los casos de `deploy/sca/casos/` (contracts/sca.md y data-model.md). Cada uno es un `.grype.yaml` de ejemplo:
   - `vacia.yaml` (`ignore: []`);
   - `vigente.yaml`;
   - `vencida.yaml` (`vence` antes de la fecha de la prueba);
@@ -173,21 +173,21 @@ description: "Tareas de B00-H07: Etapas de secretos y SCA con SBOM por módulo"
   - que cada inválida sale con un `::error::` con su identificador y el motivo.
 
   Comprobar que falla mientras `excepciones.sh` no existe.
-- [ ] T018 [US4] Crear `deploy/sca/excepciones.sh <entrada> <salida> [<hoy>]` (contracts/sca.md):
+- [X] T018 [US4] Crear `deploy/sca/excepciones.sh <entrada> <salida> [<hoy>]` (contracts/sca.md):
   - lee `<entrada>` con `yq`; `<hoy>` es ISO y, por defecto, `date -u +%F`;
   - valida cada entrada de `ignore`: `vulnerability`, `package.name`, `reason` no vacío, `desde` y `vence` presentes, con «`vence` como máximo 30 días después de `desde`». Si alguna es inválida, imprime `::error::` y termina con 1, sin escribir la salida;
   - escribe en `<salida>` las entradas vigentes (`hoy` ≤ `vence`) e imprime `::warning::` por cada vencida;
   - si `yq` no está, falla con un mensaje claro.
 
   Debe pasar `probar_excepciones.sh` (T017) y `shellcheck`.
-- [ ] T019 [P] [US4] Crear `.grype.yaml` en la raíz con `ignore: []` y el comentario del formato de contracts/sca.md (D-54: motivo y vencimiento de 30 días como máximo).
-- [ ] T020 [US4] Prueba primero del informe: en el *scratchpad*, con Grype 0.120.1, revisar con `--show-suppressed -o table -o json=<archivo>` (sin `--only-fixed` ni `--fail-on`) un SBOM sintético con `lodash@4.17.20` (research §12), una dependencia con una alta sin arreglo y una excepción vigente para una de las altas de `lodash`. Comprobar primero en ese JSON dónde quedan las suprimidas (se espera `ignoredMatches`, no `matches`). Escribir el filtro de `jq` que, desde el JSON y el `metadata.component.name` del SBOM, arma las filas `| módulo | dependencia | instalada | corregida | vulnerabilidad | severidad |` de tres tablas:
+- [X] T019 [P] [US4] Crear `.grype.yaml` en la raíz con `ignore: []` y el comentario del formato de contracts/sca.md (D-54: motivo y vencimiento de 30 días como máximo).
+- [X] T020 [US4] Prueba primero del informe: en el *scratchpad*, con Grype 0.120.1, revisar con `--show-suppressed -o table -o json=<archivo>` (sin `--only-fixed` ni `--fail-on`) un SBOM sintético con `lodash@4.17.20` (research §12), una dependencia con una alta sin arreglo y una excepción vigente para una de las altas de `lodash`. Comprobar primero en ese JSON dónde quedan las suprimidas (se espera `ignoredMatches`, no `matches`). Escribir el filtro de `jq` que, desde el JSON y el `metadata.component.name` del SBOM, arma las filas `| módulo | dependencia | instalada | corregida | vulnerabilidad | severidad |` de tres tablas:
   1. las que bloquean: `High` o `Critical` con `fix.state == "fixed"` en `matches`;
   2. las altas o críticas sin arreglo todavía (informativas);
   3. las suprimidas por una excepción vigente, con su vencimiento.
 
   El filtro también devuelve si hay que fallar (la tabla 1 no está vacía) y el conteo de medias y bajas. Comprobar que la tabla 1 dice `demo`, `lodash`, `4.17.20`, `4.17.21` o `4.18.0` y la vulnerabilidad, y que la suprimida y la sin arreglo no hacen fallar.
-- [ ] T021 [US4] En `.github/workflows/ci.yml`, job `sca` (contracts/sca.md):
+- [X] T021 [US4] En `.github/workflows/ci.yml`, job `sca` (contracts/sca.md):
   - un checkout disperso de `.grype.yaml` y `deploy/sca/`;
   - `anchore/scan-action/download-grype@8576240a41341d866dbd7ebc72cd9fc0ef023f54 # v7.4.2` con `grype-version: v0.120.1`;
   - un paso que corre `deploy/sca/probar_excepciones.sh` y después `deploy/sca/excepciones.sh .grype.yaml "$RUNNER_TEMP/grype.yaml"`;
@@ -195,7 +195,7 @@ description: "Tareas de B00-H07: Etapas de secretos y SCA con SBOM por módulo"
   - el filtro de T020 sobre cada JSON decide el fallo (alta o crítica con arreglo, no suprimida) y arma las tres tablas en `$GITHUB_STEP_SUMMARY`, con el número de SBOM revisados (hoy 24) y, si no hay hallazgos que bloquean, una línea que lo diga.
 
   Comentarios en español. La condición del job y el nombre del check no cambian.
-- [ ] T022 [US4] Correr `actionlint` sobre `ci.yml` y `shellcheck` sobre `deploy/sca/*.sh`, sin avisos. Correr `deploy/sca/probar_excepciones.sh` con `yq` (en contenedor o binario en el *scratchpad*). Anotarlo en la evidencia.
+- [X] T022 [US4] Correr `actionlint` sobre `ci.yml` y `shellcheck` sobre `deploy/sca/*.sh`, sin avisos. Correr `deploy/sca/probar_excepciones.sh` con `yq` (en contenedor o binario en el *scratchpad*). Anotarlo en la evidencia.
 
 **Checkpoint**: una dependencia vulnerable con arreglo bloquea la fusión, y el informe dice qué actualizar.
 

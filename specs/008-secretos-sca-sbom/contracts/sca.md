@@ -28,7 +28,7 @@ Sin cambios: `npm run sbom` (`cyclonedx-npm --omit dev`), artefacto `sbom-fronte
 | Grype | `anchore/scan-action/download-grype@8576240a41341d866dbd7ebc72cd9fc0ef023f54 # v7.4.2`, con `grype-version: v0.120.1` |
 | Excepciones | `deploy/sca/probar_excepciones.sh`; después, `deploy/sca/excepciones.sh .grype.yaml <configuración del run>` (ver abajo) |
 | Revisión | Por cada SBOM: `grype sbom:<archivo> -c <configuración del run> --show-suppressed -o table -o json=<archivo>.grype.json`, **sin** `--only-fixed` ni `--fail-on`, en un grupo del log con el nombre del módulo. Si Grype termina con un código distinto de 0, el check falla (FR-013) |
-| Resumen | En `$GITHUB_STEP_SUMMARY`, con módulo, dependencia, instalada, corregida, vulnerabilidad y severidad, tres tablas: (1) las que bloquean, altas o críticas con arreglo; (2) altas o críticas **sin arreglo todavía**, solo informativas; (3) las suprimidas por una excepción vigente, con su vencimiento. Las medias y bajas quedan en la tabla del log y en un conteo |
+| Resumen | `deploy/sca/resumen.sh <configuración> <módulo>.json…`, en `$GITHUB_STEP_SUMMARY`, con módulo, dependencia, instalada, corregida, vulnerabilidad y severidad, tres tablas: (1) las que bloquean, altas o críticas con arreglo; (2) altas o críticas **sin arreglo todavía**, solo informativas; (3) las suprimidas por una excepción vigente, con su vencimiento. Las medias y bajas quedan en la tabla del log y en un conteo |
 | Falla si | Algún hallazgo de `.matches[]` del JSON tiene `severity` `High` o `Critical` y `fix.state == "fixed"` (las suprimidas por una excepción vigente van aparte y no cuentan); una excepción es inválida; Grype termina con error, por ejemplo porque no puede cargar su base |
 
 La condición del job y el nombre del check no cambian (B00-H01, D-31).
@@ -55,6 +55,10 @@ ignore: []
 | Todas vigentes | Las mismas entradas | 0 |
 | Alguna vencida | Sin la vencida; `::warning::` con su identificador y la fecha | 0 |
 | Alguna inválida (falta un campo o pasa de 30 días) | Nada; `::error::` con el identificador y el motivo | 1 |
+
+## `deploy/sca/resumen.sh`
+
+**Uso:** `resumen.sh <configuración de Grype> <módulo>.json…`. Cada JSON es la salida `-o json` de Grype para un SBOM, y el nombre del archivo es el módulo. Las suprimidas salen de `ignoredMatches` (comprobado con Grype 0.120.1) y su vencimiento, de la configuración. Escribe las tres tablas en Markdown y termina con 1 si hay alguna que bloquea.
 
 ## `deploy/sca/probar_excepciones.sh`
 

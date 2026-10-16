@@ -1,0 +1,6 @@
+# Inválida: falta vence.
+ignore:
+  - vulnerability: GHSA-35jh-r3h4-6jhm
+    package: { name: lodash }
+    reason: "Caso de prueba: sin vencimiento"
+    desde: 2026-10-15

@@ -105,6 +105,7 @@ deploy/sca/
 ├── excepciones.sh               # nuevo: valida y filtra .grype.yaml
 ├── verificar_sbom.sh            # nuevo: un SBOM por módulo, ninguno vacío (lo usan la CI y el quickstart)
 ├── probar_excepciones.sh        # nuevo: casos de D-54
+├── resumen.sh                   # nuevo: tablas del resumen y decisión del check desde el JSON de Grype
 └── casos/                       # nuevo: archivos de ejemplo de la prueba
 backend/build.gradle             # cambia: SBOM solo en subproyectos con java; sin el agregado
 .github/workflows/ci.yml         # cambia: secretos (digest, --text HEAD), sbom-backend (comprobación),

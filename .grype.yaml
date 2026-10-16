@@ -1,0 +1,12 @@
+# Excepciones temporales de Grype (D-54; specs/008-secretos-sca-sbom/contracts/sca.md).
+# Solo para una vulnerabilidad alta o crítica con versión corregida que todavía no se puede aplicar.
+# Cada una con su motivo y un vencimiento de 30 días como máximo después de desde; al vencer,
+# deploy/sca/excepciones.sh la quita y el check 4 · sca vuelve a fallar. Se agrega en un pull
+# request que explica el motivo.
+#
+#  - vulnerability: GHSA-xxxx-xxxx-xxxx
+#    package: { name: <dependencia> }
+#    reason: "Por qué no se puede actualizar todavía"
+#    desde: 2026-10-15
+#    vence: 2026-11-14
+ignore: []

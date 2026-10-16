@@ -1,0 +1,7 @@
+# Vigente el 2026-10-15 (25 días entre desde y vence).
+ignore:
+  - vulnerability: GHSA-35jh-r3h4-6jhm
+    package: { name: lodash }
+    reason: "Caso de prueba: vigente"
+    desde: 2026-10-15
+    vence: 2026-11-09

@@ -43,6 +43,11 @@ Registro de las comprobaciones de los cuatro escenarios de la historia (issue #2
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Prueba de las excepciones (T017, T018) | confirmada | Antes de `excepciones.sh`, `deploy/sca/probar_excepciones.sh` daba 8 `FALLA`. Después, 8 `OK`: sin excepciones, vigente, vence hoy (vigente), vencida (se quita con `::warning::`), mixta, sin motivo, sin `vence` y 31 días (`::error::` y código 1, sin escribir la salida). Con el `.grype.yaml` del repositorio: `0 de 0 excepciones vigentes`. | 2026-10-15 |
+| Forma del JSON de Grype (T020) | confirmada | Grype 0.120.1 con `--show-suppressed -o table -o json=…` sobre un SBOM con `lodash@4.17.20`, `ip@2.0.1` y una excepción para `GHSA-r5fr-rjxr-66jc`: la suprimida sale en `ignoredMatches` (con `appliedIgnoreRules`, sin `vence`), no en `matches`; `ip` sale con `fix.state: not-fixed`. | 2026-10-15 |
+| Resumen (T020) | confirmada | `deploy/sca/resumen.sh` sobre ese JSON: «Bloquean» con `demo · lodash · 4.17.20 · 4.17.21 · GHSA-35jh-r3h4-6jhm · High`; «Sin arreglo» con `ip 2.0.1 · GHSA-2p57-rm9w-gvfp`; «Suprimidas» con `GHSA-r5fr-rjxr-66jc`, vence 2026-11-09; `Medias y bajas: 3`; código 1. Sin hallazgos: «Ninguna…» en las tres tablas y código 0. | 2026-10-15 |
+| Todos los SBOM en local (T021, SC-006) | confirmada | Binario `grype` 0.120.1 sacado de su imagen, sobre los 23 SBOM del backend y el del frontend (98 componentes, `npm run sbom` con Node 24.21.0): `Grype: dependencias de 24 módulos`, «Ninguna vulnerabilidad alta o crítica con versión corregida», sin altas sin arreglo, código 0, en 2 minutos. | 2026-10-15 |
+| Herramientas (T022) | confirmada | actionlint 1.7.12 sobre `ci.yml` y ShellCheck 0.11.0 sobre `deploy/sca/*.sh`, sin hallazgos (en contenedor, leyendo por la entrada estándar). | 2026-10-15 |
 
 ## Alcance del historial (FR-002)
 

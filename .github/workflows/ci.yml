@@ -240,16 +240,40 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      # Solo lo que usa el job: las excepciones (D-54) y los scripts de deploy/sca/.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: |
+            .grype.yaml
+            deploy/sca
+          sparse-checkout-cone-mode: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with: { pattern: sbom-*, path: sboms }
+      # Grype en una versión exacta: con un tag, la acción usa el instalador de ese tag, que verifica
+      # el SHA-256 del binario. Sin grype-version instalaría la que trae por defecto (B00-H07, FR-014).
       - id: grype
-        uses: anchore/scan-action/download-grype@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
-      - name: Grype sobre cada SBOM (alta o crítica con versión corregida)
+        uses: anchore/scan-action/download-grype@8576240a41341d866dbd7ebc72cd9fc0ef023f54 # v7.4.2
+        with: { grype-version: v0.120.1 }
+      - name: Excepciones de Grype (D-54)
         run: |
+          deploy/sca/probar_excepciones.sh
+          deploy/sca/excepciones.sh .grype.yaml "$RUNNER_TEMP/grype.yaml"
+      # Sin --only-fixed ni --fail-on: resumen.sh decide el fallo (alta o crítica con versión
+      # corregida, no suprimida) y muestra también las altas sin arreglo (FR-011, FR-012). Si Grype
+      # termina con error, por ejemplo porque no puede cargar su base, el check falla (FR-013).
+      - name: Grype sobre cada SBOM
+        env:
+          GRYPE: ${{ steps.grype.outputs.cmd }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/grype"
           estado=0
           while IFS= read -r -d '' sbom; do
-            echo "::group::$sbom"
-            "${{ steps.grype.outputs.cmd }}" "sbom:$sbom" --only-fixed --fail-on high -o table || estado=1
+            modulo=$(jq -r '.metadata.component.name' "$sbom")
+            echo "::group::$modulo ($sbom)"
+            "$GRYPE" "sbom:$sbom" -c "$RUNNER_TEMP/grype.yaml" --show-suppressed \
+              -o table -o "json=$RUNNER_TEMP/grype/$modulo.json" || estado=1
             echo "::endgroup::"
           done < <(find sboms -name '*.json' -print0)
+          deploy/sca/resumen.sh "$RUNNER_TEMP/grype.yaml" "$RUNNER_TEMP"/grype/*.json \
+            | tee -a "$GITHUB_STEP_SUMMARY" || estado=1
           exit $estado
