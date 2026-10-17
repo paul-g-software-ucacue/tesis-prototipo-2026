@@ -1,8 +1,8 @@
 # Contrato: equipo de demostración
 
-## `deploy/equipo/compose.vps.yml`
+## `deploy/equipo/compose.demo.yml`
 
-Se corre siempre como `docker compose -p mdd --env-file /opt/mdd/.env -f /opt/mdd/actual/compose.vps.yml …`.
+Se corre siempre como `docker compose -p mdd --env-file /opt/mdd/.env -f /opt/mdd/actual/compose.demo.yml …`.
 
 | Servicio | Imagen | Puertos | Memoria | Variables (solo las suyas) |
 |---|---|---|---|---|
@@ -20,7 +20,7 @@ Los *healthchecks*, `JAVA_TOOL_OPTIONS`, `SPRING_DATASOURCE_URL` y el volumen `d
 
 | Sitio | Para qué |
 |---|---|
-| `{$DIRECCION}` (por defecto `localhost`) | HTTPS: CA interna con `localhost`, Let's Encrypt con un dominio propio |
+| `{$DIRECCION}` (por defecto `mdd.localhost`) | HTTPS con la CA interna de Caddy (`tls internal`), en `127.0.0.1:443` |
 | `http://:8081` | Entrada del túnel, solo dentro de la red de Compose |
 
 Los dos importan el mismo fragmento: `basic_auth` para todo menos `/api/*`, `/api/*` → `gateway:8080`, lo demás → `frontend:8080`, y las cabeceras de seguridad de hoy.
@@ -39,7 +39,7 @@ Los dos importan el mismo fragmento: `basic_auth` para todo menos `/api/*`, `/ap
 
 ## `deploy/equipo/probar_humo.sh` (nuevo)
 
-Usa `DIRECCION`, `DEMO_USUARIO`, `DEMO_CLAVE` y `MDD_USUARIO_PRUEBA_CLAVE` del `.env`. Con `curl --resolve` a `127.0.0.1:443`, acepta la CA interna de Caddy solo con `DIRECCION=localhost`. No imprime credenciales ni el token.
+Usa `DIRECCION`, `DEMO_USUARIO`, `DEMO_CLAVE` y `MDD_USUARIO_PRUEBA_CLAVE` del `.env`. Con `curl --resolve "$DIRECCION:443:127.0.0.1"`, acepta la CA interna de Caddy solo si `DIRECCION` termina en `.localhost`. No imprime credenciales ni el token.
 
 | Paso | Petición | Comprueba |
 |---|---|---|
@@ -54,14 +54,16 @@ Lo corre `mdd-actualizar.service` cada 5 minutos, como el usuario `mdd`, con `fl
 
 | Paso | Detalle | Si falla |
 |---|---|---|
-| Consulta | Token de lectura de `auth.docker.io` y `HEAD` de `${REPOSITORIO}:despliegue-main` → `Docker-Content-Digest` | Registro local y salida con 0; reintenta en la próxima |
+| Consulta | Deriva el registro y la ruta de `REPOSITORIO` (`docker.io/p980/mdd` → `registry-1.docker.io` y `p980/mdd`; `localhost:5000/mdd` → `localhost:5000` y `mdd`). Token de lectura de `auth.docker.io` (salvo un registro sin autenticación) y `HEAD` de `despliegue-main` → `Docker-Content-Digest` | Sin respuesta o error: registro local y salida con 0; reintenta en la próxima. **404** (todavía no hay versión publicada): registro local, sin informe a GitHub, salida con 0 |
 | ¿Nuevo? | Compara con `estado/ultimo-digest` | Igual: sale con 0 |
 | Paquete | `docker pull`, `docker create`, `docker cp /paquete` → `versiones/<commit>/` | Informe `failure` |
 | Informe | *Deployment* `in_progress` (D-56) | GitHub no responde: sigue, solo registro local |
 | Despliegue | `versiones/<commit>/desplegar.sh versiones/<commit>` | — |
 | Resultado | `success` (código 0) o `failure` (1 o 2) con la línea de resumen; guarda el *digest*; borra versiones más viejas que las 3 últimas | — |
 
-Variables para la prueba de la CI: `REGISTRO` (por defecto `registry-1.docker.io`), `AUTENTICACION` (por defecto `auth.docker.io`) y `GITHUB_API` (por defecto `https://api.github.com`).
+Variables para la prueba de la CI: `AUTENTICACION` (por defecto `auth.docker.io`; vacía para un registro sin autenticación) y `GITHUB_API` (por defecto `https://api.github.com`). `REPOSITORIO` sale del `.env`.
+
+Las descripciones de los *deployments* solo llevan el estado, el commit y el servicio que falló; nunca la dirección, el nombre ni otros datos del equipo (FR-005).
 
 ## Unidades de systemd
 

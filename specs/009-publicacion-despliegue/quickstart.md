@@ -57,13 +57,13 @@ sudo ls -l /opt/mdd /opt/mdd/secretos             # .env y configuracion.env con
 | Comprobación | Dónde | Resultado esperado |
 |---|---|---|
 | Despliegue sano y vuelta atrás (escenarios 3 y 4) | Paso «Despliegue en un equipo simulado» de `perfil-consolidado`, en el pull request | Versión A sana con la prueba de humo en verde; versión B rota que vuelve a A; los informes `success` y `failure` llegan a la API simulada |
-| Imagen vulnerable (escenario 2) | Pull request de demostración que cambia la base de una imagen a una versión con una alta o crítica corregida, y corre `cd.yml` con `workflow_dispatch` en esa rama (fuera de `main` solo construye y revisa) | La revisión falla y no se sube nada |
+| Imagen vulnerable (escenario 2) | Pull request de demostración que cambia la base de una imagen a una versión con una alta o crítica corregida: corre `5 · imágenes` (`cd.yml`), que en un pull request solo construye y revisa | `5 · imágenes` falla y no se sube nada |
 | Cierre de ola (US6) | `cierre-ola` con `workflow_dispatch` en la rama | ZAP sin hallazgos altos sobre la SPA y la API; k6 omitido con un aviso |
 
 ## 4. Después de fusionar: en el PC
 
 1. `cd.yml` corre sobre `main` y publica las 7 etiquetas y `despliegue-main` (escenario 1). Comprobar en Docker Hub.
-2. En menos de 15 minutos: `journalctl -u mdd-actualizar.service -n 50` dice «Sano en N s», y `https://localhost` (aceptando la CA interna de Caddy) pide usuario y contraseña (escenario 5).
+2. En menos de 15 minutos: `journalctl -u mdd-actualizar.service -n 50` dice «Sano en N s», y `https://mdd.localhost` (aceptando la CA interna de Caddy) pide usuario y contraseña (escenario 5).
 3. En GitHub, *Deployments → demostracion* muestra el commit con `success` (D-56).
 4. Iniciar sesión en la SPA con `autor.prueba` y la clave de `/opt/mdd/.env`; con el token del inicio de sesión, `docker compose -p mdd restart identidad` y comprobar que el token sigue valiendo (SC-007).
 

@@ -37,13 +37,13 @@ Las 6 imágenes propias se construyen desde los Dockerfiles existentes (ADR-013,
 
 ## 5. Paquete de despliegue como imagen
 
-- **Decisión:** una imagen `FROM scratch` con los archivos del despliegue de ese commit: `compose.vps.yml`, `Caddyfile`, `01-esquemas.sh`, `desplegar.sh`, `probar_humo.sh` y un archivo `VERSION` con el commit. El equipo la baja con `docker pull` y extrae los archivos con `docker create` y `docker cp`.
+- **Decisión:** una imagen `FROM scratch` con los archivos del despliegue de ese commit: `compose.demo.yml`, `Caddyfile`, `01-esquemas.sh`, `desplegar.sh`, `probar_humo.sh` y un archivo `VERSION` con el commit. El equipo la baja con `docker pull` y extrae los archivos con `docker create` y `docker cp`.
 - **Por qué:**
   - si una versión necesita un cambio en el despliegue (una variable nueva, un servicio nuevo), el cambio viaja con las imágenes del mismo commit, y la vuelta atrás también vuelve a los archivos anteriores;
   - usa la misma credencial de solo lectura de Docker Hub: el equipo no necesita acceso al repositorio de GitHub, que es privado;
   - no tiene paquetes del sistema, así que Grype no tiene nada que revisar.
 - **Se registró como D-58**, aprobada por el autor el 2026-10-17, porque el issue habla de 6 imágenes: esta es un séptimo artefacto, técnico, sin servicio.
-- **Alternativas:** clonar el repositorio en el equipo (necesitaría un token con lectura de código); instalar los archivos a mano una vez (un cambio de `compose.vps.yml` obligaría a desplegar a mano, y la vuelta atrás no volvería a la configuración anterior); un artefacto OCI con ORAS (una herramienta más en el equipo).
+- **Alternativas:** clonar el repositorio en el equipo (necesitaría un token con lectura de código); instalar los archivos a mano una vez (un cambio de `compose.demo.yml` obligaría a desplegar a mano, y la vuelta atrás no volvería a la configuración anterior); un artefacto OCI con ORAS (una herramienta más en el equipo).
 
 ## 6. Consulta desde el equipo sin gastar el cupo de Docker Hub
 
@@ -71,16 +71,17 @@ Las 6 imágenes propias se construyen desde los Dockerfiles existentes (ADR-013,
 └── estado/ultimo-digest        digest de despliegue-main ya desplegado
 ```
 
-- **`desplegar.sh`** (cambia): recibe la carpeta de la versión nueva. Mueve `actual` y `anterior`, escribe `ETIQUETA` en `.env`, corre `docker compose -p mdd --env-file /opt/mdd/.env -f actual/compose.vps.yml pull` y `up -d --remove-orphans`, espera hasta 180 s a que todos queden sanos (como hoy) y corre `probar_humo.sh`. Si algo falla, vuelve `actual` a `anterior` y levanta esa versión. El nombre de proyecto fijo (`-p mdd`) hace que los contenedores y el volumen de PostgreSQL sean los mismos aunque cambie la carpeta.
+- **`desplegar.sh`** (cambia): recibe la carpeta de la versión nueva. Mueve `actual` y `anterior`, escribe `ETIQUETA` en `.env`, corre `docker compose -p mdd --env-file /opt/mdd/.env -f actual/compose.demo.yml pull` y `up -d --remove-orphans`, espera hasta 180 s a que todos queden sanos (como hoy) y corre `probar_humo.sh`. Si algo falla, vuelve `actual` a `anterior` y levanta esa versión. El nombre de proyecto fijo (`-p mdd`) hace que los contenedores y el volumen de PostgreSQL sean los mismos aunque cambie la carpeta.
 - **`actualizar.sh`** (nuevo, se instala una vez): la consulta de §6, la extracción del paquete, la llamada a `desplegar.sh` y el informe a GitHub (§10). Si Docker Hub no responde, registra el error y sale sin tocar nada.
 - **Comprobado en el código:** las imágenes de Java corren como el uid 10001 (`java.Dockerfile`). La llave se monta de solo lectura con `:ro,Z`, y su archivo pertenece al uid 10001 con modo 0400. En Fedora, `Z` reetiqueta solo esa carpeta (no el `home` del autor); en Ubuntu no tiene efecto.
 
 ## 9. Proxy, acceso y túnel
 
 - **Decisión:** el `Caddyfile` del paquete define el sitio con la variable `DIRECCION`:
-  - por defecto `localhost`: Caddy sirve HTTPS con su CA interna, en `127.0.0.1:443`;
-  - con un dominio propio que apunte al equipo: certificado de Let's Encrypt (hay que abrir 80 y 443);
+  - por defecto `mdd.localhost`: Caddy sirve HTTPS con su CA interna (`tls internal`), en `127.0.0.1:443`. Los navegadores resuelven `*.localhost` a 127.0.0.1, y la cabecera HSTS queda limitada a ese nombre: no fuerza HTTPS en `localhost` ni en el perfil local del autor (`http://localhost:8081`);
   - y un segundo sitio, `http://:8081` dentro de la red de Compose y sin publicar, para el túnel.
+
+  No hay modo con dominio propio y Let's Encrypt: necesitaría publicar los puertos 80 y 443 hacia internet, y el equipo solo publica en `127.0.0.1`. El HTTPS público, cuando hace falta, lo da Cloudflare en el túnel (análisis del 2026-10-17, M1 y M2).
 
   Los dos sitios importan el mismo fragmento: `basic_auth` para todo menos `/api/*`, `/api/*` al API Gateway y lo demás a la SPA, con las cabeceras de seguridad de hoy (FR-015).
 - **Túnel (opcional):** un servicio `cloudflared` en el perfil de Compose `tunel`, que solo arranca si el equipo define su token. Sale hacia Cloudflare y llega a `http://caddy:8081`, sin puertos de entrada (FR-016). Necesita un dominio administrado por Cloudflare (gratis para el túnel).

@@ -7,10 +7,10 @@
 ## Summary
 
 **Publicación (`cd.yml`).**
-- En cada fusión a `main`, `docker buildx bake -f compose.yaml` construye las 6 imágenes con la misma definición del perfil, más el **paquete de despliegue** (D-58): una imagen `FROM scratch` con `compose.vps.yml`, el `Caddyfile` y los scripts de ese commit.
+- En cada fusión a `main`, `docker buildx bake -f compose.yaml` construye las 6 imágenes con la misma definición del perfil, más el **paquete de despliegue** (D-58): una imagen `FROM scratch` con `compose.demo.yml`, el `Caddyfile` y los scripts de ese commit.
 - Grype revisa las 6 imágenes y las de terceros (PostgreSQL, Caddy y cloudflared, por *digest*) con las excepciones de D-54, **antes** de iniciar sesión en Docker Hub. Si una falla, no se sube nada.
 - Después sube las 7 etiquetas `<componente>-<commit>` y, al final, mueve `despliegue-main`.
-- Con `workflow_dispatch` en otra rama solo construye y revisa.
+- En un pull request que toque el despliegue (check `5 · imágenes`, no obligatorio), solo construye y revisa: así se prueba cada cambio de imagen antes de fusionar.
 
 **Despliegue en el equipo (D-55).**
 - Un temporizador de systemd en el PC corre `actualizar.sh` cada 5 minutos como el usuario `mdd`.
@@ -20,7 +20,7 @@
 
 **Secretos y acceso.**
 - `preparar.sh` crea `/opt/mdd` y genera todos los secretos en el equipo, sin mostrarlos: la llave JWT persistente, las claves de la base, la del proceso, la de `autor.prueba` (D-57) y el hash del acceso de la demo.
-- Caddy sirve HTTPS en `localhost` con su CA interna y pide usuario y contraseña. El túnel de Cloudflare es un perfil opcional de Compose.
+- Caddy sirve HTTPS en `mdd.localhost` con su CA interna y pide usuario y contraseña. El túnel de Cloudflare es un perfil opcional de Compose.
 
 **Pruebas y cierre de ola.**
 - `perfil-consolidado` simula el ciclo completo en el runner: un registro local y una API de GitHub simulada, con un despliegue sano, uno roto con vuelta atrás y los dos informes.
@@ -71,7 +71,7 @@ Los detalles, lo comprobado y las alternativas están en [research.md](research.
 **Scale/Scope**:
 - 2 workflows nuevos o cambiados (`cd.yml` nuevo; `cierre-ola.yml` reescrito) y un paso nuevo en `perfil-consolidado.yml`;
 - 1 Dockerfile nuevo, 1 Compose nuevo y el `Caddyfile` cambiado;
-- 6 scripts nuevos o cambiados (`construir.sh`, `publicar.sh`, `preparar.sh`, `actualizar.sh`, `probar_humo.sh` y `desplegar.sh`) y 2 unidades de systemd;
+- 7 scripts nuevos o cambiados (`construir.sh`, `revisar.sh`, `publicar.sh`, `preparar.sh`, `actualizar.sh`, `probar_humo.sh` y `desplegar.sh`) y 2 unidades de systemd;
 - 7 etiquetas por commit.
 
 ## Constitution Check
@@ -83,11 +83,11 @@ Los detalles, lo comprobado y las alternativas están en [research.md](research.
 | I a IV, VI, VII | Sin dominio, servicios ni contratos nuevos. | ✅ N/A |
 | V. Límites | El equipo despliega los 4 procesos y el API Gateway de ADR-006, con los límites de R-19. | ✅ |
 | VIII. Pruebas | El ciclo de despliegue se prueba en cada PR que toca el despliegue (registro y API simulados): sano, roto con vuelta atrás e informes. Datos y secretos ficticios en la CI. | ✅ |
-| IX. Seguridad (2.1.3) | *Entrega:* Grype sobre las 6 imágenes y las de terceros antes de publicar, con D-54. *Operación:* despliegue automático en el equipo de demostración, con acceso restringido (Caddy), *healthchecks* y vuelta atrás (D-55). Secretos solo en su entorno: en GitHub, solo el token de escritura de Docker Hub en `publicacion`; en el equipo, el resto, con 0600 y un usuario propio. Acciones por SHA e imágenes por *digest*. | ✅ |
+| IX. Seguridad (2.1.4) | *Entrega:* Grype sobre las 6 imágenes y las de terceros antes de publicar, con D-54. *Operación:* despliegue automático en el equipo de demostración, con acceso restringido (Caddy), *healthchecks* y vuelta atrás (D-55). Secretos solo en su entorno: en GitHub, solo el token de escritura de Docker Hub en `publicacion`; en el equipo, el resto, con 0600 y un usuario propio. Acciones por SHA e imágenes por *digest*. | ✅ |
 | X. Simplicidad | Sin herramientas nuevas en el equipo más allá de Docker, `curl`, `jq` y systemd. El paquete de despliegue (D-58) evita clonar el repositorio o dar más permisos. El túnel es opcional. | ✅ |
 | XI y XII | Los scripts llevan su comentario de propósito y de uso en español. | ✅ |
 | XIII. Errores | N/A: no hay respuestas nuevas de la API. | ✅ N/A |
-| §3 Infraestructura | Docker Compose en un equipo de 4 núcleos y 8 GiB por presupuesto (D-36); el pipeline no despliega en la VM del IST. | ✅ |
+| §3 Infraestructura | Docker Compose en un equipo de 4 núcleos y 8 GiB por presupuesto (D-36); el pipeline no despliega en la VM del IST. El equipo de demostración usa Fedora: la constitución 2.1.4 aclara que puede usar otra distribución y que el despliegue no depende de ella (D-55). | ✅ |
 | §6.4 Decisiones | D-55, D-56, D-57 y D-58, aceptadas por el autor el 2026-10-17. | ✅ |
 
 **Resultado del gate antes de la fase 0:** pasa. D-58 quedó aprobada el 2026-10-17.
@@ -107,7 +107,7 @@ specs/009-publicacion-despliegue/
 ├── quickstart.md            # fase 1: reemplaza la guía del VPS
 ├── contracts/
 │   ├── publicacion.md           # cd.yml, construir.sh, publicar.sh y el paquete
-│   ├── equipo.md                # compose.vps.yml, Caddyfile, desplegar, humo, actualizar, systemd y preparar
+│   ├── equipo.md                # compose.demo.yml, Caddyfile, desplegar, humo, actualizar, systemd y preparar
 │   └── cierre-ola.md            # ZAP y k6 sobre el perfil del runner
 ├── checklists/
 │   └── requirements.md
@@ -127,7 +127,7 @@ deploy/
 ├── desplegar.sh                 # cambia: versiones, enlaces, humo y vuelta atrás de archivos
 ├── docker/despliegue.Dockerfile # nuevo: el paquete (FROM scratch)
 ├── equipo/
-│   ├── compose.vps.yml          # nuevo
+│   ├── compose.demo.yml          # nuevo
 │   ├── actualizar.sh            # nuevo
 │   ├── probar_humo.sh           # nuevo
 │   ├── preparar.sh              # nuevo
@@ -137,6 +137,7 @@ deploy/
 │   └── mdd-actualizar.timer     # nuevo
 └── publicacion/
     ├── construir.sh             # nuevo
+    ├── revisar.sh               # nuevo: Grype sobre las 6 imágenes y las de terceros
     └── publicar.sh              # nuevo
 docs/decisiones.md               # D-58
 specs/007-spa-base/contracts/perfil.md        # remite al Caddyfile nuevo
@@ -147,7 +148,7 @@ specs/007-spa-base/contracts/perfil.md        # remite al Caddyfile nuevo
 ## Fases de implementación (guía para /speckit-tasks)
 
 1. **D-58:** aprobada por el autor el 2026-10-17 (`docs/decisiones.md`).
-2. **Archivos del equipo**, con su prueba primero: `compose.vps.yml`, `Caddyfile`, `probar_humo.sh` y `desplegar.sh`. Después la prueba del ciclo (`probar_equipo.sh` con `registry:2` y la API simulada), que tiene que fallar antes de `actualizar.sh` y pasar después.
+2. **Archivos del equipo**, con su prueba primero: `compose.demo.yml`, `Caddyfile`, `probar_humo.sh` y `desplegar.sh`. Después la prueba del ciclo (`probar_equipo.sh` con `registry:2` y la API simulada), que tiene que fallar antes de `actualizar.sh` y pasar después.
 3. **Publicación:** `despliegue.Dockerfile`, `construir.sh`, `publicar.sh` y `cd.yml` (revisión con Grype antes del inicio de sesión).
 4. **Preparación del equipo:** `preparar.sh` y las unidades de systemd; probado en la CI en modo no interactivo y en el PC del autor.
 5. **Cierre de ola:** `cierre-ola.yml` reescrito, probado con `workflow_dispatch`.

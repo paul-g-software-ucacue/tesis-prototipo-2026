@@ -9,7 +9,7 @@ Un commit de `main` publicado en el repositorio privado `<usuario>/mdd` (researc
 | Etiqueta | Contenido | Reglas |
 |---|---|---|
 | `identidad-<commit>`, `datos-<commit>`, `distributivo-<commit>`, `salida-<commit>`, `gateway-<commit>`, `frontend-<commit>` | Las 6 imágenes | `<commit>`: los 12 primeros caracteres del SHA. *Label* `org.opencontainers.image.revision` con el SHA completo. Solo existen si las 6 pasaron Grype (FR-003). |
-| `despliegue-<commit>` | Paquete de despliegue (D-58) | `FROM scratch`. Archivos: `compose.vps.yml`, `Caddyfile`, `01-esquemas.sh`, `desplegar.sh`, `probar_humo.sh` y `VERSION` (el SHA completo). |
+| `despliegue-<commit>` | Paquete de despliegue (D-58) | `FROM scratch`. Archivos: `compose.demo.yml`, `Caddyfile`, `01-esquemas.sh`, `desplegar.sh`, `probar_humo.sh` y `VERSION` (el SHA completo). |
 | `despliegue-main` | La misma imagen que el `despliegue-<commit>` más reciente | Se mueve al final de la publicación, después de las otras 7 etiquetas. |
 
 ## Equipo de demostración
@@ -18,8 +18,8 @@ Carpeta `/opt/mdd`, de un usuario de sistema `mdd` (research §8 y §11).
 
 | Archivo | Modo | Contenido | Lo usa |
 |---|---|---|---|
-| `configuracion.env` | 0600 | `REPOSITORIO`, `DOCKERHUB_USUARIO`, `DOCKERHUB_TOKEN` (solo lectura), `GITHUB_REPOSITORIO`, `GITHUB_TOKEN` (*deployments*), `GITHUB_ENTORNO=demostracion` | `actualizar.sh` |
-| `.env` | 0600 | `POSTGRES_PASSWORD`, `DB_CLAVE_IDENTIDAD`, `DB_CLAVE_DATOS`, `DB_CLAVE_DISTRIBUTIVO`, `DB_CLAVE_SALIDA`, `MDD_CLAVE_PROCESO_DISTRIBUTIVO`, `MDD_USUARIO_PRUEBA_CLAVE`, `DEMO_USUARIO`, `DEMO_CLAVE`, `DEMO_CLAVE_HASH`, `DIRECCION`, `REPOSITORIO`, `ETIQUETA` y, opcional, `TUNEL_TOKEN` | Compose (interpolación) y `probar_humo.sh` |
+| `configuracion.env` | 0600 | `DOCKERHUB_USUARIO`, `DOCKERHUB_TOKEN` (solo lectura), `GITHUB_REPOSITORIO`, `GITHUB_TOKEN` (*deployments*), `GITHUB_ENTORNO=demostracion` | `actualizar.sh` |
+| `.env` | 0600 | `POSTGRES_PASSWORD`, `DB_CLAVE_IDENTIDAD`, `DB_CLAVE_DATOS`, `DB_CLAVE_DISTRIBUTIVO`, `DB_CLAVE_SALIDA`, `MDD_CLAVE_PROCESO_DISTRIBUTIVO`, `MDD_USUARIO_PRUEBA_CLAVE`, `DEMO_USUARIO`, `DEMO_CLAVE`, `DEMO_CLAVE_HASH`, `DIRECCION` (por defecto `mdd.localhost`), `REPOSITORIO` (forma completa: `docker.io/p980/mdd`; única fuente, también para `actualizar.sh`), `ETIQUETA` y, opcional, `TUNEL_TOKEN` | Compose (interpolación), `probar_humo.sh` y `actualizar.sh` |
 | `secretos/jwt.pem` | 0400, dueño 10001 | Llave RSA de 2048 bits en PKCS#8 | `identidad` (ADR-014), montada `:ro,Z` |
 | `versiones/<commit>/` | 0750 | El paquete extraído | `desplegar.sh` |
 | `actual`, `anterior` | enlaces | A una carpeta de `versiones/` | `desplegar.sh` |

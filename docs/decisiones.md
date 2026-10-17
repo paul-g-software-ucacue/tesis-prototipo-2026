@@ -49,7 +49,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-53 | 2026-10-15 | Node 24 LTS en la CI y en la imagen; se cierra el PR #73 | Aceptada | PR #73 de Dependabot, `.github/dependabot.yml` |
 | ADR-019 | 2026-10-15 | Base del frontend: cliente generado, errores, sesión en memoria y mismo origen | Aceptada | ADR-008 (detalle del frontend) |
 | D-54 | 2026-10-15 | Excepciones de Grype solo temporales, con motivo y vencimiento | Aceptada | Constitución principio IX (2.1.2), alcance del issue #24 (B00-H07) |
-| D-55 | 2026-10-17 | El despliegue automático va al PC de demostración del autor, por extracción desde Docker Hub | Aceptada | Constitución principio IX y §3 (2.1.3), alcance del issue #25 (B00-H08), `cierre-ola.yml` |
+| D-55 | 2026-10-17 | El despliegue automático va al PC de demostración del autor, por extracción desde Docker Hub | Aceptada | Constitución principio IX y §3 (2.1.3 y 2.1.4), alcance del issue #25 (B00-H08), `cierre-ola.yml` |
 | D-56 | 2026-10-17 | Cada despliegue del equipo de demostración se informa a GitHub Deployments | Aceptada | Alcance del issue #25 (B00-H08) |
 | D-57 | 2026-10-17 | El usuario de prueba `autor.prueba` se habilita en el equipo de demostración, con clave propia | Aceptada | Alcance de los issues #25 (B00-H08) y #43 (F05-H01), D-37 |
 | D-58 | 2026-10-17 | Los archivos del despliegue viajan en una imagen más, el paquete de despliegue | Aceptada | Alcance del issue #25 (B00-H08: «las 6 imágenes») |
@@ -805,14 +805,14 @@ Hay que poder probar el flujo completo de creación del distributivo sin debilit
 
 - **Estado:** Aceptada · **Fecha:** 2026-10-17 · **Decidido por:** autor de la tesis
 - **Origen:** preparación de B00-H08 (issue #25): el crédito de DigitalOcean del GitHub Student Developer Pack, con el que se iba a pagar el VPS, terminó el 31/07/2026
-- **Modifica a:** principio IX de la constitución, *Operación*, y la fila «Repositorio y CI/CD» de §3 (2.1.2 → 2.1.3); alcance del issue #25 (B00-H08); `cierre-ola.yml`, que suponía una URL pública
+- **Modifica a:** principio IX de la constitución, *Operación*, y la fila «Repositorio y CI/CD» de §3 (2.1.2 → 2.1.3); la fila «Infraestructura» de §3, para aclarar que el equipo de demostración puede usar otra distribución (2.1.3 → 2.1.4, análisis de B00-H08); alcance del issue #25 (B00-H08); `cierre-ola.yml`, que suponía una URL pública
 
 **Decisión.**
 1. **Destino.** El despliegue automático va al PC del autor, que hace de equipo de demostración. La constitución ya decía que «la demostración corre en un equipo del autor del mismo tamaño» (§3). El PC tiene más recursos que los 4 núcleos y 8 GiB de D-36, pero los límites de memoria por contenedor (R-19) se mantienen, y el presupuesto de la demostración sigue siendo el de D-36.
 2. **Despliegue por extracción.** La CI no entra al equipo. Publica las imágenes en Docker Hub (etapa 5, sin cambios) y un servicio del propio equipo consulta Docker Hub cada pocos minutos; si hay una versión nueva de `main`, corre `deploy/desplegar.sh`, con *healthchecks* y vuelta atrás. El equipo baja las imágenes con un token de solo lectura.
 3. **Acceso restringido.** Caddy sigue pidiendo usuario y contraseña antes de mostrar el MDD. El acceso desde fuera de la red del autor es opcional: si hace falta, un túnel de salida (por ejemplo, Cloudflare Tunnel) lo publica por HTTPS sin abrir puertos.
 4. **Cierre de ola.** ZAP y k6 dejan de apuntar a una URL pública: corren contra el sistema que levanta el propio runner, como `perfil-consolidado`. El plan de B00-H08 detalla cómo.
-5. **Portabilidad.** Nada del despliegue depende del PC: el mismo `compose.vps.yml`, `desplegar.sh` y el servicio de extracción funcionan igual en un VPS o en la VM del IST, si más adelante hay uno.
+5. **Portabilidad.** Nada del despliegue depende del PC: el mismo `compose.demo.yml`, `desplegar.sh` y el servicio de extracción funcionan igual en un VPS o en la VM del IST, si más adelante hay uno.
 
 **Por qué.** Sin el crédito, un VPS de 4 vCPU y 8 GiB cuesta unos 6 a 7 € al mes (Hetzner CX33), y las opciones gratuitas no alcanzan: Oracle Always Free redujo su cupo ARM a 2 OCPU y 12 GB y exige imágenes multiarquitectura, y el crédito de Azure for Students se agota en pocos meses con una VM de ese tamaño. El destino real del sistema es la VM del IST, a la que el pipeline no despliega (§3); el VPS era una comodidad para la demostración. La extracción evita dar a GitHub acceso de red o SSH a un equipo personal.
 
@@ -865,11 +865,11 @@ Hay que poder probar el flujo completo de creación del distributivo sin debilit
 - **Origen:** plan de B00-H08 (`specs/009-publicacion-despliegue/research.md` §5)
 - **Modifica a:** alcance del issue #25 (B00-H08), que habla de publicar «las 6 imágenes»
 
-**Decisión.** Además de las 6 imágenes de los procesos, el API Gateway y la SPA, cada fusión a `main` publica en el mismo repositorio privado una imagen `FROM scratch` con los archivos del despliegue de ese commit (`compose.vps.yml`, `Caddyfile`, `01-esquemas.sh`, `desplegar.sh`, `probar_humo.sh` y `VERSION`), con la etiqueta `despliegue-<commit>`. La etiqueta móvil `despliegue-main` se mueve al final, cuando las 7 imágenes del commit ya están publicadas, y es lo único que consulta el equipo de demostración.
+**Decisión.** Además de las 6 imágenes de los procesos, el API Gateway y la SPA, cada fusión a `main` publica en el mismo repositorio privado una imagen `FROM scratch` con los archivos del despliegue de ese commit (`compose.demo.yml`, `Caddyfile`, `01-esquemas.sh`, `desplegar.sh`, `probar_humo.sh` y `VERSION`), con la etiqueta `despliegue-<commit>`. La etiqueta móvil `despliegue-main` se mueve al final, cuando las 7 imágenes del commit ya están publicadas, y es lo único que consulta el equipo de demostración.
 
 **Por qué.** Un cambio en el despliegue viaja con las imágenes del mismo commit, y la vuelta atrás también vuelve a los archivos anteriores. El equipo usa la misma credencial de solo lectura de Docker Hub y no necesita acceso al repositorio privado de GitHub (D-55). La imagen no tiene paquetes del sistema, así que no agrega nada que revisar con Grype.
 
-**Alternativas.** Clonar el repositorio en el equipo (necesita un token con lectura de código); instalar los archivos a mano una vez (un cambio de `compose.vps.yml` obligaría a desplegar a mano y la vuelta atrás no volvería a la configuración anterior); un artefacto OCI con ORAS (otra herramienta en el equipo).
+**Alternativas.** Clonar el repositorio en el equipo (necesita un token con lectura de código); instalar los archivos a mano una vez (un cambio de `compose.demo.yml` obligaría a desplegar a mano y la vuelta atrás no volvería a la configuración anterior); un artefacto OCI con ORAS (otra herramienta en el equipo).
 
 **Consecuencias.** El repositorio tiene 7 etiquetas por commit. «Las 6 imágenes» del issue siguen siendo las que se construyen desde el código y Grype revisa.
 

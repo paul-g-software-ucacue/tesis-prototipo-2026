@@ -10,11 +10,11 @@
 
 **Origen**: issue #25 · B00-H08 · sub-issue de #2 (B00 · Base técnica de la ola 0) · milestone «Ola 0 · Base técnica» · etiquetas `tipo:historia`, `prioridad:must`, `modulo:transversal` · tamaño propuesto L · depende de #19 (B00-H02) y #24 (B00-H07), cerradas. Es la última historia de la ola 0.
 
-**Requerimientos que cubre**: ADR-011 · D-27 · RNF-POR-01 · RNF-POR-02. **Decisiones que aplica** (`docs/decisiones.md`): **D-55** (el despliegue va al PC de demostración del autor, por extracción desde Docker Hub), D-36 (equipo de 4 núcleos y 8 GiB), R-19 (límites de memoria), ADR-013 y ADR-015 (imágenes construidas desde el código, con la raíz como contexto), D-52 (la SPA en el perfil), ADR-014 (llave de firma RS256), D-49 y ADR-018 (token de proceso), D-54 (excepciones de Grype) y D-31 (los 10 checks de `main`). La constitución está en la versión 2.1.3, que ya refleja D-55 (principio IX, *Operación*, y §3).
+**Requerimientos que cubre**: ADR-011 · D-27 · RNF-POR-01 · RNF-POR-02. **Decisiones que aplica** (`docs/decisiones.md`): **D-55** (el despliegue va al PC de demostración del autor, por extracción desde Docker Hub), D-36 (equipo de 4 núcleos y 8 GiB), R-19 (límites de memoria), ADR-013 y ADR-015 (imágenes construidas desde el código, con la raíz como contexto), D-52 (la SPA en el perfil), ADR-014 (llave de firma RS256), D-49 y ADR-018 (token de proceso), D-54 (excepciones de Grype) y D-31 (los 10 checks de `main`). La constitución está en la versión 2.1.4, que ya refleja D-55 (principio IX, *Operación*, y §3, también la distribución del equipo de demostración).
 
 **Historia (del issue, con el destino de D-55)**: Como autor, quiero que cada fusión a `main` publique las 6 imágenes en el repositorio privado de Docker Hub y que el equipo de demostración las despliegue solo, para tener siempre la última versión funcionando, sin desplegar a mano.
 
-**Decisiones tomadas en esta historia:** D-56 y D-57.
+**Decisiones tomadas en esta historia:** D-56, D-57 y D-58 (el paquete de despliegue, en el plan).
 
 ## Clarifications
 
@@ -155,6 +155,7 @@ Escenario: Cierre de ola sin URL pública
 - **Excepción vigente de D-54**: una vulnerabilidad cubierta por una excepción vigente no impide publicar, igual que en `4 · sca`. La misma configuración de excepciones vale para dependencias e imágenes.
 - **Imágenes de terceros que usa el despliegue** (PostgreSQL y el proxy): se fijan por *digest* y Grype también las revisa; si tienen una alta o crítica con arreglo, el despliegue no corre hasta actualizarlas o agregar una excepción (D-54).
 - **Dos fusiones seguidas**: el equipo despliega la más reciente que encuentra; no hace falta desplegar las intermedias.
+- **Todavía no hay una versión publicada** (antes de la primera publicación): el equipo lo registra y espera; no informa nada a GitHub.
 - **El equipo estaba apagado**: al encenderse, la próxima consulta despliega la última versión publicada.
 - **GitHub no responde al informar un despliegue**: el despliegue sigue igual; el informe queda en el registro local y no se reintenta hacia atrás.
 - **Docker Hub no responde o la credencial venció**: el equipo sigue con la versión que tiene, registra el error y vuelve a intentar en la próxima consulta. No borra nada.
