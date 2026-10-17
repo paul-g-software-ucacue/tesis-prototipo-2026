@@ -7,6 +7,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
@@ -17,8 +18,9 @@ import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
  * Firma tokens JWT RS256 con la llave privada de Usuarios (ADR-014).
  *
  * <p>El token lleva {@code iss}, {@code sub} (nombre de usuario), {@code roles} ordenados, {@code
- * iat} y {@code exp}; el encabezado lleva el {@code kid} de la llave, para que quien valida elija
- * la llave pública correcta del JWKS.
+ * nombre} (nombre para mostrar), {@code inicio} (segundos desde la época, el instante del inicio de
+ * sesión, que se conserva al renovar; ADR-020), {@code iat} y {@code exp}; el encabezado lleva el
+ * {@code kid} de la llave, para que quien valida elija la llave pública correcta del JWKS.
  *
  * <p>El token de proceso usa la misma llave y el mismo formato, con {@code sub} = {@code
  * proceso:<proceso>}, {@code roles} = {@code [PROCESO]} y su propia vigencia (D-49, ADR-018).
@@ -56,17 +58,21 @@ public final class EmisorJwt implements EmisorDeTokens {
     }
 
     @Override
-    public TokenEmitido emitir(Usuario usuario) {
+    public TokenEmitido emitir(Usuario usuario, Instant inicio) {
         return firmar(
-                usuario.nombreUsuario(), usuario.roles().stream().sorted().toList(), vigencia);
+                usuario.nombreUsuario(),
+                usuario.roles().stream().sorted().toList(),
+                Map.of("nombre", usuario.nombreParaMostrar(), "inicio", inicio.getEpochSecond()),
+                vigencia);
     }
 
     @Override
     public TokenEmitido emitirParaProceso(String proceso) {
-        return firmar("proceso:" + proceso, List.of("PROCESO"), vigenciaProceso);
+        return firmar("proceso:" + proceso, List.of("PROCESO"), Map.of(), vigenciaProceso);
     }
 
-    private TokenEmitido firmar(String sujeto, List<String> roles, Duration duracion) {
+    private TokenEmitido firmar(
+            String sujeto, List<String> roles, Map<String, Object> extra, Duration duracion) {
         Instant ahora = reloj.instant();
         Instant vence = ahora.plus(duracion);
         JwtClaimsSet reclamos =
@@ -76,6 +82,7 @@ public final class EmisorJwt implements EmisorDeTokens {
                         .claim("roles", roles)
                         .issuedAt(ahora)
                         .expiresAt(vence)
+                        .claims(reclamosExtra -> reclamosExtra.putAll(extra))
                         .build();
         JwsHeader encabezado = JwsHeader.with(SignatureAlgorithm.RS256).keyId(kid).build();
         String valor =

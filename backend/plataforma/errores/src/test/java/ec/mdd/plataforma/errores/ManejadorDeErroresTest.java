@@ -76,6 +76,16 @@ class ManejadorDeErroresTest {
     }
 
     @Test
+    void dadoUnaEntradaConEncabezados_cuandoSeProduceSuError_entoncesLosAgregaALaRespuesta()
+            throws Exception {
+        HttpResponse<String> respuesta = pedir("GET", "/api/prueba/espera", null, null, null);
+
+        assertThat(respuesta.statusCode()).isEqualTo(429);
+        assertThat(respuesta.headers().firstValue("Retry-After")).hasValue("42");
+        assertThat(respuesta.body()).contains("\"codigo\":\"PRUEBA_ESPERA\"");
+    }
+
+    @Test
     void dadoUnErrorDeDominioSinRegistrar_cuandoSeProduce_entonces500YElRegistroLoAvisa(
             CapturedOutput salida) throws Exception {
         HttpResponse<String> respuesta = pedir("GET", "/api/prueba/sin-catalogo", null, null, null);

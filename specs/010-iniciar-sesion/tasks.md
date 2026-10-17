@@ -36,7 +36,7 @@ description: "Tareas de F05-H01: Iniciar sesión"
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear `specs/010-iniciar-sesion/evidencia.md` con estas secciones:
+- [X] T001 Crear `specs/010-iniciar-sesion/evidencia.md` con estas secciones:
   - entorno;
   - escenario 1 (credenciales válidas y usuarios de la demo);
   - escenario 2 (credenciales inválidas y bloqueo);
@@ -51,26 +51,26 @@ description: "Tareas de F05-H01: Iniciar sesión"
 
 ### Contrato (principio IV)
 
-- [ ] T002 Cambiar `contratos/usuarios/openapi.yaml` según contracts/usuarios.md:
+- [X] T002 Cambiar `contratos/usuarios/openapi.yaml` según contracts/usuarios.md:
   - en `iniciarSesion`, la respuesta `429` con `Error` (`USUARIOS_INICIO_BLOQUEADO`) y el encabezado `Retry-After` (entero, segundos);
   - la operación nueva `renovarSesion` (`POST /api/usuarios/sesion/renovacion`, `tags: [Sesion]`, con seguridad, sin cuerpo; `200` `TokenSesion`, `401` `NoAutenticado`, `500`, `503`).
 
   Cambiar `contratos/comun/seguridad.yaml`: `SesionActual.nombre` («string», **opcional**, «Nombre para mostrar (claim `nombre` del token)»), sin tocar `required: [usuario, roles]`. Agregar a `contratos/comun/errores.md` la fila de `USUARIOS_INICIO_BLOQUEADO` (429, «Demasiados intentos», «Espera unos minutos y vuelve a intentarlo.»).
-- [ ] T003 Regenerar las interfaces del backend (`./gradlew :servicios:usuarios:compileJava`, ADR-015) y los tipos de la SPA (`npm run generar:api`). Comprobar que compila y que los demás servicios con `SesionControlador` (cargas, generacion y dashboard) siguen compilando sin cambios, porque `nombre` es opcional.
+- [X] T003 Regenerar las interfaces del backend (`./gradlew :servicios:usuarios:compileJava`, ADR-015) y los tipos de la SPA (`npm run generar:api`). Comprobar que compila y que los demás servicios con `SesionControlador` (cargas, generacion y dashboard) siguen compilando sin cambios, porque `nombre` es opcional.
 
 ### Persistencia
 
-- [ ] T004 Prueba primero: en `PRUEBA/adaptadores/salida/UsuarioJpaTest.java` (Testcontainers), comprobar que después de las migraciones:
+- [X] T004 Prueba primero: en `PRUEBA/adaptadores/salida/UsuarioJpaTest.java` (Testcontainers), comprobar que después de las migraciones:
   - `usuario` tiene `nombre_para_mostrar` «varchar(120), no nulo»;
   - un `nombre_usuario` con mayúsculas guardado antes de V4 queda en minúsculas;
   - existe `intento_fallido` (`nombre` «varchar(64)» como clave primaria, `fallidos` «int», `bloqueado_hasta` «timestamptz, nulo» y `actualizado_en` «timestamptz»).
-- [ ] T005 Crear `USU/main/resources/db/migration/usuarios/V4__usuarios_demo.sql`: agrega `nombre_para_mostrar` (relleno con `nombre_usuario` en las filas existentes, después `not null`), pasa `nombre_usuario` a `lower(...)` y crea `intento_fallido`, con un comentario que cite D-59 y D-60. T004 pasa.
+- [X] T005 Crear `USU/main/resources/db/migration/usuarios/V4__usuarios_demo.sql`: agrega `nombre_para_mostrar` (relleno con `nombre_usuario` en las filas existentes, después `not null`), pasa `nombre_usuario` a `lower(...)` y crea `intento_fallido`, con un comentario que cite D-59 y D-60. T004 pasa.
 
 ### Dominio
 
-- [ ] T006 [P] Prueba primero, en `PRUEBA/dominio/RolMddTest.java`: los 10 identificadores de research §1 (`ADMINISTRADOR`, `OPERADOR_DATOS`, `COORDINADOR_CARRERA`, `GESTOR_UNIDAD`, `RESPONSABLE_CONSOLIDACION`, `VICERRECTOR`, `RECTOR`, `MIEMBRO_OCS`, `SECRETARIA_GENERAL` y `DOCENTE`), y que un texto desconocido se rechaza.
-- [ ] T007 [P] Prueba primero, en `PRUEBA/dominio/UsuarioTest.java`: `Usuario.normalizar(" Coordinacion.Demo ")` da `coordinacion.demo`; el usuario guarda el nombre normalizado; `nombreParaMostrar` es obligatorio y no vacío; `toString` sigue sin el hash.
-- [ ] T008 Crear `JAVA/dominio/RolMdd.java` (enum con JavaDoc por rol, citando D-16 y el glosario) y cambiar `JAVA/dominio/Usuario.java`: campo `nombreParaMostrar`, normalización del nombre en el constructor (`trim` y minúsculas con `Locale.ROOT`) y el método estático `normalizar`. Ajustar `UsuarioJpa`, `RepositorioUsuariosJpa` (búsqueda por nombre normalizado) y `CargaUsuarioDePrueba` («autor.prueba» con nombre para mostrar «Autor de prueba»). T006 y T007 pasan.
+- [X] T006 [P] Prueba primero, en `PRUEBA/dominio/RolMddTest.java`: los 10 identificadores de research §1 (`ADMINISTRADOR`, `OPERADOR_DATOS`, `COORDINADOR_CARRERA`, `GESTOR_UNIDAD`, `RESPONSABLE_CONSOLIDACION`, `VICERRECTOR`, `RECTOR`, `MIEMBRO_OCS`, `SECRETARIA_GENERAL` y `DOCENTE`), y que un texto desconocido se rechaza.
+- [X] T007 [P] Prueba primero, en `PRUEBA/dominio/UsuarioTest.java`: `Usuario.normalizar(" Coordinacion.Demo ")` da `coordinacion.demo`; el usuario guarda el nombre normalizado; `nombreParaMostrar` es obligatorio y no vacío; `toString` sigue sin el hash.
+- [X] T008 Crear `JAVA/dominio/RolMdd.java` (enum con JavaDoc por rol, citando D-16 y el glosario) y cambiar `JAVA/dominio/Usuario.java`: campo `nombreParaMostrar`, normalización del nombre en el constructor (`trim` y minúsculas con `Locale.ROOT`) y el método estático `normalizar`. Ajustar `UsuarioJpa`, `RepositorioUsuariosJpa` (búsqueda por nombre normalizado) y `CargaUsuarioDePrueba` («autor.prueba» con nombre para mostrar «Autor de prueba»). T006 y T007 pasan.
 
 **Checkpoint**: el contrato, la base y el dominio están listos; todo compila y las pruebas de B00-H03 siguen en verde.
 
@@ -82,18 +82,18 @@ description: "Tareas de F05-H01: Iniciar sesión"
 
 **Independent Test**: en el perfil local, `coordinacion.demo` y `vicerrectorado.demo` entran con `cambiar-en-local-demo` y la pantalla de inicio muestra su nombre y solo su rol.
 
-- [ ] T009 [P] [US1] Crear `USU/main/resources/usuarios-demo.yaml` con los 11 usuarios de research §2 (`usuario`, `nombre` y `roles`), sin contraseñas y con un comentario de cabecera que cite D-59 y diga que son ficticios.
-- [ ] T010 [US1] Prueba primero, en `PRUEBA/infraestructura/CargaUsuariosDemoTest.java` (Testcontainers):
+- [X] T009 [P] [US1] Crear `USU/main/resources/usuarios-demo.yaml` con los 11 usuarios de research §2 (`usuario`, `nombre` y `roles`), sin contraseñas y con un comentario de cabecera que cite D-59 y diga que son ficticios.
+- [X] T010 [US1] Prueba primero, en `PRUEBA/infraestructura/CargaUsuariosDemoTest.java` (Testcontainers):
   - con la clave común: crea los 11 activos, con hashes `$argon2id$`, su nombre y sus roles;
   - con un archivo `usuario=clave`: cada uno con su clave; un usuario sin línea en el archivo no se crea y se registra un aviso;
   - al volver a arrancar con otra clave: actualiza solo el hash, el nombre y los roles, sin duplicar;
   - sin archivo ni clave común: no crea nada y avisa;
   - nunca registra una clave (la prueba revisa el registro capturado).
-- [ ] T011 [US1] Crear `JAVA/infraestructura/CargaUsuariosDemo.java` (un `ApplicationRunner` como `CargaUsuarioDePrueba`), con `PropiedadesUsuarios.Demo` (`claves`: ruta; `clave`: texto) y el puerto `RepositorioUsuarios` (agregar `actualizar` si hace falta). Lee el YAML con SnakeYAML (`org.yaml.snakeyaml`, la que ya trae Spring Boot) y no pisa nada si no hay contraseña. Registrar el bean en `ConfiguracionUsuarios`. T010 pasa.
-- [ ] T012 [US1] Prueba primero, en `PRUEBA/infraestructura/CargaUsuarioDePruebaTest.java`: con `habilitado=false` y `autor.prueba` ya en la base, queda `activo=false` (D-57); con `habilitado=true`, sigue igual que hoy. Después cambiar `CargaUsuarioDePrueba` para que desactive. T012 pasa.
-- [ ] T013 [US1] Prueba primero, en `PRUEBA/adaptadores/salida/EmisorJwtTest.java`: el token lleva el claim `nombre` y el claim `inicio` (segundos), y `sub` y `roles` como hoy. Después cambiar `EmisorJwt` y el puerto `EmisorDeTokens`. T013 pasa.
-- [ ] T014 [US1] Prueba primero, en `PRUEBA/adaptadores/entrada/SesionContratoTest.java`: `consultarSesion` con un token de `docente.coordinador.demo` devuelve `usuario`, `nombre` y `roles` ordenados, válido contra el contrato. Después cambiar `SesionControlador.consultarSesion` para rellenar `nombre` desde el claim. T014 pasa.
-- [ ] T015 [US1] Configurar `backend/apps/identidad/src/main/resources/application.yaml` (`mdd.usuarios.demo.claves: ${MDD_USUARIOS_DEMO_CLAVES:}`, `mdd.usuarios.demo.clave: ${MDD_USUARIOS_DEMO_CLAVE:}`) y `.env.ejemplo` (`MDD_USUARIOS_DEMO_CLAVE=cambiar-en-local-demo`, con un comentario que cite D-59).
+- [X] T011 [US1] Crear `JAVA/infraestructura/CargaUsuariosDemo.java` (un `ApplicationRunner` como `CargaUsuarioDePrueba`), con `PropiedadesUsuarios.Demo` (`claves`: ruta; `clave`: texto) y el puerto `RepositorioUsuarios` (agregar `actualizar` si hace falta). Lee el YAML con SnakeYAML (`org.yaml.snakeyaml`, la que ya trae Spring Boot) y no pisa nada si no hay contraseña. Registrar el bean en `ConfiguracionUsuarios`. T010 pasa.
+- [X] T012 [US1] Prueba primero, en `PRUEBA/infraestructura/CargaUsuarioDePruebaTest.java`: con `habilitado=false` y `autor.prueba` ya en la base, queda `activo=false` (D-57); con `habilitado=true`, sigue igual que hoy. Después cambiar `CargaUsuarioDePrueba` para que desactive. T012 pasa.
+- [X] T013 [US1] Prueba primero, en `PRUEBA/adaptadores/salida/EmisorJwtTest.java`: el token lleva el claim `nombre` y el claim `inicio` (segundos), y `sub` y `roles` como hoy. Después cambiar `EmisorJwt` y el puerto `EmisorDeTokens`. T013 pasa.
+- [X] T014 [US1] Prueba primero, en `PRUEBA/adaptadores/entrada/SesionContratoTest.java`: `consultarSesion` con un token de `docente.coordinador.demo` devuelve `usuario`, `nombre` y `roles` ordenados, válido contra el contrato. Después cambiar `SesionControlador.consultarSesion` para rellenar `nombre` desde el claim. T014 pasa.
+- [X] T015 [US1] Configurar `backend/apps/identidad/src/main/resources/application.yaml` (`mdd.usuarios.demo.claves: ${MDD_USUARIOS_DEMO_CLAVES:}`, `mdd.usuarios.demo.clave: ${MDD_USUARIOS_DEMO_CLAVE:}`) y `.env.ejemplo` (`MDD_USUARIOS_DEMO_CLAVE=cambiar-en-local-demo`, con un comentario que cite D-59).
 - [ ] T016 [P] [US1] Prueba primero, en `frontend/src/pantallas/Inicio.test.tsx`: «Hola, Vicerrectorado académico (demo)» con el `nombre` de la sesión, y «Hola, autor.prueba» si no viene `nombre`; los roles con sus nombres en español («Coordinador de carrera», «Docente»…). Crear `frontend/src/sesion/roles.ts` (los 10 identificadores → nombre en español; un identificador desconocido se muestra tal cual) y cambiar `frontend/src/pantallas/Inicio.tsx`. T016 pasa.
 - [ ] T017 [US1] Agregar a `deploy/probar_autenticacion.sh` un paso que recorre los 11 usuarios de `usuarios-demo.yaml` (leído con `yq`): cada uno inicia sesión con la clave común y `GET /api/usuarios/sesion` devuelve su `nombre` y **exactamente** los roles del archivo (SC-001). Correrlo con el perfil local (`docker compose up -d --build --wait`) y anotar el resultado en la evidencia.
 
@@ -107,11 +107,11 @@ description: "Tareas de F05-H01: Iniciar sesión"
 
 **Independent Test**: con un nombre inventado y con uno existente, 5 intentos fallidos llevan al sexto a 429 `USUARIOS_INICIO_BLOQUEADO`; el mensaje es el mismo en los dos casos.
 
-- [ ] T018 [P] [US2] Prueba primero, en `PRUEBA/dominio/PoliticaDeIntentosTest.java` (sin dobles, con un reloj fijo): de 1 a 4 fallos, no bloquea; el quinto bloquea 15 minutos; durante el bloqueo, `estaBloqueado` es verdadero; al vencer, un fallo vuelve a 1; los valores salen de los parámetros.
-- [ ] T019 [US2] Crear `JAVA/dominio/PoliticaDeIntentos.java` (regla pura, con `java.time.Clock`) y el registro de valor `EstadoDeIntentos` (`fallidos`, `bloqueadoHasta`). T018 pasa.
-- [ ] T020 [US2] Prueba primero, en `PRUEBA/adaptadores/salida/RepositorioIntentosJdbcTest.java` (Testcontainers): leer, registrar un fallo (atómico con `INSERT … ON CONFLICT … DO UPDATE`), bloquear, borrar al acertar y limpiar las filas sin bloqueo ni actividad por 24 horas. Crear el puerto `JAVA/puertos/salida/RepositorioIntentos.java` y `JAVA/adaptadores/salida/RepositorioIntentosJdbc.java`. T020 pasa.
-- [ ] T021 [US2] Prueba primero, en `PRUEBA/aplicacion/IniciarSesionServicioTest.java` (Mockito en los puertos): un nombre bloqueado lanza `InicioBloqueado` sin verificar la contraseña ni distinguir si existe; un fallo registra el intento con el nombre normalizado; el quinto fallo deja el nombre bloqueado; un acierto borra los intentos; los casos de B00-H03 siguen igual. Después cambiar `IniciarSesionServicio` y crear `JAVA/aplicacion/InicioBloqueado.java`. T021 pasa.
-- [ ] T022 [US2] Prueba primero, en `PRUEBA/adaptadores/entrada/ErroresUsuariosTest.java` y `SesionContratoTest.java`: `USUARIOS_INICIO_BLOQUEADO` en el catálogo coincide con `errores.md`, y `iniciarSesion` responde 429 con el modelo `Error` y `Retry-After`, válido contra el contrato. Después agregar el código a `ErroresUsuarios` y la traducción de `InicioBloqueado` (ADR-016). T022 pasa.
+- [X] T018 [P] [US2] Prueba primero, en `PRUEBA/dominio/PoliticaDeIntentosTest.java` (sin dobles, con un reloj fijo): de 1 a 4 fallos, no bloquea; el quinto bloquea 15 minutos; durante el bloqueo, `estaBloqueado` es verdadero; al vencer, un fallo vuelve a 1; los valores salen de los parámetros.
+- [X] T019 [US2] Crear `JAVA/dominio/PoliticaDeIntentos.java` (regla pura, con `java.time.Clock`) y el registro de valor `EstadoDeIntentos` (`fallidos`, `bloqueadoHasta`). T018 pasa.
+- [X] T020 [US2] Prueba primero, en `PRUEBA/adaptadores/salida/RepositorioIntentosJdbcTest.java` (Testcontainers): leer, registrar un fallo (atómico con `INSERT … ON CONFLICT … DO UPDATE`), bloquear, borrar al acertar y limpiar las filas sin bloqueo ni actividad por 24 horas. Crear el puerto `JAVA/puertos/salida/RepositorioIntentos.java` y `JAVA/adaptadores/salida/RepositorioIntentosJdbc.java`. T020 pasa.
+- [X] T021 [US2] Prueba primero, en `PRUEBA/aplicacion/IniciarSesionServicioTest.java` (Mockito en los puertos): un nombre bloqueado lanza `InicioBloqueado` sin verificar la contraseña ni distinguir si existe; un fallo registra el intento con el nombre normalizado; el quinto fallo deja el nombre bloqueado; un acierto borra los intentos; los casos de B00-H03 siguen igual. Después cambiar `IniciarSesionServicio` y crear `JAVA/aplicacion/InicioBloqueado.java`. T021 pasa.
+- [X] T022 [US2] Prueba primero, en `PRUEBA/adaptadores/entrada/ErroresUsuariosTest.java` y `SesionContratoTest.java`: `USUARIOS_INICIO_BLOQUEADO` en el catálogo coincide con `errores.md`, y `iniciarSesion` responde 429 con el modelo `Error` y `Retry-After`, válido contra el contrato. Después agregar el código a `ErroresUsuarios` y la traducción de `InicioBloqueado` (ADR-016). T022 pasa.
 - [ ] T023 [P] [US2] Prueba primero, en `frontend/src/pantallas/IniciarSesion.test.tsx`: con un 429 de la API simulada, la pantalla muestra «Demasiados intentos» y la descripción del servidor, sin texto técnico, igual que cualquier error (ADR-019). Ajustar solo si falla.
 - [ ] T024 [US2] Agregar a `deploy/probar_autenticacion.sh`: con un nombre inventado (`bloqueo-<aleatorio>`), 5 intentos con 401 y el sexto con 429 `USUARIOS_INICIO_BLOQUEADO`; con `ocs.demo` (existe y ningún otro script lo usa), el mismo resultado y el mismo mensaje. Nunca se bloquea `autor.prueba` ni `docente.coordinador.demo`, que usan los demás pasos del perfil. Correrlo y anotarlo.
 
@@ -125,8 +125,8 @@ description: "Tareas de F05-H01: Iniciar sesión"
 
 **Independent Test**: sin sesión, `/inicio` lleva al inicio de sesión y, al entrar, de vuelta a `/inicio`. Con actividad simulada, la sesión pasa los 30 minutos; sin actividad, vence a los 30.
 
-- [ ] T025 [US3] Prueba primero, en `PRUEBA/aplicacion/RenovarSesionServicioTest.java` (Mockito): con un token vigente y `inicio` hace menos de 8 horas, emite uno nuevo con el mismo `inicio`; con `inicio` hace más de 8 horas, lanza la excepción que termina en 401; un token de proceso (`roles: [PROCESO]`) se rechaza. Crear `JAVA/puertos/entrada/RenovarSesion.java`, `JAVA/aplicacion/RenovarSesionServicio.java` y la propiedad `mdd.usuarios.token.maximo` (PT8H) en `PropiedadesUsuarios`. T025 pasa.
-- [ ] T026 [US3] Prueba primero, en `PRUEBA/adaptadores/entrada/SesionContratoTest.java`: `renovarSesion` con un token vigente devuelve 200 `TokenSesion` con `venceEn` 30 minutos después; sin token, o pasadas las 8 horas, 401 `SEGURIDAD_NO_AUTENTICADO`. Después implementar `renovarSesion` en `SesionControlador`. Comprobar que el API Gateway la enruta y la protege igual que `consultarSesion`. T026 pasa.
+- [X] T025 [US3] Prueba primero, en `PRUEBA/aplicacion/RenovarSesionServicioTest.java` (Mockito): con un token vigente y `inicio` hace menos de 8 horas, emite uno nuevo con el mismo `inicio`; con `inicio` hace más de 8 horas, lanza la excepción que termina en 401; un token de proceso (`roles: [PROCESO]`) se rechaza. Crear `JAVA/puertos/entrada/RenovarSesion.java`, `JAVA/aplicacion/RenovarSesionServicio.java` y la propiedad `mdd.usuarios.token.maximo` (PT8H) en `PropiedadesUsuarios`. T025 pasa.
+- [X] T026 [US3] Prueba primero, en `PRUEBA/adaptadores/entrada/SesionContratoTest.java`: `renovarSesion` con un token vigente devuelve 200 `TokenSesion` con `venceEn` 30 minutos después; sin token, o pasadas las 8 horas, 401 `SEGURIDAD_NO_AUTENTICADO`. Después implementar `renovarSesion` en `SesionControlador`. Comprobar que el API Gateway la enruta y la protege igual que `consultarSesion`. T026 pasa.
 - [ ] T027 [P] [US3] Prueba primero, en `frontend/src/sesion/renovacion.test.ts` (temporizadores falsos de Vitest):
   - sin actividad, no llama a la renovación y la sesión se cierra a los 30 minutos con «sesión terminada»;
   - con actividad después de la última renovación y menos de 20 minutos restantes, llama una sola vez y reprograma el vencimiento con el `venceEn` nuevo;

@@ -33,22 +33,48 @@ class RepositorioUsuariosJpaIntegrationTest {
     void dadoUnUsuarioConRoles_cuandoSeGuardaYSeBusca_entoncesConservaSusDatos() {
         RepositorioUsuariosJpa repositorio = new RepositorioUsuariosJpa(filas);
         Usuario usuario =
-                new Usuario("autor.prueba", "hash", true, Set.of("DOCENTE", "COORDINADOR_CARRERA"));
+                new Usuario(
+                        "autor.prueba",
+                        "Autor de prueba",
+                        "hash",
+                        true,
+                        Set.of("DOCENTE", "COORDINADOR_CARRERA"));
 
         repositorio.guardar(usuario);
 
         assertThat(repositorio.buscarPorNombre("autor.prueba")).contains(usuario);
+        assertThat(repositorio.buscarPorNombre(" Autor.PRUEBA ")).contains(usuario);
         assertThat(repositorio.buscarPorNombre("nadie")).isEmpty();
+    }
+
+    @Test
+    void dadoUnUsuarioGuardado_cuandoSeActualiza_entoncesCambiaSusDatosSinDuplicarlo() {
+        RepositorioUsuariosJpa repositorio = new RepositorioUsuariosJpa(filas);
+        repositorio.guardar(new Usuario("docente.demo", "Viejo", "hash", false, Set.of("RECTOR")));
+        Usuario nuevo =
+                new Usuario("docente.demo", "Docente (demo)", "otro", true, Set.of("DOCENTE"));
+
+        repositorio.actualizar(nuevo);
+        filas.flush();
+
+        assertThat(repositorio.buscarPorNombre("docente.demo")).contains(nuevo);
+        assertThat(filas.count()).isEqualTo(1);
+        assertThatThrownBy(
+                        () ->
+                                repositorio.actualizar(
+                                        new Usuario("nadie", "Nadie", "h", true, Set.of())))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
     void dadoUnNombreRepetido_cuandoSeGuarda_entoncesLaBaseLoRechaza() {
         RepositorioUsuariosJpa repositorio = new RepositorioUsuariosJpa(filas);
-        repositorio.guardar(new Usuario("repetido", "hash", true, Set.of()));
+        repositorio.guardar(new Usuario("repetido", "Repetido", "hash", true, Set.of()));
 
         assertThatThrownBy(
                         () -> {
-                            repositorio.guardar(new Usuario("repetido", "otro", true, Set.of()));
+                            repositorio.guardar(
+                                    new Usuario("Repetido", "Otro", "otro", true, Set.of()));
                             filas.flush();
                         })
                 .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);

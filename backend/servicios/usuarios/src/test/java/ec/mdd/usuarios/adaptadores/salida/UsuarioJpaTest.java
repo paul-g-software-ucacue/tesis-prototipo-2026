@@ -11,8 +11,19 @@ class UsuarioJpaTest {
 
     @Test
     void dadoUnUsuario_cuandoSeConvierteEnFilaYDeVuelta_entoncesConservaSusDatos() {
-        Usuario usuario = new Usuario("autor.prueba", "hash", true, Set.of("DOCENTE"));
+        Usuario usuario = new Usuario("autor.prueba", "Autor", "hash", true, Set.of("DOCENTE"));
 
         assertThat(UsuarioJpa.nuevo(usuario).aDominio()).isEqualTo(usuario);
+    }
+
+    @Test
+    void dadoUnaFila_cuandoCopiaOtroUsuario_entoncesConservaElNombreYCambiaLoDemas() {
+        UsuarioJpa fila =
+                UsuarioJpa.nuevo(new Usuario("docente.demo", "Viejo", "hash", false, Set.of()));
+        Usuario nuevo = new Usuario("docente.demo", "Docente", "otro", true, Set.of("DOCENTE"));
+
+        fila.copiar(nuevo);
+
+        assertThat(fila.aDominio()).isEqualTo(nuevo);
     }
 }

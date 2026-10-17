@@ -37,9 +37,15 @@ class EmisorJwtTest {
     void dadoUnUsuario_cuandoSeEmiteSuToken_entoncesEsRs256ConSusDatosYVencimiento()
             throws Exception {
         Usuario usuario =
-                new Usuario("autor.prueba", "hash", true, Set.of("DOCENTE", "COORDINADOR_CARRERA"));
+                new Usuario(
+                        "autor.prueba",
+                        "Autor de prueba",
+                        "hash",
+                        true,
+                        Set.of("DOCENTE", "COORDINADOR_CARRERA"));
+        Instant inicio = ahora.minus(Duration.ofHours(2));
 
-        TokenEmitido token = emisor.emitir(usuario);
+        TokenEmitido token = emisor.emitir(usuario, inicio);
 
         SignedJWT firmado = SignedJWT.parse(token.valor());
         assertThat(firmado.getHeader().getAlgorithm()).isEqualTo(JWSAlgorithm.RS256);
@@ -52,6 +58,9 @@ class EmisorJwtTest {
         assertThat(jwt.getSubject()).isEqualTo("autor.prueba");
         assertThat(jwt.getClaimAsStringList("roles"))
                 .containsExactly("COORDINADOR_CARRERA", "DOCENTE");
+        assertThat(jwt.getClaimAsString("nombre")).isEqualTo("Autor de prueba");
+        assertThat(((Number) jwt.getClaim("inicio")).longValue())
+                .isEqualTo(inicio.getEpochSecond());
         assertThat(jwt.getIssuedAt()).isEqualTo(ahora);
         assertThat(jwt.getExpiresAt()).isEqualTo(ahora.plus(Duration.ofMinutes(30)));
         assertThat(token.venceEn()).isEqualTo(jwt.getExpiresAt());
@@ -72,13 +81,16 @@ class EmisorJwtTest {
         assertThat(jwt.getClaimAsString("iss")).isEqualTo("mdd-usuarios");
         assertThat(jwt.getSubject()).isEqualTo("proceso:distributivo");
         assertThat(jwt.getClaimAsStringList("roles")).containsExactly("PROCESO");
+        assertThat(jwt.hasClaim("nombre")).isFalse();
+        assertThat(jwt.hasClaim("inicio")).isFalse();
         assertThat(jwt.getExpiresAt()).isEqualTo(ahora.plus(Duration.ofMinutes(5)));
         assertThat(token.venceEn()).isEqualTo(jwt.getExpiresAt());
     }
 
     @Test
     void dadoUnUsuarioSinRoles_cuandoSeEmiteSuToken_entoncesLlevaUnaListaVacia() throws Exception {
-        TokenEmitido token = emisor.emitir(new Usuario("sin.roles", "hash", true, Set.of()));
+        TokenEmitido token =
+                emisor.emitir(new Usuario("sin.roles", "Sin roles", "hash", true, Set.of()), ahora);
 
         Jwt jwt =
                 NimbusJwtDecoder.withPublicKey(llaves.llave().toRSAPublicKey())

@@ -1,0 +1,38 @@
+# Usuarios de la demo (D-59, specs/010-iniciar-sesion/research.md §2). Son ficticios: uno por cada
+# rol de la matriz D-16 y uno con dos roles. Aquí no hay contraseñas: en el equipo de demostración
+# salen de secretos/claves-demo, que genera deploy/equipo/preparar.sh; en local y en la CI, de
+# MDD_USUARIOS_DEMO_CLAVE. Si se agrega un usuario, hay que volver a correr preparar.sh en el equipo.
+usuarios:
+  - usuario: admin.demo
+    nombre: Administración del sistema (demo)
+    roles: [ADMINISTRADOR]
+  - usuario: datos.demo
+    nombre: Talento Humano (demo)
+    roles: [OPERADOR_DATOS]
+  - usuario: coordinacion.demo
+    nombre: Coordinación de carrera (demo)
+    roles: [COORDINADOR_CARRERA]
+  - usuario: gestion.demo
+    nombre: Gestión de investigación y vinculación (demo)
+    roles: [GESTOR_UNIDAD]
+  - usuario: consolidacion.demo
+    nombre: Responsable de consolidación (demo)
+    roles: [RESPONSABLE_CONSOLIDACION]
+  - usuario: vicerrectorado.demo
+    nombre: Vicerrectorado académico (demo)
+    roles: [VICERRECTOR]
+  - usuario: rectorado.demo
+    nombre: Rectorado (demo)
+    roles: [RECTOR]
+  - usuario: ocs.demo
+    nombre: Miembro del OCS (demo)
+    roles: [MIEMBRO_OCS]
+  - usuario: secretaria.demo
+    nombre: Secretaría general académica (demo)
+    roles: [SECRETARIA_GENERAL]
+  - usuario: docente.demo
+    nombre: Docente (demo)
+    roles: [DOCENTE]
+  - usuario: docente.coordinador.demo
+    nombre: Docente y coordinador (demo)
+    roles: [DOCENTE, COORDINADOR_CARRERA]

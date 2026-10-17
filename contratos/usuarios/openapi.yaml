@@ -1,7 +1,8 @@
 # Contrato de Usuarios (servicio 01, proceso identidad). Inicio de sesión mínimo (D-37),
 # sesión actual (D-39) y llave pública para validar los tokens (ADR-014). Desde B00-H05, las
 # operaciones entre procesos en /interno/: el token de proceso (D-49) y el receptor de eventos de
-# prueba (D-47), que el API Gateway no expone (ADR-018).
+# prueba (D-47), que el API Gateway no expone (ADR-018). Desde F05-H01, el bloqueo por intentos
+# (429, D-60) y la renovación del token mientras hay actividad (ADR-020).
 openapi: 3.0.3
 info:
   title: MDD · Usuarios
@@ -12,7 +13,7 @@ security:
   - bearer: []
 tags:
   - name: Sesion
-    description: Inicio de sesión y sesión actual.
+    description: Inicio de sesión, sesión actual y renovación del token.
   - name: Jwks
     description: Llave pública con la que el API Gateway y los procesos validan los tokens.
   - name: TokenProceso
@@ -47,6 +48,21 @@ paths:
             application/json:
               schema:
                 $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '429':
+          description: >-
+            Demasiados intentos (USUARIOS_INICIO_BLOQUEADO). El nombre de usuario tuvo 5 intentos
+            fallidos seguidos, exista o no, y queda bloqueado 15 minutos (D-60). No dice si el
+            usuario existe.
+          headers:
+            Retry-After:
+              description: Segundos que faltan para que termine el bloqueo.
+              schema:
+                type: integer
+                minimum: 1
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
         '400':
           $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
         '500':
@@ -64,6 +80,28 @@ paths:
             application/json:
               schema:
                 $ref: '../comun/seguridad.yaml#/components/schemas/SesionActual'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/usuarios/sesion/renovacion:
+    post:
+      tags: [Sesion]
+      operationId: renovarSesion
+      summary: Emite un token nuevo para la misma sesión, con otros 30 minutos.
+      description: >-
+        Con un token de sesión vigente. El token nuevo conserva el instante del inicio de sesión
+        (claim inicio); pasadas 8 horas desde ese inicio responde 401 y la sesión termina. La SPA
+        solo la llama si hubo actividad del usuario (ADR-020).
+      responses:
+        '200':
+          description: Token renovado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenSesion'
         '401':
           $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
         '500':
@@ -169,7 +207,8 @@ components:
         usuario:
           type: string
           minLength: 1
-          description: Nombre de usuario. Vacío responde 400 (D-42).
+          description: >-
+            Nombre de usuario; no distingue mayúsculas y minúsculas. Vacío responde 400 (D-42).
           example: autor.prueba
         clave:
           type: string

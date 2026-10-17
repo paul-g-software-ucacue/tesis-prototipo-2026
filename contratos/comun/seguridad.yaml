@@ -21,6 +21,12 @@ components:
           type: string
           description: Nombre de usuario (claim sub del token).
           example: autor.prueba
+        nombre:
+          type: string
+          description: >-
+            Nombre para mostrar (claim nombre del token). Solo lo devuelve Usuarios; los demás
+            procesos lo omiten (ADR-020).
+          example: Docente y coordinador (demo)
         roles:
           type: array
           description: Roles del usuario, ordenados alfabéticamente; vacía si no tiene.

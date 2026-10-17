@@ -7,6 +7,7 @@ import ec.mdd.usuarios.puertos.entrada.TokenEmitido;
 import ec.mdd.usuarios.puertos.salida.EmisorDeTokens;
 import ec.mdd.usuarios.puertos.salida.VerificadorDeClaves;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,7 @@ class ConfiguracionUsuariosTest {
     private final ConfiguracionUsuarios configuracion = new ConfiguracionUsuarios();
     private final PropiedadesUsuarios propiedades =
             new PropiedadesUsuarios(
-                    new PropiedadesUsuarios.Token(Duration.ofMinutes(5)),
+                    new PropiedadesUsuarios.Token(Duration.ofMinutes(5), Duration.ofHours(8)),
                     null,
                     new PropiedadesUsuarios.UsuarioPrueba(false, null),
                     Map.of(
@@ -25,7 +26,9 @@ class ConfiguracionUsuariosTest {
                             new PropiedadesUsuarios.Proceso("clave-de-prueba"),
                             "salida",
                             new PropiedadesUsuarios.Proceso("")),
-                    new PropiedadesUsuarios.TokenProceso(Duration.ofMinutes(5)));
+                    new PropiedadesUsuarios.TokenProceso(Duration.ofMinutes(5)),
+                    new PropiedadesUsuarios.Intentos(5, Duration.ofMinutes(15)),
+                    new PropiedadesUsuarios.Demo(null, null));
 
     @Test
     void dadoLaConfiguracion_cuandoSeArmanLasPiezas_entoncesFirmanYVerifican() {
@@ -33,14 +36,21 @@ class ConfiguracionUsuariosTest {
         VerificadorDeClaves verificador = configuracion.verificadorDeClaves();
         EmisorDeTokens emisor = configuracion.emisorDeTokens(llaves, propiedades, "mdd-usuarios");
 
-        TokenEmitido token = emisor.emitir(new Usuario("autor.prueba", "hash", true, Set.of()));
+        TokenEmitido token =
+                emisor.emitir(
+                        new Usuario("autor.prueba", "Autor", "hash", true, Set.of()),
+                        Instant.now());
 
         assertThat(token.valor()).isNotBlank();
         assertThat(configuracion.jwksUsuarios(llaves).getKeys()).allMatch(l -> !l.isPrivate());
         assertThat(verificador.coincide("clave", verificador.calcularHash("clave"))).isTrue();
         assertThat(configuracion.repositorioUsuarios(null)).isNotNull();
-        assertThat(configuracion.iniciarSesion(null, verificador, emisor)).isNotNull();
+        assertThat(configuracion.iniciarSesion(null, verificador, emisor, null, propiedades))
+                .isNotNull();
+        assertThat(configuracion.renovarSesion(null, emisor, propiedades)).isNotNull();
+        assertThat(configuracion.repositorioIntentos(null)).isNotNull();
         assertThat(configuracion.cargaUsuarioDePrueba(null, verificador, propiedades)).isNotNull();
+        assertThat(configuracion.cargaUsuariosDemo(null, verificador, propiedades)).isNotNull();
         assertThat(configuracion.repositorioEventosRecibidos(null)).isNotNull();
         assertThat(configuracion.registrarEventoRecibido(null)).isNotNull();
         assertThat(propiedades.usuarioPrueba().toString()).doesNotContain("clave=");

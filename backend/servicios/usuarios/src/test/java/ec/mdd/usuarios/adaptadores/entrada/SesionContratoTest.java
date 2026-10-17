@@ -11,7 +11,10 @@ import ec.mdd.plataforma.pruebas.TokensDePrueba;
 import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
 import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
 import ec.mdd.usuarios.aplicacion.CredencialesInvalidas;
+import ec.mdd.usuarios.aplicacion.InicioBloqueado;
+import ec.mdd.usuarios.aplicacion.SesionNoRenovable;
 import ec.mdd.usuarios.puertos.entrada.IniciarSesion;
+import ec.mdd.usuarios.puertos.entrada.RenovarSesion;
 import ec.mdd.usuarios.puertos.entrada.TokenEmitido;
 import java.time.Instant;
 import java.util.List;
@@ -66,6 +69,73 @@ class SesionContratoTest {
         assertThat(resultado.getResponse().getStatus()).isEqualTo(401);
         assertThat(resultado.getResponse().getContentAsString())
                 .contains("USUARIOS_CREDENCIALES_INVALIDAS");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnNombreBloqueado_cuandoIniciaSesion_entonces429ConRetryAfterSegunElContrato()
+            throws Exception {
+        MvcResult resultado = iniciar("bloqueado");
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(429);
+        assertThat(resultado.getResponse().getHeader("Retry-After")).isEqualTo("600");
+        assertThat(resultado.getResponse().getContentAsString())
+                .isEqualTo(
+                        "{\"titulo\":\"Demasiados intentos\","
+                                + "\"descripcion\":\"Espera unos minutos y vuelve a intentarlo.\","
+                                + "\"codigo\":\"USUARIOS_INICIO_BLOQUEADO\"}");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnTokenVigente_cuandoRenuevaLaSesion_entonces200ConOtroTokenSegunElContrato()
+            throws Exception {
+        MvcResult resultado =
+                mvc.perform(
+                                post("/api/usuarios/sesion/renovacion")
+                                        .with(
+                                                jwt().jwt(
+                                                                token ->
+                                                                        token.subject(
+                                                                                        "docente.demo")
+                                                                                .claim(
+                                                                                        "roles",
+                                                                                        List.of(
+                                                                                                "DOCENTE"))
+                                                                                .claim(
+                                                                                        "inicio",
+                                                                                        1_792_000_000L))))
+                        .andReturn();
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("\"token\":\"renovado.cuerpo.firma\"");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnaSesionNoRenovable_cuandoRenueva_entonces401ComoUnTokenInvalido() throws Exception {
+        MvcResult resultado =
+                mvc.perform(
+                                post("/api/usuarios/sesion/renovacion")
+                                        .with(jwt().jwt(token -> token.subject("docente.demo"))))
+                        .andReturn();
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(401);
+        assertThat(resultado.getResponse().getHeader("WWW-Authenticate")).isEqualTo("Bearer");
+        assertThat(resultado.getResponse().getContentAsString())
+                .isEqualTo(
+                        "{\"titulo\":\"Sesión no válida\","
+                                + "\"descripcion\":\"Inicia sesión de nuevo para continuar.\","
+                                + "\"codigo\":\"SEGURIDAD_NO_AUTENTICADO\"}");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnaPeticionSinToken_cuandoRenueva_entonces401SegunElContrato() throws Exception {
+        MvcResult resultado = mvc.perform(post("/api/usuarios/sesion/renovacion")).andReturn();
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(401);
         contrato.validar(resultado);
     }
 
@@ -132,6 +202,35 @@ class SesionContratoTest {
     }
 
     @Test
+    void dadoUnTokenConNombre_cuandoConsultaLaSesion_entoncesDevuelveElNombreParaMostrar()
+            throws Exception {
+        MvcResult resultado =
+                mvc.perform(
+                                get("/api/usuarios/sesion")
+                                        .with(
+                                                jwt().jwt(
+                                                                token ->
+                                                                        token.subject(
+                                                                                        "docente.coordinador.demo")
+                                                                                .claim(
+                                                                                        "nombre",
+                                                                                        "Docente y coordinador (demo)")
+                                                                                .claim(
+                                                                                        "roles",
+                                                                                        List.of(
+                                                                                                "DOCENTE",
+                                                                                                "COORDINADOR_CARRERA")))))
+                        .andReturn();
+
+        assertThat(resultado.getResponse().getContentAsString())
+                .isEqualTo(
+                        "{\"usuario\":\"docente.coordinador.demo\","
+                                + "\"roles\":[\"COORDINADOR_CARRERA\",\"DOCENTE\"],"
+                                + "\"nombre\":\"Docente y coordinador (demo)\"}");
+        contrato.validar(resultado);
+    }
+
+    @Test
     void dadoUnTokenSinRoles_cuandoConsultaLaSesion_entoncesRolesVacios() throws Exception {
         MvcResult resultado =
                 mvc.perform(
@@ -187,6 +286,17 @@ class SesionContratoTest {
         }
 
         @Bean
+        RenovarSesion renovarSesion() {
+            return (usuario, roles, inicio) -> {
+                if (inicio == null) {
+                    throw new SesionNoRenovable();
+                }
+                return new TokenEmitido(
+                        "renovado.cuerpo.firma", Instant.parse("2026-10-13T12:30:00Z"));
+            };
+        }
+
+        @Bean
         JWKSet jwks() {
             TokensDePrueba tokens = new TokensDePrueba();
             return new JWKSet(
@@ -205,6 +315,9 @@ class SesionContratoTest {
             if ("explota".equals(clave)) {
                 throw new IllegalStateException(
                         "fallo técnico con eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJ4In0.firma");
+            }
+            if ("bloqueado".equals(clave)) {
+                throw new InicioBloqueado(600);
             }
             if ("correcta".equals(clave)) {
                 return new TokenEmitido(

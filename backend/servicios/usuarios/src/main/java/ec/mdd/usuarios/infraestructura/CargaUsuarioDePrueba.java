@@ -10,12 +10,13 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 
 /**
- * Crea el usuario de prueba {@code autor.prueba} al arrancar, solo si está habilitado (research
- * §8).
+ * Crea el usuario de prueba {@code autor.prueba} al arrancar, solo si está habilitado (research §8
+ * de B00-H03).
  *
- * <p>Así el usuario y su contraseña nunca están en una migración: no existe en el VPS salvo que se
- * habilite, y el hash no está en el repositorio. Si ya existe, no hace nada. La contraseña nunca se
- * registra.
+ * <p>Así el usuario y su contraseña nunca están en una migración, y el hash no está en el
+ * repositorio. Si ya existe, no hace nada. Si no está habilitado y ya existe, lo desactiva: en el
+ * equipo de demostración lo reemplazan los usuarios de la demo (D-57, F05-H01). La contraseña nunca
+ * se registra.
  */
 public final class CargaUsuarioDePrueba implements ApplicationRunner {
 
@@ -24,6 +25,9 @@ public final class CargaUsuarioDePrueba implements ApplicationRunner {
 
     /** Roles del usuario de prueba: los del escenario «Varios roles» de F05-H02. */
     public static final Set<String> ROLES = Set.of("DOCENTE", "COORDINADOR_CARRERA");
+
+    /** Nombre para mostrar del usuario de prueba. */
+    public static final String NOMBRE_PARA_MOSTRAR = "Autor de prueba";
 
     private static final Logger REGISTRO = LoggerFactory.getLogger(CargaUsuarioDePrueba.class);
 
@@ -44,6 +48,7 @@ public final class CargaUsuarioDePrueba implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments argumentos) {
         if (!configuracion.habilitado()) {
+            desactivarSiExiste();
             return;
         }
         String clave = configuracion.clave();
@@ -54,7 +59,26 @@ public final class CargaUsuarioDePrueba implements ApplicationRunner {
         if (repositorio.buscarPorNombre(NOMBRE).isPresent()) {
             return;
         }
-        repositorio.guardar(new Usuario(NOMBRE, verificador.calcularHash(clave), true, ROLES));
+        repositorio.guardar(
+                new Usuario(
+                        NOMBRE, NOMBRE_PARA_MOSTRAR, verificador.calcularHash(clave), true, ROLES));
         REGISTRO.info("Usuario de prueba {} creado.", NOMBRE);
+    }
+
+    private void desactivarSiExiste() {
+        repositorio
+                .buscarPorNombre(NOMBRE)
+                .filter(Usuario::puedeIniciarSesion)
+                .ifPresent(
+                        usuario -> {
+                            repositorio.actualizar(
+                                    new Usuario(
+                                            usuario.nombreUsuario(),
+                                            usuario.nombreParaMostrar(),
+                                            usuario.claveHash(),
+                                            false,
+                                            usuario.roles()));
+                            REGISTRO.info("Usuario de prueba {} desactivado.", NOMBRE);
+                        });
     }
 }
