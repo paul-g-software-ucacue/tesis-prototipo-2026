@@ -12,7 +12,37 @@ test('sin sesión, Inicio lleva al inicio de sesión y después vuelve a Inicio'
 
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole('heading', { level: 1, name: 'Hola, autor.prueba' })).toBeVisible();
-  await expect(page.getByRole('listitem').filter({ hasText: 'DOCENTE' })).toBeVisible();
+  await expect(page.getByRole('listitem').filter({ hasText: 'Docente' })).toBeVisible();
+});
+
+test('un usuario de la demo entra y ve su nombre y sus roles en español (F05-H01)', async ({
+  page,
+}) => {
+  await simularApi(page, { sesion: RESPUESTAS.sesionDemo });
+  await page.goto('/');
+
+  await ingresar(page, 'docente.coordinador.demo');
+
+  await expect(page).toHaveURL(/\/$/);
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Hola, Docente y coordinador (demo)' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('listitem').filter({ hasText: 'Coordinador de carrera' }),
+  ).toBeVisible();
+  await expect(page.getByText('COORDINADOR_CARRERA')).toHaveCount(0);
+});
+
+test('demasiados intentos: el aviso del servidor, sin código ni estado', async ({ page }) => {
+  await simularApi(page, { inicio: RESPUESTAS.inicioBloqueado });
+  await page.goto('/iniciar-sesion');
+
+  await ingresar(page);
+
+  await expect(page.getByRole('alert')).toContainText('Demasiados intentos');
+  await expect(page.getByRole('alert')).toContainText('Espera unos minutos y vuelve a intentarlo.');
+  await expect(page.locator('body')).not.toContainText('USUARIOS_');
+  await expect(page.locator('body')).not.toContainText('429');
 });
 
 test('después de iniciar sesión, el token no está en el navegador ni en la URL', async ({

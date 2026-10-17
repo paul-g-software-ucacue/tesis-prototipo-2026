@@ -18,6 +18,22 @@ export const RESPUESTAS = {
     estado: 200,
     cuerpo: { usuario: 'autor.prueba', roles: ['COORDINADOR_CARRERA', 'DOCENTE'] },
   },
+  sesionDemo: {
+    estado: 200,
+    cuerpo: {
+      usuario: 'docente.coordinador.demo',
+      nombre: 'Docente y coordinador (demo)',
+      roles: ['COORDINADOR_CARRERA', 'DOCENTE'],
+    },
+  },
+  inicioBloqueado: {
+    estado: 429,
+    cuerpo: {
+      titulo: 'Demasiados intentos',
+      descripcion: 'Espera unos minutos y vuelve a intentarlo.',
+      codigo: 'USUARIOS_INICIO_BLOQUEADO',
+    },
+  },
   credencialesInvalidas: {
     estado: 401,
     cuerpo: {

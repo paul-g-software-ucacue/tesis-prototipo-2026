@@ -1,7 +1,8 @@
 import { QueryClient } from '@tanstack/react-query';
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { instalarApiSimulada, json } from '../pruebas/apiSimulada';
 import { cerrarSesion, estadoDeSesion, iniciarSesion, obtenerToken } from './almacen';
 import { destinoSeguro } from './destinoSeguro';
 import { RutaProtegida } from './RutaProtegida';
@@ -92,6 +93,49 @@ describe('sesión en memoria (D-51)', () => {
     act(() => cerrarSesion());
 
     expect(consultas.getQueryData(['sesion'])).toBeUndefined();
+  });
+});
+
+describe('actividad del usuario en SesionProvider (ADR-020)', () => {
+  afterEach(() => {
+    cerrarSesion();
+    vi.useRealTimers();
+  });
+
+  it.each([
+    ['una tecla', () => fireEvent.keyDown(window, { key: 'a' })],
+    ['un clic', () => fireEvent.pointerDown(window)],
+    ['volver atrás en el navegador', () => fireEvent.popState(window)],
+  ])('%s en los últimos 20 minutos renueva el token', async (_nombre, accion) => {
+    vi.useFakeTimers();
+    const simulada = instalarApiSimulada();
+    simulada.responder(
+      'POST',
+      '/api/usuarios/sesion/renovacion',
+      json(200, {
+        token: 'renovado',
+        tipo: 'Bearer',
+        venceEn: new Date(Date.now() + 42 * 60_000).toISOString(),
+      }),
+    );
+    iniciarSesion('cabecera.cuerpo.firma', new Date(Date.now() + 30 * 60_000));
+    montar('/interna');
+    await act(() => vi.advanceTimersByTimeAsync(12 * 60_000));
+
+    accion();
+    await act(() => vi.advanceTimersByTimeAsync(0));
+
+    expect(obtenerToken()).toBe('renovado');
+  });
+
+  it('sin sesión, la actividad no pide nada a la API', async () => {
+    const simulada = instalarApiSimulada();
+    montar('/iniciar-sesion');
+
+    fireEvent.keyDown(window, { key: 'a' });
+    await act(() => Promise.resolve());
+
+    expect(simulada.peticiones).toHaveLength(0);
   });
 });
 

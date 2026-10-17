@@ -16,7 +16,30 @@ describe('Inicio', () => {
     cerrarSesion();
   });
 
-  it('muestra el usuario y sus roles de la sesión actual', async () => {
+  it('saluda con el nombre para mostrar y muestra sus roles en español', async () => {
+    simulada.responder(
+      'GET',
+      '/api/usuarios/sesion',
+      json(200, {
+        usuario: 'vicerrectorado.demo',
+        nombre: 'Vicerrectorado académico (demo)',
+        roles: ['VICERRECTOR'],
+      }),
+    );
+    montarSpa('/');
+
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'Hola, Vicerrectorado académico (demo)',
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Vicerrector académico')).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent('VICERRECTOR');
+    expect(document.title).toBe('Inicio · MDD');
+  });
+
+  it('sin nombre para mostrar, saluda con el usuario y muestra todos sus roles', async () => {
     simulada.responder(
       'GET',
       '/api/usuarios/sesion',
@@ -27,9 +50,8 @@ describe('Inicio', () => {
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Hola, autor.prueba' }),
     ).toBeInTheDocument();
-    expect(screen.getByText('COORDINADOR_CARRERA')).toBeInTheDocument();
-    expect(screen.getByText('DOCENTE')).toBeInTheDocument();
-    expect(document.title).toBe('Inicio · MDD');
+    expect(screen.getByText('Coordinador de carrera')).toBeInTheDocument();
+    expect(screen.getByText('Docente')).toBeInTheDocument();
   });
 
   it('con un error técnico, muestra el aviso con el identificador del incidente', async () => {

@@ -90,6 +90,28 @@ describe('IniciarSesion', () => {
     expect(obtenerToken()).toBeNull();
   });
 
+  it('con un 429 por demasiados intentos, muestra el error del servidor sin el código', async () => {
+    simulada.responder(
+      'POST',
+      '/api/usuarios/sesion',
+      json(429, {
+        titulo: 'Demasiados intentos',
+        descripcion: 'Espera unos minutos y vuelve a intentarlo.',
+        codigo: 'USUARIOS_INICIO_BLOQUEADO',
+      }),
+    );
+    montarSpa('/iniciar-sesion');
+
+    await ingresar('autor.prueba', 'incorrecta');
+
+    const aviso = await screen.findByRole('alert');
+    expect(aviso).toHaveTextContent('Demasiados intentos');
+    expect(aviso).toHaveTextContent('Espera unos minutos y vuelve a intentarlo.');
+    expect(document.body).not.toHaveTextContent('USUARIOS_');
+    expect(document.body).not.toHaveTextContent('429');
+    expect(obtenerToken()).toBeNull();
+  });
+
   it('con un 400 con detalles, muestra cada detalle bajo su campo', async () => {
     simulada.responder(
       'POST',
