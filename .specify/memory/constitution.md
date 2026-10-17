@@ -1,13 +1,14 @@
 # Constitución del desarrollo del MDD
 
-- **Versión:** 2.1.2, enmienda de parche del 15/10/2026 (D-54): en el principio IX, la entrega admite una excepción temporal de Grype, con motivo y vencimiento de 30 días como máximo. No cambia ningún otro principio.
+- **Versión:** 2.1.3, enmienda de parche del 17/10/2026 (D-55): en el principio IX y en la fila «Repositorio y CI/CD» de la sección 3, el despliegue automático va al equipo de demostración del autor, que baja las imágenes de Docker Hub, en lugar de un VPS. La regla (despliegue automático con acceso restringido, *healthchecks* y vuelta atrás) no cambia.
+- **Versión 2.1.2:** enmienda de parche del 15/10/2026 (D-54): en el principio IX, la entrega admite una excepción temporal de Grype, con motivo y vencimiento de 30 días como máximo. No cambia ningún otro principio.
 - **Versión 2.1.1:** enmienda de parche del 13/10/2026 (D-46): en la sección 8, la comprobación «PDFBox y Bouncy Castle validan un PDF/A firmado con FirmaEC» queda confirmada por el spike B00-S01; D-23 no cambia. Cómo firman la demo y las pruebas lo fija ADR-017.
 - **Versión 2.1.0:** enmienda menor del 12/10/2026 (D-36): el despliegue pasa de una VM de 2 vCPU y 4 GB a un servidor o PC de 4 núcleos y 8 GiB de RAM (principio V, secciones 3 y 8). Los límites de memoria por JVM y por contenedor siguen siendo obligatorios. No cambia la regla de ningún principio.
 - **Versión 2.0.1:** enmienda de parche del 11/10/2026 (D-33): en la sección 8, el formateador de Spotless pasa a ser google-java-format en estilo AOSP, porque palantir-java-format no soporta toda la sintaxis de Java 25. No cambia ningún principio.
 - **Versión 2.0.0:** enmienda mayor del 11/10/2026 (D-32): el principio VIII deja de exigir el 80 % de cobertura en el dominio central y queda un solo umbral, el 60 % por módulo. También se aclara que las decisiones desde D-28 y los ADR desde ADR-012 se registran en `docs/decisiones.md`.
 - **Versión 1.0.1:** enmienda de parche del 11/10/2026 (D-28): en la sección 3, «JUnit 5» pasa a «JUnit Jupiter 6», la versión que fija el BOM de Spring Boot (6.0.3 con Spring Boot 4.1.1). Se detectó al planificar B00-H01 y no cambia ningún principio.
 - **Versión 1.0:** ratificada el 11/10/2026. Cambios desde la 0.5: se cierran los pendientes de ratificación; el repositorio privado y el proyecto de GitHub Projects ya existen (pendiente 6), y las comprobaciones técnicas que quedaban pasan a ser criterios de las historias de la ola 0 (sección 8).
-- **Fecha:** 15/10/2026 (versión 2.1.2)
+- **Fecha:** 17/10/2026 (versión 2.1.3)
 - **Autor:** el autor de la tesis
 - **Uso:** al iniciar el desarrollo con SDD (desarrollo guiado por especificaciones), este texto se copia como constitución del proyecto (por ejemplo, `.specify/memory/constitution.md` si se usa Spec Kit) y se ratifica según la sección 8.
 - **Fuentes:** ERS v2.1 (`ERS_MDD_Requerimientos.md`), anexo de firmas (`Diseno_firmas_cadena_aprobacion.md`), ADR-001 a ADR-011 (`lean_inception/adr/`), matriz de decisiones D-01 a D-27 (copiada en el anexo A de `docs/decisiones.md`), registro de decisiones desde D-28 y ADR desde ADR-012 (`docs/decisiones.md`), estándares de ingeniería backend del autor (`sdd/fuentes/estandares_backend_autor.md`), modelo de dominio (`sdd/modelo_dominio.md`), metodología de desarrollo (`sdd/metodologia_desarrollo.md`), pipeline de CI/CD (`sdd/pipeline_cicd.md`) y paquete de entrada al Lean Inception (`paquete_lean_inception/`).
@@ -134,7 +135,7 @@ Cada principio dice qué se debe hacer (**DEBE**), qué no (**NO DEBE**) y por q
   - *Implementación:* Spotless y SpotBugs con FindSecBugs en la etapa de lint, y Gitleaks en cada commit (pre-commit) y en cada pull request.
   - *Verificación:* pruebas con cobertura mínima, de arquitectura y de contrato en cada pull request, y OWASP ZAP sin hallazgos altos al cerrar cada ola (RNF-SEG-04).
   - *Entrega:* un SBOM CycloneDX por módulo y por aplicación, y Grype sin vulnerabilidades altas o críticas con versión corregida, en las dependencias y en las imágenes. Si el arreglo todavía no se puede aplicar, se admite una excepción temporal, con motivo y un vencimiento de 30 días como máximo; al vencer, el check vuelve a fallar (D-54).
-  - *Operación:* despliegue automático en el VPS de demostración, con acceso restringido, *healthchecks* y vuelta atrás.
+  - *Operación:* despliegue automático en el equipo de demostración del autor, que baja las imágenes de Docker Hub, con acceso restringido, *healthchecks* y vuelta atrás (D-55).
 - **El propio pipeline es parte de la superficie de ataque.** Las acciones de GitHub se fijan por SHA, los permisos son mínimos y los secretos del despliegue solo existen en su entorno (ADR-011).
 
 ### X. Simplicidad y alcance
@@ -242,7 +243,7 @@ Cada principio dice qué se debe hacer (**DEBE**), qué no (**NO DEBE**) y por q
 | Documentos y firma | OpenHTMLtoPDF con plantillas Thymeleaf para el PDF/A (verificado con veraPDF); Apache PDFBox y Bouncy Castle para validar PAdES; Apache Commons CSV y Apache POI para las cargas. | ADR-007, ADR-008 |
 | Pruebas | JUnit Jupiter 6 (la versión del BOM de Spring Boot: 6.0.3 con Boot 4.1.1), AssertJ, Mockito, Testcontainers, ArchUnit, Spring Modulith, swagger-request-validator, JaCoCo (60 % de líneas por módulo, D-32); Vitest, Testing Library, axe-core y Playwright; k6 y OWASP ZAP al cerrar cada ola. | ADR-008, ADR-011, D-28, D-32 |
 | Memoria | Límite explícito por JVM y por contenedor: cinco JVM y PostgreSQL deben consumir menos de 8 GiB, con alerta en 7 GiB (R-19), lo que se mide en la ola 0. | ADR-008, D-36 |
-| Repositorio y CI/CD | Un repositorio privado de GitHub (monorepo) con GitHub Actions; la rama principal solo recibe pull requests con los checks en verde. Pipeline de seis etapas: lint, pruebas, secretos, SCA, publicación en Docker Hub (repositorio privado) y despliegue en el VPS (`sdd/pipeline_cicd.md`). | D-24, ADR-011 |
+| Repositorio y CI/CD | Un repositorio privado de GitHub (monorepo) con GitHub Actions; la rama principal solo recibe pull requests con los checks en verde. Pipeline de seis etapas: lint, pruebas, secretos, SCA, publicación en Docker Hub (repositorio privado) y despliegue en el equipo de demostración del autor, que baja las imágenes de Docker Hub (`sdd/pipeline_cicd.md`, D-55). | D-24, ADR-011, D-55 |
 | Seguridad en el pipeline | Spotless, SpotBugs con FindSecBugs, Gitleaks, CycloneDX y Grype; acciones fijadas por SHA. | ADR-011 |
 
 ## 4. Mapa de contextos

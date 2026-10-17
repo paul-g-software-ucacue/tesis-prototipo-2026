@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-55 · ADR-020.
+- **Siguiente número libre:** D-56 · ADR-020.
 
 ## Índice
 
@@ -49,6 +49,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-53 | 2026-10-15 | Node 24 LTS en la CI y en la imagen; se cierra el PR #73 | Aceptada | PR #73 de Dependabot, `.github/dependabot.yml` |
 | ADR-019 | 2026-10-15 | Base del frontend: cliente generado, errores, sesión en memoria y mismo origen | Aceptada | ADR-008 (detalle del frontend) |
 | D-54 | 2026-10-15 | Excepciones de Grype solo temporales, con motivo y vencimiento | Aceptada | Constitución principio IX (2.1.2), alcance del issue #24 (B00-H07) |
+| D-55 | 2026-10-17 | El despliegue automático va al PC de demostración del autor, por extracción desde Docker Hub | Aceptada | Constitución principio IX y §3 (2.1.3), alcance del issue #25 (B00-H08), `cierre-ola.yml` |
 
 ---
 
@@ -794,6 +795,32 @@ Hay que poder probar el flujo completo de creación del distributivo sin debilit
 **Alternativas.** Excepción sin vencimiento, revisada al cerrar cada ola; ninguna excepción, con el check fallando hasta corregir la dependencia.
 
 **Consecuencias.** El plan de B00-H07 define dónde viven las excepciones y cómo se comprueba el vencimiento. Renovar una excepción vencida es un pull request nuevo con su motivo.
+
+---
+
+## D-55. El despliegue automático va al PC de demostración del autor, por extracción desde Docker Hub
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-17 · **Decidido por:** autor de la tesis
+- **Origen:** preparación de B00-H08 (issue #25): el crédito de DigitalOcean del GitHub Student Developer Pack, con el que se iba a pagar el VPS, terminó el 31/07/2026
+- **Modifica a:** principio IX de la constitución, *Operación*, y la fila «Repositorio y CI/CD» de §3 (2.1.2 → 2.1.3); alcance del issue #25 (B00-H08); `cierre-ola.yml`, que suponía una URL pública
+
+**Decisión.**
+1. **Destino.** El despliegue automático va al PC del autor, que hace de equipo de demostración. La constitución ya decía que «la demostración corre en un equipo del autor del mismo tamaño» (§3). El PC tiene más recursos que los 4 núcleos y 8 GiB de D-36, pero los límites de memoria por contenedor (R-19) se mantienen, y el presupuesto de la demostración sigue siendo el de D-36.
+2. **Despliegue por extracción.** La CI no entra al equipo. Publica las imágenes en Docker Hub (etapa 5, sin cambios) y un servicio del propio equipo consulta Docker Hub cada pocos minutos; si hay una versión nueva de `main`, corre `deploy/desplegar.sh`, con *healthchecks* y vuelta atrás. El equipo baja las imágenes con un token de solo lectura.
+3. **Acceso restringido.** Caddy sigue pidiendo usuario y contraseña antes de mostrar el MDD. El acceso desde fuera de la red del autor es opcional: si hace falta, un túnel de salida (por ejemplo, Cloudflare Tunnel) lo publica por HTTPS sin abrir puertos.
+4. **Cierre de ola.** ZAP y k6 dejan de apuntar a una URL pública: corren contra el sistema que levanta el propio runner, como `perfil-consolidado`. El plan de B00-H08 detalla cómo.
+5. **Portabilidad.** Nada del despliegue depende del PC: el mismo `compose.vps.yml`, `desplegar.sh` y el servicio de extracción funcionan igual en un VPS o en la VM del IST, si más adelante hay uno.
+
+**Por qué.** Sin el crédito, un VPS de 4 vCPU y 8 GiB cuesta unos 6 a 7 € al mes (Hetzner CX33), y las opciones gratuitas no alcanzan: Oracle Always Free redujo su cupo ARM a 2 OCPU y 12 GB y exige imágenes multiarquitectura, y el crédito de Azure for Students se agota en pocos meses con una VM de ese tamaño. El destino real del sistema es la VM del IST, a la que el pipeline no despliega (§3); el VPS era una comodidad para la demostración. La extracción evita dar a GitHub acceso de red o SSH a un equipo personal.
+
+**Alternativas.** Un VPS de pago (Hetzner CX33): no cambia ninguna decisión, pero tiene un costo mensual. Oracle Always Free: cupo menor que D-36 y arquitectura ARM. Despliegue por SSH desde la CI al PC: obliga a exponer el equipo o a usar un runner propio.
+
+**Consecuencias.**
+- La demostración está disponible mientras el PC del autor está encendido.
+- El entorno de GitHub del despliegue solo guarda las credenciales de publicación en Docker Hub; no hay llave SSH ni dirección del equipo en GitHub.
+- B00-H08 ajusta sus escenarios: «Despliegue sano» y «Vuelta atrás» se cumplen en el PC; «Acceso restringido», con Caddy y, si se usa, con el túnel.
+- `cierre-ola.yml` deja de depender de `vars.DOMINIO`.
+- El PC del autor usa Fedora con SELinux; el despliegue no debe depender de la distribución, porque la VM del IST usa Ubuntu Server (§3).
 
 ---
 
