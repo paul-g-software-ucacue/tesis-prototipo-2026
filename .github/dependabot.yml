@@ -9,6 +9,18 @@ updates:
     directory: /frontend
     schedule: { interval: weekly }
     groups: { npm-menores: { update-types: [minor, patch] } }
+    # Mayores que se hacen a mano (2026-10-17, PRs #95 a #98 cerrados): @types/node sigue a Node 24
+    # (D-53); TypeScript 7 espera a openapi-typescript, y ESLint 10 (con @eslint/js) a
+    # eslint-plugin-jsx-a11y. Las menores y los parches siguen llegando en npm-menores.
+    ignore:
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      - dependency-name: eslint
+        update-types: [version-update:semver-major]
+      - dependency-name: "@eslint/js"
+        update-types: [version-update:semver-major]
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }
