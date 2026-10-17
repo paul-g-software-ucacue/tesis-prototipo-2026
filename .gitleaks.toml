@@ -34,5 +34,5 @@ secretGroup = 1
 keywords = ["pass", "pwd", "secret", "clave", "contrase"]
 
 [[rules.allowlists]]
-description = "Referencias a variables de entorno, sustituciones de comandos de shell y valores ficticios de .env.ejemplo"
-regexes = ['''^\$\{''', '''^\$\(''', '''^cambiar-en-local-''']
+description = "Referencias a variables de entorno, sustituciones de comandos de shell, valores ficticios de .env.ejemplo y rutas de los secretos montados en /run/mdd/ (F05-H01)"
+regexes = ['''^\$\{''', '''^\$\(''', '''^cambiar-en-local-''', '''^/run/mdd/''']
