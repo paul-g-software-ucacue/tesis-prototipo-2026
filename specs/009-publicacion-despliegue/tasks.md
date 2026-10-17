@@ -243,7 +243,7 @@ description: "Tareas de B00-H08: Publicación en Docker Hub y despliegue en el e
   - en `Evidencia de la ola`, `cyclonedxDirectBom` y `deploy/sca/verificar_sbom.sh` en lugar de `cyclonedxBom`.
 
   Sin `vars.*` ni secretos. `shell: bash` en las tuberías.
-- [ ] T028 [US6] Lanzar `cierre-ola` con `gh workflow run cierre-ola.yml --ref 009-publicacion-despliegue` (después de T030). Comprobar que ZAP de la SPA y de cada contrato terminan sin altos (o corregir lo que encuentren, o anotarlo con su justificación si es un falso positivo), que k6 se omite con el aviso y que el job de evidencia se omite fuera de un tag. Anotar el run en la evidencia.
+- [X] T028 [US6] Lanzar `cierre-ola` con `gh workflow run cierre-ola.yml --ref 009-publicacion-despliegue` (después de T030). Comprobar que ZAP de la SPA y de cada contrato terminan sin altos (o corregir lo que encuentren, o anotarlo con su justificación si es un falso positivo), que k6 se omite con el aviso y que el job de evidencia se omite fuera de un tag. Anotar el run en la evidencia.
 
 **Checkpoint**: la ola 0 se puede cerrar con su tag sin el equipo de demostración.
 
@@ -252,11 +252,11 @@ description: "Tareas de B00-H08: Publicación en Docker Hub y despliegue en el e
 ## Phase 9: Polish, pull request y cierre
 
 - [X] T029 Correr `actionlint` sobre `cd.yml`, `cierre-ola.yml` y `perfil-consolidado.yml`, `shellcheck` sobre `deploy/equipo/*.sh`, `deploy/publicacion/*.sh` y `deploy/desplegar.sh`, y Gitleaks (`--log-opts="--text HEAD"`) sobre un clon de la rama: sin hallazgos. Actualizar `backend/plantillas/README.md` o el README que corresponda con una línea que remita al quickstart de esta historia para el despliegue. Comprobar con `git status` que no hay archivos temporales.
-- [ ] T030 Hacer commit y push, y abrir el pull request de `009-publicacion-despliegue` hacia `main` **en borrador**, con `Refs #25`. Esperar los runs del borrador y marcarlo listo. Comprobar:
+- [X] T030 Hacer commit y push, y abrir el pull request de `009-publicacion-despliegue` hacia `main` **en borrador**, con `Refs #25`. Esperar los runs del borrador y marcarlo listo. Comprobar:
   - los 10 checks en verde;
   - `perfil-consolidado`, con el paso «Despliegue en un equipo simulado» en verde (escenarios 3 y 4 en la CI);
   - `5 · imágenes` (`cd.yml` en el pull request): construye y revisa las 6 imágenes y las de terceros, sin entorno, sin inicio de sesión y sin subir nada.
-- [ ] T031 [US2] Demostración del escenario 2, **con la aprobación del autor**: en una rama `demo-h08-vulnerable` (desde la de la historia), cambiar la base de la etapa final de `frontend.Dockerfile` a una versión con una alta o crítica corregida (la de T011) y abrir un pull request hacia `main`. Comprobar que `5 · imágenes` falla con esa imagen en «Bloquean» y que no hubo inicio de sesión ni `push`. Cerrarlo sin fusionar, borrar la rama y anotar el run (H1: `workflow_dispatch` no sirve antes de que `cd.yml` esté en `main`).
+- [X] T031 [US2] Demostración del escenario 2, **con la aprobación del autor**: en una rama `demo-h08-vulnerable` (desde la de la historia), cambiar la base de la etapa final de `frontend.Dockerfile` a una versión con una alta o crítica corregida (la de T011) y abrir un pull request hacia `main`. Comprobar que `5 · imágenes` falla con esa imagen en «Bloquean» y que no hubo inicio de sesión ni `push`. Cerrarlo sin fusionar, borrar la rama y anotar el run (H1: `workflow_dispatch` no sirve antes de que `cd.yml` esté en `main`).
 - [ ] T032 **Pasos del autor** (quickstart §1 y §2), con su ayuda y sin que ningún secreto pase por el chat:
   - repositorio privado y tokens en Docker Hub;
   - entornos `publicacion` y `demostracion`, con `DOCKERHUB_*`;
