@@ -7,7 +7,7 @@
 ## Summary
 
 **Publicación (`cd.yml`).**
-- En cada fusión a `main`, `docker buildx bake -f compose.yaml` construye las 6 imágenes con la misma definición del perfil, más el **paquete de despliegue** (D-58, propuesta): una imagen `FROM scratch` con `compose.vps.yml`, el `Caddyfile` y los scripts de ese commit.
+- En cada fusión a `main`, `docker buildx bake -f compose.yaml` construye las 6 imágenes con la misma definición del perfil, más el **paquete de despliegue** (D-58): una imagen `FROM scratch` con `compose.vps.yml`, el `Caddyfile` y los scripts de ese commit.
 - Grype revisa las 6 imágenes y las de terceros (PostgreSQL, Caddy y cloudflared, por *digest*) con las excepciones de D-54, **antes** de iniciar sesión en Docker Hub. Si una falla, no se sube nada.
 - Después sube las 7 etiquetas `<componente>-<commit>` y, al final, mueve `despliegue-main`.
 - Con `workflow_dispatch` en otra rama solo construye y revisa.
@@ -88,9 +88,9 @@ Los detalles, lo comprobado y las alternativas están en [research.md](research.
 | XI y XII | Los scripts llevan su comentario de propósito y de uso en español. | ✅ |
 | XIII. Errores | N/A: no hay respuestas nuevas de la API. | ✅ N/A |
 | §3 Infraestructura | Docker Compose en un equipo de 4 núcleos y 8 GiB por presupuesto (D-36); el pipeline no despliega en la VM del IST. | ✅ |
-| §6.4 Decisiones | D-55, D-56 y D-57 aceptadas el 2026-10-17; **D-58 propuesta**, pendiente de aprobación del autor antes de implementar. | ⚠️ pendiente |
+| §6.4 Decisiones | D-55, D-56, D-57 y D-58, aceptadas por el autor el 2026-10-17. | ✅ |
 
-**Resultado del gate antes de la fase 0:** pasa, con D-58 pendiente de aprobación.
+**Resultado del gate antes de la fase 0:** pasa. D-58 quedó aprobada el 2026-10-17.
 
 **Revisión después de la fase 1:** pasa. [data-model.md](data-model.md) y [contracts/](contracts/) solo agregan lo listado.
 
@@ -138,7 +138,7 @@ deploy/
 └── publicacion/
     ├── construir.sh             # nuevo
     └── publicar.sh              # nuevo
-docs/decisiones.md               # D-58 (propuesta)
+docs/decisiones.md               # D-58
 specs/007-spa-base/contracts/perfil.md        # remite al Caddyfile nuevo
 ```
 
@@ -146,7 +146,7 @@ specs/007-spa-base/contracts/perfil.md        # remite al Caddyfile nuevo
 
 ## Fases de implementación (guía para /speckit-tasks)
 
-1. **D-58:** aprobación del autor.
+1. **D-58:** aprobada por el autor el 2026-10-17 (`docs/decisiones.md`).
 2. **Archivos del equipo**, con su prueba primero: `compose.vps.yml`, `Caddyfile`, `probar_humo.sh` y `desplegar.sh`. Después la prueba del ciclo (`probar_equipo.sh` con `registry:2` y la API simulada), que tiene que fallar antes de `actualizar.sh` y pasar después.
 3. **Publicación:** `despliegue.Dockerfile`, `construir.sh`, `publicar.sh` y `cd.yml` (revisión con Grype antes del inicio de sesión).
 4. **Preparación del equipo:** `preparar.sh` y las unidades de systemd; probado en la CI en modo no interactivo y en el PC del autor.

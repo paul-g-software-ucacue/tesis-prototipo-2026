@@ -42,7 +42,7 @@ Las 6 imágenes propias se construyen desde los Dockerfiles existentes (ADR-013,
   - si una versión necesita un cambio en el despliegue (una variable nueva, un servicio nuevo), el cambio viaja con las imágenes del mismo commit, y la vuelta atrás también vuelve a los archivos anteriores;
   - usa la misma credencial de solo lectura de Docker Hub: el equipo no necesita acceso al repositorio de GitHub, que es privado;
   - no tiene paquetes del sistema, así que Grype no tiene nada que revisar.
-- **Se registra como D-58** (propuesta en este plan), porque el issue habla de 6 imágenes: esta es un séptimo artefacto, técnico, sin servicio.
+- **Se registró como D-58**, aprobada por el autor el 2026-10-17, porque el issue habla de 6 imágenes: esta es un séptimo artefacto, técnico, sin servicio.
 - **Alternativas:** clonar el repositorio en el equipo (necesitaría un token con lectura de código); instalar los archivos a mano una vez (un cambio de `compose.vps.yml` obligaría a desplegar a mano, y la vuelta atrás no volvería a la configuración anterior); un artefacto OCI con ORAS (una herramienta más en el equipo).
 
 ## 6. Consulta desde el equipo sin gastar el cupo de Docker Hub

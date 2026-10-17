@@ -52,7 +52,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-55 | 2026-10-17 | El despliegue automático va al PC de demostración del autor, por extracción desde Docker Hub | Aceptada | Constitución principio IX y §3 (2.1.3), alcance del issue #25 (B00-H08), `cierre-ola.yml` |
 | D-56 | 2026-10-17 | Cada despliegue del equipo de demostración se informa a GitHub Deployments | Aceptada | Alcance del issue #25 (B00-H08) |
 | D-57 | 2026-10-17 | El usuario de prueba `autor.prueba` se habilita en el equipo de demostración, con clave propia | Aceptada | Alcance de los issues #25 (B00-H08) y #43 (F05-H01), D-37 |
-| D-58 | 2026-10-17 | Los archivos del despliegue viajan en una imagen más, el paquete de despliegue | Propuesta | Alcance del issue #25 (B00-H08: «las 6 imágenes») |
+| D-58 | 2026-10-17 | Los archivos del despliegue viajan en una imagen más, el paquete de despliegue | Aceptada | Alcance del issue #25 (B00-H08: «las 6 imágenes») |
 
 ---
 
@@ -861,7 +861,7 @@ Hay que poder probar el flujo completo de creación del distributivo sin debilit
 
 ## D-58. Los archivos del despliegue viajan en una imagen más, el paquete de despliegue
 
-- **Estado:** Propuesta · **Fecha:** 2026-10-17 · **Decidido por:** pendiente de aprobación del autor
+- **Estado:** Aceptada · **Fecha:** 2026-10-17 · **Decidido por:** autor de la tesis
 - **Origen:** plan de B00-H08 (`specs/009-publicacion-despliegue/research.md` §5)
 - **Modifica a:** alcance del issue #25 (B00-H08), que habla de publicar «las 6 imágenes»
 
