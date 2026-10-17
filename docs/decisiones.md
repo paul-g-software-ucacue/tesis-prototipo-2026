@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-62 · ADR-020.
+- **Siguiente número libre:** D-62 · ADR-021.
 
 ## Índice
 
@@ -56,6 +56,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-59 | 2026-10-17 | Los usuarios de la demo salen de un archivo versionado; sus contraseñas, de cada entorno | Aceptada | Alcance del issue #43 (F05-H01), D-37, D-57 |
 | D-60 | 2026-10-17 | F05-H01 incluye RNF-SEG-07: bloqueo tras 5 intentos e inactividad de 30 minutos | Aceptada | Alcance del issue #43, vigencia del token de B00-H03 (ADR-014) |
 | D-61 | 2026-10-17 | «Tokens y secretos cifrados en reposo» (RNF-SEG-02) se cumple por diseño | Aceptada | — |
+| ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Propuesta | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
 
@@ -923,6 +924,29 @@ Hay que poder probar el flujo completo de creación del distributivo sin debilit
 **Alternativas.** Cifrar `.env` y `configuracion.env` del equipo (por ejemplo, con `systemd-creds`): más seguridad, más complejidad en el despliegue.
 
 **Consecuencias.** Si el MDD llega a guardar tokens o secretos en la base, o se despliega en la VM del IST, se revisa esta decisión.
+
+---
+
+## ADR-020. Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad
+
+- **Estado:** Propuesta · **Fecha:** 2026-10-17 · **Decidido por:** pendiente de aprobación del autor
+- **Origen:** plan de F05-H01 (`specs/010-iniciar-sesion/research.md` §6), para cumplir D-60
+- **Modifica a:** ADR-014 (agrega los claims `nombre` e `inicio` y la operación de renovación)
+
+**Decisión.**
+1. El token de sesión dura 30 minutos, como hoy, y lleva dos claims nuevos: `nombre` (nombre para mostrar) e `inicio` (instante del inicio de sesión).
+2. Usuarios expone `POST /api/usuarios/sesion/renovacion`: con un token de sesión vigente, emite uno nuevo con el mismo `inicio` y otros 30 minutos, salvo que hayan pasado 8 horas desde `inicio`.
+3. La SPA registra la actividad del usuario (navegación, teclado, ratón y peticiones a la API) y renueva el token una vez cuando hubo actividad desde la última renovación y le quedan menos de 20 minutos. Sin actividad, el token vence a los 30 minutos y la SPA cierra la sesión.
+4. El token sigue solo en memoria (D-51) y los procesos siguen validando sin estado con el JWKS. `SesionActual` gana `nombre` opcional.
+
+**Por qué.** Cumple «expira por inactividad» (RNF-SEG-07) sin guardar estado de sesión en el servidor ni el token fuera de la memoria, y sin que los procesos consulten a Usuarios en cada petición.
+
+**Alternativas.** *Refresh token* en una cookie `HttpOnly` (rompe D-51 y obliga a protegerse de CSRF); tabla de sesiones con la última actividad (estado en el servidor y una consulta por petición); token largo sin inactividad (no cumple RNF-SEG-07).
+
+**Consecuencias.**
+- Un token robado podría renovarse hasta 8 horas: no hay revocación en el prototipo; se anota como limitación.
+- Las historias con pantallas no hacen nada: la renovación vive en la base de la SPA.
+- Los procesos ignoran los claims nuevos; solo el «sesión actual» de Usuarios devuelve `nombre`.
 
 ---
 
