@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-59 · ADR-020.
+- **Siguiente número libre:** D-62 · ADR-020.
 
 ## Índice
 
@@ -53,6 +53,9 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-56 | 2026-10-17 | Cada despliegue del equipo de demostración se informa a GitHub Deployments | Aceptada | Alcance del issue #25 (B00-H08) |
 | D-57 | 2026-10-17 | El usuario de prueba `autor.prueba` se habilita en el equipo de demostración, con clave propia | Aceptada | Alcance de los issues #25 (B00-H08) y #43 (F05-H01), D-37 |
 | D-58 | 2026-10-17 | Los archivos del despliegue viajan en una imagen más, el paquete de despliegue | Aceptada | Alcance del issue #25 (B00-H08: «las 6 imágenes») |
+| D-59 | 2026-10-17 | Los usuarios de la demo salen de un archivo versionado; sus contraseñas, de cada entorno | Aceptada | Alcance del issue #43 (F05-H01), D-37, D-57 |
+| D-60 | 2026-10-17 | F05-H01 incluye RNF-SEG-07: bloqueo tras 5 intentos e inactividad de 30 minutos | Aceptada | Alcance del issue #43, vigencia del token de B00-H03 (ADR-014) |
+| D-61 | 2026-10-17 | «Tokens y secretos cifrados en reposo» (RNF-SEG-02) se cumple por diseño | Aceptada | — |
 
 ---
 
@@ -872,6 +875,54 @@ Hay que poder probar el flujo completo de creación del distributivo sin debilit
 **Alternativas.** Clonar el repositorio en el equipo (necesita un token con lectura de código); instalar los archivos a mano una vez (un cambio de `compose.demo.yml` obligaría a desplegar a mano y la vuelta atrás no volvería a la configuración anterior); un artefacto OCI con ORAS (otra herramienta en el equipo).
 
 **Consecuencias.** El repositorio tiene 7 etiquetas por commit. «Las 6 imágenes» del issue siguen siendo las que se construyen desde el código y Grype revisa.
+
+---
+
+## D-59. Los usuarios de la demo salen de un archivo versionado; sus contraseñas, de cada entorno
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-17 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q1 de la especificación de F05-H01 (`specs/010-iniciar-sesion/spec.md`)
+- **Modifica a:** alcance del issue #43 (F05-H01); completa D-37 y D-57
+
+**Decisión.** Los usuarios de la demo (uno por cada rol de la matriz de D-16 y uno con Docente y Coordinador de carrera) se definen en un archivo versionado del repositorio, con su nombre de usuario, su nombre para mostrar y sus roles, **sin contraseñas**. Usuarios los crea al arrancar si no existen. La contraseña de cada uno se fija en cada entorno: en local y en la CI, con valores ficticios documentados; en el equipo de demostración, generadas por `preparar.sh` y guardadas solo ahí. En la base solo queda el hash Argon2id.
+
+**Por qué.** No hay pantalla de gestión de usuarios en esta historia, y un archivo versionado hace la demo repetible en cualquier entorno sin poner contraseñas en el repositorio.
+
+**Alternativas.** Un comando de administración en el equipo (manual y sin registro en el repositorio); una pantalla de administración de usuarios (adelanta trabajo y lleva la historia a tamaño L).
+
+**Consecuencias.** Cambiar los usuarios de la demo es un cambio en el repositorio, revisado en un pull request. La gestión de usuarios desde la SPA, si llega, la hará otra historia.
+
+---
+
+## D-60. F05-H01 incluye RNF-SEG-07: bloqueo tras 5 intentos e inactividad de 30 minutos
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-17 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q2 de la especificación de F05-H01
+- **Modifica a:** alcance del issue #43 (F05-H01); la vigencia fija de 30 minutos del token de B00-H03 (ADR-014)
+
+**Decisión.** Después de 5 intentos fallidos seguidos con el mismo nombre de usuario, el inicio de sesión con ese nombre queda bloqueado por un tiempo (15 minutos por defecto); los intentos se cuentan por nombre intentado, exista o no, para no revelar qué usuarios existen. La sesión vence tras 30 minutos sin actividad y se renueva mientras el usuario trabaja, con un máximo de 8 horas desde el inicio de sesión. Los tres valores son parámetros.
+
+**Por qué.** RNF-SEG-07 (prioridad *Should*) está en el servicio de Usuarios y encaja con el inicio de sesión. Hoy el token dura 30 minutos fijos, así que un usuario activo sería expulsado en medio de su trabajo.
+
+**Alternativas.** Solo el bloqueo por intentos; dejar RNF-SEG-07 para otra historia.
+
+**Consecuencias.** El plan de F05-H01 decide cómo se renueva la sesión sin guardar el token fuera de la memoria (D-51) y dónde se cuentan los intentos.
+
+---
+
+## D-61. «Tokens y secretos cifrados en reposo» (RNF-SEG-02) se cumple por diseño
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-17 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q3 de la especificación de F05-H01
+- **Modifica a:** — (interpreta RNF-SEG-02 para el prototipo)
+
+**Decisión.** RNF-SEG-02 se da por cumplido así, con la evidencia de F05-H01: las contraseñas se guardan solo como hash Argon2id; el MDD no guarda tokens (son JWT sin estado y la SPA los tiene solo en memoria, D-51); los secretos del equipo de demostración viven solo en `/opt/mdd`, con permisos de su dueño (0600 y 0400), fuera del repositorio, de GitHub y de las imágenes (D-55, B00-H08). No se agrega cifrado de disco a esos archivos.
+
+**Por qué.** No hay tokens en reposo que cifrar, y para un prototipo en un equipo personal los permisos del sistema de archivos protegen los secretos sin complicar el despliegue.
+
+**Alternativas.** Cifrar `.env` y `configuracion.env` del equipo (por ejemplo, con `systemd-creds`): más seguridad, más complejidad en el despliegue.
+
+**Consecuencias.** Si el MDD llega a guardar tokens o secretos en la base, o se despliega en la VM del IST, se revisa esta decisión.
 
 ---
 
