@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-56 · ADR-020.
+- **Siguiente número libre:** D-58 · ADR-020.
 
 ## Índice
 
@@ -50,6 +50,8 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | ADR-019 | 2026-10-15 | Base del frontend: cliente generado, errores, sesión en memoria y mismo origen | Aceptada | ADR-008 (detalle del frontend) |
 | D-54 | 2026-10-15 | Excepciones de Grype solo temporales, con motivo y vencimiento | Aceptada | Constitución principio IX (2.1.2), alcance del issue #24 (B00-H07) |
 | D-55 | 2026-10-17 | El despliegue automático va al PC de demostración del autor, por extracción desde Docker Hub | Aceptada | Constitución principio IX y §3 (2.1.3), alcance del issue #25 (B00-H08), `cierre-ola.yml` |
+| D-56 | 2026-10-17 | Cada despliegue del equipo de demostración se informa a GitHub Deployments | Aceptada | Alcance del issue #25 (B00-H08) |
+| D-57 | 2026-10-17 | El usuario de prueba `autor.prueba` se habilita en el equipo de demostración, con clave propia | Aceptada | Alcance de los issues #25 (B00-H08) y #43 (F05-H01), D-37 |
 
 ---
 
@@ -821,6 +823,38 @@ Hay que poder probar el flujo completo de creación del distributivo sin debilit
 - B00-H08 ajusta sus escenarios: «Despliegue sano» y «Vuelta atrás» se cumplen en el PC; «Acceso restringido», con Caddy y, si se usa, con el túnel.
 - `cierre-ola.yml` deja de depender de `vars.DOMINIO`.
 - El PC del autor usa Fedora con SELinux; el despliegue no debe depender de la distribución, porque la VM del IST usa Ubuntu Server (§3).
+
+---
+
+## D-56. Cada despliegue del equipo de demostración se informa a GitHub Deployments
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-17 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q1 de la especificación de B00-H08 (`specs/009-publicacion-despliegue/spec.md`)
+- **Modifica a:** alcance del issue #25 (B00-H08); completa D-55 (la CI ya no ve el resultado del despliegue)
+
+**Decisión.** El servicio de despliegue del equipo de demostración informa cada intento a GitHub como un *deployment* del entorno del despliegue, con el commit, el estado (en curso, sano o fallido) y un resumen (vuelta atrás, error de Docker Hub, etc.). Usa un token de GitHub de grano fino, guardado solo en el equipo, con permiso únicamente sobre los *deployments* de este repositorio. Si GitHub no responde, el despliegue sigue igual y el informe queda en el registro local del equipo.
+
+**Por qué.** Con D-55, el resultado del despliegue nace en el equipo. En la pestaña *Deployments* del repositorio queda, junto a cada commit, la evidencia de que se desplegó solo o de que volvió atrás, que es lo que piden los escenarios «Despliegue sano» y «Vuelta atrás».
+
+**Alternativas.** Solo el registro del equipo (hay que entrar al equipo para saber si falló); el registro del equipo y una notificación de escritorio (sin evidencia en GitHub).
+
+**Consecuencias.** El equipo guarda dos credenciales: Docker Hub de solo lectura y este token. GitHub sigue sin credenciales ni direcciones del equipo (D-55): la conexión siempre sale del equipo.
+
+---
+
+## D-57. El usuario de prueba `autor.prueba` se habilita en el equipo de demostración, con clave propia
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-17 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q2 de la especificación de B00-H08 (`specs/009-publicacion-despliegue/spec.md`)
+- **Modifica a:** alcance del issue #25 (B00-H08); amplía el uso del usuario de prueba de D-37, que B00-H03 limitó a local y a la CI (`specs/003-autenticacion-jwt/research.md` §8)
+
+**Decisión.** En el equipo de demostración, `autor.prueba` se habilita hasta que F05-H01 traiga los usuarios reales de la demo. Su contraseña se genera en el equipo, nunca es la de `.env.ejemplo` y vive solo ahí, como las demás credenciales del equipo. El usuario sigue detrás del acceso restringido del proxy.
+
+**Por qué.** Sin un usuario, la demostración solo muestra la pantalla de inicio de sesión y no se puede comprobar de punta a punta, ni recorrer la SPA ni escanear la API con un token en el cierre de ola.
+
+**Alternativas.** No habilitarlo hasta F05-H01: la demostración queda en la pantalla de inicio de sesión.
+
+**Consecuencias.** F05-H01 lo deshabilita en el equipo de demostración cuando existan los usuarios reales.
 
 ---
 
