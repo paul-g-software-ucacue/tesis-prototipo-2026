@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-62 · ADR-021.
+- **Siguiente número libre:** D-65 · ADR-021.
 
 ## Índice
 
@@ -56,6 +56,9 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-59 | 2026-10-17 | Los usuarios de la demo salen de un archivo versionado; sus contraseñas, de cada entorno | Aceptada | Alcance del issue #43 (F05-H01), D-37, D-57 |
 | D-60 | 2026-10-17 | F05-H01 incluye RNF-SEG-07: bloqueo tras 5 intentos e inactividad de 30 minutos | Aceptada | Alcance del issue #43, vigencia del token de B00-H03 (ADR-014) |
 | D-61 | 2026-10-17 | «Tokens y secretos cifrados en reposo» (RNF-SEG-02) se cumple por diseño | Aceptada | — |
+| D-62 | 2026-10-17 | Un cambio de permisos vale para una sesión abierta en su próxima renovación | Aceptada | ADR-014 (los permisos viajan con la sesión), ADR-020 |
+| D-63 | 2026-10-17 | Los 10 roles de D-16 son fijos: se asignan, pero no se editan ni se borran | Aceptada | D-16 |
+| D-64 | 2026-10-17 | F05-H02 marca qué permisos son «solo lo propio»; el filtro lo aplica cada historia con esos datos | Aceptada | D-16 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -947,6 +950,54 @@ Hay que poder probar el flujo completo de creación del distributivo sin debilit
 - Un token robado podría renovarse hasta 8 horas: no hay revocación en el prototipo; se anota como limitación.
 - Las historias con pantallas no hacen nada: la renovación vive en la base de la SPA.
 - Los procesos ignoran los claims nuevos; solo el «sesión actual» de Usuarios devuelve `nombre`.
+
+---
+
+## D-62. Un cambio de permisos vale para una sesión abierta en su próxima renovación
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-17 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q1 de la especificación de F05-H02
+- **Modifica a:** ADR-014 (los permisos efectivos viajan con la sesión), en la línea de ADR-020
+
+**Decisión.** Si el administrador cambia los roles de un usuario, o los permisos de un rol, mientras ese usuario tiene la sesión abierta, el cambio vale desde la próxima renovación de su sesión: como máximo 30 minutos después (ADR-020), o al volver a entrar. Los procesos siguen validando sin estado, sin consultar al servicio Roles en cada petición.
+
+**Por qué.** Mantiene el diseño sin estado de ADR-014 y ADR-020 y no acopla los 4 procesos a Roles. Para un prototipo, una demora de hasta 30 minutos en quitar un permiso es aceptable.
+
+**Alternativas.** De inmediato, con una consulta a Roles en cada petición (acopla los procesos y suma latencia); recién al volver a entrar (hasta 8 horas de demora).
+
+**Consecuencias.** La renovación recalcula los permisos y los roles vigentes. Un usuario desactivado ya no renueva (F05-H01). El plan define cómo llegan los permisos a los procesos.
+
+---
+
+## D-63. Los 10 roles de D-16 son fijos: se asignan, pero no se editan ni se borran
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-17 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q2 de la especificación de F05-H02
+- **Modifica a:** —
+
+**Decisión.** Los 10 roles de la matriz D-16 existen desde el principio, con sus permisos. El administrador los ve y los asigna, pero no puede cambiar sus permisos ni borrarlos. Para otra combinación de permisos, crea un rol nuevo, que sí puede editar y, si no está asignado, borrar.
+
+**Por qué.** La matriz del ERS y el sistema nunca se separan sin una decisión registrada.
+
+**Alternativas.** Roles de D-16 editables, pero no borrables; o editables y borrables como cualquier otro.
+
+**Consecuencias.** Cambiar la matriz D-16 exige una decisión nueva y un cambio en el sistema, no un ajuste en la pantalla.
+
+---
+
+## D-64. F05-H02 marca qué permisos son «solo lo propio»; el filtro lo aplica cada historia con esos datos
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-17 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q3 de la especificación de F05-H02
+- **Modifica a:** —
+
+**Decisión.** Cada permiso tiene un alcance: **todo** o **solo lo propio** (su carrera, unidad o persona, D-16). F05-H02 registra y muestra ese alcance, pero no filtra datos, porque todavía no existen carreras, unidades ni docentes. Cada historia que trae esos datos (F03 y siguientes) aplica el filtro de «lo propio» a sus operaciones.
+
+**Por qué.** El alcance queda en el modelo desde el principio, sin inventar datos que todavía no existen.
+
+**Alternativas.** Ignorar el alcance hasta que lleguen los datos: más simple hoy, pero obliga a cambiar el modelo después.
+
+**Consecuencias.** Las historias de F03 en adelante deben probar que un permiso «solo lo propio» no deja ver ni cambiar lo de otra carrera, unidad o persona.
 
 ---
 
