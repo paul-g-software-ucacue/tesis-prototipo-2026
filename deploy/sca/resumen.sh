@@ -8,6 +8,7 @@
 # Escribe en Markdown, en la salida estándar, tres tablas: las vulnerabilidades altas o críticas con
 # versión corregida (bloquean), las altas o críticas sin arreglo todavía (informativas) y las
 # suprimidas por una excepción vigente. Termina con 1 si hay alguna que bloquea y con 0 si no.
+# RESUMEN_ASUNTO cambia el título (por defecto «dependencias»; revisar.sh de B00-H08 usa «imágenes»).
 set -euo pipefail
 
 if (($# < 2)); then
@@ -18,6 +19,8 @@ configuracion=$1
 shift
 
 excepciones=$(yq -o=json '.ignore // []' "$configuracion")
+
+asunto=${RESUMEN_ASUNTO:-dependencias}
 
 datos=$(jq -n --argjson excepciones "$excepciones" '
     def alta: .vulnerability.severity == "High" or .vulnerability.severity == "Critical";
@@ -47,7 +50,7 @@ datos=$(jq -n --argjson excepciones "$excepciones" '
         otras: (map(.otras) | add // 0)
     }' "$@")
 
-jq -r '
+jq -r --arg asunto "$asunto" '
     def tabla($filas; $extra):
         if ($filas | length) == 0 then "Ninguna.\n"
         else
@@ -57,7 +60,8 @@ jq -r '
             + ($filas | map("| \(.modulo) | \(.dependencia) | \(.instalada) | \(.corregida) | \(.id) | \(.severidad) |"
                 + (if $extra then " \(.vence) |" else "" end)) | join("\n")) + "\n"
         end;
-    "## Grype: dependencias de \(.modulos) módulos\n",
+    (if $asunto == "dependencias" then "## Grype: dependencias de \(.modulos) módulos\n"
+     else "## Grype: \($asunto) (\(.modulos))\n" end),
     (if (.bloquean | length) == 0
      then "Ninguna vulnerabilidad alta o crítica con versión corregida.\n"
      else "### Bloquean la fusión: actualizar a la versión corregida\n\n" + tabla(.bloquean; false) end),

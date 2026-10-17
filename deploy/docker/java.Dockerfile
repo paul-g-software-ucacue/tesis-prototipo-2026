@@ -25,7 +25,10 @@ COPY --from=compilacion /app.jar app.jar
 RUN java -Djarmode=tools -jar app.jar extract --layers --launcher --destination extraido
 
 FROM eclipse-temurin:25-jre
-RUN groupadd --system --gid 10001 mdd && useradd --system --uid 10001 --gid mdd mdd
+# La base trae /usr/bin/pebble, un supervisor de servicios de Canonical escrito en Go que el proceso
+# no usa; Grype encontró en él vulnerabilidades altas y críticas de Go (B00-H08). Se quita.
+RUN groupadd --system --gid 10001 mdd && useradd --system --uid 10001 --gid mdd mdd \
+    && rm -f /usr/bin/pebble
 WORKDIR /app
 COPY --from=extraccion /app/extraido/dependencies/ ./
 COPY --from=extraccion /app/extraido/spring-boot-loader/ ./

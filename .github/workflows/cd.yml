@@ -1,0 +1,67 @@
+# Publicación del MDD en Docker Hub (etapa 5, B00-H08; specs/009-publicacion-despliegue/contracts/publicacion.md).
+# Con cada fusión a main construye las 6 imágenes y el paquete de despliegue (D-58), Grype las revisa
+# junto con las de terceros (D-54) y, solo si todas pasan, las sube al repositorio privado. El equipo
+# de demostración las baja por su cuenta (D-55): este workflow no entra a ningún equipo.
+# En un pull request que toque el despliegue, el mismo job solo construye y revisa (check
+# «5 · imágenes», no obligatorio: D-31 no cambia), sin entorno, sin secretos y sin subir nada.
+name: cd
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    paths:
+      - "deploy/**"
+      - "compose.yaml"
+      - ".grype.yaml"
+      - ".dockerignore"
+      - ".github/workflows/cd.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Las publicaciones van en orden: una fusión no cancela la anterior.
+concurrency:
+  group: cd-${{ github.event_name == 'pull_request' && github.event.pull_request.number || 'main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  imagenes:
+    name: "5 · imágenes"
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # Solo el push a main usa el entorno publicacion (restringido a main) y su token de escritura.
+    environment: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'publicacion' || '' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Construcción de las 6 imágenes y del paquete
+        shell: bash
+        run: deploy/publicacion/construir.sh "$GITHUB_SHA"
+
+      - id: grype
+        uses: anchore/scan-action/download-grype@8576240a41341d866dbd7ebc72cd9fc0ef023f54 # v7.4.2
+        with: { grype-version: v0.120.1 }
+
+      # Antes de iniciar sesión: si una imagen falla, no se sube nada (FR-003).
+      - name: Revisión de las imágenes con Grype
+        shell: bash
+        env:
+          GRYPE: ${{ steps.grype.outputs.cmd }}
+        run: deploy/publicacion/revisar.sh "$GITHUB_SHA" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: ${{ vars.DOCKERHUB_USUARIO }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        name: Publicación en Docker Hub
+        shell: bash
+        env:
+          REPOSITORIO: docker.io/${{ vars.DOCKERHUB_REPOSITORIO }}
+        run: deploy/publicacion/publicar.sh "$REPOSITORIO" "$GITHUB_SHA" | tee -a "$GITHUB_STEP_SUMMARY"

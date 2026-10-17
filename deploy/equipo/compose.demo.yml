@@ -1,0 +1,179 @@
+# Equipo de demostración del MDD (B00-H08, D-55, D-58; specs/009-publicacion-despliegue/contracts/equipo.md).
+# Viaja dentro del paquete de despliegue de cada commit y lo corre desplegar.sh, siempre así:
+#   docker compose -p mdd --env-file <raíz>/.env -f <raíz>/versiones/<commit>/compose.demo.yml …
+# Con la ruta real de la versión (no el enlace «actual»), los montajes cambian con cada versión y
+# Compose recrea los contenedores que los usan.
+#
+# Las imágenes salen del repositorio privado de Docker Hub (REPOSITORIO y ETIQUETA, en el .env del
+# equipo). Cada servicio recibe solo sus variables: no hay env_file. Los secretos los genera
+# preparar.sh en el equipo y nunca entran al repositorio ni a una imagen.
+# Límites de memoria: 3 072 MiB sin el túnel, en un equipo de 8 GiB de presupuesto (R-19, D-36).
+#
+# Túnel opcional (D-55): con TUNEL_TOKEN en el .env, «--profile tunel» levanta cloudflared, que sale
+# hacia Cloudflare y llega a http://caddy:8081 sin abrir puertos de entrada (quickstart §5).
+
+x-java: &java
+  healthcheck:
+    test:
+      - CMD
+      - bash
+      - -c
+      - "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /actuator/health/readiness HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && grep -q '\"status\":\"UP\"' <&3"
+    interval: 10s
+    timeout: 5s
+    retries: 12
+    start_period: 60s
+  restart: unless-stopped
+
+x-proceso: &proceso
+  <<: *java
+  depends_on:
+    postgres:
+      condition: service_healthy
+  deploy:
+    resources:
+      limits:
+        memory: 512m
+
+x-jvm: &jvm
+  JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=60
+  SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mdd
+
+services:
+  postgres:
+    image: postgres:18.6-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
+    environment:
+      POSTGRES_DB: mdd
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?falta POSTGRES_PASSWORD}
+      DB_CLAVE_IDENTIDAD: ${DB_CLAVE_IDENTIDAD:?falta DB_CLAVE_IDENTIDAD}
+      DB_CLAVE_DATOS: ${DB_CLAVE_DATOS:?falta DB_CLAVE_DATOS}
+      DB_CLAVE_DISTRIBUTIVO: ${DB_CLAVE_DISTRIBUTIVO:?falta DB_CLAVE_DISTRIBUTIVO}
+      DB_CLAVE_SALIDA: ${DB_CLAVE_SALIDA:?falta DB_CLAVE_SALIDA}
+    volumes:
+      - datos-postgres:/var/lib/postgresql
+      # z: etiqueta de SELinux para que el contenedor lea el script; sin SELinux no tiene efecto.
+      - ./01-esquemas.sh:/docker-entrypoint-initdb.d/01-esquemas.sh:ro,z
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d mdd"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  identidad:
+    <<: *proceso
+    image: ${REPOSITORIO:?falta REPOSITORIO}:identidad-${ETIQUETA:?falta ETIQUETA}
+    environment:
+      <<: *jvm
+      DB_CLAVE_IDENTIDAD: ${DB_CLAVE_IDENTIDAD}
+      MDD_CLAVE_PROCESO_DISTRIBUTIVO: ${MDD_CLAVE_PROCESO_DISTRIBUTIVO:?falta MDD_CLAVE_PROCESO_DISTRIBUTIVO}
+      # Usuario de prueba en el equipo de demostración, con clave propia, hasta F05-H01 (D-57).
+      MDD_USUARIO_PRUEBA_HABILITADO: "true"
+      MDD_USUARIO_PRUEBA_CLAVE: ${MDD_USUARIO_PRUEBA_CLAVE:?falta MDD_USUARIO_PRUEBA_CLAVE}
+      # Llave de firma persistente (ADR-014): reiniciar identidad no invalida las sesiones.
+      MDD_LLAVE_PRIVADA: /run/mdd/jwt.pem
+    volumes:
+      # Z: etiqueta privada de SELinux solo para este archivo, de dueño 10001 y modo 0400.
+      - ${MDD_SECRETOS:-/opt/mdd/secretos}/jwt.pem:/run/mdd/jwt.pem:ro,Z
+
+  datos:
+    <<: *proceso
+    image: ${REPOSITORIO}:datos-${ETIQUETA}
+    environment:
+      <<: *jvm
+      DB_CLAVE_DATOS: ${DB_CLAVE_DATOS}
+
+  distributivo:
+    <<: *proceso
+    image: ${REPOSITORIO}:distributivo-${ETIQUETA}
+    environment:
+      <<: *jvm
+      DB_CLAVE_DISTRIBUTIVO: ${DB_CLAVE_DISTRIBUTIVO}
+      MDD_CLAVE_PROCESO_DISTRIBUTIVO: ${MDD_CLAVE_PROCESO_DISTRIBUTIVO}
+
+  salida:
+    <<: *proceso
+    image: ${REPOSITORIO}:salida-${ETIQUETA}
+    environment:
+      <<: *jvm
+      DB_CLAVE_SALIDA: ${DB_CLAVE_SALIDA}
+
+  gateway:
+    <<: *java
+    image: ${REPOSITORIO}:gateway-${ETIQUETA}
+    environment:
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=60
+    deploy:
+      resources:
+        limits:
+          memory: 384m
+
+  frontend:
+    image: ${REPOSITORIO}:frontend-${ETIQUETA}
+    depends_on:
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/salud"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+
+  # Proxy con acceso restringido (FR-015): el único puerto publicado, y solo en 127.0.0.1.
+  caddy:
+    image: caddy:2.11.7-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
+    environment:
+      DIRECCION: ${DIRECCION:-mdd.localhost}
+      DEMO_USUARIO: ${DEMO_USUARIO:?falta DEMO_USUARIO}
+      DEMO_CLAVE_HASH: ${DEMO_CLAVE_HASH:?falta DEMO_CLAVE_HASH}
+    ports:
+      - "127.0.0.1:${PUERTO_HTTPS:-443}:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro,z
+      - caddy-datos:/data
+      - caddy-config:/config
+    depends_on:
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:2019/config/"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+
+  cloudflared:
+    profiles: [tunel]
+    image: cloudflare/cloudflared:2026.9.3@sha256:072c067d25ccbe61d46e18f0d0723255f2bb5304f7317caa95b27031520ff92c
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${TUNEL_TOKEN:-}
+    depends_on:
+      caddy:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+
+volumes:
+  datos-postgres:
+  caddy-datos:
+  caddy-config:

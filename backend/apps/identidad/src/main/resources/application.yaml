@@ -15,7 +15,7 @@ mdd.seguridad.rutas-publicas:
   - POST /interno/usuarios/token-proceso
 # Claves de los procesos que pueden pedir un token de proceso (D-49). Vacía, el proceso no puede.
 mdd.usuarios.procesos.distributivo.clave: ${MDD_CLAVE_PROCESO_DISTRIBUTIVO:}
-# Llave de firma: sin archivo, efímera (research §2); en el VPS, un PEM (B00-H08).
+# Llave de firma: sin archivo, efímera (research §2); en el equipo de demostración, un PEM (D-55).
 mdd.usuarios.llave-privada: ${MDD_LLAVE_PRIVADA:}
 # Usuario de prueba autor.prueba, solo donde se habilita (research §8).
 mdd.usuarios.usuario-prueba.habilitado: ${MDD_USUARIO_PRUEBA_HABILITADO:false}

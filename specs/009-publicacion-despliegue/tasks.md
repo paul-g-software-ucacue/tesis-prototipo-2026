@@ -40,7 +40,7 @@ description: "Tareas de B00-H08: Publicación en Docker Hub y despliegue en el e
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear `specs/009-publicacion-despliegue/evidencia.md` con estas secciones:
+- [X] T001 Crear `specs/009-publicacion-despliegue/evidencia.md` con estas secciones:
   - entorno;
   - escenario 1 (publicación);
   - escenario 2 (imagen vulnerable);
@@ -51,7 +51,7 @@ description: "Tareas de B00-H08: Publicación en Docker Hub y despliegue en el e
   - informes a GitHub (D-56);
   - memoria (R-19);
   - notas.
-- [ ] T002 [P] Fijar las versiones de research §1 y anotarlas en el «entorno» de la evidencia:
+- [X] T002 [P] Fijar las versiones de research §1 y anotarlas en el «entorno» de la evidencia:
   - `caddy:2.11.7-alpine` (o la última 2.11.x con al menos dos semanas) con el *digest* de su índice;
   - el *digest* de `postgres:18.6-alpine`;
   - `cloudflare/cloudflared` en su última versión con al menos dos semanas, con *digest*;
@@ -62,7 +62,7 @@ description: "Tareas de B00-H08: Publicación en Docker Hub y despliegue en el e
 
 ## Phase 2: Foundational (bloquea a todas las historias)
 
-- [ ] T003 Crear `deploy/equipo/compose.demo.yml` según contracts/equipo.md:
+- [X] T003 Crear `deploy/equipo/compose.demo.yml` según contracts/equipo.md:
   - servicios `postgres`, `identidad`, `datos`, `distributivo`, `salida`, `gateway`, `frontend` y `caddy`, con las imágenes `${REPOSITORIO}:<componente>-${ETIQUETA}` y las de terceros por *digest* (T002);
   - los mismos *healthchecks*, `JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=60`, `SPRING_DATASOURCE_URL`, `depends_on` y límites de memoria de `compose.yaml`, más `caddy` con 64m: «3 072 MiB» en total;
   - **variables explícitas por servicio** (sin `env_file`): cada proceso recibe solo su `DB_CLAVE_*`; `identidad`, además, `MDD_CLAVE_PROCESO_DISTRIBUTIVO`, `MDD_USUARIO_PRUEBA_HABILITADO=true`, `MDD_USUARIO_PRUEBA_CLAVE` y `MDD_LLAVE_PRIVADA=/run/mdd/jwt.pem`; `distributivo`, `MDD_CLAVE_PROCESO_DISTRIBUTIVO`;
@@ -70,22 +70,22 @@ description: "Tareas de B00-H08: Publicación en Docker Hub y despliegue en el e
   - `caddy` publica solo `127.0.0.1:443:443` y monta un volumen para sus datos (la CA interna);
   - `cloudflared` en el perfil `tunel`, con `TUNEL_TOKEN`, sin puertos (FR-016);
   - comentario de cabecera: uso con `-p mdd --env-file`, D-55 y D-58.
-- [ ] T004 Cambiar `deploy/Caddyfile` según contracts/equipo.md y research §9:
+- [X] T004 Cambiar `deploy/Caddyfile` según contracts/equipo.md y research §9:
   - un fragmento `(mdd)` con el `basic_auth` para todo menos `/api/*`, `/api/*` → `gateway:8080`, lo demás → `frontend:8080`, y las cabeceras actuales;
   - el sitio `{$DIRECCION:mdd.localhost}`, con `tls internal`, que importa el fragmento (sin modo Let's Encrypt: M1 y M2 del análisis);
   - el sitio `http://:8081`, que importa el fragmento, para el túnel.
 
   Actualizar el comentario de cabecera y la referencia de `specs/007-spa-base/contracts/perfil.md` («en el equipo de demostración, detrás de Caddy»).
-- [ ] T005 [P] Crear `deploy/docker/despliegue.Dockerfile` (contracts/publicacion.md, D-58):
+- [X] T005 [P] Crear `deploy/docker/despliegue.Dockerfile` (contracts/publicacion.md, D-58):
   - `FROM scratch`, con `ARG REVISION`;
   - `COPY` de `deploy/equipo/compose.demo.yml`, `deploy/Caddyfile`, `deploy/postgres/01-esquemas.sh`, `deploy/desplegar.sh` y `deploy/equipo/probar_humo.sh` a `/paquete/`;
   - `VERSION` con el commit, escrito con una etapa previa de `busybox` fijada por *digest*;
   - un `CMD ["/nada"]` para que `docker create` funcione.
-- [ ] T006 [P] Crear `deploy/publicacion/construir.sh <commit>` (contracts/publicacion.md):
+- [X] T006 [P] Crear `deploy/publicacion/construir.sh <commit>` (contracts/publicacion.md):
   - `docker buildx bake -f compose.yaml --load` de `identidad`, `datos`, `distributivo`, `salida`, `gateway` y `frontend`, con `--set <servicio>.tags=mdd/<servicio>:<commit12>` y `--set *.labels.org.opencontainers.image.revision=<commit>`;
   - `docker build -f deploy/docker/despliegue.Dockerfile --build-arg REVISION=<commit> -t mdd/despliegue:<commit12> .`;
   - imprime la lista de imágenes construidas.
-- [ ] T007 Comprobar en local:
+- [X] T007 Comprobar en local:
   - `construir.sh $(git rev-parse HEAD)` deja las 7 imágenes `mdd/*:<commit12>`, con el *label* de revisión en las 6;
   - el paquete, extraído con `docker create` y `docker cp`, tiene los 6 archivos;
   - `docker compose -p mdd --env-file <ejemplo> -f deploy/equipo/compose.demo.yml config` resuelve las imágenes, las variables por servicio y los montajes, con un `.env` de ejemplo con valores ficticios en el *scratchpad*.
@@ -102,14 +102,14 @@ description: "Tareas de B00-H08: Publicación en Docker Hub y despliegue en el e
 
 **Independent Test**: contra un registro local, `publicar.sh` sube las 7 etiquetas y mueve `despliegue-main` al final; después de la fusión, Docker Hub las tiene.
 
-- [ ] T008 [US1] Prueba primero: script temporal en el *scratchpad* que levanta `registry:2` (T002) en `localhost:5000`, corre `deploy/publicacion/publicar.sh localhost:5000/mdd <commit>` y comprueba con `curl` al registro las 7 etiquetas y que `despliegue-main` apunta al mismo *digest* que `despliegue-<commit12>`. Comprobar que falla mientras `publicar.sh` no existe.
-- [ ] T009 [US1] Crear `deploy/publicacion/publicar.sh <repositorio> <commit>` (contracts/publicacion.md):
+- [X] T008 [US1] Prueba primero: script temporal en el *scratchpad* que levanta `registry:2` (T002) en `localhost:5000`, corre `deploy/publicacion/publicar.sh localhost:5000/mdd <commit>` y comprueba con `curl` al registro las 7 etiquetas y que `despliegue-main` apunta al mismo *digest* que `despliegue-<commit12>`. Comprobar que falla mientras `publicar.sh` no existe.
+- [X] T009 [US1] Crear `deploy/publicacion/publicar.sh <repositorio> <commit>` (contracts/publicacion.md):
   - etiqueta y sube, en orden, los 6 componentes, `despliegue-<commit12>` y, por último, `despliegue-main`;
   - termina con 1 si un `push` falla, antes de mover `despliegue-main`;
   - imprime una tabla Markdown con las etiquetas y sus *digest*.
 
   T008 pasa.
-- [ ] T010 [US1] Crear `.github/workflows/cd.yml` según contracts/publicacion.md:
+- [X] T010 [US1] Crear `.github/workflows/cd.yml` según contracts/publicacion.md:
   - `on: push: branches: [main]`, `pull_request` hacia `main` con `paths` (`deploy/**`, `compose.yaml`, `.grype.yaml`, `.github/workflows/cd.yml`) y `workflow_dispatch`; nombre del job y del check: `5 · imágenes` (no obligatorio, D-31 no cambia);
   - `concurrency: { group: cd, cancel-in-progress: false }`, `permissions: contents: read`;
   - el job con `environment: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'publicacion' || '' }}` (si actionlint lo rechaza, dos jobs con la misma revisión y la publicación en un `if`);
@@ -126,14 +126,14 @@ description: "Tareas de B00-H08: Publicación en Docker Hub y despliegue en el e
 
 **Independent Test**: con una imagen de prueba sobre una base vulnerable, la revisión falla y el resumen dice la imagen, el paquete y la versión corregida.
 
-- [ ] T011 [US2] Prueba primero, en el *scratchpad* con el binario de Grype 0.120.1: revisar una imagen de prueba construida sobre una base antigua con una alta o crítica corregida (por ejemplo, un `alpine` viejo fijado por *digest*). Con `excepciones.sh` y `resumen.sh` (B00-H07), comprobar que el resumen la pone en «Bloquean» con la imagen, el paquete, la instalada y la corregida, y que el código es 1. Anotarlo en la evidencia.
-- [ ] T012 [US2] Crear `deploy/publicacion/revisar.sh <commit>`:
+- [X] T011 [US2] Prueba primero, en el *scratchpad* con el binario de Grype 0.120.1: revisar una imagen de prueba construida sobre una base antigua con una alta o crítica corregida (por ejemplo, un `alpine` viejo fijado por *digest*). Con `excepciones.sh` y `resumen.sh` (B00-H07), comprobar que el resumen la pone en «Bloquean» con la imagen, el paquete, la instalada y la corregida, y que el código es 1. Anotarlo en la evidencia.
+- [X] T012 [US2] Crear `deploy/publicacion/revisar.sh <commit>`:
   - lista las 6 imágenes `mdd/<componente>:<commit12>` y las de terceros de `deploy/equipo/compose.demo.yml` (las `image:` con *digest*, leídas con `yq`, incluido el perfil `tunel`);
   - corre `excepciones.sh .grype.yaml` y Grype (`docker:<imagen>` o `registry:<ref>` para las de terceros) con `--show-suppressed -o table -o json=<nombre>.json`;
   - corre `resumen.sh` y termina con su código o con 1 si Grype falla (FR-013 de B00-H07).
 
   Agregar el paso «Revisión de las imágenes» a `cd.yml`, antes del inicio de sesión, con `download-grype` v7.4.2 y `grype-version: v0.120.1`, y el resumen en `$GITHUB_STEP_SUMMARY`.
-- [ ] T013 [US2] Comprobar en local `revisar.sh` sobre las 7 imágenes de T007 y las de terceros: sin hallazgos que bloquean (o, si los hay, actualizar la base o registrar la excepción según D-54, y anotarlo). Tiempo de la revisión en la evidencia.
+- [X] T013 [US2] Comprobar en local `revisar.sh` sobre las 7 imágenes de T007 y las de terceros: sin hallazgos que bloquean (o, si los hay, actualizar la base o registrar la excepción según D-54, y anotarlo). Tiempo de la revisión en la evidencia.
 
 **Checkpoint**: solo se publica lo que pasó Grype.
 
@@ -145,7 +145,7 @@ description: "Tareas de B00-H08: Publicación en Docker Hub y despliegue en el e
 
 **Independent Test**: `deploy/equipo/probar_equipo.sh` publica la versión A en un registro local, prepara un equipo temporal y corre `actualizar.sh`: todo sano, humo en verde y `success` en la API simulada.
 
-- [ ] T014 [P] [US3] Crear `deploy/equipo/github_simulado.py`: un servidor HTTP mínimo con la biblioteca estándar de Python, que acepta `POST /repos/<dueño>/<repo>/deployments` (devuelve un `id`) y `POST …/deployments/<id>/statuses`, exige el encabezado `Authorization: Bearer <token de prueba>` y guarda cada petición como una línea JSON en un archivo. Sin dependencias externas.
+- [X] T014 [P] [US3] Crear `deploy/equipo/github_simulado.py`: un servidor HTTP mínimo con la biblioteca estándar de Python, que acepta `POST /repos/<dueño>/<repo>/deployments` (devuelve un `id`) y `POST …/deployments/<id>/statuses`, exige el encabezado `Authorization: Bearer <token de prueba>` y guarda cada petición como una línea JSON en un archivo. Sin dependencias externas.
 - [ ] T015 [US3] Prueba primero: crear `deploy/equipo/probar_equipo.sh` (research §12). Con el patrón `verificar`:
   0. con el registro vacío (antes de publicar nada), `actualizar.sh` termina con 0, registra «sin versión publicada» y la API simulada no recibe nada (M5);
   1. levanta `registry:2` en `localhost:5000` y `github_simulado.py`;
@@ -161,7 +161,7 @@ description: "Tareas de B00-H08: Publicación en Docker Hub y despliegue en el e
   6. llave persistente (SC-007, FR-012, M4): inicia sesión con `autor.prueba` por el proxy, corre `docker compose -p mdd restart identidad`, espera a que quede sano y comprueba que `GET /api/usuarios/sesion` con el **mismo** token da 200.
 
   Al final baja todo (`docker compose -p mdd down -v`, el registro y el simulador). Comprobar que falla mientras no existen `actualizar.sh` y `preparar.sh`.
-- [ ] T016 [US3] Crear `deploy/equipo/probar_humo.sh` (contracts/equipo.md): los 4 pasos con `curl --resolve "$DIRECCION:443:127.0.0.1"` (y `-k` solo si `DIRECCION` termina en `.localhost`), usando `DEMO_USUARIO`, `DEMO_CLAVE` y `MDD_USUARIO_PRUEBA_CLAVE` del `.env`; no imprime credenciales ni el token.
+- [X] T016 [US3] Crear `deploy/equipo/probar_humo.sh` (contracts/equipo.md): los 4 pasos con `curl --resolve "$DIRECCION:443:127.0.0.1"` (y `-k` solo si `DIRECCION` termina en `.localhost`), usando `DEMO_USUARIO`, `DEMO_CLAVE` y `MDD_USUARIO_PRUEBA_CLAVE` del `.env`; no imprime credenciales ni el token.
 - [ ] T017 [US3] Reescribir `deploy/desplegar.sh` según contracts/equipo.md: `desplegar.sh <carpeta de la versión>`:
   - mueve `anterior` y `actual`;
   - escribe `ETIQUETA` en `.env`;
