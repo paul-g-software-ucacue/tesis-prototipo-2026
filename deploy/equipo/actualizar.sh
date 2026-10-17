@@ -71,6 +71,9 @@ codigo=$( { [[ -z $token_lectura ]] || printf 'header = "Authorization: Bearer %
 if [[ $codigo == 404 ]]; then
     echo "Sin versión publicada todavía en $repositorio:despliegue-main."
     exit 0
+elif [[ $codigo == 401 || $codigo == 403 ]]; then
+    echo "El registro negó el acceso a $repositorio ($codigo): revisar que el repositorio exista con ese nombre y que DOCKERHUB_TOKEN (solo lectura) sea de $usuario_registro. Sigo con la versión actual."
+    exit 0
 elif [[ $codigo != 200 ]]; then
     echo "El registro respondió $codigo; sigo con la versión actual y reintento en la próxima consulta."
     exit 0
