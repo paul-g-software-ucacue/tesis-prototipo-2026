@@ -56,6 +56,9 @@ Registro de las comprobaciones de los tres escenarios de la historia (issue #43)
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Equipo simulado (T030) | confirmada | `deploy/equipo/probar_equipo.sh`: pasos 0 a 11 en `OK`. La prueba de humo inicia sesión con `docente.demo` y comprueba que `autor.prueba` no entra; la llave persistente y el sitio del túnel se prueban con `docente.demo`; memoria 1 374 MiB; vuelta atrás en 149 s. Paso 11: `claves-demo` tiene una contraseña por usuario de `usuarios-demo.yaml` y, si falta una, `preparar.sh` la agrega sin cambiar las demás. | 2026-10-17 |
+| SELinux y el montaje de `claves-demo` (T030) | corregido | La primera corrida falló en los pasos 1, 4, 6 y 7 porque `docente.demo` no entraba. Causa, comprobada con un contenedor de prueba: Compose ignora `selinux: Z` en la sintaxis larga del montaje (la etiqueta quedó `user_home_t` y el uid 10001 recibió «Permission denied»). Se volvió a la sintaxis corta `:ro,Z`, como `jwt.pem`. Para que un `claves-demo` que falta no se convierta en una carpeta, `desplegar.sh` revisa con `docker compose config --format json` que existan los archivos montados y, si no, no levanta la versión y vuelve atrás. | 2026-10-17 |
+| Herramientas (T032) | confirmada | ShellCheck sin hallazgos en `probar_autenticacion.sh`, `desplegar.sh`, `preparar.sh`, `probar_humo.sh` y `probar_equipo.sh`. Gitleaks 8.30.1 (`--text HEAD`, todo el historial) sin hallazgos, después de permitir las rutas `/run/mdd/`: la regla de claves tomaba `MDD_USUARIOS_DEMO_CLAVES: /run/mdd/claves-demo` por una contraseña. `npm run verificar:ruptura`: los 4 pasos en `OK`. | 2026-10-17 |
 
 ## Notas
 

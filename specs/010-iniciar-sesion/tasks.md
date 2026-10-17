@@ -142,7 +142,7 @@ description: "Tareas de F05-H01: Iniciar sesión"
 
 ## Phase 6: Equipo de demostración y cierre
 
-- [ ] T030 Cambiar el equipo de demostración (D-57, D-59):
+- [X] T030 Cambiar el equipo de demostración (D-57, D-59):
   - `deploy/equipo/compose.demo.yml`: `identidad` con `MDD_USUARIO_PRUEBA_HABILITADO: "false"`, sin `MDD_USUARIO_PRUEBA_CLAVE`, y con `MDD_USUARIOS_DEMO_CLAVES: /run/mdd/claves-demo` y el archivo `${MDD_SECRETOS:-/opt/mdd/secretos}/claves-demo` montado `:ro,Z`;
   - `deploy/equipo/preparar.sh`: crea `secretos/claves-demo` si no existe y **agrega** una línea `usuario=clave` (`openssl rand -hex 16`) por cada usuario de `usuarios-demo.yaml` (leído con `yq` o `grep`) que todavía no la tenga, sin tocar las existentes ni mostrar las claves; dueño 10001, grupo `mdd`, modo **0440** (0444 solo con `--no-interactivo`);
   - `deploy/equipo/probar_humo.sh`: los pasos 3 y 4 con `docente.demo` y su clave de `secretos/claves-demo`, y un paso nuevo en el que `autor.prueba` recibe 401;
