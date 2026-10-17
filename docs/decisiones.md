@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-55 · ADR-020.
+- **Siguiente número libre:** D-59 · ADR-020.
 
 ## Índice
 
@@ -49,6 +49,10 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-53 | 2026-10-15 | Node 24 LTS en la CI y en la imagen; se cierra el PR #73 | Aceptada | PR #73 de Dependabot, `.github/dependabot.yml` |
 | ADR-019 | 2026-10-15 | Base del frontend: cliente generado, errores, sesión en memoria y mismo origen | Aceptada | ADR-008 (detalle del frontend) |
 | D-54 | 2026-10-15 | Excepciones de Grype solo temporales, con motivo y vencimiento | Aceptada | Constitución principio IX (2.1.2), alcance del issue #24 (B00-H07) |
+| D-55 | 2026-10-17 | El despliegue automático va al PC de demostración del autor, por extracción desde Docker Hub | Aceptada | Constitución principio IX y §3 (2.1.3 y 2.1.4), alcance del issue #25 (B00-H08), `cierre-ola.yml` |
+| D-56 | 2026-10-17 | Cada despliegue del equipo de demostración se informa a GitHub Deployments | Aceptada | Alcance del issue #25 (B00-H08) |
+| D-57 | 2026-10-17 | El usuario de prueba `autor.prueba` se habilita en el equipo de demostración, con clave propia | Aceptada | Alcance de los issues #25 (B00-H08) y #43 (F05-H01), D-37 |
+| D-58 | 2026-10-17 | Los archivos del despliegue viajan en una imagen más, el paquete de despliegue | Aceptada | Alcance del issue #25 (B00-H08: «las 6 imágenes») |
 
 ---
 
@@ -794,6 +798,80 @@ Hay que poder probar el flujo completo de creación del distributivo sin debilit
 **Alternativas.** Excepción sin vencimiento, revisada al cerrar cada ola; ninguna excepción, con el check fallando hasta corregir la dependencia.
 
 **Consecuencias.** El plan de B00-H07 define dónde viven las excepciones y cómo se comprueba el vencimiento. Renovar una excepción vencida es un pull request nuevo con su motivo.
+
+---
+
+## D-55. El despliegue automático va al PC de demostración del autor, por extracción desde Docker Hub
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-17 · **Decidido por:** autor de la tesis
+- **Origen:** preparación de B00-H08 (issue #25): el crédito de DigitalOcean del GitHub Student Developer Pack, con el que se iba a pagar el VPS, terminó el 31/07/2026
+- **Modifica a:** principio IX de la constitución, *Operación*, y la fila «Repositorio y CI/CD» de §3 (2.1.2 → 2.1.3); la fila «Infraestructura» de §3, para aclarar que el equipo de demostración puede usar otra distribución (2.1.3 → 2.1.4, análisis de B00-H08); alcance del issue #25 (B00-H08); `cierre-ola.yml`, que suponía una URL pública
+
+**Decisión.**
+1. **Destino.** El despliegue automático va al PC del autor, que hace de equipo de demostración. La constitución ya decía que «la demostración corre en un equipo del autor del mismo tamaño» (§3). El PC tiene más recursos que los 4 núcleos y 8 GiB de D-36, pero los límites de memoria por contenedor (R-19) se mantienen, y el presupuesto de la demostración sigue siendo el de D-36.
+2. **Despliegue por extracción.** La CI no entra al equipo. Publica las imágenes en Docker Hub (etapa 5, sin cambios) y un servicio del propio equipo consulta Docker Hub cada pocos minutos; si hay una versión nueva de `main`, corre `deploy/desplegar.sh`, con *healthchecks* y vuelta atrás. El equipo baja las imágenes con un token de solo lectura.
+3. **Acceso restringido.** Caddy sigue pidiendo usuario y contraseña antes de mostrar el MDD. El acceso desde fuera de la red del autor es opcional: si hace falta, un túnel de salida (por ejemplo, Cloudflare Tunnel) lo publica por HTTPS sin abrir puertos.
+4. **Cierre de ola.** ZAP y k6 dejan de apuntar a una URL pública: corren contra el sistema que levanta el propio runner, como `perfil-consolidado`. El plan de B00-H08 detalla cómo.
+5. **Portabilidad.** Nada del despliegue depende del PC: el mismo `compose.demo.yml`, `desplegar.sh` y el servicio de extracción funcionan igual en un VPS o en la VM del IST, si más adelante hay uno.
+
+**Por qué.** Sin el crédito, un VPS de 4 vCPU y 8 GiB cuesta unos 6 a 7 € al mes (Hetzner CX33), y las opciones gratuitas no alcanzan: Oracle Always Free redujo su cupo ARM a 2 OCPU y 12 GB y exige imágenes multiarquitectura, y el crédito de Azure for Students se agota en pocos meses con una VM de ese tamaño. El destino real del sistema es la VM del IST, a la que el pipeline no despliega (§3); el VPS era una comodidad para la demostración. La extracción evita dar a GitHub acceso de red o SSH a un equipo personal.
+
+**Alternativas.** Un VPS de pago (Hetzner CX33): no cambia ninguna decisión, pero tiene un costo mensual. Oracle Always Free: cupo menor que D-36 y arquitectura ARM. Despliegue por SSH desde la CI al PC: obliga a exponer el equipo o a usar un runner propio.
+
+**Consecuencias.**
+- La demostración está disponible mientras el PC del autor está encendido.
+- El entorno de GitHub del despliegue solo guarda las credenciales de publicación en Docker Hub; no hay llave SSH ni dirección del equipo en GitHub.
+- B00-H08 ajusta sus escenarios: «Despliegue sano» y «Vuelta atrás» se cumplen en el PC; «Acceso restringido», con Caddy y, si se usa, con el túnel.
+- `cierre-ola.yml` deja de depender de `vars.DOMINIO`.
+- El PC del autor usa Fedora con SELinux; el despliegue no debe depender de la distribución, porque la VM del IST usa Ubuntu Server (§3).
+
+---
+
+## D-56. Cada despliegue del equipo de demostración se informa a GitHub Deployments
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-17 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q1 de la especificación de B00-H08 (`specs/009-publicacion-despliegue/spec.md`)
+- **Modifica a:** alcance del issue #25 (B00-H08); completa D-55 (la CI ya no ve el resultado del despliegue)
+
+**Decisión.** El servicio de despliegue del equipo de demostración informa cada intento a GitHub como un *deployment* del entorno del despliegue, con el commit, el estado (en curso, sano o fallido) y un resumen (vuelta atrás, error de Docker Hub, etc.). Usa un token de GitHub de grano fino, guardado solo en el equipo, con permiso únicamente sobre los *deployments* de este repositorio. Si GitHub no responde, el despliegue sigue igual y el informe queda en el registro local del equipo.
+
+**Por qué.** Con D-55, el resultado del despliegue nace en el equipo. En la pestaña *Deployments* del repositorio queda, junto a cada commit, la evidencia de que se desplegó solo o de que volvió atrás, que es lo que piden los escenarios «Despliegue sano» y «Vuelta atrás».
+
+**Alternativas.** Solo el registro del equipo (hay que entrar al equipo para saber si falló); el registro del equipo y una notificación de escritorio (sin evidencia en GitHub).
+
+**Consecuencias.** El equipo guarda dos credenciales: Docker Hub de solo lectura y este token. GitHub sigue sin credenciales ni direcciones del equipo (D-55): la conexión siempre sale del equipo.
+
+---
+
+## D-57. El usuario de prueba `autor.prueba` se habilita en el equipo de demostración, con clave propia
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-17 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q2 de la especificación de B00-H08 (`specs/009-publicacion-despliegue/spec.md`)
+- **Modifica a:** alcance del issue #25 (B00-H08); amplía el uso del usuario de prueba de D-37, que B00-H03 limitó a local y a la CI (`specs/003-autenticacion-jwt/research.md` §8)
+
+**Decisión.** En el equipo de demostración, `autor.prueba` se habilita hasta que F05-H01 traiga los usuarios reales de la demo. Su contraseña se genera en el equipo, nunca es la de `.env.ejemplo` y vive solo ahí, como las demás credenciales del equipo. El usuario sigue detrás del acceso restringido del proxy.
+
+**Por qué.** Sin un usuario, la demostración solo muestra la pantalla de inicio de sesión y no se puede comprobar de punta a punta, ni recorrer la SPA ni escanear la API con un token en el cierre de ola.
+
+**Alternativas.** No habilitarlo hasta F05-H01: la demostración queda en la pantalla de inicio de sesión.
+
+**Consecuencias.** F05-H01 lo deshabilita en el equipo de demostración cuando existan los usuarios reales.
+
+---
+
+## D-58. Los archivos del despliegue viajan en una imagen más, el paquete de despliegue
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-17 · **Decidido por:** autor de la tesis
+- **Origen:** plan de B00-H08 (`specs/009-publicacion-despliegue/research.md` §5)
+- **Modifica a:** alcance del issue #25 (B00-H08), que habla de publicar «las 6 imágenes»
+
+**Decisión.** Además de las 6 imágenes de los procesos, el API Gateway y la SPA, cada fusión a `main` publica en el mismo repositorio privado una imagen `FROM scratch` con los archivos del despliegue de ese commit (`compose.demo.yml`, `Caddyfile`, `01-esquemas.sh`, `desplegar.sh`, `probar_humo.sh` y `VERSION`), con la etiqueta `despliegue-<commit>`. La etiqueta móvil `despliegue-main` se mueve al final, cuando las 7 imágenes del commit ya están publicadas, y es lo único que consulta el equipo de demostración.
+
+**Por qué.** Un cambio en el despliegue viaja con las imágenes del mismo commit, y la vuelta atrás también vuelve a los archivos anteriores. El equipo usa la misma credencial de solo lectura de Docker Hub y no necesita acceso al repositorio privado de GitHub (D-55). La imagen no tiene paquetes del sistema, así que no agrega nada que revisar con Grype.
+
+**Alternativas.** Clonar el repositorio en el equipo (necesita un token con lectura de código); instalar los archivos a mano una vez (un cambio de `compose.demo.yml` obligaría a desplegar a mano y la vuelta atrás no volvería a la configuración anterior); un artefacto OCI con ORAS (otra herramienta en el equipo).
+
+**Consecuencias.** El repositorio tiene 7 etiquetas por commit. «Las 6 imágenes» del issue siguen siendo las que se construyen desde el código y Grype revisa.
 
 ---
 

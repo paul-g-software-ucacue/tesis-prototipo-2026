@@ -26,10 +26,10 @@ import org.slf4j.LoggerFactory;
  * La llave RSA con la que Usuarios firma los tokens (ADR-014).
  *
  * <p>Si hay una ruta configurada, carga la llave privada de ese archivo PEM (PKCS#8): es el caso
- * del VPS (B00-H08). Si no, genera una llave efímera de 2048 bits al arrancar y lo avisa en el
- * registro: es el caso de local y de la CI, y reiniciar el proceso invalida los tokens emitidos. El
- * {@code kid} es la huella SHA-256 de la llave pública. La llave privada nunca sale de esta clase
- * hacia un registro ni hacia el JWKS.
+ * del equipo de demostración (B00-H08, D-55). Si no, genera una llave efímera de 2048 bits al
+ * arrancar y lo avisa en el registro: es el caso de local y de la CI, y reiniciar el proceso
+ * invalida los tokens emitidos. El {@code kid} es la huella SHA-256 de la llave pública. La llave
+ * privada nunca sale de esta clase hacia un registro ni hacia el JWKS.
  */
 public final class LlavesDeFirma {
 

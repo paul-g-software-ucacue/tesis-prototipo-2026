@@ -1,7 +1,14 @@
-# Proxy del VPS: HTTPS automático y acceso restringido (contrato de confidencialidad).
-# La SPA pide usuario y contraseña; /api queda protegida por el JWT del MDD,
-# porque el cliente usa la cabecera Authorization para el token.
-{$DOMINIO} {
+# Proxy del equipo de demostración (B00-H08, D-55; specs/009-publicacion-despliegue/contracts/equipo.md).
+# Acceso restringido por el contrato de confidencialidad: la SPA pide usuario y contraseña; /api queda
+# protegida por el JWT del MDD (ADR-014), porque el cliente usa la cabecera Authorization para el token.
+#
+# Dos entradas con el mismo comportamiento:
+#   {$DIRECCION}  HTTPS con la CA interna de Caddy, publicado solo en 127.0.0.1:443. Por defecto
+#                 mdd.localhost: el navegador lo resuelve a 127.0.0.1 y HSTS queda limitado a ese nombre.
+#   http://:8081  entrada del túnel (perfil «tunel»), solo dentro de la red de Compose; el HTTPS público
+#                 lo da Cloudflare.
+
+(mdd) {
 	@spa not path /api/*
 	basic_auth @spa {
 		{$DEMO_USUARIO} {$DEMO_CLAVE_HASH}
@@ -20,4 +27,13 @@
 		Referrer-Policy no-referrer
 		-Server
 	}
+}
+
+{$DIRECCION:mdd.localhost} {
+	tls internal
+	import mdd
+}
+
+http://:8081 {
+	import mdd
 }

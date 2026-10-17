@@ -9,4 +9,183 @@
 #    reason: "Por qué no se puede actualizar todavía"
 #    desde: 2026-10-15
 #    vence: 2026-11-14
-ignore: []
+ignore:
+  # PostgreSQL y Caddy: zlib de Alpine
+  - vulnerability: CVE-2026-85091
+    package: { name: zlib, version: "1.3.2-r0", type: apk }
+    reason: "Las imágenes oficiales de PostgreSQL 18.6 y Caddy 2.11.7 traen zlib 1.3.2-r0 de Alpine; el arreglo exige que las reconstruyan. Las imágenes propias del MDD ya actualizan zlib (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  # Caddy: Go y x/net del binario
+  - vulnerability: GO-2026-6603
+    package: { name: golang.org/x/net, version: "v0.59.0", type: go-module, location: "/usr/bin/caddy" }
+    reason: "Caddy 2.11.7, la última con al menos dos semanas, está compilado con Go 1.26.8 y x/net 0.59.0; el arreglo exige una versión nueva de Caddy compilada con Go 1.26.9 y x/net 0.60.0. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1 (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6610
+    package: { name: golang.org/x/net, version: "v0.59.0", type: go-module, location: "/usr/bin/caddy" }
+    reason: "Caddy 2.11.7, la última con al menos dos semanas, está compilado con Go 1.26.8 y x/net 0.59.0; el arreglo exige una versión nueva de Caddy compilada con Go 1.26.9 y x/net 0.60.0. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1 (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6611
+    package: { name: golang.org/x/net, version: "v0.59.0", type: go-module, location: "/usr/bin/caddy" }
+    reason: "Caddy 2.11.7, la última con al menos dos semanas, está compilado con Go 1.26.8 y x/net 0.59.0; el arreglo exige una versión nueva de Caddy compilada con Go 1.26.9 y x/net 0.60.0. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1 (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6612
+    package: { name: golang.org/x/net, version: "v0.59.0", type: go-module, location: "/usr/bin/caddy" }
+    reason: "Caddy 2.11.7, la última con al menos dos semanas, está compilado con Go 1.26.8 y x/net 0.59.0; el arreglo exige una versión nueva de Caddy compilada con Go 1.26.9 y x/net 0.60.0. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1 (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6617
+    package: { name: golang.org/x/net, version: "v0.59.0", type: go-module, location: "/usr/bin/caddy" }
+    reason: "Caddy 2.11.7, la última con al menos dos semanas, está compilado con Go 1.26.8 y x/net 0.59.0; el arreglo exige una versión nueva de Caddy compilada con Go 1.26.9 y x/net 0.60.0. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1 (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6603
+    package: { name: stdlib, version: "go1.26.8", type: go-module, location: "/usr/bin/caddy" }
+    reason: "Caddy 2.11.7, la última con al menos dos semanas, está compilado con Go 1.26.8 y x/net 0.59.0; el arreglo exige una versión nueva de Caddy compilada con Go 1.26.9 y x/net 0.60.0. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1 (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6604
+    package: { name: stdlib, version: "go1.26.8", type: go-module, location: "/usr/bin/caddy" }
+    reason: "Caddy 2.11.7, la última con al menos dos semanas, está compilado con Go 1.26.8 y x/net 0.59.0; el arreglo exige una versión nueva de Caddy compilada con Go 1.26.9 y x/net 0.60.0. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1 (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6605
+    package: { name: stdlib, version: "go1.26.8", type: go-module, location: "/usr/bin/caddy" }
+    reason: "Caddy 2.11.7, la última con al menos dos semanas, está compilado con Go 1.26.8 y x/net 0.59.0; el arreglo exige una versión nueva de Caddy compilada con Go 1.26.9 y x/net 0.60.0. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1 (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6607
+    package: { name: stdlib, version: "go1.26.8", type: go-module, location: "/usr/bin/caddy" }
+    reason: "Caddy 2.11.7, la última con al menos dos semanas, está compilado con Go 1.26.8 y x/net 0.59.0; el arreglo exige una versión nueva de Caddy compilada con Go 1.26.9 y x/net 0.60.0. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1 (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6608
+    package: { name: stdlib, version: "go1.26.8", type: go-module, location: "/usr/bin/caddy" }
+    reason: "Caddy 2.11.7, la última con al menos dos semanas, está compilado con Go 1.26.8 y x/net 0.59.0; el arreglo exige una versión nueva de Caddy compilada con Go 1.26.9 y x/net 0.60.0. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1 (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6609
+    package: { name: stdlib, version: "go1.26.8", type: go-module, location: "/usr/bin/caddy" }
+    reason: "Caddy 2.11.7, la última con al menos dos semanas, está compilado con Go 1.26.8 y x/net 0.59.0; el arreglo exige una versión nueva de Caddy compilada con Go 1.26.9 y x/net 0.60.0. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1 (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6610
+    package: { name: stdlib, version: "go1.26.8", type: go-module, location: "/usr/bin/caddy" }
+    reason: "Caddy 2.11.7, la última con al menos dos semanas, está compilado con Go 1.26.8 y x/net 0.59.0; el arreglo exige una versión nueva de Caddy compilada con Go 1.26.9 y x/net 0.60.0. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1 (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6611
+    package: { name: stdlib, version: "go1.26.8", type: go-module, location: "/usr/bin/caddy" }
+    reason: "Caddy 2.11.7, la última con al menos dos semanas, está compilado con Go 1.26.8 y x/net 0.59.0; el arreglo exige una versión nueva de Caddy compilada con Go 1.26.9 y x/net 0.60.0. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1 (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6612
+    package: { name: stdlib, version: "go1.26.8", type: go-module, location: "/usr/bin/caddy" }
+    reason: "Caddy 2.11.7, la última con al menos dos semanas, está compilado con Go 1.26.8 y x/net 0.59.0; el arreglo exige una versión nueva de Caddy compilada con Go 1.26.9 y x/net 0.60.0. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1 (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6613
+    package: { name: stdlib, version: "go1.26.8", type: go-module, location: "/usr/bin/caddy" }
+    reason: "Caddy 2.11.7, la última con al menos dos semanas, está compilado con Go 1.26.8 y x/net 0.59.0; el arreglo exige una versión nueva de Caddy compilada con Go 1.26.9 y x/net 0.60.0. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1 (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6617
+    package: { name: stdlib, version: "go1.26.8", type: go-module, location: "/usr/bin/caddy" }
+    reason: "Caddy 2.11.7, la última con al menos dos semanas, está compilado con Go 1.26.8 y x/net 0.59.0; el arreglo exige una versión nueva de Caddy compilada con Go 1.26.9 y x/net 0.60.0. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1 (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  # cloudflared (perfil tunel): Go y x/net del binario
+  - vulnerability: GO-2026-6603
+    package: { name: golang.org/x/net, version: "v0.58.0", type: go-module, location: "/usr/local/bin/cloudflared" }
+    reason: "cloudflared 2026.9.3 está compilado con Go 1.26.8 y x/net 0.58.0; el arreglo exige una versión nueva de cloudflared. Solo corre en el perfil opcional «tunel», que no se activa mientras dure la excepción (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6610
+    package: { name: golang.org/x/net, version: "v0.58.0", type: go-module, location: "/usr/local/bin/cloudflared" }
+    reason: "cloudflared 2026.9.3 está compilado con Go 1.26.8 y x/net 0.58.0; el arreglo exige una versión nueva de cloudflared. Solo corre en el perfil opcional «tunel», que no se activa mientras dure la excepción (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6611
+    package: { name: golang.org/x/net, version: "v0.58.0", type: go-module, location: "/usr/local/bin/cloudflared" }
+    reason: "cloudflared 2026.9.3 está compilado con Go 1.26.8 y x/net 0.58.0; el arreglo exige una versión nueva de cloudflared. Solo corre en el perfil opcional «tunel», que no se activa mientras dure la excepción (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6612
+    package: { name: golang.org/x/net, version: "v0.58.0", type: go-module, location: "/usr/local/bin/cloudflared" }
+    reason: "cloudflared 2026.9.3 está compilado con Go 1.26.8 y x/net 0.58.0; el arreglo exige una versión nueva de cloudflared. Solo corre en el perfil opcional «tunel», que no se activa mientras dure la excepción (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6617
+    package: { name: golang.org/x/net, version: "v0.58.0", type: go-module, location: "/usr/local/bin/cloudflared" }
+    reason: "cloudflared 2026.9.3 está compilado con Go 1.26.8 y x/net 0.58.0; el arreglo exige una versión nueva de cloudflared. Solo corre en el perfil opcional «tunel», que no se activa mientras dure la excepción (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6603
+    package: { name: stdlib, version: "go1.26.8", type: go-module, location: "/usr/local/bin/cloudflared" }
+    reason: "cloudflared 2026.9.3 está compilado con Go 1.26.8 y x/net 0.58.0; el arreglo exige una versión nueva de cloudflared. Solo corre en el perfil opcional «tunel», que no se activa mientras dure la excepción (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6605
+    package: { name: stdlib, version: "go1.26.8", type: go-module, location: "/usr/local/bin/cloudflared" }
+    reason: "cloudflared 2026.9.3 está compilado con Go 1.26.8 y x/net 0.58.0; el arreglo exige una versión nueva de cloudflared. Solo corre en el perfil opcional «tunel», que no se activa mientras dure la excepción (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6607
+    package: { name: stdlib, version: "go1.26.8", type: go-module, location: "/usr/local/bin/cloudflared" }
+    reason: "cloudflared 2026.9.3 está compilado con Go 1.26.8 y x/net 0.58.0; el arreglo exige una versión nueva de cloudflared. Solo corre en el perfil opcional «tunel», que no se activa mientras dure la excepción (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6608
+    package: { name: stdlib, version: "go1.26.8", type: go-module, location: "/usr/local/bin/cloudflared" }
+    reason: "cloudflared 2026.9.3 está compilado con Go 1.26.8 y x/net 0.58.0; el arreglo exige una versión nueva de cloudflared. Solo corre en el perfil opcional «tunel», que no se activa mientras dure la excepción (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6610
+    package: { name: stdlib, version: "go1.26.8", type: go-module, location: "/usr/local/bin/cloudflared" }
+    reason: "cloudflared 2026.9.3 está compilado con Go 1.26.8 y x/net 0.58.0; el arreglo exige una versión nueva de cloudflared. Solo corre en el perfil opcional «tunel», que no se activa mientras dure la excepción (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6611
+    package: { name: stdlib, version: "go1.26.8", type: go-module, location: "/usr/local/bin/cloudflared" }
+    reason: "cloudflared 2026.9.3 está compilado con Go 1.26.8 y x/net 0.58.0; el arreglo exige una versión nueva de cloudflared. Solo corre en el perfil opcional «tunel», que no se activa mientras dure la excepción (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6612
+    package: { name: stdlib, version: "go1.26.8", type: go-module, location: "/usr/local/bin/cloudflared" }
+    reason: "cloudflared 2026.9.3 está compilado con Go 1.26.8 y x/net 0.58.0; el arreglo exige una versión nueva de cloudflared. Solo corre en el perfil opcional «tunel», que no se activa mientras dure la excepción (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6613
+    package: { name: stdlib, version: "go1.26.8", type: go-module, location: "/usr/local/bin/cloudflared" }
+    reason: "cloudflared 2026.9.3 está compilado con Go 1.26.8 y x/net 0.58.0; el arreglo exige una versión nueva de cloudflared. Solo corre en el perfil opcional «tunel», que no se activa mientras dure la excepción (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: GO-2026-6617
+    package: { name: stdlib, version: "go1.26.8", type: go-module, location: "/usr/local/bin/cloudflared" }
+    reason: "cloudflared 2026.9.3 está compilado con Go 1.26.8 y x/net 0.58.0; el arreglo exige una versión nueva de cloudflared. Solo corre en el perfil opcional «tunel», que no se activa mientras dure la excepción (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  # cloudflared (perfil tunel): OpenSSL de Debian
+  - vulnerability: CVE-2026-54873
+    package: { name: libssl3t64, version: "3.5.7-1~deb13u2", type: deb, location: "/var/lib/dpkg/status.d/libssl3t64" }
+    reason: "La imagen oficial de cloudflared 2026.9.3 trae libssl3t64 3.5.7-1~deb13u2 de Debian; el arreglo exige que la reconstruyan. Solo en el perfil opcional «tunel» (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: CVE-2026-72897
+    package: { name: libssl3t64, version: "3.5.7-1~deb13u2", type: deb, location: "/var/lib/dpkg/status.d/libssl3t64" }
+    reason: "La imagen oficial de cloudflared 2026.9.3 trae libssl3t64 3.5.7-1~deb13u2 de Debian; el arreglo exige que la reconstruyan. Solo en el perfil opcional «tunel» (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: CVE-2026-84782
+    package: { name: libssl3t64, version: "3.5.7-1~deb13u2", type: deb, location: "/var/lib/dpkg/status.d/libssl3t64" }
+    reason: "La imagen oficial de cloudflared 2026.9.3 trae libssl3t64 3.5.7-1~deb13u2 de Debian; el arreglo exige que la reconstruyan. Solo en el perfil opcional «tunel» (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16
+  - vulnerability: CVE-2026-84784
+    package: { name: libssl3t64, version: "3.5.7-1~deb13u2", type: deb, location: "/var/lib/dpkg/status.d/libssl3t64" }
+    reason: "La imagen oficial de cloudflared 2026.9.3 trae libssl3t64 3.5.7-1~deb13u2 de Debian; el arreglo exige que la reconstruyan. Solo en el perfil opcional «tunel» (B00-H08)."
+    desde: 2026-10-17
+    vence: 2026-11-16

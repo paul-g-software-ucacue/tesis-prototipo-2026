@@ -1,0 +1,11 @@
+# Consulta cada 5 minutos, y al arrancar el equipo si se perdió alguna (Persistent). B00-H08.
+[Unit]
+Description=MDD: consultar Docker Hub cada 5 minutos
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

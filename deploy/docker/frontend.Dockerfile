@@ -13,6 +13,11 @@ COPY contratos/ /app/contratos/
 RUN npm run build
 
 FROM nginxinc/nginx-unprivileged:stable-alpine
+# zlib 1.3.2-r0 de la base tiene una vulnerabilidad alta corregida en 1.3.2-r1 (Grype, B00-H08).
+# Se actualiza como root y se vuelve al usuario sin privilegios de la imagen (101).
+USER root
+RUN apk upgrade --no-cache zlib
+USER 101
 # El API Gateway del perfil consolidado; se cambia con la variable (contracts/perfil.md).
 ENV MDD_URI_GATEWAY=http://gateway:8080
 # El DNS del contenedor queda en NGINX_LOCAL_RESOLVERS, para resolver el API Gateway en cada petición.

@@ -1,0 +1,93 @@
+# Evidencia: B00-H08
+
+Registro de las comprobaciones de los cinco escenarios de la historia (issue #25), del cierre de ola sin URL pública (US6) y de los informes a GitHub Deployments (D-56). Cada fila dice el comando, la versión y la salida resumida, o enlaza al run de GitHub Actions. Todo con valores ficticios, salvo la comprobación final en el PC del autor, cuyos secretos nunca salen del equipo.
+
+## Entorno
+
+| Pieza | Versión | Notas |
+|---|---|---|
+| Sistema | Fedora Linux 44 (SELinux en modo *enforcing*) | Las pruebas usan carpetas del *scratchpad*; `/opt/mdd` y systemd no se tocan hasta T032. |
+| Docker Engine y buildx | 29.8.2 y 0.38.0 (Fedora) | Con `sg docker -c '…'`. |
+| PostgreSQL | `postgres:18.6-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873` | La misma versión del perfil consolidado. |
+| Caddy | `caddy:2.11.7-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f` | 2.11.7 salió el 2026-10-03 (14 días). |
+| cloudflared | `cloudflare/cloudflared:2026.9.3@sha256:072c067d25ccbe61d46e18f0d0723255f2bb5304f7317caa95b27031520ff92c` | 2026-09-24; las 2026.10.x tienen menos de dos semanas. Solo en el perfil `tunel`. |
+| Registro de pruebas | `registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373` | Solo en `probar_equipo.sh`. |
+| curl en contenedor | `curlimages/curl:8.22.0@sha256:58adaa4e8dca9c988bae2aba4ab3434a0bb2da16bbe3f92dec39ec7785166777` | 2026-09-02; la prueba del sitio del túnel. |
+| busybox | `busybox:1.37@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e` | Etapa previa del paquete (escribe `VERSION`). |
+| `docker/setup-buildx-action` | v4.4.1, `f87e5991a6d7451dcb8d9637bfbc97413f497069` | 2026-09-16. |
+| `docker/login-action` | v4.6.0, `dbcb813823bdd20940b903addbd779551569679f` | 2026-07-29. |
+| Grype | 0.120.1 | La de B00-H07. |
+
+## Escenario 1: publicación
+
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| Construcción (T006, T007) | confirmada | `deploy/publicacion/construir.sh d8bc8828…`: `buildx bake` de los 6 servicios de `compose.yaml` (1 min 23 s con caché) y el paquete; el *label* `org.opencontainers.image.revision` tiene el SHA completo. El paquete extraído con `docker create`/`docker cp` trae `compose.demo.yml`, `Caddyfile`, `01-esquemas.sh`, `desplegar.sh`, `probar_humo.sh` y `VERSION`. Hubo que permitir esos 5 archivos en `.dockerignore`. | 2026-10-17 |
+| `compose.demo.yml` (T003, T007) | confirmada | `docker compose config` con un `.env` ficticio: imágenes `localhost:5000/mdd:<componente>-d8bc8828a281`, PostgreSQL y Caddy por *digest*, `datos` recibe solo `DB_CLAVE_DATOS`, `JAVA_TOOL_OPTIONS` y `SPRING_DATASOURCE_URL`; límites que suman 3 072 MiB; Caddy publica solo `127.0.0.1:443`; `cloudflared` no aparece sin su perfil. | 2026-10-17 |
+| `Caddyfile` (T004) | confirmada | `caddy validate` con Caddy 2.11.7: `Valid configuration` (sitio `{$DIRECCION:mdd.localhost}` con `tls internal` y `http://:8081`, los dos con el fragmento `(mdd)`). | 2026-10-17 |
+| Publicación en un registro local (T008, T009) | confirmada | `registry:2.8.3` en `localhost:5000` y `publicar.sh localhost:5000/mdd d8bc8828…`: las 7 etiquetas `<componente>-d8bc8828a281` y `despliegue-main` con el mismo *digest* que `despliegue-d8bc8828a281` (`sha256:1bcba636…`). La prueba se escribió con `publicar.sh` ya existente, así que no se vio fallar antes. | 2026-10-17 |
+
+## Escenario 2: imagen vulnerable
+
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| Imagen vulnerable de prueba (T011) | confirmada | Una imagen sobre `alpine:3.18.0`: `resumen.sh` la pone en «Bloquean» con `libcrypto3`/`libssl3` 3.1.0-r4 → 3.1.7-r0 (CVE-2024-6119, alta), CVE-2024-5535 y CVE-2022-48174 (críticas), y termina con 1. | 2026-10-17 |
+| Primera revisión de las imágenes reales (T013) | **las 9 bloqueadas** | `revisar.sh` sobre las 6 imágenes y las 3 de terceros. Java: `stdlib go1.27.1` de `/usr/bin/pebble` (supervisor de Canonical de la base `eclipse-temurin:25-jre`, que el proceso no usa), 1 crítica y 8 altas, corregidas en Go 1.27.2. `frontend` y `postgres`: `zlib 1.3.2-r0` (CVE-2026-85091), corregida en 1.3.2-r1. Caddy 2.11.7 y cloudflared 2026.9.3: Go 1.26.8 y `x/net`, críticas y altas. Las bases actuales del registro (Temurin, nginx, PostgreSQL y Caddy) seguían igual el 2026-10-17. | 2026-10-17 |
+| Arreglo de las imágenes propias (T013) | confirmada | `java.Dockerfile` borra `/usr/bin/pebble`; `frontend.Dockerfile` hace `apk upgrade --no-cache zlib` como root y vuelve al usuario 101 (`id`: `uid=101(nginx)`). Las dos imágenes reconstruidas: 0 hallazgos que bloquean. | 2026-10-17 |
+| Excepciones de las imágenes de terceros (T013, D-54) | confirmada, **aprobadas por el autor** | 35 excepciones en `.grype.yaml` (`desde: 2026-10-17`, `vence: 2026-11-16`), generadas desde los informes de Grype: `zlib` 1.3.2-r0 (PostgreSQL y Caddy); Go y `x/net` acotados por versión y por la ruta del binario (`/usr/bin/caddy`, `/usr/local/bin/cloudflared`), para no tapar un `stdlib` vulnerable en otra imagen; `libssl3t64` de cloudflared. `excepciones.sh`: `35 de 35 excepciones vigentes`. Condición del autor: el túnel no se activa mientras duren. | 2026-10-17 |
+| Revisión después del arreglo (T013) | confirmada | `revisar.sh`: `Grype: imágenes (9)`, «Ninguna vulnerabilidad alta o crítica con versión corregida», 36 filas en «Suprimidas» y las altas sin arreglo a la vista; código 0. | 2026-10-17 |
+| En el pull request de la historia (T030) | confirmada | `5 · imágenes` en el [PR #105](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/pull/105) ([run 39057883171](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/39057883171)): construye y revisa las 9 imágenes sin entorno (`environment: ''` funciona en un `pull_request`), sin inicio de sesión ni publicación. | 2026-10-17 |
+| Demostración (T031) | confirmada | [PR #106](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/pull/106), base final de `frontend.Dockerfile` cambiada a `alpine:3.18.0`: `5 · imágenes` falla en «Revisión de las imágenes con Grype» ([run 39059657439](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/39059657439)) con `frontend` en «Bloquean» (`libcrypto3`/`libssl3` 3.1.0-r4, `busybox` 1.36.0-r9: altas y críticas corregidas); `docker/login-action` y «Publicación en Docker Hub» quedan *skipped*; fusión `BLOCKED`. Cerrado sin fusionar y rama borrada. | 2026-10-17 |
+
+## Escenario 3: despliegue sano
+
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| Prueba del ciclo antes de implementar (T015) | confirmada: fallaba | `probar_equipo.sh` sin `preparar.sh` ni `actualizar.sh`: se detiene al preparar el equipo. | 2026-10-17 |
+| Errores encontrados con la prueba (T017, T018) | corregidos | (1) Con `pipefail`, `{ [[ -n $token ]] && printf …; } \| curl` devolvía 1 sin token y el código HTTP salía `404000`. (2) `RAIZ=$RAIZ script` con `RAIZ` de solo lectura: Bash rechaza la asignación y la prueba de humo no corría. (3) La prueba reutilizaba un paquete construido antes de reescribir `desplegar.sh`: ahora siempre corre `construir.sh`. | 2026-10-17 |
+| Ciclo completo en el PC (T021) | confirmada | `deploy/equipo/probar_equipo.sh` (proyecto `mdd-prueba`, puerto 8443, `registry:2.8.3` y la API de GitHub simulada): pasos 0 a 10 en `OK` en 4 min 30 s. 0: sin versión publicada, código 0 y sin informes. 1–4: versión A sana, `actual` → A, *digest* guardado, `in_progress` y `success` para A. 5: sin cambios, sin informes nuevos. | 2026-10-17 |
+| Llave persistente (SC-007, FR-012) | confirmada | Paso 6: el token de `autor.prueba` sigue dando 200 en `GET /api/usuarios/sesion` después de `restart identidad`. | 2026-10-17 |
+| En la CI (T030) | confirmada | `perfil-consolidado` del PR #105 listo ([run 39058604626](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/39058604626)), 10 min 37 s con el paso «Despliegue en un equipo simulado» en verde; los 10 checks de `ci` en verde ([run 39058604664](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/39058604664)). | 2026-10-17 |
+
+## Escenario 4: vuelta atrás
+
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| Versión rota (T023, T024) | confirmada | Paso 8: el paquete B cambia la `SPRING_DATASOURCE_URL` de `identidad`; `actualizar.sh` termina con 1, `actual` vuelve a A, todo sano con A y la API simulada recibe `failure` con «Vuelta atrás a <A>: identidad no quedó sano en … s». | 2026-10-17 |
+| Primer despliegue roto (T023) | confirmada | Paso 9: un equipo nuevo con B: código 1, sin `anterior`, `failure` sin «Vuelta atrás». | 2026-10-17 |
+| Tiempo con la espera real (SC-004) | confirmada | `ESPERA_ROTO=180 probar_equipo.sh`: «La vuelta atrás tardó 244 s, con ESPERA_SALUD=180» (menos de 5 minutos); los 11 pasos en `OK` en 8 min 30 s. | 2026-10-17 |
+
+## Escenario 5: acceso restringido
+
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| Entrada HTTPS (T016) | confirmada | Paso 1 de `probar_humo.sh` en cada despliegue: `GET /` sin credenciales → 401 con `WWW-Authenticate: Basic`; con ellas, la SPA; `autor.prueba` inicia sesión por `/api` y la sesión actual responde. | 2026-10-17 |
+| Entrada del túnel (T025) | confirmada | Paso 7, desde `curlimages/curl:8.22.0` en la red del proyecto: `http://caddy:8081/` 401 sin credenciales y 200 con ellas; `POST /api/usuarios/sesion` 200 sin las credenciales de la demo (`/api` la protege el token, ADR-014). El JWKS por el API Gateway pide token, como corresponde. | 2026-10-17 |
+| Perfil `tunel` (T026) | confirmada | `docker compose config`: sin el perfil no hay `cloudflared`; con `--profile tunel`, `cloudflared` sin puertos, con `TUNNEL_TOKEN` y 64 MiB. | 2026-10-17 |
+
+## Cierre de ola (US6)
+
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| `cierre-ola.yml` reescrito (T027) | confirmada en local | Un job levanta el perfil en el runner y corre ZAP 2.17.0 (fijado por *digest*) sobre la SPA y sobre cada `contratos/*/openapi.yaml` sin `comun/` (cargas, dashboard, generacion y usuarios), con el token de `autor.prueba` de `.env.ejemplo`; k6 solo si existe `pruebas/k6/<tag>.js`; la evidencia usa `cyclonedxDirectBom` y `verificar_sbom.sh`. Sin `vars.*` ni secretos. actionlint sin hallazgos. | 2026-10-17 |
+| `cierre-ola` en el runner (T028) | confirmada | `gh workflow run cierre-ola.yml --ref 009-publicacion-despliegue` ([run 39059508137](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/39059508137)), 8 min: «Alertas altas en zap/zap-web.json: 0» y 0 en `zap-api-cargas`, `zap-api-dashboard`, `zap-api-generacion` y `zap-api-usuarios`; `::notice::Sin pruebas/k6/009-publicacion-despliegue.js: k6 se omite`; «Evidencia de la ola» omitida fuera de un tag. | 2026-10-17 |
+
+## Informes a GitHub (D-56)
+
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| Con la API simulada (T014, T015) | confirmada | `github_simulado.py` exige `Authorization: Bearer` y guarda cada petición: A → `in_progress` y `success`; B → `failure` con la vuelta atrás; sin informes cuando no hay versión ni cambios. Un token incorrecto recibe 401. | 2026-10-17 |
+
+## Memoria (R-19)
+
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| Equipo después de iniciar sesión (T021, SC-010) | confirmada | Paso 10: **1 222,3 MiB** para los 8 contenedores de `mdd-prueba`, por debajo de la alerta de 7 168 MiB; los límites suman 3 072 MiB. | 2026-10-17 |
+
+## Notas
+- **Revisión final (T029):** actionlint sin hallazgos en los 4 workflows; ShellCheck sin hallazgos en `deploy/*.sh`, `deploy/equipo/*.sh`, `deploy/publicacion/*.sh` y `deploy/sca/*.sh`; `github_simulado.py` compila. Gitleaks (`--text HEAD`) sobre un clon: 26 commits, `no leaks found`.
+- **Falso positivo de `clave-en-configuracion` (B00-H07):** la variable de shell `clave=$(grep …)` de un `run:` de `cierre-ola.yml` se tomaba como una contraseña literal. La lista permitida de la regla suma `^\$\(` (sustituciones de comandos), junto a `^\$\{`. Comprobado: `clave=$(grep X f)` ya no se reporta y `mdd.usuarios.clave: Prueba2026` sí.
+- **Riesgo para historias futuras (L3):** `01-esquemas.sh` solo corre cuando se crea el volumen de PostgreSQL; un esquema nuevo no aparece en el equipo de demostración sin recrearlo.
+- **Repositorio de Docker Hub:** el plan gratuito permite un solo repositorio privado, y el autor ya tenía `p980/ida_mdd`. Con su aprobación se usa ese (`DOCKERHUB_REPOSITORIO=p980/ida_mdd` en el entorno `publicacion`; `REPOSITORIO=docker.io/p980/ida_mdd` en el equipo); los documentos dicen `<usuario>/mdd` como ejemplo. Los repositorios públicos `p980/api`, `p980/gateway` y `p980/register-api` son de proyectos anteriores y no se tocan.
+- **Primer arranque en el PC del autor (T032):** `preparar.sh` creó `/opt/mdd` (`configuracion.env` 0600, `jwt.pem` 0400 de 10001) y el temporizador. Las primeras consultas dieron 401: el repositorio no se llamaba `mdd` y el token de solo lectura del equipo no podía leer repositorios privados (su token de `auth.docker.io` traía `access: []`). `actualizar.sh` ahora explica un 401/403 en lugar de tratarlo como un error pasajero.
+
