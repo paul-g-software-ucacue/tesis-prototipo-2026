@@ -251,7 +251,7 @@ description: "Tareas de B00-H08: Publicación en Docker Hub y despliegue en el e
 
 ## Phase 9: Polish, pull request y cierre
 
-- [ ] T029 Correr `actionlint` sobre `cd.yml`, `cierre-ola.yml` y `perfil-consolidado.yml`, `shellcheck` sobre `deploy/equipo/*.sh`, `deploy/publicacion/*.sh` y `deploy/desplegar.sh`, y Gitleaks (`--log-opts="--text HEAD"`) sobre un clon de la rama: sin hallazgos. Actualizar `backend/plantillas/README.md` o el README que corresponda con una línea que remita al quickstart de esta historia para el despliegue. Comprobar con `git status` que no hay archivos temporales.
+- [X] T029 Correr `actionlint` sobre `cd.yml`, `cierre-ola.yml` y `perfil-consolidado.yml`, `shellcheck` sobre `deploy/equipo/*.sh`, `deploy/publicacion/*.sh` y `deploy/desplegar.sh`, y Gitleaks (`--log-opts="--text HEAD"`) sobre un clon de la rama: sin hallazgos. Actualizar `backend/plantillas/README.md` o el README que corresponda con una línea que remita al quickstart de esta historia para el despliegue. Comprobar con `git status` que no hay archivos temporales.
 - [ ] T030 Hacer commit y push, y abrir el pull request de `009-publicacion-despliegue` hacia `main` **en borrador**, con `Refs #25`. Esperar los runs del borrador y marcarlo listo. Comprobar:
   - los 10 checks en verde;
   - `perfil-consolidado`, con el paso «Despliegue en un equipo simulado» en verde (escenarios 3 y 4 en la CI);

@@ -23,7 +23,8 @@ path = '''(?i)\.(p12|pfx|pem|key|jks|keystore|crt|cer)$'''
 # Contraseñas y claves escritas como valor literal en archivos de configuración, también con poca
 # entropía (clave123), que las reglas por defecto no detectan (research §5). La clave tiene que estar
 # al inicio de la línea, en inglés o en español. No se reportan las referencias a variables de entorno
-# (${DB_CLAVE}, ${{ secrets.X }}) ni los valores ficticios de .env.ejemplo (cambiar-en-local-…).
+# (${DB_CLAVE}, ${{ secrets.X }}), las sustituciones de comandos ($(…), en los run: de un workflow;
+# B00-H08) ni los valores ficticios de .env.ejemplo (cambiar-en-local-…).
 [[rules]]
 id = "clave-en-configuracion"
 description = "Contraseña o clave escrita como valor literal en un archivo de configuración"
@@ -33,5 +34,5 @@ secretGroup = 1
 keywords = ["pass", "pwd", "secret", "clave", "contrase"]
 
 [[rules.allowlists]]
-description = "Referencias a variables de entorno y valores ficticios documentados de .env.ejemplo"
-regexes = ['''^\$\{''', '''^cambiar-en-local-''']
+description = "Referencias a variables de entorno, sustituciones de comandos de shell y valores ficticios de .env.ejemplo"
+regexes = ['''^\$\{''', '''^\$\(''', '''^cambiar-en-local-''']

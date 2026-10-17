@@ -81,3 +81,7 @@ Registro de las comprobaciones de los cinco escenarios de la historia (issue #25
 | Equipo después de iniciar sesión (T021, SC-010) | confirmada | Paso 10: **1 222,3 MiB** para los 8 contenedores de `mdd-prueba`, por debajo de la alerta de 7 168 MiB; los límites suman 3 072 MiB. | 2026-10-17 |
 
 ## Notas
+- **Revisión final (T029):** actionlint sin hallazgos en los 4 workflows; ShellCheck sin hallazgos en `deploy/*.sh`, `deploy/equipo/*.sh`, `deploy/publicacion/*.sh` y `deploy/sca/*.sh`; `github_simulado.py` compila. Gitleaks (`--text HEAD`) sobre un clon: 26 commits, `no leaks found`.
+- **Falso positivo de `clave-en-configuracion` (B00-H07):** la variable de shell `clave=$(grep …)` de un `run:` de `cierre-ola.yml` se tomaba como una contraseña literal. La lista permitida de la regla suma `^\$\(` (sustituciones de comandos), junto a `^\$\{`. Comprobado: `clave=$(grep X f)` ya no se reporta y `mdd.usuarios.clave: Prueba2026` sí.
+- **Riesgo para historias futuras (L3):** `01-esquemas.sh` solo corre cuando se crea el volumen de PostgreSQL; un esquema nuevo no aparece en el equipo de demostración sin recrearlo.
+
