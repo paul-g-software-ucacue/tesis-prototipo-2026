@@ -41,7 +41,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
   | `docente.coordinador.demo` | Docente y coordinador (demo) | DOCENTE, COORDINADOR_CARRERA |
 
 - **Contraseñas por entorno:**
-  - **Equipo de demostración:** un archivo `secretos/claves-demo` (`usuario=clave`, una por línea, 0400 del uid 10001) que genera `preparar.sh` con `openssl rand` y monta `compose.demo.yml` de solo lectura en `identidad`, como la llave JWT. Variable `MDD_USUARIOS_DEMO_CLAVES=/run/mdd/claves-demo`.
+  - **Equipo de demostración:** un archivo `secretos/claves-demo` (`usuario=clave`, una por línea; dueño 10001, grupo `mdd`, modo 0440: `identidad` lo lee como dueño y `probar_humo.sh`, que corre como `mdd`, como grupo) que genera `preparar.sh` con `openssl rand` y monta `compose.demo.yml` de solo lectura en `identidad`, como la llave JWT. Variable `MDD_USUARIOS_DEMO_CLAVES=/run/mdd/claves-demo`.
   - **Local y CI:** una contraseña ficticia común para todos, `MDD_USUARIOS_DEMO_CLAVE=cambiar-en-local-demo` en `.env.ejemplo` (Gitleaks la permite por el prefijo, B00-H07).
   - Sin archivo ni contraseña común: los usuarios de la demo no se crean, y se registra un aviso.
 - **Carga (`CargaUsuariosDemo`, al arrancar):** por cada usuario del archivo con contraseña: si no existe, lo crea activo con el hash Argon2id; si existe, actualiza su nombre y sus roles y, si la contraseña del entorno ya no coincide con su hash, guarda el hash nuevo. Así el archivo de claves del equipo es la fuente de verdad y rotarlas no exige tocar la base.
@@ -71,7 +71,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 - **Decisión:**
   - el token dura **30 minutos** (`mdd.usuarios.token.vigencia`, ya existe) y lleva el claim `inicio` (instante del inicio de sesión, `auth_time` de OpenID);
   - **renovación:** `POST /api/usuarios/sesion/renovacion`, con el token vigente, devuelve un token nuevo con el mismo `inicio` y otros 30 minutos, salvo que `inicio` + 8 horas ya haya pasado (`mdd.usuarios.token.maximo`, PT8H): entonces responde 401 `SEGURIDAD_NO_AUTENTICADO` y la sesión termina;
-  - **la SPA** registra la actividad del usuario (navegación, teclado, ratón y cada petición a la API) y, si hubo actividad desde la última renovación y al token le quedan menos de 20 minutos, lo renueva una vez. Sin actividad, no renueva: el token vence a los 30 minutos, y el temporizador de `almacen.ts` cierra la sesión con «sesión terminada» (ya existe).
+  - **la SPA** registra la actividad del usuario (navegación, teclado, ratón y las peticiones a la API que él inicia; la renovación y cualquier petición automática, marcadas con el encabezado interno `X-MDD-Automatica`, **no** cuentan, para que una sesión inactiva no se renueve sola) y, si hubo actividad desde la última renovación y al token le quedan menos de 20 minutos, lo renueva una vez. Sin actividad, no renueva: el token vence a los 30 minutos, y el temporizador de `almacen.ts` cierra la sesión con «sesión terminada» (ya existe).
 - **Por qué:** mantiene el token solo en memoria (D-51) y los procesos siguen validando sin estado con el JWKS (ADR-014). No hace falta una tabla de sesiones.
 - **Límite conocido:** un token robado podría renovarse hasta las 8 horas; no hay revocación en el prototipo. Se anota en la evidencia.
 - **Alternativas:** *refresh token* en una cookie `HttpOnly` (rompe D-51 y obliga a CSRF); tabla de sesiones con última actividad (estado en el servidor y una consulta por petición).

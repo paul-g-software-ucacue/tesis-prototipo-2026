@@ -89,13 +89,13 @@ description: "Tareas de F05-H01: Iniciar sesión"
   - al volver a arrancar con otra clave: actualiza solo el hash, el nombre y los roles, sin duplicar;
   - sin archivo ni clave común: no crea nada y avisa;
   - nunca registra una clave (la prueba revisa el registro capturado).
-- [ ] T011 [US1] Crear `JAVA/infraestructura/CargaUsuariosDemo.java` (un `ApplicationRunner` como `CargaUsuarioDePrueba`), con `PropiedadesUsuarios.Demo` (`claves`: ruta; `clave`: texto) y el puerto `RepositorioUsuarios` (agregar `actualizar` si hace falta). Lee el YAML con Jackson YAML y no pisa nada si no hay contraseña. Registrar el bean en `ConfiguracionUsuarios`. T010 pasa.
+- [ ] T011 [US1] Crear `JAVA/infraestructura/CargaUsuariosDemo.java` (un `ApplicationRunner` como `CargaUsuarioDePrueba`), con `PropiedadesUsuarios.Demo` (`claves`: ruta; `clave`: texto) y el puerto `RepositorioUsuarios` (agregar `actualizar` si hace falta). Lee el YAML con SnakeYAML (`org.yaml.snakeyaml`, la que ya trae Spring Boot) y no pisa nada si no hay contraseña. Registrar el bean en `ConfiguracionUsuarios`. T010 pasa.
 - [ ] T012 [US1] Prueba primero, en `PRUEBA/infraestructura/CargaUsuarioDePruebaTest.java`: con `habilitado=false` y `autor.prueba` ya en la base, queda `activo=false` (D-57); con `habilitado=true`, sigue igual que hoy. Después cambiar `CargaUsuarioDePrueba` para que desactive. T012 pasa.
 - [ ] T013 [US1] Prueba primero, en `PRUEBA/adaptadores/salida/EmisorJwtTest.java`: el token lleva el claim `nombre` y el claim `inicio` (segundos), y `sub` y `roles` como hoy. Después cambiar `EmisorJwt` y el puerto `EmisorDeTokens`. T013 pasa.
 - [ ] T014 [US1] Prueba primero, en `PRUEBA/adaptadores/entrada/SesionContratoTest.java`: `consultarSesion` con un token de `docente.coordinador.demo` devuelve `usuario`, `nombre` y `roles` ordenados, válido contra el contrato. Después cambiar `SesionControlador.consultarSesion` para rellenar `nombre` desde el claim. T014 pasa.
 - [ ] T015 [US1] Configurar `backend/apps/identidad/src/main/resources/application.yaml` (`mdd.usuarios.demo.claves: ${MDD_USUARIOS_DEMO_CLAVES:}`, `mdd.usuarios.demo.clave: ${MDD_USUARIOS_DEMO_CLAVE:}`) y `.env.ejemplo` (`MDD_USUARIOS_DEMO_CLAVE=cambiar-en-local-demo`, con un comentario que cite D-59).
 - [ ] T016 [P] [US1] Prueba primero, en `frontend/src/pantallas/Inicio.test.tsx`: «Hola, Vicerrectorado académico (demo)» con el `nombre` de la sesión, y «Hola, autor.prueba» si no viene `nombre`; los roles con sus nombres en español («Coordinador de carrera», «Docente»…). Crear `frontend/src/sesion/roles.ts` (los 10 identificadores → nombre en español; un identificador desconocido se muestra tal cual) y cambiar `frontend/src/pantallas/Inicio.tsx`. T016 pasa.
-- [ ] T017 [US1] Agregar a `deploy/probar_autenticacion.sh` un paso que inicia sesión con `docente.coordinador.demo` y la clave común, y comprueba en `GET /api/usuarios/sesion` el `nombre` y los roles DOCENTE y COORDINADOR_CARRERA. Correrlo con el perfil local (`docker compose up -d --build --wait`) y anotar el resultado en la evidencia.
+- [ ] T017 [US1] Agregar a `deploy/probar_autenticacion.sh` un paso que recorre los 11 usuarios de `usuarios-demo.yaml` (leído con `yq`): cada uno inicia sesión con la clave común y `GET /api/usuarios/sesion` devuelve su `nombre` y **exactamente** los roles del archivo (SC-001). Correrlo con el perfil local (`docker compose up -d --build --wait`) y anotar el resultado en la evidencia.
 
 **Checkpoint**: los usuarios de la demo entran con su nombre y sus roles en local.
 
@@ -131,8 +131,9 @@ description: "Tareas de F05-H01: Iniciar sesión"
   - sin actividad, no llama a la renovación y la sesión se cierra a los 30 minutos con «sesión terminada»;
   - con actividad después de la última renovación y menos de 20 minutos restantes, llama una sola vez y reprograma el vencimiento con el `venceEn` nuevo;
   - si la renovación responde 401, la sesión se cierra como terminada;
+  - después de una renovación, sin actividad del usuario, no hay otra renovación y la sesión vence a los 30 minutos de la última actividad: la petición de renovación **no** cuenta como actividad (H1 del análisis);
   - nunca escribe el token fuera de la memoria (D-51).
-- [ ] T028 [US3] Crear `frontend/src/sesion/renovacion.ts` y cambiar `frontend/src/sesion/almacen.ts` (registro de `ultimaActividad` y `ultimaRenovacion`), `frontend/src/api/cliente.ts` (cada petición marca actividad) y `SesionProvider` (escucha la navegación, el teclado y el ratón con `passive` y los quita al cerrar). T027 pasa, y las pruebas de `sesion.test.tsx` y `cliente.test.ts` siguen en verde.
+- [ ] T028 [US3] Crear `frontend/src/sesion/renovacion.ts` y cambiar `frontend/src/sesion/almacen.ts` (registro de `ultimaActividad` y `ultimaRenovacion`), `frontend/src/api/cliente.ts` (marca actividad solo en las peticiones sin el encabezado interno `X-MDD-Automatica`; `renovacion.ts` lo envía en la suya) y `SesionProvider` (escucha la navegación, el teclado y el ratón con `passive` y los quita al cerrar). T027 pasa, y las pruebas de `sesion.test.tsx` y `cliente.test.ts` siguen en verde.
 - [ ] T029 [US3] Prueba con Playwright, en `frontend/e2e/sesion.spec.ts`: sin sesión, `/inicio` lleva a `/iniciar-sesion`; al entrar con un usuario de la demo de la API simulada, vuelve a `/inicio` con su nombre. Agregar a `deploy/probar_autenticacion.sh` la renovación con un token vigente (200) y con un token alterado (401). Correr todo y anotarlo.
 
 **Checkpoint**: el acceso sin sesión y la inactividad funcionan; RNF-SEG-07 queda cubierto.
@@ -143,9 +144,9 @@ description: "Tareas de F05-H01: Iniciar sesión"
 
 - [ ] T030 Cambiar el equipo de demostración (D-57, D-59):
   - `deploy/equipo/compose.demo.yml`: `identidad` con `MDD_USUARIO_PRUEBA_HABILITADO: "false"`, sin `MDD_USUARIO_PRUEBA_CLAVE`, y con `MDD_USUARIOS_DEMO_CLAVES: /run/mdd/claves-demo` y el archivo `${MDD_SECRETOS:-/opt/mdd/secretos}/claves-demo` montado `:ro,Z`;
-  - `deploy/equipo/preparar.sh`: si no existe `secretos/claves-demo`, lo genera con una clave `openssl rand -hex 16` por cada usuario de `usuarios-demo.yaml` (leído con `yq` o `grep`), con dueño 10001 y modo 0400 (0444 solo con `--no-interactivo`), sin mostrar las claves;
+  - `deploy/equipo/preparar.sh`: crea `secretos/claves-demo` si no existe y **agrega** una línea `usuario=clave` (`openssl rand -hex 16`) por cada usuario de `usuarios-demo.yaml` (leído con `yq` o `grep`) que todavía no la tenga, sin tocar las existentes ni mostrar las claves; dueño 10001, grupo `mdd`, modo **0440** (0444 solo con `--no-interactivo`);
   - `deploy/equipo/probar_humo.sh`: los pasos 3 y 4 con `docente.demo` y su clave de `secretos/claves-demo`, y un paso nuevo en el que `autor.prueba` recibe 401;
-  - `deploy/equipo/probar_equipo.sh`: verificar lo mismo.
+  - `deploy/equipo/probar_equipo.sh`: verificar lo mismo, y que `claves-demo` tiene modo 0440 y la prueba de humo puede leerlo.
 
   Correr `probar_equipo.sh` en el PC (pasos 0 a 10 y los nuevos en `OK`) y anotarlo.
 - [ ] T031 Evidencia de RNF-SEG-02 (D-61, FR-008): en el perfil local, `select nombre_usuario, left(clave_hash, 10) from usuarios.usuario` muestra solo `$argon2id$`; no hay tablas de tokens; la prueba de B00-H06 de que el token no está en el almacenamiento del navegador sigue en verde; y los permisos de `/opt/mdd` del equipo (de la evidencia de B00-H08). Anotarlo en la sección RNF-SEG-02.
@@ -153,7 +154,7 @@ description: "Tareas de F05-H01: Iniciar sesión"
 - [ ] T033 Completar `evidencia.md` y la «Definición de terminado» del pull request. Fusionarlo con *squash* **con la aprobación del autor**. Después:
   - el autor corre `sudo deploy/equipo/preparar.sh`, que solo crea `secretos/claves-demo`;
   - esperar el despliegue automático («Sano en N s» y `success` en *Deployments*);
-  - en `https://mdd.localhost`, entrar con `vicerrectorado.demo`, y comprobar que `autor.prueba` ya no entra (SC-006);
+  - en `https://mdd.localhost`, entrar con `vicerrectorado.demo` en menos de 1 minuto (SC-002, comprobación manual) y comprobar que `autor.prueba` ya no entra (SC-006);
   - abrir el pull request de evidencia con `Closes #43` y borrar las ramas fusionadas.
 
 ---

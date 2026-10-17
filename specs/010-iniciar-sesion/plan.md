@@ -20,7 +20,7 @@ Los detalles y las alternativas están en [research.md](research.md).
 
 **Language/Version**: Java 25 (Spring Boot 4.1.1) · TypeScript 5.9 (React 19) · SQL (PostgreSQL 18, Flyway) · Bash
 
-**Primary Dependencies**: las del proyecto, sin dependencias nuevas: Spring Security con el emisor JWT de Usuarios (Nimbus), `Argon2PasswordEncoder` (Bouncy Castle), Jackson YAML para leer `usuarios-demo.yaml` (ya en el BOM de Spring Boot), openapi-typescript y openapi-fetch.
+**Primary Dependencies**: las del proyecto, sin dependencias nuevas: Spring Security con el emisor JWT de Usuarios (Nimbus), `Argon2PasswordEncoder` (Bouncy Castle), SnakeYAML para leer `usuarios-demo.yaml` (Spring Boot ya la trae para leer `application.yaml`), openapi-typescript y openapi-fetch.
 
 **Storage**: esquema `usuarios`: `usuario` (con `nombre_para_mostrar` nuevo) y `intento_fallido` (nueva), por la migración `V4__usuarios_demo.sql`.
 

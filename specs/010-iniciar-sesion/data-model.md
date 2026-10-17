@@ -43,7 +43,7 @@ Un intento durante el bloqueo no cuenta, no verifica la contraseña y responde `
 
 | Entorno | Fuente | Ejemplo |
 |---|---|---|
-| Equipo de demostración | `MDD_USUARIOS_DEMO_CLAVES=/run/mdd/claves-demo` (archivo `usuario=clave`, 0400 del uid 10001, generado por `preparar.sh`) | Una clave aleatoria por usuario |
+| Equipo de demostración | `MDD_USUARIOS_DEMO_CLAVES=/run/mdd/claves-demo` (archivo `usuario=clave`; dueño 10001, grupo `mdd`, modo 0440; generado por `preparar.sh`, que agrega las líneas que falten) | Una clave aleatoria por usuario |
 | Local y CI | `MDD_USUARIOS_DEMO_CLAVE` en `.env.ejemplo` | `cambiar-en-local-demo` para todos |
 
 ## Token de sesión (cambia)
@@ -63,7 +63,7 @@ La renovación emite un token nuevo con el mismo `inicio` mientras `ahora < inic
 | Campo | Reglas |
 |---|---|
 | `token`, `venceEn` | Solo en memoria (D-51), sin cambios |
-| `ultimaActividad` | **Nuevo.** Instante de la última navegación, tecla, clic o petición a la API |
+| `ultimaActividad` | **Nuevo.** Instante de la última navegación, tecla, clic o petición a la API iniciada por el usuario. La renovación y las peticiones automáticas (con `X-MDD-Automatica`) **no** cuentan |
 | `ultimaRenovacion` | **Nuevo.** Instante de la última renovación o del inicio de sesión |
 
 Renueva una vez si `ultimaActividad > ultimaRenovacion` y al token le quedan menos de 20 minutos.

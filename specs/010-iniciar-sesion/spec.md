@@ -92,13 +92,14 @@ Escenario: Acceso sin sesión
 - **Usuario desactivado**: no entra y ve el mismo mensaje que con credenciales inválidas.
 - **Usuario con varios roles** (un docente que también es coordinador, ERS §3): entra una vez y su sesión lleva todos sus roles.
 - **Datos vacíos**: el mismo comportamiento de hoy (400 con los detalles de cada campo, D-42), con los mensajes en español junto a cada campo.
-- **Mayúsculas en el usuario**: [se asume] el nombre de usuario no distingue mayúsculas y minúsculas; la contraseña sí.
+- **Mayúsculas en el usuario**: el nombre de usuario no distingue mayúsculas y minúsculas; la contraseña sí.
 - **Sesión vencida mientras trabaja**: vuelve al inicio de sesión con un mensaje en español y, al entrar, a la pantalla en la que estaba (ya lo hace la base de B00-H06).
 - **Recarga de la página**: vuelve a pedir el inicio de sesión (D-51, token solo en memoria).
 - **Varios intentos fallidos seguidos**: al quinto intento fallido seguido con el mismo nombre de usuario, ese nombre queda bloqueado 15 minutos, exista o no, para no revelar qué usuarios existen; el mensaje dice en español que se espere y no dice si el usuario existe. Un inicio de sesión correcto antes del quinto intento reinicia la cuenta (D-60).
 - **Contraseña correcta durante el bloqueo**: tampoco entra hasta que termine el bloqueo.
 - **Inactividad**: tras 30 minutos sin actividad, la sesión vence y la SPA vuelve al inicio de sesión con un mensaje; mientras el usuario trabaja, la sesión se renueva, hasta 8 horas desde que entró (D-60).
 - **`autor.prueba` en el equipo de demostración**: deja de poder entrar cuando existen los usuarios de la demo (D-57); en local y en la CI sigue igual.
+- **Usuario nuevo en el archivo de la demo**: en el equipo de demostración no se crea hasta que `preparar.sh` agregue su contraseña; Usuarios lo avisa en el registro.
 - **Contraseña olvidada**: fuera del prototipo (RF-04, prioridad *Won't*); el mensaje de error no ofrece recuperarla.
 
 ## Requirements *(mandatory)*
@@ -125,7 +126,7 @@ Escenario: Acceso sin sesión
 
 **Bloqueo e inactividad (RNF-SEG-07, D-60)**
 
-- **FR-010**: Después de 5 intentos fallidos seguidos con el mismo nombre de usuario, exista o no, el inicio de sesión con ese nombre DEBE quedar bloqueado 15 minutos, con un mensaje en español que no revele si el usuario existe; un inicio de sesión correcto antes reinicia la cuenta. Los tres valores (intentos, bloqueo y nombre normalizado en minúsculas) son parámetros.
+- **FR-010**: Después de 5 intentos fallidos seguidos con el mismo nombre de usuario, exista o no, el inicio de sesión con ese nombre DEBE quedar bloqueado 15 minutos, con un mensaje en español que no revele si el usuario existe; un inicio de sesión correcto antes reinicia la cuenta. Los intentos (5) y el bloqueo (15 minutos) son parámetros; el nombre de usuario se compara normalizado en minúsculas.
 - **FR-011**: La sesión DEBE vencer tras 30 minutos sin actividad y renovarse mientras el usuario trabaja, sin guardar el token fuera de la memoria (D-51), con un máximo de 8 horas desde el inicio de sesión; al vencer, la SPA vuelve al inicio de sesión con un mensaje en español.
 
 ### Key Entities

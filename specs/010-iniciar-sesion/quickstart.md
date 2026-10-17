@@ -31,7 +31,7 @@ Resultado esperado: los pasos de siempre más los nuevos en `OK`:
 
 ## 4. En el equipo de demostración, después de fusionar
 
-1. `sudo deploy/equipo/preparar.sh` (ya preparado: solo crea `secretos/claves-demo`, sin tocar lo demás).
+1. `sudo deploy/equipo/preparar.sh` (ya preparado: solo crea `secretos/claves-demo`, sin tocar lo demás). Si una historia futura agrega usuarios de la demo, volver a correrlo: agrega sus claves sin tocar las existentes.
 2. Esperar el despliegue automático (`journalctl -u mdd-actualizar.service`): «Sano en N s».
 3. `sudo cat /opt/mdd/secretos/claves-demo` muestra las claves de los 11 usuarios (no pegarlas en ningún lado).
 4. En `https://mdd.localhost`, entrar con `vicerrectorado.demo` y su clave; `autor.prueba` ya no entra (SC-006).
