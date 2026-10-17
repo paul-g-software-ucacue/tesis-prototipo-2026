@@ -56,7 +56,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-59 | 2026-10-17 | Los usuarios de la demo salen de un archivo versionado; sus contraseñas, de cada entorno | Aceptada | Alcance del issue #43 (F05-H01), D-37, D-57 |
 | D-60 | 2026-10-17 | F05-H01 incluye RNF-SEG-07: bloqueo tras 5 intentos e inactividad de 30 minutos | Aceptada | Alcance del issue #43, vigencia del token de B00-H03 (ADR-014) |
 | D-61 | 2026-10-17 | «Tokens y secretos cifrados en reposo» (RNF-SEG-02) se cumple por diseño | Aceptada | — |
-| ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Propuesta | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
+| ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
 
@@ -929,7 +929,7 @@ Hay que poder probar el flujo completo de creación del distributivo sin debilit
 
 ## ADR-020. Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad
 
-- **Estado:** Propuesta · **Fecha:** 2026-10-17 · **Decidido por:** pendiente de aprobación del autor
+- **Estado:** Aceptada · **Fecha:** 2026-10-17 · **Decidido por:** autor de la tesis
 - **Origen:** plan de F05-H01 (`specs/010-iniciar-sesion/research.md` §6), para cumplir D-60
 - **Modifica a:** ADR-014 (agrega los claims `nombre` e `inicio` y la operación de renovación)
 

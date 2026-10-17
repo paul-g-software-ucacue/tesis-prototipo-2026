@@ -10,7 +10,7 @@ Sobre el inicio de sesión de B00-H03 y la base de la SPA de B00-H06:
 - **Usuarios de la demo (D-59):** `usuarios-demo.yaml` con 11 usuarios ficticios (uno por cada rol de D-16 y `docente.coordinador.demo` con dos), sin contraseñas. `CargaUsuariosDemo` los crea o actualiza al arrancar, con la contraseña del entorno: un archivo `usuario=clave` que genera `preparar.sh` en el equipo, o la clave común ficticia de `.env.ejemplo` en local y en la CI. El nombre de usuario pasa a minúsculas y se agrega el nombre para mostrar (migración V4).
 - **`autor.prueba` (D-57):** se desactiva en el equipo de demostración; `probar_humo.sh` pasa a `docente.demo`.
 - **Bloqueo (D-60):** tabla `intento_fallido`, contada por nombre intentado, exista o no; con 5 fallos seguidos, 429 `USUARIOS_INICIO_BLOQUEADO` por 15 minutos.
-- **Inactividad (D-60, ADR-020 propuesto):** el token sigue en 30 minutos y gana los claims `nombre` e `inicio`; `POST /api/usuarios/sesion/renovacion` lo renueva hasta 8 horas desde `inicio`; la SPA renueva solo si hubo actividad.
+- **Inactividad (D-60, ADR-020):** el token sigue en 30 minutos y gana los claims `nombre` e `inicio`; `POST /api/usuarios/sesion/renovacion` lo renueva hasta 8 horas desde `inicio`; la SPA renueva solo si hubo actividad.
 - **SPA:** «Hola, <nombre>» con los roles en español; el 429 se muestra con el modelo de error común.
 - **RNF-SEG-02 (D-61):** se demuestra con evidencia, sin código nuevo.
 
@@ -69,9 +69,9 @@ Los detalles y las alternativas están en [research.md](research.md).
 | X. Simplicidad | Sin tabla de sesiones ni *refresh token*; el archivo de la demo en lugar de una pantalla de administración. | ✅ |
 | XI y XII | Puertos y dominio con JavaDoc en español. | ✅ |
 | XIII. Errores | `USUARIOS_INICIO_BLOQUEADO` en el catálogo y en `ErroresUsuarios`, con la prueba que los compara (ADR-016). | ✅ |
-| §6.4 Decisiones | D-59, D-60 y D-61 aceptadas; **ADR-020 propuesto**, pendiente de aprobación antes de implementar la renovación. | ⚠️ pendiente |
+| §6.4 Decisiones | D-59, D-60, D-61 y ADR-020, aceptadas por el autor el 2026-10-17. | ✅ |
 
-**Resultado del gate antes de la fase 0:** pasa, con ADR-020 pendiente de aprobación.
+**Resultado del gate antes de la fase 0:** pasa. ADR-020 quedó aprobado el 2026-10-17.
 
 **Revisión después de la fase 1:** pasa. [data-model.md](data-model.md) y [contracts/](contracts/) solo agregan lo listado.
 
@@ -132,7 +132,7 @@ deploy/
 
 ## Fases de implementación (guía para /speckit-tasks)
 
-1. **ADR-020:** aprobación del autor.
+1. **ADR-020:** aprobado por el autor el 2026-10-17 (`docs/decisiones.md`).
 2. **Contrato:** `openapi.yaml`, `seguridad.yaml` y `errores.md`; generación en el backend y en la SPA.
 3. **Dominio,** con sus pruebas primero: `RolMdd`, `Usuario` con nombre para mostrar y normalización, y `PoliticaDeIntentos`.
 4. **Persistencia:** V4, `RepositorioIntentosJdbc` y `UsuarioJpa`, con Testcontainers.
