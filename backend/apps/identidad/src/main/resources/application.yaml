@@ -20,6 +20,12 @@ mdd.usuarios.llave-privada: ${MDD_LLAVE_PRIVADA:}
 # Usuario de prueba autor.prueba, solo donde se habilita (research §8).
 mdd.usuarios.usuario-prueba.habilitado: ${MDD_USUARIO_PRUEBA_HABILITADO:false}
 mdd.usuarios.usuario-prueba.clave: ${MDD_USUARIO_PRUEBA_CLAVE:}
+# Contraseñas de los usuarios de la demo (D-59): el archivo usuario=clave del equipo de
+# demostración o, sin archivo, la clave común de local y CI. Sin ninguna, no se crean.
+mdd.usuarios.demo.claves: ${MDD_USUARIOS_DEMO_CLAVES:}
+mdd.usuarios.demo.clave: ${MDD_USUARIOS_DEMO_CLAVE:}
+# Bloqueo por intentos (D-60) y máximo de una sesión renovándose (ADR-020): los valores por
+# defecto de PropiedadesUsuarios (5 intentos, 15 minutos y 8 horas).
 # Flyway es el único que cambia el esquema; Hibernate solo lo valida.
 spring.jpa.hibernate.ddl-auto: validate
 spring.jpa.open-in-view: false

@@ -4,17 +4,22 @@ import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import ec.mdd.usuarios.adaptadores.salida.EmisorJwt;
 import ec.mdd.usuarios.adaptadores.salida.RepositorioEventosRecibidosJdbc;
+import ec.mdd.usuarios.adaptadores.salida.RepositorioIntentosJdbc;
 import ec.mdd.usuarios.adaptadores.salida.RepositorioUsuariosJpa;
 import ec.mdd.usuarios.adaptadores.salida.UsuarioJpaRepositorio;
 import ec.mdd.usuarios.adaptadores.salida.VerificadorArgon2;
 import ec.mdd.usuarios.aplicacion.EmitirTokenDeProcesoServicio;
 import ec.mdd.usuarios.aplicacion.IniciarSesionServicio;
 import ec.mdd.usuarios.aplicacion.RegistrarEventoRecibidoServicio;
+import ec.mdd.usuarios.aplicacion.RenovarSesionServicio;
+import ec.mdd.usuarios.dominio.PoliticaDeIntentos;
 import ec.mdd.usuarios.puertos.entrada.EmitirTokenDeProceso;
 import ec.mdd.usuarios.puertos.entrada.IniciarSesion;
 import ec.mdd.usuarios.puertos.entrada.RegistrarEventoRecibido;
+import ec.mdd.usuarios.puertos.entrada.RenovarSesion;
 import ec.mdd.usuarios.puertos.salida.EmisorDeTokens;
 import ec.mdd.usuarios.puertos.salida.RepositorioEventosRecibidos;
+import ec.mdd.usuarios.puertos.salida.RepositorioIntentos;
 import ec.mdd.usuarios.puertos.salida.RepositorioUsuarios;
 import ec.mdd.usuarios.puertos.salida.VerificadorDeClaves;
 import java.time.Clock;
@@ -29,7 +34,8 @@ import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 
 /**
- * Ensambla Usuarios: llaves, adaptadores de salida, el caso de uso y el usuario de prueba.
+ * Ensambla Usuarios: llaves, adaptadores de salida, los casos de uso, el usuario de prueba y los
+ * usuarios de la demo.
  *
  * <p>Los adaptadores reciben solo tipos que no son de la infraestructura (codificadores, reloj,
  * duraciones y textos), porque ninguna capa usa la infraestructura (principio I).
@@ -76,11 +82,36 @@ public class ConfiguracionUsuarios {
     }
 
     @Bean
+    public RepositorioIntentos repositorioIntentos(JdbcClient jdbc) {
+        return new RepositorioIntentosJdbc(jdbc);
+    }
+
+    /** Inicio de sesión con el bloqueo de {@code mdd.usuarios.intentos} (D-60). */
+    @Bean
     public IniciarSesion iniciarSesion(
             RepositorioUsuarios repositorio,
             VerificadorDeClaves verificador,
-            EmisorDeTokens emisor) {
-        return new IniciarSesionServicio(repositorio, verificador, emisor);
+            EmisorDeTokens emisor,
+            RepositorioIntentos intentos,
+            PropiedadesUsuarios propiedades) {
+        return new IniciarSesionServicio(
+                repositorio,
+                verificador,
+                emisor,
+                intentos,
+                new PoliticaDeIntentos(
+                        propiedades.intentos().maximo(), propiedades.intentos().bloqueo()),
+                Clock.systemUTC());
+    }
+
+    /** Renovación hasta {@code mdd.usuarios.token.maximo} desde el inicio (ADR-020). */
+    @Bean
+    public RenovarSesion renovarSesion(
+            RepositorioUsuarios repositorio,
+            EmisorDeTokens emisor,
+            PropiedadesUsuarios propiedades) {
+        return new RenovarSesionServicio(
+                repositorio, emisor, propiedades.token().maximo(), Clock.systemUTC());
     }
 
     /** Token de proceso con las claves de {@code mdd.usuarios.procesos} (D-49, ADR-018). */
@@ -111,5 +142,18 @@ public class ConfiguracionUsuarios {
             VerificadorDeClaves verificador,
             PropiedadesUsuarios propiedades) {
         return new CargaUsuarioDePrueba(repositorio, verificador, propiedades.usuarioPrueba());
+    }
+
+    /** Los usuarios de {@code usuarios-demo.yaml}, con las contraseñas del entorno (D-59). */
+    @Bean
+    public CargaUsuariosDemo cargaUsuariosDemo(
+            RepositorioUsuarios repositorio,
+            VerificadorDeClaves verificador,
+            PropiedadesUsuarios propiedades) {
+        return new CargaUsuariosDemo(
+                repositorio,
+                verificador,
+                CargaUsuariosDemo.delArchivoVersionado(),
+                propiedades.demo());
     }
 }

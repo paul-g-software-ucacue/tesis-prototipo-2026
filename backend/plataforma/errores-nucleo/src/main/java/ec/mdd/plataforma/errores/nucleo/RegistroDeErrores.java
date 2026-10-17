@@ -14,7 +14,7 @@ import java.util.Optional;
  */
 public final class RegistroDeErrores {
 
-    private final Map<Class<?>, DefinicionDeCodigo> porExcepcion = new HashMap<>();
+    private final Map<Class<?>, EntradaCatalogo> porExcepcion = new HashMap<>();
 
     /**
      * @param catalogos catálogos de los servicios del proceso
@@ -35,7 +35,7 @@ public final class RegistroDeErrores {
                                     + " y para "
                                     + entrada.excepcion().getName());
                 }
-                if (porExcepcion.putIfAbsent(entrada.excepcion(), entrada.definicion()) != null) {
+                if (porExcepcion.putIfAbsent(entrada.excepcion(), entrada) != null) {
                     throw new IllegalStateException(
                             "La excepción "
                                     + entrada.excepcion().getName()
@@ -47,10 +47,15 @@ public final class RegistroDeErrores {
 
     /** La definición de la excepción o de su superclase registrada más cercana. */
     public Optional<DefinicionDeCodigo> buscar(Class<?> tipo) {
+        return buscarEntrada(tipo).map(EntradaCatalogo::definicion);
+    }
+
+    /** La entrada de la excepción o de su superclase registrada más cercana. */
+    public Optional<EntradaCatalogo> buscarEntrada(Class<?> tipo) {
         for (Class<?> actual = tipo; actual != null; actual = actual.getSuperclass()) {
-            DefinicionDeCodigo definicion = porExcepcion.get(actual);
-            if (definicion != null) {
-                return Optional.of(definicion);
+            EntradaCatalogo entrada = porExcepcion.get(actual);
+            if (entrada != null) {
+                return Optional.of(entrada);
             }
         }
         return Optional.empty();

@@ -18,11 +18,24 @@ public final class RepositorioUsuariosJpa implements RepositorioUsuarios {
 
     @Override
     public Optional<Usuario> buscarPorNombre(String nombreUsuario) {
-        return filas.findByNombreUsuario(nombreUsuario).map(UsuarioJpa::aDominio);
+        return filas.findByNombreUsuario(Usuario.normalizar(nombreUsuario))
+                .map(UsuarioJpa::aDominio);
     }
 
     @Override
     public void guardar(Usuario usuario) {
         filas.save(UsuarioJpa.nuevo(usuario));
+    }
+
+    @Override
+    public void actualizar(Usuario usuario) {
+        UsuarioJpa fila =
+                filas.findByNombreUsuario(usuario.nombreUsuario())
+                        .orElseThrow(
+                                () ->
+                                        new IllegalStateException(
+                                                "No existe el usuario " + usuario.nombreUsuario()));
+        fila.copiar(usuario);
+        filas.save(fila);
     }
 }

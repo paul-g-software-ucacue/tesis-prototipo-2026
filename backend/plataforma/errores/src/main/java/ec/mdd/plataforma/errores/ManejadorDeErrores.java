@@ -1,8 +1,8 @@
 package ec.mdd.plataforma.errores;
 
 import ec.mdd.plataforma.errores.nucleo.CodigosComunes;
-import ec.mdd.plataforma.errores.nucleo.DefinicionDeCodigo;
 import ec.mdd.plataforma.errores.nucleo.DetalleRespuesta;
+import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
 import ec.mdd.plataforma.errores.nucleo.RegistroDeErrores;
 import ec.mdd.plataforma.errores.nucleo.RespuestaError;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,7 +30,8 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
  *
  * <ul>
  *   <li>Una excepción registrada en un {@code CatalogoDeErrores}, o subclase de una registrada,
- *       responde con su código, su estado y sus textos del catálogo.
+ *       responde con su código, su estado, sus textos del catálogo y los encabezados que la entrada
+ *       calcule (por ejemplo {@code Retry-After}).
  *   <li>Un cuerpo que no pasa la validación del contrato responde 400 {@code
  *       COMUN_SOLICITUD_INVALIDA}, con un detalle por campo.
  *   <li>Los errores de Spring MVC antes del controlador responden con su código común.
@@ -66,9 +67,13 @@ public class ManejadorDeErrores extends ResponseEntityExceptionHandler {
         if (esDeSeguridad(excepcion)) {
             throw excepcion;
         }
-        Optional<DefinicionDeCodigo> definicion = registro.buscar(excepcion.getClass());
-        if (definicion.isPresent()) {
-            return json(definicion.get().estado(), RespuestaError.deCatalogo(definicion.get()));
+        Optional<EntradaCatalogo> entrada = registro.buscarEntrada(excepcion.getClass());
+        if (entrada.isPresent()) {
+            ResponseEntity.BodyBuilder respuesta =
+                    ResponseEntity.status(entrada.get().definicion().estado())
+                            .contentType(MediaType.APPLICATION_JSON);
+            entrada.get().encabezados(excepcion).forEach(respuesta::header);
+            return respuesta.body(RespuestaError.deCatalogo(entrada.get().definicion()));
         }
         String id =
                 RegistroDeIncidentes.registrar(

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class RegistroDeErroresTest {
@@ -39,6 +40,29 @@ class RegistroDeErroresTest {
                 .extracting(DefinicionDeCodigo::estado)
                 .isEqualTo(409);
         assertThat(registro.buscar(OtroError.class)).isEmpty();
+    }
+
+    @Test
+    void dadoUnaEntradaConEncabezados_cuandoSeBuscaLaExcepcion_entoncesLosCalculaConSusDatos() {
+        CatalogoDeErrores conEncabezados =
+                () ->
+                        List.of(
+                                EntradaCatalogo.conEncabezados(
+                                        OtroError.class,
+                                        new DefinicionDeCodigo("PRUEBA_OTRO", 429, "Otro", "Otro."),
+                                        error -> Map.of("Retry-After", "7")));
+        RegistroDeErrores registro = new RegistroDeErrores(List.of(catalogo, conEncabezados));
+
+        assertThat(
+                        registro.buscarEntrada(OtroError.class)
+                                .orElseThrow()
+                                .encabezados(new OtroError()))
+                .containsExactly(Map.entry("Retry-After", "7"));
+        assertThat(
+                        registro.buscarEntrada(ErrorHijo.class)
+                                .orElseThrow()
+                                .encabezados(new ErrorHijo()))
+                .isEmpty();
     }
 
     @Test

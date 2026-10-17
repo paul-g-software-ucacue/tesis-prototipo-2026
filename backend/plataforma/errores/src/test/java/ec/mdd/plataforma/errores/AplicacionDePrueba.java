@@ -1,15 +1,18 @@
 package ec.mdd.plataforma.errores;
 
+import ec.mdd.plataforma.errores.fixtures.dominio.EsperaParaReintentar;
 import ec.mdd.plataforma.errores.fixtures.dominio.HorasExcedidas;
 import ec.mdd.plataforma.errores.fixtures.dominio.HorasExcedidasEnFeriado;
 import ec.mdd.plataforma.errores.fixtures.dominio.ReglaSinCatalogo;
 import ec.mdd.plataforma.errores.nucleo.CatalogoDeErrores;
+import ec.mdd.plataforma.errores.nucleo.DefinicionDeCodigo;
 import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.List;
+import java.util.Map;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
@@ -34,7 +37,12 @@ class AplicacionDePrueba {
                             "PRUEBA_HORAS_EXCEDIDAS",
                             409,
                             "Horas excedidas",
-                            "La asignación supera las horas del docente. Quita horas y vuelve a intentarlo."));
+                            "La asignación supera las horas del docente. Quita horas y vuelve a intentarlo."),
+                    EntradaCatalogo.conEncabezados(
+                            EsperaParaReintentar.class,
+                            new DefinicionDeCodigo(
+                                    "PRUEBA_ESPERA", 429, "Espera", "Vuelve a intentarlo luego."),
+                            error -> Map.of("Retry-After", String.valueOf(error.segundos()))));
         }
     }
 
@@ -54,6 +62,11 @@ class AplicacionDePrueba {
         @GetMapping("/api/prueba/feriado")
         String feriado() {
             throw new HorasExcedidasEnFeriado();
+        }
+
+        @GetMapping("/api/prueba/espera")
+        String espera() {
+            throw new EsperaParaReintentar(42);
         }
 
         @GetMapping("/api/prueba/sin-catalogo")

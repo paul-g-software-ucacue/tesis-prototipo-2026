@@ -1,13 +1,25 @@
 // El cliente de la API (ADR-019): openapi-fetch con los tipos generados desde contratos/, en el
 // mismo origen que la SPA. Agrega el token de la sesión en memoria (ADR-014, D-51) y, si una
-// petición con sesión responde 401, la cierra como terminada (D-50).
+// petición con sesión responde 401, la cierra como terminada (D-50). Cada petición del usuario
+// cuenta como actividad para la renovación de la sesión (ADR-020); las automáticas, no.
 import createClient, { type Middleware } from 'openapi-fetch';
 import { FalloDeApi } from '../errores/traducir';
-import { cerrarSesion, obtenerToken } from '../sesion/almacen';
+import { cerrarSesion, marcarActividad, obtenerToken } from '../sesion/almacen';
 import type { paths } from './generado/usuarios';
+
+/**
+ * Encabezado interno de las peticiones que no inicia el usuario, como la renovación del token: no
+ * cuentan como actividad. No sale del navegador.
+ */
+export const ENCABEZADO_AUTOMATICA = 'X-MDD-Automatica';
 
 const conToken: Middleware = {
   onRequest({ request }) {
+    if (request.headers.has(ENCABEZADO_AUTOMATICA)) {
+      request.headers.delete(ENCABEZADO_AUTOMATICA);
+    } else {
+      marcarActividad();
+    }
     const token = obtenerToken();
     if (token) {
       request.headers.set('Authorization', `Bearer ${token}`);

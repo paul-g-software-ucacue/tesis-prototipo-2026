@@ -41,7 +41,10 @@ class UsuariosEsquemaIntegrationTest {
 
             List<String> tablas = tablasDeUsuario(dataSource);
             assertThat(tablas)
-                    .contains("usuarios.flyway_schema_history", "usuarios.evento_recibido");
+                    .contains(
+                            "usuarios.flyway_schema_history",
+                            "usuarios.evento_recibido",
+                            "usuarios.intento_fallido");
             assertThat(tablas).allMatch(tabla -> tabla.startsWith("usuarios."));
         }
     }

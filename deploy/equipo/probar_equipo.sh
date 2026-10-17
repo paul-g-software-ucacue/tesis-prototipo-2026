@@ -7,7 +7,8 @@
 #   deploy/equipo/probar_equipo.sh
 # Levanta un registro local y una API de GitHub simulada, prepara un equipo en una carpeta temporal
 # y comprueba: sin versión publicada (0), despliegue sano (1 a 5), llave persistente (6), acceso por
-# el sitio del túnel (7), vuelta atrás con una versión rota (8) y un primer despliegue roto (9).
+# el sitio del túnel (7), vuelta atrás con una versión rota (8), un primer despliegue roto (9) y las
+# contraseñas de los usuarios de la demo (11, F05-H01).
 # Usa el proyecto de Compose «mdd-prueba» y el puerto 8443: nunca toca el equipo real («mdd»).
 # Termina con 0 si todos los pasos pasan y con 1 si alguno falla. Nunca imprime un secreto.
 set -euo pipefail
@@ -176,7 +177,9 @@ verificar 5 "Sin cambios: código 0 y ningún informe nuevo" \
 # 6. Llave persistente (SC-007, FR-012): el mismo token sirve después de reiniciar identidad.
 ruta_sesion="https://mdd.localhost:$PUERTO_PRUEBA/api/usuarios/sesion"
 opciones_curl=(-sk --max-time 15 --resolve "mdd.localhost:$PUERTO_PRUEBA:127.0.0.1")
-credenciales=$(jq -cn --arg c "$(valor "$equipo" MDD_USUARIO_PRUEBA_CLAVE)" '{usuario: "autor.prueba", clave: $c}')
+# docente.demo, con su contraseña de secretos/claves-demo (D-59); autor.prueba ya no entra (D-57).
+clave_docente=$(awk -F= '$1 == "docente.demo" { sub(/^[^=]*=/, ""); print; exit }' "$equipo/secretos/claves-demo")
+credenciales=$(jq -cn --arg c "$clave_docente" '{usuario: "docente.demo", clave: $c}')
 token=$(curl "${opciones_curl[@]}" -X POST -H 'Content-Type: application/json' --data @- "$ruta_sesion" \
     <<<"$credenciales" | jq -r '.token // empty' 2>/dev/null || true)
 compose "$equipo" restart identidad >/dev/null 2>&1 || true
@@ -208,6 +211,18 @@ api=$(docker run --rm -i --network "$red" "$IMAGEN_CURL" -s -o /dev/null -w '%{h
     -H 'Content-Type: application/json' --data @- http://caddy:8081/api/usuarios/sesion <<<"$credenciales" || echo 000)
 verificar 7 "Sitio del túnel: 401 sin credenciales, 200 con ellas y /api sin basic_auth ($sin_credenciales/$con_credenciales/$api)" \
     eval '[[ $sin_credenciales == 401 && $con_credenciales == 200 && $api == 200 ]]'
+
+# 11. Contraseñas de la demo (D-59): una por usuario de usuarios-demo.yaml, legibles por la prueba de
+# humo; volver a correr preparar.sh agrega la que falte sin cambiar las demás.
+usuarios_en_archivo=$(awk '/^  - usuario: / { print $3 }' backend/servicios/usuarios/src/main/resources/usuarios-demo.yaml | sort)
+antes_claves=$(grep -v '^docente.coordinador.demo=' "$equipo/secretos/claves-demo")
+chmod u+w "$equipo/secretos/claves-demo"
+printf '%s\n' "$antes_claves" >"$equipo/secretos/claves-demo"
+preparar_equipo "$equipo"
+verificar 11 "claves-demo: una contraseña por usuario de la demo, preparar.sh agrega la que falta y no cambia las demás" \
+    eval '[[ $(cut -d= -f1 "$equipo/secretos/claves-demo" | sort) == "$usuarios_en_archivo" ]] \
+        && [[ $(grep -v "^docente.coordinador.demo=" "$equipo/secretos/claves-demo") == "$antes_claves" ]] \
+        && [[ -r $equipo/secretos/claves-demo && $(stat -c %a "$equipo/secretos/claves-demo") == 444 ]]'
 
 # --- Vuelta atrás ----------------------------------------------------------------------------------
 

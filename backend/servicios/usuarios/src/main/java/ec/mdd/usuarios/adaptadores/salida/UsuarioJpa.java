@@ -23,6 +23,9 @@ public class UsuarioJpa {
     @Column(name = "nombre_usuario", nullable = false, unique = true, length = 64)
     private String nombreUsuario;
 
+    @Column(name = "nombre_para_mostrar", nullable = false, length = 120)
+    private String nombreParaMostrar;
+
     @Column(name = "clave_hash", nullable = false)
     private String claveHash;
 
@@ -45,14 +48,20 @@ public class UsuarioJpa {
         UsuarioJpa fila = new UsuarioJpa();
         fila.id = UUID.randomUUID();
         fila.nombreUsuario = usuario.nombreUsuario();
-        fila.claveHash = usuario.claveHash();
-        fila.activo = usuario.activo();
-        fila.roles = new HashSet<>(usuario.roles());
+        fila.copiar(usuario);
         return fila;
+    }
+
+    /** Copia todo menos el identificador y el nombre de usuario. */
+    void copiar(Usuario usuario) {
+        nombreParaMostrar = usuario.nombreParaMostrar();
+        claveHash = usuario.claveHash();
+        activo = usuario.activo();
+        roles = new HashSet<>(usuario.roles());
     }
 
     /** El usuario del dominio que representa esta fila. */
     Usuario aDominio() {
-        return new Usuario(nombreUsuario, claveHash, activo, roles);
+        return new Usuario(nombreUsuario, nombreParaMostrar, claveHash, activo, roles);
     }
 }

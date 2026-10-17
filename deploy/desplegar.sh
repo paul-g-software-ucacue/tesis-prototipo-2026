@@ -70,6 +70,16 @@ todos_sanos() {  # todos_sanos <carpeta>
 
 levantar() {  # levantar <carpeta>
     poner_etiqueta "$(etiqueta_de "$1")"
+    # Un archivo montado que no existe (por ejemplo, secretos/claves-demo sin preparar.sh): Docker
+    # crearía una carpeta en su lugar. Mejor no levantar la versión y volver atrás.
+    local fuente faltan=""
+    while read -r fuente; do
+        [[ -z $fuente || -e $fuente ]] || faltan+=" $fuente"
+    done < <(compose_de "$1" config --format json | jq -r '.services[].volumes[]? | select(.type == "bind") | .source')
+    if [[ -n $faltan ]]; then
+        echo "Faltan archivos del equipo:$faltan. Correr deploy/equipo/preparar.sh." >&2
+        return 1
+    fi
     compose_de "$1" pull --quiet >&2
     compose_de "$1" up -d --remove-orphans >&2
 }
