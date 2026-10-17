@@ -4,11 +4,13 @@
 #   sudo deploy/equipo/preparar.sh                                  equipo real, en /opt/mdd
 #   deploy/equipo/preparar.sh --no-interactivo --raiz <carpeta>     pruebas (probar_equipo.sh)
 # Crea el usuario de sistema mdd (en el grupo docker) y la carpeta del equipo; genera en el equipo,
-# sin mostrarlos, las claves de la base, la del proceso distributivo (D-49), la de autor.prueba (D-57)
-# y la llave de firma RSA (ADR-014); pide la contraseña del acceso de la demo y guarda su hash de
-# Caddy; pide el usuario y el token de solo lectura de Docker Hub y el token de GitHub para los
-# deployments (D-56); instala actualizar.sh y el temporizador de systemd. Nunca pisa un archivo que
-# ya existe: para regenerar algo, se borra a mano y se vuelve a correr.
+# sin mostrarlos, las claves de la base, la del proceso distributivo (D-49), la llave de firma RSA
+# (ADR-014) y una contraseña por cada usuario de la demo (secretos/claves-demo, D-59); pide la
+# contraseña del acceso de la demo y guarda su hash de Caddy; pide el usuario y el token de solo
+# lectura de Docker Hub y el token de GitHub para los deployments (D-56); instala actualizar.sh y el
+# temporizador de systemd. Nunca pisa un archivo que ya existe: para regenerar algo, se borra a mano
+# y se vuelve a correr. La excepción es claves-demo: si el repositorio tiene usuarios de la demo
+# nuevos, les agrega su contraseña sin tocar las demás.
 # Variables de entrada, para no preguntar (y obligatorias con --no-interactivo): DEMO_CLAVE,
 # DOCKERHUB_USUARIO, DOCKERHUB_TOKEN, GITHUB_TOKEN. Opcionales: REPOSITORIO (docker.io/<usuario>/mdd),
 # GITHUB_REPOSITORIO, AUTENTICACION (auth.docker.io), GITHUB_API, MDD_PROYECTO (mdd), PUERTO_HTTPS
@@ -18,6 +20,7 @@ cd "$(dirname "$0")/../.."
 
 readonly CADDY=caddy:2.11.7-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
 readonly UID_JAVA=10001   # usuario de las imágenes de Java (java.Dockerfile)
+readonly USUARIOS_DEMO=backend/servicios/usuarios/src/main/resources/usuarios-demo.yaml
 
 interactivo=true
 raiz=/opt/mdd
@@ -85,7 +88,6 @@ if [[ ! -e $raiz/.env ]]; then
         echo "DB_CLAVE_DISTRIBUTIVO=$(aleatorio)"
         echo "DB_CLAVE_SALIDA=$(aleatorio)"
         echo "MDD_CLAVE_PROCESO_DISTRIBUTIVO=$(aleatorio)"
-        echo "MDD_USUARIO_PRUEBA_CLAVE=$(aleatorio)"
         echo "DEMO_USUARIO=${DEMO_USUARIO:-demo}"
         echo "DEMO_CLAVE='$DEMO_CLAVE'"
         echo "DEMO_CLAVE_HASH='$hash_demo'"
@@ -109,6 +111,21 @@ if [[ ! -e $raiz/secretos/jwt.pem ]]; then
     fi
     echo "Creada la llave de firma."
 fi
+
+# --- Contraseñas de los usuarios de la demo (D-59) ------------------------------------------------
+# Una línea usuario=clave por cada usuario de usuarios-demo.yaml que todavía no tenga la suya.
+claves_demo="$raiz/secretos/claves-demo"
+[[ -e $claves_demo ]] || : >"$claves_demo"
+agregadas=0
+while read -r usuario; do
+    if ! awk -F= -v u="$usuario" '$1 == u { hay = 1 } END { exit !hay }' "$claves_demo"; then
+        echo "$usuario=$(openssl rand -hex 16)" >>"$claves_demo"
+        agregadas=$((agregadas + 1))
+    fi
+done < <(awk '/^  - usuario: / { print $3 }' "$USUARIOS_DEMO")
+# Solo en las pruebas, sin root: el uid 10001 del contenedor tiene que poder leerlo.
+[[ $interactivo == true ]] || chmod 0444 "$claves_demo"
+echo "Contraseñas de la demo: $agregadas nuevas en $claves_demo (verlas con «sudo cat», sin copiarlas a otro lado)."
 
 # --- configuracion.env: credenciales de actualizar.sh ---------------------------------------------
 if [[ ! -e $raiz/configuracion.env ]]; then
@@ -139,6 +156,9 @@ fi
 usermod -aG docker mdd
 chown -R mdd:mdd "$raiz"
 chown "$UID_JAVA:$UID_JAVA" "$raiz/secretos/jwt.pem"
+# identidad lo lee como dueño (10001) y probar_humo.sh, que corre como mdd, como grupo.
+chown "$UID_JAVA:mdd" "$claves_demo"
+chmod 0440 "$claves_demo"
 install -m 0644 deploy/equipo/mdd-actualizar.service deploy/equipo/mdd-actualizar.timer /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable --now mdd-actualizar.timer

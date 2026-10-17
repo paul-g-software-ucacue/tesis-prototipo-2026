@@ -22,6 +22,8 @@ Registro de las comprobaciones de los tres escenarios de la historia (issue #43)
 | `autor.prueba` desactivable (T012) | confirmada | `CargaUsuarioDePruebaTest` (5): con `habilitado=false` y el usuario existente, queda inactivo; si ya lo estaba, no se vuelve a guardar; con `habilitado=true`, igual que en B00-H03. | 2026-10-17 |
 | Claims `nombre` e `inicio` (T013) | confirmada | `EmisorJwtTest` (3): el token de usuario lleva `nombre` e `inicio` (segundos), además de `sub` y `roles` ordenados; el de proceso no los lleva. | 2026-10-17 |
 | Sesión actual con nombre (T014) | confirmada | `SesionContratoTest`: con un token de `docente.coordinador.demo`, `{"usuario":"docente.coordinador.demo","roles":["COORDINADOR_CARRERA","DOCENTE"],"nombre":"Docente y coordinador (demo)"}`, válido contra el contrato; sin claim `nombre`, el campo no aparece. | 2026-10-17 |
+| Inicio con nombre y roles en español (T016) | confirmada | Vitest: `Inicio.test.tsx` («Hola, Vicerrectorado académico (demo)» y «Vicerrector académico», sin `VICERRECTOR` en pantalla; sin `nombre`, «Hola, autor.prueba») y `roles.test.ts` (los 10 roles; uno desconocido, tal cual). Playwright en Chromium y Firefox: `docente.coordinador.demo` entra y ve «Hola, Docente y coordinador (demo)» y «Coordinador de carrera». | 2026-10-17 |
+| Perfil local, los 11 usuarios (T015, T017, SC-001) | confirmada | `docker compose up -d --build --wait` y `deploy/probar_autenticacion.sh`: identidad registra «Usuarios de la demo: 11 creados y 0 actualizados»; el paso 7 pasa para los 11, cada uno con su nombre y **exactamente** los roles de `usuarios-demo.yaml` (`docente.coordinador.demo`: `["COORDINADOR_CARRERA","DOCENTE"]`). Los pasos 1 a 6 de B00-H03 siguen en `OK`, y también `probar_errores.sh`, `probar_eventos.sh` y `probar_spa.sh`. | 2026-10-17 |
 
 ## Escenario 2: credenciales inválidas y bloqueo
 
@@ -31,17 +33,24 @@ Registro de las comprobaciones de los tres escenarios de la historia (issue #43)
 | Intentos en PostgreSQL (T020) | confirmada | `RepositorioIntentosJdbcIntegrationTest` (5): la cuenta sube; **10 fallos simultáneos cuentan los 10** (`INSERT … ON CONFLICT … DO UPDATE … RETURNING`); el bloqueo se guarda y se borra; la limpieza borra solo las filas de más de 24 horas sin bloqueo vigente. | 2026-10-17 |
 | Inicio de sesión con bloqueo (T021) | confirmada | `IniciarSesionServicioTest` (11, Mockito en los puertos): un nombre bloqueado lanza `InicioBloqueado` sin buscar al usuario, sin verificar la contraseña y sin contar; un fallo cuenta el nombre normalizado, exista o no; el quinto bloquea; un acierto borra los intentos; los casos de B00-H03 siguen igual. | 2026-10-17 |
 | 429 y catálogo (T022) | confirmada | `SesionContratoTest`: 429 con `Retry-After: 600` y `{"titulo":"Demasiados intentos","descripcion":"Espera unos minutos y vuelve a intentarlo.","codigo":"USUARIOS_INICIO_BLOQUEADO"}`, válido contra el contrato. `ErroresUsuariosTest`: el catálogo coincide con `contratos/comun/errores.md`. En la plataforma, `RegistroDeErroresTest` y `ManejadorDeErroresTest` cubren los encabezados calculados por la entrada del catálogo. | 2026-10-17 |
+| 429 en la SPA (T023) | confirmada | Vitest (`IniciarSesion.test.tsx`) y Playwright en los dos navegadores: «Demasiados intentos» y «Espera unos minutos y vuelve a intentarlo.», sin `USUARIOS_` ni `429` en pantalla y sin token. | 2026-10-17 |
+| Bloqueo en el perfil (T024, SC-003, SC-007) | confirmada | `probar_autenticacion.sh`, paso 8: con `bloqueo-<aleatorio>` y con `ocs.demo`, 5 veces 401 y el sexto 429 `USUARIOS_INICIO_BLOQUEADO` con `Retry-After`; los cuerpos del 401 y del 429 son **idénticos** para el nombre inventado y para el que existe. El script borra después los intentos de `ocs.demo` y se pudo correr dos veces seguidas con todo en `OK`. | 2026-10-17 |
 
 ## Escenario 3: acceso sin sesión e inactividad
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
 | Renovación (T025, T026) | confirmada | `RenovarSesionServicioTest` (4): con menos de 8 horas emite otro token con el mismo `inicio`; con 8 horas, un token de proceso o un usuario desactivado o borrado, `SesionNoRenovable`. `SesionContratoTest`: 200 `TokenSesion` con un token vigente; 401 `SEGURIDAD_NO_AUTENTICADO` con `WWW-Authenticate: Bearer` si no es renovable o no hay token, todo válido contra el contrato. | 2026-10-17 |
+| Renovación en la SPA (T027, T028) | confirmada | `renovacion.test.ts` (9, temporizadores falsos): sin actividad no renueva y cierra a los 30 minutos como «sesión terminada»; con actividad renueva una vez al entrar en los últimos 20 minutos; dos actividades seguidas, una sola renovación; **después de una renovación, sin actividad, no hay otra y la sesión vence**; la petición de renovación sale sin el encabezado interno y no cuenta como actividad; una petición del usuario sí cuenta; un 401 cierra la sesión; un fallo de red la deja hasta su vencimiento; el token renovado tampoco llega al almacenamiento. `sesion.test.tsx`: una tecla, un clic o volver atrás en el navegador renuevan; sin sesión, la actividad no pide nada. Cobertura de la SPA: 99,5 % de líneas. | 2026-10-17 |
+| Acceso sin sesión y renovación de punta a punta (T029, SC-004) | confirmada | Playwright: sin sesión, `/` lleva a `/iniciar-sesion?destino=%2F` y, al entrar, vuelve a `/` (37 pruebas en Chromium y Firefox, todas en verde). `probar_autenticacion.sh`, paso 9: la renovación con el token de `docente.demo` devuelve 200 y el token nuevo sirve en la sesión actual; con un token alterado, el 401 uniforme. | 2026-10-17 |
 
 ## RNF-SEG-02 (D-61)
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Contraseñas solo como hash (T031, FR-008) | confirmada | En el perfil local, `select nombre_usuario, left(clave_hash, 10) from usuarios.usuario`: las 12 filas (los 11 de la demo y `autor.prueba`) empiezan con `$argon2id$`. | 2026-10-17 |
+| Sin tokens guardados (T031) | confirmada | Las tablas del esquema `usuarios` son `evento_recibido`, `flyway_schema_history`, `intento_fallido`, `usuario` y `usuario_rol`: ninguna guarda tokens. En la SPA, el token solo vive en memoria: las pruebas de B00-H06 siguen en verde (Vitest y Playwright) y hay una nueva para el token renovado. | 2026-10-17 |
+| Secretos del equipo (T031) | confirmada | Los de B00-H08 (`/opt/mdd` 0750, `secretos` 0700, `jwt.pem` 0400 del uid 10001), más `claves-demo` con dueño 10001, grupo `mdd` y modo 0440 (T030). Ninguna contraseña de la demo está en el repositorio ni en una imagen: `usuarios-demo.yaml` no tiene contraseñas y en local se usa la clave ficticia `cambiar-en-local-demo`. | 2026-10-17 |
 
 ## Equipo de demostración
 

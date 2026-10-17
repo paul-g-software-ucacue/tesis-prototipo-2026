@@ -72,14 +72,20 @@ services:
       <<: *jvm
       DB_CLAVE_IDENTIDAD: ${DB_CLAVE_IDENTIDAD}
       MDD_CLAVE_PROCESO_DISTRIBUTIVO: ${MDD_CLAVE_PROCESO_DISTRIBUTIVO:?falta MDD_CLAVE_PROCESO_DISTRIBUTIVO}
-      # Usuario de prueba en el equipo de demostración, con clave propia, hasta F05-H01 (D-57).
-      MDD_USUARIO_PRUEBA_HABILITADO: "true"
-      MDD_USUARIO_PRUEBA_CLAVE: ${MDD_USUARIO_PRUEBA_CLAVE:?falta MDD_USUARIO_PRUEBA_CLAVE}
+      # autor.prueba ya no entra al equipo de demostración: lo reemplazan los usuarios de la demo
+      # (D-57, F05-H01). Si existe de una versión anterior, identidad lo desactiva al arrancar.
+      MDD_USUARIO_PRUEBA_HABILITADO: "false"
+      # Contraseñas de los usuarios de la demo, generadas en el equipo por preparar.sh (D-59).
+      MDD_USUARIOS_DEMO_CLAVES: /run/mdd/claves-demo
       # Llave de firma persistente (ADR-014): reiniciar identidad no invalida las sesiones.
       MDD_LLAVE_PRIVADA: /run/mdd/jwt.pem
     volumes:
       # Z: etiqueta privada de SELinux solo para este archivo, de dueño 10001 y modo 0400.
       - ${MDD_SECRETOS:-/opt/mdd/secretos}/jwt.pem:/run/mdd/jwt.pem:ro,Z
+      # Dueño 10001, grupo mdd y modo 0440: identidad lo lee como dueño y probar_humo.sh, como grupo.
+      # Si falta (preparar.sh sin correr), desplegar.sh no levanta la versión: Docker crearía una
+      # carpeta con ese nombre. La sintaxis larga no sirve: Compose ignora su «selinux: Z».
+      - ${MDD_SECRETOS:-/opt/mdd/secretos}/claves-demo:/run/mdd/claves-demo:ro,Z
 
   datos:
     <<: *proceso
