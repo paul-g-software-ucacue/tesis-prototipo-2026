@@ -146,7 +146,7 @@ description: "Tareas de B00-H08: Publicación en Docker Hub y despliegue en el e
 **Independent Test**: `deploy/equipo/probar_equipo.sh` publica la versión A en un registro local, prepara un equipo temporal y corre `actualizar.sh`: todo sano, humo en verde y `success` en la API simulada.
 
 - [X] T014 [P] [US3] Crear `deploy/equipo/github_simulado.py`: un servidor HTTP mínimo con la biblioteca estándar de Python, que acepta `POST /repos/<dueño>/<repo>/deployments` (devuelve un `id`) y `POST …/deployments/<id>/statuses`, exige el encabezado `Authorization: Bearer <token de prueba>` y guarda cada petición como una línea JSON en un archivo. Sin dependencias externas.
-- [ ] T015 [US3] Prueba primero: crear `deploy/equipo/probar_equipo.sh` (research §12). Con el patrón `verificar`:
+- [X] T015 [US3] Prueba primero: crear `deploy/equipo/probar_equipo.sh` (research §12). Con el patrón `verificar`:
   0. con el registro vacío (antes de publicar nada), `actualizar.sh` termina con 0, registra «sin versión publicada» y la API simulada no recibe nada (M5);
   1. levanta `registry:2` en `localhost:5000` y `github_simulado.py`;
   2. publica la versión A con `construir.sh` (o reetiqueta las imágenes ya construidas) y `publicar.sh localhost:5000/mdd`;
@@ -162,7 +162,7 @@ description: "Tareas de B00-H08: Publicación en Docker Hub y despliegue en el e
 
   Al final baja todo (`docker compose -p mdd down -v`, el registro y el simulador). Comprobar que falla mientras no existen `actualizar.sh` y `preparar.sh`.
 - [X] T016 [US3] Crear `deploy/equipo/probar_humo.sh` (contracts/equipo.md): los 4 pasos con `curl --resolve "$DIRECCION:443:127.0.0.1"` (y `-k` solo si `DIRECCION` termina en `.localhost`), usando `DEMO_USUARIO`, `DEMO_CLAVE` y `MDD_USUARIO_PRUEBA_CLAVE` del `.env`; no imprime credenciales ni el token.
-- [ ] T017 [US3] Reescribir `deploy/desplegar.sh` según contracts/equipo.md: `desplegar.sh <carpeta de la versión>`:
+- [X] T017 [US3] Reescribir `deploy/desplegar.sh` según contracts/equipo.md: `desplegar.sh <carpeta de la versión>`:
   - mueve `anterior` y `actual`;
   - escribe `ETIQUETA` en `.env`;
   - corre `docker compose -p mdd --env-file "$RAIZ/.env" -f actual/compose.demo.yml pull` y `up -d --remove-orphans`;
@@ -172,7 +172,7 @@ description: "Tareas de B00-H08: Publicación en Docker Hub y despliegue en el e
   - termina con 0, 1 o 2.
 
   `RAIZ` por defecto `/opt/mdd` (variable para las pruebas). Mantiene el comportamiento de vuelta atrás de hoy y lo extiende a los archivos (US4).
-- [ ] T018 [US3] Crear `deploy/equipo/actualizar.sh` según contracts/equipo.md y research §6:
+- [X] T018 [US3] Crear `deploy/equipo/actualizar.sh` según contracts/equipo.md y research §6:
   - deriva el registro y la ruta de `REPOSITORIO` (`docker.io/<ruta>` → `registry-1.docker.io`), pide el token de lectura a `${AUTENTICACION}` (salvo que esté vacía) y hace `HEAD` de `https://<registro>/v2/<ruta>/manifests/despliegue-main` (o `http://` para `localhost`) con el *Accept* de índices y *manifests* OCI y Docker; un 404 es «sin versión publicada»: registro local, sin informe y salida con 0;
   - compara el *digest* con `estado/ultimo-digest`;
   - `docker pull`, `docker create` y `docker cp` del paquete a `versiones/<commit12>/`;
@@ -182,7 +182,7 @@ description: "Tareas de B00-H08: Publicación en Docker Hub y despliegue en el e
   - borra las versiones más viejas que las 3 últimas.
 
   Si el registro o GitHub no responden, registra y sigue según contracts/equipo.md. `--forzar` despliega aunque el *digest* no cambie. Lee `configuracion.env` y `.env` de `RAIZ`.
-- [ ] T019 [US3] Crear `deploy/equipo/preparar.sh` según research §11 y contracts/equipo.md:
+- [X] T019 [US3] Crear `deploy/equipo/preparar.sh` según research §11 y contracts/equipo.md:
   - modo normal (con `sudo`): crea el usuario de sistema `mdd` en el grupo `docker`, `/opt/mdd` (0750) y sus subcarpetas;
   - genera con `openssl rand -hex 24` `POSTGRES_PASSWORD`, las 4 `DB_CLAVE_*`, `MDD_CLAVE_PROCESO_DISTRIBUTIVO` y `MDD_USUARIO_PRUEBA_CLAVE` («nunca `cambiar-en-local-…`», D-57);
   - genera `secretos/jwt.pem` con `openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048`, con dueño 10001 y modo 0400;
@@ -191,9 +191,9 @@ description: "Tareas de B00-H08: Publicación en Docker Hub y despliegue en el e
   - instala `actualizar.sh` en `bin/` y las unidades de systemd, y activa el temporizador.
 
   No pisa un archivo que ya existe. Modo `--no-interactivo --raiz <carpeta>` para la prueba: sin usuario de sistema ni systemd, con valores de entrada por variables.
-- [ ] T020 [P] [US3] Crear `deploy/equipo/mdd-actualizar.service` y `deploy/equipo/mdd-actualizar.timer` (contracts/equipo.md): `Type=oneshot`, `User=mdd`, `WorkingDirectory=/opt/mdd`, `ExecStart=/usr/bin/flock -n /opt/mdd/estado/candado /opt/mdd/bin/actualizar.sh`; temporizador con `OnBootSec=2min`, `OnUnitActiveSec=5min` y `Persistent=true`. Comprobar con `systemd-analyze verify`.
-- [ ] T021 [US3] Correr `probar_equipo.sh` en el PC del autor (en una carpeta temporal del *scratchpad*, no en `/opt/mdd`): pasos 1 a 5 en `OK`. Medir la memoria de los contenedores sanos con la lógica de `deploy/medir_memoria.sh` (SC-010). Anotarlo en la evidencia.
-- [ ] T022 [US3] Agregar a `.github/workflows/perfil-consolidado.yml` el paso «Despliegue en un equipo simulado», después de la medición de R-19 y de `docker compose down -v`: corre `deploy/equipo/probar_equipo.sh` con `shell: bash`. Subir `timeout-minutes` de 30 a 45 y anotar la duración real en la evidencia (M6). Agregar `deploy/equipo/**`, `deploy/publicacion/**`, `deploy/Caddyfile`, `deploy/desplegar.sh` y `deploy/docker/despliegue.Dockerfile` a las rutas que disparan el workflow, si las filtra.
+- [X] T020 [P] [US3] Crear `deploy/equipo/mdd-actualizar.service` y `deploy/equipo/mdd-actualizar.timer` (contracts/equipo.md): `Type=oneshot`, `User=mdd`, `WorkingDirectory=/opt/mdd`, `ExecStart=/usr/bin/flock -n /opt/mdd/estado/candado /opt/mdd/bin/actualizar.sh`; temporizador con `OnBootSec=2min`, `OnUnitActiveSec=5min` y `Persistent=true`. Comprobar con `systemd-analyze verify`.
+- [X] T021 [US3] Correr `probar_equipo.sh` en el PC del autor (en una carpeta temporal del *scratchpad*, no en `/opt/mdd`): pasos 1 a 5 en `OK`. Medir la memoria de los contenedores sanos con la lógica de `deploy/medir_memoria.sh` (SC-010). Anotarlo en la evidencia.
+- [X] T022 [US3] Agregar a `.github/workflows/perfil-consolidado.yml` el paso «Despliegue en un equipo simulado», después de la medición de R-19 y de `docker compose down -v`: corre `deploy/equipo/probar_equipo.sh` con `shell: bash`. Subir `timeout-minutes` de 30 a 45 y anotar la duración real en la evidencia (M6). Agregar `deploy/equipo/**`, `deploy/publicacion/**`, `deploy/Caddyfile`, `deploy/desplegar.sh` y `deploy/docker/despliegue.Dockerfile` a las rutas que disparan el workflow, si las filtra.
 
 **Checkpoint**: el equipo se actualiza solo, comprobado en el runner y en el PC.
 
@@ -205,13 +205,13 @@ description: "Tareas de B00-H08: Publicación en Docker Hub y despliegue en el e
 
 **Independent Test**: `probar_equipo.sh` publica una versión B rota después de A: vuelta atrás a A, todo sano y `failure` en la API simulada.
 
-- [ ] T023 [US4] Extender `deploy/equipo/probar_equipo.sh` (prueba primero) con:
+- [X] T023 [US4] Extender `deploy/equipo/probar_equipo.sh` (prueba primero) con:
   6. publicar la versión B: el mismo commit con otro sufijo (por ejemplo, `<commit12>b`), cuyo paquete cambia en `compose.demo.yml` la `SPRING_DATASOURCE_URL` de `identidad` a una base que no existe, con `ESPERA_SALUD=60` en la prueba;
-  7. `actualizar.sh` termina con código 0, `actual` vuelve a A, todos sanos con A, y la API simulada tiene `failure` para B con «Vuelta atrás a <A>: identidad no quedó sano»;
+  7. `actualizar.sh` termina con código 1 (despliegue fallido), `actual` vuelve a A, todos sanos con A, y la API simulada tiene `failure` para B con «Vuelta atrás a <A>: identidad no quedó sano»;
   8. el primer despliegue de un equipo nuevo con B rota: sin `anterior`, `failure` sin vuelta atrás y los contenedores como quedaron.
 
   Comprobar primero que falla si `desplegar.sh` no vuelve los archivos.
-- [ ] T024 [US4] Ajustar `deploy/desplegar.sh` y `deploy/equipo/actualizar.sh` hasta que pasen los pasos 6 a 8: la vuelta atrás usa `anterior/compose.demo.yml` y la `ETIQUETA` anterior, y el resumen nombra el servicio que no quedó sano. Medir el tiempo de la vuelta atrás con la espera real de 180 s en una corrida en el PC (SC-004: menos de 5 minutos). Anotarlo en la evidencia.
+- [X] T024 [US4] Ajustar `deploy/desplegar.sh` y `deploy/equipo/actualizar.sh` hasta que pasen los pasos 6 a 8: la vuelta atrás usa `anterior/compose.demo.yml` y la `ETIQUETA` anterior, y el resumen nombra el servicio que no quedó sano. Medir el tiempo de la vuelta atrás con la espera real de 180 s en una corrida en el PC (SC-004: menos de 5 minutos). Anotarlo en la evidencia.
 
 **Checkpoint**: una versión mala nunca deja la demostración caída.
 
@@ -223,8 +223,8 @@ description: "Tareas de B00-H08: Publicación en Docker Hub y despliegue en el e
 
 **Independent Test**: sin credenciales, 401 en `https://localhost/` y en `http://caddy:8081/` desde la red de Compose; con ellas, la SPA.
 
-- [ ] T025 [US5] Agregar a `deploy/equipo/probar_equipo.sh`, después del paso 4, una comprobación del sitio del túnel: desde un contenedor `curlimages/curl` (fijado por *digest*) en la red del proyecto `mdd`, `http://caddy:8081/` sin credenciales da 401 y con ellas da 200; `http://caddy:8081/api/usuarios/jwks` responde sin `basic_auth` (la API la protege el token, ADR-014).
-- [ ] T026 [US5] Comprobar el perfil `tunel`: `docker compose --profile tunel … config` incluye `cloudflared` con `TUNEL_TOKEN` y sin puertos, y sin el perfil no aparece. Documentar en `deploy/equipo/compose.demo.yml` cómo activarlo (quickstart §5).
+- [X] T025 [US5] Agregar a `deploy/equipo/probar_equipo.sh`, después del paso 4, una comprobación del sitio del túnel: desde un contenedor `curlimages/curl` (fijado por *digest*) en la red del proyecto `mdd`, `http://caddy:8081/` sin credenciales da 401 y con ellas da 200; `http://caddy:8081/api/usuarios/jwks` responde sin `basic_auth` (la API la protege el token, ADR-014).
+- [X] T026 [US5] Comprobar el perfil `tunel`: `docker compose --profile tunel … config` incluye `cloudflared` con `TUNEL_TOKEN` y sin puertos, y sin el perfil no aparece. Documentar en `deploy/equipo/compose.demo.yml` cómo activarlo (quickstart §5).
 
 **Checkpoint**: el acceso restringido vale para la red local y para el túnel.
 
@@ -236,7 +236,7 @@ description: "Tareas de B00-H08: Publicación en Docker Hub y despliegue en el e
 
 **Independent Test**: `cierre-ola` con `workflow_dispatch` en la rama de la historia: ZAP sin hallazgos altos, k6 omitido con aviso y SBOM comprobado.
 
-- [ ] T027 [US6] Reescribir `.github/workflows/cierre-ola.yml` según contracts/cierre-ola.md:
+- [X] T027 [US6] Reescribir `.github/workflows/cierre-ola.yml` según contracts/cierre-ola.md:
   - un job `ZAP y k6 sobre el perfil` que hace `docker compose build`, `up -d --wait`, ZAP *full scan* sobre `http://localhost:8081`, y ZAP *API scan* por cada `contratos/*/openapi.yaml` (sin `comun/`), con el token de `autor.prueba` de `.env.ejemplo` y el API Gateway como destino (`-O http://localhost:8080` o el que corresponda a los `servers` del contrato);
   - k6 solo si existe `pruebas/k6/${GITHUB_REF_NAME}.js`, si no `::notice::`;
   - artefactos con los informes;

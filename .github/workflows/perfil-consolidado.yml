@@ -17,6 +17,7 @@ on:
       - .env.ejemplo
       - "contratos/**"
       - "deploy/**"
+      - .dockerignore
       - "frontend/**"
       - .github/workflows/perfil-consolidado.yml
 
@@ -33,7 +34,7 @@ jobs:
     # En borradores no corre, como la CI.
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -92,3 +93,10 @@ jobs:
         name: Bajar el perfil
         shell: bash
         run: docker compose down -v
+
+      # B00-H08: el ciclo del equipo de demostración en el runner, sin Docker Hub ni GitHub (registro
+      # local y API simulada): sin versión, despliegue sano, llave persistente, sitio del túnel, vuelta
+      # atrás y primer despliegue roto (escenarios 3 a 5, D-56). Corre después de bajar el perfil.
+      - name: Despliegue en un equipo simulado
+        shell: bash
+        run: deploy/equipo/probar_equipo.sh

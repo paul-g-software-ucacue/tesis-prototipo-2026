@@ -18,8 +18,8 @@ Carpeta `/opt/mdd`, de un usuario de sistema `mdd` (research §8 y §11).
 
 | Archivo | Modo | Contenido | Lo usa |
 |---|---|---|---|
-| `configuracion.env` | 0600 | `DOCKERHUB_USUARIO`, `DOCKERHUB_TOKEN` (solo lectura), `GITHUB_REPOSITORIO`, `GITHUB_TOKEN` (*deployments*), `GITHUB_ENTORNO=demostracion` | `actualizar.sh` |
-| `.env` | 0600 | `POSTGRES_PASSWORD`, `DB_CLAVE_IDENTIDAD`, `DB_CLAVE_DATOS`, `DB_CLAVE_DISTRIBUTIVO`, `DB_CLAVE_SALIDA`, `MDD_CLAVE_PROCESO_DISTRIBUTIVO`, `MDD_USUARIO_PRUEBA_CLAVE`, `DEMO_USUARIO`, `DEMO_CLAVE`, `DEMO_CLAVE_HASH`, `DIRECCION` (por defecto `mdd.localhost`), `REPOSITORIO` (forma completa: `docker.io/p980/mdd`; única fuente, también para `actualizar.sh`), `ETIQUETA` y, opcional, `TUNEL_TOKEN` | Compose (interpolación), `probar_humo.sh` y `actualizar.sh` |
+| `configuracion.env` | 0600 | `AUTENTICACION` (`auth.docker.io`; vacía en la prueba), `GITHUB_API`, `DOCKERHUB_USUARIO`, `DOCKERHUB_TOKEN` (solo lectura), `GITHUB_REPOSITORIO`, `GITHUB_TOKEN` (*deployments*), `GITHUB_ENTORNO=demostracion` | `actualizar.sh` |
+| `.env` | 0600 | `MDD_PROYECTO` (`mdd`), `PUERTO_HTTPS` (`443`), `MDD_SECRETOS`, `POSTGRES_PASSWORD`, `DB_CLAVE_IDENTIDAD`, `DB_CLAVE_DATOS`, `DB_CLAVE_DISTRIBUTIVO`, `DB_CLAVE_SALIDA`, `MDD_CLAVE_PROCESO_DISTRIBUTIVO`, `MDD_USUARIO_PRUEBA_CLAVE`, `DEMO_USUARIO`, `DEMO_CLAVE`, `DEMO_CLAVE_HASH`, `DIRECCION` (por defecto `mdd.localhost`), `REPOSITORIO` (forma completa: `docker.io/p980/mdd`; única fuente, también para `actualizar.sh`), `ETIQUETA` y, opcional, `TUNEL_TOKEN` | Compose (interpolación), `probar_humo.sh` y `actualizar.sh` |
 | `secretos/jwt.pem` | 0400, dueño 10001 | Llave RSA de 2048 bits en PKCS#8 | `identidad` (ADR-014), montada `:ro,Z` |
 | `versiones/<commit>/` | 0750 | El paquete extraído | `desplegar.sh` |
 | `actual`, `anterior` | enlaces | A una carpeta de `versiones/` | `desplegar.sh` |

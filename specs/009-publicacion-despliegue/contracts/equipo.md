@@ -2,7 +2,7 @@
 
 ## `deploy/equipo/compose.demo.yml`
 
-Se corre siempre como `docker compose -p mdd --env-file /opt/mdd/.env -f /opt/mdd/actual/compose.demo.yml …`.
+Se corre siempre como `docker compose -p ${MDD_PROYECTO:-mdd} --env-file /opt/mdd/.env -f /opt/mdd/versiones/<commit12>/compose.demo.yml …`, con la **ruta real** de la versión y no el enlace `actual`: Docker resuelve un enlace al crear el contenedor, así que con el enlace un `Caddyfile` nuevo no llegaría a Caddy si su configuración no cambia. Con la ruta real, los montajes cambian con la versión y Compose recrea esos contenedores (implementación, 2026-10-17). `MDD_PROYECTO` (por defecto `mdd`) separa el equipo real de la prueba (`mdd-prueba`), que nunca toca al real.
 
 | Servicio | Imagen | Puertos | Memoria | Variables (solo las suyas) |
 |---|---|---|---|---|
@@ -27,7 +27,7 @@ Los dos importan el mismo fragmento: `basic_auth` para todo menos `/api/*`, `/ap
 
 ## `deploy/desplegar.sh` (cambia)
 
-**Uso:** `desplegar.sh <carpeta de la versión nueva>`, desde `/opt/mdd`. Termina con 0 (sano), 1 (vuelta atrás) o 2 (la versión anterior tampoco quedó sana). Escribe una línea de resumen en la salida estándar para el informe.
+**Uso:** `desplegar.sh <carpeta de la versión nueva>`, desde `/opt/mdd`. Termina con 0 (sano), 1 (no quedó sano: con vuelta atrás, o sin versión anterior) o 2 (la versión anterior tampoco quedó sana). Escribe una línea de resumen en la salida estándar para el informe.
 
 | Paso | Detalle |
 |---|---|
@@ -59,7 +59,9 @@ Lo corre `mdd-actualizar.service` cada 5 minutos, como el usuario `mdd`, con `fl
 | Paquete | `docker pull`, `docker create`, `docker cp /paquete` → `versiones/<commit>/` | Informe `failure` |
 | Informe | *Deployment* `in_progress` (D-56) | GitHub no responde: sigue, solo registro local |
 | Despliegue | `versiones/<commit>/desplegar.sh versiones/<commit>` | — |
-| Resultado | `success` (código 0) o `failure` (1 o 2) con la línea de resumen; guarda el *digest*; borra versiones más viejas que las 3 últimas | — |
+| Resultado | `success` (código 0) o `failure` (1 o 2) con la línea de resumen; guarda el *digest* (también si falló, para no reintentar cada 5 minutos una versión rota); borra versiones más viejas que las 3 últimas | — |
+
+**Códigos de `actualizar.sh`:** 0 si quedó sano, si no hubo cambios o si el registro no respondió (se reintenta); 1 si el despliegue falló, para que systemd marque la unidad como fallida.
 
 Variables para la prueba de la CI: `AUTENTICACION` (por defecto `auth.docker.io`; vacía para un registro sin autenticación) y `GITHUB_API` (por defecto `https://api.github.com`). `REPOSITORIO` sale del `.env`.
 

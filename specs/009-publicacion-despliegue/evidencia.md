@@ -41,30 +41,43 @@ Registro de las comprobaciones de los cinco escenarios de la historia (issue #25
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Prueba del ciclo antes de implementar (T015) | confirmada: fallaba | `probar_equipo.sh` sin `preparar.sh` ni `actualizar.sh`: se detiene al preparar el equipo. | 2026-10-17 |
+| Errores encontrados con la prueba (T017, T018) | corregidos | (1) Con `pipefail`, `{ [[ -n $token ]] && printf …; } \| curl` devolvía 1 sin token y el código HTTP salía `404000`. (2) `RAIZ=$RAIZ script` con `RAIZ` de solo lectura: Bash rechaza la asignación y la prueba de humo no corría. (3) La prueba reutilizaba un paquete construido antes de reescribir `desplegar.sh`: ahora siempre corre `construir.sh`. | 2026-10-17 |
+| Ciclo completo en el PC (T021) | confirmada | `deploy/equipo/probar_equipo.sh` (proyecto `mdd-prueba`, puerto 8443, `registry:2.8.3` y la API de GitHub simulada): pasos 0 a 10 en `OK` en 4 min 30 s. 0: sin versión publicada, código 0 y sin informes. 1–4: versión A sana, `actual` → A, *digest* guardado, `in_progress` y `success` para A. 5: sin cambios, sin informes nuevos. | 2026-10-17 |
+| Llave persistente (SC-007, FR-012) | confirmada | Paso 6: el token de `autor.prueba` sigue dando 200 en `GET /api/usuarios/sesion` después de `restart identidad`. | 2026-10-17 |
 
 ## Escenario 4: vuelta atrás
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Versión rota (T023, T024) | confirmada | Paso 8: el paquete B cambia la `SPRING_DATASOURCE_URL` de `identidad`; `actualizar.sh` termina con 1, `actual` vuelve a A, todo sano con A y la API simulada recibe `failure` con «Vuelta atrás a <A>: identidad no quedó sano en … s». | 2026-10-17 |
+| Primer despliegue roto (T023) | confirmada | Paso 9: un equipo nuevo con B: código 1, sin `anterior`, `failure` sin «Vuelta atrás». | 2026-10-17 |
+| Tiempo con la espera real (SC-004) | confirmada | `ESPERA_ROTO=180 probar_equipo.sh`: «La vuelta atrás tardó 244 s, con ESPERA_SALUD=180» (menos de 5 minutos); los 11 pasos en `OK` en 8 min 30 s. | 2026-10-17 |
 
 ## Escenario 5: acceso restringido
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Entrada HTTPS (T016) | confirmada | Paso 1 de `probar_humo.sh` en cada despliegue: `GET /` sin credenciales → 401 con `WWW-Authenticate: Basic`; con ellas, la SPA; `autor.prueba` inicia sesión por `/api` y la sesión actual responde. | 2026-10-17 |
+| Entrada del túnel (T025) | confirmada | Paso 7, desde `curlimages/curl:8.22.0` en la red del proyecto: `http://caddy:8081/` 401 sin credenciales y 200 con ellas; `POST /api/usuarios/sesion` 200 sin las credenciales de la demo (`/api` la protege el token, ADR-014). El JWKS por el API Gateway pide token, como corresponde. | 2026-10-17 |
+| Perfil `tunel` (T026) | confirmada | `docker compose config`: sin el perfil no hay `cloudflared`; con `--profile tunel`, `cloudflared` sin puertos, con `TUNNEL_TOKEN` y 64 MiB. | 2026-10-17 |
 
 ## Cierre de ola (US6)
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| `cierre-ola.yml` reescrito (T027) | confirmada en local | Un job levanta el perfil en el runner y corre ZAP 2.17.0 (fijado por *digest*) sobre la SPA y sobre cada `contratos/*/openapi.yaml` sin `comun/` (cargas, dashboard, generacion y usuarios), con el token de `autor.prueba` de `.env.ejemplo`; k6 solo si existe `pruebas/k6/<tag>.js`; la evidencia usa `cyclonedxDirectBom` y `verificar_sbom.sh`. Sin `vars.*` ni secretos. actionlint sin hallazgos. | 2026-10-17 |
 
 ## Informes a GitHub (D-56)
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Con la API simulada (T014, T015) | confirmada | `github_simulado.py` exige `Authorization: Bearer` y guarda cada petición: A → `in_progress` y `success`; B → `failure` con la vuelta atrás; sin informes cuando no hay versión ni cambios. Un token incorrecto recibe 401. | 2026-10-17 |
 
 ## Memoria (R-19)
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Equipo después de iniciar sesión (T021, SC-010) | confirmada | Paso 10: **1 222,3 MiB** para los 8 contenedores de `mdd-prueba`, por debajo de la alerta de 7 168 MiB; los límites suman 3 072 MiB. | 2026-10-17 |
 
 ## Notas

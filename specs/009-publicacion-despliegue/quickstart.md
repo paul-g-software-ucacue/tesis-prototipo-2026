@@ -65,17 +65,25 @@ sudo ls -l /opt/mdd /opt/mdd/secretos             # .env y configuracion.env con
 1. `cd.yml` corre sobre `main` y publica las 7 etiquetas y `despliegue-main` (escenario 1). Comprobar en Docker Hub.
 2. En menos de 15 minutos: `journalctl -u mdd-actualizar.service -n 50` dice «Sano en N s», y `https://mdd.localhost` (aceptando la CA interna de Caddy) pide usuario y contraseña (escenario 5).
 3. En GitHub, *Deployments → demostracion* muestra el commit con `success` (D-56).
-4. Iniciar sesión en la SPA con `autor.prueba` y la clave de `/opt/mdd/.env`; con el token del inicio de sesión, `docker compose -p mdd restart identidad` y comprobar que el token sigue valiendo (SC-007).
+4. Iniciar sesión en la SPA con `autor.prueba` y la clave de `/opt/mdd/.env` (`sudo grep MDD_USUARIO_PRUEBA_CLAVE /opt/mdd/.env`); con el token del inicio de sesión, `docker restart mdd-identidad-1` y comprobar que el token sigue valiendo (SC-007).
 
 ## 5. Opcional: acceso desde fuera de la casa (túnel)
 
 1. Un dominio administrado por Cloudflare (DNS gratis) y, en *Zero Trust → Networks → Tunnels*, un túnel con un nombre público, por ejemplo `mdd.<dominio>`, que apunte a `http://caddy:8081`.
 2. Copiar el token del túnel a `/opt/mdd/.env` como `TUNEL_TOKEN=…` (con `sudoedit`).
-3. Con el próximo despliegue, o con `sudo -u mdd /opt/mdd/bin/actualizar.sh --forzar`, se levanta `cloudflared`. Comprobar que `https://mdd.<dominio>` pide usuario y contraseña.
+3. **Solo cuando venzan o se retiren las excepciones de Caddy y cloudflared de `.grype.yaml`** (condición del autor del 2026-10-17). Con el próximo despliegue, o con `sudo -u mdd env RAIZ=/opt/mdd /opt/mdd/bin/actualizar.sh --forzar`, se levanta `cloudflared`. Comprobar que `https://mdd.<dominio>` pide usuario y contraseña.
 
-## 6. Lo que no debe pasar
+## 6. Prueba del ciclo en local
+
+```bash
+deploy/equipo/probar_equipo.sh      # registro local y API de GitHub simulada; proyecto mdd-prueba, puerto 8443
+```
+
+Nunca toca el equipo real (`mdd`, puerto 443). Resultado esperado: los pasos 0 a 10 en `OK`.
+
+## 7. Lo que no debe pasar
 
 - Que `gh secret list` en cualquier entorno muestre algo distinto de `DOCKERHUB_TOKEN` (SC-008).
-- Que un contenedor reciba claves que no son suyas (`docker compose -p mdd exec datos env` no muestra `DB_CLAVE_IDENTIDAD`).
+- Que un contenedor reciba claves que no son suyas (`docker exec mdd-datos-1 env` no muestra `DB_CLAVE_IDENTIDAD`).
 - Que `/opt/mdd` quede legible por otros usuarios.
 - Que una consulta sin cambios gaste una descarga de Docker Hub: solo `HEAD`.
