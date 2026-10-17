@@ -12,7 +12,8 @@ COPY contratos/ /app/contratos/
 # prebuild genera los tipos desde los contratos; tsc los revisa antes de construir.
 RUN npm run build
 
-FROM nginxinc/nginx-unprivileged:stable-alpine
+# Demostración del escenario 2 de B00-H08 (PR que se cierra sin fusionar): base vieja y vulnerable.
+FROM alpine:3.18.0@sha256:02bb6f428431fbc2809c5d1b41eab5a68350194fb508869a33cb1af4444c9b11
 # zlib 1.3.2-r0 de la base tiene una vulnerabilidad alta corregida en 1.3.2-r1 (Grype, B00-H08).
 # Se actualiza como root y se vuelve al usuario sin privilegios de la imagen (101).
 USER root
