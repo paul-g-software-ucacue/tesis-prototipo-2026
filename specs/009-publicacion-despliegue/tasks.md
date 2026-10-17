@@ -257,14 +257,14 @@ description: "Tareas de B00-H08: Publicación en Docker Hub y despliegue en el e
   - `perfil-consolidado`, con el paso «Despliegue en un equipo simulado» en verde (escenarios 3 y 4 en la CI);
   - `5 · imágenes` (`cd.yml` en el pull request): construye y revisa las 6 imágenes y las de terceros, sin entorno, sin inicio de sesión y sin subir nada.
 - [X] T031 [US2] Demostración del escenario 2, **con la aprobación del autor**: en una rama `demo-h08-vulnerable` (desde la de la historia), cambiar la base de la etapa final de `frontend.Dockerfile` a una versión con una alta o crítica corregida (la de T011) y abrir un pull request hacia `main`. Comprobar que `5 · imágenes` falla con esa imagen en «Bloquean» y que no hubo inicio de sesión ni `push`. Cerrarlo sin fusionar, borrar la rama y anotar el run (H1: `workflow_dispatch` no sirve antes de que `cd.yml` esté en `main`).
-- [ ] T032 **Pasos del autor** (quickstart §1 y §2), con su ayuda y sin que ningún secreto pase por el chat:
+- [X] T032 **Pasos del autor** (quickstart §1 y §2), con su ayuda y sin que ningún secreto pase por el chat:
   - repositorio privado y tokens en Docker Hub;
   - entornos `publicacion` y `demostracion`, con `DOCKERHUB_*`;
   - token de grano fino de *deployments*;
   - `sudo deploy/equipo/preparar.sh` en su PC, desde la rama de la historia.
 
   Comprobar con `gh secret list --env publicacion` y `gh variable list --env publicacion` (solo nombres) y con `systemctl status mdd-actualizar.timer`.
-- [ ] T033 Completar `evidencia.md` y la «Definición de terminado» del pull request. Fusionarlo con *squash* **con la aprobación del autor**. Después, en `main`:
+- [X] T033 Completar `evidencia.md` y la «Definición de terminado» del pull request. Fusionarlo con *squash* **con la aprobación del autor**. Después, en `main`:
   - `cd.yml` publica las 7 etiquetas y `despliegue-main` (escenario 1, SC-001: tiempo);
   - en menos de 15 minutos el PC despliega solo y queda sano (escenario 3, SC-003), y *Deployments → demostracion* muestra `success` con el commit (D-56, SC-005);
   - `https://mdd.localhost` pide credenciales (escenario 5, SC-006);

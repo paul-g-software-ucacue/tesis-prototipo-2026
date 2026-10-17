@@ -26,6 +26,7 @@ Registro de las comprobaciones de los cinco escenarios de la historia (issue #25
 | `compose.demo.yml` (T003, T007) | confirmada | `docker compose config` con un `.env` ficticio: imágenes `localhost:5000/mdd:<componente>-d8bc8828a281`, PostgreSQL y Caddy por *digest*, `datos` recibe solo `DB_CLAVE_DATOS`, `JAVA_TOOL_OPTIONS` y `SPRING_DATASOURCE_URL`; límites que suman 3 072 MiB; Caddy publica solo `127.0.0.1:443`; `cloudflared` no aparece sin su perfil. | 2026-10-17 |
 | `Caddyfile` (T004) | confirmada | `caddy validate` con Caddy 2.11.7: `Valid configuration` (sitio `{$DIRECCION:mdd.localhost}` con `tls internal` y `http://:8081`, los dos con el fragmento `(mdd)`). | 2026-10-17 |
 | Publicación en un registro local (T008, T009) | confirmada | `registry:2.8.3` en `localhost:5000` y `publicar.sh localhost:5000/mdd d8bc8828…`: las 7 etiquetas `<componente>-d8bc8828a281` y `despliegue-main` con el mismo *digest* que `despliegue-d8bc8828a281` (`sha256:1bcba636…`). La prueba se escribió con `publicar.sh` ya existente, así que no se vio fallar antes. | 2026-10-17 |
+| Primera publicación real (T033, SC-001) | confirmada | Fusión del [PR #105](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/pull/105) como `c152d33`; `cd.yml` en `main` ([run 39061373174](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/39061373174)), 8 min 31 s: construcción, revisión de las 9 imágenes, inicio de sesión y publicación en `docker.io/p980/ida_mdd` de `identidad`, `datos`, `distributivo`, `salida`, `gateway`, `frontend` y `despliegue` con la etiqueta `c152d3365958`, y `despliegue-main` (`sha256:8df323ad…`) al final. | 2026-10-17 |
 
 ## Escenario 2: imagen vulnerable
 
@@ -48,6 +49,7 @@ Registro de las comprobaciones de los cinco escenarios de la historia (issue #25
 | Ciclo completo en el PC (T021) | confirmada | `deploy/equipo/probar_equipo.sh` (proyecto `mdd-prueba`, puerto 8443, `registry:2.8.3` y la API de GitHub simulada): pasos 0 a 10 en `OK` en 4 min 30 s. 0: sin versión publicada, código 0 y sin informes. 1–4: versión A sana, `actual` → A, *digest* guardado, `in_progress` y `success` para A. 5: sin cambios, sin informes nuevos. | 2026-10-17 |
 | Llave persistente (SC-007, FR-012) | confirmada | Paso 6: el token de `autor.prueba` sigue dando 200 en `GET /api/usuarios/sesion` después de `restart identidad`. | 2026-10-17 |
 | En la CI (T030) | confirmada | `perfil-consolidado` del PR #105 listo ([run 39058604626](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/39058604626)), 10 min 37 s con el paso «Despliegue en un equipo simulado» en verde; los 10 checks de `ci` en verde ([run 39058604664](https://github.com/paul-g-software-ucacue/tesis-prototipo-2026/actions/runs/39058604664)). | 2026-10-17 |
+| En el PC del autor (T033, SC-003) | confirmada | `mdd-actualizar.service` detectó la versión 3 min después de publicada (19:22:58 UTC), la bajó y quedó sana: el registro de systemd muestra los 4 pasos de `probar_humo.sh` en `OK` y «Sano en 43 s». En el navegador, `https://mdd.localhost` pide usuario y contraseña y, con `autor.prueba`, muestra «Hola, autor.prueba» con COORDINADOR_CARRERA y DOCENTE (también cubre la revisión manual pendiente de B00-H06, SC-005). | 2026-10-17 |
 
 ## Escenario 4: vuelta atrás
 
@@ -64,6 +66,7 @@ Registro de las comprobaciones de los cinco escenarios de la historia (issue #25
 | Entrada HTTPS (T016) | confirmada | Paso 1 de `probar_humo.sh` en cada despliegue: `GET /` sin credenciales → 401 con `WWW-Authenticate: Basic`; con ellas, la SPA; `autor.prueba` inicia sesión por `/api` y la sesión actual responde. | 2026-10-17 |
 | Entrada del túnel (T025) | confirmada | Paso 7, desde `curlimages/curl:8.22.0` en la red del proyecto: `http://caddy:8081/` 401 sin credenciales y 200 con ellas; `POST /api/usuarios/sesion` 200 sin las credenciales de la demo (`/api` la protege el token, ADR-014). El JWKS por el API Gateway pide token, como corresponde. | 2026-10-17 |
 | Perfil `tunel` (T026) | confirmada | `docker compose config`: sin el perfil no hay `cloudflared`; con `--profile tunel`, `cloudflared` sin puertos, con `TUNNEL_TOKEN` y 64 MiB. | 2026-10-17 |
+| En el PC del autor (T033, SC-006) | confirmada | Paso 1 de la prueba de humo del despliegue real: «Sin credenciales, el proxy pide usuario y contraseña»; el navegador pide las credenciales de la demo antes de mostrar la SPA. | 2026-10-17 |
 
 ## Cierre de ola (US6)
 
@@ -77,12 +80,14 @@ Registro de las comprobaciones de los cinco escenarios de la historia (issue #25
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
 | Con la API simulada (T014, T015) | confirmada | `github_simulado.py` exige `Authorization: Bearer` y guarda cada petición: A → `in_progress` y `success`; B → `failure` con la vuelta atrás; sin informes cuando no hay versión ni cambios. Un token incorrecto recibe 401. | 2026-10-17 |
+| Despliegue real (T033, SC-005) | confirmada | *Deployments → demostracion*: deployment `7144594322`, `ref` `c152d3365958`, `in_progress` («Desplegando c152d3365958», 19:22:59 UTC) y `success` («Sano en 43 s», 19:23:43 UTC). En GitHub solo hay un secreto, `DOCKERHUB_TOKEN` en `publicacion`; `demostracion` y el repositorio no tienen ninguno (SC-008). | 2026-10-17 |
 
 ## Memoria (R-19)
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
 | Equipo después de iniciar sesión (T021, SC-010) | confirmada | Paso 10: **1 222,3 MiB** para los 8 contenedores de `mdd-prueba`, por debajo de la alerta de 7 168 MiB; los límites suman 3 072 MiB. | 2026-10-17 |
+| Equipo del autor (T033, SC-010) | confirmada | `docker stats` de los 8 contenedores de `mdd` después de iniciar sesión: identidad 361,4; distributivo 208,5; datos 207,0; salida 197,6; gateway 195,4; postgres 103,6; caddy 13,2; frontend 10,6. **Total: 1 297,2 MiB**, por debajo de la alerta de 7 168 MiB. | 2026-10-17 |
 
 ## Notas
 - **Revisión final (T029):** actionlint sin hallazgos en los 4 workflows; ShellCheck sin hallazgos en `deploy/*.sh`, `deploy/equipo/*.sh`, `deploy/publicacion/*.sh` y `deploy/sca/*.sh`; `github_simulado.py` compila. Gitleaks (`--text HEAD`) sobre un clon: 26 commits, `no leaks found`.
@@ -90,4 +95,6 @@ Registro de las comprobaciones de los cinco escenarios de la historia (issue #25
 - **Riesgo para historias futuras (L3):** `01-esquemas.sh` solo corre cuando se crea el volumen de PostgreSQL; un esquema nuevo no aparece en el equipo de demostración sin recrearlo.
 - **Repositorio de Docker Hub:** el plan gratuito permite un solo repositorio privado, y el autor ya tenía `p980/ida_mdd`. Con su aprobación se usa ese (`DOCKERHUB_REPOSITORIO=p980/ida_mdd` en el entorno `publicacion`; `REPOSITORIO=docker.io/p980/ida_mdd` en el equipo); los documentos dicen `<usuario>/mdd` como ejemplo. Los repositorios públicos `p980/api`, `p980/gateway` y `p980/register-api` son de proyectos anteriores y no se tocan.
 - **Primer arranque en el PC del autor (T032):** `preparar.sh` creó `/opt/mdd` (`configuracion.env` 0600, `jwt.pem` 0400 de 10001) y el temporizador. Las primeras consultas dieron 401: el repositorio no se llamaba `mdd` y el token de solo lectura del equipo no podía leer repositorios privados (su token de `auth.docker.io` traía `access: []`). `actualizar.sh` ahora explica un 401/403 en lugar de tratarlo como un error pasajero.
+- **Fusión (T033):** el PR #105 se fusionó con *squash* como `c152d33` en `main` el 2026-10-17, con la aprobación del autor, después de los 10 checks, `perfil-consolidado` y `5 · imágenes` en verde sobre `df4026e`. La rama `009-publicacion-despliegue` se borró.
+- **SC-007 en el equipo real:** la persistencia de la llave se comprobó con la prueba automática (paso 6 de `probar_equipo.sh`, en la CI y en el PC); repetirla en el equipo real quedó como opcional para el autor.
 
