@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-58 · ADR-020.
+- **Siguiente número libre:** D-59 · ADR-020.
 
 ## Índice
 
@@ -52,6 +52,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-55 | 2026-10-17 | El despliegue automático va al PC de demostración del autor, por extracción desde Docker Hub | Aceptada | Constitución principio IX y §3 (2.1.3), alcance del issue #25 (B00-H08), `cierre-ola.yml` |
 | D-56 | 2026-10-17 | Cada despliegue del equipo de demostración se informa a GitHub Deployments | Aceptada | Alcance del issue #25 (B00-H08) |
 | D-57 | 2026-10-17 | El usuario de prueba `autor.prueba` se habilita en el equipo de demostración, con clave propia | Aceptada | Alcance de los issues #25 (B00-H08) y #43 (F05-H01), D-37 |
+| D-58 | 2026-10-17 | Los archivos del despliegue viajan en una imagen más, el paquete de despliegue | Propuesta | Alcance del issue #25 (B00-H08: «las 6 imágenes») |
 
 ---
 
@@ -855,6 +856,22 @@ Hay que poder probar el flujo completo de creación del distributivo sin debilit
 **Alternativas.** No habilitarlo hasta F05-H01: la demostración queda en la pantalla de inicio de sesión.
 
 **Consecuencias.** F05-H01 lo deshabilita en el equipo de demostración cuando existan los usuarios reales.
+
+---
+
+## D-58. Los archivos del despliegue viajan en una imagen más, el paquete de despliegue
+
+- **Estado:** Propuesta · **Fecha:** 2026-10-17 · **Decidido por:** pendiente de aprobación del autor
+- **Origen:** plan de B00-H08 (`specs/009-publicacion-despliegue/research.md` §5)
+- **Modifica a:** alcance del issue #25 (B00-H08), que habla de publicar «las 6 imágenes»
+
+**Decisión.** Además de las 6 imágenes de los procesos, el API Gateway y la SPA, cada fusión a `main` publica en el mismo repositorio privado una imagen `FROM scratch` con los archivos del despliegue de ese commit (`compose.vps.yml`, `Caddyfile`, `01-esquemas.sh`, `desplegar.sh`, `probar_humo.sh` y `VERSION`), con la etiqueta `despliegue-<commit>`. La etiqueta móvil `despliegue-main` se mueve al final, cuando las 7 imágenes del commit ya están publicadas, y es lo único que consulta el equipo de demostración.
+
+**Por qué.** Un cambio en el despliegue viaja con las imágenes del mismo commit, y la vuelta atrás también vuelve a los archivos anteriores. El equipo usa la misma credencial de solo lectura de Docker Hub y no necesita acceso al repositorio privado de GitHub (D-55). La imagen no tiene paquetes del sistema, así que no agrega nada que revisar con Grype.
+
+**Alternativas.** Clonar el repositorio en el equipo (necesita un token con lectura de código); instalar los archivos a mano una vez (un cambio de `compose.vps.yml` obligaría a desplegar a mano y la vuelta atrás no volvería a la configuración anterior); un artefacto OCI con ORAS (otra herramienta en el equipo).
+
+**Consecuencias.** El repositorio tiene 7 etiquetas por commit. «Las 6 imágenes» del issue siguen siendo las que se construyen desde el código y Grype revisa.
 
 ---
 
