@@ -108,7 +108,7 @@ description: "Tareas de F04-H01: la política 2024 como primera versión de norm
   - `vicerrectorado.demo` entra, abre «Normativa» y ve 22 filas y Tipo 2;
   - `docente.demo` en `/normativa` ve «Acceso no autorizado» sin texto técnico;
   - axe-core sin fallas WCAG 2.1 AA en la pantalla.
-- [ ] T012 [US1] Crear `deploy/probar_normativa.sh`, con `shellcheck` limpio y el estilo de `probar_autenticacion.sh`:
+- [X] T012 [US1] Crear `deploy/probar_normativa.sh`, con `shellcheck` limpio y el estilo de `probar_autenticacion.sh`:
   - paso 1: `vicerrectorado.demo` lista una sola versión, la 1, con `SENESCYT-2024-03` y T2;
   - paso 2: la versión 1 tiene 22 filas y 7 reglas, y la fila `DOCENTE_TC` dice 22 h de clase entre 18 y 24 y 18 de otras de docencia;
   - paso 3: `admin.demo` la ve igual; `docente.demo` recibe el 403 común; una versión que no existe da 404.
@@ -125,8 +125,8 @@ description: "Tareas de F04-H01: la política 2024 como primera versión de norm
 
 **Independent Test**: reiniciar `datos` tres veces y comprobar que sigue habiendo una sola versión, igual; revisar que ninguna cifra de la política está en el código de Normativa.
 
-- [ ] T013 [US2] Agregar a `deploy/probar_normativa.sh` el paso 4: guardar la versión 1, reiniciar `datos` tres veces (`docker compose restart datos` y `up --wait`) y comprobar que sigue habiendo exactamente una versión, idéntica (SC-003). Correrlo y anotarlo.
-- [ ] T014 [US2] Revisión del principio VI (SC-004): buscar en `JNOR/` y en `frontend/src/pantallas/normativa/` las cifras de la política (por ejemplo `22`, `18`, `40`, `300`, `3500`) y anotar en la evidencia que solo aparecen en `V2__politica_2024.sql` y en las pruebas.
+- [X] T013 [US2] Agregar a `deploy/probar_normativa.sh` el paso 4: guardar la versión 1, reiniciar `datos` tres veces (`docker compose restart datos` y `up --wait`) y comprobar que sigue habiendo exactamente una versión, idéntica (SC-003). Correrlo y anotarlo.
+- [X] T014 [US2] Revisión del principio VI (SC-004): buscar en `JNOR/` y en `frontend/src/pantallas/normativa/` las cifras de la política (por ejemplo `22`, `18`, `40`, `300`, `3500`) y anotar en la evidencia que solo aparecen en `V2__politica_2024.sql` y en las pruebas.
 
 **Checkpoint**: las dos historias pasan de punta a punta.
 
