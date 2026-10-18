@@ -20,7 +20,9 @@ import org.springframework.security.web.server.savedrequest.NoOpServerRequestCac
  * <p>Es la primera de dos validaciones: el proceso que recibe la petición vuelve a validar el token
  * por su cuenta, así que una petición que llegue directo a un proceso tampoco entra. Sin token solo
  * pasan el inicio de sesión ({@code POST /api/usuarios/sesion}, D-37) y la salud de Actuator;
- * cualquier otra ruta fuera de {@code /api/**} se rechaza.
+ * cualquier otra ruta fuera de {@code /api/**} se rechaza: sin token con el 401 y con token con el
+ * 403 de {@link RespuestaAccesoNoAutorizadoReactiva}, el mismo cuerpo que los procesos (ADR-021).
+ * Los permisos de cada operación los valida el proceso, no el API Gateway.
  */
 @Configuration(proxyBeanMethods = false)
 class SeguridadGatewayConfig {
@@ -41,6 +43,8 @@ class SeguridadGatewayConfig {
     @Bean
     SecurityWebFilterChain cadenaDeSeguridad(ServerHttpSecurity http) {
         RespuestaNoAutenticadoReactiva respuesta401 = new RespuestaNoAutenticadoReactiva();
+        RespuestaAccesoNoAutorizadoReactiva respuesta403 =
+                new RespuestaAccesoNoAutorizadoReactiva();
         return http.csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
@@ -59,7 +63,10 @@ class SeguridadGatewayConfig {
                                         .denyAll())
                 .oauth2ResourceServer(
                         servidor -> servidor.jwt(jwt -> {}).authenticationEntryPoint(respuesta401))
-                .exceptionHandling(errores -> errores.authenticationEntryPoint(respuesta401))
+                .exceptionHandling(
+                        errores ->
+                                errores.authenticationEntryPoint(respuesta401)
+                                        .accessDeniedHandler(respuesta403))
                 .build();
     }
 }

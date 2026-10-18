@@ -26,7 +26,8 @@ import org.springframework.test.context.DynamicPropertySource;
 /**
  * La seguridad de los procesos con un servidor real y un JWKS servido por la prueba: cada causa de
  * rechazo da el mismo 401, y un token válido llega con sus roles (escenarios «Petición sin token» y
- * «Token alterado o vencido», ADR-014).
+ * «Token alterado o vencido», ADR-014). Desde F05-H02, los permisos del token son autoridades y
+ * cada acceso denegado responde el mismo 403 con cuerpo (ADR-021).
  */
 @SpringBootTest(
         classes = AplicacionDePrueba.class,
@@ -40,6 +41,11 @@ class SeguridadProcesoTest {
     private static final String CUERPO_401 =
             "{\"titulo\":\"Sesión no válida\",\"descripcion\":\"Inicia sesión de nuevo para"
                     + " continuar.\",\"codigo\":\"SEGURIDAD_NO_AUTENTICADO\"}";
+
+    private static final String CUERPO_403 =
+            "{\"titulo\":\"Acceso no autorizado\",\"descripcion\":\"No tienes permiso para esta"
+                    + " acción. Si crees que deberías tenerlo, pide al administrador que revise tus"
+                    + " roles.\",\"codigo\":\"SEGURIDAD_ACCESO_NO_AUTORIZADO\"}";
 
     private static final TokensDePrueba TOKENS = new TokensDePrueba();
     private static final ServidorJwks JWKS = arrancarJwks();
@@ -139,21 +145,103 @@ class SeguridadProcesoTest {
     }
 
     @Test
-    void dadoUnTokenDeUsuario_cuandoLlegaAUnaRutaInterna_entoncesResponde403() throws Exception {
+    void dadoUnTokenDeUsuario_cuandoLlegaAUnaRutaInterna_entoncesResponde403ConCuerpo()
+            throws Exception {
         String token = TOKENS.valido("autor.prueba", List.of("DOCENTE"));
 
-        assertThat(pedir("POST", "/interno/prueba/eventos", "Bearer " + token).statusCode())
-                .isEqualTo(403);
+        assertEs403(pedir("POST", "/interno/prueba/eventos", "Bearer " + token));
     }
 
     @Test
-    void dadoUnTokenDeProceso_cuandoLlegaAUnaRutaDeLaApi_entoncesResponde403() throws Exception {
+    void dadoUnTokenDeProceso_cuandoLlegaAUnaRutaDeLaApi_entoncesResponde403ConCuerpo()
+            throws Exception {
         String token = TOKENS.valido("proceso:distributivo", List.of("PROCESO"));
 
-        assertThat(pedir("GET", "/api/prueba/recurso", "Bearer " + token).statusCode())
-                .isEqualTo(403);
-        assertThat(pedir("GET", "/api/prueba/sesion", "Bearer " + token).statusCode())
-                .isEqualTo(403);
+        assertEs403(pedir("GET", "/api/prueba/recurso", "Bearer " + token));
+        assertEs403(pedir("GET", "/api/prueba/sesion", "Bearer " + token));
+    }
+
+    @Test
+    void dadoUnTokenConPermisos_cuandoLlegaAlProceso_entoncesSonAutoridadesSinElAlcance()
+            throws Exception {
+        String token =
+                TOKENS.conPermisos(
+                        "docente.demo",
+                        List.of("DOCENTE"),
+                        List.of("USUARIOS_ROLES:LECTURA", "OFERTA:LECTURA:PROPIO"));
+
+        HttpResponse<String> respuesta = pedir("GET", "/api/prueba/sesion", "Bearer " + token);
+
+        assertThat(respuesta.body())
+                .isEqualTo(
+                        "docente.demo|PERMISO_OFERTA:LECTURA,PERMISO_USUARIOS_ROLES:LECTURA,"
+                                + "ROLE_DOCENTE");
+    }
+
+    @Test
+    void dadoUnTokenSinElPermiso_cuandoLlamaAUnaOperacionProtegida_entoncesResponde403ConCuerpo()
+            throws Exception {
+        String token =
+                TOKENS.conPermisos("docente.demo", List.of("DOCENTE"), List.of("OFERTA:LECTURA"));
+
+        assertEs403(pedir("GET", "/api/prueba/protegido", "Bearer " + token));
+    }
+
+    @Test
+    void dadoUnTokenConElPermiso_cuandoLlamaAUnaOperacionProtegida_entoncesPasa() throws Exception {
+        String token =
+                TOKENS.conPermisos(
+                        "admin.demo", List.of("ADMINISTRADOR"), List.of("USUARIOS_ROLES:LECTURA"));
+
+        HttpResponse<String> respuesta = pedir("GET", "/api/prueba/protegido", "Bearer " + token);
+
+        assertThat(respuesta.statusCode()).isEqualTo(200);
+        assertThat(respuesta.body()).isEqualTo("protegido");
+    }
+
+    @Test
+    void dadoUnTokenSinElPermisoYUnCuerpoIlegible_cuandoEscribe_entoncesEl403LlegaAntesQueEl400()
+            throws Exception {
+        String sinPermiso =
+                TOKENS.conPermisos(
+                        "docente.demo", List.of("DOCENTE"), List.of("USUARIOS_ROLES:LECTURA"));
+        String conPermiso =
+                TOKENS.conPermisos(
+                        "admin.demo",
+                        List.of("ADMINISTRADOR"),
+                        List.of("USUARIOS_ROLES:ESCRITURA"));
+
+        assertEs403(pedirConCuerpo("/api/prueba/protegido", "Bearer " + sinPermiso, "no es json"));
+        assertThat(
+                        pedirConCuerpo(
+                                        "/api/prueba/protegido",
+                                        "Bearer " + conPermiso,
+                                        "no es json")
+                                .statusCode())
+                .isEqualTo(400);
+        assertThat(
+                        pedirConCuerpo(
+                                        "/api/prueba/protegido",
+                                        "Bearer " + conPermiso,
+                                        "{\"nombre\":\"rol\"}")
+                                .body())
+                .isEqualTo("escrito|1");
+    }
+
+    @Test
+    void dadoElCuerpoDel403_cuandoSeComparaConElCatalogo_entoncesEsElDeAccesoNoAutorizado() {
+        DefinicionDeCodigo codigo = CodigosComunes.ACCESO_NO_AUTORIZADO;
+
+        assertThat(CUERPO_403)
+                .isEqualTo(
+                        "{\"titulo\":\""
+                                + codigo.titulo()
+                                + "\",\"descripcion\":\""
+                                + codigo.descripcion()
+                                + "\",\"codigo\":\""
+                                + codigo.codigo()
+                                + "\"}");
+        VerificadorDeCatalogo.verificar(List.of(codigo));
     }
 
     @Test
@@ -177,6 +265,23 @@ class SeguridadProcesoTest {
     @Test
     void dadoLaSaludDelProceso_cuandoSeLlamaSinToken_entoncesResponde() throws Exception {
         assertThat(pedir("GET", "/actuator/health", "").statusCode()).isEqualTo(200);
+    }
+
+    private static void assertEs403(HttpResponse<String> respuesta) {
+        assertThat(respuesta.statusCode()).isEqualTo(403);
+        assertThat(respuesta.body()).isEqualTo(CUERPO_403);
+        assertThat(respuesta.headers().firstValue("Content-Type")).hasValue("application/json");
+    }
+
+    private HttpResponse<String> pedirConCuerpo(String ruta, String autorizacion, String cuerpo)
+            throws IOException, InterruptedException {
+        HttpRequest peticion =
+                HttpRequest.newBuilder(URI.create("http://localhost:" + puerto + ruta))
+                        .header("Authorization", autorizacion)
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(cuerpo))
+                        .build();
+        return cliente.send(peticion, HttpResponse.BodyHandlers.ofString());
     }
 
     private HttpResponse<String> pedir(String metodo, String ruta, String autorizacion)

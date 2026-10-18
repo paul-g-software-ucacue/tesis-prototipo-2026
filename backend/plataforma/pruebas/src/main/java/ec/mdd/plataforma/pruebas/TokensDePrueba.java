@@ -58,6 +58,19 @@ public final class TokensDePrueba {
         return firmar(llave, reclamos(usuario, roles, EMISOR, Instant.now().plus(VIGENCIA)));
     }
 
+    /**
+     * Token RS256 válido con el claim {@code permisos} (ADR-021), en la forma {@code
+     * FUNCIONALIDAD:TIPO} o {@code FUNCIONALIDAD:TIPO:PROPIO}.
+     */
+    public String conPermisos(String usuario, List<String> roles, List<String> permisos) {
+        JWTClaimsSet reclamos =
+                new JWTClaimsSet.Builder(
+                                reclamos(usuario, roles, EMISOR, Instant.now().plus(VIGENCIA)))
+                        .claim("permisos", permisos)
+                        .build();
+        return firmar(llave, reclamos);
+    }
+
     /** Token firmado con la llave buena que venció hace 10 minutos, más que la tolerancia. */
     public String vencido() {
         return firmar(

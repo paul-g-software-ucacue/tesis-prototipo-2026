@@ -39,11 +39,12 @@ class ControladorDeErroresTest {
     }
 
     @Test
-    void dadoUn403DeLaSeguridad_cuandoSeEscribeLaPaginaDeError_entoncesNoLlevaCuerpo() {
+    void dadoUn403DeLaSeguridad_cuandoSeEscribeLaPaginaDeError_entoncesEsAccesoNoAutorizado() {
         ResponseEntity<RespuestaError> respuesta = controlador.error(peticion(403, null));
 
         assertThat(respuesta.getStatusCode().value()).isEqualTo(403);
-        assertThat(respuesta.getBody()).isNull();
+        assertThat(respuesta.getBody().codigo()).isEqualTo("SEGURIDAD_ACCESO_NO_AUTORIZADO");
+        assertThat(respuesta.getBody().titulo()).isEqualTo("Acceso no autorizado");
     }
 
     @Test

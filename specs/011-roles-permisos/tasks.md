@@ -41,7 +41,7 @@ description: "Tareas de F05-H02: Roles con permisos y varios roles por usuario"
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear `specs/011-roles-permisos/evidencia.md` con estas secciones: entorno; escenario 1 (rol nuevo); escenario 2 (solo lectura y 403); escenario 3 (varios roles); equipo de demostración; notas.
+- [X] T001 Crear `specs/011-roles-permisos/evidencia.md` con estas secciones: entorno; escenario 1 (rol nuevo); escenario 2 (solo lectura y 403); escenario 3 (varios roles); equipo de demostración; notas.
 
 ---
 
@@ -49,25 +49,25 @@ description: "Tareas de F05-H02: Roles con permisos y varios roles por usuario"
 
 ### Contrato (principio IV)
 
-- [ ] T002 Crear `contratos/roles/openapi.yaml` según contracts/roles.md: las 9 operaciones, con `x-mdd-permiso` en las de `/api/`, los esquemas y las respuestas 401, 403 `AccesoNoAutorizado`, 404, 409, 500 y 503.
+- [X] T002 Crear `contratos/roles/openapi.yaml` según contracts/roles.md: las 9 operaciones, con `x-mdd-permiso` en las de `/api/`, los esquemas y las respuestas 401, 403 `AccesoNoAutorizado`, 404, 409, 500 y 503.
   - `Rol.nombre`: «1 a 80»; `Rol.descripcion`: «hasta 300»; `Rol.permisos`: `minItems: 1`; `alcance` ∈ `TODO`, `PROPIO`; `tipo` ∈ `LECTURA`, `ESCRITURA`, `APROBACION`, `FIRMA`.
   - `consultarAutorizacion` en `/interno/roles/autorizaciones/{usuario}`, sin `x-mdd-permiso` (token de proceso, ADR-018).
-- [ ] T003 Cambiar `contratos/usuarios/openapi.yaml` (`listarUsuarios` con `x-mdd-permiso: USUARIOS_ROLES:LECTURA`; el 403 de `recibirEvento` pasa a `AccesoNoAutorizado`), `contratos/comun/seguridad.yaml` (`SesionActual.permisos`, opcional; la respuesta `AccesoNoAutorizado`) y `contratos/comun/errores.md` (las 5 filas de contracts/roles.md). Agregar a `backend/servicios/roles/build.gradle` `id 'mdd.contrato'` y `implementation 'org.springframework.boot:spring-boot-starter-jdbc'` (para `JdbcClient`). Regenerar las interfaces del backend y los tipos de la SPA: `generar:api` gana el contrato de roles (`src/api/generado/roles.d.ts`).
+- [X] T003 Cambiar `contratos/usuarios/openapi.yaml` (`listarUsuarios` con `x-mdd-permiso: USUARIOS_ROLES:LECTURA`; el 403 de `recibirEvento` pasa a `AccesoNoAutorizado`), `contratos/comun/seguridad.yaml` (`SesionActual.permisos`, opcional; la respuesta `AccesoNoAutorizado`) y `contratos/comun/errores.md` (las 5 filas de contracts/roles.md). Agregar a `backend/servicios/roles/build.gradle` `id 'mdd.contrato'` y `implementation 'org.springframework.boot:spring-boot-starter-jdbc'` (para `JdbcClient`). Regenerar las interfaces del backend y los tipos de la SPA: `generar:api` gana el contrato de roles (`src/api/generado/roles.d.ts`).
 
 ### Plataforma: el 403 común y los permisos como autoridades
 
-- [ ] T004 [P] Prueba primero, en `PLAT/seguridad/src/test/java/ec/mdd/plataforma/seguridad/SeguridadProcesoTest.java`:
+- [X] T004 [P] Prueba primero, en `PLAT/seguridad/src/test/java/ec/mdd/plataforma/seguridad/SeguridadProcesoTest.java`:
   - un token con `permisos: ["USUARIOS_ROLES:LECTURA", "OFERTA:LECTURA:PROPIO"]` da las autoridades `PERMISO_USUARIOS_ROLES:LECTURA` y `PERMISO_OFERTA:LECTURA`, además de `ROLE_<rol>`;
   - un método con `@PreAuthorize` sin el permiso responde 403 con el cuerpo `SEGURIDAD_ACCESO_NO_AUTORIZADO`, igual que un token de usuario en `/interno/**` y uno de proceso fuera de él;
   - en `PLAT/errores/src/test/java/ec/mdd/plataforma/errores/ControladorDeErroresTest.java`, la prueba `dadoUn403DeLaSeguridad_…entoncesNoLlevaCuerpo` pasa a esperar el cuerpo `SEGURIDAD_ACCESO_NO_AUTORIZADO` (el 403 que llega a `/error`).
-- [ ] T005 Agregar `SEGURIDAD_ACCESO_NO_AUTORIZADO` a `PLAT/errores-nucleo/…/CodigosComunes.java`, con su fila del catálogo. En `PLAT/seguridad`:
+- [X] T005 Agregar `SEGURIDAD_ACCESO_NO_AUTORIZADO` a `PLAT/errores-nucleo/…/CodigosComunes.java`, con su fila del catálogo. En `PLAT/seguridad`:
   - crear `RespuestaAccesoNoAutorizado.java` (un `AccessDeniedHandler` con cuerpo fijo y sin detalles, como `RespuestaNoAutenticado`);
   - en `SeguridadProcesoAutoConfiguracion`: un conversor que una `roles` y `permisos`, `@EnableMethodSecurity` y el manejador de acceso denegado.
 
   En `PLAT/errores/…/ControladorDeErrores.java`, el 403 responde ese cuerpo (`CodigosComunes.segunEstado(403)`) y su JavaDoc deja de decir «sin cuerpo». Actualizar los comentarios «hasta F05-H02» de `Usuario.java` y `CargaUsuarioDePrueba.java`; **no** el de `V2__usuarios.sql`, porque Flyway compara su suma de verificación.
 
   T004 pasa.
-- [ ] T006 [P] Prueba primero, en `backend/gateway/src/test/…`: una ruta fuera de `/api/**` con un token válido responde 403 con el mismo cuerpo. Después configurar el manejador de acceso denegado en `backend/gateway/src/main/java/ec/mdd/gateway/SeguridadGatewayConfig.java`. T006 pasa.
+- [X] T006 [P] Prueba primero, en `backend/gateway/src/test/…`: una ruta fuera de `/api/**` con un token válido responde 403 con el mismo cuerpo. Después configurar el manejador de acceso denegado en `backend/gateway/src/main/java/ec/mdd/gateway/SeguridadGatewayConfig.java`. T006 pasa.
 - [ ] T007 Prueba primero, en `PLAT/pruebas/src/test/…`: `VerificadorDePermisos` lee un contrato de prueba con dos operaciones con `x-mdd-permiso` y una sin él. Contra una aplicación de prueba con `@PreAuthorize`, informa una operación sin anotación o con el permiso equivocado, y acepta las correctas. Después crear `PLAT/pruebas/src/main/java/ec/mdd/plataforma/pruebas/VerificadorDePermisos.java`: por cada operación con `x-mdd-permiso`, un token con todos los demás permisos espera 403 con el cuerpo común, y uno con ese permiso espera algo distinto de 403. T007 pasa.
 
 ### Dominio de Roles

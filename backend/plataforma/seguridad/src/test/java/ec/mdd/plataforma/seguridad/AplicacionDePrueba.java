@@ -1,11 +1,14 @@
 package ec.mdd.plataforma.seguridad;
 
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Aplicación mínima para probar la seguridad de los procesos con un servidor real. */
@@ -22,8 +25,11 @@ class AplicacionDePrueba {
                     + autenticacion.getAuthorities().stream()
                             .map(GrantedAuthority::getAuthority)
                             // Spring Security 7 agrega FACTOR_BEARER; aquí solo interesan los
-                            // roles.
-                            .filter(autoridad -> autoridad.startsWith("ROLE_"))
+                            // roles y los permisos.
+                            .filter(
+                                    autoridad ->
+                                            autoridad.startsWith("ROLE_")
+                                                    || autoridad.startsWith("PERMISO_"))
                             .sorted()
                             .collect(Collectors.joining(","));
         }
@@ -41,6 +47,19 @@ class AplicacionDePrueba {
         @GetMapping("/api/prueba/recurso")
         String recurso() {
             return "recurso";
+        }
+
+        @PreAuthorize("hasAuthority('PERMISO_USUARIOS_ROLES:LECTURA')")
+        @GetMapping("/api/prueba/protegido")
+        String protegido() {
+            return "protegido";
+        }
+
+        // Con cuerpo: sin el permiso, el 403 llega antes de leerlo (AutorizacionPrevia).
+        @PreAuthorize("hasAuthority('PERMISO_USUARIOS_ROLES:ESCRITURA')")
+        @PostMapping("/api/prueba/protegido")
+        String escribir(@RequestBody Map<String, String> cuerpo) {
+            return "escrito|" + cuerpo.size();
         }
     }
 }

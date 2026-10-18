@@ -16,7 +16,7 @@ Se cambia el contrato antes que el código (principio IV, ADR-015). Cada operaci
 | `asignarRoles` | `PUT /api/roles/usuarios/{usuario}` | `USUARIOS_ROLES:ESCRITURA` | 200 `RolesDeUsuario` · 400 (rol desconocido) · 409 `ROLES_SIN_ADMINISTRADOR` |
 | `consultarAutorizacion` | `GET /interno/roles/autorizaciones/{usuario}` | — (token de proceso, ADR-018) | 200 `Autorizacion` |
 
-Todas las operaciones de `/api/` responden además 401 `NoAutenticado`, 403 `AccesoNoAutorizado`, 500 y 503.
+Todas las operaciones de `/api/` responden además 401 `NoAutenticado`, 403 `AccesoNoAutorizado`, 500 y 503. El 404 es `COMUN_RECURSO_NO_ENCONTRADO`.
 
 **Esquemas:**
 
@@ -25,7 +25,8 @@ Todas las operaciones de `/api/` responden además 401 `NoAutenticado`, 403 `Acc
 | `Funcionalidad` | `codigo`, `nombre`, `tipos` (`[LECTURA, ESCRITURA, APROBACION, FIRMA]`, los que admite) |
 | `Permiso` | `funcionalidad`, `tipo`, `alcance` (`TODO` o `PROPIO`) |
 | `Rol` | `identificador` (solo lectura), `nombre` (1 a 80, con al menos una letra o un dígito: `pattern`), `descripcion` (hasta 300), `predefinido` (solo lectura), `permisos` (`minItems: 1`), `usuariosAsignados` (solo lectura, entero) |
-| `RolNuevo` / `RolEditado` | `nombre`, `descripcion`, `permisos` |
+| `RolEditable` | `nombre`, `descripcion` (1 a 300), `permisos`: lo que se escribe al crear y al editar |
+| `RolesAsignados` | `roles` (identificadores; vacía para quitarle todos), el cuerpo de `asignarRoles` |
 | `RolesDeUsuario` | `usuario`, `roles` (identificadores, puede estar vacía). Son las asignaciones de rol de un usuario (research §12) |
 | `Autorizacion` | `usuario`, `roles`, `permisos` (texto `FUNCIONALIDAD:TIPO[:PROPIO]`, ordenados) |
 

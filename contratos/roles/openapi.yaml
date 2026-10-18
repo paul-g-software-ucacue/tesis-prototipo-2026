@@ -1,0 +1,442 @@
+# Contrato de Roles (servicio 02, proceso identidad). Desde F05-H02: el catálogo de
+# funcionalidades, los roles con sus permisos (D-65) y las asignaciones de rol a usuarios (RF-02,
+# RF-03). Cada operación de /api/ declara el permiso que exige con x-mdd-permiso; sin él responde
+# 403 AccesoNoAutorizado (ADR-021). VerificadorDePermisos comprueba que el código lo respeta.
+openapi: 3.0.3
+info:
+  title: MDD · Roles
+  version: 1.0.0
+servers:
+  - url: /
+security:
+  - bearer: []
+tags:
+  - name: Funcionalidades
+    description: Partes del MDD sobre las que se dan permisos, con los tipos que admite cada una.
+  - name: Roles
+    description: Roles con sus permisos. Los 10 de la matriz D-16 son fijos (D-63).
+  - name: RolesDeUsuarios
+    description: Asignaciones de rol a usuarios; un usuario puede tener varios roles (RF-03).
+  - name: Autorizacion
+    description: Roles y permisos efectivos de un usuario, entre procesos (ADR-018, ADR-021).
+paths:
+  /api/roles/funcionalidades:
+    get:
+      tags: [Funcionalidades]
+      operationId: listarFuncionalidades
+      summary: Lista las funcionalidades en su orden, con los tipos de permiso que admite cada una.
+      x-mdd-permiso: USUARIOS_ROLES:LECTURA
+      responses:
+        '200':
+          description: Las funcionalidades.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Funcionalidad'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/roles:
+    get:
+      tags: [Roles]
+      operationId: listarRoles
+      summary: Lista los roles por nombre, con sus permisos y cuántos usuarios tienen cada uno.
+      x-mdd-permiso: USUARIOS_ROLES:LECTURA
+      responses:
+        '200':
+          description: Los roles.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Rol'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+    post:
+      tags: [Roles]
+      operationId: crearRol
+      summary: Crea un rol con sus permisos.
+      description: >-
+        El identificador se deriva del nombre y no cambia (data-model, tabla rol). Un permiso con
+        un tipo que su funcionalidad no admite, o de una funcionalidad que no existe, responde 400
+        con el detalle del campo permisos.
+      x-mdd-permiso: USUARIOS_ROLES:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RolEditable'
+      responses:
+        '201':
+          description: Rol creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rol'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/roles/{identificador}:
+    parameters:
+      - $ref: '#/components/parameters/Identificador'
+    get:
+      tags: [Roles]
+      operationId: consultarRol
+      summary: Devuelve un rol con sus permisos.
+      x-mdd-permiso: USUARIOS_ROLES:LECTURA
+      responses:
+        '200':
+          description: El rol.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rol'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+    put:
+      tags: [Roles]
+      operationId: editarRol
+      summary: Cambia el nombre, la descripción y los permisos de un rol creado por el administrador.
+      description: >-
+        El identificador no cambia. Un rol de la matriz D-16 responde 409 ROLES_ROL_PREDEFINIDO
+        (D-63).
+      x-mdd-permiso: USUARIOS_ROLES:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RolEditable'
+      responses:
+        '200':
+          description: Rol editado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rol'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+    delete:
+      tags: [Roles]
+      operationId: borrarRol
+      summary: Borra un rol creado por el administrador que no está asignado a nadie.
+      x-mdd-permiso: USUARIOS_ROLES:ESCRITURA
+      responses:
+        '204':
+          description: Rol borrado.
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/roles/usuarios:
+    get:
+      tags: [RolesDeUsuarios]
+      operationId: listarRolesDeUsuarios
+      summary: Lista, por usuario, los roles que tiene asignados.
+      description: Solo aparecen los usuarios con al menos un rol, ordenados por nombre de usuario.
+      x-mdd-permiso: USUARIOS_ROLES:LECTURA
+      responses:
+        '200':
+          description: Los roles de cada usuario.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RolesDeUsuario'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/roles/usuarios/{usuario}:
+    parameters:
+      - $ref: '#/components/parameters/Usuario'
+    put:
+      tags: [RolesDeUsuarios]
+      operationId: asignarRoles
+      summary: Reemplaza los roles de un usuario; una lista vacía le quita todos.
+      description: >-
+        El cambio vale desde la próxima renovación de la sesión del usuario (D-62). Un rol que no
+        existe responde 400 con el detalle del campo roles.
+      x-mdd-permiso: USUARIOS_ROLES:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RolesAsignados'
+      responses:
+        '200':
+          description: Roles asignados.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RolesDeUsuario'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /interno/roles/autorizaciones/{usuario}:
+    parameters:
+      - $ref: '#/components/parameters/Usuario'
+    get:
+      tags: [Autorizacion]
+      operationId: consultarAutorizacion
+      summary: Roles y permisos efectivos de un usuario.
+      description: >-
+        Solo entre procesos, con un token de proceso: el API Gateway no enruta /interno/ (ADR-018).
+        Dentro de identidad, Usuarios usa la interfaz de aplicación que refleja esta operación. Un
+        usuario sin roles devuelve las dos listas vacías.
+      responses:
+        '200':
+          description: La autorización del usuario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Autorizacion'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+components:
+  securitySchemes:
+    bearer:
+      $ref: '../comun/seguridad.yaml#/components/securitySchemes/bearer'
+  parameters:
+    Identificador:
+      name: identificador
+      in: path
+      required: true
+      description: Identificador del rol, en mayúsculas con guion bajo.
+      schema:
+        type: string
+        pattern: '^[A-Z0-9_]{1,64}$'
+      example: AUDITOR_DE_CARGAS
+    Usuario:
+      name: usuario
+      in: path
+      required: true
+      description: Nombre de usuario; no distingue mayúsculas y minúsculas.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 64
+      example: docente.demo
+  responses:
+    NoEncontrado:
+      description: El rol no existe (COMUN_RECURSO_NO_ENCONTRADO).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
+    Conflicto:
+      description: >-
+        El cambio no cumple una regla de la administración de roles: ROLES_NOMBRE_REPETIDO,
+        ROLES_ROL_PREDEFINIDO, ROLES_ROL_ASIGNADO o ROLES_SIN_ADMINISTRADOR (errores.md).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
+  schemas:
+    TipoDePermiso:
+      type: string
+      description: Lectura, escritura, aprobación (incluye devolver) o firma (RF-02).
+      enum: [LECTURA, ESCRITURA, APROBACION, FIRMA]
+    Alcance:
+      type: string
+      description: Todo, o solo lo propio (su carrera, unidad o persona, D-64).
+      enum: [TODO, PROPIO]
+    Funcionalidad:
+      type: object
+      required: [codigo, nombre, tipos]
+      properties:
+        codigo:
+          type: string
+          example: CARGAS
+        nombre:
+          type: string
+          example: Cargas de datos
+        tipos:
+          type: array
+          description: Los tipos de permiso que admite, en el orden lectura, escritura, aprobación y firma.
+          items:
+            $ref: '#/components/schemas/TipoDePermiso'
+    Permiso:
+      type: object
+      required: [funcionalidad, tipo, alcance]
+      properties:
+        funcionalidad:
+          type: string
+          description: Código de la funcionalidad.
+          pattern: '^[A-Z_]{1,40}$'
+          example: CARGAS
+        tipo:
+          $ref: '#/components/schemas/TipoDePermiso'
+        alcance:
+          $ref: '#/components/schemas/Alcance'
+    RolEditable:
+      description: Lo que el administrador escribe al crear o editar un rol.
+      type: object
+      required: [nombre, descripcion, permisos]
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 80
+          pattern: '.*[0-9A-Za-zÁÉÍÓÚÜÑáéíóúüñ].*'
+          description: >-
+            Único. Dos nombres que solo cambian en mayúsculas, tildes o signos son el mismo
+            (ROLES_NOMBRE_REPETIDO).
+          example: Auditor de cargas
+        descripcion:
+          type: string
+          minLength: 1
+          maxLength: 300
+          example: Revisa las cargas de datos y los docentes, sin cambiarlos.
+        permisos:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Permiso'
+    Rol:
+      type: object
+      required: [identificador, nombre, descripcion, predefinido, permisos, usuariosAsignados]
+      properties:
+        identificador:
+          type: string
+          readOnly: true
+          description: Se deriva del nombre al crear el rol y no cambia; viaja en el token.
+          example: AUDITOR_DE_CARGAS
+        nombre:
+          type: string
+          example: Auditor de cargas
+        descripcion:
+          type: string
+        predefinido:
+          type: boolean
+          readOnly: true
+          description: Si es uno de los 10 roles de la matriz D-16, que no se editan ni se borran.
+        permisos:
+          type: array
+          description: Ordenados por funcionalidad y tipo.
+          items:
+            $ref: '#/components/schemas/Permiso'
+        usuariosAsignados:
+          type: integer
+          minimum: 0
+          readOnly: true
+          description: Cuántos usuarios tienen el rol.
+    RolesAsignados:
+      type: object
+      required: [roles]
+      properties:
+        roles:
+          type: array
+          description: Identificadores de los roles; vacía para quitarle todos.
+          items:
+            type: string
+            pattern: '^[A-Z0-9_]{1,64}$'
+          example: [DOCENTE, AUDITOR_DE_CARGAS]
+    RolesDeUsuario:
+      description: Las asignaciones de rol de un usuario.
+      type: object
+      required: [usuario, roles]
+      properties:
+        usuario:
+          type: string
+          example: docente.demo
+        roles:
+          type: array
+          description: Identificadores de sus roles, ordenados; vacía si no tiene.
+          items:
+            type: string
+          example: [AUDITOR_DE_CARGAS, DOCENTE]
+    Autorizacion:
+      type: object
+      required: [usuario, roles, permisos]
+      properties:
+        usuario:
+          type: string
+          example: docente.coordinador.demo
+        roles:
+          type: array
+          description: Identificadores de sus roles, ordenados.
+          items:
+            type: string
+          example: [COORDINADOR_CARRERA, DOCENTE]
+        permisos:
+          type: array
+          description: >-
+            Permisos efectivos, ordenados, en la forma FUNCIONALIDAD:TIPO o
+            FUNCIONALIDAD:TIPO:PROPIO; ante dos alcances, vale el más amplio (data-model).
+          items:
+            type: string
+          example: ['DOCENTES:LECTURA', 'MI_DISTRIBUTIVO:LECTURA:PROPIO']
