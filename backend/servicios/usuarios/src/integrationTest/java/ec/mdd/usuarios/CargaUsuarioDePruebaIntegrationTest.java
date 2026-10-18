@@ -32,10 +32,12 @@ class CargaUsuarioDePruebaIntegrationTest {
         RepositorioUsuariosJpa repositorio = new RepositorioUsuariosJpa(filas);
         VerificadorArgon2 verificador =
                 new VerificadorArgon2(Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8());
+        AutorizacionAnotada autorizacion = new AutorizacionAnotada();
         CargaUsuarioDePrueba carga =
                 new CargaUsuarioDePrueba(
                         repositorio,
                         verificador,
+                        autorizacion,
                         new PropiedadesUsuarios.UsuarioPrueba(true, "clave-generada-en-la-prueba"));
 
         carga.run(null);
@@ -45,7 +47,11 @@ class CargaUsuarioDePruebaIntegrationTest {
         var usuario = repositorio.buscarPorNombre(CargaUsuarioDePrueba.NOMBRE).orElseThrow();
         assertThat(verificador.coincide("clave-generada-en-la-prueba", usuario.claveHash()))
                 .isTrue();
-        assertThat(usuario.roles()).containsExactlyInAnyOrder("DOCENTE", "COORDINADOR_CARRERA");
+        assertThat(autorizacion.pedidos)
+                .containsExactly(
+                        java.util.Map.entry(
+                                CargaUsuarioDePrueba.NOMBRE,
+                                java.util.List.of("COORDINADOR_CARRERA", "DOCENTE")));
     }
 
     @TestConfiguration(proxyBeanMethods = false)

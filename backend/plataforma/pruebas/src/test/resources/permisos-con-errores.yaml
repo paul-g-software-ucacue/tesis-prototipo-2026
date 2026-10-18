@@ -1,0 +1,26 @@
+openapi: 3.0.3
+info:
+  title: Contrato de prueba de VerificadorDePermisos, con el código que no lo cumple
+  version: 1.0.0
+paths:
+  /api/prueba/registros:
+    get:
+      operationId: listarRegistros
+      x-mdd-permiso: PRUEBA:LECTURA
+      responses:
+        '200':
+          description: Registros; esta sí está bien.
+  /api/prueba/olvidada:
+    get:
+      operationId: consultarOlvidada
+      x-mdd-permiso: PRUEBA:LECTURA
+      responses:
+        '200':
+          description: El controlador no tiene @PreAuthorize.
+  /api/prueba/equivocada:
+    get:
+      operationId: consultarEquivocada
+      x-mdd-permiso: PRUEBA:LECTURA
+      responses:
+        '200':
+          description: El controlador exige otro permiso.

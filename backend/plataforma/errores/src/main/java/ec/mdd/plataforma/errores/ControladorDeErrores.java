@@ -14,8 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
  * La página {@code /error} propia: los errores que no pasan por {@link ManejadorDeErrores}, como
  * los de un filtro, también responden con el esquema {@code Error} (FR-010, ADR-016).
  *
- * <p>Un 5xx (salvo 503) registra el incidente y responde 500 con su {@code idIncidente}. El 403 de
- * la seguridad se responde sin cuerpo: su formato llega con F05-H02 (matriz de permisos).
+ * <p>Un 5xx (salvo 503) registra el incidente y responde 500 con su {@code idIncidente}. Un 403 que
+ * llega aquí responde el mismo cuerpo que la seguridad, {@code SEGURIDAD_ACCESO_NO_AUTORIZADO}
+ * (ADR-021).
  */
 @RestController
 public class ControladorDeErrores implements ErrorController {
@@ -27,9 +28,6 @@ public class ControladorDeErrores implements ErrorController {
                 peticion.getAttribute(RequestDispatcher.ERROR_STATUS_CODE) instanceof Integer codigo
                         ? codigo
                         : 500;
-        if (estado == 403) {
-            return ResponseEntity.status(403).build();
-        }
         if (estado >= 500 && estado != 503) {
             String id =
                     RegistroDeIncidentes.registrar(

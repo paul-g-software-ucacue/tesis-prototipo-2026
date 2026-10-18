@@ -13,6 +13,7 @@ import org.springframework.security.authentication.AuthenticationTrustResolver;
 import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -24,24 +25,27 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * Seguridad de los 4 procesos: servidor de recursos con JWT RS256 (ADR-014).
  *
  * <p>Cada proceso valida por su cuenta el token de cada petición, aunque haya pasado por el API
  * Gateway: solo acepta RS256, la firma de una llave del JWKS de Usuarios, el emisor configurado y
- * un vencimiento que no pasó. Los roles salen del claim {@code roles} como autoridades {@code
- * ROLE_<rol>}. Sin un token válido, solo se atienden la salud de Actuator y las rutas de {@link
+ * un vencimiento que no pasó. Los roles y los permisos del token son autoridades ({@link
+ * AutoridadesDelToken}), y cada operación protegida los exige con {@code @PreAuthorize} (ADR-021).
+ * Sin un token válido, solo se atienden la salud de Actuator y las rutas de {@link
  * PropiedadesSeguridad#rutasPublicas()}; lo demás responde con {@link RespuestaNoAutenticado}.
  *
  * <p>Los tokens de usuario y los de proceso no se mezclan (ADR-018): las rutas entre procesos
  * ({@code /interno/**}) solo admiten el rol {@code PROCESO}, y un token con ese rol no sirve en
- * ninguna otra ruta. En los dos casos el rechazo es un 403.
+ * ninguna otra ruta. En los dos casos, y cuando falta un permiso, el rechazo es el 403 de {@link
+ * RespuestaAccesoNoAutorizado}.
  *
  * <p>Se aplica antes que la seguridad por defecto de Spring Boot, que se retira al encontrar esta
  * cadena de filtros y este decodificador.
@@ -60,6 +64,9 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 // Activa la seguridad web aunque no esté la autoconfiguración de Spring Boot que lo hace, por
 // ejemplo en las pruebas con @WebMvcTest.
 @EnableWebSecurity
+// Proxy por clase: los controladores implementan las interfaces generadas del contrato, y un proxy
+// por interfaz perdería su @RestController (la ruta respondería 404).
+@EnableMethodSecurity(proxyTargetClass = true)
 public class SeguridadProcesoAutoConfiguracion {
 
     private static final String JWKS = "spring.security.oauth2.resourceserver.jwt.jwk-set-uri";
@@ -82,16 +89,27 @@ public class SeguridadProcesoAutoConfiguracion {
         return decodificador;
     }
 
-    /** Convierte el claim {@code roles} en autoridades {@code ROLE_<rol>}. */
+    /** Convierte los claims {@code roles} y {@code permisos} en autoridades. */
     @Bean
     @ConditionalOnMissingBean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter roles = new JwtGrantedAuthoritiesConverter();
-        roles.setAuthoritiesClaimName("roles");
-        roles.setAuthorityPrefix("ROLE_");
         JwtAuthenticationConverter conversor = new JwtAuthenticationConverter();
-        conversor.setJwtGrantedAuthoritiesConverter(roles);
+        conversor.setJwtGrantedAuthoritiesConverter(new AutoridadesDelToken());
         return conversor;
+    }
+
+    /**
+     * El permiso de la operación se comprueba antes de leer la petición ({@link
+     * AutorizacionPrevia}).
+     */
+    @Bean
+    public WebMvcConfigurer autorizacionPrevia() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addInterceptors(InterceptorRegistry registro) {
+                registro.addInterceptor(new AutorizacionPrevia());
+            }
+        };
     }
 
     /**
@@ -105,6 +123,7 @@ public class SeguridadProcesoAutoConfiguracion {
             JwtAuthenticationConverter conversor)
             throws Exception {
         RespuestaNoAutenticado respuesta401 = new RespuestaNoAutenticado();
+        RespuestaAccesoNoAutorizado respuesta403 = new RespuestaAccesoNoAutorizado();
         http.csrf(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
@@ -130,7 +149,10 @@ public class SeguridadProcesoAutoConfiguracion {
                         servidor ->
                                 servidor.jwt(jwt -> jwt.jwtAuthenticationConverter(conversor))
                                         .authenticationEntryPoint(respuesta401))
-                .exceptionHandling(errores -> errores.authenticationEntryPoint(respuesta401));
+                .exceptionHandling(
+                        errores ->
+                                errores.authenticationEntryPoint(respuesta401)
+                                        .accessDeniedHandler(respuesta403));
         return http.build();
     }
 

@@ -22,7 +22,8 @@ describe('nombres de los roles', () => {
     ).not.toContain(expect.stringMatching(/^[A-Z_]+$/));
   });
 
-  it('un identificador desconocido se muestra tal cual', () => {
-    expect(nombreDelRol('ROL_NUEVO')).toBe('ROL_NUEVO');
+  it('un rol creado por el administrador se muestra con su identificador legible, sin tildes', () => {
+    expect(nombreDelRol('AUDITOR_DE_ROLES')).toBe('Auditor de roles');
+    expect(nombreDelRol('ROL_2026')).toBe('Rol 2026');
   });
 });

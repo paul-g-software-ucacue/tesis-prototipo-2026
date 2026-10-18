@@ -33,6 +33,15 @@ components:
           items:
             type: string
           example: [COORDINADOR_CARRERA, DOCENTE]
+        permisos:
+          type: array
+          description: >-
+            Permisos efectivos (claim permisos del token), ordenados, en la forma
+            FUNCIONALIDAD:TIPO o FUNCIONALIDAD:TIPO:PROPIO. Solo lo devuelve Usuarios; la SPA lo
+            usa para decidir qué mostrar, y el servidor valida cada operación (ADR-021).
+          items:
+            type: string
+          example: ['MI_DISTRIBUTIVO:ESCRITURA:PROPIO', 'MI_DISTRIBUTIVO:LECTURA:PROPIO']
   responses:
     NoAutenticado:
       description: >-
@@ -43,6 +52,15 @@ components:
           description: Siempre "Bearer", sin detalles.
           schema:
             type: string
+      content:
+        application/json:
+          schema:
+            $ref: './errores.yaml#/components/schemas/Error'
+    AccesoNoAutorizado:
+      description: >-
+        Token válido sin el permiso de la operación, un token de usuario en /interno/ o uno de
+        proceso fuera de él. El cuerpo es el mismo para todas las causas y no dice qué permiso faltó
+        (código SEGURIDAD_ACCESO_NO_AUTORIZADO, ADR-021).
       content:
         application/json:
           schema:

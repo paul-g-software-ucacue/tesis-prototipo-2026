@@ -2,6 +2,9 @@ package ec.mdd.usuarios.infraestructura;
 
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
+import ec.mdd.roles.puertos.entrada.AsignarRolesIniciales;
+import ec.mdd.roles.puertos.entrada.ConsultarAutorizacion;
+import ec.mdd.usuarios.adaptadores.salida.AutorizacionDesdeRoles;
 import ec.mdd.usuarios.adaptadores.salida.EmisorJwt;
 import ec.mdd.usuarios.adaptadores.salida.RepositorioEventosRecibidosJdbc;
 import ec.mdd.usuarios.adaptadores.salida.RepositorioIntentosJdbc;
@@ -10,14 +13,17 @@ import ec.mdd.usuarios.adaptadores.salida.UsuarioJpaRepositorio;
 import ec.mdd.usuarios.adaptadores.salida.VerificadorArgon2;
 import ec.mdd.usuarios.aplicacion.EmitirTokenDeProcesoServicio;
 import ec.mdd.usuarios.aplicacion.IniciarSesionServicio;
+import ec.mdd.usuarios.aplicacion.ListarUsuariosServicio;
 import ec.mdd.usuarios.aplicacion.RegistrarEventoRecibidoServicio;
 import ec.mdd.usuarios.aplicacion.RenovarSesionServicio;
 import ec.mdd.usuarios.dominio.PoliticaDeIntentos;
 import ec.mdd.usuarios.puertos.entrada.EmitirTokenDeProceso;
 import ec.mdd.usuarios.puertos.entrada.IniciarSesion;
+import ec.mdd.usuarios.puertos.entrada.ListarUsuarios;
 import ec.mdd.usuarios.puertos.entrada.RegistrarEventoRecibido;
 import ec.mdd.usuarios.puertos.entrada.RenovarSesion;
 import ec.mdd.usuarios.puertos.salida.EmisorDeTokens;
+import ec.mdd.usuarios.puertos.salida.ProveedorDeAutorizacion;
 import ec.mdd.usuarios.puertos.salida.RepositorioEventosRecibidos;
 import ec.mdd.usuarios.puertos.salida.RepositorioIntentos;
 import ec.mdd.usuarios.puertos.salida.RepositorioUsuarios;
@@ -81,6 +87,13 @@ public class ConfiguracionUsuarios {
                 llaves.llave().getKeyID());
     }
 
+    /** Roles y permisos desde Roles, en el mismo proceso (research §2, ADR-021). */
+    @Bean
+    public ProveedorDeAutorizacion proveedorDeAutorizacion(
+            ConsultarAutorizacion consultar, AsignarRolesIniciales iniciales) {
+        return new AutorizacionDesdeRoles(consultar, iniciales);
+    }
+
     @Bean
     public RepositorioIntentos repositorioIntentos(JdbcClient jdbc) {
         return new RepositorioIntentosJdbc(jdbc);
@@ -93,15 +106,23 @@ public class ConfiguracionUsuarios {
             VerificadorDeClaves verificador,
             EmisorDeTokens emisor,
             RepositorioIntentos intentos,
+            ProveedorDeAutorizacion autorizacion,
             PropiedadesUsuarios propiedades) {
         return new IniciarSesionServicio(
                 repositorio,
                 verificador,
                 emisor,
                 intentos,
+                autorizacion,
                 new PoliticaDeIntentos(
                         propiedades.intentos().maximo(), propiedades.intentos().bloqueo()),
                 Clock.systemUTC());
+    }
+
+    /** La lista de usuarios para asignarles roles (F05-H02). */
+    @Bean
+    public ListarUsuarios listarUsuarios(RepositorioUsuarios repositorio) {
+        return new ListarUsuariosServicio(repositorio);
     }
 
     /** Renovación hasta {@code mdd.usuarios.token.maximo} desde el inicio (ADR-020). */
@@ -109,9 +130,10 @@ public class ConfiguracionUsuarios {
     public RenovarSesion renovarSesion(
             RepositorioUsuarios repositorio,
             EmisorDeTokens emisor,
+            ProveedorDeAutorizacion autorizacion,
             PropiedadesUsuarios propiedades) {
         return new RenovarSesionServicio(
-                repositorio, emisor, propiedades.token().maximo(), Clock.systemUTC());
+                repositorio, emisor, autorizacion, propiedades.token().maximo(), Clock.systemUTC());
     }
 
     /** Token de proceso con las claves de {@code mdd.usuarios.procesos} (D-49, ADR-018). */
@@ -140,8 +162,10 @@ public class ConfiguracionUsuarios {
     public CargaUsuarioDePrueba cargaUsuarioDePrueba(
             RepositorioUsuarios repositorio,
             VerificadorDeClaves verificador,
+            ProveedorDeAutorizacion autorizacion,
             PropiedadesUsuarios propiedades) {
-        return new CargaUsuarioDePrueba(repositorio, verificador, propiedades.usuarioPrueba());
+        return new CargaUsuarioDePrueba(
+                repositorio, verificador, autorizacion, propiedades.usuarioPrueba());
     }
 
     /** Los usuarios de {@code usuarios-demo.yaml}, con las contraseñas del entorno (D-59). */
@@ -149,10 +173,12 @@ public class ConfiguracionUsuarios {
     public CargaUsuariosDemo cargaUsuariosDemo(
             RepositorioUsuarios repositorio,
             VerificadorDeClaves verificador,
+            ProveedorDeAutorizacion autorizacion,
             PropiedadesUsuarios propiedades) {
         return new CargaUsuariosDemo(
                 repositorio,
                 verificador,
+                autorizacion,
                 CargaUsuariosDemo.delArchivoVersionado(),
                 propiedades.demo());
     }

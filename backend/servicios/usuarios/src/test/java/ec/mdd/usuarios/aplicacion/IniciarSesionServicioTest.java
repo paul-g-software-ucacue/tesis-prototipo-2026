@@ -14,7 +14,9 @@ import ec.mdd.usuarios.dominio.EstadoDeIntentos;
 import ec.mdd.usuarios.dominio.PoliticaDeIntentos;
 import ec.mdd.usuarios.dominio.Usuario;
 import ec.mdd.usuarios.puertos.entrada.TokenEmitido;
+import ec.mdd.usuarios.puertos.salida.AutorizacionDeUsuario;
 import ec.mdd.usuarios.puertos.salida.EmisorDeTokens;
+import ec.mdd.usuarios.puertos.salida.ProveedorDeAutorizacion;
 import ec.mdd.usuarios.puertos.salida.RepositorioIntentos;
 import ec.mdd.usuarios.puertos.salida.RepositorioUsuarios;
 import ec.mdd.usuarios.puertos.salida.VerificadorDeClaves;
@@ -22,8 +24,8 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -36,8 +38,12 @@ class IniciarSesionServicioTest {
     private final RepositorioIntentos intentos = mock(RepositorioIntentos.class);
     private final VerificadorDeClaves verificador = mock(VerificadorDeClaves.class);
     private final EmisorDeTokens emisor = mock(EmisorDeTokens.class);
-    private final Usuario activo =
-            new Usuario("autor.prueba", "Autor", "hash", true, Set.of("DOCENTE"));
+    private final ProveedorDeAutorizacion autorizacion = mock(ProveedorDeAutorizacion.class);
+    private final AutorizacionDeUsuario docente =
+            new AutorizacionDeUsuario(
+                    List.of("DOCENTE"),
+                    List.of("MI_DISTRIBUTIVO:ESCRITURA:PROPIO", "MI_DISTRIBUTIVO:LECTURA:PROPIO"));
+    private final Usuario activo = new Usuario("autor.prueba", "Autor", "hash", true);
     private final TokenEmitido token =
             new TokenEmitido("token", Instant.parse("2026-10-13T12:00:00Z"));
     private IniciarSesionServicio servicio;
@@ -47,12 +53,14 @@ class IniciarSesionServicioTest {
         when(verificador.calcularHash(anyString())).thenReturn("hash-de-relleno");
         when(intentos.leer(anyString())).thenReturn(EstadoDeIntentos.SIN_INTENTOS);
         when(intentos.sumarFallo(anyString(), any())).thenReturn(1);
+        when(autorizacion.consultar("autor.prueba")).thenReturn(docente);
         servicio =
                 new IniciarSesionServicio(
                         repositorio,
                         verificador,
                         emisor,
                         intentos,
+                        autorizacion,
                         new PoliticaDeIntentos(5, Duration.ofMinutes(15)),
                         Clock.fixed(AHORA, ZoneOffset.UTC));
     }
@@ -61,17 +69,29 @@ class IniciarSesionServicioTest {
     void dadoCredencialesCorrectas_cuandoIniciaSesion_entoncesRecibeElTokenYBorraLosIntentos() {
         when(repositorio.buscarPorNombre("autor.prueba")).thenReturn(Optional.of(activo));
         when(verificador.coincide("correcta", "hash")).thenReturn(true);
-        when(emisor.emitir(activo, AHORA)).thenReturn(token);
+        when(emisor.emitir(activo, docente, AHORA)).thenReturn(token);
 
         assertThat(servicio.iniciar("autor.prueba", "correcta")).isEqualTo(token);
         verify(intentos).borrar("autor.prueba");
     }
 
     @Test
+    void dadoCredencialesCorrectas_cuandoIniciaSesion_entoncesElTokenLlevaLosPermisosDeRoles() {
+        when(repositorio.buscarPorNombre("autor.prueba")).thenReturn(Optional.of(activo));
+        when(verificador.coincide("correcta", "hash")).thenReturn(true);
+        when(emisor.emitir(any(), any(), any())).thenReturn(token);
+
+        servicio.iniciar("Autor.Prueba", "correcta");
+
+        verify(autorizacion).consultar("autor.prueba");
+        verify(emisor).emitir(activo, docente, AHORA);
+    }
+
+    @Test
     void dadoElNombreConMayusculas_cuandoIniciaSesion_entoncesBuscaYCuentaElNombreNormalizado() {
         when(repositorio.buscarPorNombre("autor.prueba")).thenReturn(Optional.of(activo));
         when(verificador.coincide("correcta", "hash")).thenReturn(true);
-        when(emisor.emitir(activo, AHORA)).thenReturn(token);
+        when(emisor.emitir(activo, docente, AHORA)).thenReturn(token);
 
         assertThat(servicio.iniciar(" Autor.Prueba ", "correcta")).isEqualTo(token);
         verify(intentos).leer("autor.prueba");
@@ -83,14 +103,14 @@ class IniciarSesionServicioTest {
 
         assertThatThrownBy(() -> servicio.iniciar("autor.prueba", "incorrecta"))
                 .isInstanceOf(CredencialesInvalidas.class);
-        verify(emisor, never()).emitir(any(), any());
+        verify(emisor, never()).emitir(any(), any(), any());
         verify(intentos).sumarFallo("autor.prueba", AHORA);
         verify(intentos, never()).bloquear(anyString(), any(), any());
     }
 
     @Test
     void dadoUnUsuarioInactivo_cuandoIniciaSesionConSuContrasena_entoncesCredencialesInvalidas() {
-        Usuario inactivo = new Usuario("autor.prueba", "Autor", "hash", false, Set.of());
+        Usuario inactivo = new Usuario("autor.prueba", "Autor", "hash", false);
         when(repositorio.buscarPorNombre("autor.prueba")).thenReturn(Optional.of(inactivo));
         when(verificador.coincide("correcta", "hash")).thenReturn(true);
 

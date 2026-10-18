@@ -91,6 +91,18 @@ public final class CodigosComunes {
                     "Sesión no válida",
                     "Inicia sesión de nuevo para continuar.");
 
+    /**
+     * 403: token válido sin el permiso de la operación, un token de usuario en {@code /interno/**}
+     * o uno de proceso fuera de él. No dice qué faltó (ADR-021).
+     */
+    public static final DefinicionDeCodigo ACCESO_NO_AUTORIZADO =
+            new DefinicionDeCodigo(
+                    "SEGURIDAD_ACCESO_NO_AUTORIZADO",
+                    403,
+                    "Acceso no autorizado",
+                    "No tienes permiso para esta acción. Si crees que deberías tenerlo, pide al"
+                            + " administrador que revise tus roles.");
+
     /** Todos los códigos de la plataforma, para verificarlos contra el catálogo documentado. */
     public static final List<DefinicionDeCodigo> TODOS =
             List.of(
@@ -103,7 +115,8 @@ public final class CodigosComunes {
                     TIPO_NO_SOPORTADO,
                     SERVICIO_NO_DISPONIBLE,
                     EVENTO_NO_RECONOCIDO,
-                    SEGURIDAD_NO_AUTENTICADO);
+                    SEGURIDAD_NO_AUTENTICADO,
+                    ACCESO_NO_AUTORIZADO);
 
     private CodigosComunes() {}
 
@@ -114,6 +127,7 @@ public final class CodigosComunes {
     public static DefinicionDeCodigo segunEstado(int estado) {
         return switch (estado) {
             case 401 -> SEGURIDAD_NO_AUTENTICADO;
+            case 403 -> ACCESO_NO_AUTORIZADO;
             case 404 -> RECURSO_NO_ENCONTRADO;
             case 405 -> METODO_NO_PERMITIDO;
             case 406 -> FORMATO_NO_ACEPTADO;

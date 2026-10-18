@@ -3,7 +3,7 @@ package ec.mdd.usuarios.infraestructura;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ec.mdd.usuarios.dominio.Usuario;
-import java.util.Set;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /** La carga del usuario de prueba con dobles escritos a mano de los puertos (sin Mockito). */
@@ -11,36 +11,32 @@ class CargaUsuarioDePruebaTest {
 
     private final RepositorioEnMemoria repositorio = new RepositorioEnMemoria();
     private final VerificadorFalso verificador = new VerificadorFalso();
+    private final AutorizacionEnMemoria autorizacion = new AutorizacionEnMemoria();
 
     @Test
     void dadoQueEstaDeshabilitado_cuandoArranca_entoncesNoCreaNada() {
         carga(false, "una-clave").run(null);
 
         assertThat(repositorio.usuarios).isEmpty();
+        assertThat(autorizacion.pedidos).isZero();
     }
 
     @Test
     void dadoQueEstaDeshabilitadoYElUsuarioYaExiste_cuandoArranca_entoncesLoDesactiva() {
         repositorio.guardar(
-                new Usuario(
-                        CargaUsuarioDePrueba.NOMBRE,
-                        "Autor de prueba",
-                        "hash:vieja",
-                        true,
-                        CargaUsuarioDePrueba.ROLES));
+                new Usuario(CargaUsuarioDePrueba.NOMBRE, "Autor de prueba", "hash:vieja", true));
 
         carga(false, null).run(null);
 
         Usuario usuario = repositorio.usuarios.get(0);
         assertThat(usuario.puedeIniciarSesion()).isFalse();
-        assertThat(usuario.roles()).isEqualTo(CargaUsuarioDePrueba.ROLES);
+        assertThat(usuario.claveHash()).isEqualTo("hash:vieja");
     }
 
     @Test
     void dadoQueEstaDeshabilitadoYYaEstaInactivo_cuandoArranca_entoncesNoLoVuelveAGuardar() {
         repositorio.guardar(
-                new Usuario(
-                        CargaUsuarioDePrueba.NOMBRE, "Autor de prueba", "hash:x", false, Set.of()));
+                new Usuario(CargaUsuarioDePrueba.NOMBRE, "Autor de prueba", "hash:x", false));
 
         carga(false, null).run(null);
 
@@ -55,7 +51,7 @@ class CargaUsuarioDePruebaTest {
     }
 
     @Test
-    void dadoQueEstaHabilitado_cuandoArrancaDosVeces_entoncesCreaElUsuarioUnaSolaVez() {
+    void dadoQueEstaHabilitado_cuandoArrancaDosVeces_entoncesCreaElUsuarioYPideSusRolesIniciales() {
         CargaUsuarioDePrueba carga = carga(true, "una-clave");
 
         carga.run(null);
@@ -66,12 +62,19 @@ class CargaUsuarioDePruebaTest {
         assertThat(usuario.nombreUsuario()).isEqualTo(CargaUsuarioDePrueba.NOMBRE);
         assertThat(usuario.nombreParaMostrar()).isEqualTo("Autor de prueba");
         assertThat(usuario.claveHash()).isEqualTo("hash:una-clave");
-        assertThat(usuario.roles()).containsExactlyInAnyOrder("DOCENTE", "COORDINADOR_CARRERA");
         assertThat(usuario.puedeIniciarSesion()).isTrue();
+        // Se piden en cada arranque; Roles los da solo la primera vez (research §8).
+        assertThat(autorizacion.pedidos).isEqualTo(2);
+        assertThat(autorizacion.roles)
+                .containsEntry(
+                        CargaUsuarioDePrueba.NOMBRE, List.of("COORDINADOR_CARRERA", "DOCENTE"));
     }
 
     private CargaUsuarioDePrueba carga(boolean habilitado, String clave) {
         return new CargaUsuarioDePrueba(
-                repositorio, verificador, new PropiedadesUsuarios.UsuarioPrueba(habilitado, clave));
+                repositorio,
+                verificador,
+                autorizacion,
+                new PropiedadesUsuarios.UsuarioPrueba(habilitado, clave));
     }
 }

@@ -11,6 +11,7 @@ import ec.mdd.usuarios.infraestructura.PropiedadesUsuarios;
 import ec.mdd.usuarios.infraestructura.UsuariosFlywayConfig;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,9 +52,10 @@ class CargaUsuariosDemoIntegrationTest {
         PropiedadesUsuarios.Demo configuracion =
                 new PropiedadesUsuarios.Demo(claves.toString(), null);
 
-        cargar(repositorio, verificador, configuracion);
+        AutorizacionAnotada autorizacion = new AutorizacionAnotada();
+        cargar(repositorio, verificador, autorizacion, configuracion);
         Files.writeString(claves, lineas.toString().replace("clave-rectorado", "rotada"));
-        cargar(repositorio, verificador, configuracion);
+        cargar(repositorio, verificador, autorizacion, configuracion);
         filas.flush();
 
         assertThat(filas.count()).isEqualTo(11);
@@ -61,7 +63,10 @@ class CargaUsuariosDemoIntegrationTest {
         assertThat(rector.claveHash()).startsWith("$argon2id$");
         assertThat(verificador.coincide("rotada.demo", rector.claveHash())).isTrue();
         Usuario mixto = repositorio.buscarPorNombre("docente.coordinador.demo").orElseThrow();
-        assertThat(mixto.roles()).containsExactlyInAnyOrder("DOCENTE", "COORDINADOR_CARRERA");
+        assertThat(autorizacion.pedidos)
+                .hasSize(11)
+                .containsEntry(
+                        "docente.coordinador.demo", List.of("COORDINADOR_CARRERA", "DOCENTE"));
         assertThat(verificador.coincide("clave-docente.coordinador.demo", mixto.claveHash()))
                 .isTrue();
     }
@@ -69,10 +74,12 @@ class CargaUsuariosDemoIntegrationTest {
     private static void cargar(
             RepositorioUsuariosJpa repositorio,
             VerificadorArgon2 verificador,
+            AutorizacionAnotada autorizacion,
             PropiedadesUsuarios.Demo configuracion) {
         new CargaUsuariosDemo(
                         repositorio,
                         verificador,
+                        autorizacion,
                         CargaUsuariosDemo.delArchivoVersionado(),
                         configuracion)
                 .run(null);

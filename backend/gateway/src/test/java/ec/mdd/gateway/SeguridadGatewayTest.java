@@ -39,6 +39,12 @@ class SeguridadGatewayTest {
             "{\"titulo\":\"Sesión no válida\",\"descripcion\":\"Inicia sesión de nuevo para"
                     + " continuar.\",\"codigo\":\"SEGURIDAD_NO_AUTENTICADO\"}";
 
+    // El mismo 403 que los procesos (ADR-021); SeguridadProcesoTest lo compara con el catálogo.
+    private static final String CUERPO_403 =
+            "{\"titulo\":\"Acceso no autorizado\",\"descripcion\":\"No tienes permiso para esta"
+                    + " acción. Si crees que deberías tenerlo, pide al administrador que revise tus"
+                    + " roles.\",\"codigo\":\"SEGURIDAD_ACCESO_NO_AUTORIZADO\"}";
+
     private static final TokensDePrueba TOKENS = new TokensDePrueba();
     private static final ServidorJwks JWKS = arrancar(() -> new ServidorJwks(TOKENS.jwks()));
     private static final AtomicReference<String> AUTORIZACION_RECIBIDA = new AtomicReference<>();
@@ -129,7 +135,10 @@ class SeguridadGatewayTest {
         assertThat(sinToken.statusCode()).isEqualTo(401);
         assertThat(sinToken.body()).isEqualTo(CUERPO_401);
         assertThat(conToken.statusCode()).isEqualTo(403);
+        assertThat(conToken.body()).isEqualTo(CUERPO_403);
+        assertThat(conToken.headers().firstValue("Content-Type")).hasValue("application/json");
         assertThat(deProceso.statusCode()).isEqualTo(403);
+        assertThat(deProceso.body()).isEqualTo(CUERPO_403);
         assertThat(AUTORIZACION_RECIBIDA.get()).isNull();
     }
 

@@ -5,6 +5,7 @@ import ec.mdd.plataforma.errores.nucleo.DetalleRespuesta;
 import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
 import ec.mdd.plataforma.errores.nucleo.RegistroDeErrores;
 import ec.mdd.plataforma.errores.nucleo.RespuestaError;
+import ec.mdd.plataforma.errores.nucleo.SolicitudInvalida;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,8 +33,8 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
  *   <li>Una excepción registrada en un {@code CatalogoDeErrores}, o subclase de una registrada,
  *       responde con su código, su estado, sus textos del catálogo y los encabezados que la entrada
  *       calcule (por ejemplo {@code Retry-After}).
- *   <li>Un cuerpo que no pasa la validación del contrato responde 400 {@code
- *       COMUN_SOLICITUD_INVALIDA}, con un detalle por campo.
+ *   <li>Un cuerpo que no pasa la validación del contrato, o una {@link SolicitudInvalida}, responde
+ *       400 {@code COMUN_SOLICITUD_INVALIDA}, con un detalle por campo.
  *   <li>Los errores de Spring MVC antes del controlador responden con su código común.
  *   <li>Cualquier otra excepción responde 500 {@code COMUN_ERROR_INTERNO} con un {@code
  *       idIncidente}, y se registra con su traza saneada.
@@ -66,6 +67,12 @@ public class ManejadorDeErrores extends ResponseEntityExceptionHandler {
             throws Exception {
         if (esDeSeguridad(excepcion)) {
             throw excepcion;
+        }
+        if (excepcion instanceof SolicitudInvalida invalida) {
+            return json(
+                    400,
+                    RespuestaError.conDetalles(
+                            CodigosComunes.SOLICITUD_INVALIDA, invalida.detalles()));
         }
         Optional<EntradaCatalogo> entrada = registro.buscarEntrada(excepcion.getClass());
         if (entrada.isPresent()) {

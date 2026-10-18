@@ -1,0 +1,48 @@
+openapi: 3.0.3
+info:
+  title: Contrato de prueba de VerificadorDePermisos, con el código que lo cumple
+  version: 1.0.0
+paths:
+  /api/prueba/registros:
+    get:
+      operationId: listarRegistros
+      x-mdd-permiso: PRUEBA:LECTURA
+      responses:
+        '200':
+          description: Registros.
+    post:
+      operationId: crearRegistro
+      x-mdd-permiso: PRUEBA:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre]
+              properties:
+                nombre:
+                  type: string
+      responses:
+        '201':
+          description: Creado.
+  /api/prueba/registros/{codigo}:
+    parameters:
+      - name: codigo
+        in: path
+        required: true
+        schema:
+          type: string
+        example: REGISTRO_UNO
+    delete:
+      operationId: borrarRegistro
+      x-mdd-permiso: PRUEBA:ESCRITURA
+      responses:
+        '204':
+          description: Borrado.
+  /api/prueba/libre:
+    get:
+      operationId: consultarLibre
+      responses:
+        '200':
+          description: Solo exige sesión.

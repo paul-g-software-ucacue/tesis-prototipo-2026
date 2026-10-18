@@ -41,6 +41,7 @@ class RespuestaErrorTest {
     void dadoUnEstadoHttp_cuandoSeBuscaSuCodigoComun_entoncesUsaLaCorrespondencia() {
         assertThat(CodigosComunes.segunEstado(401))
                 .isEqualTo(CodigosComunes.SEGURIDAD_NO_AUTENTICADO);
+        assertThat(CodigosComunes.segunEstado(403)).isEqualTo(CodigosComunes.ACCESO_NO_AUTORIZADO);
         assertThat(CodigosComunes.segunEstado(404)).isEqualTo(CodigosComunes.RECURSO_NO_ENCONTRADO);
         assertThat(CodigosComunes.segunEstado(405)).isEqualTo(CodigosComunes.METODO_NO_PERMITIDO);
         assertThat(CodigosComunes.segunEstado(406)).isEqualTo(CodigosComunes.FORMATO_NO_ACEPTADO);
@@ -49,6 +50,6 @@ class RespuestaErrorTest {
         assertThat(CodigosComunes.segunEstado(503))
                 .isEqualTo(CodigosComunes.SERVICIO_NO_DISPONIBLE);
         assertThat(CodigosComunes.segunEstado(502)).isEqualTo(CodigosComunes.ERROR_INTERNO);
-        assertThat(CodigosComunes.TODOS).hasSize(10);
+        assertThat(CodigosComunes.TODOS).hasSize(11);
     }
 }

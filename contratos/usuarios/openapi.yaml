@@ -2,7 +2,8 @@
 # sesión actual (D-39) y llave pública para validar los tokens (ADR-014). Desde B00-H05, las
 # operaciones entre procesos en /interno/: el token de proceso (D-49) y el receptor de eventos de
 # prueba (D-47), que el API Gateway no expone (ADR-018). Desde F05-H01, el bloqueo por intentos
-# (429, D-60) y la renovación del token mientras hay actividad (ADR-020).
+# (429, D-60) y la renovación del token mientras hay actividad (ADR-020). Desde F05-H02, la lista de
+# usuarios para asignarles roles, protegida con x-mdd-permiso (ADR-021).
 openapi: 3.0.3
 info:
   title: MDD · Usuarios
@@ -20,6 +21,8 @@ tags:
     description: Token de proceso para las entregas de eventos entre procesos (D-49).
   - name: Eventos
     description: Receptor de eventos de otros procesos, idempotente por idEvento (ADR-018).
+  - name: Usuarios
+    description: Usuarios del MDD, para asignarles roles (F05-H02).
 paths:
   /api/usuarios/sesion:
     post:
@@ -108,6 +111,29 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/usuarios/usuarios:
+    get:
+      tags: [Usuarios]
+      operationId: listarUsuarios
+      summary: Lista los usuarios ordenados por nombre de usuario, sin contraseñas ni hashes.
+      x-mdd-permiso: USUARIOS_ROLES:LECTURA
+      responses:
+        '200':
+          description: Los usuarios.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UsuarioResumen'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
   /api/usuarios/jwks:
     get:
       tags: [Jwks]
@@ -190,7 +216,7 @@ paths:
         '401':
           $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
         '403':
-          description: El token no es de proceso. Sin cuerpo hasta F05-H02.
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
         '500':
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
@@ -245,6 +271,20 @@ components:
           type: string
           format: date-time
           description: Fecha y hora de vencimiento del token (ISO 8601).
+    UsuarioResumen:
+      type: object
+      required: [usuario, nombre, activo]
+      properties:
+        usuario:
+          type: string
+          description: Nombre de usuario, normalizado.
+          example: docente.demo
+        nombre:
+          type: string
+          description: Nombre para mostrar.
+          example: Docente (demo)
+        activo:
+          type: boolean
     Jwks:
       type: object
       required: [keys]

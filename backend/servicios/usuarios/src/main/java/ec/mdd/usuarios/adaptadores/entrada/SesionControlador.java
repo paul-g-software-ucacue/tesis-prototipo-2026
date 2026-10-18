@@ -22,8 +22,8 @@ import org.springframework.web.bind.annotation.RestController;
  * contratos/usuarios/openapi.yaml}).
  *
  * <p>El inicio de sesión no pide token (D-37). La sesión actual devuelve el usuario, su nombre para
- * mostrar y los roles del token, que la seguridad del proceso ya validó (D-39). La renovación emite
- * un token nuevo para la misma sesión (ADR-020).
+ * mostrar, los roles y los permisos del token, que la seguridad del proceso ya validó (D-39,
+ * ADR-021). La renovación emite un token nuevo para la misma sesión (ADR-020).
  *
  * <p>Los errores los traduce el mecanismo común, con los códigos registrados en {@link
  * ErroresUsuarios} (D-38, ADR-016).
@@ -51,6 +51,10 @@ class SesionControlador implements SesionApi {
         Jwt token = tokenActual();
         SesionActual sesion = new SesionActual(token.getSubject(), roles(token));
         sesion.setNombre(token.getClaimAsString("nombre"));
+        List<String> permisos = token.getClaimAsStringList("permisos");
+        if (permisos != null) {
+            sesion.setPermisos(permisos.stream().sorted().toList());
+        }
         return ResponseEntity.ok(sesion);
     }
 

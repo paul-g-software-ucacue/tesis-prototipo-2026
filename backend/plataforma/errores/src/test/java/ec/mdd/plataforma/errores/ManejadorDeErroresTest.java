@@ -67,6 +67,22 @@ class ManejadorDeErroresTest {
     }
 
     @Test
+    void dadoUnaReglaDeEntradaQueElContratoNoExpresa_cuandoFalla_entonces400ConElDetalle()
+            throws Exception {
+        HttpResponse<String> respuesta =
+                pedir("GET", "/api/prueba/regla-de-entrada", null, null, null);
+
+        assertThat(respuesta.statusCode()).isEqualTo(400);
+        assertThat(respuesta.body())
+                .isEqualTo(
+                        "{\"titulo\":\"Solicitud inválida\",\"descripcion\":\"Revisa los campos"
+                                + " marcados y vuelve a intentarlo.\",\"codigo\":"
+                                + "\"COMUN_SOLICITUD_INVALIDA\",\"detalles\":[{\"campo\":"
+                                + "\"permisos\",\"descripcion\":\"«Cargas de datos» no admite el"
+                                + " permiso de firma.\"}]}");
+    }
+
+    @Test
     void dadoUnaSubclaseDeUnErrorRegistrado_cuandoSeProduce_entoncesUsaElCodigoDeLaSuperclase()
             throws Exception {
         HttpResponse<String> respuesta = pedir("GET", "/api/prueba/feriado", null, null, null);

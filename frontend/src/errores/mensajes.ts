@@ -1,6 +1,7 @@
 // Los mensajes genéricos de la SPA (ADR-019): los mismos textos de contratos/comun/errores.md para
-// una respuesta sin el modelo común (COMUN_ERROR_INTERNO) y para un fallo de red
-// (COMUN_SERVICIO_NO_DISPONIBLE). Una prueba los compara con el catálogo.
+// una respuesta sin el modelo común (COMUN_ERROR_INTERNO), para un fallo de red
+// (COMUN_SERVICIO_NO_DISPONIBLE) y para una pantalla sin permiso (SEGURIDAD_ACCESO_NO_AUTORIZADO,
+// ADR-021). Una prueba los compara con el catálogo.
 
 /** Título y descripción de un mensaje para el usuario. */
 export interface TextoDeError {
@@ -23,4 +24,11 @@ export const MENSAJE_SERVICIO_NO_DISPONIBLE: TextoDeError = {
 export const MENSAJE_SESION_TERMINADA: TextoDeError = {
   titulo: 'Sesión terminada',
   descripcion: 'Tu sesión terminó. Inicia sesión de nuevo.',
+};
+
+/** Una pantalla que los permisos del usuario no dejan ver (ADR-021), como el 403 de la API. */
+export const MENSAJE_ACCESO_NO_AUTORIZADO: TextoDeError = {
+  titulo: 'Acceso no autorizado',
+  descripcion:
+    'No tienes permiso para esta acción. Si crees que deberías tenerlo, pide al administrador que revise tus roles.',
 };

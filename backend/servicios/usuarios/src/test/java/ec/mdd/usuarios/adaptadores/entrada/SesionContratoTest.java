@@ -231,6 +231,36 @@ class SesionContratoTest {
     }
 
     @Test
+    void dadoUnTokenConPermisos_cuandoConsultaLaSesion_entoncesLosDevuelveOrdenados()
+            throws Exception {
+        MvcResult resultado =
+                mvc.perform(
+                                get("/api/usuarios/sesion")
+                                        .with(
+                                                jwt().jwt(
+                                                                token ->
+                                                                        token.subject(
+                                                                                        "docente.demo")
+                                                                                .claim(
+                                                                                        "roles",
+                                                                                        List.of(
+                                                                                                "DOCENTE"))
+                                                                                .claim(
+                                                                                        "permisos",
+                                                                                        List.of(
+                                                                                                "MI_DISTRIBUTIVO:LECTURA:PROPIO",
+                                                                                                "MI_DISTRIBUTIVO:ESCRITURA:PROPIO")))))
+                        .andReturn();
+
+        assertThat(resultado.getResponse().getContentAsString())
+                .isEqualTo(
+                        "{\"usuario\":\"docente.demo\",\"roles\":[\"DOCENTE\"],"
+                                + "\"permisos\":[\"MI_DISTRIBUTIVO:ESCRITURA:PROPIO\","
+                                + "\"MI_DISTRIBUTIVO:LECTURA:PROPIO\"]}");
+        contrato.validar(resultado);
+    }
+
+    @Test
     void dadoUnTokenSinRoles_cuandoConsultaLaSesion_entoncesRolesVacios() throws Exception {
         MvcResult resultado =
                 mvc.perform(

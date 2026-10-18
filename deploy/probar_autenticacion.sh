@@ -3,10 +3,11 @@
 # shellcheck disable=SC2329
 # Autenticación de punta a punta sobre el perfil levantado (B00-H03, escenarios 1 a 3;
 # specs/003-autenticacion-jwt/contracts/medicion-r19-sesion.md). Desde F05-H01, también los
-# usuarios de la demo (D-59), el bloqueo por intentos (D-60) y la renovación (ADR-020).
+# usuarios de la demo (D-59), el bloqueo por intentos (D-60) y la renovación (ADR-020). Desde
+# F05-H02, los roles con permisos: un rol nuevo, solo lectura con 403 y varios roles (ADR-021).
 # Uso, desde cualquier directorio: deploy/probar_autenticacion.sh
-# Termina con 0 si los 9 pasos pasan y con 1 si alguno falla. Nunca imprime el token ni la
-# contraseña.
+# Termina con 0 si los 12 pasos pasan y con 1 si alguno falla. Nunca imprime el token ni la
+# contraseña. Deja los roles como los encontró: borra el rol de prueba y se lo quita a docente.demo.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -14,6 +15,10 @@ readonly GATEWAY="${MDD_GATEWAY:-http://localhost:8080}"
 readonly USUARIO="autor.prueba"
 readonly USUARIOS_DEMO=backend/servicios/usuarios/src/main/resources/usuarios-demo.yaml
 readonly CUERPO_401='{"titulo":"Sesión no válida","descripcion":"Inicia sesión de nuevo para continuar.","codigo":"SEGURIDAD_NO_AUTENTICADO"}'
+readonly CUERPO_403='{"titulo":"Acceso no autorizado","descripcion":"No tienes permiso para esta acción. Si crees que deberías tenerlo, pide al administrador que revise tus roles.","codigo":"SEGURIDAD_ACCESO_NO_AUTORIZADO"}'
+# El rol que crean los pasos 10 a 12 y su identificador, derivado del nombre (research §7).
+readonly ROL_DE_PRUEBA="Auditor de roles"
+readonly ID_DE_PRUEBA=AUDITOR_DE_ROLES
 
 # El valor de una variable: el de .env si existe, si no el de .env.ejemplo.
 valor_de_entorno() {
@@ -136,6 +141,45 @@ hay_token_renovado() {
     [[ $estado == 200 && -n $renovado && $(jq -r '.tipo' <<<"$cuerpo" 2>/dev/null) == Bearer ]]
 }
 
+# iniciar <usuario> <clave>: deja el token en $token, o vacío si no entró.
+iniciar() {
+    pedir POST "$GATEWAY/api/usuarios/sesion" "" "$(jq -cn --arg u "$1" --arg c "$2" '{usuario: $u, clave: $c}')"
+    token=$(jq -r '.token // empty' <<<"$cuerpo" 2>/dev/null || true)
+}
+
+# Deja docente.demo solo con DOCENTE y borra el rol de prueba, si quedó de una corrida anterior.
+limpiar_rol_de_prueba() {
+    pedir PUT "$GATEWAY/api/roles/usuarios/docente.demo" "Bearer $1" '{"roles":["DOCENTE"]}'
+    pedir DELETE "$GATEWAY/api/roles/$ID_DE_PRUEBA" "Bearer $1"
+}
+
+es_403_comun() {
+    [[ $estado == 403 && $cuerpo == "$CUERPO_403" ]]
+}
+
+es_rol_de_prueba_creado() {
+    [[ $estado == 201 && $(jq -c '{identificador, nombre, predefinido, usuariosAsignados}' <<<"$cuerpo" 2>/dev/null) \
+        == "{\"identificador\":\"$ID_DE_PRUEBA\",\"nombre\":\"$ROL_DE_PRUEBA\",\"predefinido\":false,\"usuariosAsignados\":0}" ]]
+}
+
+# es_sesion_con <roles json> <permisos json>: la sesión actual tiene exactamente esos roles y permisos.
+es_sesion_con() {
+    [[ $estado == 200 && $(jq -c '{roles, permisos}' <<<"$cuerpo" 2>/dev/null) \
+        == "$(jq -cn --argjson r "$1" --argjson p "$2" '{roles: $r, permisos: $p}')" ]]
+}
+
+tiene_permiso_de_lectura_de_roles() {
+    [[ $estado == 200 ]] && jq -e '.permisos | index("USUARIOS_ROLES:LECTURA")' <<<"$cuerpo" >/dev/null 2>&1
+}
+
+no_tiene_permiso_de_lectura_de_roles() {
+    [[ $estado == 200 ]] && ! jq -e '.permisos | index("USUARIOS_ROLES:LECTURA")' <<<"$cuerpo" >/dev/null 2>&1
+}
+
+es_estado() {
+    [[ $estado == "$1" ]]
+}
+
 # 1. Sin token
 pedir GET "$GATEWAY/api/cargas/sesion"
 verificar 1 "Sin token: 401 con SEGURIDAD_NO_AUTENTICADO y WWW-Authenticate: Bearer (recibido: $estado)" es_401_uniforme
@@ -172,6 +216,11 @@ verificar 6 "Contraseña incorrecta: 401 con USUARIOS_CREDENCIALES_INVALIDAS (re
 
 # 7. Los usuarios de la demo entran con la clave común y solo con sus roles (D-59, SC-001)
 clave_demo=$(valor_de_entorno MDD_USUARIOS_DEMO_CLAVE)
+# Si una corrida anterior se cortó entre los pasos 10 y 12, docente.demo podría tener el rol de
+# prueba: se limpia antes de comprobar los roles iniciales.
+iniciar admin.demo "$clave_demo"
+token_admin=$token
+limpiar_rol_de_prueba "$token_admin"
 token_demo=""
 while IFS=$'\t' read -r usuario_demo nombre_demo roles_demo; do
     credenciales=$(jq -cn --arg u "$usuario_demo" --arg c "$clave_demo" '{usuario: $u, clave: $c}')
@@ -206,6 +255,56 @@ reemplazo=A
 [[ ${firma:10:1} == A ]] && reemplazo=B
 pedir POST "$GATEWAY/api/usuarios/sesion/renovacion" "Bearer ${token_demo%.*}.${firma:0:10}${reemplazo}${firma:11}"
 verificar 9 "Renovación con un token alterado: el mismo 401 que sin token (recibido: $estado)" es_401_uniforme
+
+# 10. Rol nuevo (F05-H02, escenario 1): admin.demo crea un rol con solo «Usuarios y roles: lectura»
+# y se lo asigna a docente.demo; su nueva sesión, y la renovación de la anterior (D-62), lo traen.
+rol_nuevo=$(jq -cn --arg n "$ROL_DE_PRUEBA" '{nombre: $n, descripcion: "Ve los roles sin cambiarlos.",
+    permisos: [{funcionalidad: "USUARIOS_ROLES", tipo: "LECTURA", alcance: "TODO"}]}')
+pedir POST "$GATEWAY/api/roles" "Bearer $token_admin" "$rol_nuevo"
+verificar 10 "admin.demo crea «$ROL_DE_PRUEBA»: 201 con el identificador $ID_DE_PRUEBA (recibido: $estado)" es_rol_de_prueba_creado
+pedir PUT "$GATEWAY/api/roles/usuarios/docente.demo" "Bearer $token_admin" "{\"roles\":[\"DOCENTE\",\"$ID_DE_PRUEBA\"]}"
+verificar 10 "admin.demo se lo asigna a docente.demo (recibido: $estado)" es_estado 200
+pedir POST "$GATEWAY/api/usuarios/sesion/renovacion" "Bearer $token_demo"
+renovado=$(jq -r '.token // empty' <<<"$cuerpo" 2>/dev/null || true)
+pedir GET "$GATEWAY/api/usuarios/sesion" "Bearer $renovado"
+verificar 10 "La sesión anterior de docente.demo, al renovarse, ya trae USUARIOS_ROLES:LECTURA (D-62)" tiene_permiso_de_lectura_de_roles
+iniciar docente.demo "$clave_demo"
+token_lectura=$token
+pedir GET "$GATEWAY/api/usuarios/sesion" "Bearer $token_lectura"
+verificar 10 "Nueva sesión de docente.demo: sus dos roles y los permisos de los dos (recibido: $estado)" \
+    es_sesion_con "[\"$ID_DE_PRUEBA\",\"DOCENTE\"]" \
+    '["MI_DISTRIBUTIVO:ESCRITURA:PROPIO","MI_DISTRIBUTIVO:LECTURA:PROPIO","USUARIOS_ROLES:LECTURA"]'
+
+# 11. Solo lectura (escenario 2, RNF-SEG-03): docente.demo lista los roles, pero crear uno da el 403
+# común, aunque el cuerpo sea inválido, y el rol no se crea.
+pedir GET "$GATEWAY/api/roles" "Bearer $token_lectura"
+verificar 11 "Con solo lectura, GET /api/roles: 200 (recibido: $estado)" es_estado 200
+prohibido=$(jq -cn '{nombre: "Rol prohibido", descripcion: "No debe crearse.",
+    permisos: [{funcionalidad: "CARGAS", tipo: "LECTURA", alcance: "TODO"}]}')
+pedir POST "$GATEWAY/api/roles" "Bearer $token_lectura" "$prohibido"
+verificar 11 "Con solo lectura, POST /api/roles: 403 SEGURIDAD_ACCESO_NO_AUTORIZADO con el cuerpo común (recibido: $estado)" es_403_comun
+pedir POST "$GATEWAY/api/roles" "Bearer $token_lectura" '{"nombre":""}'
+verificar 11 "Con solo lectura y un cuerpo inválido: también 403, no 400 (recibido: $estado)" es_403_comun
+pedir GET "$GATEWAY/api/roles/ROL_PROHIBIDO" "Bearer $token_admin"
+verificar 11 "El rol prohibido no se creó: 404 (recibido: $estado)" es_estado 404
+
+# 12. Varios roles (escenario 3, RF-03): docente.coordinador.demo tiene la unión de Docente y de
+# Coordinador de carrera, sin repetir. Después se limpia: docente.demo vuelve a solo DOCENTE, su nueva
+# sesión ya no lee los roles (403) y el rol de prueba se borra (escenario 3.3).
+iniciar docente.coordinador.demo "$clave_demo"
+pedir GET "$GATEWAY/api/usuarios/sesion" "Bearer $token"
+verificar 12 "docente.coordinador.demo: los permisos de sus dos roles, sin repetir (recibido: $estado)" \
+    es_sesion_con '["COORDINADOR_CARRERA","DOCENTE"]' \
+    '["DISTRIBUTIVO:LECTURA:PROPIO","DOCENTES:LECTURA","MI_DISTRIBUTIVO:ESCRITURA:PROPIO","MI_DISTRIBUTIVO:LECTURA:PROPIO","OFERTA:APROBACION:PROPIO","OFERTA:ESCRITURA:PROPIO","OFERTA:LECTURA:PROPIO"]'
+pedir PUT "$GATEWAY/api/roles/usuarios/docente.demo" "Bearer $token_admin" '{"roles":["DOCENTE"]}'
+verificar 12 "admin.demo le quita el rol de prueba a docente.demo (recibido: $estado)" es_estado 200
+iniciar docente.demo "$clave_demo"
+pedir GET "$GATEWAY/api/usuarios/sesion" "Bearer $token"
+verificar 12 "La nueva sesión de docente.demo ya no trae USUARIOS_ROLES:LECTURA" no_tiene_permiso_de_lectura_de_roles
+pedir GET "$GATEWAY/api/roles" "Bearer $token"
+verificar 12 "docente.demo sin el rol, GET /api/roles: 403 común (recibido: $estado)" es_403_comun
+pedir DELETE "$GATEWAY/api/roles/$ID_DE_PRUEBA" "Bearer $token_admin"
+verificar 12 "admin.demo borra «$ROL_DE_PRUEBA»: 204 (recibido: $estado)" es_estado 204
 
 if [[ $fallas -eq 0 ]]; then
     echo "Autenticación de punta a punta: todos los pasos pasan."

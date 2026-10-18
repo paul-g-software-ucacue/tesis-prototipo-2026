@@ -3,4 +3,14 @@
 // SpotBugs. Vale para todos los servicios, centrales o no.
 plugins {
     id 'mdd.servicio'
+    id 'mdd.contrato'
+}
+
+dependencies {
+    // Roles, permisos y asignaciones de rol en el esquema roles, con JdbcClient (research §11).
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    // El detalle de cada cambio en jsonb (FR-011).
+    implementation 'tools.jackson.core:jackson-databind'
+    // @PreAuthorize y el usuario de la sesión que hace el cambio (ADR-021, FR-011).
+    implementation 'org.springframework.security:spring-security-core'
 }
