@@ -5,11 +5,13 @@ import ec.mdd.usuarios.adaptadores.entrada.api.UsuariosApi;
 import ec.mdd.usuarios.puertos.entrada.ListarUsuarios;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
  * La lista de usuarios para la administración de roles ({@code contratos/usuarios/openapi.yaml},
- * F05-H02). Nunca devuelve contraseñas ni hashes.
+ * F05-H02). Nunca devuelve contraseñas ni hashes. Exige «Usuarios y roles: lectura», como dice su
+ * {@code x-mdd-permiso} (ADR-021).
  */
 @RestController
 class UsuariosControlador implements UsuariosApi {
@@ -21,6 +23,7 @@ class UsuariosControlador implements UsuariosApi {
     }
 
     @Override
+    @PreAuthorize("hasAuthority('PERMISO_USUARIOS_ROLES:LECTURA')")
     public ResponseEntity<List<UsuarioResumen>> listarUsuarios() {
         return ResponseEntity.ok(
                 listar.listar().stream()

@@ -45,6 +45,9 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
   2. **En el código:** el controlador anota el método con `@PreAuthorize("hasAuthority('PERMISO_USUARIOS_ROLES:ESCRITURA')")` (Spring Security, *method security*, activada en `plataforma:seguridad`).
 - **La prueba que los une:** `plataforma:pruebas` gana `VerificadorDePermisos`. Lee el contrato del servicio y, por cada operación con `x-mdd-permiso`, llama con un token que tiene todos los permisos **menos** ese y espera 403; con ese permiso, espera algo distinto de 403. Si un controlador olvida la anotación o pone otra, la prueba falla. Es la «prueba de autorización por endpoint» de RNF-SEG-03.
 - **Por qué:** el permiso queda escrito en el contrato, que es la fuente de verdad (ADR-015), y la prueba impide que contrato y código se separen.
+- **Dos ajustes de la plataforma, descubiertos al implementar:**
+  - **`AutorizacionPrevia`:** Spring MVC lee y valida el cuerpo antes de llamar al método, y recién ahí actúa `@PreAuthorize`. Sin este interceptor, un usuario sin permiso que envía datos inválidos recibía 400 con el detalle de los campos en lugar de 403. El interceptor evalúa el mismo `@PreAuthorize` antes de leer la petición; se comprobó quitándolo y viendo fallar la prueba.
+  - **Proxy por clase** (`@EnableMethodSecurity(proxyTargetClass = true)`): los controladores implementan las interfaces generadas del contrato, y un proxy por interfaz perdía su `@RestController`, así que las rutas respondían 404.
 - **Alternativas:** reglas por ruta en la cadena de filtros (se separan del contrato); un filtro que lea el contrato en ejecución (más magia, y el generador no lleva la extensión al código).
 
 ## 5. El 403 con el modelo de errores común (ADR-016)

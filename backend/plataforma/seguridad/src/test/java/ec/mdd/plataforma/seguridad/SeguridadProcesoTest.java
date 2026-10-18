@@ -200,6 +200,20 @@ class SeguridadProcesoTest {
     }
 
     @Test
+    void
+            dadoUnControladorQueImplementaLaInterfazDelContrato_cuandoExigeUnPermiso_entoncesSigueRuteado()
+                    throws Exception {
+        String con =
+                TOKENS.conPermisos(
+                        "admin.demo", List.of("ADMINISTRADOR"), List.of("USUARIOS_ROLES:LECTURA"));
+        String sin = TOKENS.conPermisos("docente.demo", List.of("DOCENTE"), List.of());
+
+        assertThat(pedir("GET", "/api/prueba/por-interfaz", "Bearer " + con).body())
+                .isEqualTo("por interfaz");
+        assertEs403(pedir("GET", "/api/prueba/por-interfaz", "Bearer " + sin));
+    }
+
+    @Test
     void dadoUnTokenSinElPermisoYUnCuerpoIlegible_cuandoEscribe_entoncesEl403LlegaAntesQueEl400()
             throws Exception {
         String sinPermiso =

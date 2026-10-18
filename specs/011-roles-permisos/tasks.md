@@ -156,7 +156,7 @@ description: "Tareas de F05-H02: Roles con permisos y varios roles por usuario"
 
 **Independent Test**: con un usuario de solo lectura de «Usuarios y roles», ver los roles, pero recibir 403 al crear uno, desde la pantalla y por la API.
 
-- [ ] T022 [US2] Prueba primero: `PROL/adaptadores/entrada/PermisosRolesTest.java` y `PUSU/adaptadores/entrada/PermisosUsuariosTest.java` corren `VerificadorDePermisos` sobre sus contratos (SC-003) y fallan mientras falten las anotaciones. Después poner `@PreAuthorize("hasAuthority('PERMISO_<permiso>')")` en cada método de `RolesControlador` y en `listarUsuarios`, según su `x-mdd-permiso`. T022 pasa; comprobar que vuelve a fallar si se quita una anotación.
+- [X] T022 [US2] Prueba primero: `PROL/adaptadores/entrada/PermisosRolesTest.java` y `PUSU/adaptadores/entrada/PermisosUsuariosTest.java` corren `VerificadorDePermisos` sobre sus contratos (SC-003) y fallan mientras falten las anotaciones. Después poner `@PreAuthorize("hasAuthority('PERMISO_<permiso>')")` en cada método de `RolesControlador` y en `listarUsuarios`, según su `x-mdd-permiso`. T022 pasa; comprobar que vuelve a fallar si se quita una anotación.
 - [X] T023 [P] [US2] Prueba primero, en `frontend/src/sesion/permisos.test.ts` y `RutaConPermiso.test.tsx`:
   - `tienePermiso` con y sin el permiso, y con alcance «propio»;
   - sin `USUARIOS_ROLES:LECTURA`, `/roles` muestra «Acceso no autorizado» sin pedir los roles a la API;

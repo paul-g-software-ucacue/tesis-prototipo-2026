@@ -64,7 +64,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 // Activa la seguridad web aunque no esté la autoconfiguración de Spring Boot que lo hace, por
 // ejemplo en las pruebas con @WebMvcTest.
 @EnableWebSecurity
-@EnableMethodSecurity
+// Proxy por clase: los controladores implementan las interfaces generadas del contrato, y un proxy
+// por interfaz perdería su @RestController (la ruta respondería 404).
+@EnableMethodSecurity(proxyTargetClass = true)
 public class SeguridadProcesoAutoConfiguracion {
 
     private static final String JWKS = "spring.security.oauth2.resourceserver.jwt.jwk-set-uri";

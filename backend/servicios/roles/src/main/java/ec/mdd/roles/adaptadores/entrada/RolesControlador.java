@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -35,9 +36,15 @@ import org.springframework.web.server.ResponseStatusException;
  * <p>Cada cambio lleva el usuario de la sesión, para el registro (FR-011). Las reglas de la
  * administración responden 409 con los códigos de {@link ErroresRoles}; un permiso o un rol que no
  * existe, 400 con el detalle del campo; un rol que no existe en la ruta, 404.
+ *
+ * <p>Cada operación exige el permiso de su {@code x-mdd-permiso} con {@code @PreAuthorize}
+ * (ADR-021); {@code PermisosRolesTest} comprueba que coinciden.
  */
 @RestController
 class RolesControlador implements FuncionalidadesApi, RolesApi, RolesDeUsuariosApi {
+
+    private static final String LECTURA = "hasAuthority('PERMISO_USUARIOS_ROLES:LECTURA')";
+    private static final String ESCRITURA = "hasAuthority('PERMISO_USUARIOS_ROLES:ESCRITURA')";
 
     private final GestionarRoles gestionar;
     private final AsignarRoles asignar;
@@ -48,6 +55,7 @@ class RolesControlador implements FuncionalidadesApi, RolesApi, RolesDeUsuariosA
     }
 
     @Override
+    @PreAuthorize(LECTURA)
     public ResponseEntity<List<Funcionalidad>> listarFuncionalidades() {
         return ResponseEntity.ok(
                 gestionar.funcionalidades().stream()
@@ -70,23 +78,27 @@ class RolesControlador implements FuncionalidadesApi, RolesApi, RolesDeUsuariosA
     }
 
     @Override
+    @PreAuthorize(LECTURA)
     public ResponseEntity<List<Rol>> listarRoles() {
         return ResponseEntity.ok(
                 gestionar.roles().stream().map(RolesControlador::aRespuesta).toList());
     }
 
     @Override
+    @PreAuthorize(LECTURA)
     public ResponseEntity<Rol> consultarRol(String identificador) {
         return ResponseEntity.ok(aRespuesta(existente(() -> gestionar.consultar(identificador))));
     }
 
     @Override
+    @PreAuthorize(ESCRITURA)
     public ResponseEntity<Rol> crearRol(RolEditable rol) {
         RolConUsuarios creado = conPermisosValidos(() -> gestionar.crear(datos(rol), quien()));
         return ResponseEntity.status(HttpStatus.CREATED).body(aRespuesta(creado));
     }
 
     @Override
+    @PreAuthorize(ESCRITURA)
     public ResponseEntity<Rol> editarRol(String identificador, RolEditable rol) {
         RolConUsuarios editado =
                 existente(
@@ -99,6 +111,7 @@ class RolesControlador implements FuncionalidadesApi, RolesApi, RolesDeUsuariosA
     }
 
     @Override
+    @PreAuthorize(ESCRITURA)
     public ResponseEntity<Void> borrarRol(String identificador) {
         existente(
                 () -> {
@@ -109,6 +122,7 @@ class RolesControlador implements FuncionalidadesApi, RolesApi, RolesDeUsuariosA
     }
 
     @Override
+    @PreAuthorize(LECTURA)
     public ResponseEntity<List<RolesDeUsuario>> listarRolesDeUsuarios() {
         return ResponseEntity.ok(
                 asignar.rolesDeUsuarios().entrySet().stream()
@@ -118,6 +132,7 @@ class RolesControlador implements FuncionalidadesApi, RolesApi, RolesDeUsuariosA
     }
 
     @Override
+    @PreAuthorize(ESCRITURA)
     public ResponseEntity<RolesDeUsuario> asignarRoles(String usuario, RolesAsignados roles) {
         try {
             List<String> asignados = asignar.asignar(usuario, roles.getRoles(), quien());

@@ -15,6 +15,24 @@ import org.springframework.web.bind.annotation.RestController;
 @SpringBootApplication
 class AplicacionDePrueba {
 
+    /** Como las interfaces que openapi-generator genera desde el contrato. */
+    interface RecursoApi {
+
+        @GetMapping("/api/prueba/por-interfaz")
+        String porInterfaz();
+    }
+
+    /** Un controlador que implementa la interfaz generada y exige un permiso. */
+    @RestController
+    static class Recurso implements RecursoApi {
+
+        @Override
+        @PreAuthorize("hasAuthority('PERMISO_USUARIOS_ROLES:LECTURA')")
+        public String porInterfaz() {
+            return "por interfaz";
+        }
+    }
+
     @RestController
     static class Sesion {
 
