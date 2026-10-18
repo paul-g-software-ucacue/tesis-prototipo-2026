@@ -79,7 +79,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 ## 8. Roles iniciales de los usuarios de la demo (FR-009)
 
 - **Decisión:** `AsignarRolesIniciales(usuario, roles)` asigna los roles **solo la primera vez** que se le pide para ese usuario, y lo deja anotado en `roles.inicializacion`. Si después el administrador cambia sus roles, incluso si se los quita todos, un nuevo arranque no los toca.
-  - `CargaUsuariosDemo` deja de actualizar roles. Al crear o actualizar un usuario de la demo, pide sus roles iniciales del archivo, y Roles los ignora si ya se inicializó.
+  - `CargaUsuariosDemo` deja de actualizar roles. En cada arranque, para cada usuario de la demo que existe (creado, actualizado o sin cambios), pide sus roles iniciales del archivo, y Roles los ignora si ya se inicializó. Pedirlos solo al crear o actualizar dejaría sin roles a los usuarios que ya existían al desplegar F05-H02.
   - Lo mismo `CargaUsuarioDePrueba` para `autor.prueba`.
 - **Equipo del autor:** al desplegar esta versión, Roles está vacío. Los 11 usuarios de la demo y `autor.prueba` reciben sus roles iniciales del archivo, que son los mismos que tenían en `usuario_rol`. No hace falta migrar datos entre esquemas.
 - **El enum `RolMdd` de Usuarios** se retira: los roles válidos ya no son fijos. `CargaUsuariosDemo` valida los roles del archivo contra el catálogo de Roles por medio de `AsignarRolesIniciales`, que rechaza un rol desconocido.
