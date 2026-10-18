@@ -144,7 +144,7 @@ description: "Tareas de F05-H02: Roles con permisos y varios roles por usuario"
   - la vista de usuarios asigna y quita roles.
 
   Crear `frontend/src/pantallas/roles/` (`Roles.tsx`, `RolFormulario.tsx`, `RolesDeUsuarios.tsx`), `frontend/src/sesion/funcionalidades.ts` (nombres en español), la ruta `/roles` en `rutas.tsx` y la entrada «Roles» en `navegacion/Marco.tsx`. T020 pasa.
-- [ ] T021 [US1] Agregar a `deploy/probar_autenticacion.sh`, paso 10: `admin.demo` crea «Auditor de roles» con solo `USUARIOS_ROLES:LECTURA` y se lo asigna a `docente.demo`, y la nueva sesión de `docente.demo` trae ese permiso. Correrlo en el perfil y anotarlo.
+- [X] T021 [US1] Agregar a `deploy/probar_autenticacion.sh`, paso 10: `admin.demo` crea «Auditor de roles» con solo `USUARIOS_ROLES:LECTURA` y se lo asigna a `docente.demo`, y la nueva sesión de `docente.demo` trae ese permiso. Correrlo en el perfil y anotarlo.
 
 **Checkpoint**: la administración de roles funciona por la API y por la pantalla.
 
@@ -164,7 +164,7 @@ description: "Tareas de F05-H02: Roles con permisos y varios roles por usuario"
   - un 403 de la API se muestra con su título y descripción, sin el código (ADR-019).
 
   Crear `frontend/src/sesion/permisos.ts` y `RutaConPermiso.tsx`, y usarlos en la pantalla de roles y en el menú. T023 pasa.
-- [ ] T024 [US2] Agregar a `deploy/probar_autenticacion.sh`, paso 11: con la sesión de `docente.demo` del paso 10, `GET /api/roles` da 200 y `POST /api/roles` da 403 `SEGURIDAD_ACCESO_NO_AUTORIZADO`, con el cuerpo común y sin crear el rol. También `docente.demo` sin el rol (sesión nueva) da 403 en `GET /api/roles`. Correrlo y anotarlo.
+- [X] T024 [US2] Agregar a `deploy/probar_autenticacion.sh`, paso 11: con la sesión de `docente.demo` del paso 10, `GET /api/roles` da 200 y `POST /api/roles` da 403 `SEGURIDAD_ACCESO_NO_AUTORIZADO`, con el cuerpo común y sin crear el rol. También `docente.demo` sin el rol (sesión nueva) da 403 en `GET /api/roles`. Correrlo y anotarlo.
 
 **Checkpoint**: el mínimo privilegio se valida en el servidor y se refleja en la SPA.
 
@@ -182,7 +182,7 @@ description: "Tareas de F05-H02: Roles con permisos y varios roles por usuario"
   - `nombreDelRol` muestra un rol fuera de D-16 con su identificador legible: `AUDITOR_DE_ROLES` → «Auditor de roles» (research §9).
 
   Después cambiar `frontend/src/pantallas/Inicio.tsx` y `frontend/src/sesion/roles.ts`. T025 pasa.
-- [ ] T026 [US3] Prueba con Playwright, en `frontend/e2e/roles.spec.ts`, con la API simulada: `admin.demo` crea un rol y lo asigna; `docente.coordinador.demo` ve las funciones de sus dos roles; `docente.demo` abre `/roles` y ve «Acceso no autorizado». Agregar a `deploy/probar_autenticacion.sh`, paso 12: el token de `docente.coordinador.demo` trae en `permisos` la unión de Docente y Coordinador de carrera, sin repetidos. Al final, el script le quita el rol a `docente.demo`, comprueba que su nueva sesión ya no trae `USUARIOS_ROLES:LECTURA` (escenario 3.3) y borra «Auditor de roles», para poder repetirse. Correr todo y anotarlo.
+- [X] T026 [US3] Prueba con Playwright, en `frontend/e2e/roles.spec.ts`, con la API simulada: `admin.demo` crea un rol y lo asigna; `docente.coordinador.demo` ve las funciones de sus dos roles; `docente.demo` abre `/roles` y ve «Acceso no autorizado». Agregar a `deploy/probar_autenticacion.sh`, paso 12: el token de `docente.coordinador.demo` trae en `permisos` la unión de Docente y Coordinador de carrera, sin repetidos. Al final, el script le quita el rol a `docente.demo`, comprueba que su nueva sesión ya no trae `USUARIOS_ROLES:LECTURA` (escenario 3.3) y borra «Auditor de roles», para poder repetirse. Correr todo y anotarlo.
 
 **Checkpoint**: los tres escenarios pasan de punta a punta.
 
