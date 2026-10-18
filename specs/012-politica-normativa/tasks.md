@@ -38,7 +38,7 @@ description: "Tareas de F04-H01: la política 2024 como primera versión de norm
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear `specs/012-politica-normativa/evidencia.md` con estas secciones: entorno; base (dominio, versión 1 y permiso); escenario «Versión inicial»; solo datos (US2); equipo de demostración; notas.
+- [X] T001 Crear `specs/012-politica-normativa/evidencia.md` con estas secciones: entorno; base (dominio, versión 1 y permiso); escenario «Versión inicial»; solo datos (US2); equipo de demostración; notas.
 
 ---
 
@@ -46,7 +46,7 @@ description: "Tareas de F04-H01: la política 2024 como primera versión de norm
 
 ### Contrato (principio IV)
 
-- [ ] T002 Crear `contratos/normativa/openapi.yaml` según contracts/normativa.md:
+- [X] T002 Crear `contratos/normativa/openapi.yaml` según contracts/normativa.md:
   - `listarVersiones` (`GET /api/normativa/versiones`) y `consultarVersion` (`GET /api/normativa/versiones/{numero}`, `numero` entero ≥ 1), las dos con `x-mdd-permiso: PARAMETROS:LECTURA`;
   - los esquemas `VersionResumen`, `VersionNormativa`, `Regla`, `Parametro` y `FilaCargaHoraria`, con `tipoIst` ∈ `T1`…`T5`, `aplicaA` ∈ `TODOS`, `T1`…`T5` y `severidad` ∈ `DURA`, `BLANDA`; las horas opcionales que la política no da se omiten;
   - respuestas 401 `NoAutenticado`, 403 `AccesoNoAutorizado`, 404, 500 y 503.
@@ -55,23 +55,23 @@ description: "Tareas de F04-H01: la política 2024 como primera versión de norm
 
 ### Dominio de Normativa (principio II)
 
-- [ ] T003 [P] Prueba primero, en `PNOR/dominio/`, sin dobles:
+- [X] T003 [P] Prueba primero, en `PNOR/dominio/`, sin dobles:
   - `TipoIst` (T1 a T5) y `Severidad` (`DURA`, `BLANDA`);
   - `FilaCargaHoraria`: horas enteras y no negativas; «sin valor» distinto de cero; mínimo ≤ clase ≤ máximo; la suma de clase, otras de docencia, gestión y el máximo de investigación y vinculación no supera la dedicación total (el cuidador sustituto, 18 + 12 = 30 de 40, es válido);
   - `TablaCargaHoraria`: rechaza un perfil y tipo repetidos y un perfil que aplica a la vez a `TODOS` y a un tipo concreto; `filaPara(GESTOR, T2)` da la fila de T2 y `filaPara(DOCENTE_TC, T2)` la de `TODOS`; sin fila, vacío;
   - `Regla`: identificador `RN-NN`, severidad opcional, al menos un parámetro;
   - `VersionNormativa`: número ≥ 1, código, origen, vigencia, tipo de IST, tabla y reglas, reconstruida con sus invariantes (crear una versión y su evento llegan con F04-H02).
-- [ ] T004 Crear en `JNOR/dominio/` `TipoIst`, `Severidad`, `FilaCargaHoraria`, `TablaCargaHoraria`, `Regla` y `VersionNormativa`, con JavaDoc en español que cite RF-19, RN-xx, MD-08 y el modelo de dominio §5.1. T003 pasa.
+- [X] T004 Crear en `JNOR/dominio/` `TipoIst`, `Severidad`, `FilaCargaHoraria`, `TablaCargaHoraria`, `Regla` y `VersionNormativa`, con JavaDoc en español que cite RF-19, RN-xx, MD-08 y el modelo de dominio §5.1. T003 pasa.
 
 ### La versión 1 en la base (FR-001 a FR-004, FR-010)
 
-- [ ] T005 Crear `NOR/main/resources/db/migration/normativa/V2__politica_2024.sql` según data-model.md:
+- [X] T005 Crear `NOR/main/resources/db/migration/normativa/V2__politica_2024.sql` según data-model.md:
   - las tablas `version_normativa`, `fila_carga_horaria` (con `orden`), `regla`, `parametro_regla` y `registro_cambio`, con sus `check`;
   - la versión 1 (`SENESCYT-2024-03`, «Política SENESCYT 2024», vigente desde 2024-03-11, `T2`);
   - las 22 filas de `07_politica_carga_horaria.csv`, en su orden, con «sin valor» (`null`) donde la carga 7 está vacía;
   - las 7 reglas y los 29 parámetros de research §4, con sus severidades;
   - el registro `VERSION_CREADA` por `sistema`.
-- [ ] T006 Prueba primero, en `INOR/` (Testcontainers):
+- [X] T006 Prueba primero, en `INOR/` (Testcontainers):
   - copiar la carga 7 a `NOR/integrationTest/resources/politica-2024.csv`;
   - `PoliticaDe2024IntegrationTest`: después de migrar hay una sola versión, la 1, y sus 22 filas coinciden con el archivo **valor por valor** (SC-001); el tipo es T2; están las 7 reglas con sus 29 parámetros y severidades; está el registro `VERSION_CREADA`;
   - `RepositorioVersionesJdbcIntegrationTest`: el repositorio lista las versiones y reconstruye la versión 1 con el agregado, así que cumple sus invariantes; una versión que no existe da vacío; las filas vuelven en el orden de la política;

@@ -1,0 +1,210 @@
+# Contrato de Normativa (servicio 12, proceso datos). Desde F04-H01: la consulta de las versiones de
+# normativa, con la Política SENESCYT 2024 como versión 1 (RF-19, RN-01 a RN-15). Las dos
+# operaciones exigen «Parámetros y normativa: lectura» con x-mdd-permiso (ADR-021), que tienen el
+# Administrador del sistema y el Vicerrector académico (D-65, D-66). Crear y editar versiones es de
+# F04-H02.
+openapi: 3.0.3
+info:
+  title: MDD · Normativa
+  version: 1.0.0
+servers:
+  - url: /
+security:
+  - bearer: []
+tags:
+  - name: Versiones
+    description: Versiones de normativa con su tabla de carga horaria y sus reglas (RF-19).
+paths:
+  /api/normativa/versiones:
+    get:
+      tags: [Versiones]
+      operationId: listarVersiones
+      summary: Lista las versiones de normativa por número.
+      x-mdd-permiso: PARAMETROS:LECTURA
+      responses:
+        '200':
+          description: Las versiones.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VersionResumen'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/normativa/versiones/{numero}:
+    parameters:
+      - name: numero
+        in: path
+        required: true
+        description: Número de la versión de normativa.
+        schema:
+          type: integer
+          minimum: 1
+        example: 1
+    get:
+      tags: [Versiones]
+      operationId: consultarVersion
+      summary: Devuelve una versión de normativa con sus reglas y su tabla de carga horaria.
+      x-mdd-permiso: PARAMETROS:LECTURA
+      responses:
+        '200':
+          description: La versión.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionNormativa'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: La versión no existe (COMUN_RECURSO_NO_ENCONTRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+components:
+  securitySchemes:
+    bearer:
+      $ref: '../comun/seguridad.yaml#/components/securitySchemes/bearer'
+  schemas:
+    TipoIst:
+      type: string
+      description: Tipo de instituto según sus matriculados (RN-06).
+      enum: [T1, T2, T3, T4, T5]
+    Severidad:
+      type: string
+      description: Dura (impide guardar o avanzar) o blanda (exige justificación).
+      enum: [DURA, BLANDA]
+    VersionResumen:
+      type: object
+      required: [numero, codigo, origen, vigenteDesde, tipoIst]
+      properties:
+        numero:
+          type: integer
+          minimum: 1
+          example: 1
+        codigo:
+          type: string
+          example: SENESCYT-2024-03
+        origen:
+          type: string
+          example: Política SENESCYT 2024
+        vigenteDesde:
+          type: string
+          format: date
+          example: '2024-03-11'
+        tipoIst:
+          $ref: '#/components/schemas/TipoIst'
+    VersionNormativa:
+      type: object
+      required: [numero, codigo, origen, vigenteDesde, tipoIst, reglas, tablaCargaHoraria]
+      properties:
+        numero:
+          type: integer
+          minimum: 1
+        codigo:
+          type: string
+        origen:
+          type: string
+        vigenteDesde:
+          type: string
+          format: date
+        tipoIst:
+          $ref: '#/components/schemas/TipoIst'
+        reglas:
+          type: array
+          description: Ordenadas por identificador.
+          items:
+            $ref: '#/components/schemas/Regla'
+        tablaCargaHoraria:
+          type: array
+          description: Las filas en el orden de la política.
+          items:
+            $ref: '#/components/schemas/FilaCargaHoraria'
+    Regla:
+      type: object
+      required: [identificador, parametros]
+      properties:
+        identificador:
+          type: string
+          pattern: '^RN-[0-9]{2}$'
+          example: RN-02
+        severidad:
+          $ref: '#/components/schemas/Severidad'
+        parametros:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Parametro'
+    Parametro:
+      type: object
+      required: [nombre, valor]
+      properties:
+        nombre:
+          type: string
+          example: horas_maximas_docente
+        valor:
+          type: number
+          example: 40
+    FilaCargaHoraria:
+      type: object
+      required:
+        - aplicaA
+        - perfil
+        - dedicacionTotal
+        - horasClase
+        - horasClaseMinimo
+        - horasClaseMaximo
+        - severidad
+        - referencia
+      properties:
+        aplicaA:
+          type: string
+          description: El tipo de IST al que aplica la fila, o TODOS.
+          enum: [TODOS, T1, T2, T3, T4, T5]
+        perfil:
+          type: string
+          example: DOCENTE_TC
+        dedicacionTotal:
+          type: integer
+          minimum: 0
+        horasClase:
+          type: integer
+          minimum: 0
+        horasClaseMinimo:
+          type: integer
+          minimum: 0
+        horasClaseMaximo:
+          type: integer
+          minimum: 0
+        horasOtrasDocencia:
+          type: integer
+          minimum: 0
+          description: Se omite si la política no lo da.
+        horasGestion:
+          type: integer
+          minimum: 0
+          description: Se omite si la política no lo da.
+        horasInvestigacionVinculacionMaximo:
+          type: integer
+          minimum: 0
+          description: Se omite si la política no lo da.
+        severidad:
+          $ref: '#/components/schemas/Severidad'
+        referencia:
+          type: string
+          example: POL 6; RCE arts. 146 y 149
+        observacion:
+          type: string
