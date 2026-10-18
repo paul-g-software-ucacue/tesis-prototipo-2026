@@ -17,9 +17,9 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
  * Después de migrar, cada rol de D-16 tiene exactamente los permisos de su fila en
- * specs/011-roles-permisos/data-model.md (SC-002, D-65), con el cambio de D-66, y cada funcionalidad
- * sus tipos. La tabla
- * esperada está escrita aquí a mano a propósito: si alguien cambia la migración, esta prueba falla.
+ * specs/011-roles-permisos/data-model.md (SC-002, D-65), con el cambio de D-66, y cada
+ * funcionalidad sus tipos. La tabla esperada está escrita aquí a mano a propósito: si alguien
+ * cambia la migración, esta prueba falla.
  */
 class MatrizD16IntegrationTest {
 
