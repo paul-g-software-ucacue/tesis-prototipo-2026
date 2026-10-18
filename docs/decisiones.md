@@ -1026,7 +1026,7 @@ Hay que poder probar el flujo completo de creación del distributivo sin debilit
 - **Modifica a:** ADR-014 (claim `permisos`; los roles salen de Roles), ADR-015 (extensión `x-mdd-permiso`), ADR-016 (403 con cuerpo)
 
 **Decisión.**
-1. Roles es dueño de los roles, sus permisos y las asignaciones. Usuarios deja de guardar roles, aunque `usuario_rol` se conserva para poder volver a una versión anterior.
+1. Roles es dueño de los roles, sus permisos y las asignaciones de roles. Usuarios deja de guardar roles, aunque `usuario_rol` se conserva para poder volver a una versión anterior.
 2. Al iniciar sesión y al renovar, Usuarios pide a Roles los roles y permisos efectivos, por su interfaz publicada dentro del proceso, y los pone en el token: `roles` y `permisos` (`FUNCIONALIDAD:TIPO[:PROPIO]`).
 3. Cada proceso convierte los permisos en autoridades `PERMISO_FUNCIONALIDAD:TIPO`. Cada operación protegida declara `x-mdd-permiso` en su contrato y `@PreAuthorize` en su controlador. `VerificadorDePermisos` (`plataforma:pruebas`) comprueba, operación por operación, que sin ese permiso se recibe 403.
 4. El 403 es `SEGURIDAD_ACCESO_NO_AUTORIZADO`, con el modelo de errores común, en los 4 procesos y en el API Gateway.

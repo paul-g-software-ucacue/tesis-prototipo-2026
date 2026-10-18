@@ -8,11 +8,11 @@ Esquema `roles` del proceso `identidad`. Los detalles están en [research.md](re
 |---|---|---|
 | `funcionalidad` | `codigo` varchar(40) PK, `nombre` varchar(80), `orden` int | Fijas: las inserta `V2__matriz_d16.sql`; las historias siguientes agregan las suyas con otra migración |
 | `funcionalidad_tipo` | `funcionalidad` FK, `tipo` varchar(12); PK (`funcionalidad`, `tipo`) | `tipo` ∈ `LECTURA`, `ESCRITURA`, `APROBACION`, `FIRMA` (RF-02) |
-| `rol` | `id` uuid PK, `identificador` varchar(64) único, `nombre` varchar(80) único, `descripcion` varchar(300), `predefinido` boolean, `creado_en`, `actualizado_en` timestamptz | `identificador` en mayúsculas con guion bajo; se deriva del nombre al crear y no cambia. `predefinido = true` solo para los 10 de D-16 (D-63) |
+| `rol` | `id` uuid PK, `identificador` varchar(64) único, `nombre` varchar(80) único, `descripcion` varchar(300), `predefinido` boolean, `creado_en`, `actualizado_en` timestamptz | `identificador`: se deriva del nombre al crear (sin tildes, mayúsculas, cada tramo que no es letra ni dígito pasa a `_`, sin `_` en los extremos, recortado a 64) y no cambia. Dos nombres con el mismo identificador derivado son el mismo nombre (409 `ROLES_NOMBRE_REPETIDO`, research §7). `predefinido = true` solo para los 10 de D-16 (D-63) |
 | `rol_permiso` | `rol_id` FK, `funcionalidad`, `tipo`, `alcance` varchar(8); PK (`rol_id`, `funcionalidad`, `tipo`); FK (`funcionalidad`, `tipo`) → `funcionalidad_tipo` | `alcance` ∈ `TODO`, `PROPIO` (D-64). Un rol tiene al menos un permiso |
-| `asignacion` | `nombre_usuario` varchar(64), `rol_id` FK, `asignado_en` timestamptz, `asignado_por` varchar(64); PK (`nombre_usuario`, `rol_id`) | El nombre de usuario va normalizado (minúsculas, F05-H01). Sin FK a Usuarios: otro esquema (principio V) |
+| `asignacion_rol` | `nombre_usuario` varchar(64), `rol_id` FK, `asignado_en` timestamptz, `asignado_por` varchar(64); PK (`nombre_usuario`, `rol_id`) | El nombre de usuario va normalizado (minúsculas, F05-H01). Sin FK a Usuarios: otro esquema (principio V) |
 | `inicializacion` | `nombre_usuario` varchar(64) PK, `inicializado_en` timestamptz | Marca que el usuario ya recibió sus roles iniciales (research §8) |
-| `registro_cambio` | `id` uuid PK, `momento` timestamptz, `usuario` varchar(64), `accion` varchar(20), `detalle` jsonb | `accion` ∈ `CREAR_ROL`, `EDITAR_ROL`, `BORRAR_ROL`, `ASIGNAR`, `QUITAR`, `INICIALIZAR`. Nunca datos sensibles (FR-011) |
+| `registro_cambio` | `id` uuid PK, `momento` timestamptz, `usuario` varchar(64), `accion` varchar(20), `detalle` jsonb | `accion` ∈ `CREAR_ROL`, `EDITAR_ROL`, `BORRAR_ROL`, `ASIGNAR_ROL`, `QUITAR_ROL`, `INICIALIZAR`. Nunca datos sensibles (FR-011) |
 
 `usuarios.usuario_rol` queda sin uso y no se borra (research §1).
 

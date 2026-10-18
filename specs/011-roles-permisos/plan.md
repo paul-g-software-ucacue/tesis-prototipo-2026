@@ -7,13 +7,13 @@
 ## Summary
 
 Sobre el inicio de sesión de F05-H01 y el esqueleto del servicio Roles:
-- **Roles (servicio 2):** dueño del catálogo de funcionalidades, los roles, sus permisos (funcionalidad, tipo y alcance) y las asignaciones a usuarios. `V2__matriz_d16.sql` carga las 16 funcionalidades y los 10 roles de D-16, que son fijos (D-63). El administrador crea, edita y borra roles propios y asigna varios a un usuario.
+- **Roles (servicio 2):** dueño del catálogo de funcionalidades, los roles, sus permisos (funcionalidad, tipo y alcance) y las asignaciones de roles a usuarios. `V2__matriz_d16.sql` carga las 16 funcionalidades y los 10 roles de D-16, que son fijos (D-63). El administrador crea, edita y borra roles propios y asigna varios a un usuario.
 - **Permisos en el token (ADR-021):** Usuarios pide a Roles los roles y permisos efectivos al iniciar sesión y al renovar, y los pone en el claim `permisos`. Un cambio vale desde la próxima renovación (D-62). El alcance «solo lo propio» viaja en el permiso, pero todavía no filtra datos (D-64).
 - **Validación en el servidor (RNF-SEG-03):**
   - cada operación protegida declara `x-mdd-permiso` en el contrato y `@PreAuthorize` en el controlador;
   - `VerificadorDePermisos` prueba, operación por operación, que sin el permiso se recibe 403.
 - **403 común:** `SEGURIDAD_ACCESO_NO_AUTORIZADO` en los 4 procesos y en el API Gateway.
-- **SPA:** la pantalla «Roles» (roles, matriz, asignaciones), «Tus funciones» en Inicio y «Acceso no autorizado» en las rutas sin permiso.
+- **SPA:** la pantalla «Roles» (roles, matriz y roles de cada usuario), «Tus funciones» en Inicio y «Acceso no autorizado» en las rutas sin permiso.
 - **Usuarios:** deja de guardar roles (`usuario_rol` queda sin uso) y los usuarios de la demo reciben sus roles iniciales una sola vez.
 - **Matriz D-16:** su interpretación en permisos es D-65.
 
@@ -28,7 +28,7 @@ Los detalles y las alternativas están en [research.md](research.md).
 - **Roles:** `JdbcClient` (un subdominio genérico con un CRUD simple, principio II).
 - **SPA:** openapi-typescript y openapi-fetch. Para la matriz, los componentes de MUI que ya usa la SPA.
 
-**Storage**: esquema `roles`: `funcionalidad`, `funcionalidad_tipo`, `rol`, `rol_permiso`, `asignacion`, `inicializacion` y `registro_cambio` (V2 y V3). `usuarios.usuario_rol` queda sin uso.
+**Storage**: esquema `roles`: `funcionalidad`, `funcionalidad_tipo`, `rol`, `rol_permiso`, `asignacion_rol`, `inicializacion` y `registro_cambio` (V2 y V3). `usuarios.usuario_rol` queda sin uso.
 
 **Testing**:
 - **Dominio y aplicación:** JUnit Jupiter 6, AssertJ y Mockito, este último solo en la aplicación.
@@ -68,9 +68,9 @@ Los detalles y las alternativas están en [research.md](research.md).
 |---|---|---|
 | I. Capas | Roles con sus cinco capas. Las reglas (permisos válidos, unión, predefinido y sin administrador) en el dominio. La consulta a Roles desde Usuarios, por un puerto de salida. | ✅ |
 | II. DDD según el subdominio | Roles es genérico: CRUD simple detrás de sus puertos, sin agregados elaborados. | ✅ |
-| III. Lenguaje ubicuo | Rol, Permiso, Funcionalidad y Asignación de rol en español, con los nombres de D-16 y el glosario. | ✅ |
+| III. Lenguaje ubicuo | Rol, Funcionalidad, Tipo de permiso, Alcance, Permiso, Permisos efectivos y Asignación de rol, agregados al glosario antes del código (research §12). «Asignación de rol» siempre completa, para no confundirla con la asignación de horas. | ✅ |
 | IV. API primero | `contratos/roles/openapi.yaml` nuevo, `x-mdd-permiso` en el contrato, y los cambios en Usuarios y en lo común antes del código. | ✅ |
-| V. Límites | Usuarios llama a Roles solo por `ec.mdd.roles.puertos.entrada` (`ModulosTest`), en una sola dirección. Las asignaciones pasan a Roles; nadie lee las tablas de otro. | ✅ |
+| V. Límites | Usuarios llama a Roles solo por `ec.mdd.roles.puertos.entrada` (`ModulosTest`), en una sola dirección. Las asignaciones de roles pasan a Roles; nadie lee las tablas de otro. | ✅ |
 | VI y VII | Sin reglas del distributivo ni versionado de normativa. | ✅ N/A |
 | VIII. Pruebas | Pruebas primero; Mockito solo en la aplicación; Testcontainers en los adaptadores; datos ficticios; una prueba de autorización por operación. | ✅ |
 | IX. Seguridad | Mínimo privilegio validado en el servidor (RNF-SEG-03); el 403 sin detalles; registro de cambios de roles. | ✅ |
@@ -117,18 +117,18 @@ backend/servicios/roles/                     # build.gradle con mdd.contrato
 ├── src/main/java/ec/mdd/roles/
 │   ├── dominio/                             # Funcionalidad, TipoDePermiso, Alcance, Permiso, Rol, PermisosEfectivos, reglas
 │   ├── puertos/entrada/                     # GestionarRoles, AsignarRoles, ConsultarAutorizacion, AsignarRolesIniciales
-│   ├── puertos/salida/                      # RepositorioRoles, RepositorioAsignaciones, RegistroDeCambios
+│   ├── puertos/salida/                      # RepositorioRoles, RepositorioAsignacionesDeRol, RegistroDeCambios
 │   ├── aplicacion/                          # servicios de los casos de uso y sus excepciones
 │   ├── adaptadores/entrada/                 # RolesControlador, AutorizacionControlador, ErroresRoles
 │   ├── adaptadores/salida/                  # repositorios JDBC
 │   └── infraestructura/                     # ConfiguracionRoles
-├── src/main/resources/db/migration/roles/V2__matriz_d16.sql, V3__asignaciones.sql
+├── src/main/resources/db/migration/roles/V2__matriz_d16.sql, V3__asignaciones_de_rol.sql
 └── src/test, src/integrationTest
 backend/servicios/usuarios/                  # Usuario sin roles; ProveedorDeAutorizacion; listarUsuarios; carga de la demo con roles iniciales
 backend/gateway/                             # 403 común
 frontend/src/
 ├── sesion/permisos.ts, funcionalidades.ts, RutaConPermiso.tsx
-├── pantallas/roles/                         # Roles, RolFormulario, AsignacionesDeUsuarios
+├── pantallas/roles/                         # Roles, RolFormulario, RolesDeUsuarios
 └── pantallas/Inicio.tsx                     # «Tus funciones»
 deploy/probar_autenticacion.sh               # pasos de roles, solo lectura y varios roles
 ```
@@ -141,8 +141,8 @@ deploy/probar_autenticacion.sh               # pasos de roles, solo lectura y va
 2. **Contrato:** `roles/openapi.yaml`, los cambios en Usuarios y en lo común, y la generación en el backend y en la SPA.
 3. **Plataforma:** el código común, `RespuestaAccesoNoAutorizado`, las autoridades `PERMISO_`, la *method security*, el 403 del API Gateway y `VerificadorDePermisos`.
 4. **Dominio de Roles,** con sus pruebas primero.
-5. **Persistencia de Roles:** V2 con la matriz D-16, V3 con las asignaciones, los repositorios JDBC y la prueba de la matriz contra `data-model.md`.
-6. **Aplicación y API de Roles:** gestión, asignación, autorización, roles iniciales, registro de cambios, el controlador y `ErroresRoles`.
+5. **Persistencia de Roles:** V2 con la matriz D-16, V3 con las asignaciones de roles, los repositorios JDBC y la prueba de la matriz contra `data-model.md`.
+6. **Aplicación y API de Roles:** gestión, asignación de roles, autorización, roles iniciales, registro de cambios, el controlador y `ErroresRoles`.
 7. **Usuarios:** `ProveedorDeAutorizacion` en el inicio de sesión y la renovación, el claim `permisos`, `listarUsuarios`, la carga de la demo y de `autor.prueba` con roles iniciales, y el retiro de `RolMdd` y del mapeo de `usuario_rol`.
 8. **SPA:** permisos, «Tus funciones», la pantalla Roles y `RutaConPermiso`.
 9. **Punta a punta:** `probar_autenticacion.sh` y la comprobación en el perfil.
@@ -153,4 +153,4 @@ deploy/probar_autenticacion.sh               # pasos de roles, solo lectura y va
 | Pieza | Por qué hace falta | Alternativa más simple descartada porque |
 |---|---|---|
 | `x-mdd-permiso` y `VerificadorDePermisos` | RNF-SEG-03 pide pruebas de autorización por endpoint, y el permiso tiene que estar en el contrato, que es la fuente de verdad | Reglas por ruta sin prueba: el contrato y el código se separan sin que nadie lo note. |
-| Tabla `inicializacion` | Las asignaciones del administrador tienen que sobrevivir a los reinicios (FR-009), incluso si le quita todos los roles a un usuario de la demo | Asignar si el usuario no tiene roles: volvería a dar los roles iniciales a quien el administrador dejó sin ninguno. |
+| Tabla `inicializacion` | Las asignaciones de roles del administrador tienen que sobrevivir a los reinicios (FR-009), incluso si le quita todos los roles a un usuario de la demo | Asignar si el usuario no tiene roles: volvería a dar los roles iniciales a quien el administrador dejó sin ninguno. |

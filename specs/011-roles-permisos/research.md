@@ -13,10 +13,10 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 | Credenciales, nombre para mostrar, activo e intentos | Usuarios | `usuarios` |
 | Catálogo de funcionalidades, roles, permisos y asignaciones de roles a usuarios | **Roles** | `roles` |
 
-- **Decisión:** las asignaciones pasan de `usuarios.usuario_rol` a Roles (`roles.asignacion`). Usuarios deja de leer y escribir `usuario_rol`, y el dominio `Usuario` pierde `roles`.
+- **Decisión:** las asignaciones de roles pasan de `usuarios.usuario_rol` a Roles (`roles.asignacion_rol`). Usuarios deja de leer y escribir `usuario_rol`, y el dominio `Usuario` pierde `roles`.
 - **`usuario_rol` no se borra en esta historia:** si la versión nueva falla y el equipo vuelve a la anterior (D-55), la anterior todavía lee esa tabla. Se borra en una historia posterior, cuando ya no haga falta volver a una versión de antes de F05-H02.
 - **Por qué:** la ERS 8.5 da a Roles «roles múltiples por usuario y permisos por funcionalidad» (servicio 2), y el principio V prohíbe que un servicio lea las tablas de otro.
-- **Alternativa:** dejar las asignaciones en Usuarios y solo los roles en Roles (dos servicios para una sola regla, y Usuarios tendría que validar roles que no conoce).
+- **Alternativa:** dejar las asignaciones de roles en Usuarios y solo los roles en Roles (dos servicios para una sola regla, y Usuarios tendría que validar roles que no conoce).
 
 ## 2. Cómo se hablan Usuarios y Roles
 
@@ -24,7 +24,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
   - **`ConsultarAutorizacion`:** roles y permisos efectivos de un usuario. Lo usan el inicio de sesión y la renovación.
   - **`AsignarRolesIniciales`:** da los roles iniciales a un usuario una sola vez. Lo usan `CargaUsuariosDemo` y `CargaUsuarioDePrueba`.
 - Del lado de Usuarios, un puerto de salida propio (`ProveedorDeAutorizacion`) con un adaptador que delega en esos dos puertos de entrada. Usuarios no ve las clases internas de Roles.
-- **Una sola dirección:** Usuarios → Roles. Roles no llama a Usuarios: al asignar, no comprueba que el usuario exista (la pantalla solo ofrece usuarios existentes; una asignación a un nombre inexistente no da acceso a nadie). Así no hay dependencia circular.
+- **Una sola dirección:** Usuarios → Roles. Roles no llama a Usuarios: al asignar, no comprueba que el usuario exista (la pantalla solo ofrece usuarios existentes; una asignación de rol a un nombre inexistente no da acceso a nadie). Así no hay dependencia circular.
 - `Consultar autorización` también queda en el contrato de Roles como operación interna (`GET /interno/roles/autorizaciones/{usuario}`, solo con el token de proceso, ADR-018), para el día en que Roles corra en otro proceso.
 - **Alternativa:** que Usuarios lea las tablas de Roles (prohibido por el principio V); un evento por cada cambio (más piezas, y la autorización tiene que ser una consulta síncrona al iniciar sesión).
 
@@ -65,10 +65,13 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 - **D-63:** los 10 roles de D-16 llevan `predefinido = true`; editarlos o borrarlos responde 409 `ROLES_ROL_PREDEFINIDO`.
 - **Nombre repetido:** 409 `ROLES_NOMBRE_REPETIDO`.
 - **Rol sin permisos:** 400 por la validación del contrato (`permisos` con `minItems: 1`).
-- **Rol asignado:** borrarlo responde 409 `ROLES_ROL_ASIGNADO`, con la cantidad de usuarios en la descripción.
-- **Sin administrador:** si un cambio de asignaciones dejaría sin ningún usuario con `USUARIOS_ROLES:ESCRITURA`, o le quitaría ese permiso a quien hace el cambio, responde 409 `ROLES_SIN_ADMINISTRADOR`. Esto no mira si el usuario está activo, que es dato de Usuarios: basta con que quede una asignación con ese permiso.
+- **Rol asignado:** borrarlo responde 409 `ROLES_ROL_ASIGNADO`. La cantidad de usuarios la muestra la pantalla con `usuariosAsignados`, y el registro del servidor la anota.
+- **Sin administrador:** si un cambio de los roles de un usuario, o la edición de un rol, dejaría sin ningún usuario con `USUARIOS_ROLES:ESCRITURA`, o le quitaría ese permiso a quien hace el cambio, responde 409 `ROLES_SIN_ADMINISTRADOR`. Esto no mira si el usuario está activo, que es dato de Usuarios: basta con que quede una asignación de rol con ese permiso. Borrar un rol no puede causarlo, porque un rol asignado no se borra.
 - **Identificador de un rol nuevo:** se deriva del nombre (`Auditor de cargas` → `AUDITOR_DE_CARGAS`), es único y no cambia aunque cambie el nombre, porque viaja en el token.
-- **Registro (FR-011):** la tabla `registro_cambio` (momento, usuario, acción y detalle en JSON) guarda cada creación, edición, borrado, asignación y retiro. La bitácora de historias posteriores lo consumirá.
+  - **Regla:** sin tildes, en mayúsculas, cada tramo de caracteres que no son letras ni dígitos pasa a un `_`, sin `_` en los extremos y recortado a 64.
+  - **Nombres equivalentes:** dos nombres que dan el mismo identificador son el mismo nombre y responden 409 `ROLES_NOMBRE_REPETIDO`. Vale también contra los 10 de D-16: «Administrador» da `ADMINISTRADOR` y se rechaza. Al editar, se compara el identificador que daría el nombre nuevo con los de los demás roles.
+  - El nombre necesita al menos una letra o un dígito (`pattern` en el contrato).
+- **Registro (FR-011):** la tabla `registro_cambio` (momento, usuario, acción y detalle en JSON) guarda cada creación, edición y borrado de un rol, y cada asignación y retiro de un rol. La bitácora de historias posteriores lo consumirá.
 
 ## 8. Roles iniciales de los usuarios de la demo (FR-009)
 
@@ -83,12 +86,14 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 - **Pantalla «Roles»** (`/roles`), en el menú solo con `USUARIOS_ROLES:LECTURA`:
   - pestaña **Roles**: la lista con nombre, descripción y si es de D-16; el detalle muestra la matriz funcionalidad × tipo × alcance, en solo lectura para los de D-16;
   - **crear y editar** un rol: nombre, descripción y una tabla con una casilla por cada tipo que admite cada funcionalidad, más un selector de alcance (todo o solo lo propio);
-  - pestaña **Usuarios**: la lista de usuarios (`GET /api/usuarios/usuarios`, nombre de usuario y nombre para mostrar) con sus roles, y un diálogo para asignar y quitar.
+  - pestaña **Usuarios**: la lista de usuarios (`GET /api/usuarios/usuarios`, nombre de usuario y nombre para mostrar) con sus roles (`GET /api/roles/usuarios`), y un diálogo para asignar y quitar roles;
+  - un rol propio asignado muestra «Asignado a N usuarios. Quítaselo antes de borrarlo.» y no deja borrarlo.
 - **Sin `USUARIOS_ROLES:ESCRITURA`**, las acciones de crear, editar, borrar y asignar no aparecen.
 - **Sin `USUARIOS_ROLES:LECTURA`**, la ruta muestra «Acceso no autorizado» (componente `RutaConPermiso`).
 - **Inicio:** una sección «Tus funciones» lista las funcionalidades que el usuario puede usar, con sus tipos de permiso en español y sin repetir, a partir de `SesionActual.permisos`.
 - **Permisos en la SPA:** `sesion/permisos.ts` (`tienePermiso`) y `sesion/funcionalidades.ts`, con los nombres en español. Solo deciden qué se muestra; el servidor decide qué se permite.
 - `SesionActual` gana `permisos` (opcional), que Usuarios toma del token. Los demás procesos no cambian.
+- **Nombres de los roles creados:** el token solo lleva identificadores. `nombreDelRol` traduce los 10 de D-16 y muestra los demás con su identificador legible (`AUDITOR_DE_ROLES` → «Auditor de roles»), sin tildes. Es aceptable para el prototipo; llevar los nombres en la sesión agrega una consulta y no lo pide ningún requisito.
 
 ## 10. Lista de usuarios en Usuarios
 
@@ -117,3 +122,14 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
   - `docente.coordinador.demo` trae los permisos de sus dos roles.
 
   Al final borra lo que creó, para poder repetirse.
+
+## 12. Términos nuevos del glosario (principio III)
+
+- **Decisión:** antes del código, el glosario (`sdd/modelo_dominio.md`, fuera del repositorio) ganó en §7.1 Funcionalidad, Tipo de permiso, Alcance, Permiso, Permisos efectivos y Asignación de rol, y en §8 la fila «"Asignación" sola para un rol dado a un usuario → Asignación de rol» (2026-10-18).
+- **Por qué:** «Asignación» ya es, en el glosario, las horas de un docente en un componente (RF-27). Por eso en el código, el contrato y la pantalla se dice siempre «asignación de rol»:
+  - tabla `asignacion_rol` (`V3__asignaciones_de_rol.sql`);
+  - puerto `RepositorioAsignacionesDeRol`;
+  - esquema `RolesDeUsuario` y operaciones `listarRolesDeUsuarios` (`GET /api/roles/usuarios`) y `asignarRoles` (`PUT /api/roles/usuarios/{usuario}`);
+  - acciones del registro `ASIGNAR_ROL` y `QUITAR_ROL`;
+  - componente `RolesDeUsuarios.tsx`.
+- Las rutas fijas (`funcionalidades`, `usuarios`) van en minúsculas y los identificadores de los roles en mayúsculas, así que no chocan con `/api/roles/{identificador}`.

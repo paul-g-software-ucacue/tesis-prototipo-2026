@@ -36,7 +36,7 @@ Resultado esperado: los pasos de F05-H01 más los nuevos en `OK`:
 ## 4. En el equipo de demostración, después de fusionar
 
 1. Esperar el despliegue automático: «Sano en N s».
-2. Con `admin.demo` (su clave en `sudo cat /opt/mdd/secretos/claves-demo`), repetir el paso 3.1. Después, reiniciar `identidad` y comprobar que el rol y la asignación siguen ahí (SC-006).
+2. Con `admin.demo` (su clave en `sudo cat /opt/mdd/secretos/claves-demo`), repetir el paso 3.1. Después, reiniciar `identidad` y comprobar que el rol y la asignación de rol siguen ahí (SC-006).
 
 ## 5. Lo que no debe pasar
 

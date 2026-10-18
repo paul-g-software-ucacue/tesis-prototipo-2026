@@ -52,16 +52,19 @@ description: "Tareas de F05-H02: Roles con permisos y varios roles por usuario"
 - [ ] T002 Crear `contratos/roles/openapi.yaml` según contracts/roles.md: las 9 operaciones, con `x-mdd-permiso` en las de `/api/`, los esquemas y las respuestas 401, 403 `AccesoNoAutorizado`, 404, 409, 500 y 503.
   - `Rol.nombre`: «1 a 80»; `Rol.descripcion`: «hasta 300»; `Rol.permisos`: `minItems: 1`; `alcance` ∈ `TODO`, `PROPIO`; `tipo` ∈ `LECTURA`, `ESCRITURA`, `APROBACION`, `FIRMA`.
   - `consultarAutorizacion` en `/interno/roles/autorizaciones/{usuario}`, sin `x-mdd-permiso` (token de proceso, ADR-018).
-- [ ] T003 Cambiar `contratos/usuarios/openapi.yaml` (`listarUsuarios` con `x-mdd-permiso: USUARIOS_ROLES:LECTURA`; el 403 de `recibirEvento` pasa a `AccesoNoAutorizado`), `contratos/comun/seguridad.yaml` (`SesionActual.permisos`, opcional; la respuesta `AccesoNoAutorizado`) y `contratos/comun/errores.md` (las 5 filas de contracts/roles.md). Agregar `id 'mdd.contrato'` a `backend/servicios/roles/build.gradle`. Regenerar las interfaces del backend y los tipos de la SPA: `generar:api` gana el contrato de roles (`src/api/generado/roles.d.ts`).
+- [ ] T003 Cambiar `contratos/usuarios/openapi.yaml` (`listarUsuarios` con `x-mdd-permiso: USUARIOS_ROLES:LECTURA`; el 403 de `recibirEvento` pasa a `AccesoNoAutorizado`), `contratos/comun/seguridad.yaml` (`SesionActual.permisos`, opcional; la respuesta `AccesoNoAutorizado`) y `contratos/comun/errores.md` (las 5 filas de contracts/roles.md). Agregar a `backend/servicios/roles/build.gradle` `id 'mdd.contrato'` y `implementation 'org.springframework.boot:spring-boot-starter-jdbc'` (para `JdbcClient`). Regenerar las interfaces del backend y los tipos de la SPA: `generar:api` gana el contrato de roles (`src/api/generado/roles.d.ts`).
 
 ### Plataforma: el 403 común y los permisos como autoridades
 
 - [ ] T004 [P] Prueba primero, en `PLAT/seguridad/src/test/java/ec/mdd/plataforma/seguridad/SeguridadProcesoTest.java`:
   - un token con `permisos: ["USUARIOS_ROLES:LECTURA", "OFERTA:LECTURA:PROPIO"]` da las autoridades `PERMISO_USUARIOS_ROLES:LECTURA` y `PERMISO_OFERTA:LECTURA`, además de `ROLE_<rol>`;
-  - un método con `@PreAuthorize` sin el permiso responde 403 con el cuerpo `SEGURIDAD_ACCESO_NO_AUTORIZADO`, igual que un token de usuario en `/interno/**` y uno de proceso fuera de él.
+  - un método con `@PreAuthorize` sin el permiso responde 403 con el cuerpo `SEGURIDAD_ACCESO_NO_AUTORIZADO`, igual que un token de usuario en `/interno/**` y uno de proceso fuera de él;
+  - en `PLAT/errores/src/test/java/ec/mdd/plataforma/errores/ControladorDeErroresTest.java`, la prueba `dadoUn403DeLaSeguridad_…entoncesNoLlevaCuerpo` pasa a esperar el cuerpo `SEGURIDAD_ACCESO_NO_AUTORIZADO` (el 403 que llega a `/error`).
 - [ ] T005 Agregar `SEGURIDAD_ACCESO_NO_AUTORIZADO` a `PLAT/errores-nucleo/…/CodigosComunes.java`, con su fila del catálogo. En `PLAT/seguridad`:
   - crear `RespuestaAccesoNoAutorizado.java` (un `AccessDeniedHandler` con cuerpo fijo y sin detalles, como `RespuestaNoAutenticado`);
   - en `SeguridadProcesoAutoConfiguracion`: un conversor que una `roles` y `permisos`, `@EnableMethodSecurity` y el manejador de acceso denegado.
+
+  En `PLAT/errores/…/ControladorDeErrores.java`, el 403 responde ese cuerpo (`CodigosComunes.segunEstado(403)`) y su JavaDoc deja de decir «sin cuerpo». Actualizar los comentarios «hasta F05-H02» de `Usuario.java` y `CargaUsuarioDePrueba.java`; **no** el de `V2__usuarios.sql`, porque Flyway compara su suma de verificación.
 
   T004 pasa.
 - [ ] T006 [P] Prueba primero, en `backend/gateway/src/test/…`: una ruta fuera de `/api/**` con un token válido responde 403 con el mismo cuerpo. Después configurar el manejador de acceso denegado en `backend/gateway/src/main/java/ec/mdd/gateway/SeguridadGatewayConfig.java`. T006 pasa.
@@ -72,23 +75,24 @@ description: "Tareas de F05-H02: Roles con permisos y varios roles por usuario"
 - [ ] T008 [P] Prueba primero, en `PROL/dominio/`, sin dobles:
   - `TipoDePermiso` y `Alcance` (valores);
   - un `Permiso` con un tipo que su funcionalidad no admite se rechaza;
-  - `Rol`: nombre de 1 a 80, descripción hasta 300, al menos un permiso, identificador derivado del nombre (`Auditor de cargas` → `AUDITOR_DE_CARGAS`, sin tildes);
+  - `Rol`: nombre de 1 a 80 con al menos una letra o un dígito, descripción hasta 300, al menos un permiso;
+  - identificador derivado del nombre (data-model.md): `Auditor de cargas` → `AUDITOR_DE_CARGAS`; `Gestión  de  cargas!` → `GESTION_DE_CARGAS`; un nombre de 80 caracteres da uno de 64; «Auditor de Cargas.» da el mismo que «Auditor de cargas»;
   - `PermisosEfectivos`: unión de varios roles, el alcance `TODO` gana a `PROPIO`, orden alfabético y la forma de texto `FUNCIONALIDAD:TIPO[:PROPIO]`;
-  - `ReglaDeAdministracion`: un rol predefinido no se edita ni se borra; uno asignado no se borra; un cambio que deja sin `USUARIOS_ROLES:ESCRITURA`, o se lo quita a quien lo hace, se rechaza.
+  - `ReglaDeAdministracion`: un rol predefinido no se edita ni se borra; uno asignado no se borra; un nombre cuyo identificador derivado ya existe se rechaza, también contra los de D-16 («Administrador» → `ADMINISTRADOR`); un cambio de los roles de un usuario, o la edición de un rol propio, que deja sin `USUARIOS_ROLES:ESCRITURA`, o se lo quita a quien lo hace, se rechaza.
 - [ ] T009 Crear en `JROL/dominio/` `Funcionalidad`, `TipoDePermiso`, `Alcance`, `Permiso`, `Rol`, `PermisosEfectivos` y `ReglaDeAdministracion`, con JavaDoc en español que cite D-16, D-63, D-64 y D-65. T008 pasa.
 
 ### Persistencia de Roles
 
-- [ ] T010 Crear `ROL/main/resources/db/migration/roles/V2__matriz_d16.sql`: `funcionalidad`, `funcionalidad_tipo`, `rol` y `rol_permiso`, con las 16 funcionalidades, sus tipos y los 10 roles de D-16 (`predefinido = true`), con los permisos y alcances de la tabla «Matriz D-16» de data-model.md. Crear `V3__asignaciones.sql`: `asignacion`, `inicializacion` y `registro_cambio`. Los tipos y longitudes, según data-model.md.
+- [ ] T010 Crear `ROL/main/resources/db/migration/roles/V2__matriz_d16.sql`: `funcionalidad`, `funcionalidad_tipo`, `rol` y `rol_permiso`, con las 16 funcionalidades, sus tipos y los 10 roles de D-16 (`predefinido = true`), con los permisos y alcances de la tabla «Matriz D-16» de data-model.md. Crear `V3__asignaciones_de_rol.sql`: `asignacion_rol`, `inicializacion` y `registro_cambio`. Los tipos y longitudes, según data-model.md.
 - [ ] T011 Prueba primero, en `IROL/MatrizD16IntegrationTest.java` (Testcontainers): después de migrar, cada uno de los 10 roles tiene **exactamente** los permisos y alcances de data-model.md, escritos en la prueba como tabla esperada (SC-002), y las 16 funcionalidades tienen sus tipos. `RolesEsquemaIntegrationTest` sigue en verde, con las tablas nuevas.
 - [ ] T012 Prueba primero, en `IROL/RepositoriosJdbcIntegrationTest.java`:
   - guardar, leer, editar y borrar un rol con sus permisos;
-  - asignar y quitar roles;
+  - asignar y quitar roles (`asignacion_rol`);
   - contar usuarios por rol;
   - inicialización una sola vez;
   - registro de cambios.
 
-  Crear en `JROL/puertos/salida/` `RepositorioRoles`, `RepositorioAsignaciones` y `RegistroDeCambios`, y en `JROL/adaptadores/salida/` sus implementaciones con `JdbcClient`. T011 y T012 pasan.
+  Crear en `JROL/puertos/salida/` `RepositorioRoles`, `RepositorioAsignacionesDeRol` y `RegistroDeCambios`, y en `JROL/adaptadores/salida/` sus implementaciones con `JdbcClient`. T011 y T012 pasan.
 
 ### Autorización en la sesión (ADR-021, D-62)
 
@@ -105,10 +109,11 @@ description: "Tareas de F05-H02: Roles con permisos y varios roles por usuario"
   - crear el puerto `JUSU/puertos/salida/ProveedorDeAutorizacion.java` y su adaptador `JUSU/adaptadores/salida/AutorizacionDesdeRoles.java`, que delega en `ConsultarAutorizacion` y `AsignarRolesIniciales`;
   - quitar `roles` de `Usuario` y el mapeo de `usuario_rol` de `UsuarioJpa` (la tabla **no** se borra, research §1);
   - retirar `RolMdd`;
-  - agregar `implementation project(':servicios:roles')` a `backend/servicios/usuarios/build.gradle`.
+  - agregar `implementation project(':servicios:roles')` a `backend/servicios/usuarios/build.gradle`;
+  - ajustar `USU/integrationTest/java/ec/mdd/usuarios/RepositorioUsuariosJpaIntegrationTest.java`, porque `Usuario` ya no tiene roles.
 
-  T014 pasa y `ModulosTest` de `identidad` sigue en verde.
-- [ ] T015 Prueba primero, en `PUSU/infraestructura/CargaUsuariosDemoTest.java` y `CargaUsuarioDePruebaTest.java`: al crear o actualizar un usuario de la demo, o `autor.prueba`, se piden sus roles iniciales del archivo; un rol desconocido falla y dice cuál; ya no se actualizan roles en cada arranque (FR-009). Después cambiar `CargaUsuariosDemo` y `CargaUsuarioDePrueba`. T015 pasa.
+  T014 pasa, y `ModulosTest` de `identidad` y `:servicios:usuarios:integrationTest` siguen en verde.
+- [ ] T015 Prueba primero, en `PUSU/infraestructura/CargaUsuariosDemoTest.java` y `CargaUsuarioDePruebaTest.java`: al crear o actualizar un usuario de la demo, o `autor.prueba`, se piden sus roles iniciales del archivo; un rol desconocido falla y dice cuál; ya no se actualizan roles en cada arranque (FR-009). Después cambiar `CargaUsuariosDemo` y `CargaUsuarioDePrueba`, y ajustar `USU/integrationTest/java/ec/mdd/usuarios/CargaUsuariosDemoIntegrationTest.java` y `CargaUsuarioDePruebaIntegrationTest.java` con un `ProveedorDeAutorizacion` falso escrito a mano (sin Mockito: son adaptadores) que anota los roles iniciales pedidos. T015 pasa.
 - [ ] T016 Prueba primero, en `PUSU/adaptadores/entrada/SesionContratoTest.java`: `consultarSesion` devuelve `permisos` del token, válido contra el contrato. Después cambiar `SesionControlador`. T016 pasa.
 
 **Checkpoint**: el contrato, el 403 común, la matriz D-16 en la base y los permisos en el token están listos; `./gradlew check` y las pruebas de integración de Roles y Usuarios en verde.
@@ -123,19 +128,22 @@ description: "Tareas de F05-H02: Roles con permisos y varios roles por usuario"
 
 - [ ] T017 [US1] Prueba primero, en `PROL/aplicacion/GestionarRolesServicioTest.java` y `AsignarRolesServicioTest.java` (Mockito):
   - crear, editar y borrar con las reglas de `ReglaDeAdministracion`: `RolPredefinido`, `RolAsignado`, `NombreRepetido` y `SinAdministrador`;
+  - editar un rol propio que es la única fuente de `USUARIOS_ROLES:ESCRITURA` y quitarle ese permiso da `SinAdministrador`;
   - asignar el conjunto de roles de un usuario (vacío también) y rechazar un rol desconocido;
-  - cada cambio queda en `RegistroDeCambios`, con quién y cuándo (FR-011).
+  - cada cambio queda en `RegistroDeCambios`, con quién y cuándo (FR-011): `CREAR_ROL`, `EDITAR_ROL`, `BORRAR_ROL`, `ASIGNAR_ROL` y `QUITAR_ROL`.
 
   Crear los puertos `GestionarRoles` y `AsignarRoles`, sus servicios y las excepciones. T017 pasa.
-- [ ] T018 [US1] Prueba primero, en `PROL/adaptadores/entrada/RolesContratoTest.java`: cada operación de `/api/roles` con un token con los permisos, contra el contrato, incluidos los 409 de los 4 códigos y el 400 de un permiso con un tipo que la funcionalidad no admite. Agregar `ErroresRolesTest`, que compara el catálogo con `errores.md`. Después crear `JROL/adaptadores/entrada/RolesControlador.java` y `ErroresRoles.java`. T018 pasa.
+- [ ] T018 [US1] Prueba primero, en `PROL/adaptadores/entrada/RolesContratoTest.java`: cada operación de `/api/roles` con un token con los permisos, contra el contrato, incluidos los 409 de los 4 códigos (también `ROLES_SIN_ADMINISTRADOR` en `editarRol` y `ROLES_NOMBRE_REPETIDO` al crear «Administrador»), el 400 de un permiso con un tipo que la funcionalidad no admite y el 400 de `permisos: []`. `listarRolesDeUsuarios` (`GET /api/roles/usuarios`) y `asignarRoles` (`PUT /api/roles/usuarios/{usuario}`) devuelven `RolesDeUsuario`. Agregar `ErroresRolesTest`, que compara el catálogo con `errores.md`. Después crear `JROL/adaptadores/entrada/RolesControlador.java` y `ErroresRoles.java`. T018 pasa.
 - [ ] T019 [P] [US1] Prueba primero, en `PUSU/adaptadores/entrada/UsuariosContratoTest.java`: `listarUsuarios` devuelve `usuario`, `nombre` y `activo`, ordenados, sin hashes, válido contra el contrato. Después agregar la consulta al puerto de Usuarios y su controlador. T019 pasa.
 - [ ] T020 [P] [US1] Prueba primero, en `frontend/src/pantallas/roles/*.test.tsx`, con la API simulada:
   - la lista de roles muestra cuáles son de D-16;
   - el detalle de un rol de D-16 muestra su matriz en solo lectura;
   - el formulario crea un rol con una casilla por cada tipo que admite cada funcionalidad y su alcance, y muestra los 409 y 400 del servidor;
+  - sin ningún permiso marcado, el formulario no deja guardar y dice «El rol necesita al menos un permiso.»;
+  - un rol propio con `usuariosAsignados > 0` muestra «Asignado a N usuarios. Quítaselo antes de borrarlo.» y no deja borrarlo;
   - la vista de usuarios asigna y quita roles.
 
-  Crear `frontend/src/pantallas/roles/` (`Roles.tsx`, `RolFormulario.tsx`, `AsignacionesDeUsuarios.tsx`), `frontend/src/sesion/funcionalidades.ts` (nombres en español), la ruta `/roles` en `rutas.tsx` y la entrada «Roles» en `navegacion/Marco.tsx`. T020 pasa.
+  Crear `frontend/src/pantallas/roles/` (`Roles.tsx`, `RolFormulario.tsx`, `RolesDeUsuarios.tsx`), `frontend/src/sesion/funcionalidades.ts` (nombres en español), la ruta `/roles` en `rutas.tsx` y la entrada «Roles» en `navegacion/Marco.tsx`. T020 pasa.
 - [ ] T021 [US1] Agregar a `deploy/probar_autenticacion.sh`, paso 10: `admin.demo` crea «Auditor de roles» con solo `USUARIOS_ROLES:LECTURA` y se lo asigna a `docente.demo`, y la nueva sesión de `docente.demo` trae ese permiso. Correrlo en el perfil y anotarlo.
 
 **Checkpoint**: la administración de roles funciona por la API y por la pantalla.
@@ -148,7 +156,7 @@ description: "Tareas de F05-H02: Roles con permisos y varios roles por usuario"
 
 **Independent Test**: con un usuario de solo lectura de «Usuarios y roles», ver los roles, pero recibir 403 al crear uno, desde la pantalla y por la API.
 
-- [ ] T022 [US2] Poner `@PreAuthorize("hasAuthority('PERMISO_<permiso>')")` en cada método de `RolesControlador` y en `listarUsuarios`, según su `x-mdd-permiso`. Agregar `PROL/adaptadores/entrada/PermisosRolesTest.java` y `PUSU/adaptadores/entrada/PermisosUsuariosTest.java`, que corren `VerificadorDePermisos` sobre sus contratos (SC-003). Comprobar que fallan si se quita una anotación y que pasan con todas.
+- [ ] T022 [US2] Prueba primero: `PROL/adaptadores/entrada/PermisosRolesTest.java` y `PUSU/adaptadores/entrada/PermisosUsuariosTest.java` corren `VerificadorDePermisos` sobre sus contratos (SC-003) y fallan mientras falten las anotaciones. Después poner `@PreAuthorize("hasAuthority('PERMISO_<permiso>')")` en cada método de `RolesControlador` y en `listarUsuarios`, según su `x-mdd-permiso`. T022 pasa; comprobar que vuelve a fallar si se quita una anotación.
 - [ ] T023 [P] [US2] Prueba primero, en `frontend/src/sesion/permisos.test.ts` y `RutaConPermiso.test.tsx`:
   - `tienePermiso` con y sin el permiso, y con alcance «propio»;
   - sin `USUARIOS_ROLES:LECTURA`, `/roles` muestra «Acceso no autorizado» sin pedir los roles a la API;
@@ -168,8 +176,13 @@ description: "Tareas de F05-H02: Roles con permisos y varios roles por usuario"
 
 **Independent Test**: `docente.coordinador.demo` entra y «Tus funciones» muestra las de Docente y las de Coordinador de carrera, sin repetir.
 
-- [ ] T025 [P] [US3] Prueba primero, en `frontend/src/pantallas/Inicio.test.tsx`: «Tus funciones» con los permisos de `docente.coordinador.demo` muestra «Mi distributivo» y «Oferta y propuesta de docentes» con sus tipos en español («lectura», «escritura» y «aprobación»; «solo lo propio» donde corresponde), sin repetir; un usuario sin permisos ve «Todavía no tienes funciones asignadas.». Después cambiar `frontend/src/pantallas/Inicio.tsx`. T025 pasa.
-- [ ] T026 [US3] Prueba con Playwright, en `frontend/e2e/roles.spec.ts`, con la API simulada: `admin.demo` crea un rol y lo asigna; `docente.coordinador.demo` ve las funciones de sus dos roles; `docente.demo` abre `/roles` y ve «Acceso no autorizado». Agregar a `deploy/probar_autenticacion.sh`, paso 12: el token de `docente.coordinador.demo` trae en `permisos` la unión de Docente y Coordinador de carrera, sin repetidos. Al final, el script le quita el rol a `docente.demo` y borra «Auditor de roles», para poder repetirse. Correr todo y anotarlo.
+- [ ] T025 [P] [US3] Prueba primero, en `frontend/src/pantallas/Inicio.test.tsx` y `frontend/src/sesion/roles.test.ts`:
+  - «Tus funciones» con los permisos de `docente.coordinador.demo` muestra exactamente 4 funcionalidades, sin repetir: «Mi distributivo» (lectura y escritura, solo lo propio), «Oferta y propuesta de docentes» (lectura, escritura y aprobación, solo lo propio), «Distributivo del periodo» (lectura, solo lo propio) y «Docentes» (lectura);
+  - un usuario sin permisos ve «Todavía no tienes funciones asignadas.»;
+  - `nombreDelRol` muestra un rol fuera de D-16 con su identificador legible: `AUDITOR_DE_ROLES` → «Auditor de roles» (research §9).
+
+  Después cambiar `frontend/src/pantallas/Inicio.tsx` y `frontend/src/sesion/roles.ts`. T025 pasa.
+- [ ] T026 [US3] Prueba con Playwright, en `frontend/e2e/roles.spec.ts`, con la API simulada: `admin.demo` crea un rol y lo asigna; `docente.coordinador.demo` ve las funciones de sus dos roles; `docente.demo` abre `/roles` y ve «Acceso no autorizado». Agregar a `deploy/probar_autenticacion.sh`, paso 12: el token de `docente.coordinador.demo` trae en `permisos` la unión de Docente y Coordinador de carrera, sin repetidos. Al final, el script le quita el rol a `docente.demo`, comprueba que su nueva sesión ya no trae `USUARIOS_ROLES:LECTURA` (escenario 3.3) y borra «Auditor de roles», para poder repetirse. Correr todo y anotarlo.
 
 **Checkpoint**: los tres escenarios pasan de punta a punta.
 

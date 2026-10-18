@@ -103,12 +103,12 @@ Escenario: Varios roles
 ### Edge Cases
 
 - **Cambio de permisos con la sesión abierta**: un usuario con sesión al que el administrador le quita un rol o un permiso lo conserva hasta la próxima renovación de su sesión (como máximo 30 minutos, ADR-020) o hasta que vuelva a entrar; desde entonces ya no lo tiene (D-62). Lo mismo al agregarle un rol: lo recibe en la próxima renovación.
-- **Quedarse sin administrador**: el administrador no puede quitarse a sí mismo el último permiso de escritura sobre «Usuarios y roles» ni dejar el sistema sin ningún usuario activo que lo tenga; el sistema lo impide y explica por qué.
-- **Rol asignado que se borra**: un rol creado por el administrador que todavía está asignado no se puede borrar; el sistema dice a cuántos usuarios está asignado.
+- **Quedarse sin administrador**: el administrador no puede, ni al cambiar los roles de un usuario ni al editar un rol, quitarse a sí mismo el permiso de escritura sobre «Usuarios y roles» ni dejar el sistema sin ningún usuario que lo tenga por alguno de sus roles; el sistema lo impide y explica por qué.
+- **Rol asignado que se borra**: un rol creado por el administrador que todavía está asignado no se puede borrar; la pantalla dice a cuántos usuarios está asignado.
 - **Roles de D-16**: los 10 roles de la matriz D-16 existen desde el principio con sus permisos; se ven y se asignan, pero no se editan ni se borran. Si el administrador intenta cambiarlos, el sistema lo impide y sugiere crear un rol nuevo (D-63).
 - **«Propio»**: D-16 dice que varios roles solo ven o escriben «lo propio» (su carrera, unidad o persona), pero todavía no existen carreras, unidades ni docentes en el MDD. Cada permiso registra su alcance, **todo** o **solo lo propio**, y la pantalla lo muestra; el filtro de datos lo aplica cada historia que trae esos datos (D-64). Si dos roles dan el mismo permiso con alcances distintos, vale el más amplio.
 - **Usuario sin roles**: un usuario al que se le quitan todos los roles puede entrar, pero no tiene ninguna función; la pantalla de inicio lo dice.
-- **Usuarios de la demo al volver a arrancar**: las asignaciones que hizo el administrador no se pierden cuando el sistema se reinicia o se despliega una versión nueva; el archivo de la demo (D-59) solo da los roles iniciales.
+- **Usuarios de la demo al volver a arrancar**: las asignaciones de roles que hizo el administrador no se pierden cuando el sistema se reinicia o se despliega una versión nueva; el archivo de la demo (D-59) solo da los roles iniciales.
 - **Acceso denegado en cualquier proceso**: el 403 tiene el mismo cuerpo del modelo de errores común en todos los procesos y en el API Gateway, sin decir qué permiso faltó.
 - **Firma**: el permiso de firma existe en el modelo y en la matriz, pero firmar es de historias posteriores (F11); aquí solo se guarda y se muestra.
 
@@ -117,7 +117,7 @@ Escenario: Varios roles
 ### Functional Requirements
 
 - **FR-001**: El sistema DEBE tener un catálogo de **funcionalidades** del MDD, tomado de la matriz D-16 y de las features del backlog (por ejemplo: Usuarios y roles, Parámetros y normativa, Cargas, Docentes, Oferta y propuesta, Proyectos, Consolidación, Distributivo, Reportes, Bitácora, Resolución del OCS y Publicación), cada una con los tipos de permiso que tienen sentido para ella entre **lectura, escritura, aprobación y firma**.
-- **FR-002**: Un **rol** DEBE tener un nombre único, una descripción y al menos un permiso; cada permiso es una funcionalidad, un tipo de permiso y un alcance (**todo** o **solo lo propio**, D-64).
+- **FR-002**: Un **rol** DEBE tener un nombre único (dos nombres que solo cambian en mayúsculas, tildes o signos son el mismo), una descripción y al menos un permiso; cada permiso es una funcionalidad, un tipo de permiso y un alcance (**todo** o **solo lo propio**, D-64).
 - **FR-003**: Los **10 roles de D-16** DEBEN existir desde el principio, con los permisos y alcances de la matriz, y no se pueden editar ni borrar (D-63); los 11 usuarios de la demo DEBEN tener sus roles de F05-H01.
 - **FR-004**: El administrador DEBE poder crear roles, verlos todos, editar y borrar los que creó, y asignar y quitar cualquier rol a los usuarios, con las reglas de los casos límite (sin roles vacíos ni nombres repetidos, sin borrar un rol asignado, sin tocar los de D-16 y sin quedarse sin administrador).
 - **FR-005**: Un usuario DEBE poder tener **varios roles**; sus permisos son la **unión** de los permisos de todos sus roles, y ante el mismo permiso con alcances distintos vale el más amplio (RF-03).
@@ -126,7 +126,7 @@ Escenario: Varios roles
 - **FR-008**: La pantalla de inicio DEBE mostrar las funciones que el usuario puede usar según la unión de sus permisos; la SPA DEBE ocultar o desactivar las acciones que el usuario no puede hacer y mostrar «Acceso no autorizado» si abre una pantalla sin permiso.
 - **FR-009**: Las asignaciones de roles hechas por el administrador DEBEN conservarse al reiniciar o al desplegar; los usuarios de la demo solo reciben sus roles iniciales cuando se crean.
 - **FR-010**: Un cambio en los roles de un usuario, o en los permisos de un rol, DEBE valer para sus sesiones abiertas desde la próxima renovación (como máximo 30 minutos, ADR-020) o al volver a entrar (D-62).
-- **FR-011**: Cada creación, cambio o borrado de un rol, y cada asignación o retiro, DEBE quedar registrado con quién lo hizo y cuándo, para la bitácora (RF de bitácora, en historias posteriores).
+- **FR-011**: Cada creación, cambio o borrado de un rol, y cada asignación o retiro de un rol a un usuario, DEBE quedar registrado con quién lo hizo y cuándo, para la bitácora (RF de bitácora, en historias posteriores).
 
 ### Key Entities
 
@@ -134,7 +134,7 @@ Escenario: Varios roles
 - **Tipo de permiso**: lectura, escritura, aprobación (incluye devolver) o firma (RF-02).
 - **Permiso**: una funcionalidad con un tipo de permiso y un alcance (todo o solo lo propio).
 - **Rol**: nombre único, descripción y un conjunto de permisos; puede ser uno de los 10 de D-16 (fijo) o uno creado por el administrador (editable).
-- **Asignación de rol**: un usuario con un rol; un usuario puede tener varias.
+- **Asignación de rol**: un usuario con un rol; un usuario puede tener varias. No es la «asignación» de horas del distributivo (glosario, §8).
 - **Permisos efectivos**: la unión de los permisos de todos los roles de un usuario.
 
 ## Success Criteria *(mandatory)*
@@ -146,13 +146,14 @@ Escenario: Varios roles
 - **SC-003**: El 100 % de las operaciones del servidor que cambian datos rechaza con 403 a un usuario sin el permiso, aunque llame directamente sin pasar por la pantalla; lo comprueba una prueba de autorización por cada operación (RNF-SEG-03).
 - **SC-004**: `docente.coordinador.demo` ve en la pantalla de inicio las funciones de Docente y de Coordinador de carrera, sin repetidas.
 - **SC-005**: Un acceso denegado muestra «Acceso no autorizado» en español en el 100 % de los casos, sin códigos internos, estados HTTP ni el nombre del permiso que faltó.
-- **SC-006**: Después de reiniciar el sistema o desplegar una versión nueva, el 100 % de las asignaciones y de los roles creados por el administrador siguen iguales.
+- **SC-006**: Después de reiniciar el sistema o desplegar una versión nueva, el 100 % de las asignaciones de roles y de los roles creados por el administrador siguen iguales.
 
 ## Assumptions
 
 - El administrador es el usuario de la demo `admin.demo` (rol Administrador del sistema), que en D-16 escribe usuarios y roles. Crear o desactivar usuarios no es de esta historia: solo se asignan roles a los usuarios que ya existen.
 - El catálogo de funcionalidades es fijo en esta historia (lo define el sistema, no el administrador); las historias siguientes agregan las suyas cuando traen pantallas nuevas, con los permisos de D-16 para los 10 roles.
-- Como todavía no hay pantallas de F01 a F04, la protección se demuestra con las operaciones que existen: las de roles y asignaciones de esta historia, y las ya existentes de las sesiones; cada historia siguiente protege las suyas con este mismo mecanismo.
+- Como todavía no hay pantallas de F01 a F04, la protección se demuestra con las operaciones que existen: las de roles y asignaciones de roles de esta historia, y las ya existentes de las sesiones; cada historia siguiente protege las suyas con este mismo mecanismo.
+- La operación de prueba de eventos de Generación (D-48) queda fuera de FR-006 y SC-003: está apagado por defecto, no se enciende en el equipo de demostración y no toca datos del negocio.
 - «Aprobación» incluye devolver con observaciones (D-16, columna «Aprobación o devolución»).
 - La firma del distributivo (F1, F2 y F3, D-19) es de historias posteriores; el permiso de firma solo se guarda y se muestra.
 - Los nombres para mostrar de los roles y de las funcionalidades están en español; el identificador interno de los 10 roles de D-16 es el de F05-H01.
