@@ -6,6 +6,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import Toolbar from '@mui/material/Toolbar';
@@ -69,9 +70,12 @@ export function Marco() {
                 !permiso ||
                 tienePermiso(sesion.data?.permisos, permiso.funcionalidad, permiso.tipo),
             ).map(({ ruta, texto }) => (
-              <ListItemButton key={ruta} component={NavLink} to={ruta} end>
-                <ListItemText primary={texto} />
-              </ListItemButton>
+              // Cada enlace en su <li>: un <ul> solo puede tener elementos de lista (WCAG 1.3.1).
+              <ListItem key={ruta} disablePadding>
+                <ListItemButton component={NavLink} to={ruta} end>
+                  <ListItemText primary={texto} />
+                </ListItemButton>
+              </ListItem>
             ))}
           </List>
         </nav>
