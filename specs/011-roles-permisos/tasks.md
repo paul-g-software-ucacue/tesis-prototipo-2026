@@ -191,7 +191,7 @@ description: "Tareas de F05-H02: Roles con permisos y varios roles por usuario"
 ## Phase 6: Cierre
 
 - [X] T027 Correr `./gradlew check`, `:servicios:roles:integrationTest` y `:servicios:usuarios:integrationTest`; en el frontend, `npm run lint`, `formato:verificar`, `tipos`, `test -- --run --coverage`, `test:e2e` y `verificar:ruptura`. Además, `shellcheck` sobre los scripts cambiados y Gitleaks (`--text HEAD`) sobre un clon. Correr también `probar_errores.sh`, `probar_eventos.sh`, `probar_spa.sh` y `deploy/equipo/probar_equipo.sh`. Todo en verde, con el 60 % de líneas. Hacer commit y push, abrir el PR en borrador con `Refs #44` y marcarlo listo **después** de que terminen sus runs. Si la concurrencia cancela el run de `ready_for_review`, relanzarlo. Comprobar los 10 checks, `perfil-consolidado` y `5 · imágenes`.
-- [ ] T028 Completar `evidencia.md` y la «Definición de terminado» del PR. Fusionarlo con *squash* **con la aprobación del autor**, con la rama al día con `main`. Después:
+- [X] T028 Completar `evidencia.md` y la «Definición de terminado» del PR. Fusionarlo con *squash* **con la aprobación del autor**, con la rama al día con `main`. Después:
   - esperar el despliegue automático en el PC («Sano en N s»);
   - el autor entra con `admin.demo`, crea un rol y lo asigna (SC-001), y se comprueba que sigue después de reiniciar `identidad` (SC-006);
   - abrir el PR de evidencia con `Closes #44` y borrar las ramas.

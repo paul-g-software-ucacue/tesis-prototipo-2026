@@ -74,6 +74,9 @@ Registro de las comprobaciones de los tres escenarios de la historia (issue #44)
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Despliegue automático (T028) | confirmada | Al fusionar #115 (`47d1f74`), el CD publicó las imágenes y `mdd-actualizar.timer` desplegó la versión `47d1f749a481`: «Sano en 58 s», los 8 contenedores sanos. `identidad` migró `roles` de V1 a V3 sobre la base de F05-H01 y los 11 usuarios de la demo recibieron sus roles iniciales (11 `INICIALIZAR`). Prueba de humo en `OK`: `docente.demo` entra y `autor.prueba` no. | 2026-10-18 |
+| Rol nuevo en el equipo (T028, SC-001) | confirmada | El autor entró con `admin.demo` en `https://mdd.localhost`, creó el rol «administrador soporte» y lo borró. `roles.registro_cambio` guarda `CREAR_ROL` (16:02) y `BORRAR_ROL` (16:03), los dos de `admin.demo`. | 2026-10-18 |
+| Reinicio en el equipo (T028, SC-006) | confirmada | `docker restart mdd-identidad-1`: las 12 asignaciones de rol son idénticas antes y después, y no hubo una nueva inicialización (siguen 11 `INICIALIZAR`): el archivo de la demo no vuelve a dar roles. | 2026-10-18 |
 | Equipo simulado (T027) | confirmada | `deploy/equipo/probar_equipo.sh` con la versión de esta rama: pasos 0 a 11 en `OK`. La prueba de humo inicia sesión con `docente.demo`, que recibe sus roles iniciales al arrancar; el token sigue valiendo después de reiniciar `identidad`; memoria 1 326,7 MiB; la versión rota vuelve a la anterior. | 2026-10-18 |
 
 ## Notas
