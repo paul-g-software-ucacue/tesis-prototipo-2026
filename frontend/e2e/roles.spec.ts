@@ -194,6 +194,8 @@ test.describe('accesibilidad de la pantalla «Roles»', () => {
 
     await page.getByRole('button', { name: 'Crear rol' }).click();
     await expect(page.getByRole('dialog', { name: 'Rol nuevo' })).toBeVisible();
+    // El diálogo entra con una transición de opacidad: axe mediría un contraste falso a mitad.
+    await expect(page.locator('.MuiDialog-container')).toHaveCSS('opacity', '1');
     await sinFallas(page);
     await page.getByRole('button', { name: 'Cerrar' }).click();
 
