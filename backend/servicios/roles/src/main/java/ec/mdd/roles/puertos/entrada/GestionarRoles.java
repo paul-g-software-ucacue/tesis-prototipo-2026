@@ -17,7 +17,7 @@ public interface GestionarRoles {
     List<RolConUsuarios> roles();
 
     /**
-     * @throws ec.mdd.roles.aplicacion.RolNoEncontrado si no existe
+     * @throws RolNoEncontrado si no existe
      */
     RolConUsuarios consultar(String identificador);
 

@@ -8,6 +8,7 @@ import ec.mdd.roles.dominio.Rol;
 import ec.mdd.roles.puertos.entrada.DatosDeRol;
 import ec.mdd.roles.puertos.entrada.GestionarRoles;
 import ec.mdd.roles.puertos.entrada.RolConUsuarios;
+import ec.mdd.roles.puertos.entrada.RolNoEncontrado;
 import ec.mdd.roles.puertos.salida.CambioDeRoles;
 import ec.mdd.roles.puertos.salida.RegistroDeCambios;
 import ec.mdd.roles.puertos.salida.RepositorioAsignacionesDeRol;

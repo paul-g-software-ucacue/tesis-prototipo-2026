@@ -1,4 +1,4 @@
-package ec.mdd.roles.aplicacion;
+package ec.mdd.roles.puertos.entrada;
 
 /** No hay un rol con ese identificador. */
 public class RolNoEncontrado extends RuntimeException {

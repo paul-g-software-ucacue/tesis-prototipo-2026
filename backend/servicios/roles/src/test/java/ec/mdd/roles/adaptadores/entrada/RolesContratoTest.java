@@ -10,7 +10,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import ec.mdd.plataforma.errores.ErroresAutoConfiguracion;
 import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
 import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
-import ec.mdd.roles.aplicacion.RolNoEncontrado;
 import ec.mdd.roles.dominio.Alcance;
 import ec.mdd.roles.dominio.Funcionalidad;
 import ec.mdd.roles.dominio.NombreRepetido;
@@ -26,6 +25,7 @@ import ec.mdd.roles.puertos.entrada.DatosDeRol;
 import ec.mdd.roles.puertos.entrada.GestionarRoles;
 import ec.mdd.roles.puertos.entrada.RolConUsuarios;
 import ec.mdd.roles.puertos.entrada.RolDesconocido;
+import ec.mdd.roles.puertos.entrada.RolNoEncontrado;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;

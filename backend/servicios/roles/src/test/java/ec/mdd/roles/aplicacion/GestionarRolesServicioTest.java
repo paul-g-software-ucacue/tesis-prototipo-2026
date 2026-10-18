@@ -21,6 +21,7 @@ import ec.mdd.roles.dominio.SinAdministrador;
 import ec.mdd.roles.dominio.TipoDePermiso;
 import ec.mdd.roles.puertos.entrada.DatosDeRol;
 import ec.mdd.roles.puertos.entrada.RolConUsuarios;
+import ec.mdd.roles.puertos.entrada.RolNoEncontrado;
 import ec.mdd.roles.puertos.salida.CambioDeRoles;
 import ec.mdd.roles.puertos.salida.RegistroDeCambios;
 import ec.mdd.roles.puertos.salida.RepositorioAsignacionesDeRol;
