@@ -5,6 +5,8 @@ import { Marco } from './navegacion/Marco';
 import { IniciarSesion } from './pantallas/IniciarSesion';
 import { Inicio } from './pantallas/Inicio';
 import { NoEncontrada } from './pantallas/NoEncontrada';
+import { Roles } from './pantallas/roles/Roles';
+import { RutaConPermiso } from './sesion/RutaConPermiso';
 import { RutaProtegida } from './sesion/RutaProtegida';
 
 export const rutasDeLaSpa: RouteObject[] = [
@@ -15,7 +17,17 @@ export const rutasDeLaSpa: RouteObject[] = [
         <Marco />
       </RutaProtegida>
     ),
-    children: [{ index: true, element: <Inicio /> }],
+    children: [
+      { index: true, element: <Inicio /> },
+      {
+        path: 'roles',
+        element: (
+          <RutaConPermiso funcionalidad="USUARIOS_ROLES" tipo="LECTURA">
+            <Roles />
+          </RutaConPermiso>
+        ),
+      },
+    ],
   },
   { path: '*', element: <NoEncontrada /> },
 ];

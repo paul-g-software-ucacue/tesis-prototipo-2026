@@ -1,5 +1,6 @@
 // El marco común de las pantallas internas (FR-005, ADR-019): encabezado con el usuario y «Cerrar
-// sesión», menú lateral y la región principal. Cada historia agrega su entrada en ENTRADAS.
+// sesión», menú lateral y la región principal. Cada historia agrega su entrada en ENTRADAS, con el
+// permiso que exige; el menú solo muestra las que el usuario puede usar (ADR-021).
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -11,12 +12,23 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import { NavLink, Outlet } from 'react-router';
 import { cerrarSesion } from '../sesion/almacen';
+import type { TipoDePermiso } from '../sesion/funcionalidades';
+import { tienePermiso } from '../sesion/permisos';
 import { useSesionActual } from '../sesion/useSesionActual';
 
 const ANCHO_DEL_MENU = 240;
 
+interface Entrada {
+  ruta: string;
+  texto: string;
+  permiso?: { funcionalidad: string; tipo: TipoDePermiso };
+}
+
 /** Las entradas del menú principal; las historias con pantallas agregan las suyas. */
-const ENTRADAS = [{ ruta: '/', texto: 'Inicio' }];
+const ENTRADAS: Entrada[] = [
+  { ruta: '/', texto: 'Inicio' },
+  { ruta: '/roles', texto: 'Roles', permiso: { funcionalidad: 'USUARIOS_ROLES', tipo: 'LECTURA' } },
+];
 
 export function Marco() {
   const sesion = useSesionActual();
@@ -52,7 +64,11 @@ export function Marco() {
         <Toolbar />
         <nav aria-label="Menú principal">
           <List>
-            {ENTRADAS.map(({ ruta, texto }) => (
+            {ENTRADAS.filter(
+              ({ permiso }) =>
+                !permiso ||
+                tienePermiso(sesion.data?.permisos, permiso.funcionalidad, permiso.tipo),
+            ).map(({ ruta, texto }) => (
               <ListItemButton key={ruta} component={NavLink} to={ruta} end>
                 <ListItemText primary={texto} />
               </ListItemButton>

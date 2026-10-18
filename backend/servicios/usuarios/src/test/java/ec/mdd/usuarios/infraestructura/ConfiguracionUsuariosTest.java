@@ -50,6 +50,7 @@ class ConfiguracionUsuariosTest {
                 .isNotNull();
         assertThat(configuracion.renovarSesion(null, emisor, null, propiedades)).isNotNull();
         assertThat(configuracion.repositorioIntentos(null)).isNotNull();
+        assertThat(configuracion.listarUsuarios(null)).isNotNull();
         assertThat(configuracion.cargaUsuarioDePrueba(null, verificador, null, propiedades))
                 .isNotNull();
         assertThat(configuracion.cargaUsuariosDemo(null, verificador, null, propiedades))

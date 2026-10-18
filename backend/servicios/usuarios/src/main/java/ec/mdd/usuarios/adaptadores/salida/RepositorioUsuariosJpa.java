@@ -2,7 +2,9 @@ package ec.mdd.usuarios.adaptadores.salida;
 
 import ec.mdd.usuarios.dominio.Usuario;
 import ec.mdd.usuarios.puertos.salida.RepositorioUsuarios;
+import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Sort;
 
 /** {@link RepositorioUsuarios} sobre PostgreSQL con Spring Data JPA (constitución §3). */
 public final class RepositorioUsuariosJpa implements RepositorioUsuarios {
@@ -20,6 +22,11 @@ public final class RepositorioUsuariosJpa implements RepositorioUsuarios {
     public Optional<Usuario> buscarPorNombre(String nombreUsuario) {
         return filas.findByNombreUsuario(Usuario.normalizar(nombreUsuario))
                 .map(UsuarioJpa::aDominio);
+    }
+
+    @Override
+    public List<Usuario> todos() {
+        return filas.findAll(Sort.by("nombreUsuario")).stream().map(UsuarioJpa::aDominio).toList();
     }
 
     @Override

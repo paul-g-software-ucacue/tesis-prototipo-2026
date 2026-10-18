@@ -41,6 +41,18 @@ class RepositorioUsuariosJpaIntegrationTest {
     }
 
     @Test
+    void dadoVariosUsuarios_cuandoSeListanTodos_entoncesVienenPorNombreDeUsuario() {
+        RepositorioUsuariosJpa repositorio = new RepositorioUsuariosJpa(filas);
+        repositorio.guardar(new Usuario("zeta.demo", "Zeta", "hash", true));
+        repositorio.guardar(new Usuario("alfa.demo", "Alfa", "hash", false));
+
+        assertThat(repositorio.todos())
+                .extracting(Usuario::nombreUsuario)
+                .containsSubsequence("alfa.demo", "zeta.demo")
+                .isSorted();
+    }
+
+    @Test
     void dadoUnUsuarioGuardado_cuandoSeActualiza_entoncesCambiaSusDatosSinDuplicarlo() {
         RepositorioUsuariosJpa repositorio = new RepositorioUsuariosJpa(filas);
         repositorio.guardar(new Usuario("docente.demo", "Viejo", "hash", false));

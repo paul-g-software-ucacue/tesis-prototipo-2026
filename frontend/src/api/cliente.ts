@@ -5,6 +5,7 @@
 import createClient, { type Middleware } from 'openapi-fetch';
 import { FalloDeApi } from '../errores/traducir';
 import { cerrarSesion, marcarActividad, obtenerToken } from '../sesion/almacen';
+import type { paths as rutasDeRoles } from './generado/roles';
 import type { paths } from './generado/usuarios';
 
 /**
@@ -40,6 +41,13 @@ export const api = createClient<paths>({
   fetch: (peticion) => globalThis.fetch(peticion),
 });
 api.use(conToken);
+
+/** El cliente de Roles (F05-H02), con el mismo token y la misma actividad que el de Usuarios. */
+export const apiRoles = createClient<rutasDeRoles>({
+  baseUrl: globalThis.location?.origin ?? '',
+  fetch: (peticion) => globalThis.fetch(peticion),
+});
+apiRoles.use(conToken);
 
 /**
  * Espera la respuesta: con 2xx devuelve los datos; con otro estado, rechaza con un

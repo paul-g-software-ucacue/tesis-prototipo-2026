@@ -13,11 +13,13 @@ import ec.mdd.usuarios.adaptadores.salida.UsuarioJpaRepositorio;
 import ec.mdd.usuarios.adaptadores.salida.VerificadorArgon2;
 import ec.mdd.usuarios.aplicacion.EmitirTokenDeProcesoServicio;
 import ec.mdd.usuarios.aplicacion.IniciarSesionServicio;
+import ec.mdd.usuarios.aplicacion.ListarUsuariosServicio;
 import ec.mdd.usuarios.aplicacion.RegistrarEventoRecibidoServicio;
 import ec.mdd.usuarios.aplicacion.RenovarSesionServicio;
 import ec.mdd.usuarios.dominio.PoliticaDeIntentos;
 import ec.mdd.usuarios.puertos.entrada.EmitirTokenDeProceso;
 import ec.mdd.usuarios.puertos.entrada.IniciarSesion;
+import ec.mdd.usuarios.puertos.entrada.ListarUsuarios;
 import ec.mdd.usuarios.puertos.entrada.RegistrarEventoRecibido;
 import ec.mdd.usuarios.puertos.entrada.RenovarSesion;
 import ec.mdd.usuarios.puertos.salida.EmisorDeTokens;
@@ -115,6 +117,12 @@ public class ConfiguracionUsuarios {
                 new PoliticaDeIntentos(
                         propiedades.intentos().maximo(), propiedades.intentos().bloqueo()),
                 Clock.systemUTC());
+    }
+
+    /** La lista de usuarios para asignarles roles (F05-H02). */
+    @Bean
+    public ListarUsuarios listarUsuarios(RepositorioUsuarios repositorio) {
+        return new ListarUsuariosServicio(repositorio);
     }
 
     /** Renovación hasta {@code mdd.usuarios.token.maximo} desde el inicio (ADR-020). */

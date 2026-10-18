@@ -3,6 +3,7 @@ package ec.mdd.usuarios.infraestructura;
 import ec.mdd.usuarios.dominio.Usuario;
 import ec.mdd.usuarios.puertos.salida.RepositorioUsuarios;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,6 +18,11 @@ final class RepositorioEnMemoria implements RepositorioUsuarios {
         return usuarios.stream()
                 .filter(u -> u.nombreUsuario().equals(Usuario.normalizar(nombreUsuario)))
                 .findFirst();
+    }
+
+    @Override
+    public List<Usuario> todos() {
+        return usuarios.stream().sorted(Comparator.comparing(Usuario::nombreUsuario)).toList();
     }
 
     @Override
