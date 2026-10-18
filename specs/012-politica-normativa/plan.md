@@ -78,9 +78,9 @@ Los detalles y las alternativas están en [research.md](research.md).
 | X. Simplicidad | La versión 1 por migración, sin un caso de uso de creación ni un envío de eventos sin consumidor (research §2 y §5). | ✅ |
 | XI y XII | JavaDoc en español en los puertos y el dominio, con la regla RN-xx que aplica cada pieza. | ✅ |
 | XIII. Errores | Sin códigos nuevos: el 404 y el 403 son los comunes. | ✅ |
-| §6.4 Decisiones | D-66 se propone y debe aprobarse antes de implementar. | ⏳ D-66 pendiente |
+| §6.4 Decisiones | D-66, aceptada por el autor el 2026-10-18. | ✅ |
 
-**Resultado del gate antes de la fase 0:** pasa, salvo la aprobación de D-66, que bloquea solo la migración de Roles (V4).
+**Resultado del gate antes de la fase 0:** pasa. D-66 quedó aprobada el 2026-10-18.
 
 **Revisión después de la fase 1:** pasa. [data-model.md](data-model.md) y [contracts/](contracts/) solo agregan lo listado.
 
@@ -130,7 +130,7 @@ deploy/probar_normativa.sh                        # nuevo; también en perfil-co
 
 ## Fases de implementación (guía para /speckit-tasks)
 
-1. **D-66:** aprobación del autor (`docs/decisiones.md`).
+1. **D-66:** aprobada por el autor el 2026-10-18 (`docs/decisiones.md`).
 2. **Contrato:** `normativa/openapi.yaml` y la generación en el backend y en la SPA.
 3. **Dominio de Normativa,** con sus pruebas primero.
 4. **Persistencia:** V2 con la versión 1, el repositorio JDBC, la prueba contra la política y la de la vuelta atrás.

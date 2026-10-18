@@ -10,7 +10,7 @@
 
 **Origen**: issue #40 · F04-H01 · sub-issue de F04 (Parametrizar y versionar la política) · milestone «Ola 1 · Datos listos» · etiquetas `tipo:historia`, `prioridad:must`, `modulo:12-normativa`, `RF-19`, `RN-01`, `RN-03` a `RN-11`, `RN-13` a `RN-15` · tamaño propuesto M · depende de #18 (B00-H01), cerrada. Es la raíz de la cadena F04-H02 (#41) → F02-H01 (#32) → F05-H03 (#45).
 
-**Requerimientos que cubre**: RF-19 (en la parte de la primera versión) · RN-01 y RN-03 a RN-15 (ERS, `requerimientos_mdd/ERS_MDD_Requerimientos.md`), con las 22 filas de la carga 7 (ERS 8.3). **Decisiones tomadas en esta historia:** D-66 (el Vicerrector académico lee «Parámetros y normativa»), que se propone en el plan. **Decisiones que aplica** (`docs/decisiones.md`): D-11 (docente de medio tiempo: 12 + 8), D-13 y ADR-003 (el coordinador académico institucional no existe en la institución de referencia), D-65 y ADR-021 (permisos), ADR-016 (catálogo de errores) y ADR-019 (base de la SPA). **Principios de la constitución** que la rigen: VI (las cifras de la política son datos versionados, nunca fijas en el código) y VII (inmutabilidad y trazabilidad).
+**Requerimientos que cubre**: RF-19 (en la parte de la primera versión) · RN-01 y RN-03 a RN-15 (ERS, `requerimientos_mdd/ERS_MDD_Requerimientos.md`), con las 22 filas de la carga 7 (ERS 8.3). **Decisiones tomadas en esta historia:** D-66 (el Vicerrector académico lee «Parámetros y normativa»). **Decisiones que aplica** (`docs/decisiones.md`): D-11 (docente de medio tiempo: 12 + 8), D-13 y ADR-003 (el coordinador académico institucional no existe en la institución de referencia), D-65 y ADR-021 (permisos), ADR-016 (catálogo de errores) y ADR-019 (base de la SPA). **Principios de la constitución** que la rigen: VI (las cifras de la política son datos versionados, nunca fijas en el código) y VII (inmutabilidad y trazabilidad).
 
 **Historia (tal como está en el issue)**: Como Vicerrector académico, quiero que la Política SENESCYT 2024 venga precargada como la versión 1 de la normativa, para no tener que digitar la tabla de carga horaria.
 
@@ -20,7 +20,7 @@
 
 ### Session 2026-10-18
 
-- Q: ¿Quién puede consultar las versiones de normativa, si la historia nombra al Vicerrector académico y D-65 solo da «Parámetros y normativa» al Administrador? → A: El Administrador del sistema y el Vicerrector académico las leen; solo el Administrador las escribe. Ajusta D-65 y se propone como D-66 en el plan.
+- Q: ¿Quién puede consultar las versiones de normativa, si la historia nombra al Vicerrector académico y D-65 solo da «Parámetros y normativa» al Administrador? → A: El Administrador del sistema y el Vicerrector académico las leen; solo el Administrador las escribe. Ajusta D-65; es D-66.
 - Q: ¿Qué parámetros entran en la versión 1 además de las 22 filas? → A: Los de RN-01 a RN-15 que las filas no expresan: las dedicaciones, el máximo de horas, la proporción 60/40, los rangos de matriculados por tipo de IST, los umbrales del coordinador académico institucional, el número de gestores por tipo y la proporción de la nómina para investigación y vinculación.
 - Q: ¿Cómo se consulta la versión 1 en esta historia? → A: En una pantalla «Normativa» de la SPA, de solo lectura; F04-H02 le agrega la edición.
 
