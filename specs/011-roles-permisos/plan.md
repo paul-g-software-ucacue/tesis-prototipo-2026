@@ -8,14 +8,14 @@
 
 Sobre el inicio de sesión de F05-H01 y el esqueleto del servicio Roles:
 - **Roles (servicio 2):** dueño del catálogo de funcionalidades, los roles, sus permisos (funcionalidad, tipo y alcance) y las asignaciones a usuarios. `V2__matriz_d16.sql` carga las 16 funcionalidades y los 10 roles de D-16, que son fijos (D-63). El administrador crea, edita y borra roles propios y asigna varios a un usuario.
-- **Permisos en el token (ADR-021, propuesto):** Usuarios pide a Roles los roles y permisos efectivos al iniciar sesión y al renovar, y los pone en el claim `permisos`. Un cambio vale desde la próxima renovación (D-62). El alcance «solo lo propio» viaja en el permiso, pero todavía no filtra datos (D-64).
+- **Permisos en el token (ADR-021):** Usuarios pide a Roles los roles y permisos efectivos al iniciar sesión y al renovar, y los pone en el claim `permisos`. Un cambio vale desde la próxima renovación (D-62). El alcance «solo lo propio» viaja en el permiso, pero todavía no filtra datos (D-64).
 - **Validación en el servidor (RNF-SEG-03):**
   - cada operación protegida declara `x-mdd-permiso` en el contrato y `@PreAuthorize` en el controlador;
   - `VerificadorDePermisos` prueba, operación por operación, que sin el permiso se recibe 403.
 - **403 común:** `SEGURIDAD_ACCESO_NO_AUTORIZADO` en los 4 procesos y en el API Gateway.
 - **SPA:** la pantalla «Roles» (roles, matriz, asignaciones), «Tus funciones» en Inicio y «Acceso no autorizado» en las rutas sin permiso.
 - **Usuarios:** deja de guardar roles (`usuario_rol` queda sin uso) y los usuarios de la demo reciben sus roles iniciales una sola vez.
-- **Matriz D-16:** su interpretación en permisos es **D-65, propuesta**, pendiente de la aprobación del autor.
+- **Matriz D-16:** su interpretación en permisos es D-65.
 
 Los detalles y las alternativas están en [research.md](research.md).
 
@@ -77,9 +77,9 @@ Los detalles y las alternativas están en [research.md](research.md).
 | X. Simplicidad | Sin un servidor de autorización externo ni consultas por petición; los permisos en el token. | ✅ |
 | XI y XII | JavaDoc en español en los puertos y el dominio de Roles. | ✅ |
 | XIII. Errores | 5 códigos en el catálogo (1 común y 4 de Roles), con su prueba (ADR-016). | ✅ |
-| §6.4 Decisiones | D-62, D-63 y D-64 aceptadas. **D-65 y ADR-021 propuestas**, pendientes de aprobación antes de implementar. | ⚠️ pendiente |
+| §6.4 Decisiones | D-62, D-63, D-64, D-65 y ADR-021, aceptadas por el autor. | ✅ |
 
-**Resultado del gate antes de la fase 0:** pasa, con D-65 y ADR-021 pendientes de aprobación.
+**Resultado del gate antes de la fase 0:** pasa. D-65 y ADR-021 quedaron aprobados el 2026-10-18.
 
 **Revisión después de la fase 1:** pasa. [data-model.md](data-model.md) y [contracts/](contracts/) solo agregan lo listado.
 
@@ -137,7 +137,7 @@ deploy/probar_autenticacion.sh               # pasos de roles, solo lectura y va
 
 ## Fases de implementación (guía para /speckit-tasks)
 
-1. **D-65 y ADR-021:** aprobación del autor.
+1. **D-65 y ADR-021:** aprobados por el autor el 2026-10-18 (`docs/decisiones.md`).
 2. **Contrato:** `roles/openapi.yaml`, los cambios en Usuarios y en lo común, y la generación en el backend y en la SPA.
 3. **Plataforma:** el código común, `RespuestaAccesoNoAutorizado`, las autoridades `PERMISO_`, la *method security*, el 403 del API Gateway y `VerificadorDePermisos`.
 4. **Dominio de Roles,** con sus pruebas primero.

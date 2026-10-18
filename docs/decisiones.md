@@ -59,8 +59,8 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-62 | 2026-10-17 | Un cambio de permisos vale para una sesión abierta en su próxima renovación | Aceptada | ADR-014 (los permisos viajan con la sesión), ADR-020 |
 | D-63 | 2026-10-17 | Los 10 roles de D-16 son fijos: se asignan, pero no se editan ni se borran | Aceptada | D-16 |
 | D-64 | 2026-10-17 | F05-H02 marca qué permisos son «solo lo propio»; el filtro lo aplica cada historia con esos datos | Aceptada | D-16 |
-| D-65 | 2026-10-18 | La matriz D-16 en permisos: 16 funcionalidades y los permisos de los 10 roles | Propuesta | D-16 (interpreta la prosa de la matriz) |
-| ADR-021 | 2026-10-18 | Permisos efectivos en el token y cada operación declara su permiso en el contrato | Propuesta | ADR-014 (claim `permisos`), ADR-015 (`x-mdd-permiso`), ADR-016 (403 común) |
+| D-65 | 2026-10-18 | La matriz D-16 en permisos: 16 funcionalidades y los permisos de los 10 roles | Aceptada | D-16 (interpreta la prosa de la matriz) |
+| ADR-021 | 2026-10-18 | Permisos efectivos en el token y cada operación declara su permiso en el contrato | Aceptada | ADR-014 (claim `permisos`), ADR-015 (`x-mdd-permiso`), ADR-016 (403 común) |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1005,7 +1005,7 @@ Hay que poder probar el flujo completo de creación del distributivo sin debilit
 
 ## D-65. La matriz D-16 en permisos: 16 funcionalidades y los permisos de los 10 roles
 
-- **Estado:** Propuesta · **Fecha:** 2026-10-18 · **Decidido por:** pendiente de aprobación del autor
+- **Estado:** Aceptada · **Fecha:** 2026-10-18 · **Decidido por:** autor de la tesis
 - **Origen:** plan de F05-H02 (`specs/011-roles-permisos/research.md` §6 y `data-model.md`, «Matriz D-16»)
 - **Modifica a:** — (interpreta D-16)
 
@@ -1021,7 +1021,7 @@ Hay que poder probar el flujo completo de creación del distributivo sin debilit
 
 ## ADR-021. Permisos efectivos en el token y cada operación declara su permiso en el contrato
 
-- **Estado:** Propuesta · **Fecha:** 2026-10-18 · **Decidido por:** pendiente de aprobación del autor
+- **Estado:** Aceptada · **Fecha:** 2026-10-18 · **Decidido por:** autor de la tesis
 - **Origen:** plan de F05-H02 (`specs/011-roles-permisos/research.md` §1 a §5), para cumplir RNF-SEG-03 y D-62
 - **Modifica a:** ADR-014 (claim `permisos`; los roles salen de Roles), ADR-015 (extensión `x-mdd-permiso`), ADR-016 (403 con cuerpo)
 

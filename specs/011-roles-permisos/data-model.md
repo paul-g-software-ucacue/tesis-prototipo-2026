@@ -52,7 +52,7 @@ L = lectura, E = escritura, A = aprobación (incluye devolver), F = firma.
 
 ## Matriz D-16
 
-Interpretación de cada fila del ERS (sección 3) en permisos. «(P)» = alcance «solo lo propio» (D-64); sin marca = todo. **Propuesta como D-65, pendiente de la aprobación del autor.**
+Interpretación de cada fila del ERS (sección 3) en permisos. «(P)» = alcance «solo lo propio» (D-64); sin marca = todo. Aprobada como D-65.
 
 | Rol (identificador) | Lectura | Escritura | Aprobación | Firma | Celda del ERS que lo origina |
 |---|---|---|---|---|---|

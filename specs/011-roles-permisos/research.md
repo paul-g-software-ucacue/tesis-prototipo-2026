@@ -54,11 +54,11 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
   - **API Gateway:** su `denyAll()` para rutas fuera de `/api/**` responde el mismo cuerpo.
 - Los contratos que hoy dicen «403 sin cuerpo hasta F05-H02» pasan a la respuesta común.
 
-## 6. Catálogo de funcionalidades y la matriz D-16 (D-65, propuesta)
+## 6. Catálogo de funcionalidades y la matriz D-16 (D-65)
 
 - **Decisión:** 16 funcionalidades fijas, cada una con los tipos de permiso que admite, y los permisos de los 10 roles tomados de D-16. Están en [data-model.md](data-model.md#matriz-d-16), con la interpretación de cada celda de la matriz.
 - **Cómo se guardan:** una migración de Roles (`V2__matriz_d16.sql`) inserta las funcionalidades, los 10 roles predefinidos y sus permisos. Cambiar la matriz exige una migración nueva y una decisión (D-63). Las historias siguientes agregan sus funcionalidades del mismo modo.
-- **Interpretación de D-16:** la tabla del ERS está en prosa («Todo, incluida la bitácora», «Oferta propia y propuesta de docentes»). Pasarla a permisos concretos exige elegir. Por eso la interpretación queda como **D-65, propuesta, para la aprobación del autor** antes de implementar.
+- **Interpretación de D-16:** la tabla del ERS está en prosa («Todo, incluida la bitácora», «Oferta propia y propuesta de docentes»). Pasarla a permisos concretos exige elegir. Por eso la interpretación queda registrada como D-65, aprobada por el autor.
 
 ## 7. Roles predefinidos y reglas de la administración
 
