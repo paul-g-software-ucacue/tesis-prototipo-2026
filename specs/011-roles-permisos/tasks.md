@@ -126,14 +126,14 @@ description: "Tareas de F05-H02: Roles con permisos y varios roles por usuario"
 
 **Independent Test**: con `admin.demo`, crear un rol con 3 permisos, asignárselo a `docente.demo` y comprobar que su nueva sesión trae esos permisos.
 
-- [ ] T017 [US1] Prueba primero, en `PROL/aplicacion/GestionarRolesServicioTest.java` y `AsignarRolesServicioTest.java` (Mockito):
+- [X] T017 [US1] Prueba primero, en `PROL/aplicacion/GestionarRolesServicioTest.java` y `AsignarRolesServicioTest.java` (Mockito):
   - crear, editar y borrar con las reglas de `ReglaDeAdministracion`: `RolPredefinido`, `RolAsignado`, `NombreRepetido` y `SinAdministrador`;
   - editar un rol propio que es la única fuente de `USUARIOS_ROLES:ESCRITURA` y quitarle ese permiso da `SinAdministrador`;
   - asignar el conjunto de roles de un usuario (vacío también) y rechazar un rol desconocido;
   - cada cambio queda en `RegistroDeCambios`, con quién y cuándo (FR-011): `CREAR_ROL`, `EDITAR_ROL`, `BORRAR_ROL`, `ASIGNAR_ROL` y `QUITAR_ROL`.
 
   Crear los puertos `GestionarRoles` y `AsignarRoles`, sus servicios y las excepciones. T017 pasa.
-- [ ] T018 [US1] Prueba primero, en `PROL/adaptadores/entrada/RolesContratoTest.java`: cada operación de `/api/roles` con un token con los permisos, contra el contrato, incluidos los 409 de los 4 códigos (también `ROLES_SIN_ADMINISTRADOR` en `editarRol` y `ROLES_NOMBRE_REPETIDO` al crear «Administrador»), el 400 de un permiso con un tipo que la funcionalidad no admite y el 400 de `permisos: []`. `listarRolesDeUsuarios` (`GET /api/roles/usuarios`) y `asignarRoles` (`PUT /api/roles/usuarios/{usuario}`) devuelven `RolesDeUsuario`. Agregar `ErroresRolesTest`, que compara el catálogo con `errores.md`. Después crear `JROL/adaptadores/entrada/RolesControlador.java` y `ErroresRoles.java`. T018 pasa.
+- [X] T018 [US1] Prueba primero, en `PROL/adaptadores/entrada/RolesContratoTest.java`: cada operación de `/api/roles` con un token con los permisos, contra el contrato, incluidos los 409 de los 4 códigos (también `ROLES_SIN_ADMINISTRADOR` en `editarRol` y `ROLES_NOMBRE_REPETIDO` al crear «Administrador»), el 400 de un permiso con un tipo que la funcionalidad no admite y el 400 de `permisos: []`. `listarRolesDeUsuarios` (`GET /api/roles/usuarios`) y `asignarRoles` (`PUT /api/roles/usuarios/{usuario}`) devuelven `RolesDeUsuario`. Agregar `ErroresRolesTest`, que compara el catálogo con `errores.md`. Después crear `JROL/adaptadores/entrada/RolesControlador.java` y `ErroresRoles.java`. T018 pasa.
 - [ ] T019 [P] [US1] Prueba primero, en `PUSU/adaptadores/entrada/UsuariosContratoTest.java`: `listarUsuarios` devuelve `usuario`, `nombre` y `activo`, ordenados, sin hashes, válido contra el contrato. Después agregar la consulta al puerto de Usuarios y su controlador. T019 pasa.
 - [ ] T020 [P] [US1] Prueba primero, en `frontend/src/pantallas/roles/*.test.tsx`, con la API simulada:
   - la lista de roles muestra cuáles son de D-16;

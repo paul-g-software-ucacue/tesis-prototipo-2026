@@ -65,7 +65,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 - **D-63:** los 10 roles de D-16 llevan `predefinido = true`; editarlos o borrarlos responde 409 `ROLES_ROL_PREDEFINIDO`.
 - **Nombre repetido:** 409 `ROLES_NOMBRE_REPETIDO`.
 - **Rol sin permisos:** 400 por la validación del contrato (`permisos` con `minItems: 1`).
-- **Rol asignado:** borrarlo responde 409 `ROLES_ROL_ASIGNADO`. La cantidad de usuarios la muestra la pantalla con `usuariosAsignados`, y el registro del servidor la anota.
+- **Rol asignado:** borrarlo responde 409 `ROLES_ROL_ASIGNADO`. La cantidad de usuarios la muestra la pantalla con `usuariosAsignados`.
 - **Sin administrador:** si un cambio de los roles de un usuario, o la edición de un rol, dejaría sin ningún usuario con `USUARIOS_ROLES:ESCRITURA`, o le quitaría ese permiso a quien hace el cambio, responde 409 `ROLES_SIN_ADMINISTRADOR`. Esto no mira si el usuario está activo, que es dato de Usuarios: basta con que quede una asignación de rol con ese permiso. Borrar un rol no puede causarlo, porque un rol asignado no se borra.
 - **Identificador de un rol nuevo:** se deriva del nombre (`Auditor de cargas` → `AUDITOR_DE_CARGAS`), es único y no cambia aunque cambie el nombre, porque viaja en el token.
   - **Regla:** sin tildes, en mayúsculas, cada tramo de caracteres que no son letras ni dígitos pasa a un `_`, sin `_` en los extremos y recortado a 64.

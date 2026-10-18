@@ -4,9 +4,13 @@ import ec.mdd.roles.adaptadores.salida.RegistroDeCambiosJdbc;
 import ec.mdd.roles.adaptadores.salida.RepositorioAsignacionesDeRolJdbc;
 import ec.mdd.roles.adaptadores.salida.RepositorioRolesJdbc;
 import ec.mdd.roles.aplicacion.AsignarRolesInicialesServicio;
+import ec.mdd.roles.aplicacion.AsignarRolesServicio;
 import ec.mdd.roles.aplicacion.ConsultarAutorizacionServicio;
+import ec.mdd.roles.aplicacion.GestionarRolesServicio;
+import ec.mdd.roles.puertos.entrada.AsignarRoles;
 import ec.mdd.roles.puertos.entrada.AsignarRolesIniciales;
 import ec.mdd.roles.puertos.entrada.ConsultarAutorizacion;
+import ec.mdd.roles.puertos.entrada.GestionarRoles;
 import ec.mdd.roles.puertos.salida.RegistroDeCambios;
 import ec.mdd.roles.puertos.salida.RepositorioAsignacionesDeRol;
 import ec.mdd.roles.puertos.salida.RepositorioRoles;
@@ -50,6 +54,24 @@ public class ConfiguracionRoles {
     public ConsultarAutorizacion consultarAutorizacion(
             RepositorioRoles roles, RepositorioAsignacionesDeRol asignaciones) {
         return new ConsultarAutorizacionServicio(roles, asignaciones);
+    }
+
+    /** La administración de roles (RF-02, FR-004). */
+    @Bean
+    public GestionarRoles gestionarRoles(
+            RepositorioRoles roles,
+            RepositorioAsignacionesDeRol asignaciones,
+            RegistroDeCambios registro) {
+        return new GestionarRolesServicio(roles, asignaciones, registro, Clock.systemUTC());
+    }
+
+    /** Las asignaciones de rol a usuarios (RF-03). */
+    @Bean
+    public AsignarRoles asignarRoles(
+            RepositorioRoles roles,
+            RepositorioAsignacionesDeRol asignaciones,
+            RegistroDeCambios registro) {
+        return new AsignarRolesServicio(roles, asignaciones, registro, Clock.systemUTC());
     }
 
     /** Roles iniciales de la demo, una sola vez por usuario (research §8). */

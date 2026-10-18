@@ -6,7 +6,9 @@ import ec.mdd.plataforma.errores.fixtures.dominio.HorasExcedidasEnFeriado;
 import ec.mdd.plataforma.errores.fixtures.dominio.ReglaSinCatalogo;
 import ec.mdd.plataforma.errores.nucleo.CatalogoDeErrores;
 import ec.mdd.plataforma.errores.nucleo.DefinicionDeCodigo;
+import ec.mdd.plataforma.errores.nucleo.DetalleRespuesta;
 import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
+import ec.mdd.plataforma.errores.nucleo.SolicitudInvalida;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -78,6 +80,15 @@ class AplicacionDePrueba {
         String tecnico() {
             throw new IllegalStateException(
                     "fallo con eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJ4In0.firma y clave=secreta");
+        }
+
+        @GetMapping("/api/prueba/regla-de-entrada")
+        String reglaDeEntrada() {
+            throw new SolicitudInvalida(
+                    List.of(
+                            new DetalleRespuesta(
+                                    "permisos",
+                                    "«Cargas de datos» no admite el permiso de firma.")));
         }
 
         @GetMapping("/api/prueba/prohibido")
