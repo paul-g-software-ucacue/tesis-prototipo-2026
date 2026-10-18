@@ -176,7 +176,7 @@ description: "Tareas de F05-H02: Roles con permisos y varios roles por usuario"
 
 **Independent Test**: `docente.coordinador.demo` entra y «Tus funciones» muestra las de Docente y las de Coordinador de carrera, sin repetir.
 
-- [ ] T025 [P] [US3] Prueba primero, en `frontend/src/pantallas/Inicio.test.tsx` y `frontend/src/sesion/roles.test.ts`:
+- [X] T025 [P] [US3] Prueba primero, en `frontend/src/pantallas/Inicio.test.tsx` y `frontend/src/sesion/roles.test.ts`:
   - «Tus funciones» con los permisos de `docente.coordinador.demo` muestra exactamente 4 funcionalidades, sin repetir: «Mi distributivo» (lectura y escritura, solo lo propio), «Oferta y propuesta de docentes» (lectura, escritura y aprobación, solo lo propio), «Distributivo del periodo» (lectura, solo lo propio) y «Docentes» (lectura);
   - un usuario sin permisos ve «Todavía no tienes funciones asignadas.»;
   - `nombreDelRol` muestra un rol fuera de D-16 con su identificador legible: `AUDITOR_DE_ROLES` → «Auditor de roles» (research §9).
