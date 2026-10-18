@@ -95,7 +95,7 @@ description: "Tareas de F04-H01: la política 2024 como primera versión de norm
 
 - [ ] T008 [US1] Prueba primero, en `PNOR/aplicacion/ConsultarNormativaServicioTest.java` (Mockito): listar las versiones por número; consultar la 1; una versión que no existe lanza `VersionNoEncontrada`. Crear el puerto `JNOR/puertos/entrada/ConsultarNormativa.java`, `ConsultarNormativaServicio`, `VersionNoEncontrada` y `JNOR/infraestructura/ConfiguracionNormativa.java`. T008 pasa.
 - [ ] T009 [US1] Prueba primero, en `PNOR/adaptadores/entrada/`:
-  - `NormativaContratoTest`: las dos operaciones contra el contrato, con la versión completa (las horas sin valor se omiten), y el 404 con `COMUN_RECURSO_NO_ENCONTRADO`; `POST /api/normativa/versiones` y `PUT /api/normativa/versiones/1` responden 405 `COMUN_METODO_NO_PERMITIDO`, porque no hay forma de cambiarla (US2, escenario 3);
+  - `NormativaContratoTest`: las dos operaciones contra el contrato, con la versión completa (las horas sin valor se omiten), y el 404 con `COMUN_RECURSO_NO_ENCONTRADO`; `POST /api/normativa/versiones` y `PUT /api/normativa/versiones/1` responden 405 `COMUN_METODO_NO_PERMITIDO`, porque no hay forma de cambiarla (US2, escenario 3); este caso se comprueba por estado y código, sin `contrato.validar`, porque el contrato no tiene esas operaciones;
   - `PermisosNormativaTest`: `VerificadorDePermisos` sobre el contrato de Normativa (SC-005).
 
   Después crear `JNOR/adaptadores/entrada/NormativaControlador.java`, con `@PreAuthorize("hasAuthority('PERMISO_PARAMETROS:LECTURA')")` en cada método, y la clase raíz de pruebas `PNOR/AplicacionDePruebaNormativa.java`. T009 pasa. `ModulosTest` de `datos` sigue en verde.
@@ -137,7 +137,7 @@ description: "Tareas de F04-H01: la política 2024 como primera versión de norm
 - [ ] T015 Correr:
   - en el backend, `./gradlew check integrationTest`;
   - en el frontend, `npm run lint`, `formato:verificar`, `tipos`, `test -- --run --coverage`, `test:e2e` y `verificar:ruptura`;
-  - `shellcheck` sobre `probar_normativa.sh`, y Gitleaks sobre un clon en el scratchpad;
+  - `shellcheck` sobre `probar_normativa.sh`, y Gitleaks sobre un clon en una carpeta temporal, montado con `:ro,Z` (nunca el repositorio);
   - `probar_autenticacion.sh`, `probar_errores.sh`, `probar_eventos.sh`, `probar_spa.sh` y `deploy/equipo/probar_equipo.sh`.
 
   Todo en verde, con el 60 % de líneas. Hacer commit y push, abrir el PR en borrador con `Refs #40` y marcarlo listo **después** de que terminen sus runs. Si la concurrencia cancela el run de `ready_for_review`, relanzarlo. Comprobar los checks, `perfil-consolidado` y `5 · imágenes`.
@@ -163,7 +163,7 @@ description: "Tareas de F04-H01: la política 2024 como primera versión de norm
 ### Parallel Opportunities
 
 - Fase 2: T003 y T007.
-- US1: T010, una vez hechos T002 y T009 en el backend.
+- US1: T010, una vez hecho T002 (la pantalla se prueba con la API simulada).
 - Como trabajas solo, [P] indica orden libre, no trabajo simultáneo.
 
 ---
