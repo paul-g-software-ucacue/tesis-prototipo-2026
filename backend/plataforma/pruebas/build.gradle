@@ -18,6 +18,9 @@ dependencies {
     // los tiene.
     compileOnly 'org.springframework:spring-test'
     compileOnly 'jakarta.servlet:jakarta.servlet-api'
+    // VerificadorDePermisos: el token de cada caso para MockMvc (ADR-021). Lo tienen las pruebas de
+    // contrato de cada servicio.
+    compileOnly 'org.springframework.security:spring-security-test'
 }
 
 testing {
@@ -27,6 +30,10 @@ testing {
                 // StubMvcResult, para probar ValidadorDeContrato sin levantar un contexto.
                 implementation 'org.springframework:spring-webmvc'
                 implementation 'jakarta.servlet:jakarta.servlet-api'
+                // VerificadorDePermisos contra una aplicación con la seguridad de los procesos.
+                implementation project(':plataforma:seguridad')
+                implementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+                implementation 'org.springframework.security:spring-security-test'
             }
         }
     }

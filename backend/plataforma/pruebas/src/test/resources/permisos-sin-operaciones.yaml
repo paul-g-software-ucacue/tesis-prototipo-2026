@@ -1,0 +1,11 @@
+openapi: 3.0.3
+info:
+  title: Contrato de prueba de VerificadorDePermisos, sin operaciones protegidas
+  version: 1.0.0
+paths:
+  /api/prueba/libre:
+    get:
+      operationId: consultarLibre
+      responses:
+        '200':
+          description: Solo exige sesión.

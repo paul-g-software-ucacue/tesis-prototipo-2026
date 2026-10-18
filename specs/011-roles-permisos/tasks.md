@@ -68,24 +68,24 @@ description: "Tareas de F05-H02: Roles con permisos y varios roles por usuario"
 
   T004 pasa.
 - [X] T006 [P] Prueba primero, en `backend/gateway/src/test/…`: una ruta fuera de `/api/**` con un token válido responde 403 con el mismo cuerpo. Después configurar el manejador de acceso denegado en `backend/gateway/src/main/java/ec/mdd/gateway/SeguridadGatewayConfig.java`. T006 pasa.
-- [ ] T007 Prueba primero, en `PLAT/pruebas/src/test/…`: `VerificadorDePermisos` lee un contrato de prueba con dos operaciones con `x-mdd-permiso` y una sin él. Contra una aplicación de prueba con `@PreAuthorize`, informa una operación sin anotación o con el permiso equivocado, y acepta las correctas. Después crear `PLAT/pruebas/src/main/java/ec/mdd/plataforma/pruebas/VerificadorDePermisos.java`: por cada operación con `x-mdd-permiso`, un token con todos los demás permisos espera 403 con el cuerpo común, y uno con ese permiso espera algo distinto de 403. T007 pasa.
+- [X] T007 Prueba primero, en `PLAT/pruebas/src/test/…`: `VerificadorDePermisos` lee un contrato de prueba con dos operaciones con `x-mdd-permiso` y una sin él. Contra una aplicación de prueba con `@PreAuthorize`, informa una operación sin anotación o con el permiso equivocado, y acepta las correctas. Después crear `PLAT/pruebas/src/main/java/ec/mdd/plataforma/pruebas/VerificadorDePermisos.java`: por cada operación con `x-mdd-permiso`, un token con todos los demás permisos espera 403 con el cuerpo común, y uno con ese permiso espera algo distinto de 403. T007 pasa.
 
 ### Dominio de Roles
 
-- [ ] T008 [P] Prueba primero, en `PROL/dominio/`, sin dobles:
+- [X] T008 [P] Prueba primero, en `PROL/dominio/`, sin dobles:
   - `TipoDePermiso` y `Alcance` (valores);
   - un `Permiso` con un tipo que su funcionalidad no admite se rechaza;
   - `Rol`: nombre de 1 a 80 con al menos una letra o un dígito, descripción hasta 300, al menos un permiso;
   - identificador derivado del nombre (data-model.md): `Auditor de cargas` → `AUDITOR_DE_CARGAS`; `Gestión  de  cargas!` → `GESTION_DE_CARGAS`; un nombre de 80 caracteres da uno de 64; «Auditor de Cargas.» da el mismo que «Auditor de cargas»;
   - `PermisosEfectivos`: unión de varios roles, el alcance `TODO` gana a `PROPIO`, orden alfabético y la forma de texto `FUNCIONALIDAD:TIPO[:PROPIO]`;
   - `ReglaDeAdministracion`: un rol predefinido no se edita ni se borra; uno asignado no se borra; un nombre cuyo identificador derivado ya existe se rechaza, también contra los de D-16 («Administrador» → `ADMINISTRADOR`); un cambio de los roles de un usuario, o la edición de un rol propio, que deja sin `USUARIOS_ROLES:ESCRITURA`, o se lo quita a quien lo hace, se rechaza.
-- [ ] T009 Crear en `JROL/dominio/` `Funcionalidad`, `TipoDePermiso`, `Alcance`, `Permiso`, `Rol`, `PermisosEfectivos` y `ReglaDeAdministracion`, con JavaDoc en español que cite D-16, D-63, D-64 y D-65. T008 pasa.
+- [X] T009 Crear en `JROL/dominio/` `Funcionalidad`, `TipoDePermiso`, `Alcance`, `Permiso`, `Rol`, `PermisosEfectivos` y `ReglaDeAdministracion`, con JavaDoc en español que cite D-16, D-63, D-64 y D-65. T008 pasa.
 
 ### Persistencia de Roles
 
-- [ ] T010 Crear `ROL/main/resources/db/migration/roles/V2__matriz_d16.sql`: `funcionalidad`, `funcionalidad_tipo`, `rol` y `rol_permiso`, con las 16 funcionalidades, sus tipos y los 10 roles de D-16 (`predefinido = true`), con los permisos y alcances de la tabla «Matriz D-16» de data-model.md. Crear `V3__asignaciones_de_rol.sql`: `asignacion_rol`, `inicializacion` y `registro_cambio`. Los tipos y longitudes, según data-model.md.
-- [ ] T011 Prueba primero, en `IROL/MatrizD16IntegrationTest.java` (Testcontainers): después de migrar, cada uno de los 10 roles tiene **exactamente** los permisos y alcances de data-model.md, escritos en la prueba como tabla esperada (SC-002), y las 16 funcionalidades tienen sus tipos. `RolesEsquemaIntegrationTest` sigue en verde, con las tablas nuevas.
-- [ ] T012 Prueba primero, en `IROL/RepositoriosJdbcIntegrationTest.java`:
+- [X] T010 Crear `ROL/main/resources/db/migration/roles/V2__matriz_d16.sql`: `funcionalidad`, `funcionalidad_tipo`, `rol` y `rol_permiso`, con las 16 funcionalidades, sus tipos y los 10 roles de D-16 (`predefinido = true`), con los permisos y alcances de la tabla «Matriz D-16» de data-model.md. Crear `V3__asignaciones_de_rol.sql`: `asignacion_rol`, `inicializacion` y `registro_cambio`. Los tipos y longitudes, según data-model.md.
+- [X] T011 Prueba primero, en `IROL/MatrizD16IntegrationTest.java` (Testcontainers): después de migrar, cada uno de los 10 roles tiene **exactamente** los permisos y alcances de data-model.md, escritos en la prueba como tabla esperada (SC-002), y las 16 funcionalidades tienen sus tipos. `RolesEsquemaIntegrationTest` sigue en verde, con las tablas nuevas.
+- [X] T012 Prueba primero, en `IROL/RepositoriosJdbcIntegrationTest.java`:
   - guardar, leer, editar y borrar un rol con sus permisos;
   - asignar y quitar roles (`asignacion_rol`);
   - contar usuarios por rol;
