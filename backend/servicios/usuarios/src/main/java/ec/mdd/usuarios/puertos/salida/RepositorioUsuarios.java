@@ -13,8 +13,8 @@ public interface RepositorioUsuarios {
     void guardar(Usuario usuario);
 
     /**
-     * Reemplaza el nombre para mostrar, el hash, si está activo y los roles de un usuario que ya
-     * existe, buscado por su nombre.
+     * Reemplaza el nombre para mostrar, el hash y si está activo de un usuario que ya existe,
+     * buscado por su nombre.
      *
      * @throws IllegalStateException si el usuario no existe
      */

@@ -6,6 +6,7 @@ import ec.mdd.usuarios.dominio.Usuario;
 import ec.mdd.usuarios.puertos.entrada.IniciarSesion;
 import ec.mdd.usuarios.puertos.entrada.TokenEmitido;
 import ec.mdd.usuarios.puertos.salida.EmisorDeTokens;
+import ec.mdd.usuarios.puertos.salida.ProveedorDeAutorizacion;
 import ec.mdd.usuarios.puertos.salida.RepositorioIntentos;
 import ec.mdd.usuarios.puertos.salida.RepositorioUsuarios;
 import ec.mdd.usuarios.puertos.salida.VerificadorDeClaves;
@@ -23,6 +24,8 @@ import java.util.Optional;
  *
  * <p>Los fallos se cuentan por nombre intentado, exista o no. Un nombre bloqueado responde {@link
  * InicioBloqueado} sin verificar la contraseña ni contar el intento.
+ *
+ * <p>Los roles y permisos del token los da Roles en ese momento (ADR-021).
  */
 public final class IniciarSesionServicio implements IniciarSesion {
 
@@ -33,6 +36,7 @@ public final class IniciarSesionServicio implements IniciarSesion {
     private final VerificadorDeClaves verificador;
     private final EmisorDeTokens emisor;
     private final RepositorioIntentos intentos;
+    private final ProveedorDeAutorizacion autorizacion;
     private final PoliticaDeIntentos politica;
     private final Clock reloj;
     private final String hashDeRelleno;
@@ -43,12 +47,14 @@ public final class IniciarSesionServicio implements IniciarSesion {
             VerificadorDeClaves verificador,
             EmisorDeTokens emisor,
             RepositorioIntentos intentos,
+            ProveedorDeAutorizacion autorizacion,
             PoliticaDeIntentos politica,
             Clock reloj) {
         this.repositorio = repositorio;
         this.verificador = verificador;
         this.emisor = emisor;
         this.intentos = intentos;
+        this.autorizacion = autorizacion;
         this.politica = politica;
         this.reloj = reloj;
         this.hashDeRelleno = verificador.calcularHash("hash-de-relleno-sin-usuario");
@@ -82,7 +88,7 @@ public final class IniciarSesionServicio implements IniciarSesion {
             throw fallo(nombre, estado, ahora);
         }
         intentos.borrar(nombre);
-        return emisor.emitir(existente, ahora);
+        return emisor.emitir(existente, autorizacion.consultar(nombre), ahora);
     }
 
     /** Cuenta el fallo, bloquea el nombre si llegó al máximo y devuelve el error uniforme. */

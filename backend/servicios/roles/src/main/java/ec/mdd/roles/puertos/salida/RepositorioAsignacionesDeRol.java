@@ -29,9 +29,11 @@ public interface RepositorioAsignacionesDeRol {
     void reemplazar(String usuario, Collection<String> roles, String quien, Instant momento);
 
     /**
-     * Anota que el usuario recibió sus roles iniciales.
+     * Da al usuario sus roles iniciales solo si nunca los recibió: anota la inicialización y agrega
+     * los roles en una sola transacción (research §8). Si ya estaba anotado, no hace nada, aunque
+     * el usuario no tenga roles.
      *
-     * @return {@code true} si es la primera vez; {@code false} si ya estaba anotado
+     * @return {@code true} si los agregó; {@code false} si el usuario ya estaba inicializado
      */
-    boolean marcarInicializado(String usuario, Instant momento);
+    boolean inicializar(String usuario, Collection<String> roles, Instant momento);
 }

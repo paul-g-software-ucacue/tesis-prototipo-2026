@@ -37,6 +37,11 @@ public final class RepositorioAsignacionesDeRolJdbc implements RepositorioAsigna
                     + " SELECT :usuario, id, :momento, :quien FROM roles.rol"
                     + " WHERE identificador = :rol";
 
+    private static final String SIN_REPETIR = " ON CONFLICT (nombre_usuario, rol_id) DO NOTHING";
+
+    /** Quién hace los cambios que no hace una persona, como los roles iniciales. */
+    public static final String SISTEMA = "sistema";
+
     private static final String INICIALIZAR =
             "INSERT INTO roles.inicializacion (nombre_usuario, inicializado_en)"
                     + " VALUES (:usuario, :momento) ON CONFLICT (nombre_usuario) DO NOTHING";
@@ -103,11 +108,28 @@ public final class RepositorioAsignacionesDeRolJdbc implements RepositorioAsigna
     }
 
     @Override
-    public boolean marcarInicializado(String usuario, Instant momento) {
-        return jdbc.sql(INICIALIZAR)
-                        .param("usuario", usuario)
-                        .param("momento", Timestamp.from(momento))
-                        .update()
-                > 0;
+    public boolean inicializar(String usuario, Collection<String> roles, Instant momento) {
+        Boolean nuevo =
+                transacciones.execute(
+                        estado -> {
+                            int marcado =
+                                    jdbc.sql(INICIALIZAR)
+                                            .param("usuario", usuario)
+                                            .param("momento", Timestamp.from(momento))
+                                            .update();
+                            if (marcado == 0) {
+                                return false;
+                            }
+                            for (String rol : roles) {
+                                jdbc.sql(ASIGNAR + SIN_REPETIR)
+                                        .param("usuario", usuario)
+                                        .param("momento", Timestamp.from(momento))
+                                        .param("quien", SISTEMA)
+                                        .param("rol", rol)
+                                        .update();
+                            }
+                            return true;
+                        });
+        return Boolean.TRUE.equals(nuevo);
     }
 }

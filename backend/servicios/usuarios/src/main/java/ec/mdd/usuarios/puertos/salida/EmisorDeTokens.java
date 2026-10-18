@@ -8,13 +8,14 @@ import java.time.Instant;
 public interface EmisorDeTokens {
 
     /**
-     * Emite un token con el nombre del usuario, su nombre para mostrar, sus roles, el inicio de la
-     * sesión y su vencimiento (ADR-020).
+     * Emite un token con el nombre del usuario, su nombre para mostrar, sus roles y permisos, el
+     * inicio de la sesión y su vencimiento (ADR-020, ADR-021).
      *
      * @param usuario el usuario de la sesión
+     * @param autorizacion sus roles y permisos, de Roles
      * @param inicio cuándo inició sesión; se conserva al renovar
      */
-    TokenEmitido emitir(Usuario usuario, Instant inicio);
+    TokenEmitido emitir(Usuario usuario, AutorizacionDeUsuario autorizacion, Instant inicio);
 
     /**
      * Emite un token de proceso: {@code sub} = {@code proceso:<proceso>}, el rol {@code PROCESO} y

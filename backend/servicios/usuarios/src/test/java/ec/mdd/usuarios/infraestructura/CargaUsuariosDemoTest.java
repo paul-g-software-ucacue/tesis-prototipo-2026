@@ -26,11 +26,12 @@ class CargaUsuariosDemoTest {
 
     private final RepositorioEnMemoria repositorio = new RepositorioEnMemoria();
     private final VerificadorFalso verificador = new VerificadorFalso();
+    private final AutorizacionEnMemoria autorizacion = new AutorizacionEnMemoria();
 
     @TempDir Path carpeta;
 
     @Test
-    void dadoElArchivoVersionado_cuandoSeLee_entoncesTieneLosOnceUsuariosConRolesValidos()
+    void dadoElArchivoVersionado_cuandoSeLee_entoncesTieneLosOnceUsuariosConLosDiezRoles()
             throws IOException {
         try (InputStream archivo =
                 CargaUsuariosDemo.class.getResourceAsStream("/" + CargaUsuariosDemo.ARCHIVO)) {
@@ -47,14 +48,16 @@ class CargaUsuariosDemoTest {
     }
 
     @Test
-    void dadoLaClaveComun_cuandoArranca_entoncesCreaTodosActivosConSuNombreYRoles(
+    void dadoLaClaveComun_cuandoArranca_entoncesCreaTodosActivosYPideSusRolesIniciales(
             CapturedOutput salida) {
         carga(new PropiedadesUsuarios.Demo(null, CLAVE_COMUN)).run(null);
 
         assertThat(repositorio.usuarios).hasSize(2);
         Usuario mixto = repositorio.buscarPorNombre("docente.coordinador.demo").orElseThrow();
         assertThat(mixto.nombreParaMostrar()).isEqualTo("Docente y coordinador (demo)");
-        assertThat(mixto.roles()).containsExactlyInAnyOrder("DOCENTE", "COORDINADOR_CARRERA");
+        assertThat(autorizacion.roles)
+                .containsEntry(
+                        "docente.coordinador.demo", List.of("COORDINADOR_CARRERA", "DOCENTE"));
         assertThat(mixto.claveHash()).isEqualTo("hash:" + CLAVE_COMUN);
         assertThat(mixto.puedeIniciarSesion()).isTrue();
         assertThat(salida.getAll()).doesNotContain(CLAVE_COMUN);
@@ -78,8 +81,7 @@ class CargaUsuariosDemoTest {
 
     @Test
     void dadoOtraClaveYOtrosDatos_cuandoVuelveAArrancar_entoncesActualizaSinDuplicar() {
-        repositorio.guardar(
-                new Usuario("docente.demo", "Nombre viejo", "hash:vieja", false, Set.of("RECTOR")));
+        repositorio.guardar(new Usuario("docente.demo", "Nombre viejo", "hash:vieja", false));
 
         carga(new PropiedadesUsuarios.Demo(null, CLAVE_COMUN)).run(null);
 
@@ -87,7 +89,7 @@ class CargaUsuariosDemoTest {
         Usuario docente = repositorio.buscarPorNombre("docente.demo").orElseThrow();
         assertThat(docente.claveHash()).isEqualTo("hash:" + CLAVE_COMUN);
         assertThat(docente.nombreParaMostrar()).isEqualTo("Docente (demo)");
-        assertThat(docente.roles()).containsExactly("DOCENTE");
+        assertThat(autorizacion.roles).containsEntry("docente.demo", List.of("DOCENTE"));
         assertThat(docente.puedeIniciarSesion()).isTrue();
     }
 
@@ -101,6 +103,26 @@ class CargaUsuariosDemoTest {
 
         assertThat(verificador.hashesCalculados).isEqualTo(hashes);
         assertThat(repositorio.actualizaciones).isZero();
+    }
+
+    @Test
+    void dadoUsuariosQueYaExistian_cuandoArranca_entoncesTambienPideSusRolesIniciales() {
+        // Al desplegar F05-H02, los usuarios ya existen y Roles está vacío (research §8).
+        repositorio.guardar(
+                new Usuario("docente.demo", "Docente (demo)", "hash:" + CLAVE_COMUN, true));
+
+        carga(new PropiedadesUsuarios.Demo(null, CLAVE_COMUN)).run(null);
+
+        assertThat(autorizacion.roles).containsEntry("docente.demo", List.of("DOCENTE"));
+    }
+
+    @Test
+    void dadoRolesCambiadosPorElAdministrador_cuandoVuelveAArrancar_entoncesNoSeTocan() {
+        autorizacion.roles.put("docente.demo", List.of());
+
+        carga(new PropiedadesUsuarios.Demo(null, CLAVE_COMUN)).run(null);
+
+        assertThat(autorizacion.roles).containsEntry("docente.demo", List.of());
     }
 
     @Test
@@ -122,14 +144,20 @@ class CargaUsuariosDemoTest {
     }
 
     @Test
-    void dadoUnRolDesconocidoEnElArchivo_cuandoSeLee_entoncesFallaYDiceCual() {
+    void dadoUnRolDesconocidoEnElArchivo_cuandoArranca_entoncesFallaYDiceCual() {
         String yaml = "usuarios:\n  - usuario: raro.demo\n    nombre: Raro\n    roles: [JEFE]\n";
+        List<CargaUsuariosDemo.UsuarioDemo> usuarios =
+                CargaUsuariosDemo.leer(
+                        new ByteArrayInputStream(yaml.getBytes(StandardCharsets.UTF_8)));
+        CargaUsuariosDemo carga =
+                new CargaUsuariosDemo(
+                        repositorio,
+                        verificador,
+                        autorizacion,
+                        usuarios,
+                        new PropiedadesUsuarios.Demo(null, CLAVE_COMUN));
 
-        assertThatThrownBy(
-                        () ->
-                                CargaUsuariosDemo.leer(
-                                        new ByteArrayInputStream(
-                                                yaml.getBytes(StandardCharsets.UTF_8))))
+        assertThatThrownBy(() -> carga.run(null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("JEFE");
     }
@@ -145,6 +173,7 @@ class CargaUsuariosDemoTest {
         return new CargaUsuariosDemo(
                 repositorio,
                 verificador,
+                autorizacion,
                 List.of(
                         new CargaUsuariosDemo.UsuarioDemo(
                                 "docente.demo", "Docente (demo)", Set.of("DOCENTE")),

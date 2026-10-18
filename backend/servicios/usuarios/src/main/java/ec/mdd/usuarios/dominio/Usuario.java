@@ -2,29 +2,23 @@ package ec.mdd.usuarios.dominio;
 
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Usuario del MDD que puede iniciar sesión.
  *
- * <p>Guarda el hash de la contraseña, nunca la contraseña. Los roles son los identificadores que
- * viajan en el token; qué permite cada uno es de F05-H02 (D-16). El nombre de usuario no distingue
- * mayúsculas y minúsculas: se guarda normalizado.
+ * <p>Guarda el hash de la contraseña, nunca la contraseña. Sus roles y permisos no están aquí: son
+ * de Roles, que los da al iniciar sesión y al renovar el token (ADR-021). El nombre de usuario no
+ * distingue mayúsculas y minúsculas: se guarda normalizado.
  *
  * @param nombreUsuario nombre con el que inicia sesión, normalizado; es el {@code sub} del token
  * @param nombreParaMostrar nombre que ve el usuario en la pantalla de inicio
  * @param claveHash hash Argon2id de la contraseña
  * @param activo si puede iniciar sesión
- * @param roles roles del usuario; puede estar vacío
  */
 public record Usuario(
-        String nombreUsuario,
-        String nombreParaMostrar,
-        String claveHash,
-        boolean activo,
-        Set<String> roles) {
+        String nombreUsuario, String nombreParaMostrar, String claveHash, boolean activo) {
 
-    /** Exige nombre, nombre para mostrar y hash, normaliza el nombre y copia los roles. */
+    /** Exige nombre, nombre para mostrar y hash, y normaliza el nombre. */
     public Usuario {
         Objects.requireNonNull(nombreUsuario, "nombreUsuario");
         Objects.requireNonNull(nombreParaMostrar, "nombreParaMostrar");
@@ -33,7 +27,6 @@ public record Usuario(
         if (nombreUsuario.isEmpty() || nombreParaMostrar.isBlank()) {
             throw new IllegalArgumentException("El usuario necesita nombre y nombre para mostrar");
         }
-        roles = roles == null ? Set.of() : Set.copyOf(roles);
     }
 
     /**
@@ -54,12 +47,6 @@ public record Usuario(
     /** No incluye el hash de la contraseña, para que no termine en un registro. */
     @Override
     public String toString() {
-        return "Usuario[nombreUsuario="
-                + nombreUsuario
-                + ", activo="
-                + activo
-                + ", roles="
-                + roles
-                + "]";
+        return "Usuario[nombreUsuario=" + nombreUsuario + ", activo=" + activo + "]";
     }
 }

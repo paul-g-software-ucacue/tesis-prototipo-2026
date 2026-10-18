@@ -7,7 +7,6 @@ import ec.mdd.usuarios.adaptadores.salida.RepositorioUsuariosJpa;
 import ec.mdd.usuarios.adaptadores.salida.UsuarioJpaRepositorio;
 import ec.mdd.usuarios.dominio.Usuario;
 import ec.mdd.usuarios.infraestructura.UsuariosFlywayConfig;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -30,15 +29,9 @@ class RepositorioUsuariosJpaIntegrationTest {
     @Autowired private UsuarioJpaRepositorio filas;
 
     @Test
-    void dadoUnUsuarioConRoles_cuandoSeGuardaYSeBusca_entoncesConservaSusDatos() {
+    void dadoUnUsuario_cuandoSeGuardaYSeBusca_entoncesConservaSusDatos() {
         RepositorioUsuariosJpa repositorio = new RepositorioUsuariosJpa(filas);
-        Usuario usuario =
-                new Usuario(
-                        "autor.prueba",
-                        "Autor de prueba",
-                        "hash",
-                        true,
-                        Set.of("DOCENTE", "COORDINADOR_CARRERA"));
+        Usuario usuario = new Usuario("autor.prueba", "Autor de prueba", "hash", true);
 
         repositorio.guardar(usuario);
 
@@ -50,31 +43,26 @@ class RepositorioUsuariosJpaIntegrationTest {
     @Test
     void dadoUnUsuarioGuardado_cuandoSeActualiza_entoncesCambiaSusDatosSinDuplicarlo() {
         RepositorioUsuariosJpa repositorio = new RepositorioUsuariosJpa(filas);
-        repositorio.guardar(new Usuario("docente.demo", "Viejo", "hash", false, Set.of("RECTOR")));
-        Usuario nuevo =
-                new Usuario("docente.demo", "Docente (demo)", "otro", true, Set.of("DOCENTE"));
+        repositorio.guardar(new Usuario("docente.demo", "Viejo", "hash", false));
+        Usuario nuevo = new Usuario("docente.demo", "Docente (demo)", "otro", true);
 
         repositorio.actualizar(nuevo);
         filas.flush();
 
         assertThat(repositorio.buscarPorNombre("docente.demo")).contains(nuevo);
         assertThat(filas.count()).isEqualTo(1);
-        assertThatThrownBy(
-                        () ->
-                                repositorio.actualizar(
-                                        new Usuario("nadie", "Nadie", "h", true, Set.of())))
+        assertThatThrownBy(() -> repositorio.actualizar(new Usuario("nadie", "Nadie", "h", true)))
                 .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
     void dadoUnNombreRepetido_cuandoSeGuarda_entoncesLaBaseLoRechaza() {
         RepositorioUsuariosJpa repositorio = new RepositorioUsuariosJpa(filas);
-        repositorio.guardar(new Usuario("repetido", "Repetido", "hash", true, Set.of()));
+        repositorio.guardar(new Usuario("repetido", "Repetido", "hash", true));
 
         assertThatThrownBy(
                         () -> {
-                            repositorio.guardar(
-                                    new Usuario("Repetido", "Otro", "otro", true, Set.of()));
+                            repositorio.guardar(new Usuario("Repetido", "Otro", "otro", true));
                             filas.flush();
                         })
                 .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);

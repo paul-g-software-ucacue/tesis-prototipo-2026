@@ -9,7 +9,9 @@ plugins {
 def versionBouncyCastle = providers.gradleProperty('versionBouncyCastle').get()
 
 dependencies {
-    // Usuarios y sus roles en el esquema usuarios (research §7).
+    // Roles y permisos de cada usuario, por la interfaz publicada de Roles (research §2).
+    implementation project(':servicios:roles')
+    // Usuarios en el esquema usuarios (research §7 de B00-H03).
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     // Argon2id para las contraseñas; necesita BouncyCastle (research §7).
     implementation 'org.springframework.security:spring-security-crypto'

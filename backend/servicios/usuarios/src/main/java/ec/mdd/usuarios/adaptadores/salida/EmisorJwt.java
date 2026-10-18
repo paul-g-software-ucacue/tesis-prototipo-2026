@@ -2,6 +2,7 @@ package ec.mdd.usuarios.adaptadores.salida;
 
 import ec.mdd.usuarios.dominio.Usuario;
 import ec.mdd.usuarios.puertos.entrada.TokenEmitido;
+import ec.mdd.usuarios.puertos.salida.AutorizacionDeUsuario;
 import ec.mdd.usuarios.puertos.salida.EmisorDeTokens;
 import java.time.Clock;
 import java.time.Duration;
@@ -17,13 +18,15 @@ import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 /**
  * Firma tokens JWT RS256 con la llave privada de Usuarios (ADR-014).
  *
- * <p>El token lleva {@code iss}, {@code sub} (nombre de usuario), {@code roles} ordenados, {@code
- * nombre} (nombre para mostrar), {@code inicio} (segundos desde la época, el instante del inicio de
- * sesión, que se conserva al renovar; ADR-020), {@code iat} y {@code exp}; el encabezado lleva el
- * {@code kid} de la llave, para que quien valida elija la llave pública correcta del JWKS.
+ * <p>El token lleva {@code iss}, {@code sub} (nombre de usuario), {@code roles} y {@code permisos}
+ * ordenados (ADR-021), {@code nombre} (nombre para mostrar), {@code inicio} (segundos desde la
+ * época, el instante del inicio de sesión, que se conserva al renovar; ADR-020), {@code iat} y
+ * {@code exp}; el encabezado lleva el {@code kid} de la llave, para que quien valida elija la llave
+ * pública correcta del JWKS.
  *
  * <p>El token de proceso usa la misma llave y el mismo formato, con {@code sub} = {@code
- * proceso:<proceso>}, {@code roles} = {@code [PROCESO]} y su propia vigencia (D-49, ADR-018).
+ * proceso:<proceso>}, {@code roles} = {@code [PROCESO]}, sin {@code permisos}, y su propia vigencia
+ * (D-49, ADR-018).
  */
 public final class EmisorJwt implements EmisorDeTokens {
 
@@ -58,11 +61,18 @@ public final class EmisorJwt implements EmisorDeTokens {
     }
 
     @Override
-    public TokenEmitido emitir(Usuario usuario, Instant inicio) {
+    public TokenEmitido emitir(
+            Usuario usuario, AutorizacionDeUsuario autorizacion, Instant inicio) {
         return firmar(
                 usuario.nombreUsuario(),
-                usuario.roles().stream().sorted().toList(),
-                Map.of("nombre", usuario.nombreParaMostrar(), "inicio", inicio.getEpochSecond()),
+                autorizacion.roles().stream().sorted().toList(),
+                Map.of(
+                        "nombre",
+                        usuario.nombreParaMostrar(),
+                        "inicio",
+                        inicio.getEpochSecond(),
+                        "permisos",
+                        autorizacion.permisos().stream().sorted().toList()),
                 vigencia);
     }
 

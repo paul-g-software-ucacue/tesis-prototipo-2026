@@ -96,12 +96,12 @@ description: "Tareas de F05-H02: Roles con permisos y varios roles por usuario"
 
 ### Autorización en la sesión (ADR-021, D-62)
 
-- [ ] T013 Prueba primero, en `PROL/aplicacion/` (Mockito en los puertos):
+- [X] T013 Prueba primero, en `PROL/aplicacion/` (Mockito en los puertos):
   - `ConsultarAutorizacionServicio` devuelve los roles y los permisos efectivos de un usuario, y vacíos si no tiene;
   - `AsignarRolesInicialesServicio` asigna solo la primera vez (si ya hay `inicializacion`, no hace nada aunque el usuario no tenga roles), rechaza un rol desconocido y registra el cambio como `INICIALIZAR`.
 
   Crear los puertos de entrada `JROL/puertos/entrada/ConsultarAutorizacion.java` y `AsignarRolesIniciales.java` (con registros de valor propios), sus servicios y `JROL/infraestructura/ConfiguracionRoles.java`. Exponer `consultarAutorizacion` en `JROL/adaptadores/entrada/AutorizacionControlador.java` (`/interno/`). T013 pasa.
-- [ ] T014 Prueba primero, en `PUSU/aplicacion/IniciarSesionServicioTest.java`, `RenovarSesionServicioTest.java` y `PUSU/adaptadores/salida/EmisorJwtTest.java`:
+- [X] T014 Prueba primero, en `PUSU/aplicacion/IniciarSesionServicioTest.java`, `RenovarSesionServicioTest.java` y `PUSU/adaptadores/salida/EmisorJwtTest.java`:
   - el inicio de sesión y la renovación piden la autorización a `ProveedorDeAutorizacion` y emiten un token con `roles` y `permisos` desde ahí (D-62);
   - el token de proceso no los lleva.
 
@@ -113,8 +113,8 @@ description: "Tareas de F05-H02: Roles con permisos y varios roles por usuario"
   - ajustar `USU/integrationTest/java/ec/mdd/usuarios/RepositorioUsuariosJpaIntegrationTest.java`, porque `Usuario` ya no tiene roles.
 
   T014 pasa, y `ModulosTest` de `identidad` y `:servicios:usuarios:integrationTest` siguen en verde.
-- [ ] T015 Prueba primero, en `PUSU/infraestructura/CargaUsuariosDemoTest.java` y `CargaUsuarioDePruebaTest.java`: al crear o actualizar un usuario de la demo, o `autor.prueba`, se piden sus roles iniciales del archivo; un rol desconocido falla y dice cuál; ya no se actualizan roles en cada arranque (FR-009). Después cambiar `CargaUsuariosDemo` y `CargaUsuarioDePrueba`, y ajustar `USU/integrationTest/java/ec/mdd/usuarios/CargaUsuariosDemoIntegrationTest.java` y `CargaUsuarioDePruebaIntegrationTest.java` con un `ProveedorDeAutorizacion` falso escrito a mano (sin Mockito: son adaptadores) que anota los roles iniciales pedidos. T015 pasa.
-- [ ] T016 Prueba primero, en `PUSU/adaptadores/entrada/SesionContratoTest.java`: `consultarSesion` devuelve `permisos` del token, válido contra el contrato. Después cambiar `SesionControlador`. T016 pasa.
+- [X] T015 Prueba primero, en `PUSU/infraestructura/CargaUsuariosDemoTest.java` y `CargaUsuarioDePruebaTest.java`: al crear o actualizar un usuario de la demo, o `autor.prueba`, se piden sus roles iniciales del archivo; un rol desconocido falla y dice cuál; ya no se actualizan roles en cada arranque (FR-009). Después cambiar `CargaUsuariosDemo` y `CargaUsuarioDePrueba`, y ajustar `USU/integrationTest/java/ec/mdd/usuarios/CargaUsuariosDemoIntegrationTest.java` y `CargaUsuarioDePruebaIntegrationTest.java` con un `ProveedorDeAutorizacion` falso escrito a mano (sin Mockito: son adaptadores) que anota los roles iniciales pedidos. T015 pasa.
+- [X] T016 Prueba primero, en `PUSU/adaptadores/entrada/SesionContratoTest.java`: `consultarSesion` devuelve `permisos` del token, válido contra el contrato. Después cambiar `SesionControlador`. T016 pasa.
 
 **Checkpoint**: el contrato, el 403 común, la matriz D-16 en la base y los permisos en el token están listos; `./gradlew check` y las pruebas de integración de Roles y Usuarios en verde.
 

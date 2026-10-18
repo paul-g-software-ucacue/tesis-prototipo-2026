@@ -1,19 +1,17 @@
 package ec.mdd.usuarios.adaptadores.salida;
 
 import ec.mdd.usuarios.dominio.Usuario;
-import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 
-/** Fila de {@code usuarios.usuario}, con sus roles en {@code usuarios.usuario_rol}. */
+/**
+ * Fila de {@code usuarios.usuario}. Desde F05-H02 los roles son de Roles: {@code
+ * usuarios.usuario_rol} queda sin uso y no se borra, para poder volver a la versión anterior
+ * (research §1).
+ */
 @Entity
 @Table(schema = "usuarios", name = "usuario")
 public class UsuarioJpa {
@@ -32,14 +30,6 @@ public class UsuarioJpa {
     @Column(nullable = false)
     private boolean activo;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(
-            schema = "usuarios",
-            name = "usuario_rol",
-            joinColumns = @JoinColumn(name = "usuario_id"))
-    @Column(name = "rol", length = 64)
-    private Set<String> roles = new HashSet<>();
-
     /** Para JPA. */
     protected UsuarioJpa() {}
 
@@ -57,11 +47,10 @@ public class UsuarioJpa {
         nombreParaMostrar = usuario.nombreParaMostrar();
         claveHash = usuario.claveHash();
         activo = usuario.activo();
-        roles = new HashSet<>(usuario.roles());
     }
 
     /** El usuario del dominio que representa esta fila. */
     Usuario aDominio() {
-        return new Usuario(nombreUsuario, nombreParaMostrar, claveHash, activo, roles);
+        return new Usuario(nombreUsuario, nombreParaMostrar, claveHash, activo);
     }
 }

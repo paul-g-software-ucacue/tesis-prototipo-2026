@@ -1,7 +1,7 @@
 package ec.mdd.usuarios.infraestructura;
 
-import ec.mdd.usuarios.dominio.RolMdd;
 import ec.mdd.usuarios.dominio.Usuario;
+import ec.mdd.usuarios.puertos.salida.ProveedorDeAutorizacion;
 import ec.mdd.usuarios.puertos.salida.RepositorioUsuarios;
 import ec.mdd.usuarios.puertos.salida.VerificadorDeClaves;
 import java.io.IOException;
@@ -34,6 +34,11 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
  * {@code mdd.usuarios.demo.clave} (local y CI). Un usuario sin contraseña no se crea. Si la
  * contraseña ya no coincide con el hash guardado, se guarda uno nuevo: rotar las claves no exige
  * tocar la base. Las contraseñas nunca se registran.
+ *
+ * <p>Los roles del archivo son los iniciales: en cada arranque se piden a Roles para cada usuario
+ * de la demo que existe, y Roles solo los da la primera vez (FR-009, research §8). Así, al
+ * desplegar F05-H02, los usuarios que ya existían los reciben, y después los cambia solo el
+ * administrador. Un rol que Roles no conoce detiene el arranque y dice cuál.
  */
 public final class CargaUsuariosDemo implements ApplicationRunner {
 
@@ -44,6 +49,7 @@ public final class CargaUsuariosDemo implements ApplicationRunner {
 
     private final RepositorioUsuarios repositorio;
     private final VerificadorDeClaves verificador;
+    private final ProveedorDeAutorizacion autorizacion;
     private final List<UsuarioDemo> usuarios;
     private final PropiedadesUsuarios.Demo configuracion;
 
@@ -52,7 +58,7 @@ public final class CargaUsuariosDemo implements ApplicationRunner {
      *
      * @param usuario nombre de usuario
      * @param nombre nombre para mostrar
-     * @param roles sus roles, de los 10 de {@link RolMdd}
+     * @param roles sus roles iniciales (identificadores de Roles)
      */
     public record UsuarioDemo(String usuario, String nombre, Set<String> roles) {
 
@@ -66,10 +72,12 @@ public final class CargaUsuariosDemo implements ApplicationRunner {
     public CargaUsuariosDemo(
             RepositorioUsuarios repositorio,
             VerificadorDeClaves verificador,
+            ProveedorDeAutorizacion autorizacion,
             List<UsuarioDemo> usuarios,
             PropiedadesUsuarios.Demo configuracion) {
         this.repositorio = repositorio;
         this.verificador = verificador;
+        this.autorizacion = autorizacion;
         this.usuarios = List.copyOf(usuarios);
         this.configuracion = configuracion;
     }
@@ -88,8 +96,7 @@ public final class CargaUsuariosDemo implements ApplicationRunner {
 
     /**
      * Lee la lista {@code usuarios} de un YAML con {@code usuario}, {@code nombre} y {@code roles}.
-     *
-     * @throws IllegalArgumentException si un rol no es uno de los 10 de {@link RolMdd}
+     * Los roles los valida Roles al asignarlos.
      */
     public static List<UsuarioDemo> leer(InputStream yaml) {
         Map<String, Object> raiz = new Yaml(new SafeConstructor(new LoaderOptions())).load(yaml);
@@ -98,7 +105,7 @@ public final class CargaUsuariosDemo implements ApplicationRunner {
             Map<?, ?> fila = (Map<?, ?>) elemento;
             Set<String> roles = new LinkedHashSet<>();
             for (Object rol : (List<?>) fila.get("roles")) {
-                roles.add(RolMdd.desde(String.valueOf(rol)).name());
+                roles.add(String.valueOf(rol));
             }
             leidos.add(
                     new UsuarioDemo(
@@ -130,12 +137,12 @@ public final class CargaUsuariosDemo implements ApplicationRunner {
                                 demo.usuario(),
                                 demo.nombre(),
                                 verificador.calcularHash(clave),
-                                true,
-                                demo.roles()));
+                                true));
                 creados++;
             } else if (actualizar(existente.get(), demo, clave)) {
                 actualizados++;
             }
+            autorizacion.asignarRolesIniciales(Usuario.normalizar(demo.usuario()), demo.roles());
         }
         REGISTRO.info("Usuarios de la demo: {} creados y {} actualizados.", creados, actualizados);
     }
@@ -144,8 +151,7 @@ public final class CargaUsuariosDemo implements ApplicationRunner {
         boolean mismaClave = verificador.coincide(clave, existente.claveHash());
         if (mismaClave
                 && existente.puedeIniciarSesion()
-                && existente.nombreParaMostrar().equals(demo.nombre())
-                && existente.roles().equals(demo.roles())) {
+                && existente.nombreParaMostrar().equals(demo.nombre())) {
             return false;
         }
         repositorio.actualizar(
@@ -153,8 +159,7 @@ public final class CargaUsuariosDemo implements ApplicationRunner {
                         demo.usuario(),
                         demo.nombre(),
                         mismaClave ? existente.claveHash() : verificador.calcularHash(clave),
-                        true,
-                        demo.roles()));
+                        true));
         return true;
     }
 

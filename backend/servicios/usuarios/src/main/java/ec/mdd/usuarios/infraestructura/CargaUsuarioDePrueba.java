@@ -1,6 +1,7 @@
 package ec.mdd.usuarios.infraestructura;
 
 import ec.mdd.usuarios.dominio.Usuario;
+import ec.mdd.usuarios.puertos.salida.ProveedorDeAutorizacion;
 import ec.mdd.usuarios.puertos.salida.RepositorioUsuarios;
 import ec.mdd.usuarios.puertos.salida.VerificadorDeClaves;
 import java.util.Set;
@@ -16,14 +17,15 @@ import org.springframework.boot.ApplicationRunner;
  * <p>Así el usuario y su contraseña nunca están en una migración, y el hash no está en el
  * repositorio. Si ya existe, no hace nada. Si no está habilitado y ya existe, lo desactiva: en el
  * equipo de demostración lo reemplazan los usuarios de la demo (D-57, F05-H01). La contraseña nunca
- * se registra.
+ * se registra. Habilitado, pide a Roles sus roles iniciales, que Roles da solo la primera vez
+ * (F05-H02, research §8).
  */
 public final class CargaUsuarioDePrueba implements ApplicationRunner {
 
     /** Nombre del usuario de prueba. */
     public static final String NOMBRE = "autor.prueba";
 
-    /** Roles del usuario de prueba: los del escenario «Varios roles» de F05-H02. */
+    /** Roles iniciales del usuario de prueba: los del escenario «Varios roles» de F05-H02. */
     public static final Set<String> ROLES = Set.of("DOCENTE", "COORDINADOR_CARRERA");
 
     /** Nombre para mostrar del usuario de prueba. */
@@ -33,15 +35,18 @@ public final class CargaUsuarioDePrueba implements ApplicationRunner {
 
     private final RepositorioUsuarios repositorio;
     private final VerificadorDeClaves verificador;
+    private final ProveedorDeAutorizacion autorizacion;
     private final PropiedadesUsuarios.UsuarioPrueba configuracion;
 
     /** Recibe los puertos y la configuración del usuario de prueba. */
     public CargaUsuarioDePrueba(
             RepositorioUsuarios repositorio,
             VerificadorDeClaves verificador,
+            ProveedorDeAutorizacion autorizacion,
             PropiedadesUsuarios.UsuarioPrueba configuracion) {
         this.repositorio = repositorio;
         this.verificador = verificador;
+        this.autorizacion = autorizacion;
         this.configuracion = configuracion;
     }
 
@@ -56,13 +61,13 @@ public final class CargaUsuarioDePrueba implements ApplicationRunner {
             REGISTRO.warn("Usuario de prueba habilitado sin contraseña: no se crea.");
             return;
         }
-        if (repositorio.buscarPorNombre(NOMBRE).isPresent()) {
-            return;
+        if (repositorio.buscarPorNombre(NOMBRE).isEmpty()) {
+            repositorio.guardar(
+                    new Usuario(
+                            NOMBRE, NOMBRE_PARA_MOSTRAR, verificador.calcularHash(clave), true));
+            REGISTRO.info("Usuario de prueba {} creado.", NOMBRE);
         }
-        repositorio.guardar(
-                new Usuario(
-                        NOMBRE, NOMBRE_PARA_MOSTRAR, verificador.calcularHash(clave), true, ROLES));
-        REGISTRO.info("Usuario de prueba {} creado.", NOMBRE);
+        autorizacion.asignarRolesIniciales(NOMBRE, ROLES);
     }
 
     private void desactivarSiExiste() {
@@ -76,8 +81,7 @@ public final class CargaUsuarioDePrueba implements ApplicationRunner {
                                             usuario.nombreUsuario(),
                                             usuario.nombreParaMostrar(),
                                             usuario.claveHash(),
-                                            false,
-                                            usuario.roles()));
+                                            false));
                             REGISTRO.info("Usuario de prueba {} desactivado.", NOMBRE);
                         });
     }

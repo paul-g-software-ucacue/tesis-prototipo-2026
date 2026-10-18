@@ -129,11 +129,16 @@ class RepositoriosJdbcIntegrationTest {
     }
 
     @Test
-    void dadoUnUsuario_cuandoSeMarcaInicializadoDosVeces_entoncesSoloLaPrimeraCuenta() {
+    void dadoUnUsuario_cuandoSeInicializaDosVeces_entoncesSoloLaPrimeraAgregaRoles() {
         String usuario = "usuario." + sufijo();
 
-        assertThat(asignaciones.marcarInicializado(usuario, AHORA)).isTrue();
-        assertThat(asignaciones.marcarInicializado(usuario, AHORA)).isFalse();
+        assertThat(asignaciones.inicializar(usuario, List.of("DOCENTE"), AHORA)).isTrue();
+        assertThat(asignaciones.rolesDe(usuario)).containsExactly("DOCENTE");
+
+        asignaciones.reemplazar(usuario, List.of(), "admin.demo", AHORA);
+        assertThat(asignaciones.inicializar(usuario, List.of("DOCENTE", "RECTOR"), AHORA))
+                .isFalse();
+        assertThat(asignaciones.rolesDe(usuario)).isEmpty();
     }
 
     @Test

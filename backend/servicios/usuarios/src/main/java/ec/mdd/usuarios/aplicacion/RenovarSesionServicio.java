@@ -4,6 +4,7 @@ import ec.mdd.usuarios.dominio.Usuario;
 import ec.mdd.usuarios.puertos.entrada.RenovarSesion;
 import ec.mdd.usuarios.puertos.entrada.TokenEmitido;
 import ec.mdd.usuarios.puertos.salida.EmisorDeTokens;
+import ec.mdd.usuarios.puertos.salida.ProveedorDeAutorizacion;
 import ec.mdd.usuarios.puertos.salida.RepositorioUsuarios;
 import java.time.Clock;
 import java.time.Duration;
@@ -13,8 +14,8 @@ import java.util.List;
 /**
  * Renovación del token mientras el usuario trabaja (ADR-020).
  *
- * <p>Vuelve a leer el usuario, así que un usuario desactivado no renueva y los roles del token
- * nuevo son los vigentes.
+ * <p>Vuelve a leer el usuario, así que un usuario desactivado no renueva, y vuelve a pedir a Roles
+ * los roles y permisos: un cambio del administrador vale desde la renovación (D-62).
  */
 public final class RenovarSesionServicio implements RenovarSesion {
 
@@ -22,19 +23,26 @@ public final class RenovarSesionServicio implements RenovarSesion {
 
     private final RepositorioUsuarios repositorio;
     private final EmisorDeTokens emisor;
+    private final ProveedorDeAutorizacion autorizacion;
     private final Duration maximo;
     private final Clock reloj;
 
     /**
      * @param repositorio los usuarios
      * @param emisor firma el token nuevo
+     * @param autorizacion los roles y permisos vigentes
      * @param maximo cuánto puede durar una sesión desde su inicio; 8 horas en el MDD
      * @param reloj el instante actual
      */
     public RenovarSesionServicio(
-            RepositorioUsuarios repositorio, EmisorDeTokens emisor, Duration maximo, Clock reloj) {
+            RepositorioUsuarios repositorio,
+            EmisorDeTokens emisor,
+            ProveedorDeAutorizacion autorizacion,
+            Duration maximo,
+            Clock reloj) {
         this.repositorio = repositorio;
         this.emisor = emisor;
+        this.autorizacion = autorizacion;
         this.maximo = maximo;
         this.reloj = reloj;
     }
@@ -52,6 +60,6 @@ public final class RenovarSesionServicio implements RenovarSesion {
                         .buscarPorNombre(nombreUsuario)
                         .filter(Usuario::puedeIniciarSesion)
                         .orElseThrow(SesionNoRenovable::new);
-        return emisor.emitir(usuario, inicio);
+        return emisor.emitir(usuario, autorizacion.consultar(usuario.nombreUsuario()), inicio);
     }
 }
