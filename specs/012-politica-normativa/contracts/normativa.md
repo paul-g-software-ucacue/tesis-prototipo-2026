@@ -19,7 +19,9 @@ Las dos responden además 401 `NoAutenticado`, 403 `AccesoNoAutorizado`, 500 y 5
 | `VersionNormativa` | los de `VersionResumen`, más `reglas` (`[Regla]`, por identificador) y `tablaCargaHoraria` (`[FilaCargaHoraria]`, en el orden de la política) |
 | `Regla` | `identificador` (`RN-NN`), `severidad` (`DURA` o `BLANDA`, opcional), `parametros` (`[Parametro]`) |
 | `Parametro` | `nombre`, `valor` (número) |
-| `FilaCargaHoraria` | `alcanceIst` (`TODOS` o `T1`…`T5`), `perfil`, `dedicacionTotal`, `horasClase`, `horasClaseMinimo`, `horasClaseMaximo`, `horasOtrasDocencia`, `horasGestion`, `horasInvestigacionVinculacionMaximo` (las tres últimas opcionales: se omiten si la política no las da), `severidad`, `referencia`, `observacion` (opcional) |
+| `FilaCargaHoraria` | `aplicaA` (`TODOS` o `T1`…`T5`), `perfil`, `dedicacionTotal`, `horasClase`, `horasClaseMinimo`, `horasClaseMaximo`, `horasOtrasDocencia`, `horasGestion`, `horasInvestigacionVinculacionMaximo` (las tres últimas opcionales: se omiten si la política no las da), `severidad`, `referencia`, `observacion` (opcional) |
+
+**Nombre:** `aplicaA` dice a qué tipo de IST aplica la fila; no se llama «alcance», que en el glosario es «todo o solo lo propio».
 
 **Orden de la tabla:** el de la carga 7. Para que sea estable, la fila guarda su posición (`orden`) en la tabla `fila_carga_horaria` (data-model).
 

@@ -7,7 +7,7 @@
 ## Summary
 
 Sobre el esqueleto del servicio Normativa:
-- **Dominio (subdominio central, DDD táctico):** el agregado `VersionNormativa`, con `TablaCargaHoraria`, `FilaCargaHoraria`, `Regla`, `TipoIst` y `Severidad`, cada uno con sus invariantes; el evento `VersionNormativaCreada`.
+- **Dominio (subdominio central, DDD táctico):** el agregado `VersionNormativa`, con `TablaCargaHoraria`, `FilaCargaHoraria`, `Regla`, `TipoIst` y `Severidad`, cada uno con sus invariantes. El evento `VersionNormativaCreada` llega con F04-H02, que crea versiones.
 - **Versión 1 por migración:** `V2__politica_2024.sql` crea las tablas e inserta la versión 1:
   - la Política SENESCYT 2024 con sus 22 filas;
   - el tipo de IST T2;
@@ -26,7 +26,7 @@ Los detalles y las alternativas están en [research.md](research.md).
 **Language/Version**: Java 25 (Spring Boot 4.1.1) · TypeScript 5.9 (React 19) · SQL (PostgreSQL 18, Flyway) · Bash
 
 **Primary Dependencies**: no hay dependencias nuevas en el proyecto.
-- **Normativa:** aplica `mdd.contrato`, con `spring-boot-starter-jdbc` (`JdbcClient`), `spring-security-core` (`@PreAuthorize`) y `jackson-databind` (el detalle en `jsonb`), como Roles.
+- **Normativa:** aplica `mdd.contrato`, con `spring-boot-starter-jdbc` (`JdbcClient`) y `spring-security-core` (`@PreAuthorize`), como Roles.
 - **SPA:** los componentes de MUI que ya usa.
 
 **Storage**: esquema `normativa`, con las tablas `version_normativa`, `fila_carga_horaria`, `regla`, `parametro_regla` y `registro_cambio` (V2). En el esquema `roles`, V4 con un permiso nuevo.
@@ -67,8 +67,8 @@ Los detalles y las alternativas están en [research.md](research.md).
 | Principio | Cómo lo respeta el plan | Estado |
 |---|---|---|
 | I. Capas | Normativa con sus cinco capas. Las invariantes, en el dominio. La consulta, por un puerto de entrada, y la persistencia, por un puerto de salida. | ✅ |
-| II. DDD según el subdominio | Normativa es central: agregado, objetos de valor, evento de dominio y repositorio (research §1). | ✅ |
-| III. Lenguaje ubicuo | Versión de normativa, Regla, Severidad, Tipo de IST, Componente y Política, tal como en el glosario §7.3. «Tabla de carga horaria» y «Fila» siguen el modelo de dominio §5.1 (`TablaCargaHoraria`). | ✅ |
+| II. DDD según el subdominio | Normativa es central: agregado, objetos de valor y repositorio (research §1). El evento de dominio llega con la creación de versiones (F04-H02). | ✅ |
+| III. Lenguaje ubicuo | Versión de normativa, Regla, Severidad, Tipo de IST, Componente, Política, Tabla de carga horaria y Perfil, tal como en el glosario §7.3; los dos últimos se agregaron antes del código (research §10). | ✅ |
 | IV. API primero | `contratos/normativa/openapi.yaml` antes del código, con `x-mdd-permiso`. | ✅ |
 | V. Límites | Normativa solo en su esquema. El permiso del Vicerrector lo cambia Roles con su propia migración. | ✅ |
 | VI. Las reglas son datos | Las cifras de la política están solo en la versión 1, en la base. Las severidades son datos de la versión (MD-08). | ✅ |
@@ -109,7 +109,7 @@ specs/012-politica-normativa/
 contratos/normativa/openapi.yaml                  # nuevo
 backend/servicios/normativa/                      # build.gradle con mdd.contrato
 ├── src/main/java/ec/mdd/normativa/
-│   ├── dominio/                                  # VersionNormativa, TablaCargaHoraria, FilaCargaHoraria, Regla, TipoIst, Severidad, VersionNormativaCreada
+│   ├── dominio/                                  # VersionNormativa, TablaCargaHoraria, FilaCargaHoraria, Regla, TipoIst, Severidad
 │   ├── puertos/entrada/                          # ConsultarNormativa
 │   ├── puertos/salida/                           # RepositorioVersiones
 │   ├── aplicacion/                               # ConsultarNormativaServicio, VersionNoEncontrada

@@ -86,7 +86,7 @@ Como institución, quiero que las cifras de la política solo existan en la vers
 - **FR-001**: Desde la instalación, el MDD DEBE tener la versión 1 de la normativa, con su número, su origen («Política SENESCYT 2024», código `SENESCYT-2024-03») y su fecha de vigencia (11 de marzo de 2024), sin que nadie la cargue.
 - **FR-002**: La versión 1 DEBE tener la tabla de carga horaria con las 22 filas de la carga 7 (ERS 8.3), cada una con el tipo de IST al que aplica (T1 a T5 o todos), el perfil, la dedicación total, las horas de clase con su mínimo y su máximo, las horas de otras actividades de docencia, de gestión y el máximo de investigación y vinculación, la severidad (dura o blanda), la referencia normativa y la observación.
 - **FR-003**: La versión 1 DEBE tener el tipo de IST de la institución: Tipo 2 (RN-06; en el prototipo es un parámetro fijo, el cálculo por matriculados es F23).
-- **FR-004**: La versión 1 DEBE incluir, con su regla RN-xx y su severidad, los parámetros de RN-01 a RN-15 que las 22 filas no expresan:
+- **FR-004**: La versión 1 DEBE incluir, con su regla RN-xx y, cuando la tiene, su severidad (RN-01 y RN-06 son solo parámetros), los parámetros de RN-01 a RN-15 que las 22 filas no expresan:
   - RN-01: las dedicaciones de tiempo completo (40 h), medio tiempo (20 h) y tiempo parcial (hasta 19 h);
   - RN-02: el máximo de 40 h asignadas a un docente;
   - RN-05: la proporción de 60 % de clase y 40 % de otras actividades de docencia;
@@ -99,13 +99,14 @@ Como institución, quiero que las cifras de la política solo existan en la vers
 - **FR-007**: La versión 1 DEBE poder consultarse, con todos sus datos, con el permiso de lectura de «Parámetros y normativa», que tienen el Administrador del sistema y el Vicerrector académico. La escritura sigue solo en el Administrador (D-65, ajustada por D-66).
 - **FR-008**: La SPA DEBE tener una pantalla «Normativa», de solo lectura y en el menú solo para quien tenga el permiso, con la lista de versiones y, de la versión elegida, su origen, su código, su vigencia, el tipo de IST, los parámetros de FR-004 y la tabla de carga horaria con sus 22 filas, en español.
 - **FR-009**: Sin el permiso de lectura de «Parámetros y normativa», la consulta DEBE responder «Acceso no autorizado» (403), validado en el servidor (RNF-SEG-03, ADR-021).
-- **FR-010**: La creación de la versión 1 DEBE quedar registrada como el primer evento de la normativa (`VersionNormativaCreada`), para la bitácora y para los servicios que dependan de la normativa.
+- **FR-010**: La creación de la versión 1 DEBE quedar registrada, con quién, cuándo y qué versión (el hecho que el modelo de dominio llama `VersionNormativaCreada`), para la bitácora. Se publicará a otros procesos cuando tenga su primer consumidor.
 
 ### Key Entities
 
 - **Política**: la Política SENESCYT 2024 de carga horaria (POL) con el RCE. Es el origen de la versión 1 (glosario §7.3).
 - **Versión de normativa**: conjunto numerado de parámetros de RN-01 a RN-26 que rige un periodo; no cambia una vez asociada a un periodo (glosario §7.3, `VersionNormativa`). Tiene número, origen, código, fecha de vigencia, tipo de IST, tabla de carga horaria y reglas.
-- **Tabla de carga horaria**: las horas por componente según el perfil, la dedicación y el tipo de IST (carga 7, 22 filas; `TablaCargaHoraria`).
+- **Tabla de carga horaria**: las horas por componente según el perfil, la dedicación y el tipo de IST (carga 7, 22 filas; `TablaCargaHoraria`, glosario §7.3). No es la carga horaria de un docente.
+- **Perfil**: categoría de la tabla según el cargo o la condición del docente, por ejemplo docente a tiempo completo, gestor o cuidador sustituto (glosario §7.3).
 - **Regla**: comprobación de la política con su identificador RN-xx, sus parámetros y su severidad (glosario §7.3); en la tabla, la severidad de cada fila.
 - **Severidad**: dura (impide guardar o avanzar) o blanda (exige justificación).
 - **Tipo de IST**: T1 a T5; en el prototipo, Tipo 2 fijo.

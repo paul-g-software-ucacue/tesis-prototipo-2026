@@ -13,12 +13,12 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
   - **`TablaCargaHoraria`** y **`FilaCargaHoraria`**, objetos de valor: una fila por perfil y tipo de IST (o `TODOS`).
   - **`Regla`**, objeto de valor: identificador RN-xx, severidad opcional y sus parámetros con nombre.
   - **`TipoIst`** (T1 a T5) y **`Severidad`** (dura o blanda): enumeraciones.
-  - **`VersionNormativaCreada`**: el evento de dominio (modelo de dominio §6).
+  - **`VersionNormativaCreada`**, el evento de dominio (modelo de dominio §6), no tiene clase todavía: ningún código de producción crea una versión en esta historia. Llega con F04-H02, junto con la creación (principio X).
 - **Invariantes de una fila** (se comprueban al construirla, también al leerla de la base):
   - las horas son enteras y no negativas; un valor que la política no da queda «sin valor», no en cero;
   - el mínimo de clase ≤ las horas de clase ≤ el máximo de clase;
   - clase + otras de docencia + gestión + máximo de investigación y vinculación ≤ la dedicación total.
-- **Invariantes de la tabla:** un perfil y un tipo de IST no se repiten, y un perfil está en `TODOS` o en tipos concretos, no en los dos. Así, `filaPara(perfil, tipoIst)` da siempre una sola fila: la del tipo, o la de `TODOS`.
+- **Invariantes de la tabla:** un perfil y un tipo de IST no se repiten, y un perfil aplica a `TODOS` o a tipos concretos, no a los dos (`aplicaA`). Así, `filaPara(perfil, tipoIst)` da siempre una sola fila: la del tipo, o la de `TODOS`.
 - Las 22 filas de la carga 7 cumplen todas las invariantes. Lo comprueba la prueba de §3, que reconstruye la versión 1 desde la base.
 - **Por qué:** el principio II exige DDD táctico en los subdominios centrales, y las invariantes atrapan un error de digitación en la política antes de que llegue a un distributivo.
 - **Alternativa:** un CRUD de filas como en Roles (subdominio genérico). Se descarta porque Normativa es central y sus cifras gobiernan el distributivo.
@@ -62,8 +62,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 ## 5. Registro de la creación (FR-010)
 
 - **Decisión:**
-  - el agregado lleva el evento de dominio `VersionNormativaCreada`;
-  - la tabla `normativa.registro_cambio` lo guarda, con el momento, el usuario (`sistema` para la versión 1), la acción `VERSION_CREADA` y el detalle en `jsonb` (número, código y origen);
+  - la tabla `normativa.registro_cambio` guarda el hecho que el modelo de dominio llama `VersionNormativaCreada`, con el momento, el usuario (`sistema` para la versión 1), la acción `VERSION_CREADA` y el detalle en `jsonb` (número, código y origen);
   - la migración inserta la fila de la versión 1, y F04-H02 la escribirá desde el caso de uso.
 - **No se publica entre procesos todavía:** ningún servicio consume el evento hoy. Distributivo lo necesitará al validar, y la bitácora al leer los registros; el envío entre procesos (ADR-018) llega con su primer consumidor.
 - **Por qué:** es el mismo registro que Roles (F05-H02, FR-011), y el principio X pide no armar una entrega sin consumidor.
@@ -87,7 +86,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
   - `consultarVersion` (`GET /api/normativa/versiones/{numero}`), con la versión completa y 404 si no existe.
 - Las dos llevan `x-mdd-permiso: PARAMETROS:LECTURA` y `@PreAuthorize`, y las prueba `PermisosNormativaTest` con `VerificadorDePermisos`.
 - **Sin códigos de error nuevos:** el 404 es `COMUN_RECURSO_NO_ENCONTRADO`, como el de un rol inexistente en Roles.
-- Normativa aplica `mdd.contrato` (las interfaces generadas) y agrega `spring-boot-starter-jdbc` y `spring-security-core`, que ya usa Roles.
+- Normativa aplica `mdd.contrato` (las interfaces generadas) y agrega `spring-boot-starter-jdbc` y `spring-security-core`, que ya usa Roles. No necesita `jackson-databind`: la fila del registro la inserta la migración.
 
 ## 8. La pantalla «Normativa» (FR-008)
 
@@ -101,7 +100,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 
 ## 9. Pruebas
 
-- **Dominio, sin dobles:** las invariantes de la fila y de la tabla, `filaPara` con `TODOS` y con un tipo concreto, la regla con y sin severidad, y el evento al construir una versión nueva.
+- **Dominio, sin dobles:** las invariantes de la fila y de la tabla, `filaPara` con `TODOS` y con un tipo concreto, y la regla con y sin severidad.
 - **Aplicación, con Mockito en los puertos:** listar y consultar versiones; una versión que no existe.
 - **Adaptadores, con Testcontainers:** la comparación con la política de §3; el repositorio JDBC que reconstruye el agregado; el registro de la creación; y que la versión anterior arranque sobre el esquema nuevo, como en Roles.
 - **Contrato:** las dos operaciones contra el contrato y `VerificadorDePermisos`.
@@ -113,3 +112,8 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
   - `vicerrectorado.demo` y `admin.demo` ven la versión 1 con 22 filas y el tipo de IST T2;
   - `docente.demo` recibe el 403 común;
   - después de reiniciar `datos`, sigue habiendo una sola versión.
+
+## 10. Términos nuevos del glosario (principio III)
+
+- **Decisión:** antes del código, el glosario (`sdd/modelo_dominio.md`, fuera del repositorio) ganó en §7.3 «Tabla de carga horaria» y «Perfil», y en §8 la fila «"Carga horaria" para la tabla de la política → Tabla de carga horaria» (2026-10-18).
+- **Por qué:** «Carga horaria» ya es, en el glosario, el total de horas de un docente en el Distributivo (RF-27), y «Perfil» es la columna de la carga 7 que el código usa. «Alcance» ya significa «todo o solo lo propio» (D-64), así que el tipo de IST al que aplica una fila se llama `aplicaA`, no `alcanceIst`.

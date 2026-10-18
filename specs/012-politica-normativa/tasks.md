@@ -48,26 +48,26 @@ description: "Tareas de F04-H01: la política 2024 como primera versión de norm
 
 - [ ] T002 Crear `contratos/normativa/openapi.yaml` según contracts/normativa.md:
   - `listarVersiones` (`GET /api/normativa/versiones`) y `consultarVersion` (`GET /api/normativa/versiones/{numero}`, `numero` entero ≥ 1), las dos con `x-mdd-permiso: PARAMETROS:LECTURA`;
-  - los esquemas `VersionResumen`, `VersionNormativa`, `Regla`, `Parametro` y `FilaCargaHoraria`, con `tipoIst` ∈ `T1`…`T5`, `alcanceIst` ∈ `TODOS`, `T1`…`T5` y `severidad` ∈ `DURA`, `BLANDA`; las horas opcionales que la política no da se omiten;
+  - los esquemas `VersionResumen`, `VersionNormativa`, `Regla`, `Parametro` y `FilaCargaHoraria`, con `tipoIst` ∈ `T1`…`T5`, `aplicaA` ∈ `TODOS`, `T1`…`T5` y `severidad` ∈ `DURA`, `BLANDA`; las horas opcionales que la política no da se omiten;
   - respuestas 401 `NoAutenticado`, 403 `AccesoNoAutorizado`, 404, 500 y 503.
 
-  Agregar a `backend/servicios/normativa/build.gradle` `id 'mdd.contrato'`, `spring-boot-starter-jdbc`, `spring-security-core` y `tools.jackson.core:jackson-databind`. Regenerar las interfaces y los tipos de la SPA: `generar:api` gana `src/api/generado/normativa.d.ts` y `apiNormativa` en `frontend/src/api/cliente.ts`.
+  Agregar a `backend/servicios/normativa/build.gradle` `id 'mdd.contrato'`, `spring-boot-starter-jdbc` y `spring-security-core`. Regenerar las interfaces y los tipos de la SPA: `generar:api` gana `src/api/generado/normativa.d.ts` y `apiNormativa` en `frontend/src/api/cliente.ts`.
 
 ### Dominio de Normativa (principio II)
 
 - [ ] T003 [P] Prueba primero, en `PNOR/dominio/`, sin dobles:
   - `TipoIst` (T1 a T5) y `Severidad` (`DURA`, `BLANDA`);
   - `FilaCargaHoraria`: horas enteras y no negativas; «sin valor» distinto de cero; mínimo ≤ clase ≤ máximo; la suma de clase, otras de docencia, gestión y el máximo de investigación y vinculación no supera la dedicación total (el cuidador sustituto, 18 + 12 = 30 de 40, es válido);
-  - `TablaCargaHoraria`: rechaza un perfil y tipo repetidos y un perfil a la vez en `TODOS` y en un tipo concreto; `filaPara(GESTOR, T2)` da la fila de T2 y `filaPara(DOCENTE_TC, T2)` la de `TODOS`; sin fila, vacío;
+  - `TablaCargaHoraria`: rechaza un perfil y tipo repetidos y un perfil que aplica a la vez a `TODOS` y a un tipo concreto; `filaPara(GESTOR, T2)` da la fila de T2 y `filaPara(DOCENTE_TC, T2)` la de `TODOS`; sin fila, vacío;
   - `Regla`: identificador `RN-NN`, severidad opcional, al menos un parámetro;
-  - `VersionNormativa`: número ≥ 1, código, origen, vigencia, tipo de IST, tabla y reglas; una versión nueva registra `VersionNormativaCreada` con su número y su código; reconstruirla desde la base no lo registra.
-- [ ] T004 Crear en `JNOR/dominio/` `TipoIst`, `Severidad`, `FilaCargaHoraria`, `TablaCargaHoraria`, `Regla`, `VersionNormativa` y `VersionNormativaCreada`, con JavaDoc en español que cite RF-19, RN-xx, MD-08 y el modelo de dominio §5.1. T003 pasa.
+  - `VersionNormativa`: número ≥ 1, código, origen, vigencia, tipo de IST, tabla y reglas, reconstruida con sus invariantes (crear una versión y su evento llegan con F04-H02).
+- [ ] T004 Crear en `JNOR/dominio/` `TipoIst`, `Severidad`, `FilaCargaHoraria`, `TablaCargaHoraria`, `Regla` y `VersionNormativa`, con JavaDoc en español que cite RF-19, RN-xx, MD-08 y el modelo de dominio §5.1. T003 pasa.
 
 ### La versión 1 en la base (FR-001 a FR-004, FR-010)
 
 - [ ] T005 Crear `NOR/main/resources/db/migration/normativa/V2__politica_2024.sql` según data-model.md:
   - las tablas `version_normativa`, `fila_carga_horaria` (con `orden`), `regla`, `parametro_regla` y `registro_cambio`, con sus `check`;
-  - la versión 1 (`SENESCYT-2024-03`, «Política SENESCYT 2024 de asignación de carga horaria», vigente desde 2024-03-11, `T2`);
+  - la versión 1 (`SENESCYT-2024-03`, «Política SENESCYT 2024», vigente desde 2024-03-11, `T2`);
   - las 22 filas de `07_politica_carga_horaria.csv`, en su orden, con «sin valor» (`null`) donde la carga 7 está vacía;
   - las 7 reglas y los 29 parámetros de research §4, con sus severidades;
   - el registro `VERSION_CREADA` por `sistema`.
@@ -95,7 +95,7 @@ description: "Tareas de F04-H01: la política 2024 como primera versión de norm
 
 - [ ] T008 [US1] Prueba primero, en `PNOR/aplicacion/ConsultarNormativaServicioTest.java` (Mockito): listar las versiones por número; consultar la 1; una versión que no existe lanza `VersionNoEncontrada`. Crear el puerto `JNOR/puertos/entrada/ConsultarNormativa.java`, `ConsultarNormativaServicio`, `VersionNoEncontrada` y `JNOR/infraestructura/ConfiguracionNormativa.java`. T008 pasa.
 - [ ] T009 [US1] Prueba primero, en `PNOR/adaptadores/entrada/`:
-  - `NormativaContratoTest`: las dos operaciones contra el contrato, con la versión completa (las horas sin valor se omiten), y el 404 con `COMUN_RECURSO_NO_ENCONTRADO`;
+  - `NormativaContratoTest`: las dos operaciones contra el contrato, con la versión completa (las horas sin valor se omiten), y el 404 con `COMUN_RECURSO_NO_ENCONTRADO`; `POST /api/normativa/versiones` y `PUT /api/normativa/versiones/1` responden 405 `COMUN_METODO_NO_PERMITIDO`, porque no hay forma de cambiarla (US2, escenario 3);
   - `PermisosNormativaTest`: `VerificadorDePermisos` sobre el contrato de Normativa (SC-005).
 
   Después crear `JNOR/adaptadores/entrada/NormativaControlador.java`, con `@PreAuthorize("hasAuthority('PERMISO_PARAMETROS:LECTURA')")` en cada método, y la clase raíz de pruebas `PNOR/AplicacionDePruebaNormativa.java`. T009 pasa. `ModulosTest` de `datos` sigue en verde.
@@ -186,5 +186,5 @@ description: "Tareas de F04-H01: la política 2024 como primera versión de norm
 ## Notes
 
 - Crear y editar versiones es F04-H02; asociar una versión a un periodo, F02-H01; cargar la política por archivo, F01.
-- El evento `VersionNormativaCreada` queda en `registro_cambio`; se publicará entre procesos cuando tenga su primer consumidor (research §5).
+- La creación de la versión 1 queda en `registro_cambio` (`VERSION_CREADA`). El evento `VersionNormativaCreada` y su envío entre procesos llegan con F04-H02 y con su primer consumidor (research §5).
 - Hacer commit por tarea o por grupo lógico en `012-politica-normativa`, con `Refs #40`.
