@@ -99,12 +99,12 @@ description: "Tareas de F04-H01: la política 2024 como primera versión de norm
   - `PermisosNormativaTest`: `VerificadorDePermisos` sobre el contrato de Normativa (SC-005).
 
   Después crear `JNOR/adaptadores/entrada/NormativaControlador.java`, con `@PreAuthorize("hasAuthority('PERMISO_PARAMETROS:LECTURA')")` en cada método, y la clase raíz de pruebas `PNOR/AplicacionDePruebaNormativa.java`. T009 pasa. `ModulosTest` de `datos` sigue en verde.
-- [ ] T010 [P] [US1] Prueba primero, en `frontend/src/pantallas/normativa/Normativa.test.tsx`, con la API simulada:
+- [X] T010 [P] [US1] Prueba primero, en `frontend/src/pantallas/normativa/Normativa.test.tsx`, con la API simulada:
   - con `PARAMETROS:LECTURA`: la lista de versiones; la cabecera (Política SENESCYT 2024, `SENESCYT-2024-03`, vigente desde el 11/03/2024, Tipo 2); los parámetros agrupados por regla, con la severidad en español («Dura», «Blanda», «—» si no tiene); la tabla con los perfiles en español, «Todos» para `TODOS` y «—» para un valor que la política no da;
   - sin el permiso: «Acceso no autorizado», sin pedir nada a `/api/normativa`, y sin «Normativa» en el menú.
 
   Crear `frontend/src/pantallas/normativa/` (`Normativa.tsx`, `consultas.ts`, `perfiles.ts`, con un perfil desconocido legible), la ruta `/normativa` con `RutaConPermiso` en `rutas.tsx` y la entrada «Normativa» con su permiso en `navegacion/Marco.tsx`. T010 pasa.
-- [ ] T011 [US1] Prueba con Playwright, en `frontend/e2e/normativa.spec.ts`, con la API simulada:
+- [X] T011 [US1] Prueba con Playwright, en `frontend/e2e/normativa.spec.ts`, con la API simulada:
   - `vicerrectorado.demo` entra, abre «Normativa» y ve 22 filas y Tipo 2;
   - `docente.demo` en `/normativa` ve «Acceso no autorizado» sin texto técnico;
   - axe-core sin fallas WCAG 2.1 AA en la pantalla.

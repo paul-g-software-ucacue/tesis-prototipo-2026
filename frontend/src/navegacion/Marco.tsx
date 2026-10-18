@@ -29,6 +29,11 @@ interface Entrada {
 const ENTRADAS: Entrada[] = [
   { ruta: '/', texto: 'Inicio' },
   { ruta: '/roles', texto: 'Roles', permiso: { funcionalidad: 'USUARIOS_ROLES', tipo: 'LECTURA' } },
+  {
+    ruta: '/normativa',
+    texto: 'Normativa',
+    permiso: { funcionalidad: 'PARAMETROS', tipo: 'LECTURA' },
+  },
 ];
 
 export function Marco() {
