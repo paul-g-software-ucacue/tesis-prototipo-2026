@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-66 · ADR-022.
+- **Siguiente número libre:** D-67 · ADR-022.
 
 ## Índice
 
@@ -61,6 +61,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-64 | 2026-10-17 | F05-H02 marca qué permisos son «solo lo propio»; el filtro lo aplica cada historia con esos datos | Aceptada | D-16 |
 | D-65 | 2026-10-18 | La matriz D-16 en permisos: 16 funcionalidades y los permisos de los 10 roles | Aceptada | D-16 (interpreta la prosa de la matriz) |
 | ADR-021 | 2026-10-18 | Permisos efectivos en el token y cada operación declara su permiso en el contrato | Aceptada | ADR-014 (claim `permisos`), ADR-015 (`x-mdd-permiso`), ADR-016 (403 común) |
+| D-66 | 2026-10-18 | El Vicerrector académico lee «Parámetros y normativa» | Propuesta | D-65 (un permiso más en la fila del Vicerrector) |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1098,3 +1099,19 @@ Estado al 2026-10-11. El texto completo está en `lean_inception/adr/`.
 | ADR-009 | Estándares de ingeniería backend: microservicios en el perfil consolidado, cinco capas, errores y fallos entre procesos | Aceptada |
 | ADR-010 | El puntaje de afinidad se calcula en el servicio de Generación (contexto Distributivo) | Aceptada |
 | ADR-011 | Plataforma Java 25 con Spring Boot 4.1.1 y Gradle, y pipeline de DevSecOps | Aceptada, modificada por ADR-012 (punto 2), D-28, D-32 (punto 3), D-33 (formateador de Spotless) y ADR-013 (construcción de imágenes) |
+
+---
+
+## D-66. El Vicerrector académico lee «Parámetros y normativa»
+
+- **Estado:** Propuesta · **Fecha:** 2026-10-18 · **Propuesto por:** plan de F04-H01
+- **Origen:** aclaración de la especificación de F04-H01 (`specs/012-politica-normativa/spec.md`, Clarifications) y `research.md` §6
+- **Modifica a:** D-65 (fila del Vicerrector académico en la matriz D-16)
+
+**Decisión.** El rol Vicerrector académico (`VICERRECTOR`) gana el permiso `PARAMETROS:LECTURA` con alcance todo. La escritura de «Parámetros y normativa» sigue solo en el Administrador del sistema. Se aplica con la migración `V4__vicerrector_lee_normativa.sql` de Roles, y `MatrizD16IntegrationTest` actualiza su fila esperada.
+
+**Por qué.** La historia F04-H01 la pide el Vicerrector académico, y es él quien abre el periodo y elige su versión de normativa (F02-H01). D-16 le da «todo el distributivo», y las reglas que lo gobiernan son parte de leerlo. Sin este permiso, no vería la normativa que elige.
+
+**Alternativas.** Dejar la normativa solo para el Administrador (el Vicerrector elegiría a ciegas la versión de su periodo); abrirla a todos los usuarios con sesión (contradice el mínimo privilegio de D-16).
+
+**Consecuencias.** La fila del Vicerrector en la matriz queda con lectura de `DISTRIBUTIVO`, `REPORTES`, `BITACORA` y `PARAMETROS`. El permiso llega al token de una sesión abierta en su próxima renovación (D-62). Documentos a poner al día: `specs/012-politica-normativa/data-model.md` (ya lo dice) y la prueba de la matriz.
