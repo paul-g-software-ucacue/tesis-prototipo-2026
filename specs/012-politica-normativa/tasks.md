@@ -81,7 +81,7 @@ description: "Tareas de F04-H01: la política 2024 como primera versión de norm
 
 ### Permiso del Vicerrector (D-66)
 
-- [ ] T007 [P] Prueba primero: en `backend/servicios/roles/src/integrationTest/java/ec/mdd/roles/MatrizD16IntegrationTest.java`, la fila esperada de `VICERRECTOR` gana `PARAMETROS:LECTURA`. Después crear `backend/servicios/roles/src/main/resources/db/migration/roles/V4__vicerrector_lee_normativa.sql`. La prueba pasa.
+- [X] T007 [P] Prueba primero: en `backend/servicios/roles/src/integrationTest/java/ec/mdd/roles/MatrizD16IntegrationTest.java`, la fila esperada de `VICERRECTOR` gana `PARAMETROS:LECTURA`. Después crear `backend/servicios/roles/src/main/resources/db/migration/roles/V4__vicerrector_lee_normativa.sql`. La prueba pasa.
 
 **Checkpoint**: el contrato, el dominio, la versión 1 en la base y el permiso del Vicerrector están listos; `./gradlew check` y las pruebas de integración de Normativa y Roles en verde.
 
@@ -93,8 +93,8 @@ description: "Tareas de F04-H01: la política 2024 como primera versión de norm
 
 **Independent Test**: con `vicerrectorado.demo`, abrir «Normativa» y ver la versión 1 con sus 22 filas, el tipo de IST T2 y los parámetros de RN-01 a RN-15.
 
-- [ ] T008 [US1] Prueba primero, en `PNOR/aplicacion/ConsultarNormativaServicioTest.java` (Mockito): listar las versiones por número; consultar la 1; una versión que no existe lanza `VersionNoEncontrada`. Crear el puerto `JNOR/puertos/entrada/ConsultarNormativa.java`, `ConsultarNormativaServicio`, `VersionNoEncontrada` y `JNOR/infraestructura/ConfiguracionNormativa.java`. T008 pasa.
-- [ ] T009 [US1] Prueba primero, en `PNOR/adaptadores/entrada/`:
+- [X] T008 [US1] Prueba primero, en `PNOR/aplicacion/ConsultarNormativaServicioTest.java` (Mockito): listar las versiones por número; consultar la 1; una versión que no existe lanza `VersionNoEncontrada`. Crear el puerto `JNOR/puertos/entrada/ConsultarNormativa.java` con su excepción `VersionNoEncontrada` (junto al puerto que la declara, como `RolNoEncontrado` en Roles), `ConsultarNormativaServicio` y `JNOR/infraestructura/ConfiguracionNormativa.java`. T008 pasa.
+- [X] T009 [US1] Prueba primero, en `PNOR/adaptadores/entrada/`:
   - `NormativaContratoTest`: las dos operaciones contra el contrato, con la versión completa (las horas sin valor se omiten), y el 404 con `COMUN_RECURSO_NO_ENCONTRADO`; `POST /api/normativa/versiones` y `PUT /api/normativa/versiones/1` responden 405 `COMUN_METODO_NO_PERMITIDO`, porque no hay forma de cambiarla (US2, escenario 3); este caso se comprueba por estado y código, sin `contrato.validar`, porque el contrato no tiene esas operaciones;
   - `PermisosNormativaTest`: `VerificadorDePermisos` sobre el contrato de Normativa (SC-005).
 
