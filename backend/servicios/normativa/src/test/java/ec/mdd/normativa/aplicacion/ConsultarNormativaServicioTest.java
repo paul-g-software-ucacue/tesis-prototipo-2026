@@ -76,4 +76,25 @@ class ConsultarNormativaServicioTest {
                 .isInstanceOf(VersionNoEncontrada.class)
                 .hasMessageContaining("7");
     }
+
+    @Test
+    void dadoUnPeriodoConVersion_cuandoSeConsulta_entoncesDevuelveSuAsignacion() {
+        java.time.Instant momento = java.time.Instant.parse("2026-10-18T15:00:00Z");
+        when(repositorio.porPeriodo("2025-1"))
+                .thenReturn(Optional.of(VERSION_1.asociadaA("2025-1", momento)));
+
+        assertThat(servicio.periodo("2025-1"))
+                .isEqualTo(
+                        new ec.mdd.normativa.puertos.entrada.AsignacionDelPeriodo(
+                                "2025-1", 1, momento));
+    }
+
+    @Test
+    void dadoUnPeriodoSinVersion_cuandoSeConsulta_entoncesPeriodoSinVersion() {
+        when(repositorio.porPeriodo("2030-1")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> servicio.periodo("2030-1"))
+                .isInstanceOf(ec.mdd.normativa.puertos.entrada.PeriodoSinVersion.class)
+                .hasMessageContaining("2030-1");
+    }
 }

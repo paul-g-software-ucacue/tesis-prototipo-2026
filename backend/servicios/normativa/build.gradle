@@ -9,6 +9,8 @@ plugins {
 dependencies {
     // Las versiones de normativa en el esquema normativa, con JdbcClient (F04-H01, research §2).
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
-    // @PreAuthorize en la consulta (ADR-021).
+    // El detalle de cada cambio en jsonb (F04-H02, FR-009).
+    implementation 'tools.jackson.core:jackson-databind'
+    // @PreAuthorize y el usuario de la sesión que hace el cambio (ADR-021, FR-009).
     implementation 'org.springframework.security:spring-security-core'
 }

@@ -1,6 +1,7 @@
-// F04-H01 en un navegador, con la API simulada: el Vicerrector académico abre «Normativa» y ve la
-// versión 1 con su tabla de carga horaria; un docente ve «Acceso no autorizado». También la
-// accesibilidad de la pantalla con axe-core (WCAG 2.1 AA).
+// F04-H01 y F04-H02 en un navegador, con la API simulada: el Vicerrector académico abre «Normativa»
+// y ve la versión 1 con su tabla de carga horaria; un docente ve «Acceso no autorizado»; con
+// escritura, el Vicerrector cambia en pantalla las horas de clase del docente de medio tiempo de una
+// versión nueva. También la accesibilidad de la pantalla y sus diálogos con axe-core (WCAG 2.1 AA).
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { TEXTO_TECNICO, ingresar, simularApi } from './simulacion';
@@ -49,7 +50,16 @@ const RESUMEN = {
   origen: 'Política SENESCYT 2024',
   vigenteDesde: '2024-03-11',
   tipoIst: 'T2',
+  periodos: [] as string[],
 };
+
+const REGLAS = [
+  {
+    identificador: 'RN-02',
+    severidad: 'DURA',
+    parametros: [{ nombre: 'horas_maximas_docente', valor: 40 }],
+  },
+];
 
 async function simularNormativa(pagina: Page) {
   await pagina.route('**/api/normativa/versiones', (ruta) => ruta.fulfill({ json: [RESUMEN] }));
@@ -57,13 +67,7 @@ async function simularNormativa(pagina: Page) {
     ruta.fulfill({
       json: {
         ...RESUMEN,
-        reglas: [
-          {
-            identificador: 'RN-02',
-            severidad: 'DURA',
-            parametros: [{ nombre: 'horas_maximas_docente', valor: 40 }],
-          },
-        ],
+        reglas: REGLAS,
         tablaCargaHoraria: TABLA,
       },
     }),
@@ -117,6 +121,122 @@ test('sin permiso: docente.demo abre /normativa y ve «Acceso no autorizado»', 
   expect(pedidas.filter((ruta) => ruta.startsWith('/api/normativa'))).toEqual([]);
 });
 
+// F04-H02: la versión 1 rige 2025-1 y la 2, copiada de ella, todavía no rige ningún periodo.
+const UNO_EN_USO = { ...RESUMEN, periodos: ['2025-1'] };
+const DOS = {
+  ...RESUMEN,
+  numero: 2,
+  codigo: 'SENESCYT-2025-01',
+  origen: 'Reforma de la política 2025',
+  vigenteDesde: '2025-01-15',
+  copiadaDe: 1,
+};
+
+const ESCRITOR = {
+  estado: 200,
+  cuerpo: { ...VICERRECTOR.cuerpo, permisos: ['PARAMETROS:LECTURA', 'PARAMETROS:ESCRITURA'] },
+};
+
+const CLASE_DE_MEDIO_TIEMPO = 'Clase · Docente a medio tiempo · Todos';
+
+interface CuerpoEditado {
+  tablaCargaHoraria: { perfil: string; horasClase: number }[];
+}
+
+/** Simula las dos versiones y responde el PUT de la 2 con lo que diga {@code alEditar}. */
+async function simularDosVersiones(
+  pagina: Page,
+  alEditar: (cuerpo: CuerpoEditado) => {
+    status: number;
+    json: unknown;
+  },
+) {
+  let dos = { ...DOS, reglas: REGLAS, tablaCargaHoraria: TABLA };
+  await pagina.route('**/api/normativa/versiones', (ruta) =>
+    ruta.fulfill({ json: [UNO_EN_USO, DOS] }),
+  );
+  await pagina.route('**/api/normativa/versiones/1', (ruta) =>
+    ruta.fulfill({ json: { ...UNO_EN_USO, reglas: REGLAS, tablaCargaHoraria: TABLA } }),
+  );
+  await pagina.route('**/api/normativa/versiones/2', async (ruta) => {
+    if (ruta.request().method() === 'PUT') {
+      const respuesta = alEditar(ruta.request().postDataJSON() as CuerpoEditado);
+      if (respuesta.status === 200) {
+        dos = respuesta.json as typeof dos;
+      }
+      await ruta.fulfill(respuesta);
+      return;
+    }
+    await ruta.fulfill({ json: dos });
+  });
+}
+
+async function abrirComoEscritor(pagina: Page) {
+  await simularApi(pagina, { sesion: ESCRITOR });
+  await pagina.goto('/iniciar-sesion');
+  await ingresar(pagina, 'vicerrectorado.demo');
+  await pagina.getByRole('link', { name: 'Normativa' }).click();
+  await expect(
+    pagina.getByRole('heading', { level: 2, name: 'Versión 2 · Reforma de la política 2025' }),
+  ).toBeVisible();
+}
+
+test('versión nueva: el Vicerrector cambia las horas de clase del docente de medio tiempo', async ({
+  page,
+}) => {
+  await simularDosVersiones(page, (cuerpo) => ({
+    status: 200,
+    json: {
+      ...DOS,
+      reglas: REGLAS,
+      tablaCargaHoraria: cuerpo.tablaCargaHoraria.map((fila, i) => ({ ...TABLA[i], ...fila })),
+    },
+  }));
+  await abrirComoEscritor(page);
+
+  await page.getByRole('button', { name: 'Editar' }).click();
+  await page.getByRole('spinbutton', { name: CLASE_DE_MEDIO_TIEMPO }).fill('5');
+  await page.getByRole('button', { name: 'Guardar' }).click();
+
+  await expect(page.getByRole('button', { name: 'Guardar' })).toBeHidden();
+  const tabla = page.getByRole('table', { name: 'Tabla de carga horaria' });
+  await expect(tabla.getByRole('row').nth(2)).toContainText('Docente a medio tiempo');
+  await expect(tabla.getByRole('row').nth(2).getByRole('cell').nth(3)).toHaveText('5');
+});
+
+test('edición en pantalla: un valor fuera de rango muestra el motivo junto a su fila', async ({
+  page,
+}) => {
+  await simularDosVersiones(page, () => ({
+    status: 400,
+    json: {
+      titulo: 'Solicitud inválida',
+      descripcion: 'Revisa los campos marcados y vuelve a intentarlo.',
+      codigo: 'COMUN_SOLICITUD_INVALIDA',
+      detalles: [
+        {
+          campo: 'tablaCargaHoraria[DOCENTE_MT/TODOS]',
+          descripcion: 'Las horas de clase (9) no están entre el mínimo y el máximo (3 a 5)',
+        },
+      ],
+    },
+  }));
+  await abrirComoEscritor(page);
+
+  await page.getByRole('button', { name: 'Editar' }).click();
+  const clase = page.getByRole('spinbutton', { name: CLASE_DE_MEDIO_TIEMPO });
+  await clase.fill('9');
+  await page.getByRole('button', { name: 'Guardar' }).click();
+
+  await expect(page.getByRole('alert')).toContainText('Solicitud inválida');
+  await expect(clase).toHaveAccessibleDescription(
+    'Las horas de clase (9) no están entre el mínimo y el máximo (3 a 5)',
+  );
+  for (const tecnico of TEXTO_TECNICO) {
+    await expect(page.locator('body')).not.toContainText(tecnico);
+  }
+});
+
 test.describe('accesibilidad de la pantalla «Normativa»', () => {
   test.skip(({ browserName }) => browserName !== 'chromium', 'axe-core corre solo en Chromium');
 
@@ -137,4 +257,40 @@ test.describe('accesibilidad de la pantalla «Normativa»', () => {
     );
     expect(fallas, fallas.join('\n')).toEqual([]);
   });
+
+  async function sinFallas(page: Page) {
+    const resultado = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    const fallas = resultado.violations.map(
+      (falla) =>
+        `${falla.id} (${falla.impact}): ${falla.nodes.map((nodo) => nodo.target.join(' ')).join(', ')}`,
+    );
+    expect(fallas, fallas.join('\n')).toEqual([]);
+  }
+
+  test('la edición en pantalla de la versión 2', async ({ page }) => {
+    await simularDosVersiones(page, () => ({ status: 200, json: DOS }));
+    await abrirComoEscritor(page);
+    await page.getByRole('button', { name: 'Editar' }).click();
+    await expect(page.getByRole('spinbutton', { name: CLASE_DE_MEDIO_TIEMPO })).toBeVisible();
+
+    await sinFallas(page);
+  });
+
+  for (const [boton, titulo] of [
+    ['Crear versión nueva', 'Versión nueva a partir de la versión 2'],
+    ['Asociar a un periodo', 'Asociar la versión 2 a un periodo'],
+  ] as const) {
+    test(`el diálogo «${titulo}»`, async ({ page }) => {
+      await simularDosVersiones(page, () => ({ status: 200, json: DOS }));
+      await abrirComoEscritor(page);
+      await page.getByRole('button', { name: boton }).click();
+      await expect(page.getByRole('dialog', { name: titulo })).toBeVisible();
+      // Sin esperar a que termine la transición, axe mide el contraste a media opacidad.
+      await expect(page.locator('.MuiDialog-container')).toHaveCSS('opacity', '1');
+
+      await sinFallas(page);
+    });
+  }
 });

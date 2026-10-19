@@ -1,7 +1,9 @@
-// La pantalla «Normativa» (F04-H01, RF-19): las versiones de normativa y, de la elegida, su
-// cabecera, sus reglas con sus parámetros y la tabla de carga horaria, en español y de solo lectura.
-// Crear y editar versiones es F04-H02. La ven quienes tienen «Parámetros y normativa: lectura»
-// (D-65, D-66); el servidor lo valida en cada operación.
+// La pantalla «Normativa» (RF-19): las versiones de normativa y, de la elegida, su cabecera, sus
+// reglas con sus parámetros y la tabla de carga horaria, en español (F04-H01). La ven quienes tienen
+// «Parámetros y normativa: lectura» (D-65, D-66). Con escritura (D-67, F04-H02) se crea una versión
+// nueva a partir de la elegida, se edita en pantalla la que no rige ningún periodo y se asocia a un
+// periodo; la que rige uno se ve en solo lectura. El servidor valida cada operación.
+import Button from '@mui/material/Button';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -12,34 +14,30 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { AvisoDeError } from '../../errores/AvisoDeError';
 import { traducirError } from '../../errores/traducir';
 import { useTitulo } from '../../navegacion/useTitulo';
+import { tienePermiso } from '../../sesion/permisos';
+import { useSesionActual } from '../../sesion/useSesionActual';
 import {
+  CLAVE_NORMATIVA,
   useVersion,
   useVersiones,
   type FilaCargaHoraria,
   type VersionNormativa,
 } from './consultas';
+import { DialogoAsociar, DialogoVersionNueva } from './DialogosDeVersion';
+import { EdicionDeVersion } from './EdicionDeVersion';
+import { fecha, SEVERIDADES, SIN_VALOR, tipoIst } from './formato';
 import { nombreDelPerfil } from './perfiles';
 import { nombreDeLaRegla, nombreDelParametro } from './reglas';
 
-const SIN_VALOR = '—';
-
-const SEVERIDADES: Record<string, string> = { DURA: 'Dura', BLANDA: 'Blanda' };
-
-/** «T2» → «Tipo 2»; «TODOS» → «Todos». */
-function tipoIst(valor: string): string {
-  return valor === 'TODOS' ? 'Todos' : `Tipo ${valor.slice(1)}`;
-}
-
-/** «2024-03-11» → «11/03/2024», sin pasar por la zona horaria. */
-function fecha(iso: string): string {
-  const [anio, mes, dia] = iso.split('-');
-  return `${dia}/${mes}/${anio}`;
-}
+/** Lo que está abierto sobre la versión elegida. */
+type Abierto = 'edicion' | 'version-nueva' | 'asociar' | null;
 
 function valor(horas: number | undefined): string {
   return horas === undefined ? SIN_VALOR : String(horas);
@@ -47,10 +45,16 @@ function valor(horas: number | undefined): string {
 
 export function Normativa() {
   useTitulo('Normativa');
+  const sesion = useSesionActual();
+  const escritura = tienePermiso(sesion.data?.permisos, 'PARAMETROS', 'ESCRITURA');
+  const consultas = useQueryClient();
   const versiones = useVersiones();
   const [elegida, setElegida] = useState<number | undefined>(undefined);
-  const numero = elegida ?? versiones.data?.[0]?.numero;
+  const [abierto, setAbierto] = useState<Abierto>(null);
+  // Al abrir, la de número más alto: la más reciente (F04-H02).
+  const numero = elegida ?? versiones.data?.at(-1)?.numero;
   const version = useVersion(numero);
+  const recargar = () => consultas.invalidateQueries({ queryKey: CLAVE_NORMATIVA });
 
   const error = versiones.error ?? version.error;
   return (
@@ -66,7 +70,10 @@ export function Normativa() {
             <ListItem key={resumen.numero} disablePadding>
               <ListItemButton
                 selected={resumen.numero === numero}
-                onClick={() => setElegida(resumen.numero)}
+                onClick={() => {
+                  setElegida(resumen.numero);
+                  setAbierto(null);
+                }}
               >
                 <ListItemText
                   primary={`Versión ${resumen.numero}`}
@@ -77,12 +84,66 @@ export function Normativa() {
           ))}
         </List>
       )}
-      {version.data && <DetalleDeVersion version={version.data} />}
+      {version.data && (
+        <>
+          <CabeceraDeVersion version={version.data} />
+          {escritura && abierto !== 'edicion' && (
+            <Stack direction="row" spacing={1} sx={{ my: 1, flexWrap: 'wrap' }}>
+              <Button variant="outlined" onClick={() => setAbierto('version-nueva')}>
+                Crear versión nueva
+              </Button>
+              {version.data.periodos.length === 0 && (
+                <Button variant="outlined" onClick={() => setAbierto('edicion')}>
+                  Editar
+                </Button>
+              )}
+              <Button variant="outlined" onClick={() => setAbierto('asociar')}>
+                Asociar a un periodo
+              </Button>
+            </Stack>
+          )}
+          {abierto === 'edicion' ? (
+            <EdicionDeVersion
+              key={version.data.numero}
+              version={version.data}
+              alCancelar={() => setAbierto(null)}
+              alGuardar={async () => {
+                await recargar();
+                setAbierto(null);
+              }}
+            />
+          ) : (
+            <DetalleDeVersion version={version.data} />
+          )}
+          {abierto === 'version-nueva' && (
+            <DialogoVersionNueva
+              numero={version.data.numero}
+              alCerrar={() => setAbierto(null)}
+              alCrear={async (creada) => {
+                await recargar();
+                setElegida(creada.numero);
+                setAbierto(null);
+              }}
+            />
+          )}
+          {abierto === 'asociar' && (
+            <DialogoAsociar
+              numero={version.data.numero}
+              alCerrar={() => setAbierto(null)}
+              alAsociar={async () => {
+                await recargar();
+                setAbierto(null);
+              }}
+            />
+          )}
+        </>
+      )}
     </>
   );
 }
 
-function DetalleDeVersion({ version }: { version: VersionNormativa }) {
+function CabeceraDeVersion({ version }: { version: VersionNormativa }) {
+  const enUso = version.periodos.length > 0;
   return (
     <>
       <Typography component="h2" variant="h5" sx={{ mt: 3 }} gutterBottom>
@@ -92,8 +153,27 @@ function DetalleDeVersion({ version }: { version: VersionNormativa }) {
         <Dato nombre="Código" valor={version.codigo} />
         <Dato nombre="Vigente desde" valor={fecha(version.vigenteDesde)} />
         <Dato nombre="Tipo de IST de la institución" valor={tipoIst(version.tipoIst)} />
+        {version.copiadaDe !== undefined && (
+          <Dato nombre="Origen de la copia" valor={`Copiada de la versión ${version.copiadaDe}`} />
+        )}
+        <Dato
+          nombre="Periodos"
+          valor={enUso ? `Rige: ${version.periodos.join(', ')}` : 'No rige ningún periodo'}
+        />
       </List>
+      {enUso && (
+        <Typography variant="body2" color="text.secondary">
+          Esta versión rige un periodo y ya no se puede cambiar. Para cambiarla, crea una versión
+          nueva a partir de ella.
+        </Typography>
+      )}
+    </>
+  );
+}
 
+function DetalleDeVersion({ version }: { version: VersionNormativa }) {
+  return (
+    <>
       <Typography component="h3" variant="h6" sx={{ mt: 2 }}>
         Reglas y parámetros
       </Typography>

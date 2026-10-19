@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-67 · ADR-022.
+- **Siguiente número libre:** D-68 · ADR-022.
 
 ## Índice
 
@@ -62,6 +62,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-65 | 2026-10-18 | La matriz D-16 en permisos: 16 funcionalidades y los permisos de los 10 roles | Aceptada | D-16 (interpreta la prosa de la matriz) |
 | ADR-021 | 2026-10-18 | Permisos efectivos en el token y cada operación declara su permiso en el contrato | Aceptada | ADR-014 (claim `permisos`), ADR-015 (`x-mdd-permiso`), ADR-016 (403 común) |
 | D-66 | 2026-10-18 | El Vicerrector académico lee «Parámetros y normativa» | Aceptada | D-65 (un permiso más en la fila del Vicerrector) |
+| D-67 | 2026-10-18 | El Vicerrector académico escribe «Parámetros y normativa» | Aceptada | D-65, D-66 (la escritura además de la lectura) |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1115,3 +1116,19 @@ Estado al 2026-10-11. El texto completo está en `lean_inception/adr/`.
 **Alternativas.** Dejar la normativa solo para el Administrador (el Vicerrector elegiría a ciegas la versión de su periodo); abrirla a todos los usuarios con sesión (contradice el mínimo privilegio de D-16).
 
 **Consecuencias.** La fila del Vicerrector en la matriz queda con lectura de `DISTRIBUTIVO`, `REPORTES`, `BITACORA` y `PARAMETROS`. El permiso llega al token de una sesión abierta en su próxima renovación (D-62). Documentos a poner al día: `specs/012-politica-normativa/data-model.md` (ya lo dice) y la prueba de la matriz.
+
+---
+
+## D-67. El Vicerrector académico escribe «Parámetros y normativa»
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-18 · **Decidido por:** autor de la tesis (propuesta en el plan de F04-H02)
+- **Origen:** aclaración de la especificación de F04-H02 (`specs/013-version-normativa-nueva/spec.md`, Clarifications) y `research.md` §7
+- **Modifica a:** D-65 (fila del Vicerrector académico en la matriz D-16) y amplía D-66
+
+**Decisión.** El rol Vicerrector académico (`VICERRECTOR`) gana el permiso `PARAMETROS:ESCRITURA`, con alcance todo: crea versiones de normativa, las edita mientras no rigen un periodo y las asocia a un periodo. Se aplica con la migración `V5__vicerrector_escribe_normativa.sql` de Roles, y `MatrizD16IntegrationTest` actualiza su fila esperada. El Administrador del sistema conserva la lectura y la escritura.
+
+**Por qué.** La historia F04-H02 la pide el Vicerrector académico. D-16 le da los ajustes a la propuesta y aprobar y congelar el distributivo, y él abre el periodo y elige su versión (F02-H01). Sin este permiso, cada cambio de la norma dependería de sistemas.
+
+**Alternativas.** Solo el Administrador (D-65 tal cual): el Vicerrector pediría cada cambio de la política. Una funcionalidad aparte para «versionar la normativa»: más permisos para un solo rol más.
+
+**Consecuencias.** La fila del Vicerrector en la matriz queda con lectura de `DISTRIBUTIVO`, `REPORTES`, `BITACORA` y `PARAMETROS`, y escritura de `DISTRIBUTIVO` y `PARAMETROS`. Como `PARAMETROS` agrupa parámetros y normativa, también podrá escribir los demás parámetros cuando las historias que los traigan los protejan con esa funcionalidad. El permiso llega al token en la próxima renovación (D-62).
