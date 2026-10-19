@@ -134,14 +134,14 @@ description: "Tareas de F04-H01: la política 2024 como primera versión de norm
 
 ## Phase 5: Cierre
 
-- [ ] T015 Correr:
+- [X] T015 Correr:
   - en el backend, `./gradlew check integrationTest`;
   - en el frontend, `npm run lint`, `formato:verificar`, `tipos`, `test -- --run --coverage`, `test:e2e` y `verificar:ruptura`;
   - `shellcheck` sobre `probar_normativa.sh`, y Gitleaks sobre un clon en una carpeta temporal, montado con `:ro,Z` (nunca el repositorio);
   - `probar_autenticacion.sh`, `probar_errores.sh`, `probar_eventos.sh`, `probar_spa.sh` y `deploy/equipo/probar_equipo.sh`.
 
   Todo en verde, con el 60 % de líneas. Hacer commit y push, abrir el PR en borrador con `Refs #40` y marcarlo listo **después** de que terminen sus runs. Si la concurrencia cancela el run de `ready_for_review`, relanzarlo. Comprobar los checks, `perfil-consolidado` y `5 · imágenes`.
-- [ ] T016 Completar `evidencia.md` y la «Definición de terminado» del PR. Fusionarlo con *squash* **con la aprobación del autor**, con la rama al día con `main`. Después:
+- [X] T016 Completar `evidencia.md` y la «Definición de terminado» del PR. Fusionarlo con *squash* **con la aprobación del autor**, con la rama al día con `main`. Después:
   - esperar el despliegue automático en el PC («Sano en N s»);
   - el autor entra con `vicerrectorado.demo` y ve la versión 1 en «Normativa» (SC-002);
   - abrir el PR de evidencia con `Closes #40` y borrar las ramas.

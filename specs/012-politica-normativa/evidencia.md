@@ -56,6 +56,8 @@ Registro de las comprobaciones de la historia (issue #40): la Política SENESCYT
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Despliegue automático (T016) | confirmada | Al fusionar #118 (`d574e9d`), el CD publicó las imágenes y `mdd-actualizar.timer` desplegó la versión `d574e9dc4a4a`: «Sano en 35 s», los 8 contenedores sanos y la prueba de humo en `OK`. `datos` migró `normativa` de V1 a V2 y `identidad` migró `roles` a V4. En la base del equipo: una sola versión, la 1 (`SENESCYT-2024-03`, T2), con 22 filas, 7 reglas y 29 parámetros; leen `PARAMETROS` el `ADMINISTRADOR` y el `VICERRECTOR` (D-66). | 2026-10-18 |
+| Versión 1 en el equipo (T016, SC-002) | confirmada | El autor entró con `vicerrectorado.demo` en `https://mdd.localhost` y abrió la versión 1 en «Normativa». | 2026-10-18 |
 | Equipo simulado (T015) | confirmada | `deploy/equipo/probar_equipo.sh` con la versión de esta rama: pasos 0 a 11 en `OK`; memoria 1 348 MiB; la versión rota vuelve a la anterior. | 2026-10-18 |
 
 ## Notas
