@@ -81,6 +81,8 @@ class MatrizD16IntegrationTest {
                             "DISTRIBUTIVO:ESCRITURA",
                             "DISTRIBUTIVO:FIRMA",
                             "DISTRIBUTIVO:LECTURA",
+                            // D-67: crea y edita versiones de normativa (F04-H02).
+                            "PARAMETROS:ESCRITURA",
                             // D-66: lee la normativa que elige para su periodo (F04-H01).
                             "PARAMETROS:LECTURA",
                             "REPORTES:LECTURA"),

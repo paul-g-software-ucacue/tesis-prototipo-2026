@@ -18,7 +18,9 @@ import java.util.Map;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -103,6 +105,20 @@ class AplicacionDePrueba {
 
         @PostMapping(value = "/api/prueba/datos", consumes = "application/json")
         String datos(@Valid @RequestBody Datos datos) {
+            return "{}";
+        }
+    }
+
+    /**
+     * Como las interfaces que genera el contrato: {@code @Validated} hace que Spring valide los
+     * parámetros antes del controlador y lance {@code ConstraintViolationException}.
+     */
+    @Validated
+    @RestController
+    static class PruebaValidada {
+
+        @GetMapping("/api/prueba/periodos/{periodo}")
+        String periodo(@Pattern(regexp = "[0-9]{4}-[12]") @PathVariable("periodo") String periodo) {
             return "{}";
         }
     }

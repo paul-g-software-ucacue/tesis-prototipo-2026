@@ -7,6 +7,9 @@ import ec.mdd.plataforma.errores.nucleo.RegistroDeErrores;
 import ec.mdd.plataforma.errores.nucleo.RespuestaError;
 import ec.mdd.plataforma.errores.nucleo.SolicitudInvalida;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -33,8 +36,9 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
  *   <li>Una excepción registrada en un {@code CatalogoDeErrores}, o subclase de una registrada,
  *       responde con su código, su estado, sus textos del catálogo y los encabezados que la entrada
  *       calcule (por ejemplo {@code Retry-After}).
- *   <li>Un cuerpo que no pasa la validación del contrato, o una {@link SolicitudInvalida}, responde
- *       400 {@code COMUN_SOLICITUD_INVALIDA}, con un detalle por campo.
+ *   <li>Un cuerpo o un parámetro que no pasa la validación del contrato, o una {@link
+ *       SolicitudInvalida}, responde 400 {@code COMUN_SOLICITUD_INVALIDA}, con un detalle por
+ *       campo.
  *   <li>Los errores de Spring MVC antes del controlador responden con su código común.
  *   <li>Cualquier otra excepción responde 500 {@code COMUN_ERROR_INTERNO} con un {@code
  *       idIncidente}, y se registra con su traza saneada.
@@ -73,6 +77,19 @@ public class ManejadorDeErrores extends ResponseEntityExceptionHandler {
                     400,
                     RespuestaError.conDetalles(
                             CodigosComunes.SOLICITUD_INVALIDA, invalida.detalles()));
+        }
+        // Las interfaces generadas llevan @Validated: Spring valida los parámetros de la ruta
+        // antes del controlador y lanza esta excepción, no la de Spring MVC.
+        if (excepcion instanceof ConstraintViolationException violaciones) {
+            List<DetalleRespuesta> detalles = new ArrayList<>();
+            for (ConstraintViolation<?> violacion : violaciones.getConstraintViolations()) {
+                detalles.add(
+                        new DetalleRespuesta(
+                                ultimoNodo(violacion.getPropertyPath()),
+                                DescripcionDeValidacion.de(violacion)));
+            }
+            return json(
+                    400, RespuestaError.conDetalles(CodigosComunes.SOLICITUD_INVALIDA, detalles));
         }
         Optional<EntradaCatalogo> entrada = registro.buscarEntrada(excepcion.getClass());
         if (entrada.isPresent()) {
@@ -161,6 +178,14 @@ public class ManejadorDeErrores extends ResponseEntityExceptionHandler {
         conTipo.putAll(encabezados);
         conTipo.setContentType(MediaType.APPLICATION_JSON);
         return new ResponseEntity<>(respuesta, conTipo, estado);
+    }
+
+    private static String ultimoNodo(Path camino) {
+        String nombre = "";
+        for (Path.Node nodo : camino) {
+            nombre = nodo.getName();
+        }
+        return nombre;
     }
 
     private static ResponseEntity<Object> conDetalles(List<DetalleRespuesta> detalles) {

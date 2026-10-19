@@ -67,6 +67,21 @@ class ManejadorDeErroresTest {
     }
 
     @Test
+    void dadoUnParametroDeRutaQueNoCumpleSuPatron_cuandoSeValida_entonces400ConSuCampo()
+            throws Exception {
+        HttpResponse<String> respuesta =
+                pedir("GET", "/api/prueba/periodos/2025-x", null, null, null);
+
+        assertThat(respuesta.statusCode()).isEqualTo(400);
+        assertThat(respuesta.body())
+                .isEqualTo(
+                        "{\"titulo\":\"Solicitud inválida\",\"descripcion\":\"Revisa los campos"
+                                + " marcados y vuelve a intentarlo.\",\"codigo\":"
+                                + "\"COMUN_SOLICITUD_INVALIDA\",\"detalles\":[{\"campo\":"
+                                + "\"periodo\",\"descripcion\":\"no tiene el formato esperado\"}]}");
+    }
+
+    @Test
     void dadoUnaReglaDeEntradaQueElContratoNoExpresa_cuandoFalla_entonces400ConElDetalle()
             throws Exception {
         HttpResponse<String> respuesta =

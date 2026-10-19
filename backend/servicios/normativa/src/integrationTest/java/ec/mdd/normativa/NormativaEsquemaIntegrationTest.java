@@ -52,17 +52,18 @@ class NormativaEsquemaIntegrationTest {
     }
 
     /**
-     * Si la versión de F04-H01 falla en el equipo y se vuelve a la anterior (D-55), el Flyway de
-     * esa versión solo conoce V1 y encuentra V2 aplicada: la tiene que ignorar como futura y
+     * Si la versión de F04-H02 falla en el equipo y se vuelve a la anterior (D-55), el Flyway de
+     * esa versión solo conoce V1 y V2 y encuentra V3 aplicada: la tiene que ignorar como futura y
      * arrancar.
      */
     @Test
-    void dadoUnEsquemaConLaPoliticaDe2024_cuandoArrancaLaVersionAnterior_entoncesNoFalla(
+    void dadoUnEsquemaConVersionesYPeriodos_cuandoArrancaLaVersionAnterior_entoncesNoFalla(
             @TempDir Path anterior) throws IOException {
-        try (InputStream v1 =
-                getClass()
-                        .getResourceAsStream("/db/migration/normativa/V1__esquema_normativa.sql")) {
-            Files.copy(v1, anterior.resolve("V1__esquema_normativa.sql"));
+        for (String migracion : List.of("V1__esquema_normativa.sql", "V2__politica_2024.sql")) {
+            try (InputStream archivo =
+                    getClass().getResourceAsStream("/db/migration/normativa/" + migracion)) {
+                Files.copy(archivo, anterior.resolve(migracion));
+            }
         }
         try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
             postgres.start();

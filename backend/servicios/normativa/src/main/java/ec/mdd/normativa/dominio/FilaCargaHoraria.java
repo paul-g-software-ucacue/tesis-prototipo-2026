@@ -9,7 +9,7 @@ import java.util.Objects;
  * <p>Invariantes: las horas son enteras y no negativas; el mínimo de clase no supera las horas de
  * clase y estas no superan el máximo; la suma de clase, otras actividades de docencia, gestión y el
  * máximo de investigación y vinculación no supera la dedicación total. Un valor que la política no
- * da es {@code null}, no cero.
+ * da es {@code null}, no cero. Una fila que no las cumple lanza {@link FilaInvalida}.
  *
  * @param aplicaA el tipo de IST al que aplica, o {@code null} si aplica a todos
  * @param perfil el perfil, por ejemplo {@code DOCENTE_TC}
@@ -48,6 +48,7 @@ public record FilaCargaHoraria(
         Objects.requireNonNull(referencia, "referencia");
         noNegativas(
                 perfil,
+                aplicaA,
                 dedicacionTotal,
                 horasClase,
                 horasClaseMinimo,
@@ -56,15 +57,16 @@ public record FilaCargaHoraria(
                 valor(horasGestion),
                 valor(horasInvestigacionVinculacionMaximo));
         if (horasClaseMinimo > horasClase || horasClase > horasClaseMaximo) {
-            throw new IllegalArgumentException(
-                    "Las horas de clase de "
-                            + perfil
-                            + " no están entre su mínimo y su máximo: "
-                            + horasClaseMinimo
-                            + " ≤ "
+            throw new FilaInvalida(
+                    perfil,
+                    aplicaA,
+                    "Las horas de clase ("
                             + horasClase
-                            + " ≤ "
-                            + horasClaseMaximo);
+                            + ") no están entre el mínimo y el máximo ("
+                            + horasClaseMinimo
+                            + " a "
+                            + horasClaseMaximo
+                            + ")");
         }
         int suma =
                 horasClase
@@ -72,13 +74,10 @@ public record FilaCargaHoraria(
                         + valor(horasGestion)
                         + valor(horasInvestigacionVinculacionMaximo);
         if (suma > dedicacionTotal) {
-            throw new IllegalArgumentException(
-                    "Las horas de "
-                            + perfil
-                            + " ("
-                            + suma
-                            + ") superan su dedicación de "
-                            + dedicacionTotal);
+            throw new FilaInvalida(
+                    perfil,
+                    aplicaA,
+                    "Las horas (" + suma + ") superan la dedicación de " + dedicacionTotal);
         }
     }
 
@@ -91,11 +90,10 @@ public record FilaCargaHoraria(
         return horas == null ? 0 : horas;
     }
 
-    private static void noNegativas(String perfil, int... horas) {
+    private static void noNegativas(String perfil, TipoIst aplicaA, int... horas) {
         for (int hora : horas) {
             if (hora < 0) {
-                throw new IllegalArgumentException(
-                        "La fila de " + perfil + " tiene horas negativas");
+                throw new FilaInvalida(perfil, aplicaA, "Las horas no pueden ser negativas");
             }
         }
     }

@@ -67,7 +67,7 @@ class FilaCargaHorariaTest {
     @Test
     void dadoHorasDeClaseFueraDeSuRango_cuandoSeCreaLaFila_entoncesSeRechaza() {
         assertThatThrownBy(() -> fila(null, "DOCENTE_TC", 25, 18, 24, 15, 0, null))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(FilaInvalida.class)
                 .hasMessageContaining("DOCENTE_TC");
         assertThatThrownBy(() -> fila(null, "DOCENTE_TC", 17, 18, 24, 18, 0, null))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -76,14 +76,21 @@ class FilaCargaHorariaTest {
     @Test
     void dadoUnaSumaMayorQueLaDedicacion_cuandoSeCreaLaFila_entoncesSeRechaza() {
         assertThatThrownBy(() -> fila(TipoIst.T1, "GESTOR", 16, 16, 16, 16, 9, null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("dedicación");
+                .isInstanceOfSatisfying(
+                        FilaInvalida.class,
+                        error -> {
+                            assertThat(error.aplicaA()).isEqualTo(TipoIst.T1);
+                            assertThat(error.motivo())
+                                    .isEqualTo("Las horas (41) superan la dedicación de 40");
+                        })
+                .hasMessageContaining("GESTOR");
     }
 
     @Test
     void dadoHorasNegativasOSinPerfil_cuandoSeCreaLaFila_entoncesSeRechaza() {
         assertThatThrownBy(() -> fila(null, "DOCENTE_TC", 22, 18, 24, -1, 0, null))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(FilaInvalida.class)
+                .hasMessageContaining("negativas");
         assertThatThrownBy(() -> fila(null, " ", 22, 18, 24, 18, 0, null))
                 .isInstanceOf(IllegalArgumentException.class);
     }

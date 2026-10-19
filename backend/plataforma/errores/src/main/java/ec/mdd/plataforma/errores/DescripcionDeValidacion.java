@@ -20,16 +20,30 @@ final class DescripcionDeValidacion {
     private DescripcionDeValidacion() {}
 
     static String de(FieldError error) {
-        Object rechazado = error.getRejectedValue();
-        if (rechazado == null
-                || (rechazado instanceof CharSequence texto && texto.toString().isBlank())) {
+        if (vacio(error.getRejectedValue())) {
             return OBLIGATORIO;
         }
         if (!error.contains(ConstraintViolation.class)) {
             return NO_VALIDO;
         }
-        Annotation restriccion =
-                error.unwrap(ConstraintViolation.class).getConstraintDescriptor().getAnnotation();
+        return segun(
+                error.unwrap(ConstraintViolation.class).getConstraintDescriptor().getAnnotation());
+    }
+
+    /** La de un parámetro que validó Spring antes del controlador. */
+    static String de(ConstraintViolation<?> violacion) {
+        if (vacio(violacion.getInvalidValue())) {
+            return OBLIGATORIO;
+        }
+        return segun(violacion.getConstraintDescriptor().getAnnotation());
+    }
+
+    private static boolean vacio(Object rechazado) {
+        return rechazado == null
+                || (rechazado instanceof CharSequence texto && texto.toString().isBlank());
+    }
+
+    private static String segun(Annotation restriccion) {
         if (restriccion instanceof Size tamano) {
             return tamano.max() == Integer.MAX_VALUE
                     ? "debe tener al menos " + tamano.min() + " caracteres"
