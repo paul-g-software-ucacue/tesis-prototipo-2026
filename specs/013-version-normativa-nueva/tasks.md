@@ -40,7 +40,7 @@ description: "Tareas de F04-H02: crear una versión nueva de la normativa"
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear `specs/013-version-normativa-nueva/evidencia.md` con estas secciones: entorno; base (contrato, dominio, persistencia y permiso); escenario «Versión nueva» (US1); escenario «Versión en uso» (US2); escenario «Edición en pantalla» (US3); cierre; equipo de demostración; notas.
+- [X] T001 Crear `specs/013-version-normativa-nueva/evidencia.md` con estas secciones: entorno; base (contrato, dominio, persistencia y permiso); escenario «Versión nueva» (US1); escenario «Versión en uso» (US2); escenario «Edición en pantalla» (US3); cierre; equipo de demostración; notas.
 
 ---
 
@@ -48,7 +48,7 @@ description: "Tareas de F04-H02: crear una versión nueva de la normativa"
 
 ### Contrato (principio IV)
 
-- [ ] T002 Cambiar `contratos/normativa/openapi.yaml` según contracts/normativa.md, y actualizar su comentario de cabecera (D-67; crear y editar ya no es «de F04-H02»):
+- [X] T002 Cambiar `contratos/normativa/openapi.yaml` según contracts/normativa.md, y actualizar su comentario de cabecera (D-67; crear y editar ya no es «de F04-H02»):
   - `crearVersion` (`POST /api/normativa/versiones`, cuerpo `VersionNueva`: `copiarDe` entero ≥ 1, `codigo`, `origen`, `vigenteDesde` fecha; 201 · 400 · 404 · 409);
   - `editarVersion` (`PUT /api/normativa/versiones/{numero}`, cuerpo `VersionEditada`: `codigo`, `origen`, `vigenteDesde`, `tablaCargaHoraria` y `reglas`; la fila se identifica por `aplicaA` y `perfil`, sin `severidad`, `referencia` ni `observacion` (FR-002); 200 · 400 · 404 · 409);
   - `asociarPeriodo` (`PUT /api/normativa/periodos/{periodo}`, cuerpo `{ "version": n }`; 200 · 400 · 404 · 409) y `consultarPeriodo` (`GET /api/normativa/periodos/{periodo}`; 200 · 404), con `periodo` `^[A-Za-z0-9._-]{1,20}$` y el esquema `PeriodoNormativo` (`periodo`, `version`, `asociadaEn`);

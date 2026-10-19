@@ -1,8 +1,9 @@
 # Contrato de Normativa (servicio 12, proceso datos). Desde F04-H01: la consulta de las versiones de
-# normativa, con la Política SENESCYT 2024 como versión 1 (RF-19, RN-01 a RN-15). Las dos
-# operaciones exigen «Parámetros y normativa: lectura» con x-mdd-permiso (ADR-021), que tienen el
-# Administrador del sistema y el Vicerrector académico (D-65, D-66). Crear y editar versiones es de
-# F04-H02.
+# normativa, con la Política SENESCYT 2024 como versión 1 (RF-19, RN-01 a RN-15). Desde F04-H02:
+# crear una versión a partir de otra, editarla mientras no rija un periodo y asociarla a un periodo.
+# Leer exige «Parámetros y normativa: lectura» y escribir, «Parámetros y normativa: escritura», con
+# x-mdd-permiso (ADR-021). Las dos las tienen el Administrador del sistema y el Vicerrector
+# académico (D-65, D-66, D-67).
 openapi: 3.0.3
 info:
   title: MDD · Normativa
@@ -14,6 +15,10 @@ security:
 tags:
   - name: Versiones
     description: Versiones de normativa con su tabla de carga horaria y sus reglas (RF-19).
+  - name: Periodos
+    description: >-
+      La versión de normativa que rige cada periodo académico (asignación normativa). Un periodo
+      tiene una sola versión, y una versión que rige un periodo ya no cambia.
 paths:
   /api/normativa/versiones:
     get:
@@ -34,6 +39,41 @@ paths:
           $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
         '403':
           $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+    post:
+      tags: [Versiones]
+      operationId: crearVersion
+      summary: Crea una versión nueva copiando otra, con el siguiente número.
+      description: >-
+        Copia la tabla de carga horaria, las reglas y el tipo de IST de la versión copiarDe. La
+        versión nueva no rige ningún periodo, así que se puede editar.
+      x-mdd-permiso: PARAMETROS:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionNueva'
+      responses:
+        '201':
+          description: La versión creada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionNormativa'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrada'
+        '409':
+          $ref: '#/components/responses/Conflicto'
         '500':
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
@@ -65,11 +105,113 @@ paths:
         '403':
           $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
         '404':
-          description: La versión no existe (COMUN_RECURSO_NO_ENCONTRADO).
+          $ref: '#/components/responses/NoEncontrada'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+    put:
+      tags: [Versiones]
+      operationId: editarVersion
+      summary: Edita una versión que no rige ningún periodo.
+      description: >-
+        Recibe la versión completa: la cabecera, todas las filas de la tabla con sus horas y todas
+        las reglas con sus parámetros. Las filas, las reglas y los parámetros tienen que ser
+        exactamente los de la versión; solo cambian sus valores (FR-002). Es la única forma de
+        cambiar una versión: la pantalla y la carga 7 por archivo la usan igual (FR-010).
+      x-mdd-permiso: PARAMETROS:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionEditada'
+      responses:
+        '200':
+          description: La versión editada.
           content:
             application/json:
               schema:
-                $ref: '../comun/errores.yaml#/components/schemas/Error'
+                $ref: '#/components/schemas/VersionNormativa'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrada'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/normativa/periodos/{periodo}:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2025-1
+    get:
+      tags: [Periodos]
+      operationId: consultarPeriodo
+      summary: Devuelve la versión de normativa que rige el periodo.
+      x-mdd-permiso: PARAMETROS:LECTURA
+      responses:
+        '200':
+          description: La asignación normativa del periodo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PeriodoNormativo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrada'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+    put:
+      tags: [Periodos]
+      operationId: asociarPeriodo
+      summary: Asocia una versión de normativa al periodo.
+      description: >-
+        Desde entonces la versión no cambia. Asociar otra vez la misma versión no cambia nada; un
+        periodo que ya tiene otra versión responde 409 NORMATIVA_PERIODO_CON_VERSION.
+      x-mdd-permiso: PARAMETROS:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionDelPeriodo'
+      responses:
+        '200':
+          description: La asignación normativa del periodo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PeriodoNormativo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrada'
+        '409':
+          $ref: '#/components/responses/Conflicto'
         '500':
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
@@ -78,6 +220,21 @@ components:
   securitySchemes:
     bearer:
       $ref: '../comun/seguridad.yaml#/components/securitySchemes/bearer'
+  responses:
+    NoEncontrada:
+      description: La versión o el periodo no existe (COMUN_RECURSO_NO_ENCONTRADO).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
+    Conflicto:
+      description: >-
+        El cambio no cumple una regla de la normativa: NORMATIVA_VERSION_EN_USO,
+        NORMATIVA_CODIGO_REPETIDO o NORMATIVA_PERIODO_CON_VERSION (errores.md).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
   schemas:
     TipoIst:
       type: string
@@ -89,7 +246,7 @@ components:
       enum: [DURA, BLANDA]
     VersionResumen:
       type: object
-      required: [numero, codigo, origen, vigenteDesde, tipoIst]
+      required: [numero, codigo, origen, vigenteDesde, tipoIst, periodos]
       properties:
         numero:
           type: integer
@@ -107,9 +264,15 @@ components:
           example: '2024-03-11'
         tipoIst:
           $ref: '#/components/schemas/TipoIst'
+        copiadaDe:
+          type: integer
+          minimum: 1
+          description: La versión de la que se copió; se omite en la versión 1.
+        periodos:
+          $ref: '#/components/schemas/Periodos'
     VersionNormativa:
       type: object
-      required: [numero, codigo, origen, vigenteDesde, tipoIst, reglas, tablaCargaHoraria]
+      required: [numero, codigo, origen, vigenteDesde, tipoIst, periodos, reglas, tablaCargaHoraria]
       properties:
         numero:
           type: integer
@@ -123,6 +286,12 @@ components:
           format: date
         tipoIst:
           $ref: '#/components/schemas/TipoIst'
+        copiadaDe:
+          type: integer
+          minimum: 1
+          description: La versión de la que se copió; se omite en la versión 1.
+        periodos:
+          $ref: '#/components/schemas/Periodos'
         reglas:
           type: array
           description: Ordenadas por identificador.
@@ -208,3 +377,137 @@ components:
           example: POL 6; RCE arts. 146 y 149
         observacion:
           type: string
+    Periodos:
+      type: array
+      description: Los periodos que rige la versión, por código; vacía si no rige ninguno.
+      items:
+        $ref: '#/components/schemas/CodigoDePeriodo'
+    CodigoDePeriodo:
+      type: string
+      pattern: '^[A-Za-z0-9._-]{1,20}$'
+      example: 2025-1
+    VersionNueva:
+      type: object
+      required: [copiarDe, codigo, origen, vigenteDesde]
+      properties:
+        copiarDe:
+          type: integer
+          minimum: 1
+          description: El número de la versión que se copia.
+          example: 1
+        codigo:
+          type: string
+          minLength: 1
+          maxLength: 40
+          example: SENESCYT-2025-01
+        origen:
+          type: string
+          minLength: 1
+          maxLength: 120
+          example: Reforma de la política 2025
+        vigenteDesde:
+          type: string
+          format: date
+          example: '2025-01-15'
+    VersionEditada:
+      type: object
+      required: [codigo, origen, vigenteDesde, reglas, tablaCargaHoraria]
+      properties:
+        codigo:
+          type: string
+          minLength: 1
+          maxLength: 40
+          example: SENESCYT-2025-01
+        origen:
+          type: string
+          minLength: 1
+          maxLength: 120
+          example: Reforma de la política 2025
+        vigenteDesde:
+          type: string
+          format: date
+          example: '2025-01-15'
+        reglas:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ReglaEditada'
+        tablaCargaHoraria:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/FilaEditada'
+    ReglaEditada:
+      type: object
+      required: [identificador, parametros]
+      properties:
+        identificador:
+          type: string
+          pattern: '^RN-[0-9]{2}$'
+        parametros:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Parametro'
+    FilaEditada:
+      type: object
+      description: >-
+        Una fila de la tabla, identificada por aplicaA y perfil. La severidad, la referencia y la
+        observación no se editan (FR-002).
+      required:
+        - aplicaA
+        - perfil
+        - dedicacionTotal
+        - horasClase
+        - horasClaseMinimo
+        - horasClaseMaximo
+      properties:
+        aplicaA:
+          type: string
+          enum: [TODOS, T1, T2, T3, T4, T5]
+        perfil:
+          type: string
+        dedicacionTotal:
+          type: integer
+          minimum: 0
+        horasClase:
+          type: integer
+          minimum: 0
+        horasClaseMinimo:
+          type: integer
+          minimum: 0
+        horasClaseMaximo:
+          type: integer
+          minimum: 0
+        horasOtrasDocencia:
+          type: integer
+          minimum: 0
+          description: Se omite si la política no lo da.
+        horasGestion:
+          type: integer
+          minimum: 0
+          description: Se omite si la política no lo da.
+        horasInvestigacionVinculacionMaximo:
+          type: integer
+          minimum: 0
+          description: Se omite si la política no lo da.
+    VersionDelPeriodo:
+      type: object
+      required: [version]
+      properties:
+        version:
+          type: integer
+          minimum: 1
+          example: 1
+    PeriodoNormativo:
+      type: object
+      required: [periodo, version, asociadaEn]
+      properties:
+        periodo:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        version:
+          type: integer
+          minimum: 1
+        asociadaEn:
+          type: string
+          format: date-time
