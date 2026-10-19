@@ -113,9 +113,9 @@ specs/013-version-normativa-nueva/
 contratos/normativa/openapi.yaml, contratos/comun/errores.md
 backend/servicios/normativa/src/main/java/ec/mdd/normativa/
 ├── dominio/                 # VersionNormativa (operaciones), AsignacionNormativa, DatosDeVersion, CambioDeValor, VersionNormativaCreada, VersionEnUso, CambioNoPermitido, FilaInvalida
-├── puertos/entrada/         # CrearVersion, EditarVersion, AsociarVersionAPeriodo (publicado), ConsultarNormativa (con el periodo)
+├── puertos/entrada/         # CrearVersion, EditarVersion, AsociarVersionAPeriodo (publicado), ConsultarNormativa (con el periodo), CodigoRepetido, PeriodoConVersion, PeriodoSinVersion
 ├── puertos/salida/          # RepositorioVersiones (guardar, numerar, bloquear), RegistroDeCambios
-├── aplicacion/              # los servicios y CodigoRepetido, PeriodoConVersion
+├── aplicacion/              # los servicios
 ├── adaptadores/entrada/     # NormativaControlador, ErroresNormativa
 ├── adaptadores/salida/      # RepositorioVersionesJdbc, RegistroDeCambiosJdbc
 └── infraestructura/         # ConfiguracionNormativa

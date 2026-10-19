@@ -13,7 +13,7 @@ Se cambia el contrato antes que el código (principio IV, ADR-015). Las operacio
 
 - `periodo`: `^[A-Za-z0-9._-]{1,20}$`.
 - `PeriodoNormativo`: `periodo`, `version` y `asociadaEn`.
-- En `editarVersion`, la fila se identifica por `aplicaA` y `perfil`, y no cambian ni la severidad ni la referencia. La observación sí se puede cambiar.
+- En `editarVersion`, la fila se identifica por `aplicaA` y `perfil`, y no cambian ni la severidad, ni la referencia, ni la observación (FR-002).
 - Todas responden además 401 `NoAutenticado`, 403 `AccesoNoAutorizado`, 500 y 503.
 
 ## Campos nuevos

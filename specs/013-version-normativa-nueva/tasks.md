@@ -50,14 +50,14 @@ description: "Tareas de F04-H02: crear una versión nueva de la normativa"
 
 - [ ] T002 Cambiar `contratos/normativa/openapi.yaml` según contracts/normativa.md, y actualizar su comentario de cabecera (D-67; crear y editar ya no es «de F04-H02»):
   - `crearVersion` (`POST /api/normativa/versiones`, cuerpo `VersionNueva`: `copiarDe` entero ≥ 1, `codigo`, `origen`, `vigenteDesde` fecha; 201 · 400 · 404 · 409);
-  - `editarVersion` (`PUT /api/normativa/versiones/{numero}`, cuerpo `VersionEditada`: `codigo`, `origen`, `vigenteDesde`, `tablaCargaHoraria` y `reglas`; la fila se identifica por `aplicaA` y `perfil`, sin `severidad` ni `referencia`, con `observacion` opcional; 200 · 400 · 404 · 409);
+  - `editarVersion` (`PUT /api/normativa/versiones/{numero}`, cuerpo `VersionEditada`: `codigo`, `origen`, `vigenteDesde`, `tablaCargaHoraria` y `reglas`; la fila se identifica por `aplicaA` y `perfil`, sin `severidad`, `referencia` ni `observacion` (FR-002); 200 · 400 · 404 · 409);
   - `asociarPeriodo` (`PUT /api/normativa/periodos/{periodo}`, cuerpo `{ "version": n }`; 200 · 400 · 404 · 409) y `consultarPeriodo` (`GET /api/normativa/periodos/{periodo}`; 200 · 404), con `periodo` `^[A-Za-z0-9._-]{1,20}$` y el esquema `PeriodoNormativo` (`periodo`, `version`, `asociadaEn`);
   - `x-mdd-permiso: PARAMETROS:ESCRITURA` en las tres de escritura y `PARAMETROS:LECTURA` en `consultarPeriodo`;
   - `VersionResumen` y `VersionNormativa` ganan `copiadaDe` (opcional) y `periodos` (`[string]`, requerido, vacía si no rige ninguno);
   - todas con 401 `NoAutenticado`, 403 `AccesoNoAutorizado`, 500 y 503.
 
   Agregar a `contratos/comun/errores.md` las tres filas de contracts/normativa.md (`NORMATIVA_VERSION_EN_USO`, `NORMATIVA_CODIGO_REPETIDO`, `NORMATIVA_PERIODO_CON_VERSION`, todas 409). Regenerar las interfaces (`openApiGenerate`) y los tipos de la SPA (`npm run generar:api`).
-- [ ] T003 [P] Prueba primero, en `PNOR/adaptadores/entrada/ErroresNormativaTest.java`, como `ErroresRolesTest`: los tres códigos de `ErroresNormativa` coinciden con `errores.md` en estado, título y descripción. Crear `JNOR/adaptadores/entrada/ErroresNormativa.java`, que traduce `VersionEnUso`, `CodigoRepetido` y `PeriodoConVersion` a sus códigos. T003 pasa.
+- [ ] T003 Prueba primero, en `PNOR/adaptadores/entrada/ErroresNormativaTest.java`, como `ErroresRolesTest`: los tres códigos de `ErroresNormativa` coinciden con `errores.md` en estado, título y descripción. Crear `JNOR/adaptadores/entrada/ErroresNormativa.java` con `VersionEnUso` (de T005); cada otra excepción se suma en la tarea que la crea: `CodigoRepetido` en T009 y `PeriodoConVersion` en T012. T003 pasa.
 
 ### Dominio (principio II, research §1)
 
@@ -100,13 +100,13 @@ description: "Tareas de F04-H02: crear una versión nueva de la normativa"
   - `CrearVersionServicioTest`: crea con `siguienteNumero` dentro de la transacción y registra `VERSION_CREADA` con el usuario de la sesión; una versión de origen que no existe lanza `VersionNoEncontrada`; un código repetido lanza `CodigoRepetido` y no guarda nada;
   - `EditarVersionServicioTest`: bloquea la versión, aplica `editada` y guarda; registra `VERSION_EDITADA` con los cambios, y no registra nada si no cambió nada; una versión en uso lanza `VersionEnUso` sin guardar; un código que ya usa otra versión lanza `CodigoRepetido`; `FilaInvalida` y `CambioNoPermitido` pasan sin guardar.
 
-  Crear los puertos `JNOR/puertos/entrada/CrearVersion.java` y `EditarVersion.java`, `CodigoRepetido` en `JNOR/aplicacion/`, los servicios `CrearVersionServicio` y `EditarVersionServicio` con `TransactionOperations`, y sus beans en `JNOR/infraestructura/ConfiguracionNormativa.java`. T009 pasa.
+  Crear los puertos `JNOR/puertos/entrada/CrearVersion.java` y `EditarVersion.java`, con JavaDoc que nombra las excepciones que lanzan; `CodigoRepetido` en `JNOR/puertos/entrada/`, junto a `EditarVersion`, como `VersionNoEncontrada`, y sumado a `ErroresNormativa`; los servicios `CrearVersionServicio` y `EditarVersionServicio` con `TransactionOperations`, y sus beans en `JNOR/infraestructura/ConfiguracionNormativa.java`. T009 pasa.
 - [ ] T010 [US1] Prueba primero, en `PNOR/adaptadores/entrada/`:
   - `NormativaContratoTest`: `crearVersion` responde 201 con la versión nueva contra el contrato; `editarVersion` responde 200 con la versión editada; un `FilaInvalida` responde 400 `COMUN_SOLICITUD_INVALIDA` con un detalle cuyo campo es `tablaCargaHoraria[DOCENTE_MT/TODOS]` y su descripción en español (por ejemplo, «Las horas de clase (13) no están entre el mínimo y el máximo (8 a 12)»); un `CambioNoPermitido`, 400 con su detalle; un código repetido, 409 `NORMATIVA_CODIGO_REPETIDO`; una versión de origen que no existe, 404; `listarVersiones` y `consultarVersion` traen `copiadaDe` y `periodos`. La prueba de F04-H01 que esperaba 405 en `POST` y `PUT` se reemplaza por estas.
   - `PermisosNormativaTest`: `VerificadorDePermisos` sobre las seis operaciones del contrato (SC-005 de F04-H01 y FR-008).
 
-  Agregar `crearVersion` y `editarVersion` a `JNOR/adaptadores/entrada/NormativaControlador.java`, con `@PreAuthorize("hasAuthority('PERMISO_PARAMETROS:ESCRITURA')")` y el usuario del token (`sub`). T010 pasa. `ModulosTest` de `datos` sigue en verde.
-- [ ] T011 [US1] Agregar a `deploy/probar_normativa.sh` el paso 5, con un periodo de prueba `prueba-<aleatorio>`: `vicerrectorado.demo` asocia la versión 1 a ese periodo (`asociarPeriodo`), crea la versión 2 a partir de la 1, cambia las horas de clase de `DOCENTE_MT` a un valor válido distinto y comprueba que la 2 tiene el cambio y que la 1 es idéntica, byte a byte, a la de antes (SC-002). Agregar al final del script la limpieza por `psql` de research §12 (la asignación del periodo de prueba, las versiones mayores que 1 que creó, sus filas, reglas, parámetros y registros), que corre también si un paso falla. Correrlo y anotarlo.
+  Agregar `crearVersion` y `editarVersion` a `JNOR/adaptadores/entrada/NormativaControlador.java`, con `@PreAuthorize("hasAuthority('PERMISO_PARAMETROS:ESCRITURA')")` y el usuario del token (`sub`). El controlador captura `FilaInvalida` y `CambioNoPermitido` y lanza `SolicitudInvalida`, con un `DetalleRespuesta` por campo, como `RolesControlador`; el campo es `tablaCargaHoraria[<perfil>/<aplicaA>]` o `reglas[<RN-xx>].<parametro>`. T010 pasa. `ModulosTest` de `datos` sigue en verde.
+- [ ] T011 [US1] Agregar a `deploy/probar_normativa.sh` el paso 5, con un periodo de prueba `prueba-<aleatorio>`: `vicerrectorado.demo` asocia la versión 1 a ese periodo (`asociarPeriodo`), crea la versión 2 a partir de la 1, cambia las horas de clase de `DOCENTE_MT` a un valor válido distinto y comprueba que la 2 tiene el cambio y que la 1 es idéntica, byte a byte, a la de antes (SC-002). Agregar la limpieza por `psql` de research §12, en un `trap … EXIT`: la asignación del periodo de prueba y **solo** las versiones cuyo número anotó el script (`versiones_creadas`), con sus filas, reglas, parámetros y registros. Los pasos 1 y 4 dejan de exigir «una sola versión»: comprueban que la versión 1 existe, es la primera de la lista y es idéntica a la migración, así el script pasa aunque haya otras versiones. Correrlo y anotarlo.
 
 **Checkpoint**: una versión nueva se crea y se cambia por la API, y la anterior no cambia.
 
@@ -118,9 +118,9 @@ description: "Tareas de F04-H02: crear una versión nueva de la normativa"
 
 **Independent Test**: con una versión asociada a un periodo, intentar cambiarla por la API: 409 `NORMATIVA_VERSION_EN_USO`, y la versión no cambia.
 
-- [ ] T012 [US2] Prueba primero, en `PNOR/aplicacion/AsociarVersionAPeriodoServicioTest.java` (Mockito): bloquea la versión, la asocia y registra `VERSION_ASOCIADA`; asociar otra vez la misma versión al mismo periodo no cambia nada ni registra; un periodo con otra versión lanza `PeriodoConVersion`; una versión que no existe lanza `VersionNoEncontrada`. `ConsultarNormativaServicioTest` gana `porPeriodo`: un periodo sin versión lanza `PeriodoSinVersion`. Crear el puerto publicado `JNOR/puertos/entrada/AsociarVersionAPeriodo.java` (JavaDoc: lo usará Académico en F02-H01), `PeriodoConVersion` en `JNOR/aplicacion/`, `PeriodoSinVersion` junto a `ConsultarNormativa`, y el servicio con su bean. T012 pasa.
+- [ ] T012 [US2] Prueba primero, en `PNOR/aplicacion/AsociarVersionAPeriodoServicioTest.java` (Mockito): bloquea la versión, la asocia y registra `VERSION_ASOCIADA`; asociar otra vez la misma versión al mismo periodo no cambia nada ni registra; un periodo con otra versión lanza `PeriodoConVersion`; una versión que no existe lanza `VersionNoEncontrada`. `ConsultarNormativaServicioTest` gana `porPeriodo`: un periodo sin versión lanza `PeriodoSinVersion`. Crear el puerto publicado `JNOR/puertos/entrada/AsociarVersionAPeriodo.java` (JavaDoc: lo usará Académico en F02-H01), `PeriodoConVersion` en `JNOR/puertos/entrada/`, junto a `AsociarVersionAPeriodo` y sumado a `ErroresNormativa`, `PeriodoSinVersion` junto a `ConsultarNormativa`, y el servicio con su bean. T012 pasa.
 - [ ] T013 [US2] Prueba primero, en `PNOR/adaptadores/entrada/NormativaContratoTest.java`: `asociarPeriodo` responde 200 `PeriodoNormativo` contra el contrato; un periodo con otra versión, 409 `NORMATIVA_PERIODO_CON_VERSION`; un periodo con un código inválido (`2025 1`), 400; `consultarPeriodo` responde 200 o 404; `editarVersion` sobre una versión en uso responde 409 `NORMATIVA_VERSION_EN_USO` con la descripción que pide crear una versión nueva. Agregar las dos operaciones al controlador, con `PARAMETROS:ESCRITURA` y `PARAMETROS:LECTURA`. T013 pasa.
-- [ ] T014 [US2] Prueba en `INOR/VersionEnUsoIntegrationTest.java` (Testcontainers, con los servicios reales): una edición y una asociación de la misma versión lanzadas a la vez (dos hilos) terminan con la versión asociada y, o bien la edición guardada antes de asociar, o bien rechazada con `VersionEnUso`; nunca editada después de asociada (research §3).
+- [ ] T014 [US2] Prueba en `INOR/VersionEnUsoIntegrationTest.java` (Testcontainers, con los servicios reales): una edición y una asociación de la misma versión lanzadas a la vez (dos hilos) terminan con la versión asociada y, o bien la edición guardada antes de asociar, o bien rechazada con `VersionEnUso`; nunca editada después de asociada (research §3). Y dos ediciones de la misma versión sin periodo, lanzadas a la vez, terminan las dos guardadas en orden, con dos registros `VERSION_EDITADA`; la versión queda con la última (caso límite).
 - [ ] T015 [US2] Agregar a `deploy/probar_normativa.sh` los pasos 6 y 7: editar la versión 1, que rige el periodo de prueba, da 409 `NORMATIVA_VERSION_EN_USO` y la versión no cambia (SC-003); asociar la versión 2 al mismo periodo da 409 `NORMATIVA_PERIODO_CON_VERSION`, y `consultarPeriodo` sigue dando la 1. Con `docente.demo`, `crearVersion` da el 403 común. Correrlo y anotarlo.
 
 **Checkpoint**: la regla de inmutabilidad se cumple de punta a punta, también con concurrencia.
@@ -134,6 +134,7 @@ description: "Tareas de F04-H02: crear una versión nueva de la normativa"
 **Independent Test**: con una versión sin periodo, editar una fila en la pantalla y comprobar que el cambio queda en esa versión, con las mismas validaciones que la API.
 
 - [ ] T016 [US3] Prueba primero, en `frontend/src/pantallas/normativa/Normativa.test.tsx`, con la API simulada (ampliar `datosDePrueba.ts` con una versión 2 sin periodo y la 1 con el periodo `2025-1`):
+  - al abrir, queda elegida la versión de número más alto;
   - con `PARAMETROS:ESCRITURA`: «Crear versión nueva» abre un diálogo con código, origen y vigencia y llama a `crearVersion` con `copiarDe`; la versión creada queda elegida;
   - en una versión sin periodo, «Editar» pasa la tabla y los parámetros a campos numéricos y la cabecera a campos de texto y fecha; «Guardar» envía la versión completa a `editarVersion`; «Cancelar» descarta;
   - un 400 marca la fila o el parámetro de cada detalle con su descripción, junto al campo, sin códigos; un 409 se muestra con su título y su descripción;
@@ -157,7 +158,7 @@ description: "Tareas de F04-H02: crear una versión nueva de la normativa"
   - `shellcheck` sobre `probar_normativa.sh`, y Gitleaks sobre un clon en el scratchpad, montado con `:ro,Z` (nunca el repositorio);
   - `probar_autenticacion.sh`, `probar_errores.sh`, `probar_eventos.sh`, `probar_spa.sh`, `probar_normativa.sh` dos veces seguidas (la limpieza permite repetirlo) y `deploy/equipo/probar_equipo.sh`.
 
-  Todo en verde, con el 60 % de líneas. Hacer commit y push, abrir el PR en borrador con `Refs #41` y marcarlo listo **después** de que terminen sus runs. Comprobar los checks, `perfil-consolidado` y `5 · imágenes`.
+  Anotar en la evidencia el tiempo de `crearVersion` y `editarVersion` en el paso 5 de `probar_normativa.sh` (meta < 200 ms, plan.md). Todo en verde, con el 60 % de líneas. Hacer commit y push, abrir el PR en borrador con `Refs #41` y marcarlo listo **después** de que terminen sus runs. Comprobar los checks, `perfil-consolidado` y `5 · imágenes`.
 - [ ] T020 Completar `evidencia.md` y la «Definición de terminado» del PR. Fusionarlo con *squash* **con la aprobación del autor**, con la rama al día con `main`. Después:
   - esperar el despliegue automático en el PC («Sano en N s»), con `normativa` en V3 y `roles` en V5;
   - el autor entra de nuevo con `vicerrectorado.demo` (para traer el permiso nuevo, D-62), crea la versión 2 y cambia las horas de clase del docente de medio tiempo en menos de 2 minutos, y comprueba que la 1 sigue igual (SC-001);
@@ -170,7 +171,7 @@ description: "Tareas de F04-H02: crear una versión nueva de la normativa"
 - **Setup (fase 1)**: T001 es libre.
 - **Foundational (fase 2)**:
   - T002 antes que todo lo demás;
-  - T003 después de T002 (el catálogo) y de T005 (las excepciones de dominio) para compilar, o con las excepciones de aplicación creadas como esqueleto;
+  - T003 después de T002 (el catálogo) y de T005 (`VersionEnUso`);
   - T004 antes que T005;
   - T006 y T007 después de T005;
   - T008 es libre.
@@ -181,7 +182,7 @@ description: "Tareas de F04-H02: crear una versión nueva de la normativa"
 
 ### Parallel Opportunities
 
-- Fase 2: T003 y T008.
+- Fase 2: T008.
 - US3: T016 puede empezar después de T002, porque la pantalla se prueba con la API simulada.
 - Como trabajas solo, [P] indica orden libre, no trabajo simultáneo.
 

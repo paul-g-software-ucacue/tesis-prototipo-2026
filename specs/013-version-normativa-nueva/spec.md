@@ -101,7 +101,7 @@ Escenario: Edición en pantalla
 
 ### Edge Cases
 
-- **Crear a partir de qué versión**: una versión nueva se crea copiando otra versión existente (por defecto, la de número más alto). El número de la nueva es el siguiente disponible.
+- **Crear a partir de qué versión**: una versión nueva se crea copiando la versión elegida; la pantalla abre con la de número más alto elegida. El número de la nueva es el siguiente disponible.
 - **Dos versiones nuevas a la vez**: dos personas que crean una versión nueva al mismo tiempo obtienen números distintos; ninguna pisa a la otra.
 - **Cambios simultáneos sobre la misma versión**: si dos personas editan la misma versión sin periodo, gana la última que guarda, y ambas ediciones quedan en el registro.
 - **Versión 1**: sigue la misma regla que cualquier otra versión: si está asociada a un periodo, no se cambia. Para cambiar la política 2024 sin perderla, lo normal es crear la versión 2 a partir de ella.
@@ -132,7 +132,7 @@ Escenario: Edición en pantalla
 - **Asignación normativa**: el periodo, nombrado por su código, al que se asocia una versión; un periodo tiene una sola versión vigente (modelo de dominio §5.1 y glosario §7.3, `AsignacionNormativa`). Una versión puede tener varias.
 - **Tabla de carga horaria** y **Perfil**: como en F04-H01 (glosario §7.3).
 - **Regla** y **Parámetro**: como en F04-H01; aquí se cambian sus valores.
-- **Cambio de versión**: quién, cuándo, qué versión y qué valores cambiaron (para la bitácora).
+- **Cambio de valor**: quién, cuándo, en qué versión, qué campo, valor anterior y nuevo (para la bitácora).
 
 ## Success Criteria *(mandatory)*
 

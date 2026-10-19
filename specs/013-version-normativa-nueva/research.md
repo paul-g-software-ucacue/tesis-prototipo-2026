@@ -39,6 +39,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 - La tabla `asignacion_normativa` (`periodo` único) garantiza que un periodo tenga una sola versión. Asociarle otra responde 409 `NORMATIVA_PERIODO_CON_VERSION`; asociar otra vez la misma versión no cambia nada y responde 200.
 - **Puerto de entrada publicado:** `AsociarVersionAPeriodo` queda en `ec.mdd.normativa.puertos.entrada`. Académico, que vive en el mismo proceso `datos`, lo usará en F02-H01 por la interfaz publicada (principio V), como Usuarios usa Roles.
 - **El periodo es un código** (`^[A-Za-z0-9._-]{1,20}$`, por ejemplo `2025-1`). Normativa no comprueba que exista: es dato de Académico, y un servicio no lee las tablas de otro.
+- Las excepciones que lanzan los puertos publicados (`CodigoRepetido`, `PeriodoConVersion`, `VersionNoEncontrada`) están en `puertos.entrada`, junto al puerto que las declara, para que Académico (F02-H01) y Cargas (F01) las usen sin romper `ModulosTest`.
 - **Alternativa:** dejar solo la regla y probar el 409 con filas insertadas en la prueba. El escenario «Versión en uso» no se vería de punta a punta hasta F02-H01.
 
 ## 5. Errores (ADR-016)
@@ -53,6 +54,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
   - **Campo:** `tablaCargaHoraria[DOCENTE_MT/TODOS]` o `reglas[RN-02].horas_maximas_docente`.
   - **Descripción:** en español, sin códigos internos. Por ejemplo: «Las horas de clase (13) no están entre el mínimo y el máximo (8 a 12)».
 - `FilaInvalida` hereda de `IllegalArgumentException`, para que las pruebas de F04-H01 sigan iguales. Lleva aparte el perfil, el tipo y el motivo.
+- `NormativaControlador` captura `FilaInvalida` y `CambioNoPermitido` y lanza `SolicitudInvalida`, con un `DetalleRespuesta` por campo, como `RolesControlador`. El campo es `tablaCargaHoraria[<perfil>/<aplicaA>]` o `reglas[<RN-xx>].<parametro>`.
 - `ErroresNormativa` registra los tres códigos, y una prueba los compara con `errores.md`.
 
 ## 6. Registro (FR-009, principio VII)
@@ -134,8 +136,9 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 
 - **Decisión:** `probar_normativa.sh` usa un periodo de prueba con un código aleatorio (`prueba-<aleatorio>`) y, al terminar, borra en la base del perfil, con `psql` como en el paso 8 de `probar_autenticacion.sh`:
   - la asignación de ese periodo;
-  - las versiones que creó y sus filas, reglas y parámetros;
+  - solo las versiones cuyo número anotó al crearlas (`versiones_creadas`), con sus filas, reglas y parámetros; nunca una versión que no creó;
   - sus registros.
 
-  La API no ofrece borrar versiones: el principio VII no lo permite.
+  La limpieza va en un `trap … EXIT`, así corre aunque falle un paso. La API no ofrece borrar versiones: el principio VII no lo permite.
+- **Pasos 1 y 4:** dejan de exigir «una sola versión». Comprueban que la versión 1 existe, es la primera de la lista y es idéntica a la de la migración, así el script pasa aunque haya otras versiones (por ejemplo, las que el autor crea a mano en el perfil local).
 - **Por qué:** el script se repite en local y en la CI sobre la misma base, y la versión 1 tiene que quedar siempre como la dejó la migración.

@@ -26,7 +26,7 @@ Resultado esperado: los pasos de F04-H01 más los nuevos en `OK`:
 - **versión nueva:** `vicerrectorado.demo` asocia la versión 1 a un periodo de prueba y crea la versión 2 a partir de ella; cambia las horas de clase del docente de medio tiempo; la 2 tiene el cambio y la 1 sigue idéntica (SC-002);
 - **versión en uso:** editar la 1 da 409 `NORMATIVA_VERSION_EN_USO` (SC-003);
 - **periodo con versión:** asociar la 2 al mismo periodo da 409;
-- **limpieza:** al final, el script borra lo que creó.
+- **limpieza:** al final, el script borra solo las versiones y el periodo de prueba que creó.
 
 ## 3. Revisión manual (SC-001)
 
