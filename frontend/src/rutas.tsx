@@ -5,6 +5,7 @@ import { Marco } from './navegacion/Marco';
 import { IniciarSesion } from './pantallas/IniciarSesion';
 import { Inicio } from './pantallas/Inicio';
 import { NoEncontrada } from './pantallas/NoEncontrada';
+import { Normativa } from './pantallas/normativa/Normativa';
 import { Roles } from './pantallas/roles/Roles';
 import { RutaConPermiso } from './sesion/RutaConPermiso';
 import { RutaProtegida } from './sesion/RutaProtegida';
@@ -24,6 +25,14 @@ export const rutasDeLaSpa: RouteObject[] = [
         element: (
           <RutaConPermiso funcionalidad="USUARIOS_ROLES" tipo="LECTURA">
             <Roles />
+          </RutaConPermiso>
+        ),
+      },
+      {
+        path: 'normativa',
+        element: (
+          <RutaConPermiso funcionalidad="PARAMETROS" tipo="LECTURA">
+            <Normativa />
           </RutaConPermiso>
         ),
       },

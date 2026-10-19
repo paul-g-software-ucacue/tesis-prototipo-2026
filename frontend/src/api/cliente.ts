@@ -5,6 +5,7 @@
 import createClient, { type Middleware } from 'openapi-fetch';
 import { FalloDeApi } from '../errores/traducir';
 import { cerrarSesion, marcarActividad, obtenerToken } from '../sesion/almacen';
+import type { paths as rutasDeNormativa } from './generado/normativa';
 import type { paths as rutasDeRoles } from './generado/roles';
 import type { paths } from './generado/usuarios';
 
@@ -62,3 +63,10 @@ export async function llamar<T>(
   }
   return data as T;
 }
+
+/** El cliente de Normativa (F04-H01), con el mismo token y la misma actividad. */
+export const apiNormativa = createClient<rutasDeNormativa>({
+  baseUrl: globalThis.location?.origin ?? '',
+  fetch: (peticion) => globalThis.fetch(peticion),
+});
+apiNormativa.use(conToken);

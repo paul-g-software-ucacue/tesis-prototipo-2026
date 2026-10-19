@@ -3,4 +3,12 @@
 // SpotBugs. Vale para todos los servicios, centrales o no.
 plugins {
     id 'mdd.servicio'
+    id 'mdd.contrato'
+}
+
+dependencies {
+    // Las versiones de normativa en el esquema normativa, con JdbcClient (F04-H01, research §2).
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    // @PreAuthorize en la consulta (ADR-021).
+    implementation 'org.springframework.security:spring-security-core'
 }
