@@ -1,5 +1,6 @@
 // Respuestas de la API de Normativa para las pruebas de la pantalla «Normativa»
-// (contratos/normativa). Un resumen de la versión 1: dos filas y dos reglas de la política 2024.
+// (contratos/normativa). Un resumen de la versión 1: tres filas y tres reglas de la política 2024.
+// Desde F04-H02, también una versión 2 copiada de la 1 y todavía sin periodo.
 export const VERSIONES = [
   {
     numero: 1,
@@ -7,6 +8,7 @@ export const VERSIONES = [
     origen: 'Política SENESCYT 2024',
     vigenteDesde: '2024-03-11',
     tipoIst: 'T2',
+    periodos: [] as string[],
   },
 ];
 
@@ -70,3 +72,25 @@ export const VERSION_1 = {
     },
   ],
 };
+
+/** La versión 1 cuando ya rige el periodo 2025-1: no se puede editar. */
+export const VERSION_1_EN_USO = { ...VERSION_1, periodos: ['2025-1'] };
+
+export const RESUMEN_2 = {
+  numero: 2,
+  codigo: 'SENESCYT-2025-01',
+  origen: 'Reforma de la política 2025',
+  vigenteDesde: '2025-01-15',
+  tipoIst: 'T2',
+  copiadaDe: 1,
+  periodos: [] as string[],
+};
+
+/** La versión 2, copiada de la 1 y sin periodo: se puede editar. */
+export const VERSION_2 = {
+  ...RESUMEN_2,
+  reglas: VERSION_1.reglas,
+  tablaCargaHoraria: VERSION_1.tablaCargaHoraria,
+};
+
+export const DOS_VERSIONES = [{ ...VERSIONES[0], periodos: ['2025-1'] }, RESUMEN_2];
