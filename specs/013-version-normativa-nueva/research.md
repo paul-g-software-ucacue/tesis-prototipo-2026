@@ -99,7 +99,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 ## 10. Glosario (principio III)
 
 - «Asignación normativa» está en el modelo táctico (§5.1, `AsignacionNormativa`), pero no en el glosario §7.3. Además, «Asignación» sola son las horas de un docente (§8).
-- **Propuesta:** agregar al glosario §7.3 «Asignación normativa: el periodo, nombrado por su código, al que se asocia una versión de normativa; un periodo tiene una sola. No es una asignación de horas.», y usarla siempre completa.
+- **Decisión, aprobada por el autor el 2026-10-18 y ya aplicada:** se agregó al glosario §7.3 (`sdd/modelo_dominio.md`, fuera del repositorio) «Asignación normativa: el periodo, nombrado por su código, al que se asocia una versión de normativa; un periodo tiene una sola. No es una asignación de horas.». Se usa siempre completa.
 - En las rutas y la pantalla se dice «periodo» (`/api/normativa/periodos/{periodo}`, «Rige: 2025-1»), para no usar «asignación» sola.
 
 ## 11. Pruebas

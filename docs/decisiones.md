@@ -62,7 +62,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-65 | 2026-10-18 | La matriz D-16 en permisos: 16 funcionalidades y los permisos de los 10 roles | Aceptada | D-16 (interpreta la prosa de la matriz) |
 | ADR-021 | 2026-10-18 | Permisos efectivos en el token y cada operación declara su permiso en el contrato | Aceptada | ADR-014 (claim `permisos`), ADR-015 (`x-mdd-permiso`), ADR-016 (403 común) |
 | D-66 | 2026-10-18 | El Vicerrector académico lee «Parámetros y normativa» | Aceptada | D-65 (un permiso más en la fila del Vicerrector) |
-| D-67 | 2026-10-18 | El Vicerrector académico escribe «Parámetros y normativa» | Propuesta | D-65, D-66 (la escritura además de la lectura) |
+| D-67 | 2026-10-18 | El Vicerrector académico escribe «Parámetros y normativa» | Aceptada | D-65, D-66 (la escritura además de la lectura) |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1121,7 +1121,7 @@ Estado al 2026-10-11. El texto completo está en `lean_inception/adr/`.
 
 ## D-67. El Vicerrector académico escribe «Parámetros y normativa»
 
-- **Estado:** Propuesta · **Fecha:** 2026-10-18 · **Propuesto por:** plan de F04-H02
+- **Estado:** Aceptada · **Fecha:** 2026-10-18 · **Decidido por:** autor de la tesis (propuesta en el plan de F04-H02)
 - **Origen:** aclaración de la especificación de F04-H02 (`specs/013-version-normativa-nueva/spec.md`, Clarifications) y `research.md` §7
 - **Modifica a:** D-65 (fila del Vicerrector académico en la matriz D-16) y amplía D-66
 

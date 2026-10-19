@@ -10,7 +10,7 @@
 
 **Origen**: issue #41 · F04-H02 · sub-issue de F04 (Parametrizar y versionar la política) · milestone «Ola 1 · Datos listos» · etiquetas `tipo:historia`, `prioridad:must`, `modulo:12-normativa`, `RF-19` · tamaño propuesto M · depende de #40 (F04-H01), cerrada. La siguen F04-H03 (#42) y F02-H01 (#32).
 
-**Requerimientos que cubre**: RF-19, en la parte de versionar («al cambiar un parámetro en una versión nueva, los periodos anteriores no se ven afectados»), y la recomendación de la ERS 8.3 para la carga 7 («además del archivo, pueda editarse en pantalla y quede versionada por periodo»). **Decisiones tomadas en esta historia:** D-67 (el Vicerrector académico escribe «Parámetros y normativa»), que se propone en el plan. **Decisiones que aplica** (`docs/decisiones.md`): D-65 y D-66 (permisos de «Parámetros y normativa»), ADR-021 (permisos), ADR-016 (catálogo de errores), ADR-009 y MD-13 (la carga 7 por archivo entra como una versión nueva). **Principios de la constitución**: VI (las cifras son datos versionados) y VII (inmutabilidad y trazabilidad).
+**Requerimientos que cubre**: RF-19, en la parte de versionar («al cambiar un parámetro en una versión nueva, los periodos anteriores no se ven afectados»), y la recomendación de la ERS 8.3 para la carga 7 («además del archivo, pueda editarse en pantalla y quede versionada por periodo»). **Decisiones tomadas en esta historia:** D-67 (el Vicerrector académico escribe «Parámetros y normativa»). **Decisiones que aplica** (`docs/decisiones.md`): D-65 y D-66 (permisos de «Parámetros y normativa»), ADR-021 (permisos), ADR-016 (catálogo de errores), ADR-009 y MD-13 (la carga 7 por archivo entra como una versión nueva). **Principios de la constitución**: VI (las cifras son datos versionados) y VII (inmutabilidad y trazabilidad).
 
 **Historia (tal como está en el issue)**: Como Vicerrector académico, quiero cambiar un parámetro de la política en una versión nueva, para aplicar un cambio de la norma sin alterar los periodos anteriores.
 
@@ -20,7 +20,7 @@
 
 ### Session 2026-10-18
 
-- Q: ¿Quién crea y edita versiones, si la historia la pide el Vicerrector académico y D-65 da la escritura solo al Administrador? → A: El Vicerrector académico y el Administrador del sistema. El Vicerrector gana la escritura de «Parámetros y normativa»; amplía D-66 y se propone como D-67 en el plan.
+- Q: ¿Quién crea y edita versiones, si la historia la pide el Vicerrector académico y D-65 da la escritura solo al Administrador? → A: El Vicerrector académico y el Administrador del sistema. El Vicerrector gana la escritura de «Parámetros y normativa»; amplía D-66; es D-67.
 - Q: ¿Cómo se prueba «una versión asociada a un periodo», si los periodos llegan con F02-H01? → A: Normativa ofrece en esta historia la operación de asociar una versión a un periodo, que F02-H01 usará al abrir el periodo. El periodo se nombra con su código y Normativa no lo valida contra Académico.
 - Q: ¿Qué se puede cambiar en una versión sin periodo? → A: Las horas de las filas existentes, los valores de los parámetros existentes, el origen, el código y la vigencia. Agregar o quitar filas, perfiles o reglas, y cambiar el tipo de IST, quedan para cuando una norma nueva lo pida.
 
@@ -129,7 +129,7 @@ Escenario: Edición en pantalla
 ### Key Entities
 
 - **Versión de normativa**: conjunto numerado de parámetros de RN-01 a RN-26 que rige un periodo; no cambia una vez asociada a un periodo (glosario §7.3). Tiene número, código, origen, vigencia, tipo de IST, tabla de carga horaria y reglas, y sabe de qué versión se copió.
-- **Asignación normativa**: el periodo, nombrado por su código, al que se asocia una versión; un periodo tiene una sola versión vigente (modelo de dominio §5.1, `AsignacionNormativa`). Una versión puede tener varias.
+- **Asignación normativa**: el periodo, nombrado por su código, al que se asocia una versión; un periodo tiene una sola versión vigente (modelo de dominio §5.1 y glosario §7.3, `AsignacionNormativa`). Una versión puede tener varias.
 - **Tabla de carga horaria** y **Perfil**: como en F04-H01 (glosario §7.3).
 - **Regla** y **Parámetro**: como en F04-H01; aquí se cambian sus valores.
 - **Cambio de versión**: quién, cuándo, qué versión y qué valores cambiaron (para la bitácora).

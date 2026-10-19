@@ -15,7 +15,7 @@ Sobre la versión 1 y la consulta de F04-H01:
 - **Asociar a un periodo:** `asociarPeriodo` y `consultarPeriodo`. Un periodo, nombrado por su código, tiene una sola versión. Académico lo usará en F02-H01 por el puerto publicado.
 - **Errores:** tres códigos nuevos (`NORMATIVA_VERSION_EN_USO`, `NORMATIVA_CODIGO_REPETIDO` y `NORMATIVA_PERIODO_CON_VERSION`), y 400 con detalle para las invariantes.
 - **Registro:** cada cambio queda en `registro_cambio`, con su valor anterior y el nuevo.
-- **D-67 (propuesta):** el Vicerrector académico escribe «Parámetros y normativa».
+- **D-67 (aceptada):** el Vicerrector académico escribe «Parámetros y normativa».
 - **SPA:** «Normativa» gana crear, editar y asociar.
 
 Los detalles y las alternativas están en [research.md](research.md).
@@ -72,7 +72,7 @@ Los detalles y las alternativas están en [research.md](research.md).
 |---|---|---|
 | I. Capas | Las reglas, en el agregado. La aplicación orquesta la transacción, el registro y la numeración; los adaptadores traducen HTTP y SQL. | ✅ |
 | II. DDD según el subdominio | Normativa es central: el agregado con su entidad `AsignacionNormativa`, sus objetos de valor, su evento y sus excepciones de dominio (research §1). | ✅ |
-| III. Lenguaje ubicuo | Versión de normativa, Tabla de carga horaria, Perfil, Regla y Periodo académico, del glosario. Se propone agregar «Asignación normativa» al glosario §7.3, siempre completa (research §10). | ⏳ glosario pendiente |
+| III. Lenguaje ubicuo | Versión de normativa, Tabla de carga horaria, Perfil, Regla, Periodo académico y Asignación normativa, del glosario; la última se agregó antes del código y se usa siempre completa (research §10). | ✅ |
 | IV. API primero | Las cuatro operaciones y los campos nuevos en `contratos/normativa/openapi.yaml`, y los tres códigos en `errores.md`, antes del código. | ✅ |
 | V. Límites | El periodo es un código; Académico usará `AsociarVersionAPeriodo` por `puertos.entrada` (F02-H01). El permiso nuevo lo cambia Roles con su migración. | ✅ |
 | VI. Las reglas son datos | Las cifras cambian en una versión nueva, nunca en el código. | ✅ |
@@ -82,9 +82,9 @@ Los detalles y las alternativas están en [research.md](research.md).
 | X. Simplicidad | Una sola operación de edición, con la versión completa, en lugar de una por celda. Sin estados «borrador» ni «publicada», y sin envío de eventos sin consumidor. | ✅ |
 | XI y XII | JavaDoc en español en el agregado, los puertos y las excepciones. | ✅ |
 | XIII. Errores | Tres códigos nuevos en el catálogo, con su prueba. | ✅ |
-| §6.4 Decisiones | D-67 se propone y debe aprobarse antes de implementar. | ⏳ D-67 pendiente |
+| §6.4 Decisiones | D-67, aceptada por el autor el 2026-10-18. | ✅ |
 
-**Resultado del gate antes de la fase 0:** pasa, salvo dos aprobaciones del autor: D-67 y la entrada «Asignación normativa» del glosario.
+**Resultado del gate antes de la fase 0:** pasa. D-67 y la entrada «Asignación normativa» del glosario quedaron aprobadas el 2026-10-18.
 
 **Revisión después de la fase 1:** pasa. [data-model.md](data-model.md) y [contracts/](contracts/) solo agregan lo listado.
 
@@ -129,7 +129,7 @@ deploy/probar_normativa.sh         # pasos 5 a 7 y la limpieza
 
 ## Fases de implementación (guía para /speckit-tasks)
 
-1. **D-67 y el glosario:** aprobación del autor.
+1. **D-67 y el glosario:** aprobados por el autor el 2026-10-18.
 2. **Contrato y catálogo:** las operaciones, los campos y los errores; la generación.
 3. **Dominio,** con sus pruebas primero.
 4. **Persistencia:** V3, el repositorio (guardar, numerar con candado, `FOR UPDATE`) y el registro, con Testcontainers.
