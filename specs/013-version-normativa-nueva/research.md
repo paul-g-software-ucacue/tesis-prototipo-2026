@@ -135,10 +135,10 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 ## 12. Limpieza de las pruebas de punta a punta
 
 - **Decisión:** `probar_normativa.sh` usa un periodo de prueba con un código aleatorio (`prueba-<aleatorio>`) y, al terminar, borra en la base del perfil, con `psql` como en el paso 8 de `probar_autenticacion.sh`:
-  - la asignación de ese periodo;
+  - la asignación de ese periodo y su registro `VERSION_ASOCIADA`;
   - solo las versiones cuyo número anotó al crearlas (`versiones_creadas`), con sus filas, reglas y parámetros; nunca una versión que no creó;
   - sus registros.
 
   La limpieza va en un `trap … EXIT`, así corre aunque falle un paso. La API no ofrece borrar versiones: el principio VII no lo permite.
-- **Pasos 1 y 4:** dejan de exigir «una sola versión». Comprueban que la versión 1 existe, es la primera de la lista y es idéntica a la de la migración, así el script pasa aunque haya otras versiones (por ejemplo, las que el autor crea a mano en el perfil local).
+- **Pasos 1 y 4:** dejan de exigir «una sola versión». Comprueban que la versión 1 existe, es la primera de la lista y es idéntica a la de la migración sin el campo `periodos` (que cambia al asociarla), así el script pasa aunque haya otras versiones (por ejemplo, las que el autor crea a mano en el perfil local).
 - **Por qué:** el script se repite en local y en la CI sobre la misma base, y la versión 1 tiene que quedar siempre como la dejó la migración.
