@@ -68,6 +68,8 @@ Registro de las comprobaciones de la historia (issue #41): crear una versión nu
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Despliegue automático (T020) | confirmada | Al fusionar #120 (`51d3c19`), el CD publicó las 9 imágenes y `mdd-actualizar.timer` desplegó la versión `51d3c1916ee0` (anterior: `fec9c6918106`): «Sano en 45 s» y la prueba de humo en `OK`. `datos` migró `normativa` a V3 y `identidad` migró `roles` a V5. | 2026-10-19 |
+| Versión 2 en el equipo (T020, SC-001) | aceptada por el autor | El autor entró de nuevo con `vicerrectorado.demo` en `https://mdd.localhost` y creó la versión 2 (`SENECYT-2025`, copiada de la 1), que quedó con `VERSION_CREADA` en el registro. En la base del equipo no quedó registrada la edición de las horas de clase del docente de medio tiempo: la 2 sigue con 12, igual que la 1, y la 1 no cambió. La misma secuencia en el perfil local, con Chromium y Playwright (entrar, crear, «Editar», «Clase · Docente a medio tiempo · Todos» de 12 a 10, «Guardar»), respondió 200, mostró 10 y registró `VERSION_EDITADA` de 12 a 10, con la 1 en 12; esa versión de prueba se borró después. El autor dio la comprobación por buena sin repetir la edición en el equipo. | 2026-10-19 |
 | Equipo simulado (T019) | confirmada | `deploy/equipo/probar_equipo.sh` con la versión de esta rama: pasos 0 a 11 en `OK`; memoria 1 354,6 MiB; la versión rota vuelve a la anterior. | 2026-10-18 |
 
 ## Notas

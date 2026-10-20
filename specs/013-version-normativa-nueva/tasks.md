@@ -155,14 +155,14 @@ description: "Tareas de F04-H02: crear una versión nueva de la normativa"
 
 ## Phase 6: Cierre
 
-- [ ] T019 Correr:
+- [X] T019 Correr:
   - en el backend, `./gradlew check integrationTest`;
   - en el frontend, `npm run lint`, `formato:verificar`, `tipos`, `test -- --run --coverage`, `test:e2e` y `verificar:ruptura`;
   - `shellcheck` sobre `probar_normativa.sh`, y Gitleaks sobre un clon en el scratchpad, montado con `:ro,Z` (nunca el repositorio);
   - `probar_autenticacion.sh`, `probar_errores.sh`, `probar_eventos.sh`, `probar_spa.sh`, `probar_normativa.sh` dos veces seguidas (la limpieza permite repetirlo) y `deploy/equipo/probar_equipo.sh`.
 
   Anotar en la evidencia el tiempo de `crearVersion` y `editarVersion` en el paso 5 de `probar_normativa.sh` (meta < 200 ms, plan.md). Todo en verde, con el 60 % de líneas. Hacer commit y push, abrir el PR en borrador con `Refs #41` y marcarlo listo **después** de que terminen sus runs. Comprobar los checks, `perfil-consolidado` y `5 · imágenes`.
-- [ ] T020 Completar `evidencia.md` y la «Definición de terminado» del PR. Fusionarlo con *squash* **con la aprobación del autor**, con la rama al día con `main`. Después:
+- [X] T020 Completar `evidencia.md` y la «Definición de terminado» del PR. Fusionarlo con *squash* **con la aprobación del autor**, con la rama al día con `main`. Después:
   - esperar el despliegue automático en el PC («Sano en N s»), con `normativa` en V3 y `roles` en V5;
   - el autor entra de nuevo con `vicerrectorado.demo` (para traer el permiso nuevo, D-62), crea la versión 2 y cambia las horas de clase del docente de medio tiempo en menos de 2 minutos, y comprueba que la 1 sigue igual (SC-001);
   - abrir el PR de evidencia con `Closes #41` y borrar las ramas.
