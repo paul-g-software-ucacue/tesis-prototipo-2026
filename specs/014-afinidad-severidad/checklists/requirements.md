@@ -32,4 +32,5 @@
 ## Notes
 
 - Los 3 marcadores [NEEDS CLARIFICATION] se resolvieron con el autor el 2026-10-20 (sección Clarifications): se agregan las reglas del motor que faltan; los valores por defecto son tope 3, mínimo 2 y 1 punto menos con el campo amplio; la severidad se prueba con la consulta del periodo.
+- El análisis del 2026-10-20 ajustó FR-008 y SC-004 (la consulta del periodo lleva a la versión, que trae las reglas) y agregó a FR-004 la regla del campo amplio frente al específico (RN-24), con su caso límite. Los puntos siguen pasando.
 - Los códigos 409 y 403 citan el catálogo común y el contrato de permisos ya existentes, no una tecnología.

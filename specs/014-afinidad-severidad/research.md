@@ -82,7 +82,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 - `Regla` y `ReglaEditada`: `identificador` con `pattern: '^R[NF]-[0-9]{2}$'`; `parametros` sigue obligatorio pero puede venir vacío (sin `minItems`).
 - `ReglaEditada` gana `severidad` (`$ref: Severidad`), opcional, con su descripción (§3).
 - Sin operaciones ni códigos de error nuevos: los 400 usan `COMUN_SOLICITUD_INVALIDA` con su detalle, y la versión en uso, el 409 `NORMATIVA_VERSION_EN_USO` de F04-H02.
-- **La consulta del periodo (clarificación 3):** `consultarPeriodo` dice qué versión rige el periodo y `consultarVersion` devuelve sus reglas con su severidad, sus pesos y su mínimo. No se agrega una operación `ReglasDelPeriodo` todavía: su consumidor, el motor de Distributivo (F07), está en otro proceso y decidirá cómo llama (con el usuario o con la credencial del proceso). Se anota en la evidencia para F07. La especificación dice «la consulta de una versión y la del periodo»: el plan propone leerla como esas dos llamadas.
+- **La consulta del periodo (clarificación 3):** `consultarPeriodo` dice qué versión rige el periodo y `consultarVersion` devuelve sus reglas con su severidad, sus pesos y su mínimo. No se agrega una operación `ReglasDelPeriodo` todavía: su consumidor, el motor de Distributivo (F07), está en otro proceso y decidirá cómo llama (con el usuario o con la credencial del proceso). Se anota en la evidencia para F07. FR-008 y SC-004 de la especificación lo dicen así desde el análisis del 2026-10-20.
 
 ## 8. La pantalla «Normativa» (FR-009)
 

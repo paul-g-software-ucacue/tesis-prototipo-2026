@@ -70,7 +70,7 @@ Escenario: Severidad de una regla
 ```
 
 1. **Given** una versión nueva sin periodo, **When** cambio la severidad de una regla de blanda a dura y guardo, **Then** la versión la tiene como dura, queda registrado con su valor anterior, y la versión de la que se copió la sigue teniendo blanda.
-2. **Given** esa versión asociada a un periodo, **When** se consultan las reglas del periodo, **Then** la regla aparece como dura. El motor de reglas que la aplica llega con F07, que lo prueba con esta consulta.
+2. **Given** esa versión asociada a un periodo, **When** se consulta qué versión rige el periodo y las reglas de esa versión, **Then** la regla aparece como dura. El motor de reglas que la aplica llega con F07, que lo prueba con esta consulta.
 3. **Given** una regla que es solo un parámetro (RN-01, RN-06, RN-24), **When** intento darle severidad, **Then** se rechaza con el motivo en español.
 4. **Given** una versión que rige un periodo, **When** intento cambiar una severidad, **Then** se rechaza con 409, como cualquier otro cambio.
 
@@ -96,6 +96,7 @@ Como Vicerrector académico, quiero ajustar los pesos, el mínimo y las severida
 
 - **Qué reglas tienen severidad**: las reglas del motor de la versión: RN-02, RN-05, RN-09, RN-10 y RN-13, que ya estaban, y RN-12, RN-16, RN-17, RN-18, RN-19, RN-22, RN-25 y la de la oferta sin propuesta (RF-24), que se agregan con la severidad por defecto de la tabla 5.2. RN-01, RN-06 y RN-24 son solo parámetros. Las filas de la tabla de carga horaria siguen duras y no se editan aquí (F07).
 - **Reglas nuevas sin parámetros**: varias reglas del motor que se agregan (por ejemplo, RN-17, «ningún docente queda sin horas de clase») no tienen cifras; solo tienen su severidad.
+- **Pesos que se cruzan**: si el peso del campo amplio queda mayor que el del campo específico en un mismo nivel (por ejemplo, cuarto nivel amplio 4 y específico 3), se rechaza con el motivo. Iguales es válido. Un tope menor que un curso, o un mínimo mayor que la suma de los pesos, son decisiones de la institución y no se rechazan.
 - **Versiones que ya existen**: las reglas nuevas, los pesos y el mínimo por defecto se agregan a las versiones que todavía no los tienen, empezando por la 1, sin cambiar ningún otro valor. Hoy ninguna versión rige un periodo (los periodos llegan con F02-H01), así que agregarlos no rompe el principio VII.
 - **Versión nueva**: copia los pesos, el mínimo y las severidades de la versión de origen, tal como F04-H02 copia el resto.
 - **Sin cambios**: guardar una versión con los mismos valores no deja registro, como en F04-H02.
@@ -110,11 +111,11 @@ Como Vicerrector académico, quiero ajustar los pesos, el mínimo y las severida
 - **FR-001**: Cada versión de normativa DEBE tener los pesos de afinidad de RN-24 (título de cuarto nivel y de tercer nivel, cada uno cuando coincide el campo específico de la asignatura y cuando solo coincide el campo amplio; experiencia laboral relacionada; curso o capacitación relacionada, y el tope de los cursos) y el mínimo de afinidad de RN-19.
 - **FR-002**: La versión 1 y las versiones que ya existen DEBEN quedar con los valores por defecto: cuarto nivel 3 en el campo específico y 2 si solo coincide el amplio; tercer nivel 2 y 1; experiencia 2; curso 1, con tope de 3; mínimo de afinidad 2. También DEBEN ganar las reglas del motor que les faltan (RN-12, RN-16, RN-17, RN-18, RN-19, RN-22, RN-25 y la de la oferta sin propuesta) con la severidad por defecto de la tabla 5.2 del modelo de dominio. Ningún otro valor DEBE cambiar.
 - **FR-003**: Mientras una versión no rija ningún periodo, se DEBEN poder cambiar sus pesos de afinidad, su mínimo de afinidad y la severidad (dura o blanda) de sus reglas del motor, por la misma forma de cambiar una versión de F04-H02 (FR-010 de F04-H02).
-- **FR-004**: Los pesos y el mínimo DEBEN ser números no negativos, con la misma precisión que los demás parámetros; un valor inválido se rechaza entero, con el motivo en español y sin dejar la versión a medias.
+- **FR-004**: Los pesos y el mínimo DEBEN ser números no negativos, con la misma precisión que los demás parámetros. Para cada nivel de título, el peso del campo amplio NO DEBE superar al del campo específico (RN-24: «los títulos cuentan más si coincide el campo específico»). Un valor inválido se rechaza entero, con el motivo en español y sin dejar la versión a medias.
 - **FR-005**: Una regla que es solo un parámetro (RN-01, RN-06, RN-24) NO DEBE tener severidad; una regla del motor DEBE tener siempre una, dura o blanda. Un cambio que no cumpla esto se rechaza con el motivo en español.
 - **FR-006**: Una versión que rige un periodo NO DEBE cambiar sus pesos, su mínimo ni sus severidades: el intento responde 409 con el mismo código y mensaje de F04-H02.
 - **FR-007**: Una versión nueva DEBE copiar los pesos, el mínimo y las severidades de su versión de origen, y cambiarlos NO DEBE alterar ninguna otra versión.
-- **FR-008**: La consulta de una versión y la del periodo DEBEN devolver sus pesos de afinidad, su mínimo y la severidad de cada regla, para que Distributivo los lea al calcular el puntaje y al validar (MD-02, F07).
+- **FR-008**: La consulta del periodo DEBE decir qué versión lo rige, y la consulta de esa versión DEBE devolver sus pesos de afinidad, su mínimo y la severidad de cada regla, para que Distributivo los lea al calcular el puntaje y al validar (MD-02). La consulta propia de las reglas del periodo, desde el proceso de Distributivo, la define F07.
 - **FR-009**: La pantalla «Normativa» DEBE mostrar los pesos, el mínimo y las severidades de la versión elegida, con nombres en español, y permitir editarlos a quien tenga el permiso de escritura cuando la versión no rige un periodo.
 - **FR-010**: Cambiar pesos, mínimo o severidades DEBE exigir el permiso de escritura de «Parámetros y normativa», validado en el servidor (D-65, D-67, ADR-021), y cada cambio DEBE quedar registrado con quién, cuándo, qué campo, valor anterior y nuevo (principio VII).
 
@@ -133,7 +134,7 @@ Como Vicerrector académico, quiero ajustar los pesos, el mínimo y las severida
 - **SC-001**: El Vicerrector académico cambia en pantalla un peso de afinidad y la severidad de una regla de una versión nueva en menos de 2 minutos, sin ayuda.
 - **SC-002**: La versión 1 muestra los pesos por defecto de RN-24, su tope, el mínimo de afinidad y las 8 reglas del motor agregadas con su severidad por defecto, y el 100 % de sus demás valores sigue idéntico al de antes de esta historia.
 - **SC-003**: El 100 % de los intentos de cambiar pesos, mínimo o severidades de una versión que rige un periodo se rechazan con 409, también llamando directamente al servidor.
-- **SC-004**: Después de cambiar la severidad de una regla en una versión nueva, la consulta de los periodos asociados a esa versión la devuelve con la severidad nueva, y la versión de origen la conserva.
+- **SC-004**: Después de cambiar la severidad de una regla en una versión nueva, la consulta de los periodos asociados lleva a esa versión, y la consulta de la versión devuelve la severidad nueva, y la versión de origen la conserva.
 - **SC-005**: Cada cambio de un peso, del mínimo o de una severidad aparece en el registro con quién, cuándo, el valor anterior y el nuevo.
 
 ## Assumptions
