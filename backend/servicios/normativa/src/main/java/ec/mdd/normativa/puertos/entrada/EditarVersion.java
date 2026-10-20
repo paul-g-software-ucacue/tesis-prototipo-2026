@@ -9,8 +9,9 @@ import ec.mdd.normativa.dominio.VersionNormativa;
  *
  * <p>Es la única forma de cambiar una versión (FR-010): la pantalla «Normativa» la usa, y la carga
  * 7 por archivo de F01 la usará con la tabla completa. Así las dos pasan por las mismas reglas.
- * Cada edición que cambia algo queda en el registro como {@code VERSION_EDITADA}, con cada valor
- * anterior y nuevo.
+ * Desde F04-H03 también cambia la severidad de las reglas del motor; la carga 7 no la trae, y una
+ * regla sin severidad pedida conserva la suya. Cada edición que cambia algo queda en el registro
+ * como {@code VERSION_EDITADA}, con cada valor anterior y nuevo.
  */
 public interface EditarVersion {
 

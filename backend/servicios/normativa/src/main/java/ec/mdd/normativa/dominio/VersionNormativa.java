@@ -135,15 +135,18 @@ public record VersionNormativa(
     }
 
     /**
-     * La versión con otra cabecera, otras horas en sus filas y otros valores en sus parámetros. Las
-     * filas, las reglas y los parámetros tienen que ser exactamente los de la versión (FR-002), y
-     * cada fila tiene que cumplir sus invariantes.
+     * La versión con otra cabecera, otras horas en sus filas, otros valores en sus parámetros y, si
+     * se piden, otras severidades en sus reglas del motor (F04-H03). Las filas, las reglas y los
+     * parámetros tienen que ser exactamente los de la versión (FR-002), cada fila tiene que cumplir
+     * sus invariantes y los pesos de afinidad, la suya.
      *
      * @param cambios la edición completa
      * @return la versión editada y lo que cambió, valor por valor
      * @throws VersionEnUso si la versión rige un periodo
      * @throws CambioNoPermitido si se agrega o se quita una fila, una regla o un parámetro
      * @throws CambioNoPermitido si un parámetro es negativo, tiene más de dos decimales o no cabe
+     * @throws CambioNoPermitido si se pide severidad para una regla que solo da parámetros
+     * @throws CambioNoPermitido si un peso del campo amplio supera al del campo específico
      * @throws FilaInvalida si una fila no cumple sus invariantes
      */
     public Edicion editada(CambiosDeVersion cambios) {
@@ -156,7 +159,8 @@ public record VersionNormativa(
         anotar(lista, "origen", origen, datos.origen());
         anotar(lista, "vigenteDesde", vigenteDesde.toString(), datos.vigenteDesde().toString());
         TablaCargaHoraria nuevaTabla = new TablaCargaHoraria(filasEditadas(cambios.filas(), lista));
-        List<Regla> nuevasReglas = reglasEditadas(cambios.parametros(), lista);
+        List<Regla> nuevasReglas =
+                reglasEditadas(cambios.parametros(), cambios.severidades(), lista);
         if (lista.isEmpty()) {
             return new Edicion(this, List.of());
         }
@@ -286,7 +290,16 @@ public record VersionNormativa(
     }
 
     private List<Regla> reglasEditadas(
-            Map<String, Map<String, BigDecimal>> parametros, List<CambioDeValor> lista) {
+            Map<String, Map<String, BigDecimal>> parametros,
+            Map<String, Severidad> severidades,
+            List<CambioDeValor> lista) {
+        for (String identificador : severidades.keySet()) {
+            if (regla(identificador).isEmpty()) {
+                throw new CambioNoPermitido(
+                        "reglas[" + identificador + "]",
+                        "La regla no está en la versión: en una versión no se agregan reglas");
+            }
+        }
         Map<String, Map<String, BigDecimal>> pendientes = new LinkedHashMap<>(parametros);
         List<Regla> nuevas = new ArrayList<>();
         for (Regla actual : reglas) {
@@ -321,7 +334,12 @@ public record VersionNormativa(
                                     nuevos.put(nombre, anterior);
                                 }
                             });
-            nuevas.add(new Regla(actual.identificador(), actual.severidad(), nuevos));
+            nuevas.add(
+                    new Regla(
+                            actual.identificador(),
+                            severidadEditada(
+                                    actual, severidades.get(actual.identificador()), lista),
+                            nuevos));
         }
         if (!pendientes.isEmpty()) {
             throw new CambioNoPermitido(
@@ -329,6 +347,21 @@ public record VersionNormativa(
                     "La regla no está en la versión: en una versión no se agregan reglas");
         }
         return nuevas;
+    }
+
+    // Sin severidad pedida, no cambia. Una regla que solo da parámetros no puede recibirla, y una
+    // del motor no puede perderla: como «sin pedir» no la cambia, nunca se pierde (research §3).
+    private static Severidad severidadEditada(
+            Regla actual, Severidad pedida, List<CambioDeValor> lista) {
+        if (pedida == null) {
+            return actual.severidad();
+        }
+        String campo = "reglas[" + actual.identificador() + "].severidad";
+        if (!actual.delMotor()) {
+            throw new CambioNoPermitido(campo, "Esta regla solo da parámetros: no tiene severidad");
+        }
+        anotar(lista, campo, actual.severidad().name(), pedida.name());
+        return pedida;
     }
 
     private static void anotar(

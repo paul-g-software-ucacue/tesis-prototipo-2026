@@ -136,7 +136,8 @@ class NormativaControlador implements VersionesApi, PeriodosApi {
                         versionEditada.getTablaCargaHoraria().stream()
                                 .map(NormativaControlador::horas)
                                 .toList(),
-                        parametros(versionEditada.getReglas()));
+                        parametros(versionEditada.getReglas()),
+                        severidades(versionEditada.getReglas()));
         try {
             return ResponseEntity.ok(respuesta(editar.editar(numero, cambios, quien())));
         } catch (VersionNoEncontrada error) {
@@ -216,6 +217,20 @@ class NormativaControlador implements VersionesApi, PeriodosApi {
     }
 
     // Una regla o un parámetro repetido en la solicitud es un error de entrada, no de la versión.
+    // Solo las reglas que traen severidad: sin ella, la de la regla no cambia (F04-H03).
+    private static Map<String, ec.mdd.normativa.dominio.Severidad> severidades(
+            List<ReglaEditada> reglas) {
+        Map<String, ec.mdd.normativa.dominio.Severidad> severidades = new LinkedHashMap<>();
+        for (ReglaEditada regla : reglas) {
+            if (regla.getSeveridad() != null) {
+                severidades.put(
+                        regla.getIdentificador(),
+                        ec.mdd.normativa.dominio.Severidad.valueOf(regla.getSeveridad().name()));
+            }
+        }
+        return severidades;
+    }
+
     private static Map<String, Map<String, BigDecimal>> parametros(List<ReglaEditada> reglas) {
         Map<String, Map<String, BigDecimal>> parametros = new LinkedHashMap<>();
         for (ReglaEditada regla : reglas) {

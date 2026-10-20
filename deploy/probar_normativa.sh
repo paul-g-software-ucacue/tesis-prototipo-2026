@@ -125,12 +125,13 @@ clase_de_medio_tiempo() {
 # La limpieza (research §12 de F04-H02): solo el periodo de prueba y las versiones que este script
 # creó, con sus filas, reglas, parámetros y registros. Corre al salir, aunque falle un paso.
 periodo="prueba-$RANDOM$RANDOM"
+periodo_b="$periodo-b"  # F04-H03: el periodo que rige la versión con RN-05 dura
 versiones_creadas=()
 limpiar() {
     local sql numero
-    sql="delete from normativa.asignacion_normativa where periodo = '$periodo';
+    sql="delete from normativa.asignacion_normativa where periodo in ('$periodo', '$periodo_b');
 delete from normativa.registro_cambio where accion = 'VERSION_ASOCIADA'
-    and detalle ->> 'periodo' = '$periodo';"
+    and detalle ->> 'periodo' in ('$periodo', '$periodo_b');"
     for numero in "${versiones_creadas[@]}"; do
         [[ $numero =~ ^[0-9]+$ ]] || continue
         sql+="
@@ -145,7 +146,7 @@ delete from normativa.version_normativa where numero = $numero;"
     done
     docker compose exec -T postgres psql -q -U postgres -d "$(valor_de_entorno POSTGRES_DB)" \
         -v ON_ERROR_STOP=1 -c "$sql" >/dev/null 2>&1 \
-        || echo "AVISO  No se pudo limpiar el periodo $periodo ni las versiones ${versiones_creadas[*]:-}"
+        || echo "AVISO  No se pudo limpiar los periodos $periodo y $periodo_b ni las versiones ${versiones_creadas[*]:-}"
 }
 trap limpiar EXIT
 
@@ -247,6 +248,39 @@ pesos_por_defecto() {
 }
 verificar 8 "La versión 1 trae los pesos de RN-24 (3, 2, 2, 1, 2, 1 y tope 3) y el mínimo 2 de RN-19, blanda (recibido: $estado)" \
     pesos_por_defecto
+
+# 9. Severidad de una regla (F04-H03, escenario 2, SC-004): la versión del paso 5, que sigue sin
+# periodo, pasa RN-05 a dura y rige un segundo periodo de prueba; la consulta del periodo lleva a
+# ella, con RN-05 dura, y la 1 la sigue teniendo blanda. Ya en uso, cambiarla da 409.
+con_severidad() {  # con_severidad <cuerpo de editarVersion> <regla> <severidad>
+    jq -c --arg r "$2" --arg s "$3" \
+        '.reglas |= map(if .identificador == $r then .severidad = $s else . end)' <<<"$1"
+}
+severidad_de() {  # severidad_de <versión> <regla>
+    jq -r --arg r "$2" '.reglas[] | select(.identificador == $r) | .severidad' <<<"$1"
+}
+pedir GET "$GATEWAY/api/normativa/versiones/${numero:-0}" "Bearer $token_vicerrector"
+sin_periodo=$cuerpo
+pedir PUT "$GATEWAY/api/normativa/versiones/${numero:-0}" "Bearer $token_vicerrector" \
+    "$(con_severidad "$(edicion_de "$sin_periodo")" RN-05 DURA)"
+tiempo_severidad=$tiempo
+rn05_dura() { [[ $estado == 200 && $(severidad_de "$cuerpo" RN-05) == DURA ]]; }
+verificar 9 "Pasar RN-05 a dura en la versión ${numero:-?}: 200 (recibido: $estado, ${tiempo_severidad} s)" rn05_dura
+pedir PUT "$GATEWAY/api/normativa/periodos/$periodo_b" "Bearer $token_vicerrector" \
+    "{\"version\":${numero:-0}}"
+verificar 9 "La versión ${numero:-?} queda asociada al periodo $periodo_b (recibido: $estado)" es_estado 200
+pedir GET "$GATEWAY/api/normativa/periodos/$periodo_b" "Bearer $token_vicerrector"
+rige_la_creada() { [[ $estado == 200 && $(jq '.version' <<<"$cuerpo") == "${numero:-0}" ]]; }
+verificar 9 "La consulta del periodo $periodo_b lleva a la versión ${numero:-?} (recibido: $estado)" rige_la_creada
+pedir GET "$GATEWAY/api/normativa/versiones/${numero:-0}" "Bearer $token_vicerrector"
+verificar 9 "Y esa versión trae RN-05 dura (recibido: $estado)" rn05_dura
+pedir GET "$GATEWAY/api/normativa/versiones/1" "Bearer $token_vicerrector"
+uno_blanda() { [[ $estado == 200 && $(severidad_de "$cuerpo" RN-05) == BLANDA ]]; }
+verificar 9 "La versión 1 sigue con RN-05 blanda (recibido: $estado)" uno_blanda
+pedir PUT "$GATEWAY/api/normativa/versiones/${numero:-0}" "Bearer $token_vicerrector" \
+    "$(con_severidad "$(edicion_de "$sin_periodo")" RN-05 BLANDA)"
+verificar 9 "Ya en uso, volver RN-05 a blanda: 409 NORMATIVA_VERSION_EN_USO (recibido: $estado)" \
+    es_codigo 409 NORMATIVA_VERSION_EN_USO
 
 if [[ $fallas -eq 0 ]]; then
     echo "Normativa de punta a punta: todos los pasos pasan."

@@ -37,6 +37,9 @@ Registro de las comprobaciones de la historia (issue #42): los pesos y el mínim
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Dominio (T011, T012) | confirmada | `VersionNormativaTest` (6 nuevas), sin dobles: RN-19 de blanda a dura cambia y da el `CambioDeValor` `reglas[RN-19].severidad` de `BLANDA` a `DURA`, sin tocar sus parámetros ni la versión original; sin severidad pedida o con la misma, no hay cambios; una severidad en RN-24 lanza `CambioNoPermitido` en `reglas[RN-24].severidad` con «Esta regla solo da parámetros: no tiene severidad»; una severidad de una regla que no está, `CambioNoPermitido` en `reglas[RN-17]`; con un periodo, `VersionEnUso`. No compilaban antes del código. `CambiosDeVersion` gana las severidades y conserva su constructor de tres argumentos, así que `EditarVersionServicio` y sus pruebas no cambiaron. | 2026-10-20 |
+| API (T013) | confirmada | `NormativaContratoTest` (4 nuevas): RN-19 a dura da 200 con la severidad nueva y la 1 la conserva blanda; sin severidades, ninguna cambia; una severidad en RN-24, 400 con su campo y su motivo; con la versión en uso, 409 `NORMATIVA_VERSION_EN_USO`. Las dos primeras de 200 y 400 fallaron antes de pasar la severidad desde el controlador; la de 409 ya pasaba, porque toda edición de una versión en uso se rechaza. `PermisosNormativaTest` sigue en verde. | 2026-10-20 |
+| Persistencia y registro (T014, FR-007) | confirmada | `VersionesNuevasJdbcIntegrationTest` con `EditarVersionServicio` y `RegistroDeCambiosJdbc` reales: la copia de la 1 con RN-05 dura se guarda y se reconstruye dura; la 1 sigue blanda; la copia trae RN-19, RN-24 y RF-24 iguales a los de la 1; el registro tiene `reglas[RN-05].severidad` de `BLANDA` a `DURA`. | 2026-10-20 |
 
 ## Ajustar en pantalla (US3)
 

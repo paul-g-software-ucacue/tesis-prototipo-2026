@@ -440,4 +440,82 @@ class VersionNormativaTest {
                                 assertThat(error.motivo())
                                         .isEqualTo("El valor no puede ser negativo"));
     }
+
+    // F04-H03: la severidad de las reglas (MD-08).
+
+    // La versión tal como viene, sin cambios de valores, con las severidades indicadas.
+    private static CambiosDeVersion conSeveridades(
+            VersionNormativa version, Map<String, Severidad> severidades) {
+        Map<String, Map<String, BigDecimal>> parametros = new LinkedHashMap<>();
+        version.reglas().forEach(una -> parametros.put(una.identificador(), una.parametros()));
+        return new CambiosDeVersion(
+                datosDe(version),
+                version.tabla().filas().stream().map(HorasDeFila::de).toList(),
+                parametros,
+                severidades);
+    }
+
+    @Test
+    void dadoUnaReglaBlanda_cuandoSePasaADura_entoncesCambiaYQuedaAnotada() {
+        VersionNormativa dos = conAfinidad();
+
+        VersionNormativa.Edicion edicion =
+                dos.editada(conSeveridades(dos, Map.of("RN-19", Severidad.DURA)));
+
+        assertThat(edicion.cambios())
+                .containsExactly(new CambioDeValor("reglas[RN-19].severidad", "BLANDA", "DURA"));
+        assertThat(edicion.version().regla("RN-19").orElseThrow().severidad())
+                .isEqualTo(Severidad.DURA);
+        assertThat(edicion.version().regla("RN-19").orElseThrow().parametros())
+                .isEqualTo(RN_19.parametros());
+        assertThat(dos.regla("RN-19").orElseThrow().severidad()).isEqualTo(Severidad.BLANDA);
+    }
+
+    @Test
+    void dadoSinSeveridadPedida_cuandoSeEdita_entoncesNoCambia() {
+        VersionNormativa dos = conAfinidad();
+
+        assertThat(dos.editada(conSeveridades(dos, Map.of())).cambios()).isEmpty();
+    }
+
+    @Test
+    void dadoLaMismaSeveridad_cuandoSeEdita_entoncesNoHayCambios() {
+        VersionNormativa dos = conAfinidad();
+
+        assertThat(dos.editada(conSeveridades(dos, Map.of("RN-02", Severidad.DURA))).cambios())
+                .isEmpty();
+    }
+
+    @Test
+    void dadoUnaReglaQueSoloDaParametros_cuandoSeLeDaSeveridad_entoncesSeRechaza() {
+        VersionNormativa dos = conAfinidad();
+
+        assertThatThrownBy(() -> dos.editada(conSeveridades(dos, Map.of("RN-24", Severidad.DURA))))
+                .isInstanceOfSatisfying(
+                        CambioNoPermitido.class,
+                        error -> {
+                            assertThat(error.campo()).isEqualTo("reglas[RN-24].severidad");
+                            assertThat(error.motivo())
+                                    .isEqualTo("Esta regla solo da parámetros: no tiene severidad");
+                        });
+    }
+
+    @Test
+    void dadoUnaSeveridadDeUnaReglaQueNoEsta_cuandoSeEdita_entoncesSeRechaza() {
+        VersionNormativa dos = conAfinidad();
+
+        assertThatThrownBy(() -> dos.editada(conSeveridades(dos, Map.of("RN-17", Severidad.DURA))))
+                .isInstanceOfSatisfying(
+                        CambioNoPermitido.class,
+                        error -> assertThat(error.campo()).isEqualTo("reglas[RN-17]"));
+    }
+
+    @Test
+    void dadoUnaVersionEnUso_cuandoSeCambiaUnaSeveridad_entoncesSeRechaza() {
+        VersionNormativa enUso = conAfinidad().asociadaA("2025-1", AHORA);
+
+        assertThatThrownBy(
+                        () -> enUso.editada(conSeveridades(enUso, Map.of("RN-19", Severidad.DURA))))
+                .isInstanceOf(VersionEnUso.class);
+    }
 }

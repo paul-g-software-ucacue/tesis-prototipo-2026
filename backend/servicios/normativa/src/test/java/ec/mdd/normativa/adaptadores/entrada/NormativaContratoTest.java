@@ -263,6 +263,80 @@ class NormativaContratoTest {
     }
 
     @Test
+    void dadoRn19Blanda_cuandoSePasaADura_entonces200ConLaSeveridadNueva() throws Exception {
+        MvcResult resultado =
+                pedir(
+                        put("/api/normativa/versiones/2")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(edicion(22, true, "2", ",\"severidad\":\"DURA\"")),
+                        escritura());
+
+        String cuerpo = resultado.getResponse().getContentAsString();
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(JsonPath.<String>read(cuerpo, "$.reglas[2].identificador")).isEqualTo("RN-19");
+        assertThat(JsonPath.<String>read(cuerpo, "$.reglas[2].severidad")).isEqualTo("DURA");
+        assertThat(normativa.version(1).regla("RN-19").orElseThrow().severidad())
+                .isEqualTo(Severidad.BLANDA);
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoSinSeveridades_cuandoSeEdita_entoncesNingunaCambia() throws Exception {
+        MvcResult resultado =
+                pedir(
+                        put("/api/normativa/versiones/2")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(edicion(22, true)),
+                        escritura());
+
+        String cuerpo = resultado.getResponse().getContentAsString();
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(JsonPath.<List<String>>read(cuerpo, "$.reglas[*].severidad"))
+                .containsExactly("DURA", "BLANDA", "DURA");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnaSeveridadEnRn24_cuandoSeEdita_entonces400ConSuCampo() throws Exception {
+        String cuerpoPedido =
+                edicion(22, true)
+                        .replace(
+                                "{\"identificador\":\"RN-24\"",
+                                "{\"identificador\":\"RN-24\",\"severidad\":\"DURA\"");
+        MvcResult resultado =
+                pedir(
+                        put("/api/normativa/versiones/2")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(cuerpoPedido),
+                        escritura());
+
+        String cuerpo = resultado.getResponse().getContentAsString();
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(400);
+        assertThat(JsonPath.<String>read(cuerpo, "$.detalles[0].campo"))
+                .isEqualTo("reglas[RN-24].severidad");
+        assertThat(JsonPath.<String>read(cuerpo, "$.detalles[0].descripcion"))
+                .isEqualTo("Esta regla solo da parámetros: no tiene severidad");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoLaVersionDosEnUso_cuandoSeCambiaUnaSeveridad_entonces409() throws Exception {
+        normativa.asociar(2, "2025-1");
+
+        MvcResult resultado =
+                pedir(
+                        put("/api/normativa/versiones/2")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(edicion(22, true, "2", ",\"severidad\":\"DURA\"")),
+                        escritura());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(409);
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("NORMATIVA_VERSION_EN_USO");
+        contrato.validar(resultado);
+    }
+
+    @Test
     void dadoHorasDeClaseFueraDeRango_cuandoSeEdita_entonces400ConLaFilaYElMotivo()
             throws Exception {
         MvcResult resultado =
