@@ -68,7 +68,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 ## 5. Las versiones que ya existen (FR-002) — D-68
 
 - **Decisión:** `V4__afinidad_y_reglas_del_motor.sql` agrega las 9 reglas nuevas (§2) y los 8 parámetros (§1) a **cada versión que no las tiene**, y deja un `VERSION_EDITADA` por versión, de `sistema`, con cada valor agregado (anterior `null`). No cambia ningún valor que ya existía.
-- **Versiones en uso:** hoy ninguna versión rige un periodo en ningún entorno (los periodos llegan con F02-H01, y `probar_normativa.sh` borra el suyo). Aun así la migración las trataría igual: no cambia un valor, completa la versión con reglas que no definía. Es una excepción acotada al principio VII que se propone como **D-68** (§10).
+- **Versiones en uso:** hoy ninguna versión rige un periodo en ningún entorno (los periodos llegan con F02-H01, y `probar_normativa.sh` borra el suyo). Aun así la migración las trataría igual: no cambia un valor, completa la versión con reglas que no definía. Es una excepción acotada al principio VII: **D-68**, aceptada por el autor el 2026-10-20.
 - **Alternativa:** agregar las reglas solo a la versión 1, y que las demás las tengan al crear una nueva. Se descarta: la versión 2 que el autor creó en el equipo quedaría sin pesos, y una versión sin RN-19 no podría usarse en F07.
 
 ## 6. Vuelta atrás (D-55)
@@ -100,8 +100,8 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 
 ## 10. Decisiones y glosario (§6.4, principio III)
 
-- **D-68 (propuesta):** las reglas del motor que faltan y los pesos y el mínimo de afinidad por defecto se agregan por migración a todas las versiones existentes, con su registro, aunque una rija un periodo: completan la versión, no cambian un valor. Necesita la aprobación del autor antes del código.
-- **Glosario §7.3 (propuesta):**
+- **D-68 (aceptada el 2026-10-20):** las reglas del motor que faltan y los pesos y el mínimo de afinidad por defecto se agregan por migración a todas las versiones existentes, con su registro, aunque una rija un periodo: completan la versión, no cambian un valor. Registrada en `docs/decisiones.md`.
+- **Glosario §7.3 (aprobado por el autor el 2026-10-20):**
   - «Regla»: «Comprobación de la política con su identificador RN-xx (o RF-xx, como RF-24), sus parámetros y su severidad.» Hoy dice solo RN-xx.
   - «Pesos de afinidad»: «Puntos que suma cada título, experiencia o curso relacionado. Un título suma más si coincide el campo específico de la asignatura que si solo coincide el campo amplio.»
   - Se hace una copia anterior (`modelo_dominio.md.antes-F04-H03`), como en F04-H01 y F04-H02.

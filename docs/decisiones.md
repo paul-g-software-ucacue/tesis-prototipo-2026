@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-68 · ADR-022.
+- **Siguiente número libre:** D-69 · ADR-022.
 
 ## Índice
 
@@ -63,6 +63,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | ADR-021 | 2026-10-18 | Permisos efectivos en el token y cada operación declara su permiso en el contrato | Aceptada | ADR-014 (claim `permisos`), ADR-015 (`x-mdd-permiso`), ADR-016 (403 común) |
 | D-66 | 2026-10-18 | El Vicerrector académico lee «Parámetros y normativa» | Aceptada | D-65 (un permiso más en la fila del Vicerrector) |
 | D-67 | 2026-10-18 | El Vicerrector académico escribe «Parámetros y normativa» | Aceptada | D-65, D-66 (la escritura además de la lectura) |
+| D-68 | 2026-10-20 | Las reglas del motor y la afinidad por defecto completan las versiones existentes por migración | Aceptada | — (excepción acotada al principio VII para V4 de Normativa) |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1132,3 +1133,17 @@ Estado al 2026-10-11. El texto completo está en `lean_inception/adr/`.
 **Alternativas.** Solo el Administrador (D-65 tal cual): el Vicerrector pediría cada cambio de la política. Una funcionalidad aparte para «versionar la normativa»: más permisos para un solo rol más.
 
 **Consecuencias.** La fila del Vicerrector en la matriz queda con lectura de `DISTRIBUTIVO`, `REPORTES`, `BITACORA` y `PARAMETROS`, y escritura de `DISTRIBUTIVO` y `PARAMETROS`. Como `PARAMETROS` agrupa parámetros y normativa, también podrá escribir los demás parámetros cuando las historias que los traigan los protejan con esa funcionalidad. El permiso llega al token en la próxima renovación (D-62).
+
+## D-68. Las reglas del motor y la afinidad por defecto completan las versiones existentes por migración
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-20 · **Decidido por:** autor de la tesis (propuesta en el plan de F04-H03)
+- **Origen:** aclaración de la especificación de F04-H03 (`specs/014-afinidad-severidad/spec.md`, Clarifications) y `research.md` §5
+- **Modifica a:** — (excepción acotada al principio VII de la constitución para una migración)
+
+**Decisión.** La migración `V4__afinidad_y_reglas_del_motor.sql` de Normativa agrega a cada versión de normativa existente las reglas del motor que le faltan (RN-12, RN-16, RN-17, RN-18, RN-19, RN-22, RN-25 y RF-24, con la severidad por defecto de la tabla 5.2 del modelo de dominio) y la regla RN-24 con los pesos de afinidad por defecto, más el mínimo de afinidad en RN-19. Lo hace aunque la versión rija un periodo. Deja un `VERSION_EDITADA` de `sistema` por versión, con cada valor agregado. No cambia ningún valor que ya existía.
+
+**Por qué.** Las reglas y los pesos agregados no existían en ninguna versión: completarlas no cambia cómo se validó un periodo. Sin ellos, la versión 1 y las creadas a mano quedarían sin pesos ni mínimo, y una versión en uso no podría completarse nunca (F06 y F07 los necesitan). Hoy ninguna versión rige un periodo en ningún entorno.
+
+**Alternativas.** Agregarlos solo a las versiones nuevas: las existentes quedarían incompletas. Agregarlos solo a las versiones sin periodo: una versión en uso sin RN-19 rompería F07.
+
+**Consecuencias.** Por la API, una versión en uso sigue sin cambiar (409). Cualquier otra migración que quiera completar versiones en uso necesita su propia decisión.

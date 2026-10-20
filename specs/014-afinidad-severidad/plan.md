@@ -13,7 +13,7 @@ Sobre las versiones de normativa de F04-H02:
   - el agregado arma con ellos `PesosAfinidad` y `MinimoAfinidad` y comprueba que el campo amplio no pese más que el específico.
 - **Las reglas del motor que faltan:** RN-12, RN-16, RN-17, RN-18, RN-19, RN-22, RN-25 y RF-24 se agregan con la severidad por defecto de la tabla 5.2. Una regla puede no tener parámetros, y el identificador admite `RF-xx`.
 - **Severidad editable:** `ReglaEditada` gana `severidad`, opcional, por la misma `editarVersion` (FR-010 de F04-H02). Una versión en uso sigue sin cambiar (409).
-- **Versiones existentes:** `V4` completa cada versión con las reglas y los valores por defecto, con su registro. Es **D-68 (propuesta)**.
+- **Versiones existentes:** `V4` completa cada versión con las reglas y los valores por defecto, con su registro. Es **D-68 (aceptada)**.
 - **SPA:** «Normativa» gana la sección «Afinidad» y el selector de severidad en la edición.
 
 Sin operaciones ni códigos de error nuevos. Los detalles y las alternativas están en [research.md](research.md).
@@ -66,21 +66,21 @@ Sin operaciones ni códigos de error nuevos. Los detalles y las alternativas est
 |---|---|---|
 | I. Capas | Las invariantes, en `Regla`, `PesosAfinidad` y el agregado. La aplicación no cambia; los adaptadores traducen la severidad del contrato y leen las reglas sin parámetros. | ✅ |
 | II. DDD según el subdominio | `PesosAfinidad` y `MinimoAfinidad`, objetos de valor del modelo de dominio §5.1, dentro del agregado. | ✅ |
-| III. Lenguaje ubicuo | Pesos de afinidad, Mínimo de afinidad, Regla y Severidad, del glosario. Se proponen dos ajustes al glosario antes del código (research §10). | ⚠️ pendiente de aprobación |
+| III. Lenguaje ubicuo | Pesos de afinidad, Mínimo de afinidad, Regla y Severidad, del glosario. Los dos ajustes al glosario se aprobaron y aplicaron antes del código (research §10). | ✅ |
 | IV. API primero | Los dos esquemas cambian en `contratos/normativa/openapi.yaml` antes del código. | ✅ |
 | V. Límites | Distributivo leerá las reglas por la API de Normativa (F07), sin leer sus tablas. | ✅ |
 | VI. Las reglas son datos | Los pesos, el mínimo y cada severidad están en la versión. | ✅ |
-| VII. Inmutabilidad y trazabilidad | Una versión en uso no cambia por la API. La migración completa versiones con su registro (D-68). | ⚠️ D-68 pendiente de aprobación |
+| VII. Inmutabilidad y trazabilidad | Una versión en uso no cambia por la API. La migración completa versiones con su registro (D-68). | ✅ |
 | VIII. Pruebas | Primero las pruebas. Las invariantes, sin dobles; la migración, con PostgreSQL real. | ✅ |
 | IX. Seguridad | La escritura sigue exigiendo `PARAMETROS:ESCRITURA`, validada en el servidor. | ✅ |
 | X. Simplicidad | La afinidad usa los parámetros que ya existen; ni tablas, ni operaciones, ni códigos nuevos. `ReglasDelPeriodo` espera a su consumidor (F07). | ✅ |
 | XI y XII | JavaDoc en español en `Regla`, los objetos de valor nuevos y el agregado. | ✅ |
 | XIII. Errores | Los 400 con su detalle y el 409 de F04-H02. | ✅ |
-| §6.4 Decisiones | D-68, propuesta en research §10. | ⚠️ pendiente de aprobación |
+| §6.4 Decisiones | D-68, aceptada por el autor el 2026-10-20. | ✅ |
 
-**Resultado del gate antes de la fase 0:** pasa con dos condiciones. D-68 y los dos ajustes al glosario necesitan la aprobación del autor antes del código.
+**Resultado del gate antes de la fase 0:** pasa. D-68 y los dos ajustes al glosario quedaron aprobados el 2026-10-20.
 
-**Revisión después de la fase 1:** pasa con las mismas condiciones. [data-model.md](data-model.md) y [contracts/](contracts/) solo agregan lo listado.
+**Revisión después de la fase 1:** pasa. [data-model.md](data-model.md) y [contracts/](contracts/) solo agregan lo listado.
 
 ## Project Structure
 
@@ -119,7 +119,7 @@ docs/decisiones.md                 # D-68
 
 ## Fases de implementación (guía para /speckit-tasks)
 
-1. **D-68 y el glosario:** con la aprobación del autor.
+1. **D-68 y el glosario:** aprobados por el autor el 2026-10-20.
 2. **Contrato:** los dos esquemas y la descripción de `editarVersion`; la generación.
 3. **Dominio,** con sus pruebas primero: `Regla`, `PesosAfinidad`, `MinimoAfinidad` y la severidad en `editada`.
 4. **Persistencia:** V4 y el repositorio (reglas sin parámetros y su orden), con Testcontainers y la vuelta atrás.
