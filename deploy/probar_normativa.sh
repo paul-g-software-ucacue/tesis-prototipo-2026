@@ -158,7 +158,7 @@ verificar 1 "vicerrectorado.demo: la primera versión es la 1, SENESCYT-2024-03 
 
 # 2. La versión 1 es la política 2024
 pedir GET "$GATEWAY/api/normativa/versiones/1" "Bearer $token_vicerrector"
-verificar 2 "La versión 1 tiene 22 filas y 7 reglas; DOCENTE_TC con 22 h de clase entre 18 y 24 y 18 de otras de docencia (recibido: $estado)" es_la_politica_de_2024
+verificar 2 "La versión 1 tiene 22 filas y 16 reglas; DOCENTE_TC con 22 h de clase entre 18 y 24 y 18 de otras de docencia (recibido: $estado)" es_la_politica_de_2024
 guardada=$cuerpo
 
 # 3. El Administrador la ve igual; un docente recibe el 403; una versión que no existe, 404
@@ -240,9 +240,9 @@ verificar 7 "docente.demo no crea versiones: 403 con el cuerpo común (recibido:
 pedir GET "$GATEWAY/api/normativa/versiones/1" "Bearer $token_vicerrector"
 pesos_por_defecto() {
     [[ $estado == 200 ]] \
-        && [[ $(jq -c '[.reglas[] | select(.identificador == "RN-24") | .parametros[]
+        && [[ $(jq -cS '[.reglas[] | select(.identificador == "RN-24") | .parametros[]
                 | {(.nombre): .valor}] | add' <<<"$cuerpo") \
-            == '{"cuarto_nivel_campo_especifico":3,"cuarto_nivel_campo_amplio":2,"tercer_nivel_campo_especifico":2,"tercer_nivel_campo_amplio":1,"experiencia_relacionada":2,"curso_relacionado":1,"tope_cursos":3}' ]] \
+            == "$(jq -cS . <<<'{"cuarto_nivel_campo_especifico":3,"cuarto_nivel_campo_amplio":2,"tercer_nivel_campo_especifico":2,"tercer_nivel_campo_amplio":1,"experiencia_relacionada":2,"curso_relacionado":1,"tope_cursos":3}')" ]] \
         && [[ $(jq -c '.reglas[] | select(.identificador == "RN-19") | [.severidad, .parametros]' <<<"$cuerpo") \
             == '["BLANDA",[{"nombre":"minimo_afinidad","valor":2}]]' ]]
 }
@@ -270,7 +270,9 @@ pedir PUT "$GATEWAY/api/normativa/periodos/$periodo_b" "Bearer $token_vicerrecto
     "{\"version\":${numero:-0}}"
 verificar 9 "La versión ${numero:-?} queda asociada al periodo $periodo_b (recibido: $estado)" es_estado 200
 pedir GET "$GATEWAY/api/normativa/periodos/$periodo_b" "Bearer $token_vicerrector"
-rige_la_creada() { [[ $estado == 200 && $(jq '.version' <<<"$cuerpo") == "${numero:-0}" ]]; }
+# En su propia variable: dentro de verificar, «numero» es el número del paso (local).
+version_creada=${numero:-0}
+rige_la_creada() { [[ $estado == 200 && $(jq '.version' <<<"$cuerpo") == "$version_creada" ]]; }
 verificar 9 "La consulta del periodo $periodo_b lleva a la versión ${numero:-?} (recibido: $estado)" rige_la_creada
 pedir GET "$GATEWAY/api/normativa/versiones/${numero:-0}" "Bearer $token_vicerrector"
 verificar 9 "Y esa versión trae RN-05 dura (recibido: $estado)" rn05_dura
