@@ -53,7 +53,7 @@ Sin operaciones ni códigos de error nuevos. Los detalles y las alternativas est
 - 60 % de líneas por módulo.
 
 **Scale/Scope**:
-- 9 reglas y 8 parámetros por versión;
+- 9 reglas y 8 parámetros nuevos por versión (16 reglas en total);
 - 2 esquemas del contrato;
 - 0 operaciones y 0 códigos de error nuevos;
 - 2 pasos nuevos de punta a punta.

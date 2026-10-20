@@ -6,7 +6,7 @@ Parte del modelo de F04-H02 ([data-model.md](../013-version-normativa-nueva/data
 
 | Elemento | Tipo | Cambio |
 |---|---|---|
-| `Regla` | Objeto de valor | El identificador admite `RN-xx` y `RF-xx`. Exige parámetros **o** severidad, no al menos un parámetro (research §2). |
+| `Regla` | Objeto de valor | El identificador admite `RN-xx` y `RF-xx`. Exige parámetros **o** severidad, no al menos un parámetro (research §2). Gana `delMotor()`: tiene severidad. |
 | `PesosAfinidad` | Objeto de valor, nuevo | Los 7 parámetros de RN-24. Invariante: para cada nivel, el peso del campo amplio no supera al del específico (research §4). |
 | `MinimoAfinidad` | Objeto de valor, nuevo | El parámetro `minimo_afinidad` de RN-19. |
 | `VersionNormativa` | Agregado | Gana `pesosAfinidad()` y `minimoAfinidad()`. `editada` también compara y cambia la severidad de cada regla (research §3). |

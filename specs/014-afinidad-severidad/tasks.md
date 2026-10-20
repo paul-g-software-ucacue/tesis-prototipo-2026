@@ -40,7 +40,7 @@ description: "Tareas de F04-H03: pesos y mínimo de afinidad y la severidad de l
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear `specs/014-afinidad-severidad/evidencia.md` con estas secciones: entorno; base (contrato, reglas, migración y repositorio); escenario «Valores por defecto» (US1); escenario «Severidad de una regla» (US2); «Ajustar en pantalla» (US3); cierre; equipo de demostración; notas.
+- [X] T001 Crear `specs/014-afinidad-severidad/evidencia.md` con estas secciones: entorno; base (contrato, reglas, migración y repositorio); escenario «Valores por defecto» (US1); escenario «Severidad de una regla» (US2); «Ajustar en pantalla» (US3); cierre; equipo de demostración; notas.
 
 ---
 
@@ -48,7 +48,7 @@ description: "Tareas de F04-H03: pesos y mínimo de afinidad y la severidad de l
 
 ### Contrato (principio IV)
 
-- [ ] T002 Cambiar `contratos/normativa/openapi.yaml` según contracts/normativa.md:
+- [X] T002 Cambiar `contratos/normativa/openapi.yaml` según contracts/normativa.md:
   - `Regla.identificador` y `ReglaEditada.identificador` con `pattern: '^R[NF]-[0-9]{2}$'`;
   - `Regla.parametros` y `ReglaEditada.parametros` siguen en `required`, sin `minItems`;
   - `ReglaEditada` gana `severidad` (`$ref: '#/components/schemas/Severidad'`), opcional, con la descripción «Ausente: no cambia. Solo en las reglas del motor; en RN-01, RN-06 y RN-24 responde 400»;
