@@ -83,10 +83,20 @@ class VersionNormativaTest {
     }
 
     @Test
+    void dadoUnaReglaRf_cuandoSeCreaLaVersion_entoncesVaDespuesDeLasRn() {
+        Regla rf24 = new Regla("RF-24", Severidad.DURA, Map.of());
+
+        assertThat(version(1, List.of(rf24, RN_02, RN_01)).reglas())
+                .extracting(Regla::identificador)
+                .containsExactly("RN-01", "RN-02", "RF-24");
+    }
+
+    @Test
     void dadoReglasInvalidas_cuandoSeCrean_entoncesSeRechazan() {
         assertThatThrownBy(() -> new Regla("RN-1", null, Map.of("x", BigDecimal.ONE)))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new Regla("RN-05", Severidad.BLANDA, Map.of()))
+        // Desde F04-H03 una regla del motor puede no tener parámetros; sin severidad, no.
+        assertThatThrownBy(() -> new Regla("RN-05", null, Map.of()))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

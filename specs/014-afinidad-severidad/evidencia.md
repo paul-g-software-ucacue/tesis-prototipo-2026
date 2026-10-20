@@ -16,6 +16,14 @@ Registro de las comprobaciones de la historia (issue #42): los pesos y el mínim
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Contrato primero (T002) | confirmada | `contratos/normativa/openapi.yaml`: `Regla` y `ReglaEditada` con `identificador` `^R[NF]-[0-9]{2}$` y `parametros` sin `minItems`; `ReglaEditada` gana `severidad` opcional (un `$ref` simple, sin `allOf`, para que el generador dé una clase simple, como en F04-H02). `openApiGenerate` y `generar:api` regeneran; `tipos` y `verificar:ruptura` en verde. | 2026-10-20 |
+| Reglas (T003, T004) | confirmada | `ReglaTest` (5), sin dobles: RF-24 y RN-17 con severidad y sin parámetros; RN-24 con parámetros y sin severidad; sin parámetros ni severidad, rechazada; `RX-01`, `RN-1`, `rn-02` y `RF-024`, rechazados. Fallaron antes del código (no existía `delMotor()`). La prueba de F04-H01 que rechazaba RN-05 sin parámetros pasó a rechazarla sin parámetros ni severidad: es la regla que esta historia cambia. | 2026-10-20 |
+| Orden de las reglas | agregada | El agregado ordena sus reglas por identificador, así que RF-24 salía primera. `VersionNormativa` las ordena ahora con las `RF-xx` al final; la prueba de dominio falló antes del cambio. La consulta del repositorio quedó con su orden de antes: T006 lo ponía en el SQL, pero el agregado lo reordenaba. | 2026-10-20 |
+| Migración V4 (T005, D-68) | confirmada | `V4__afinidad_y_reglas_del_motor.sql`. Se escribió antes que su prueba; para que la prueba fallara primero, se corrió T006 sin V4: fallaron 6 pruebas. Con V4 pasaron las de la migración y fallaron las 2 del repositorio, hasta el `LEFT JOIN`. | 2026-10-20 |
+| Versión 1 después de V4 (T006, SC-002) | confirmada | `PoliticaDe2024IntegrationTest` (5): 16 reglas con la severidad de research §2 y 37 parámetros, con los 8 nuevos (RN-24 3, 2, 2, 1, 2, 1 y 3; RN-19 2); las 22 filas, idénticas a la carga 7; el `VERSION_CREADA` de F04-H01 sigue; un `VERSION_EDITADA` de `sistema` con 16 cambios (8 severidades y 8 parámetros, con anterior `null`). | 2026-10-20 |
+| Repositorio (T006) | confirmada | `RepositorioVersionesJdbcIntegrationTest` (5): 16 reglas; RN-17 dura sin parámetros; RF-24 al final; una copia de la 1 con sus reglas sin parámetros se guarda y se reconstruye igual. | 2026-10-20 |
+| Versión creada a mano (T006, D-68) | confirmada | `NormativaEsquemaIntegrationTest`: una versión 2 insertada después de V3 (Flyway con `target` 3) queda, después de V4, con las mismas 16 reglas que la 1 y su propio `VERSION_EDITADA`. | 2026-10-20 |
+| Vuelta atrás (T006, D-55) | confirmada | `NormativaEsquemaIntegrationTest`: el Flyway de la versión anterior, con V1 a V3, arranca sobre el esquema con V4; la consulta de reglas de esa versión (con `JOIN`, copiada de `51d3c19`) solo trae reglas `RN-xx` con parámetros: ve RN-19 y RN-24, y no RN-17 ni RF-24. | 2026-10-20 |
 
 ## Escenario «Valores por defecto» (US1)
 

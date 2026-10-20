@@ -26,7 +26,8 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
  * Después de migrar, la versión 1 es la Política SENESCYT 2024: sus 22 filas coinciden, valor por
  * valor, con la carga 7 (SC-001), y tiene el tipo de IST, las reglas y el registro de la historia.
  * La carga 7 está copiada en {@code politica-2024.csv}, así que un cambio en la migración o en el
- * archivo hace fallar esta prueba.
+ * archivo hace fallar esta prueba. Desde F04-H03 (V4, D-68) tiene además las reglas del motor que
+ * faltaban y los pesos y el mínimo de afinidad, sin que cambie nada de lo anterior.
  */
 class PoliticaDe2024IntegrationTest {
 
@@ -100,7 +101,7 @@ class PoliticaDe2024IntegrationTest {
     }
 
     @Test
-    void dadoLaMigracion_cuandoSeLeenLasReglas_entoncesSonLasSieteConSus29Parametros() {
+    void dadoLaMigracion_cuandoSeLeenLasReglas_entoncesSonLas16ConSus37Parametros() {
         Map<String, String> severidades = new LinkedHashMap<>();
         jdbc.sql(
                         "select r.identificador, coalesce(r.severidad, '—') from normativa.regla r"
@@ -114,14 +115,33 @@ class PoliticaDe2024IntegrationTest {
 
         assertThat(severidades)
                 .containsExactly(
+                        Map.entry("RF-24", "DURA"),
                         Map.entry("RN-01", "—"),
                         Map.entry("RN-02", "DURA"),
                         Map.entry("RN-05", "BLANDA"),
                         Map.entry("RN-06", "—"),
                         Map.entry("RN-09", "BLANDA"),
                         Map.entry("RN-10", "BLANDA"),
-                        Map.entry("RN-13", "DURA"));
-        assertThat(parametros).hasSize(29);
+                        Map.entry("RN-12", "DURA"),
+                        Map.entry("RN-13", "DURA"),
+                        Map.entry("RN-16", "BLANDA"),
+                        Map.entry("RN-17", "DURA"),
+                        Map.entry("RN-18", "DURA"),
+                        Map.entry("RN-19", "BLANDA"),
+                        Map.entry("RN-22", "DURA"),
+                        Map.entry("RN-24", "—"),
+                        Map.entry("RN-25", "DURA"));
+        assertThat(parametros).hasSize(37);
+        // F04-H03: los pesos de RN-24 y el mínimo de RN-19 (escenario «Valores por defecto»).
+        assertThat(parametros)
+                .containsEntry("RN-24.cuarto_nivel_campo_especifico", new BigDecimal("3.00"))
+                .containsEntry("RN-24.cuarto_nivel_campo_amplio", new BigDecimal("2.00"))
+                .containsEntry("RN-24.tercer_nivel_campo_especifico", new BigDecimal("2.00"))
+                .containsEntry("RN-24.tercer_nivel_campo_amplio", new BigDecimal("1.00"))
+                .containsEntry("RN-24.experiencia_relacionada", new BigDecimal("2.00"))
+                .containsEntry("RN-24.curso_relacionado", new BigDecimal("1.00"))
+                .containsEntry("RN-24.tope_cursos", new BigDecimal("3.00"))
+                .containsEntry("RN-19.minimo_afinidad", new BigDecimal("2.00"));
         assertThat(parametros)
                 .containsEntry("RN-01.dedicacion_tiempo_parcial_maxima", new BigDecimal("19.00"))
                 .containsEntry("RN-02.horas_maximas_docente", new BigDecimal("40.00"))
@@ -137,7 +157,8 @@ class PoliticaDe2024IntegrationTest {
         Map<String, Object> registro =
                 jdbc.sql(
                                 "select usuario, accion, detalle ->> 'codigo' as codigo"
-                                        + " from normativa.registro_cambio")
+                                        + " from normativa.registro_cambio"
+                                        + " where accion = 'VERSION_CREADA'")
                         .query()
                         .singleRow();
 
@@ -145,6 +166,47 @@ class PoliticaDe2024IntegrationTest {
                 .containsEntry("usuario", "sistema")
                 .containsEntry("accion", "VERSION_CREADA")
                 .containsEntry("codigo", "SENESCYT-2024-03");
+    }
+
+    @Test
+    void dadoV4_cuandoSeLeeElRegistro_entoncesLaVersionUnoQuedoCompletadaPorElSistema() {
+        Map<String, Object> registro =
+                jdbc.sql(
+                                "select usuario, (detalle ->> 'numero')::int as numero,"
+                                        + " jsonb_array_length(detalle -> 'cambios') as cambios"
+                                        + " from normativa.registro_cambio"
+                                        + " where accion = 'VERSION_EDITADA'")
+                        .query()
+                        .singleRow();
+        List<Map<String, Object>> severidades =
+                jdbc.sql(
+                                "select c ->> 'campo' as campo, c ->> 'anterior' as anterior,"
+                                        + " c ->> 'nuevo' as nuevo"
+                                        + " from normativa.registro_cambio,"
+                                        + " jsonb_array_elements(detalle -> 'cambios') c"
+                                        + " where c ->> 'campo' in"
+                                        + " ('reglas[RN-17].severidad', 'reglas[RN-24].tope_cursos')"
+                                        + " order by 1")
+                        .query()
+                        .listOfRows();
+
+        // 8 severidades y 8 parámetros: RN-24 solo aporta sus parámetros (D-68).
+        assertThat(registro)
+                .containsEntry("usuario", "sistema")
+                .containsEntry("numero", 1)
+                .containsEntry("cambios", 16);
+        assertThat(severidades)
+                .containsExactly(
+                        mapa("reglas[RN-17].severidad", null, "DURA"),
+                        mapa("reglas[RN-24].tope_cursos", null, "3"));
+    }
+
+    private static Map<String, Object> mapa(String campo, String anterior, String nuevo) {
+        Map<String, Object> uno = new LinkedHashMap<>();
+        uno.put("campo", campo);
+        uno.put("anterior", anterior);
+        uno.put("nuevo", nuevo);
+        return uno;
     }
 
     // Las columnas de la carga 7 que guarda la fila, en el orden de FILAS.

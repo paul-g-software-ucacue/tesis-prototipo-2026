@@ -28,6 +28,9 @@ import org.springframework.jdbc.core.simple.JdbcClient;
  * política, sus reglas con sus parámetros y sus periodos, en cuatro consultas. Cada versión se
  * reconstruye con el agregado, que comprueba sus invariantes.
  *
+ * <p>Las reglas se leen con {@code LEFT JOIN}, porque las del motor pueden no tener parámetros
+ * (F04-H03).
+ *
  * <p>Guardar una versión existente reemplaza sus filas y sus parámetros, en la transacción en
  * curso. Los candados son los de research §3: uno de la transacción para numerar y otro por
  * periodo, y {@code FOR UPDATE} sobre la versión.
@@ -46,7 +49,7 @@ public final class RepositorioVersionesJdbc implements RepositorioVersiones {
 
     private static final String PARAMETROS =
             "SELECT r.version_id, r.identificador, r.severidad, p.nombre, p.valor"
-                    + " FROM normativa.regla r JOIN normativa.parametro_regla p"
+                    + " FROM normativa.regla r LEFT JOIN normativa.parametro_regla p"
                     + " ON p.version_id = r.version_id AND p.regla = r.identificador"
                     + " ORDER BY r.version_id, r.identificador, p.nombre";
 
@@ -280,11 +283,16 @@ public final class RepositorioVersionesJdbc implements RepositorioVersiones {
                                                     severidad == null
                                                             ? null
                                                             : Severidad.valueOf(severidad));
-                                    valores.computeIfAbsent(version, clave -> new LinkedHashMap<>())
-                                            .computeIfAbsent(regla, clave -> new LinkedHashMap<>())
-                                            .put(
-                                                    fila.getString("nombre"),
-                                                    fila.getBigDecimal("valor"));
+                                    Map<String, BigDecimal> suyos =
+                                            valores.computeIfAbsent(
+                                                            version, clave -> new LinkedHashMap<>())
+                                                    .computeIfAbsent(
+                                                            regla, clave -> new LinkedHashMap<>());
+                                    // Sin parámetros, el LEFT JOIN trae el nombre en null.
+                                    String nombre = fila.getString("nombre");
+                                    if (nombre != null) {
+                                        suyos.put(nombre, fila.getBigDecimal("valor"));
+                                    }
                                 });
         Map<UUID, List<AsignacionNormativa>> asignaciones = new LinkedHashMap<>();
         jdbc.sql(ASIGNACIONES)

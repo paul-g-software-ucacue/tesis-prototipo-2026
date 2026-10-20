@@ -67,7 +67,15 @@ public record VersionNormativa(
                                 + numero);
             }
         }
-        reglas = reglas.stream().sorted(Comparator.comparing(Regla::identificador)).toList();
+        // Por identificador, con las RF-xx (RF-24) después de las RN-xx.
+        reglas =
+                reglas.stream()
+                        .sorted(
+                                Comparator.comparing(
+                                                (Regla regla) ->
+                                                        regla.identificador().startsWith("RF-"))
+                                        .thenComparing(Regla::identificador))
+                        .toList();
         if (copiadaDe != null && copiadaDe == numero) {
             throw new IllegalArgumentException("La versión " + numero + " no se copia de sí misma");
         }

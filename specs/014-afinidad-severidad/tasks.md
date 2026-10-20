@@ -59,17 +59,17 @@ description: "Tareas de F04-H03: pesos y mínimo de afinidad y la severidad de l
 
 ### Reglas (research §2)
 
-- [ ] T003 Prueba primero, en `PNOR/dominio/ReglaTest.java`, sin dobles: una regla `RF-24` con severidad dura y sin parámetros se crea; `RN-17` con severidad y sin parámetros, también; una regla sin parámetros ni severidad lanza `IllegalArgumentException`; `RX-01` y `RN-1` siguen rechazándose; `RN-24` con parámetros y sin severidad se crea. Las pruebas de dominio de F04-H01 y F04-H02 siguen en verde.
-- [ ] T004 Cambiar `JNOR/dominio/Regla.java`: el identificador sigue `R[NF]-[0-9]{2}`; exige parámetros **o** severidad; agregar `delMotor()` (tiene severidad), con JavaDoc que cite MD-08 y la tabla 5.2 del modelo de dominio. T003 pasa.
+- [X] T003 Prueba primero, en `PNOR/dominio/ReglaTest.java`, sin dobles: una regla `RF-24` con severidad dura y sin parámetros se crea; `RN-17` con severidad y sin parámetros, también; una regla sin parámetros ni severidad lanza `IllegalArgumentException`; `RX-01` y `RN-1` siguen rechazándose; `RN-24` con parámetros y sin severidad se crea. Las pruebas de dominio de F04-H01 y F04-H02 siguen en verde.
+- [X] T004 Cambiar `JNOR/dominio/Regla.java`: el identificador sigue `R[NF]-[0-9]{2}`; exige parámetros **o** severidad; agregar `delMotor()` (tiene severidad), con JavaDoc que cite MD-08 y la tabla 5.2 del modelo de dominio. T003 pasa.
 
 ### Migración y repositorio (research §2, §5 y §6; D-68)
 
-- [ ] T005 Crear `NOR/main/resources/db/migration/normativa/V4__afinidad_y_reglas_del_motor.sql` según data-model.md, con un comentario de cabecera que cite RN-19, RN-24, MD-08, la tabla 5.2 y D-68:
+- [X] T005 Crear `NOR/main/resources/db/migration/normativa/V4__afinidad_y_reglas_del_motor.sql` según data-model.md, con un comentario de cabecera que cite RN-19, RN-24, MD-08, la tabla 5.2 y D-68:
   - el `check` de `regla.identificador` pasa a `'^R[NF]-[0-9]{2}$'`;
   - para cada versión que no las tiene (`where not exists`), las 9 reglas de research §2 con su severidad: RN-12, RN-17, RN-18, RN-22, RN-25 y RF-24 `DURA`; RN-16 y RN-19 `BLANDA`; RN-24 sin severidad;
   - los parámetros de research §1: RN-24 `cuarto_nivel_campo_especifico` 3, `cuarto_nivel_campo_amplio` 2, `tercer_nivel_campo_especifico` 2, `tercer_nivel_campo_amplio` 1, `experiencia_relacionada` 2, `curso_relacionado` 1, `tope_cursos` 3; RN-19 `minimo_afinidad` 2;
   - un `VERSION_EDITADA` de `sistema` por versión completada, con `{"numero": n, "cambios": [...]}` y un cambio por cada severidad agregada (las 8 reglas del motor: `reglas[RN-17].severidad`, anterior `null`, nuevo `DURA`) y por cada parámetro agregado (los 8 de RN-24 y RN-19: `reglas[RN-24].tope_cursos`, anterior `null`, nuevo `3`): 16 cambios, en el formato de `EditarVersionServicio`. RN-24 no tiene severidad, así que solo aporta sus parámetros.
-- [ ] T006 Prueba primero, en `INOR/` (Testcontainers):
+- [X] T006 Prueba primero, en `INOR/` (Testcontainers):
   - `PoliticaDe2024IntegrationTest`: la versión 1 tiene 16 reglas y 37 parámetros (29 + 8); los 29 de antes y las 22 filas, idénticos; las severidades de research §2; un `VERSION_EDITADA` de `sistema` con 16 cambios: las 8 severidades y los 8 parámetros agregados (SC-002);
   - `RepositorioVersionesJdbcIntegrationTest`: `hasSize(7)` pasa a 16; una versión con RF-24 y reglas sin parámetros se guarda y se reconstruye igual; las reglas salen ordenadas por identificador con las `RF-xx` al final;
   - `NormativaEsquemaIntegrationTest`: la versión anterior, que conoce V1 a V3, arranca sobre el esquema con V4 **y lee la versión 1** (D-55, research §6);
