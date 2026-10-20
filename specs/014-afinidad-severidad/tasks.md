@@ -124,7 +124,7 @@ description: "Tareas de F04-H03: pesos y mínimo de afinidad y la severidad de l
 
 **Independent Test**: con una versión sin periodo, editar en pantalla un peso, el mínimo y una severidad, y comprobar que el cambio queda; con una versión en uso, verlos en solo lectura.
 
-- [ ] T016 [US3] Prueba primero, en `frontend/src/pantallas/normativa/` (Vitest con la API simulada; ampliar `datosDePrueba.ts` con RN-19, RN-24, RF-24 y una regla sin parámetros):
+- [X] T016 [US3] Prueba primero, en `frontend/src/pantallas/normativa/` (Vitest con la API simulada; ampliar `datosDePrueba.ts` con RN-19, RN-24, RF-24 y una regla sin parámetros):
   - la sección «Afinidad» de la vista de solo lectura muestra «Título de cuarto nivel, campo específico: 3», «… campo amplio: 2», tercer nivel, experiencia, curso, «Tope de los cursos: 3» y «Mínimo de afinidad: 2»;
   - la tabla «Reglas y parámetros» muestra los nombres en español de las reglas nuevas («Oferta sin propuesta» para RF-24) y «—» en «Parámetros» si no tiene;
   - en la edición, cada regla con severidad tiene un selector «RN-05 · Severidad» con «Dura» y «Blanda», y las de solo parámetros no; «Guardar» envía la severidad de cada regla del motor; un 400 con `reglas[RN-24].severidad` o `reglas[RN-24].cuarto_nivel_campo_amplio` se muestra junto a su campo;
@@ -132,8 +132,8 @@ description: "Tareas de F04-H03: pesos y mínimo de afinidad y la severidad de l
   - las pruebas de F04-H01 y F04-H02 siguen en verde.
 
   Cambiar `reglas.ts` (nombres de RN-12, RN-16, RN-17, RN-18, RN-19, RN-22, RN-24, RN-25 y RF-24, y de los 8 parámetros), `Normativa.tsx` (la sección «Afinidad», sobre la tabla de reglas) y `EdicionDeVersion.tsx` (el selector, con un `TextField select` de MUI). T016 pasa.
-- [ ] T017 [US3] Prueba con Playwright, en `frontend/e2e/normativa.spec.ts`, con la API simulada: `vicerrectorado.demo` cambia la severidad de RN-05 a «Dura» y un peso, guarda y ve los valores nuevos; axe-core sin fallas WCAG 2.1 AA en la vista con «Afinidad» y en la edición con los selectores (solo Chromium).
-- [ ] T018 [US3] Revisión del principio VI: buscar en `JNOR/` y en `frontend/src/pantallas/normativa/` los pesos, el mínimo y las severidades por defecto, y anotar que solo aparecen en `V4`, en las pruebas y en los nombres. Anotar en la evidencia el límite de la vuelta atrás de research §6.
+- [X] T017 [US3] Prueba con Playwright, en `frontend/e2e/normativa.spec.ts`, con la API simulada: `vicerrectorado.demo` cambia la severidad de RN-05 a «Dura» y un peso, guarda y ve los valores nuevos; axe-core sin fallas WCAG 2.1 AA en la vista con «Afinidad» y en la edición con los selectores (solo Chromium).
+- [X] T018 [US3] Revisión del principio VI: buscar en `JNOR/` y en `frontend/src/pantallas/normativa/` los pesos, el mínimo y las severidades por defecto, y anotar que solo aparecen en `V4`, en las pruebas y en los nombres. Anotar en la evidencia el límite de la vuelta atrás de research §6.
 
 **Checkpoint**: las tres historias pasan de punta a punta.
 

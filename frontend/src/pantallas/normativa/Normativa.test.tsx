@@ -80,6 +80,42 @@ describe('Normativa', () => {
       expect(filas[3]).toHaveTextContent('Clase (%): 60');
     });
 
+    it('muestra los pesos y el mínimo de afinidad en «Afinidad», en el orden de RN-24', async () => {
+      montarSpa('/normativa');
+
+      const afinidad = await screen.findByRole('list', { name: 'Afinidad' });
+      expect(
+        within(afinidad)
+          .getAllByRole('listitem')
+          .map((item) => item.textContent),
+      ).toEqual([
+        'Título de cuarto nivel, campo específico: 3',
+        'Título de cuarto nivel, campo amplio: 2',
+        'Título de tercer nivel, campo específico: 2',
+        'Título de tercer nivel, campo amplio: 1',
+        'Experiencia relacionada: 2',
+        'Cada curso relacionado: 1',
+        'Tope de los cursos: 3',
+        'Mínimo de afinidad: 2',
+      ]);
+    });
+
+    it('nombra las reglas nuevas y muestra «—» en una regla sin parámetros', async () => {
+      montarSpa('/normativa');
+
+      const reglas = await screen.findByRole('table', { name: 'Reglas y parámetros' });
+      const filas = within(reglas).getAllByRole('row');
+      expect(fila(filas, 4)).toHaveTextContent('Mínimo de afinidad');
+      expect(fila(filas, 5)).toHaveTextContent('Pesos de afinidad');
+      const rf24 = within(fila(filas, 6)).getAllByRole('cell');
+      expect(rf24.map((celda) => celda.textContent)).toEqual([
+        'RF-24',
+        'Oferta sin propuesta',
+        'Dura',
+        '—',
+      ]);
+    });
+
     it('muestra la tabla de carga horaria con los perfiles en español y «—» sin valor', async () => {
       montarSpa('/normativa');
 

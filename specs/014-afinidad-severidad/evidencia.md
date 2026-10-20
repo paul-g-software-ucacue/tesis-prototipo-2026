@@ -47,6 +47,9 @@ Registro de las comprobaciones de la historia (issue #42): los pesos y el mínim
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Pantalla (T016, FR-009) | confirmada | Vitest, con la versión de prueba ampliada con RN-19, RN-24 (sus parámetros en el orden de la base) y RF-24. `Normativa.test.tsx` (2 nuevas): la lista «Afinidad» muestra los 7 pesos y el mínimo en el orden de RN-24, no en el de la base; la tabla nombra las reglas nuevas («Oferta sin propuesta» para RF-24) y muestra «—» si no tiene parámetros. `Edicion.test.tsx` (2 nuevas y 2 ampliadas): el selector «RN-05 · Severidad» cambia a «Dura» y «Guardar» envía la severidad de las 4 reglas del motor y ninguna en RN-01 ni RN-24; RF-24 va con `parametros` vacío; un 400 de `reglas[RN-24].cuarto_nivel_campo_amplio` y de `reglas[RN-05].severidad` queda como descripción accesible de su campo, sin el nombre técnico; con solo lectura se ve «Afinidad» y no hay selectores. Las 6 que tocan la afinidad o la severidad fallaron antes del código. El selector es un `select` nativo de MUI, para que su nombre accesible sea el de la regla. 102 pruebas de Vitest con 95,57 % de líneas; `lint`, `tipos` y `formato:verificar` en verde. | 2026-10-20 |
+| Playwright y accesibilidad (T017) | confirmada | `e2e/normativa.spec.ts` (9): una prueba nueva pasa RN-05 a «Dura» y la experiencia relacionada a 3, guarda y ve los dos valores nuevos en la tabla y en «Afinidad». axe-core sin fallas WCAG 2.1 AA en la versión con «Afinidad» y en la edición con los selectores (solo Chromium). | 2026-10-20 |
+| Principio VI (T018) | confirmada | Se buscaron severidades y cifras en el Java de Normativa y en `frontend/src/pantallas/normativa`. Solo aparecen el límite de almacenamiento `MAXIMO` (de F04-H02) y el tipo `'DURA' \| 'BLANDA'`. Los pesos, el mínimo y las severidades por defecto están solo en `V4` y en las pruebas; la SPA solo tiene sus nombres. | 2026-10-20 |
 
 ## Cierre
 
@@ -59,3 +62,10 @@ Registro de las comprobaciones de la historia (issue #42): los pesos y el mínim
 |---|---|---|---|
 
 ## Notas
+
+- **Afinidad como reglas.** Los pesos son los parámetros de RN-24 y el mínimo, el de RN-19 (research §1). Se guardan, se copian, se editan y se registran por el camino de F04-H02, sin tablas, operaciones ni códigos de error nuevos.
+- **Orden de los parámetros.** La base devuelve los parámetros de cada regla por nombre, así que los de RN-24 llegan en orden alfabético. La sección «Afinidad» los ordena como se leen; la edición los muestra en el orden de la base.
+- **Vuelta atrás (D-55, research §6).** La versión anterior arranca y lee las versiones, pero no ve las 7 reglas sin parámetros. Si alguien edita una versión mientras corre la versión anterior, esa edición borra esas 7 reglas de esa versión, y volver a la versión nueva no las repone. La prueba del equipo simulado no edita versiones.
+- **Las reglas del periodo para F07.** La consulta del periodo dice qué versión lo rige, y la de la versión trae sus severidades, sus pesos y su mínimo (FR-008). La operación propia de las reglas del periodo, y cómo la llama el proceso `distributivo` (con el usuario o con su credencial de proceso), la define F07.
+- **Glosario.** «Regla» admite RF-xx y «Pesos de afinidad» dice que un título suma más con el campo específico, en §7.3 de `sdd/modelo_dominio.md` (fuera del repositorio), con una copia anterior en `modelo_dominio.md.antes-F04-H03`.
+

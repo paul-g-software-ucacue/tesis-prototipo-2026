@@ -34,7 +34,7 @@ import { DialogoAsociar, DialogoVersionNueva } from './DialogosDeVersion';
 import { EdicionDeVersion } from './EdicionDeVersion';
 import { fecha, SEVERIDADES, SIN_VALOR, tipoIst } from './formato';
 import { nombreDelPerfil } from './perfiles';
-import { nombreDeLaRegla, nombreDelParametro } from './reglas';
+import { AFINIDAD, nombreDeLaRegla, nombreDelParametro } from './reglas';
 
 /** Lo que está abierto sobre la versión elegida. */
 type Abierto = 'edicion' | 'version-nueva' | 'asociar' | null;
@@ -171,9 +171,35 @@ function CabeceraDeVersion({ version }: { version: VersionNormativa }) {
   );
 }
 
+// Los pesos y el mínimo de afinidad de la versión (F04-H03), si los tiene.
+function Afinidad({ version }: { version: VersionNormativa }) {
+  const datos = AFINIDAD.flatMap(([regla, nombre]) => {
+    const parametro = version.reglas
+      .find((una) => una.identificador === regla)
+      ?.parametros.find((uno) => uno.nombre === nombre);
+    return parametro ? [{ nombre, valor: parametro.valor }] : [];
+  });
+  if (datos.length === 0) {
+    return null;
+  }
+  return (
+    <>
+      <Typography component="h3" variant="h6" sx={{ mt: 2 }}>
+        Afinidad
+      </Typography>
+      <List aria-label="Afinidad" dense>
+        {datos.map(({ nombre, valor: cifra }) => (
+          <Dato key={nombre} nombre={nombreDelParametro(nombre)} valor={String(cifra)} />
+        ))}
+      </List>
+    </>
+  );
+}
+
 function DetalleDeVersion({ version }: { version: VersionNormativa }) {
   return (
     <>
+      <Afinidad version={version} />
       <Typography component="h3" variant="h6" sx={{ mt: 2 }}>
         Reglas y parámetros
       </Typography>
@@ -193,6 +219,7 @@ function DetalleDeVersion({ version }: { version: VersionNormativa }) {
               <TableCell>{nombreDeLaRegla(regla.identificador)}</TableCell>
               <TableCell>{regla.severidad ? SEVERIDADES[regla.severidad] : SIN_VALOR}</TableCell>
               <TableCell>
+                {regla.parametros.length === 0 && SIN_VALOR}
                 {regla.parametros.map((parametro) => (
                   <div key={parametro.nombre}>
                     {`${nombreDelParametro(parametro.nombre)}: ${parametro.valor}`}
