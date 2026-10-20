@@ -76,6 +76,10 @@ public record VersionNormativa(
                                                         regla.identificador().startsWith("RF-"))
                                         .thenComparing(Regla::identificador))
                         .toList();
+        // Los pesos de RN-24 cumplen su invariante (F04-H03, research §4).
+        reglas.stream()
+                .filter(regla -> regla.identificador().equals(PesosAfinidad.REGLA))
+                .forEach(PesosAfinidad::de);
         if (copiadaDe != null && copiadaDe == numero) {
             throw new IllegalArgumentException("La versión " + numero + " no se copia de sí misma");
         }
@@ -186,6 +190,16 @@ public record VersionNormativa(
         todas.add(asignacion);
         return new VersionNormativa(
                 numero, codigo, origen, vigenteDesde, tipoIst, tabla, reglas, copiadaDe, todas);
+    }
+
+    /** Los pesos de afinidad, si la versión tiene RN-24 (F04-H03). */
+    public Optional<PesosAfinidad> pesosAfinidad() {
+        return regla(PesosAfinidad.REGLA).map(PesosAfinidad::de);
+    }
+
+    /** El mínimo de afinidad, si la versión tiene RN-19 (F04-H03). */
+    public Optional<MinimoAfinidad> minimoAfinidad() {
+        return regla(MinimoAfinidad.REGLA).map(MinimoAfinidad::de);
     }
 
     /** Si rige al menos un periodo: entonces ya no cambia. */

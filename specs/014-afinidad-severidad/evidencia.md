@@ -29,6 +29,9 @@ Registro de las comprobaciones de la historia (issue #42): los pesos y el mínim
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Dominio (T007, T008) | confirmada | Sin dobles: `PesosAfinidadTest` (4): arma los 7 pesos de RN-24; el campo amplio igual al específico es válido; cuarto nivel amplio 4 con específico 3 lanza `CambioNoPermitido` en `reglas[RN-24].cuarto_nivel_campo_amplio` con «El peso del campo amplio (4) no puede superar al del campo específico (3)», y lo mismo con el tercer nivel. `VersionNormativaTest` (5 nuevas): `pesosAfinidad()` y `minimoAfinidad()`, vacíos sin RN-24 ni RN-19; editar con el campo amplio mayor se rechaza y la versión no cambia; cambiar el mínimo de 2 a 3 da su `CambioDeValor`; un peso negativo, «El valor no puede ser negativo». No compilaban antes del código. La invariante está en el constructor del agregado, así que también vale al reconstruir una versión. | 2026-10-20 |
+| API (T009) | confirmada | `NormativaContratoTest` (2 nuevas, con la versión de prueba ampliada con RN-19, RN-24 y RF-24): `consultarVersion` trae los 7 pesos, el mínimo con RN-19 blanda y RF-24 dura con `parametros` vacío, contra el contrato; editar con el campo amplio mayor da 400 `COMUN_SOLICITUD_INVALIDA` con el campo y el motivo, y la versión no cambia. El controlador no cambió. Con la invariante del agregado desactivada, fallan la de contrato y la de dominio; se volvió a poner. | 2026-10-20 |
+| `DatosDePrueba` de la aplicación | sin cambios | T007 pedía sumarle RN-19 y RN-24. No hizo falta: la aplicación no cambia, y sus pruebas no tocan la afinidad. | 2026-10-20 |
 
 ## Escenario «Severidad de una regla» (US2)
 

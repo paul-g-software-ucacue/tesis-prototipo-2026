@@ -1,16 +1,19 @@
 #!/usr/bin/env bash
 # Las condiciones se invocan a través de verificar; shellcheck no lo ve.
 # shellcheck disable=SC2329
-# La normativa de punta a punta sobre el perfil levantado (F04-H01 y F04-H02; quickstart.md de
-# specs/012-politica-normativa y specs/013-version-normativa-nueva). Uso, desde cualquier
-# directorio: deploy/probar_normativa.sh
+# La normativa de punta a punta sobre el perfil levantado (F04-H01, F04-H02 y F04-H03; quickstart.md
+# de specs/012-politica-normativa, specs/013-version-normativa-nueva y specs/014-afinidad-severidad).
+# Uso, desde cualquier directorio: deploy/probar_normativa.sh
 # Comprueba que la Política SENESCYT 2024 es la versión 1 con sus 22 filas, que la leen el
 # Vicerrector académico y el Administrador y no un docente (D-66), y que reiniciar el proceso datos
 # no la duplica ni la cambia (FR-006). Reinicia datos tres veces. Después (F04-H02, D-67), el
 # Vicerrector asocia la versión 1 a un periodo de prueba, crea una versión a partir de ella y le
 # cambia las horas de clase del docente de medio tiempo; la 1 no cambia, editarla da 409 y el
-# periodo no acepta otra versión. Al terminar, aunque un paso falle, borra en la base solo el
-# periodo de prueba y las versiones que creó: la API no borra versiones (principio VII).
+# periodo no acepta otra versión. Por último (F04-H03), la 1 trae los pesos y el mínimo de afinidad
+# por defecto, y la versión creada pasa RN-05 a dura, rige un segundo periodo de prueba y la consulta
+# del periodo lleva a ella, con RN-05 dura; la 1 la sigue teniendo blanda. Al terminar, aunque un
+# paso falle, borra en la base solo los periodos de prueba y las versiones que creó: la API no borra
+# versiones (principio VII).
 # Termina con 0 si todos los pasos pasan y con 1 si alguno falla. Nunca imprime el token ni la
 # contraseña.
 set -euo pipefail
@@ -77,7 +80,7 @@ sin_periodos() {
 es_la_politica_de_2024() {
     [[ $estado == 200 ]] \
         && [[ $(jq '.tablaCargaHoraria | length' <<<"$cuerpo") == 22 ]] \
-        && [[ $(jq '.reglas | length' <<<"$cuerpo") == 7 ]] \
+        && [[ $(jq '.reglas | length' <<<"$cuerpo") == 16 ]] \
         && [[ $(jq -c '.tablaCargaHoraria[] | select(.perfil == "DOCENTE_TC")
                 | [.horasClase, .horasClaseMinimo, .horasClaseMaximo, .horasOtrasDocencia]' <<<"$cuerpo") \
             == '[22,18,24,18]' ]]
@@ -231,6 +234,19 @@ iniciar docente.demo
 pedir POST "$GATEWAY/api/normativa/versiones" "Bearer $token" \
     '{"copiarDe":1,"codigo":"NO-DEBE","origen":"No debe","vigenteDesde":"2025-01-15"}'
 verificar 7 "docente.demo no crea versiones: 403 con el cuerpo común (recibido: $estado)" es_403_comun
+
+# 8. Valores por defecto (F04-H03, escenario 1): los pesos de afinidad de RN-24 y el mínimo de RN-19
+pedir GET "$GATEWAY/api/normativa/versiones/1" "Bearer $token_vicerrector"
+pesos_por_defecto() {
+    [[ $estado == 200 ]] \
+        && [[ $(jq -c '[.reglas[] | select(.identificador == "RN-24") | .parametros[]
+                | {(.nombre): .valor}] | add' <<<"$cuerpo") \
+            == '{"cuarto_nivel_campo_especifico":3,"cuarto_nivel_campo_amplio":2,"tercer_nivel_campo_especifico":2,"tercer_nivel_campo_amplio":1,"experiencia_relacionada":2,"curso_relacionado":1,"tope_cursos":3}' ]] \
+        && [[ $(jq -c '.reglas[] | select(.identificador == "RN-19") | [.severidad, .parametros]' <<<"$cuerpo") \
+            == '["BLANDA",[{"nombre":"minimo_afinidad","valor":2}]]' ]]
+}
+verificar 8 "La versión 1 trae los pesos de RN-24 (3, 2, 2, 1, 2, 1 y tope 3) y el mínimo 2 de RN-19, blanda (recibido: $estado)" \
+    pesos_por_defecto
 
 if [[ $fallas -eq 0 ]]; then
     echo "Normativa de punta a punta: todos los pasos pasan."
