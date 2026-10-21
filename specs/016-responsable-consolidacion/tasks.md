@@ -109,8 +109,8 @@ description: "Tareas de F05-H03: designar al Responsable de consolidación del p
 
 **Goal**: la columna y el diálogo en «Periodos» (FR-010; SC-001).
 
-- [ ] T018 [US4] Prueba primero, en `frontend/src/pantallas/periodos/Periodos.test.tsx` (Vitest con la API simulada): la columna «Responsable de consolidación» con el usuario o «Sin designar»; con escritura, «Designar responsable <código>» en un periodo no cerrado (no en uno cerrado), con la lista de `listarDocentes`; al confirmar, la fila muestra al elegido; un 400 muestra su motivo y un 409 su título; un 404 muestra «El periodo todavía no está disponible para designar. Inténtalo en unos segundos.»; sin escritura, la columna sin acción. Agregar `apiRoles` a las consultas de la pantalla (`listarResponsables`, `listarDocentes`, `designarResponsable`) y el diálogo en `DialogosDePeriodo.tsx`. T018 pasa.
-- [ ] T019 [US4] Prueba con Playwright, en `frontend/e2e/periodos.spec.ts`: el Vicerrector designa un responsable; axe-core sin fallas en el diálogo «Designar al Responsable de consolidación de <código>».
+- [X] T018 [US4] Prueba primero, en `frontend/src/pantallas/periodos/Periodos.test.tsx` (Vitest con la API simulada): la columna «Responsable de consolidación» con el usuario o «Sin designar»; con escritura, «Designar responsable <código>» en un periodo no cerrado (no en uno cerrado), con la lista de `listarDocentes`; al confirmar, la fila muestra al elegido; un 400 muestra su motivo y un 409 su título; un 404 muestra «El periodo todavía no está disponible para designar. Inténtalo en unos segundos.»; sin escritura, la columna sin acción. Agregar `apiRoles` a las consultas de la pantalla (`listarResponsables`, `listarDocentes`, `designarResponsable`) y el diálogo en `DialogosDePeriodo.tsx`. T018 pasa.
+- [X] T019 [US4] Prueba con Playwright, en `frontend/e2e/periodos.spec.ts`: el Vicerrector designa un responsable; axe-core sin fallas en el diálogo «Designar al Responsable de consolidación de <código>».
 
 **Checkpoint**: las cuatro historias pasan.
 

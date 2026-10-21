@@ -1,8 +1,9 @@
 // La pantalla «Periodos» (F02-H01, RF-13): los periodos académicos con sus fechas, su estado y la
 // versión de normativa que los rige. La ven quienes tienen «Distributivo del periodo: lectura»; con
 // su escritura (el Vicerrector académico, D-69) se registra un periodo, se corrige, se abre
-// eligiendo su versión de normativa y se pasa al estado siguiente. Cerrar pide confirmación. El
-// servidor valida cada operación.
+// eligiendo su versión de normativa y se pasa al estado siguiente. Cerrar pide confirmación. Desde
+// F05-H03, cada periodo muestra su Responsable de consolidación, que el Vicerrector designa aquí.
+// El servidor valida cada operación.
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
@@ -23,17 +24,26 @@ import { CLAVE_NORMATIVA } from '../normativa/consultas';
 import { fecha } from '../normativa/formato';
 import {
   CLAVE_PERIODOS,
+  CLAVE_RESPONSABLES,
   cambiarEstadoPeriodo,
   usePeriodos,
+  useResponsables,
   type EstadoPeriodo,
   type PeriodoAcademico,
 } from './consultas';
-import { DialogoAbrir, DialogoCerrar, DialogoDatosDelPeriodo } from './DialogosDePeriodo';
+import {
+  DialogoAbrir,
+  DialogoCerrar,
+  DialogoDatosDelPeriodo,
+  DialogoDesignar,
+} from './DialogosDePeriodo';
 import { NOMBRE_DEL_ESTADO, siguiente } from './estados';
 
 /** Lo que está abierto: un diálogo, sobre un periodo o para uno nuevo. */
 type Abierto =
-  { que: 'registrar' } | { que: 'corregir' | 'abrir' | 'cerrar'; periodo: PeriodoAcademico } | null;
+  | { que: 'registrar' }
+  | { que: 'corregir' | 'abrir' | 'cerrar' | 'designar'; periodo: PeriodoAcademico }
+  | null;
 
 export function Periodos() {
   useTitulo('Periodos');
@@ -41,6 +51,9 @@ export function Periodos() {
   const escritura = tienePermiso(sesion.data?.permisos, 'DISTRIBUTIVO', 'ESCRITURA');
   const consultas = useQueryClient();
   const periodos = usePeriodos();
+  const responsables = useResponsables();
+  const responsableDe = (codigo: string) =>
+    responsables.data?.find((responsable) => responsable.periodo === codigo)?.usuario;
   const [abierto, setAbierto] = useState<Abierto>(null);
   const [aviso, setAviso] = useState<MensajeDeError | null>(null);
 
@@ -49,6 +62,7 @@ export function Periodos() {
     await Promise.all([
       consultas.invalidateQueries({ queryKey: CLAVE_PERIODOS }),
       consultas.invalidateQueries({ queryKey: CLAVE_NORMATIVA }),
+      consultas.invalidateQueries({ queryKey: CLAVE_RESPONSABLES }),
     ]);
   };
   const terminar = async () => {
@@ -90,6 +104,7 @@ export function Periodos() {
                 <TableCell>Fin</TableCell>
                 <TableCell>Estado</TableCell>
                 <TableCell>Versión de normativa</TableCell>
+                <TableCell>Responsable de consolidación</TableCell>
                 {escritura && <TableCell>Acciones</TableCell>}
               </TableRow>
             </TableHead>
@@ -104,6 +119,7 @@ export function Periodos() {
                   <TableCell>
                     {periodo.version === undefined ? 'Sin versión' : `Versión ${periodo.version}`}
                   </TableCell>
+                  <TableCell>{responsableDe(periodo.codigo) ?? 'Sin designar'}</TableCell>
                   {escritura && (
                     <TableCell>
                       <Acciones
@@ -136,6 +152,14 @@ export function Periodos() {
           alTerminar={terminar}
         />
       )}
+      {abierto?.que === 'designar' && (
+        <DialogoDesignar
+          periodo={abierto.periodo}
+          actual={responsableDe(abierto.periodo.codigo)}
+          alCerrar={() => setAbierto(null)}
+          alTerminar={terminar}
+        />
+      )}
       {abierto?.que === 'cerrar' && (
         <DialogoCerrar
           periodo={abierto.periodo}
@@ -154,7 +178,7 @@ function Acciones({
   alPasar,
 }: {
   periodo: PeriodoAcademico;
-  alAbrir: (que: 'corregir' | 'abrir' | 'cerrar') => void;
+  alAbrir: (que: 'corregir' | 'abrir' | 'cerrar' | 'designar') => void;
   alPasar: (destino: EstadoPeriodo) => void;
 }) {
   const destino = siguiente(periodo.estado);
@@ -170,6 +194,15 @@ function Acciones({
             onClick={() => alAbrir('corregir')}
           >
             Corregir
+          </Button>
+        )}
+        {periodo.estado !== 'CERRADO' && (
+          <Button
+            size="small"
+            aria-label={`Designar responsable ${periodo.codigo}`}
+            onClick={() => alAbrir('designar')}
+          >
+            Designar responsable
           </Button>
         )}
         {bloqueado && (

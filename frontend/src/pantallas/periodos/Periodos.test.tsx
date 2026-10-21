@@ -51,6 +51,12 @@ describe('Periodos', () => {
     simulada = instalarApiSimulada();
     simulada.responder('GET', '/api/academico/periodos', json(200, PERIODOS));
     simulada.responder('GET', '/api/normativa/versiones', json(200, VERSIONES));
+    simulada.responder('GET', '/api/roles/responsables', json(200, []));
+    simulada.responder(
+      'GET',
+      '/api/roles/docentes',
+      json(200, ['docente.coordinador.demo', 'docente.demo']),
+    );
     iniciarSesion('cabecera.cuerpo.firma', new Date(Date.now() + 60_000));
   });
 
@@ -299,6 +305,126 @@ describe('Periodos', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Periodo cerrado');
     expect(await cuerpoDe(simulada, 'PUT', '/api/academico/periodos/2026-2/estado')).toEqual({
       estado: 'EN_APROBACION',
+    });
+  });
+
+  describe('Responsable de consolidación (F05-H03)', () => {
+    it('muestra el Responsable de cada periodo, o «Sin designar»', async () => {
+      sesionCon(simulada, 'rectorado.demo', ['DISTRIBUTIVO:LECTURA']);
+      simulada.responder(
+        'GET',
+        '/api/roles/responsables',
+        json(200, [
+          { periodo: '2026-1', usuario: 'docente.demo', designadoEn: '2026-03-02T15:00:00Z' },
+        ]),
+      );
+      montarSpa('/periodos');
+
+      expect(await filaDe('2026-1')).toHaveTextContent('docente.demo');
+      expect(await filaDe('2026-2')).toHaveTextContent('Sin designar');
+      expect(screen.queryByRole('button', { name: /^Designar responsable/ })).toBeNull();
+    });
+
+    it('designa a un docente de la lista, y no lo ofrece en un periodo cerrado', async () => {
+      sesionCon(simulada, 'vicerrectorado.demo', ESCRITURA);
+      simulada.responder(
+        'GET',
+        '/api/academico/periodos',
+        json(200, [PLANIFICACION, { ...VIGENTE, estado: 'CERRADO' }]),
+      );
+      simulada.responder(
+        'PUT',
+        '/api/roles/responsables/2026-2',
+        json(200, {
+          periodo: '2026-2',
+          usuario: 'docente.demo',
+          designadoEn: '2026-10-21T15:00:00Z',
+        }),
+      );
+      const usuario = userEvent.setup();
+      montarSpa('/periodos');
+
+      expect(
+        within(await filaDe('2026-1')).queryByRole('button', { name: /^Designar responsable/ }),
+      ).toBeNull();
+      await usuario.click(
+        within(await filaDe('2026-2')).getByRole('button', {
+          name: 'Designar responsable 2026-2',
+        }),
+      );
+      const dialogo = await screen.findByRole('dialog', {
+        name: 'Designar al Responsable de consolidación de 2026-2',
+      });
+      const lista = within(dialogo).getByLabelText('Docente');
+      expect(
+        within(lista)
+          .getAllByRole('option')
+          .map((opcion) => opcion.textContent),
+      ).toEqual(['docente.coordinador.demo', 'docente.demo']);
+      await usuario.selectOptions(lista, 'docente.demo');
+      await usuario.click(within(dialogo).getByRole('button', { name: 'Designar' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(await cuerpoDe(simulada, 'PUT', '/api/roles/responsables/2026-2')).toEqual({
+        usuario: 'docente.demo',
+      });
+    });
+
+    it('muestra el motivo de un 400, el título de un 409 y un aviso si el periodo aún no llegó', async () => {
+      sesionCon(simulada, 'vicerrectorado.demo', ESCRITURA);
+      let respuestas = [
+        json(400, {
+          titulo: 'Solicitud inválida',
+          descripcion: 'Revisa los campos marcados y vuelve a intentarlo.',
+          codigo: 'COMUN_SOLICITUD_INVALIDA',
+          detalles: [
+            {
+              campo: 'usuario',
+              descripcion: 'Solo se puede designar a un usuario con el rol Docente',
+            },
+          ],
+        }),
+        json(409, {
+          titulo: 'Periodo cerrado',
+          descripcion: 'El periodo está cerrado y ya no admite cambios.',
+          codigo: 'ROLES_PERIODO_CERRADO',
+        }),
+        json(404, {
+          titulo: 'Recurso no encontrado',
+          descripcion:
+            'La dirección solicitada no existe. Revisa la dirección y vuelve a intentarlo.',
+          codigo: 'COMUN_RECURSO_NO_ENCONTRADO',
+        }),
+      ];
+      simulada.responder('PUT', '/api/roles/responsables/2026-2', () => {
+        const [primera, ...resto] = respuestas;
+        respuestas = resto;
+        return primera ?? json(500);
+      });
+      const usuario = userEvent.setup();
+      montarSpa('/periodos');
+
+      await usuario.click(
+        within(await filaDe('2026-2')).getByRole('button', {
+          name: 'Designar responsable 2026-2',
+        }),
+      );
+      const dialogo = await screen.findByRole('dialog', {
+        name: 'Designar al Responsable de consolidación de 2026-2',
+      });
+      const designar = within(dialogo).getByRole('button', { name: 'Designar' });
+      await usuario.click(designar);
+      expect(
+        await within(dialogo).findByText('Solo se puede designar a un usuario con el rol Docente'),
+      ).toBeInTheDocument();
+      await usuario.click(designar);
+      expect(await within(dialogo).findByRole('alert')).toHaveTextContent('Periodo cerrado');
+      await usuario.click(designar);
+      expect(
+        await within(dialogo).findByText(
+          'El periodo todavía no está disponible para designar. Inténtalo en unos segundos.',
+        ),
+      ).toBeInTheDocument();
     });
   });
 });

@@ -51,6 +51,8 @@ Registro de las comprobaciones de la historia (issue #45): designar por periodo 
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Columna y diálogo (T018, FR-010) | confirmada | `Periodos.test.tsx` (+3, Vitest con la API simulada): la columna «Responsable de consolidación» con el usuario o «Sin designar»; sin escritura, sin la acción; «Designar responsable 2026-2» con la lista de docentes, que no aparece en un periodo cerrado; el 400 muestra su motivo, el 409 su título y el 404 «El periodo todavía no está disponible para designar. Inténtalo en unos segundos.». Fallaron las 3 antes del código. `tipos` y `lint` en verde. | 2026-10-21 |
+| Playwright y axe (T019, SC-001) | confirmada | `e2e/periodos.spec.ts` (+2, Chromium): el Vicerrector designa a `docente.demo` y la fila lo muestra; axe-core sin fallas WCAG 2.1 AA en «Designar al Responsable de consolidación de 2026-2». | 2026-10-21 |
 
 ## Cierre
 
