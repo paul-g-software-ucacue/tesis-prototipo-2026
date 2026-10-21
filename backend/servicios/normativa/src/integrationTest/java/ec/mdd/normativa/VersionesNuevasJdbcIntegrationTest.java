@@ -3,17 +3,22 @@ package ec.mdd.normativa;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ec.mdd.normativa.adaptadores.salida.RegistroDeCambiosJdbc;
 import ec.mdd.normativa.adaptadores.salida.RepositorioVersionesJdbc;
 import ec.mdd.normativa.adaptadores.salida.TransaccionSpring;
+import ec.mdd.normativa.aplicacion.EditarVersionServicio;
 import ec.mdd.normativa.dominio.AsignacionNormativa;
 import ec.mdd.normativa.dominio.CambiosDeVersion;
 import ec.mdd.normativa.dominio.DatosDeVersion;
 import ec.mdd.normativa.dominio.HorasDeFila;
+import ec.mdd.normativa.dominio.Severidad;
 import ec.mdd.normativa.dominio.VersionNormativa;
 import ec.mdd.normativa.infraestructura.NormativaFlywayConfig;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -306,5 +311,48 @@ class VersionesNuevasJdbcIntegrationTest {
             Thread.currentThread().interrupt();
             throw new IllegalStateException(error);
         }
+    }
+
+    // F04-H03: la severidad cambiada se guarda, se registra y no toca la versión de origen.
+    @Test
+    void dadoUnaCopia_cuandoRn05PasaADura_entoncesSeGuardaSeRegistraYLaUnoSigueBlanda() {
+        VersionNormativa copia = copiaGuardada();
+        Map<String, Map<String, BigDecimal>> parametros = new LinkedHashMap<>();
+        copia.reglas().forEach(regla -> parametros.put(regla.identificador(), regla.parametros()));
+        CambiosDeVersion cambios =
+                new CambiosDeVersion(
+                        new DatosDeVersion(copia.codigo(), copia.origen(), copia.vigenteDesde()),
+                        copia.tabla().filas().stream().map(HorasDeFila::de).toList(),
+                        parametros,
+                        Map.of("RN-05", Severidad.DURA));
+        EditarVersionServicio editar =
+                new EditarVersionServicio(
+                        repositorio,
+                        new RegistroDeCambiosJdbc(jdbc),
+                        transaccion,
+                        Clock.fixed(AHORA, ZoneOffset.UTC));
+
+        editar.editar(copia.numero(), cambios, "vicerrectorado.demo");
+
+        VersionNormativa leida = repositorio.buscar(copia.numero()).orElseThrow();
+        VersionNormativa uno = repositorio.buscar(1).orElseThrow();
+        assertThat(leida.regla("RN-05").orElseThrow().severidad()).isEqualTo(Severidad.DURA);
+        assertThat(uno.regla("RN-05").orElseThrow().severidad()).isEqualTo(Severidad.BLANDA);
+        // FR-007: la copia trae la afinidad y las reglas del motor sin parámetros de la 1.
+        for (String identificador : List.of("RN-19", "RN-24", "RF-24")) {
+            assertThat(leida.regla(identificador)).isEqualTo(uno.regla(identificador));
+        }
+        assertThat(
+                        jdbc.sql(
+                                        "select c ->> 'anterior' || '>' || (c ->> 'nuevo')"
+                                                + " from normativa.registro_cambio,"
+                                                + " jsonb_array_elements(detalle -> 'cambios') c"
+                                                + " where accion = 'VERSION_EDITADA'"
+                                                + " and (detalle ->> 'numero')::int = :numero"
+                                                + " and c ->> 'campo' = 'reglas[RN-05].severidad'")
+                                .param("numero", copia.numero())
+                                .query(String.class)
+                                .list())
+                .containsExactly("BLANDA>DURA");
     }
 }

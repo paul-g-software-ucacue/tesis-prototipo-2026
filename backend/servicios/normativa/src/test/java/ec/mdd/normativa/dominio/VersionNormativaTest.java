@@ -83,10 +83,20 @@ class VersionNormativaTest {
     }
 
     @Test
+    void dadoUnaReglaRf_cuandoSeCreaLaVersion_entoncesVaDespuesDeLasRn() {
+        Regla rf24 = new Regla("RF-24", Severidad.DURA, Map.of());
+
+        assertThat(version(1, List.of(rf24, RN_02, RN_01)).reglas())
+                .extracting(Regla::identificador)
+                .containsExactly("RN-01", "RN-02", "RF-24");
+    }
+
+    @Test
     void dadoReglasInvalidas_cuandoSeCrean_entoncesSeRechazan() {
         assertThatThrownBy(() -> new Regla("RN-1", null, Map.of("x", BigDecimal.ONE)))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new Regla("RN-05", Severidad.BLANDA, Map.of()))
+        // Desde F04-H03 una regla del motor puede no tener parámetros; sin severidad, no.
+        assertThatThrownBy(() -> new Regla("RN-05", null, Map.of()))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -321,5 +331,191 @@ class VersionNormativaTest {
         assertThat(dos.editada(cambios(dos, REFORMA, 12, "38.50")).cambios())
                 .containsExactly(
                         new CambioDeValor("reglas[RN-02].horas_maximas_docente", "40", "38.5"));
+    }
+
+    // F04-H03: los pesos y el mínimo de afinidad.
+
+    private static final Regla RN_19 =
+            new Regla("RN-19", Severidad.BLANDA, Map.of("minimo_afinidad", new BigDecimal("2")));
+
+    private static VersionNormativa conAfinidad() {
+        return VersionNormativa.copiaDe(
+                        new VersionNormativa(
+                                1,
+                                "SENESCYT-2024-03",
+                                "Política SENESCYT 2024",
+                                LocalDate.of(2024, 3, 11),
+                                TipoIst.T2,
+                                new TablaCargaHoraria(List.of(medioTiempo(12))),
+                                List.of(
+                                        RN_02,
+                                        RN_19,
+                                        new Regla(
+                                                "RN-24",
+                                                null,
+                                                PesosAfinidadTest.pesos(3, 2, 2, 1)))),
+                        2,
+                        REFORMA,
+                        AHORA)
+                .version();
+    }
+
+    // La versión tal como viene, con un parámetro cambiado.
+    private static CambiosDeVersion conParametro(
+            VersionNormativa version, String regla, String nombre, String valor) {
+        Map<String, Map<String, BigDecimal>> parametros = new LinkedHashMap<>();
+        version.reglas()
+                .forEach(
+                        una ->
+                                parametros.put(
+                                        una.identificador(),
+                                        new LinkedHashMap<>(una.parametros())));
+        parametros.get(regla).put(nombre, new BigDecimal(valor));
+        return new CambiosDeVersion(
+                datosDe(version),
+                version.tabla().filas().stream().map(HorasDeFila::de).toList(),
+                parametros);
+    }
+
+    @Test
+    void dadoUnaVersionConRn19YRn24_cuandoSeConsultaLaAfinidad_entoncesDaLosPesosYElMinimo() {
+        VersionNormativa dos = conAfinidad();
+
+        assertThat(dos.pesosAfinidad())
+                .hasValueSatisfying(
+                        pesos -> {
+                            assertThat(pesos.cuartoNivelCampoEspecifico())
+                                    .isEqualByComparingTo("3");
+                            assertThat(pesos.topeCursos()).isEqualByComparingTo("3");
+                        });
+        assertThat(dos.minimoAfinidad())
+                .hasValueSatisfying(minimo -> assertThat(minimo.valor()).isEqualByComparingTo("2"));
+    }
+
+    @Test
+    void dadoUnaVersionSinRn19NiRn24_cuandoSeConsultaLaAfinidad_entoncesNoHay() {
+        assertThat(politica().pesosAfinidad()).isEmpty();
+        assertThat(politica().minimoAfinidad()).isEmpty();
+    }
+
+    @Test
+    void dadoElCampoAmplioMayorQueElEspecifico_cuandoSeEdita_entoncesSeRechazaYNoCambia() {
+        VersionNormativa dos = conAfinidad();
+
+        assertThatThrownBy(
+                        () ->
+                                dos.editada(
+                                        conParametro(
+                                                dos, "RN-24", "cuarto_nivel_campo_amplio", "4")))
+                .isInstanceOfSatisfying(
+                        CambioNoPermitido.class,
+                        error ->
+                                assertThat(error.campo())
+                                        .isEqualTo("reglas[RN-24].cuarto_nivel_campo_amplio"));
+        assertThat(dos.pesosAfinidad().orElseThrow().cuartoNivelCampoAmplio())
+                .isEqualByComparingTo("2");
+    }
+
+    @Test
+    void dadoElMinimo_cuandoSeCambia_entoncesQuedaAnotadoConSuValorAnterior() {
+        VersionNormativa dos = conAfinidad();
+
+        VersionNormativa.Edicion edicion =
+                dos.editada(conParametro(dos, "RN-19", "minimo_afinidad", "3"));
+
+        assertThat(edicion.cambios())
+                .containsExactly(new CambioDeValor("reglas[RN-19].minimo_afinidad", "2", "3"));
+        assertThat(edicion.version().minimoAfinidad().orElseThrow().valor())
+                .isEqualByComparingTo("3");
+    }
+
+    @Test
+    void dadoUnPesoNegativo_cuandoSeEdita_entoncesSeRechazaComoCualquierParametro() {
+        VersionNormativa dos = conAfinidad();
+
+        assertThatThrownBy(() -> dos.editada(conParametro(dos, "RN-24", "curso_relacionado", "-1")))
+                .isInstanceOfSatisfying(
+                        CambioNoPermitido.class,
+                        error ->
+                                assertThat(error.motivo())
+                                        .isEqualTo("El valor no puede ser negativo"));
+    }
+
+    // F04-H03: la severidad de las reglas (MD-08).
+
+    // La versión tal como viene, sin cambios de valores, con las severidades indicadas.
+    private static CambiosDeVersion conSeveridades(
+            VersionNormativa version, Map<String, Severidad> severidades) {
+        Map<String, Map<String, BigDecimal>> parametros = new LinkedHashMap<>();
+        version.reglas().forEach(una -> parametros.put(una.identificador(), una.parametros()));
+        return new CambiosDeVersion(
+                datosDe(version),
+                version.tabla().filas().stream().map(HorasDeFila::de).toList(),
+                parametros,
+                severidades);
+    }
+
+    @Test
+    void dadoUnaReglaBlanda_cuandoSePasaADura_entoncesCambiaYQuedaAnotada() {
+        VersionNormativa dos = conAfinidad();
+
+        VersionNormativa.Edicion edicion =
+                dos.editada(conSeveridades(dos, Map.of("RN-19", Severidad.DURA)));
+
+        assertThat(edicion.cambios())
+                .containsExactly(new CambioDeValor("reglas[RN-19].severidad", "BLANDA", "DURA"));
+        assertThat(edicion.version().regla("RN-19").orElseThrow().severidad())
+                .isEqualTo(Severidad.DURA);
+        assertThat(edicion.version().regla("RN-19").orElseThrow().parametros())
+                .isEqualTo(RN_19.parametros());
+        assertThat(dos.regla("RN-19").orElseThrow().severidad()).isEqualTo(Severidad.BLANDA);
+    }
+
+    @Test
+    void dadoSinSeveridadPedida_cuandoSeEdita_entoncesNoCambia() {
+        VersionNormativa dos = conAfinidad();
+
+        assertThat(dos.editada(conSeveridades(dos, Map.of())).cambios()).isEmpty();
+    }
+
+    @Test
+    void dadoLaMismaSeveridad_cuandoSeEdita_entoncesNoHayCambios() {
+        VersionNormativa dos = conAfinidad();
+
+        assertThat(dos.editada(conSeveridades(dos, Map.of("RN-02", Severidad.DURA))).cambios())
+                .isEmpty();
+    }
+
+    @Test
+    void dadoUnaReglaQueSoloDaParametros_cuandoSeLeDaSeveridad_entoncesSeRechaza() {
+        VersionNormativa dos = conAfinidad();
+
+        assertThatThrownBy(() -> dos.editada(conSeveridades(dos, Map.of("RN-24", Severidad.DURA))))
+                .isInstanceOfSatisfying(
+                        CambioNoPermitido.class,
+                        error -> {
+                            assertThat(error.campo()).isEqualTo("reglas[RN-24].severidad");
+                            assertThat(error.motivo())
+                                    .isEqualTo("Esta regla solo da parámetros: no tiene severidad");
+                        });
+    }
+
+    @Test
+    void dadoUnaSeveridadDeUnaReglaQueNoEsta_cuandoSeEdita_entoncesSeRechaza() {
+        VersionNormativa dos = conAfinidad();
+
+        assertThatThrownBy(() -> dos.editada(conSeveridades(dos, Map.of("RN-17", Severidad.DURA))))
+                .isInstanceOfSatisfying(
+                        CambioNoPermitido.class,
+                        error -> assertThat(error.campo()).isEqualTo("reglas[RN-17]"));
+    }
+
+    @Test
+    void dadoUnaVersionEnUso_cuandoSeCambiaUnaSeveridad_entoncesSeRechaza() {
+        VersionNormativa enUso = conAfinidad().asociadaA("2025-1", AHORA);
+
+        assertThatThrownBy(
+                        () -> enUso.editada(conSeveridades(enUso, Map.of("RN-19", Severidad.DURA))))
+                .isInstanceOf(VersionEnUso.class);
     }
 }

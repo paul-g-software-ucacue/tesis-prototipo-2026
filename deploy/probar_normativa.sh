@@ -1,16 +1,19 @@
 #!/usr/bin/env bash
 # Las condiciones se invocan a través de verificar; shellcheck no lo ve.
 # shellcheck disable=SC2329
-# La normativa de punta a punta sobre el perfil levantado (F04-H01 y F04-H02; quickstart.md de
-# specs/012-politica-normativa y specs/013-version-normativa-nueva). Uso, desde cualquier
-# directorio: deploy/probar_normativa.sh
+# La normativa de punta a punta sobre el perfil levantado (F04-H01, F04-H02 y F04-H03; quickstart.md
+# de specs/012-politica-normativa, specs/013-version-normativa-nueva y specs/014-afinidad-severidad).
+# Uso, desde cualquier directorio: deploy/probar_normativa.sh
 # Comprueba que la Política SENESCYT 2024 es la versión 1 con sus 22 filas, que la leen el
 # Vicerrector académico y el Administrador y no un docente (D-66), y que reiniciar el proceso datos
 # no la duplica ni la cambia (FR-006). Reinicia datos tres veces. Después (F04-H02, D-67), el
 # Vicerrector asocia la versión 1 a un periodo de prueba, crea una versión a partir de ella y le
 # cambia las horas de clase del docente de medio tiempo; la 1 no cambia, editarla da 409 y el
-# periodo no acepta otra versión. Al terminar, aunque un paso falle, borra en la base solo el
-# periodo de prueba y las versiones que creó: la API no borra versiones (principio VII).
+# periodo no acepta otra versión. Por último (F04-H03), la 1 trae los pesos y el mínimo de afinidad
+# por defecto, y la versión creada pasa RN-05 a dura, rige un segundo periodo de prueba y la consulta
+# del periodo lleva a ella, con RN-05 dura; la 1 la sigue teniendo blanda. Al terminar, aunque un
+# paso falle, borra en la base solo los periodos de prueba y las versiones que creó: la API no borra
+# versiones (principio VII).
 # Termina con 0 si todos los pasos pasan y con 1 si alguno falla. Nunca imprime el token ni la
 # contraseña.
 set -euo pipefail
@@ -77,7 +80,7 @@ sin_periodos() {
 es_la_politica_de_2024() {
     [[ $estado == 200 ]] \
         && [[ $(jq '.tablaCargaHoraria | length' <<<"$cuerpo") == 22 ]] \
-        && [[ $(jq '.reglas | length' <<<"$cuerpo") == 7 ]] \
+        && [[ $(jq '.reglas | length' <<<"$cuerpo") == 16 ]] \
         && [[ $(jq -c '.tablaCargaHoraria[] | select(.perfil == "DOCENTE_TC")
                 | [.horasClase, .horasClaseMinimo, .horasClaseMaximo, .horasOtrasDocencia]' <<<"$cuerpo") \
             == '[22,18,24,18]' ]]
@@ -122,12 +125,13 @@ clase_de_medio_tiempo() {
 # La limpieza (research §12 de F04-H02): solo el periodo de prueba y las versiones que este script
 # creó, con sus filas, reglas, parámetros y registros. Corre al salir, aunque falle un paso.
 periodo="prueba-$RANDOM$RANDOM"
+periodo_b="$periodo-b"  # F04-H03: el periodo que rige la versión con RN-05 dura
 versiones_creadas=()
 limpiar() {
     local sql numero
-    sql="delete from normativa.asignacion_normativa where periodo = '$periodo';
+    sql="delete from normativa.asignacion_normativa where periodo in ('$periodo', '$periodo_b');
 delete from normativa.registro_cambio where accion = 'VERSION_ASOCIADA'
-    and detalle ->> 'periodo' = '$periodo';"
+    and detalle ->> 'periodo' in ('$periodo', '$periodo_b');"
     for numero in "${versiones_creadas[@]}"; do
         [[ $numero =~ ^[0-9]+$ ]] || continue
         sql+="
@@ -142,7 +146,7 @@ delete from normativa.version_normativa where numero = $numero;"
     done
     docker compose exec -T postgres psql -q -U postgres -d "$(valor_de_entorno POSTGRES_DB)" \
         -v ON_ERROR_STOP=1 -c "$sql" >/dev/null 2>&1 \
-        || echo "AVISO  No se pudo limpiar el periodo $periodo ni las versiones ${versiones_creadas[*]:-}"
+        || echo "AVISO  No se pudo limpiar los periodos $periodo y $periodo_b ni las versiones ${versiones_creadas[*]:-}"
 }
 trap limpiar EXIT
 
@@ -154,7 +158,7 @@ verificar 1 "vicerrectorado.demo: la primera versión es la 1, SENESCYT-2024-03 
 
 # 2. La versión 1 es la política 2024
 pedir GET "$GATEWAY/api/normativa/versiones/1" "Bearer $token_vicerrector"
-verificar 2 "La versión 1 tiene 22 filas y 7 reglas; DOCENTE_TC con 22 h de clase entre 18 y 24 y 18 de otras de docencia (recibido: $estado)" es_la_politica_de_2024
+verificar 2 "La versión 1 tiene 22 filas y 16 reglas; DOCENTE_TC con 22 h de clase entre 18 y 24 y 18 de otras de docencia (recibido: $estado)" es_la_politica_de_2024
 guardada=$cuerpo
 
 # 3. El Administrador la ve igual; un docente recibe el 403; una versión que no existe, 404
@@ -231,6 +235,54 @@ iniciar docente.demo
 pedir POST "$GATEWAY/api/normativa/versiones" "Bearer $token" \
     '{"copiarDe":1,"codigo":"NO-DEBE","origen":"No debe","vigenteDesde":"2025-01-15"}'
 verificar 7 "docente.demo no crea versiones: 403 con el cuerpo común (recibido: $estado)" es_403_comun
+
+# 8. Valores por defecto (F04-H03, escenario 1): los pesos de afinidad de RN-24 y el mínimo de RN-19
+pedir GET "$GATEWAY/api/normativa/versiones/1" "Bearer $token_vicerrector"
+pesos_por_defecto() {
+    [[ $estado == 200 ]] \
+        && [[ $(jq -cS '[.reglas[] | select(.identificador == "RN-24") | .parametros[]
+                | {(.nombre): .valor}] | add' <<<"$cuerpo") \
+            == "$(jq -cS . <<<'{"cuarto_nivel_campo_especifico":3,"cuarto_nivel_campo_amplio":2,"tercer_nivel_campo_especifico":2,"tercer_nivel_campo_amplio":1,"experiencia_relacionada":2,"curso_relacionado":1,"tope_cursos":3}')" ]] \
+        && [[ $(jq -c '.reglas[] | select(.identificador == "RN-19") | [.severidad, .parametros]' <<<"$cuerpo") \
+            == '["BLANDA",[{"nombre":"minimo_afinidad","valor":2}]]' ]]
+}
+verificar 8 "La versión 1 trae los pesos de RN-24 (3, 2, 2, 1, 2, 1 y tope 3) y el mínimo 2 de RN-19, blanda (recibido: $estado)" \
+    pesos_por_defecto
+
+# 9. Severidad de una regla (F04-H03, escenario 2, SC-004): la versión del paso 5, que sigue sin
+# periodo, pasa RN-05 a dura y rige un segundo periodo de prueba; la consulta del periodo lleva a
+# ella, con RN-05 dura, y la 1 la sigue teniendo blanda. Ya en uso, cambiarla da 409.
+con_severidad() {  # con_severidad <cuerpo de editarVersion> <regla> <severidad>
+    jq -c --arg r "$2" --arg s "$3" \
+        '.reglas |= map(if .identificador == $r then .severidad = $s else . end)' <<<"$1"
+}
+severidad_de() {  # severidad_de <versión> <regla>
+    jq -r --arg r "$2" '.reglas[] | select(.identificador == $r) | .severidad' <<<"$1"
+}
+pedir GET "$GATEWAY/api/normativa/versiones/${numero:-0}" "Bearer $token_vicerrector"
+sin_periodo=$cuerpo
+pedir PUT "$GATEWAY/api/normativa/versiones/${numero:-0}" "Bearer $token_vicerrector" \
+    "$(con_severidad "$(edicion_de "$sin_periodo")" RN-05 DURA)"
+tiempo_severidad=$tiempo
+rn05_dura() { [[ $estado == 200 && $(severidad_de "$cuerpo" RN-05) == DURA ]]; }
+verificar 9 "Pasar RN-05 a dura en la versión ${numero:-?}: 200 (recibido: $estado, ${tiempo_severidad} s)" rn05_dura
+pedir PUT "$GATEWAY/api/normativa/periodos/$periodo_b" "Bearer $token_vicerrector" \
+    "{\"version\":${numero:-0}}"
+verificar 9 "La versión ${numero:-?} queda asociada al periodo $periodo_b (recibido: $estado)" es_estado 200
+pedir GET "$GATEWAY/api/normativa/periodos/$periodo_b" "Bearer $token_vicerrector"
+# En su propia variable: dentro de verificar, «numero» es el número del paso (local).
+version_creada=${numero:-0}
+rige_la_creada() { [[ $estado == 200 && $(jq '.version' <<<"$cuerpo") == "$version_creada" ]]; }
+verificar 9 "La consulta del periodo $periodo_b lleva a la versión ${numero:-?} (recibido: $estado)" rige_la_creada
+pedir GET "$GATEWAY/api/normativa/versiones/${numero:-0}" "Bearer $token_vicerrector"
+verificar 9 "Y esa versión trae RN-05 dura (recibido: $estado)" rn05_dura
+pedir GET "$GATEWAY/api/normativa/versiones/1" "Bearer $token_vicerrector"
+uno_blanda() { [[ $estado == 200 && $(severidad_de "$cuerpo" RN-05) == BLANDA ]]; }
+verificar 9 "La versión 1 sigue con RN-05 blanda (recibido: $estado)" uno_blanda
+pedir PUT "$GATEWAY/api/normativa/versiones/${numero:-0}" "Bearer $token_vicerrector" \
+    "$(con_severidad "$(edicion_de "$sin_periodo")" RN-05 BLANDA)"
+verificar 9 "Ya en uso, volver RN-05 a blanda: 409 NORMATIVA_VERSION_EN_USO (recibido: $estado)" \
+    es_codigo 409 NORMATIVA_VERSION_EN_USO
 
 if [[ $fallas -eq 0 ]]; then
     echo "Normativa de punta a punta: todos los pasos pasan."

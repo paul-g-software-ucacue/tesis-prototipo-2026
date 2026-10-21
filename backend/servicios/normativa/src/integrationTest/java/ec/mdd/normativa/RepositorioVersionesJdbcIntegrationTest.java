@@ -3,13 +3,17 @@ package ec.mdd.normativa;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ec.mdd.normativa.adaptadores.salida.RepositorioVersionesJdbc;
+import ec.mdd.normativa.dominio.DatosDeVersion;
 import ec.mdd.normativa.dominio.FilaCargaHoraria;
+import ec.mdd.normativa.dominio.Regla;
 import ec.mdd.normativa.dominio.Severidad;
 import ec.mdd.normativa.dominio.TipoIst;
 import ec.mdd.normativa.dominio.VersionNormativa;
 import ec.mdd.normativa.infraestructura.NormativaFlywayConfig;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -54,7 +58,8 @@ class RepositorioVersionesJdbcIntegrationTest {
                             assertThat(version.vigenteDesde()).isEqualTo(LocalDate.of(2024, 3, 11));
                             assertThat(version.tipoIst()).isEqualTo(TipoIst.T2);
                             assertThat(version.tabla().filas()).hasSize(22);
-                            assertThat(version.reglas()).hasSize(7);
+                            // 7 de F04-H01 y 9 de V4 (F04-H03, D-68).
+                            assertThat(version.reglas()).hasSize(16);
                         });
     }
 
@@ -84,6 +89,45 @@ class RepositorioVersionesJdbcIntegrationTest {
         assertThat(version.regla("RN-02").orElseThrow().parametro("horas_maximas_docente"))
                 .hasValueSatisfying(
                         valor -> assertThat(valor).isEqualByComparingTo(BigDecimal.valueOf(40)));
+    }
+
+    @Test
+    void dadoLaVersionUno_cuandoSeLeenSusReglas_entoncesLasRfVanAlFinalYLasDelMotorSinCifras() {
+        VersionNormativa version = repositorio.buscar(1).orElseThrow();
+
+        assertThat(version.reglas().stream().map(Regla::identificador).toList())
+                .startsWith("RN-01", "RN-02")
+                .endsWith("RN-24", "RN-25", "RF-24");
+        assertThat(version.regla("RN-17").orElseThrow())
+                .satisfies(
+                        regla -> {
+                            assertThat(regla.severidad()).isEqualTo(Severidad.DURA);
+                            assertThat(regla.parametros()).isEmpty();
+                        });
+        assertThat(version.regla("RN-24").orElseThrow().delMotor()).isFalse();
+    }
+
+    @Test
+    void dadoUnaCopiaConReglasSinParametros_cuandoSeGuarda_entoncesSeReconstruyeIgual() {
+        VersionNormativa uno = repositorio.buscar(1).orElseThrow();
+        Instant momento = Instant.parse("2026-10-20T12:00:00Z");
+        VersionNormativa copia =
+                VersionNormativa.copiaDe(
+                                uno,
+                                99,
+                                new DatosDeVersion(
+                                        "PRUEBA-REGLAS",
+                                        "Prueba de reglas",
+                                        LocalDate.of(2026, 1, 1)),
+                                momento)
+                        .version();
+
+        repositorio.guardar(copia, "prueba", momento);
+
+        VersionNormativa leida = repositorio.buscar(99).orElseThrow();
+        assertThat(leida.reglas()).containsExactlyElementsOf(copia.reglas());
+        assertThat(leida.regla("RF-24")).isEqualTo(uno.regla("RF-24"));
+        assertThat(List.copyOf(leida.reglas())).isEqualTo(uno.reglas());
     }
 
     @Test

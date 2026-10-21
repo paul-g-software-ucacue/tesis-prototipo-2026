@@ -1,7 +1,8 @@
 // F04-H01 y F04-H02 en un navegador, con la API simulada: el Vicerrector académico abre «Normativa»
 // y ve la versión 1 con su tabla de carga horaria; un docente ve «Acceso no autorizado»; con
 // escritura, el Vicerrector cambia en pantalla las horas de clase del docente de medio tiempo de una
-// versión nueva. También la accesibilidad de la pantalla y sus diálogos con axe-core (WCAG 2.1 AA).
+// versión nueva. F04-H03: la afinidad y la severidad de una regla del motor. También la accesibilidad
+// de la pantalla y sus diálogos con axe-core (WCAG 2.1 AA).
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { TEXTO_TECNICO, ingresar, simularApi } from './simulacion';
@@ -59,6 +60,29 @@ const REGLAS = [
     severidad: 'DURA',
     parametros: [{ nombre: 'horas_maximas_docente', valor: 40 }],
   },
+  {
+    identificador: 'RN-05',
+    severidad: 'BLANDA',
+    parametros: [{ nombre: 'porcentaje_clase', valor: 60 }],
+  },
+  {
+    identificador: 'RN-19',
+    severidad: 'BLANDA',
+    parametros: [{ nombre: 'minimo_afinidad', valor: 2 }],
+  },
+  {
+    identificador: 'RN-24',
+    parametros: [
+      { nombre: 'cuarto_nivel_campo_amplio', valor: 2 },
+      { nombre: 'cuarto_nivel_campo_especifico', valor: 3 },
+      { nombre: 'curso_relacionado', valor: 1 },
+      { nombre: 'experiencia_relacionada', valor: 2 },
+      { nombre: 'tercer_nivel_campo_amplio', valor: 1 },
+      { nombre: 'tercer_nivel_campo_especifico', valor: 2 },
+      { nombre: 'tope_cursos', valor: 3 },
+    ],
+  },
+  { identificador: 'RF-24', severidad: 'DURA', parametros: [] },
 ];
 
 async function simularNormativa(pagina: Page) {
@@ -141,6 +165,11 @@ const CLASE_DE_MEDIO_TIEMPO = 'Clase · Docente a medio tiempo · Todos';
 
 interface CuerpoEditado {
   tablaCargaHoraria: { perfil: string; horasClase: number }[];
+  reglas: {
+    identificador: string;
+    severidad?: string;
+    parametros: { nombre: string; valor: number }[];
+  }[];
 }
 
 /** Simula las dos versiones y responde el PUT de la 2 con lo que diga {@code alEditar}. */
@@ -204,6 +233,31 @@ test('versión nueva: el Vicerrector cambia las horas de clase del docente de me
   await expect(tabla.getByRole('row').nth(2).getByRole('cell').nth(3)).toHaveText('5');
 });
 
+test('severidad y afinidad: RN-05 pasa a «Dura» y un peso cambia en una versión nueva', async ({
+  page,
+}) => {
+  await simularDosVersiones(page, (cuerpo) => ({
+    status: 200,
+    json: { ...DOS, reglas: cuerpo.reglas, tablaCargaHoraria: TABLA },
+  }));
+  await abrirComoEscritor(page);
+  await expect(page.getByRole('list', { name: 'Afinidad' })).toContainText(
+    'Experiencia relacionada: 2',
+  );
+
+  await page.getByRole('button', { name: 'Editar' }).click();
+  await page.getByRole('combobox', { name: 'RN-05 · Severidad' }).selectOption('Dura');
+  await page.getByRole('spinbutton', { name: 'RN-24 · Experiencia relacionada' }).fill('3');
+  await page.getByRole('button', { name: 'Guardar' }).click();
+
+  await expect(page.getByRole('button', { name: 'Guardar' })).toBeHidden();
+  await expect(page.getByRole('list', { name: 'Afinidad' })).toContainText(
+    'Experiencia relacionada: 3',
+  );
+  const reglas = page.getByRole('table', { name: 'Reglas y parámetros' });
+  await expect(reglas.getByRole('row').filter({ hasText: 'RN-05' })).toContainText('Dura');
+});
+
 test('edición en pantalla: un valor fuera de rango muestra el motivo junto a su fila', async ({
   page,
 }) => {
@@ -240,7 +294,7 @@ test('edición en pantalla: un valor fuera de rango muestra el motivo junto a su
 test.describe('accesibilidad de la pantalla «Normativa»', () => {
   test.skip(({ browserName }) => browserName !== 'chromium', 'axe-core corre solo en Chromium');
 
-  test('la versión 1 con sus reglas y su tabla', async ({ page }) => {
+  test('la versión 1 con su afinidad, sus reglas y su tabla', async ({ page }) => {
     await simularApi(page, { sesion: VICERRECTOR });
     await simularNormativa(page);
     await page.goto('/iniciar-sesion');
@@ -269,11 +323,14 @@ test.describe('accesibilidad de la pantalla «Normativa»', () => {
     expect(fallas, fallas.join('\n')).toEqual([]);
   }
 
-  test('la edición en pantalla de la versión 2', async ({ page }) => {
+  test('la edición en pantalla de la versión 2, con los selectores de severidad', async ({
+    page,
+  }) => {
     await simularDosVersiones(page, () => ({ status: 200, json: DOS }));
     await abrirComoEscritor(page);
     await page.getByRole('button', { name: 'Editar' }).click();
     await expect(page.getByRole('spinbutton', { name: CLASE_DE_MEDIO_TIEMPO })).toBeVisible();
+    await expect(page.getByRole('combobox', { name: 'RN-05 · Severidad' })).toBeVisible();
 
     await sinFallas(page);
   });

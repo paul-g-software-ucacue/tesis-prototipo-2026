@@ -149,10 +149,87 @@ describe('Normativa con escritura', () => {
         horasGestion: 10,
       },
     ]);
+    // F04-H03: las reglas del motor envían su severidad; las de solo parámetros, no.
     expect(cuerpo.reglas.find((regla) => regla.identificador === 'RN-02')).toEqual({
       identificador: 'RN-02',
+      severidad: 'DURA',
       parametros: [{ nombre: 'horas_maximas_docente', valor: 38.5 }],
     });
+  });
+
+  it('cambia la severidad de una regla del motor; las de solo parámetros no tienen selector', async () => {
+    sesionCon(simulada, ESCRITURA);
+    simulada.responder('PUT', '/api/normativa/versiones/2', json(200, VERSION_2));
+    const usuario = userEvent.setup();
+    montarSpa('/normativa');
+
+    await usuario.click(await screen.findByRole('button', { name: 'Editar' }));
+    await usuario.selectOptions(
+      screen.getByRole('combobox', { name: 'RN-05 · Severidad' }),
+      'Dura',
+    );
+    expect(screen.queryByRole('combobox', { name: 'RN-01 · Severidad' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'RN-24 · Severidad' })).not.toBeInTheDocument();
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Guardar' })).not.toBeInTheDocument(),
+    );
+    const cuerpo = (await cuerpoDe(simulada, 'PUT', '/api/normativa/versiones/2')) as {
+      reglas: { identificador: string; severidad?: string; parametros: unknown[] }[];
+    };
+    expect(cuerpo.reglas.map((regla) => [regla.identificador, regla.severidad ?? null])).toEqual([
+      ['RN-01', null],
+      ['RN-02', 'DURA'],
+      ['RN-05', 'DURA'],
+      ['RN-19', 'BLANDA'],
+      ['RN-24', null],
+      ['RF-24', 'DURA'],
+    ]);
+    expect(cuerpo.reglas.find((regla) => regla.identificador === 'RF-24')?.parametros).toEqual([]);
+  });
+
+  it('un 400 de una severidad o de un peso se muestra junto a su campo', async () => {
+    sesionCon(simulada, ESCRITURA);
+    simulada.responder(
+      'PUT',
+      '/api/normativa/versiones/2',
+      json(400, {
+        titulo: 'Solicitud inválida',
+        descripcion: 'Revisa los campos marcados y vuelve a intentarlo.',
+        codigo: 'COMUN_SOLICITUD_INVALIDA',
+        detalles: [
+          {
+            campo: 'reglas[RN-24].cuarto_nivel_campo_amplio',
+            descripcion:
+              'El peso del campo amplio (4) no puede superar al del campo específico (3)',
+          },
+          {
+            campo: 'reglas[RN-05].severidad',
+            descripcion: 'Esta regla solo da parámetros: no tiene severidad',
+          },
+        ],
+      }),
+    );
+    const usuario = userEvent.setup();
+    montarSpa('/normativa');
+
+    await usuario.click(await screen.findByRole('button', { name: 'Editar' }));
+    await usuario.click(screen.getByRole('button', { name: 'Guardar' }));
+
+    expect(
+      await screen.findByRole('spinbutton', {
+        name: 'RN-24 · Título de cuarto nivel, campo amplio',
+        description: 'El peso del campo amplio (4) no puede superar al del campo específico (3)',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('combobox', {
+        name: 'RN-05 · Severidad',
+        description: 'Esta regla solo da parámetros: no tiene severidad',
+      }),
+    ).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent('reglas[');
   });
 
   it('un 400 marca la fila con su motivo, sin códigos, y un 409 se muestra con su título', async () => {
@@ -271,5 +348,8 @@ describe('Normativa con escritura', () => {
     expect(screen.queryByRole('button', { name: 'Crear versión nueva' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Editar' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Asociar a un periodo' })).not.toBeInTheDocument();
+    // F04-H03: la afinidad se ve, y no hay selectores de severidad.
+    expect(screen.getByRole('list', { name: 'Afinidad' })).toBeInTheDocument();
+    expect(screen.queryAllByRole('combobox')).toEqual([]);
   });
 });

@@ -86,7 +86,7 @@ class NormativaContratoTest {
         String cuerpo = resultado.getResponse().getContentAsString();
         assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
         assertThat(JsonPath.<List<String>>read(cuerpo, "$.reglas[*].identificador"))
-                .containsExactly("RN-01", "RN-02");
+                .containsExactly("RN-01", "RN-02", "RN-19", "RN-24", "RF-24");
         assertThat(JsonPath.<Integer>read(cuerpo, "$.reglas[0].parametros[0].valor")).isEqualTo(40);
         // RN-01 es solo parámetros: sin severidad, el campo se omite.
         assertThat(JsonPath.<Map<String, Object>>read(cuerpo, "$.reglas[0]"))
@@ -214,6 +214,125 @@ class NormativaContratoTest {
         assertThat(JsonPath.<String>read(cuerpo, "$.origen")).isEqualTo("Reforma editada");
         assertThat(normativa.version(1)).isEqualTo(VERSION_1);
         assertThat(normativa.ultimoUsuario()).isEqualTo("vicerrectorado.demo");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoLaVersionUno_cuandoSeConsulta_entoncesTraeLaAfinidadYLasReglasSinParametros()
+            throws Exception {
+        MvcResult resultado = pedir(get("/api/normativa/versiones/1"));
+
+        String cuerpo = resultado.getResponse().getContentAsString();
+        assertThat(JsonPath.<List<String>>read(cuerpo, "$.reglas[3].parametros[*].nombre"))
+                .containsExactly(
+                        "cuarto_nivel_campo_especifico",
+                        "cuarto_nivel_campo_amplio",
+                        "tercer_nivel_campo_especifico",
+                        "tercer_nivel_campo_amplio",
+                        "experiencia_relacionada",
+                        "curso_relacionado",
+                        "tope_cursos");
+        assertThat(JsonPath.<Integer>read(cuerpo, "$.reglas[2].parametros[0].valor")).isEqualTo(2);
+        assertThat(JsonPath.<String>read(cuerpo, "$.reglas[2].severidad")).isEqualTo("BLANDA");
+        assertThat(JsonPath.<List<Object>>read(cuerpo, "$.reglas[4].parametros")).isEmpty();
+        assertThat(JsonPath.<String>read(cuerpo, "$.reglas[4].severidad")).isEqualTo("DURA");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoElCampoAmplioMayorQueElEspecifico_cuandoSeEdita_entonces400ConSuCampo()
+            throws Exception {
+        MvcResult resultado =
+                pedir(
+                        put("/api/normativa/versiones/2")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(edicion(22, true, "4", "")),
+                        escritura());
+
+        String cuerpo = resultado.getResponse().getContentAsString();
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(400);
+        assertThat(JsonPath.<String>read(cuerpo, "$.codigo")).isEqualTo("COMUN_SOLICITUD_INVALIDA");
+        assertThat(JsonPath.<String>read(cuerpo, "$.detalles[0].campo"))
+                .isEqualTo("reglas[RN-24].cuarto_nivel_campo_amplio");
+        assertThat(JsonPath.<String>read(cuerpo, "$.detalles[0].descripcion"))
+                .isEqualTo(
+                        "El peso del campo amplio (4) no puede superar al del campo específico (3)");
+        assertThat(normativa.version(2).pesosAfinidad().orElseThrow().cuartoNivelCampoAmplio())
+                .isEqualByComparingTo("2");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoRn19Blanda_cuandoSePasaADura_entonces200ConLaSeveridadNueva() throws Exception {
+        MvcResult resultado =
+                pedir(
+                        put("/api/normativa/versiones/2")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(edicion(22, true, "2", ",\"severidad\":\"DURA\"")),
+                        escritura());
+
+        String cuerpo = resultado.getResponse().getContentAsString();
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(JsonPath.<String>read(cuerpo, "$.reglas[2].identificador")).isEqualTo("RN-19");
+        assertThat(JsonPath.<String>read(cuerpo, "$.reglas[2].severidad")).isEqualTo("DURA");
+        assertThat(normativa.version(1).regla("RN-19").orElseThrow().severidad())
+                .isEqualTo(Severidad.BLANDA);
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoSinSeveridades_cuandoSeEdita_entoncesNingunaCambia() throws Exception {
+        MvcResult resultado =
+                pedir(
+                        put("/api/normativa/versiones/2")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(edicion(22, true)),
+                        escritura());
+
+        String cuerpo = resultado.getResponse().getContentAsString();
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(JsonPath.<List<String>>read(cuerpo, "$.reglas[*].severidad"))
+                .containsExactly("DURA", "BLANDA", "DURA");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnaSeveridadEnRn24_cuandoSeEdita_entonces400ConSuCampo() throws Exception {
+        String cuerpoPedido =
+                edicion(22, true)
+                        .replace(
+                                "{\"identificador\":\"RN-24\"",
+                                "{\"identificador\":\"RN-24\",\"severidad\":\"DURA\"");
+        MvcResult resultado =
+                pedir(
+                        put("/api/normativa/versiones/2")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(cuerpoPedido),
+                        escritura());
+
+        String cuerpo = resultado.getResponse().getContentAsString();
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(400);
+        assertThat(JsonPath.<String>read(cuerpo, "$.detalles[0].campo"))
+                .isEqualTo("reglas[RN-24].severidad");
+        assertThat(JsonPath.<String>read(cuerpo, "$.detalles[0].descripcion"))
+                .isEqualTo("Esta regla solo da parámetros: no tiene severidad");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoLaVersionDosEnUso_cuandoSeCambiaUnaSeveridad_entonces409() throws Exception {
+        normativa.asociar(2, "2025-1");
+
+        MvcResult resultado =
+                pedir(
+                        put("/api/normativa/versiones/2")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(edicion(22, true, "2", ",\"severidad\":\"DURA\"")),
+                        escritura());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(409);
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("NORMATIVA_VERSION_EN_USO");
         contrato.validar(resultado);
     }
 
@@ -365,6 +484,12 @@ class NormativaContratoTest {
 
     // La versión 2 completa, con las horas de clase del docente de tiempo completo y RN-02 en 38,5.
     private static String edicion(int claseTiempoCompleto, boolean conGestor) {
+        return edicion(claseTiempoCompleto, conGestor, "2", "");
+    }
+
+    // Con el peso del cuarto nivel en el campo amplio y lo que se agregue a RN-19 (su severidad).
+    private static String edicion(
+            int claseTiempoCompleto, boolean conGestor, String cuartoAmplio, String rn19) {
         String gestor =
                 ",{\"aplicaA\":\"T2\",\"perfil\":\"GESTOR\",\"dedicacionTotal\":40,"
                         + "\"horasClase\":14,\"horasClaseMinimo\":14,\"horasClaseMaximo\":14,"
@@ -374,7 +499,22 @@ class NormativaContratoTest {
                 + "\"reglas\":[{\"identificador\":\"RN-01\",\"parametros\":"
                 + "[{\"nombre\":\"dedicacion_tiempo_completo\",\"valor\":40}]},"
                 + "{\"identificador\":\"RN-02\",\"parametros\":"
-                + "[{\"nombre\":\"horas_maximas_docente\",\"valor\":38.5}]}],"
+                + "[{\"nombre\":\"horas_maximas_docente\",\"valor\":38.5}]},"
+                + "{\"identificador\":\"RN-19\""
+                + rn19
+                + ",\"parametros\":"
+                + "[{\"nombre\":\"minimo_afinidad\",\"valor\":2}]},"
+                + "{\"identificador\":\"RN-24\",\"parametros\":["
+                + "{\"nombre\":\"cuarto_nivel_campo_especifico\",\"valor\":3},"
+                + "{\"nombre\":\"cuarto_nivel_campo_amplio\",\"valor\":"
+                + cuartoAmplio
+                + "},"
+                + "{\"nombre\":\"tercer_nivel_campo_especifico\",\"valor\":2},"
+                + "{\"nombre\":\"tercer_nivel_campo_amplio\",\"valor\":1},"
+                + "{\"nombre\":\"experiencia_relacionada\",\"valor\":2},"
+                + "{\"nombre\":\"curso_relacionado\",\"valor\":1},"
+                + "{\"nombre\":\"tope_cursos\",\"valor\":3}]},"
+                + "{\"identificador\":\"RF-24\",\"parametros\":[]}],"
                 + "\"tablaCargaHoraria\":[{\"aplicaA\":\"TODOS\",\"perfil\":\"DOCENTE_TC\","
                 + "\"dedicacionTotal\":40,\"horasClase\":"
                 + claseTiempoCompleto
@@ -448,7 +588,26 @@ class NormativaContratoTest {
                         new Regla(
                                 "RN-02",
                                 Severidad.DURA,
-                                Map.of("horas_maximas_docente", BigDecimal.valueOf(40)))));
+                                Map.of("horas_maximas_docente", BigDecimal.valueOf(40))),
+                        // F04-H03: la afinidad y una regla del motor sin parámetros.
+                        new Regla(
+                                "RN-19",
+                                Severidad.BLANDA,
+                                Map.of("minimo_afinidad", BigDecimal.valueOf(2))),
+                        new Regla("RN-24", null, pesos()),
+                        new Regla("RF-24", Severidad.DURA, Map.of())));
+    }
+
+    private static Map<String, BigDecimal> pesos() {
+        Map<String, BigDecimal> pesos = new LinkedHashMap<>();
+        pesos.put("cuarto_nivel_campo_especifico", BigDecimal.valueOf(3));
+        pesos.put("cuarto_nivel_campo_amplio", BigDecimal.valueOf(2));
+        pesos.put("tercer_nivel_campo_especifico", BigDecimal.valueOf(2));
+        pesos.put("tercer_nivel_campo_amplio", BigDecimal.valueOf(1));
+        pesos.put("experiencia_relacionada", BigDecimal.valueOf(2));
+        pesos.put("curso_relacionado", BigDecimal.valueOf(1));
+        pesos.put("tope_cursos", BigDecimal.valueOf(3));
+        return pesos;
     }
 
     @TestConfiguration

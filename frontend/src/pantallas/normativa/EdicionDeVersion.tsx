@@ -1,5 +1,6 @@
 // La edición en pantalla de una versión de normativa sin periodo (F04-H02, ERS 8.3): la cabecera,
-// las horas de cada fila de la tabla de carga horaria y los valores de cada parámetro. «Guardar»
+// las horas de cada fila de la tabla de carga horaria, los valores de cada parámetro y, desde
+// F04-H03, la severidad de cada regla del motor (MD-08). «Guardar»
 // envía la versión completa, como la carga 7 por archivo (FR-010): las reglas las aplica el
 // servidor, y cada motivo que responde se muestra junto a su fila o su parámetro, sin códigos.
 import Button from '@mui/material/Button';
@@ -21,7 +22,7 @@ import {
   type FilaEditada,
   type VersionNormativa,
 } from './consultas';
-import { campoDeFila, campoDeParametro, tipoIst } from './formato';
+import { campoDeFila, campoDeParametro, SEVERIDADES, tipoIst } from './formato';
 import { nombreDelPerfil } from './perfiles';
 import { nombreDeLaRegla, nombreDelParametro } from './reglas';
 
@@ -73,6 +74,14 @@ export function EdicionDeVersion({ version, alGuardar, alCancelar }: Propiedades
   const [origen, setOrigen] = useState(version.origen);
   const [vigenteDesde, setVigenteDesde] = useState(version.vigenteDesde);
   const [textos, setTextos] = useState(() => textosIniciales(version));
+  // Solo las reglas del motor tienen severidad; las que solo dan parámetros no la reciben.
+  const [severidades, setSeveridades] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      version.reglas.flatMap((regla) =>
+        regla.severidad ? [[regla.identificador, regla.severidad]] : [],
+      ),
+    ),
+  );
   const [aviso, setAviso] = useState<MensajeDeError | null>(null);
   const [falta, setFalta] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -88,6 +97,7 @@ export function EdicionDeVersion({ version, alGuardar, alCancelar }: Propiedades
     'vigenteDesde',
     ...version.tablaCargaHoraria.map(campoDeFila),
     ...Object.keys(textos).filter((clave) => clave.startsWith('reglas[')),
+    ...Object.keys(severidades).map((regla) => campoDeParametro(regla, 'severidad')),
   ]);
 
   const filaEditada = (fila: FilaCargaHoraria): FilaEditada | null => {
@@ -132,6 +142,9 @@ export function EdicionDeVersion({ version, alGuardar, alCancelar }: Propiedades
         tablaCargaHoraria: filas as FilaEditada[],
         reglas: version.reglas.map((regla) => ({
           identificador: regla.identificador,
+          ...(severidades[regla.identificador] && {
+            severidad: severidades[regla.identificador] as 'DURA' | 'BLANDA',
+          }),
           parametros: regla.parametros.map((parametro) => ({
             nombre: parametro.nombre,
             valor: Number(textos[campoDeParametro(regla.identificador, parametro.nombre)]),
@@ -193,6 +206,7 @@ export function EdicionDeVersion({ version, alGuardar, alCancelar }: Propiedades
           <TableRow>
             <TableCell>Regla</TableCell>
             <TableCell>Qué controla</TableCell>
+            <TableCell>Severidad</TableCell>
             <TableCell>Parámetros</TableCell>
           </TableRow>
         </TableHead>
@@ -201,6 +215,16 @@ export function EdicionDeVersion({ version, alGuardar, alCancelar }: Propiedades
             <TableRow key={regla.identificador}>
               <TableCell>{regla.identificador}</TableCell>
               <TableCell>{nombreDeLaRegla(regla.identificador)}</TableCell>
+              <TableCell>
+                <SelectorDeSeveridad
+                  regla={regla.identificador}
+                  severidad={severidades[regla.identificador]}
+                  motivo={detalle(campoDeParametro(regla.identificador, 'severidad'))}
+                  alCambiar={(nueva) =>
+                    setSeveridades({ ...severidades, [regla.identificador]: nueva })
+                  }
+                />
+              </TableCell>
               <TableCell>
                 <Stack spacing={1}>
                   {regla.parametros.map((parametro) => {
@@ -271,6 +295,45 @@ export function EdicionDeVersion({ version, alGuardar, alCancelar }: Propiedades
         <Button onClick={alCancelar}>Cancelar</Button>
       </Stack>
     </Stack>
+  );
+}
+
+// Un selector nativo, para que el nombre accesible sea el de la regla (WCAG 4.1.2). Las reglas que
+// solo dan parámetros no tienen severidad y no lo muestran.
+function SelectorDeSeveridad({
+  regla,
+  severidad,
+  motivo,
+  alCambiar,
+}: {
+  regla: string;
+  severidad: string | undefined;
+  motivo: string | undefined;
+  alCambiar: (severidad: string) => void;
+}) {
+  if (!severidad) {
+    return null;
+  }
+  return (
+    <TextField
+      select
+      label="Severidad"
+      size="small"
+      value={severidad}
+      onChange={(evento) => alCambiar(evento.target.value)}
+      error={Boolean(motivo)}
+      helperText={motivo}
+      slotProps={{
+        select: { native: true },
+        htmlInput: { 'aria-label': `${regla} · Severidad` },
+      }}
+    >
+      {Object.entries(SEVERIDADES).map(([valor, nombre]) => (
+        <option key={valor} value={valor}>
+          {nombre}
+        </option>
+      ))}
+    </TextField>
   );
 }
 

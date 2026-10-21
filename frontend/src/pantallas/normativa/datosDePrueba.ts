@@ -1,6 +1,8 @@
 // Respuestas de la API de Normativa para las pruebas de la pantalla «Normativa»
 // (contratos/normativa). Un resumen de la versión 1: tres filas y tres reglas de la política 2024.
-// Desde F04-H02, también una versión 2 copiada de la 1 y todavía sin periodo.
+// Desde F04-H02, también una versión 2 copiada de la 1 y todavía sin periodo. Desde F04-H03, la 1
+// trae la afinidad (RN-19 y RN-24, con los parámetros en el orden en que los da la base) y una regla
+// del motor sin parámetros (RF-24).
 export const VERSIONES = [
   {
     numero: 1,
@@ -32,6 +34,24 @@ export const VERSION_1 = {
       severidad: 'BLANDA',
       parametros: [{ nombre: 'porcentaje_clase', valor: 60 }],
     },
+    {
+      identificador: 'RN-19',
+      severidad: 'BLANDA',
+      parametros: [{ nombre: 'minimo_afinidad', valor: 2 }],
+    },
+    {
+      identificador: 'RN-24',
+      parametros: [
+        { nombre: 'cuarto_nivel_campo_amplio', valor: 2 },
+        { nombre: 'cuarto_nivel_campo_especifico', valor: 3 },
+        { nombre: 'curso_relacionado', valor: 1 },
+        { nombre: 'experiencia_relacionada', valor: 2 },
+        { nombre: 'tercer_nivel_campo_amplio', valor: 1 },
+        { nombre: 'tercer_nivel_campo_especifico', valor: 2 },
+        { nombre: 'tope_cursos', valor: 3 },
+      ],
+    },
+    { identificador: 'RF-24', severidad: 'DURA', parametros: [] },
   ],
   tablaCargaHoraria: [
     {
