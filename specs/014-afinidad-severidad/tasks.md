@@ -141,14 +141,14 @@ description: "Tareas de F04-H03: pesos y mínimo de afinidad y la severidad de l
 
 ## Phase 6: Cierre
 
-- [ ] T019 Correr:
+- [X] T019 Correr:
   - en el backend, `./gradlew check integrationTest`;
   - en el frontend, `npm run lint`, `formato:verificar`, `tipos`, `test -- --run --coverage`, `test:e2e` y `verificar:ruptura`;
   - `shellcheck` sobre `probar_normativa.sh`, y Gitleaks sobre un clon en el scratchpad, montado con `:ro,Z` (nunca el repositorio);
   - con el perfil local reconstruido con la rama: `probar_autenticacion.sh`, `probar_errores.sh`, `probar_eventos.sh`, `probar_spa.sh`, `probar_normativa.sh` dos veces seguidas y `deploy/equipo/probar_equipo.sh`.
 
   Anotar el tiempo de `editarVersion` en el paso 9 (meta < 200 ms con 16 reglas). Todo en verde, con el 60 % de líneas. Hacer commit y push, abrir el PR en borrador con `Refs #42` y marcarlo listo **después** de que terminen sus runs. Comprobar los checks, `perfil-consolidado` y `5 · imágenes`.
-- [ ] T020 Completar `evidencia.md` y la «Definición de terminado» del PR. Fusionarlo con *squash* **con la aprobación del autor**, con la rama al día con `main`. Después:
+- [X] T020 Completar `evidencia.md` y la «Definición de terminado» del PR. Fusionarlo con *squash* **con la aprobación del autor**, con la rama al día con `main`. Después:
   - esperar el despliegue automático en el PC («Sano en N s»), con `normativa` en V4;
   - en la base del equipo, cada versión (la 1 y la 2 que creó el autor) con 16 reglas y su `VERSION_EDITADA` de `sistema` (D-68);
   - el autor entra con `vicerrectorado.demo`, ve «Afinidad» en la versión 1 y cambia en la versión 2 un peso y la severidad de RN-05 en menos de 2 minutos (SC-001);
