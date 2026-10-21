@@ -69,6 +69,8 @@ Registro de las comprobaciones de la historia (issue #32): registrar el periodo 
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Despliegue automático (T027) | confirmada | Al fusionar #124 (`aa73e24`), el CD publicó las 9 imágenes y `mdd-actualizar.timer` desplegó la versión `aa73e24f6a35` (anterior: `798dda07729a`): «Sano en 65 s» y la prueba de humo en `OK`. `datos` migró `academico` a V2, sin periodos; las versiones de normativa 1 y 2 seguían sin periodo. | 2026-10-21 |
+| Periodo en el equipo (T027, SC-001) | confirmada | El autor entró con `vicerrectorado.demo` en `https://mdd.localhost` y, en «Periodos», registró el periodo `001` («2026-2») a las 05:32:55, lo abrió con la versión 1 a las 05:33:14 y lo pasó a En aprobación a las 05:33:42: 47 s del registro a En aprobación, por debajo de los 2 minutos. Después corrigió su fecha de fin y lo llevó a Vigente y a Cerrado. En la base del equipo, Académico tiene las 6 acciones (`PERIODO_REGISTRADO`, `PERIODO_ABIERTO`, `PERIODO_CORREGIDO` y 3 `PERIODO_ESTADO_CAMBIADO`) y Normativa su `VERSION_ASOCIADA`, todas de `vicerrectorado.demo`; la versión 1 rige el periodo `001`. La pantalla muestra el periodo cerrado, con la versión 1 y sin acciones. | 2026-10-21 |
 | Equipo simulado (T026) | confirmada | `deploy/equipo/probar_equipo.sh` con la versión de esta rama: pasos 0 a 11 en `OK`, a la primera; memoria 1 345,5 MiB; la versión rota vuelve a la anterior en 132 s. | 2026-10-21 |
 
 ## Notas
