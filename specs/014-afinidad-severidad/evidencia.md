@@ -55,11 +55,16 @@ Registro de las comprobaciones de la historia (issue #42): los pesos y el mínim
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Backend (T019) | confirmada | `./gradlew check integrationTest jacocoTestReport`: 556 pruebas en todo el backend, ninguna falla. Normativa con 73,0 % de líneas. | 2026-10-20 |
+| SPA (T019) | confirmada | `lint`, `formato:verificar`, `tipos` y `verificar:ruptura` en verde; 102 pruebas de Vitest con 95,57 % de líneas; 50 de Playwright. | 2026-10-20 |
+| Scripts (T019) | confirmada | Perfil local reconstruido con la rama (`normativa` en V4). `probar_normativa.sh` dos veces seguidas, los 9 pasos en `OK`; `editarVersion` en el paso 9, de 0,063 a 0,082 s (meta < 200 ms con 16 reglas). En el paso 5, la primera edición después de reiniciar `datos` tres veces tardó de 0,22 a 0,27 s, con la JVM recién arrancada. `probar_autenticacion.sh`, `probar_errores.sh`, `probar_eventos.sh` y `probar_spa.sh`: todos los pasos pasan. | 2026-10-20 |
+| Gitleaks y shellcheck (T019) | confirmada | Gitleaks v8.30.1 sobre un clon en el scratchpad, montado con `:ro,Z` (nunca el repositorio): 11 commits, sin fugas. `shellcheck` sin observaciones en `probar_normativa.sh`. | 2026-10-20 |
 
 ## Equipo de demostración
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Equipo simulado (T019) | confirmada | `deploy/equipo/probar_equipo.sh` con la versión de esta rama. Una primera corrida se cortó al cerrarse la sesión. La segunda falló en los pasos 1, 2, 4, 6, 7 y 8: `identidad`, que esta rama no cambia, se reinició y no quedó sano en los 60 s de `ESPERA_SALUD`, con el equipo recién encendido (carga media de 8,5 en 5 minutos; sin falta de memoria ni procesos matados). La tercera, ya con menos carga, pasó los pasos 0 a 11 en `OK`: memoria 1 370,0 MiB; la versión rota vuelve a la anterior en 135 s. | 2026-10-20 |
 
 ## Notas
 
