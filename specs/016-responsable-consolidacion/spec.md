@@ -114,9 +114,9 @@ Como Vicerrector académico, quiero ver y elegir al Responsable de consolidació
 - **El mismo usuario otra vez**: designar a quien ya es el Responsable del periodo no cambia nada ni deja un registro nuevo.
 - **Varios periodos**: un mismo usuario puede ser Responsable de consolidación de varios periodos.
 - **El Vicerrector no se designa a sí mismo**: la consolidación («Elaborado por») y la revisión («Revisado por») siguen en manos distintas (ADR-003, el árbol de firmas). Designarse a sí mismo se rechaza con el motivo.
-- **Rol asignado a mano**: si el Administrador asignó el rol «Responsable de consolidación» de forma global con la pantalla «Roles» (F05-H02), esa asignación no es una designación de periodo; el plan decide cómo conviven.
+- **Rol asignado a mano**: si el Administrador asignó el rol «Responsable de consolidación» de forma global con la pantalla «Roles» (F05-H02), esa asignación no es una designación de periodo y sigue valiendo, porque es una decisión del Administrador; la pantalla «Roles» no muestra las designaciones.
 - **Periodo que se cierra**: al cerrarse, su Responsable conserva la designación como dato, pero deja de tener los permisos del rol si no tiene otra designación en un periodo no cerrado.
-- **Académico no responde**: si no se puede comprobar el periodo, la designación no se guarda y se informa «servicio no disponible».
+- **Periodo que todavía no llegó a Roles**: Roles conoce los periodos por los eventos de Académico. Si un periodo recién registrado todavía no llegó, designar responde «no encontrado» y la pantalla pide intentarlo en unos segundos. Si el proceso `datos` está caído, Roles sigue designando con la copia que ya tiene.
 - **Sesión abierta del designado**: los permisos del rol le llegan desde su próxima renovación de sesión, como cualquier cambio de permisos (D-62).
 
 ## Requirements *(mandatory)*
@@ -152,7 +152,7 @@ Como Vicerrector académico, quiero ver y elegir al Responsable de consolidació
 
 ## Assumptions
 
-- La designación es de Identidad y acceso (servicio Roles, glosario §7.3), y el periodo es de Académico: Roles comprueba el periodo por la API de Académico, sin leer sus tablas (principio V).
+- La designación es de Identidad y acceso (servicio Roles, glosario §7.3), y el periodo es de Académico: Roles conoce los periodos por los eventos que publica Académico y guarda una copia con su estado, sin leer sus tablas (principio V, ADR-018).
 - El designado normalmente es un docente con cargo de gestión (ADR-003), pero el sistema no exige el cargo: los cargos llegan con F03-H05.
 - La etapa de consolidación (RF-32), el informe sustentado y la firma F1 son de otras historias (F09, F10); esta historia solo deja quién es el Responsable de cada periodo y sus permisos.
 - El cálculo de horas es de Distributivo (F06, F07); esta historia garantiza que la designación no es un cargo ni una actividad, y F07 comprueba que no suma horas.
