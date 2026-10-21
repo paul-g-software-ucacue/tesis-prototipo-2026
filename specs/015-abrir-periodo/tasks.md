@@ -41,8 +41,8 @@ description: "Tareas de F02-H01: abrir el periodo académico con su versión de 
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear `specs/015-abrir-periodo/evidencia.md` con estas secciones: entorno; base (contrato, dominio, migración y repositorio); escenario «Abrir el periodo» (US1); «Estados del periodo» (US2); «Periodo cerrado» (US3); pantalla «Periodos» (US4); cierre; equipo de demostración; notas.
-- [ ] T002 Cambiar `backend/servicios/academico/build.gradle`: plugin `mdd.contrato`; `spring-boot-starter-jdbc`, `tools.jackson.core:jackson-databind` y `spring-security-core`, como Normativa; `implementation project(':servicios:normativa')`, con un comentario que diga que solo usa su interfaz `api` (research §4, como Usuarios con Roles).
+- [X] T001 Crear `specs/015-abrir-periodo/evidencia.md` con estas secciones: entorno; base (contrato, dominio, migración y repositorio); escenario «Abrir el periodo» (US1); «Estados del periodo» (US2); «Periodo cerrado» (US3); pantalla «Periodos» (US4); cierre; equipo de demostración; notas.
+- [X] T002 Cambiar `backend/servicios/academico/build.gradle`: plugin `mdd.contrato`; `spring-boot-starter-jdbc`, `tools.jackson.core:jackson-databind` y `spring-security-core`, como Normativa; `implementation project(':servicios:normativa')`, con un comentario que diga que solo usa su interfaz `api` (research §4, como Usuarios con Roles).
 
 ---
 
@@ -50,7 +50,7 @@ description: "Tareas de F02-H01: abrir el periodo académico con su versión de 
 
 ### Contrato y errores (principio IV, research §5 y §8)
 
-- [ ] T003 Crear `contratos/academico/openapi.yaml` según contracts/academico.md, con el estilo de `contratos/normativa/openapi.yaml`:
+- [X] T003 Crear `contratos/academico/openapi.yaml` según contracts/academico.md, con el estilo de `contratos/normativa/openapi.yaml`:
   - comentario de cabecera que cite F02-H01, RF-13, RF-19, D-69 y la pregunta 4;
   - esquemas `EstadoPeriodo`, `PeriodoAcademico` (`version` opcional, entero ≥ 1), `PeriodoNuevo`, `DatosDelPeriodo`, `VersionDelPeriodo` y `EstadoDeDestino`; `codigo` con `pattern: '^[A-Za-z0-9._-]{1,20}$'`; `nombre` con `minLength: 1` y `maxLength: 120`; `inicio` y `fin` con `format: date`; sin `allOf` en los cuerpos;
   - las seis operaciones con su `x-mdd-permiso` (`DISTRIBUTIVO:LECTURA` o `DISTRIBUTIVO:ESCRITURA`) y sus respuestas, incluidas 401, 403, 500 y 503 de `contratos/comun/`;
@@ -124,7 +124,7 @@ description: "Tareas de F02-H01: abrir el periodo académico con su versión de 
 
 - [ ] T017 [US2] Prueba primero, en `PACA/dominio/PeriodoAcademicoTest.java`: `conEstado` con los 16 pares de estados de origen y destino: el mismo estado no cambia; el siguiente cambia; los demás lanzan `TransicionNoPermitida` con el actual y el siguiente; `PLANIFICACION` → `EN_APROBACION` sin versión lanza `PeriodoSinVersion`, y con versión cambia; desde `CERRADO`, cualquier destino distinto lanza `PeriodoCerrado`. Completar `conEstado` en `JACA/dominio/PeriodoAcademico.java`. T017 pasa.
 - [ ] T018 [US2] Prueba primero, en `PACA/aplicacion/CambiarEstadoPeriodoServicioTest.java` (Mockito): bloquea el periodo, pide la versión a `NormativaDelPeriodo` solo si está en `PLANIFICACION`, guarda y registra `PERIODO_ESTADO_CAMBIADO` con el estado anterior y el nuevo; el mismo estado no guarda ni registra. Crear `JACA/aplicacion/CambiarEstadoPeriodoServicio.java` (la lectura de la versión, antes de abrir su transacción). T018 pasa.
-- [ ] T019 [US2] Prueba primero, en `AcademicoContratoTest`: `cambiarEstadoPeriodo` a `EN_APROBACION` con versión responde 200; sin versión, 409 `ACADEMICO_PERIODO_SIN_VERSION`; de `PLANIFICACION` a `VIGENTE`, 409 `ACADEMICO_TRANSICION_NO_PERMITIDA` con una descripción que nombra el estado actual y el siguiente; un estado que no es del enum, 400. Implementar la operación en `AcademicoControlador`. T019 pasa.
+- [ ] T019 [US2] Prueba primero, en `AcademicoContratoTest`: `cambiarEstadoPeriodo` a `EN_APROBACION` con versión responde 200; sin versión, 409 `ACADEMICO_PERIODO_SIN_VERSION`; de `PLANIFICACION` a `VIGENTE`, 409 `ACADEMICO_TRANSICION_NO_PERMITIDA` con la descripción del catálogo; un estado que no es del enum, 400. Implementar la operación en `AcademicoControlador`. T019 pasa.
 
 **Checkpoint**: los estados avanzan en orden por la API.
 

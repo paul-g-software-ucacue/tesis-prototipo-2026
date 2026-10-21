@@ -53,7 +53,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 |---|---|---|
 | `ACADEMICO_CODIGO_REPETIDO` | 409 | Registrar un periodo con el código de otro. |
 | `ACADEMICO_PERIODO_CERRADO` | 409 | Corregir, abrir o cambiar el estado de un periodo cerrado. |
-| `ACADEMICO_TRANSICION_NO_PERMITIDA` | 409 | Saltar un estado o retroceder. La descripción dice el estado actual y el siguiente permitido. |
+| `ACADEMICO_TRANSICION_NO_PERMITIDA` | 409 | Saltar un estado o retroceder. La descripción es la del catálogo, fija; la pantalla ya muestra el estado actual y solo ofrece el siguiente. |
 | `ACADEMICO_PERIODO_SIN_VERSION` | 409 | Pasar a En aprobación un periodo sin versión de normativa. Pide abrirlo antes. |
 | `ACADEMICO_PERIODO_CON_VERSION` | 409 | Abrir con otra versión un periodo que ya tiene una. Traduce `PeriodoConVersion` de Normativa (no reenvía su código). |
 
