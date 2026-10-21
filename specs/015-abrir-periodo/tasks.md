@@ -175,7 +175,7 @@ description: "Tareas de F02-H01: abrir el periodo académico con su versión de 
   - con el perfil local reconstruido con la rama: `probar_autenticacion.sh`, `probar_errores.sh`, `probar_eventos.sh`, `probar_spa.sh`, `probar_normativa.sh`, `probar_periodos.sh` dos veces seguidas y `deploy/equipo/probar_equipo.sh`.
 
   Anotar el tiempo de `listarPeriodos` y `abrirPeriodo` (meta < 200 ms). Todo en verde, con el 60 % de líneas en Académico. Hacer commit y push, abrir el PR en borrador con `Refs #32` y marcarlo listo **después** de que terminen sus runs. Comprobar los checks, `perfil-consolidado` y `5 · imágenes`.
-- [ ] T027 Completar `evidencia.md` y la «Definición de terminado» del PR. Fusionarlo con *squash* **con la aprobación del autor**, con la rama al día con `main`. Después:
+- [X] T027 Completar `evidencia.md` y la «Definición de terminado» del PR. Fusionarlo con *squash* **con la aprobación del autor**, con la rama al día con `main`. Después:
   - esperar el despliegue automático en el PC («Sano en N s»), con `academico` en V2;
   - el autor entra con `vicerrectorado.demo` en `https://mdd.localhost`, registra un periodo, lo abre con la versión que elija y lo pasa a En aprobación en menos de 2 minutos (SC-001); en «Normativa», esa versión dice que rige el periodo y ya no se edita;
   - en la base del equipo, los registros de Académico y Normativa con su usuario;
