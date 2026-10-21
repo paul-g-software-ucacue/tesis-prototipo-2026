@@ -52,6 +52,9 @@ class EsquemasIntegrationTest {
                         esperados.stream()
                                 .map(esquema -> esquema + ".flyway_schema_history")
                                 .toList());
+        // El registro de publicaciones, que migra flywayEventos: Académico avisa a Roles (F05-H03,
+        // ADR-018).
+        assertThat(tablas).contains("eventos_datos.event_publication");
         assertThat(tablas).noneMatch(tabla -> tabla.startsWith("public."));
         assertThat(tablas)
                 .allMatch(tabla -> esperados.contains(tabla.substring(0, tabla.indexOf('.'))));

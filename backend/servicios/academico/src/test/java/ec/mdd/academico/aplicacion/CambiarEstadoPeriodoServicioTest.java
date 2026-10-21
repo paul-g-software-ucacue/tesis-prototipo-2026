@@ -19,6 +19,7 @@ import ec.mdd.academico.dominio.PeriodoSinVersion;
 import ec.mdd.academico.dominio.TransicionNoPermitida;
 import ec.mdd.academico.puertos.entrada.PeriodoConsultado;
 import ec.mdd.academico.puertos.entrada.PeriodoNoEncontrado;
+import ec.mdd.academico.puertos.salida.AvisosDelPeriodo;
 import ec.mdd.academico.puertos.salida.CambioDePeriodo;
 import ec.mdd.academico.puertos.salida.CambioDePeriodo.Accion;
 import ec.mdd.academico.puertos.salida.NormativaDelPeriodo;
@@ -40,8 +41,10 @@ class CambiarEstadoPeriodoServicioTest {
     private final RegistroDeCambios registro = mock(RegistroDeCambios.class);
     private final DatosDePrueba.TransaccionDePrueba transaccion =
             new DatosDePrueba.TransaccionDePrueba();
+    private final AvisosDelPeriodo avisos = mock(AvisosDelPeriodo.class);
     private final CambiarEstadoPeriodoServicio servicio =
-            new CambiarEstadoPeriodoServicio(repositorio, normativa, registro, transaccion, RELOJ);
+            new CambiarEstadoPeriodoServicio(
+                    repositorio, normativa, registro, avisos, transaccion, RELOJ);
 
     private void esta(EstadoPeriodo estado) {
         when(repositorio.porCodigo(CODIGO)).thenReturn(Optional.of(periodo(estado)));
@@ -80,6 +83,24 @@ class CambiarEstadoPeriodoServicioTest {
                                         "codigo", CODIGO,
                                         "anterior", "PLANIFICACION",
                                         "nuevo", "EN_APROBACION")));
+    }
+
+    @Test
+    void dadoUnCambioDeEstado_cuandoSeGuarda_entoncesAvisaARolesDentroDeLaTransaccion() {
+        esta(EstadoPeriodo.VIGENTE);
+        when(normativa.versionDe(CODIGO)).thenReturn(OptionalInt.of(2));
+        List<Boolean> dentro = new ArrayList<>();
+        org.mockito.Mockito.doAnswer(
+                        llamada -> {
+                            dentro.add(transaccion.dentro());
+                            return null;
+                        })
+                .when(avisos)
+                .actualizado(periodo(EstadoPeriodo.CERRADO));
+
+        servicio.cambiar(CODIGO, EstadoPeriodo.CERRADO, QUIEN);
+
+        assertThat(dentro).containsExactly(true);
     }
 
     @Test
@@ -125,6 +146,7 @@ class CambiarEstadoPeriodoServicioTest {
                 .isEqualTo(periodo(EstadoPeriodo.VIGENTE));
         verify(repositorio, never()).guardar(any());
         verify(registro, never()).registrar(any());
+        verify(avisos, never()).actualizado(any());
     }
 
     @Test

@@ -10,6 +10,9 @@ dependencies {
     // Abrir el periodo con su versión de normativa, por la interfaz publicada de Normativa: solo
     // ec.mdd.normativa.puertos.entrada (F02-H01, research §4; como Usuarios con Roles).
     implementation project(':servicios:normativa')
+    // Los avisos de cada periodo hacia Roles, con el sobre de los eventos entre procesos (F05-H03,
+    // ADR-018).
+    implementation project(':plataforma:eventos')
     // Los periodos en el esquema academico, con JdbcClient, como Normativa (F02-H01).
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     // El detalle de cada cambio en jsonb (FR-008).
