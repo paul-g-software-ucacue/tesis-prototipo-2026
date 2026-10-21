@@ -3,6 +3,8 @@ package ec.mdd.academico.adaptadores.entrada;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import com.jayway.jsonpath.JsonPath;
 import ec.mdd.plataforma.errores.ErroresAutoConfiguracion;
@@ -17,6 +19,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor;
 import org.springframework.test.context.TestPropertySource;
@@ -94,6 +97,143 @@ class AcademicoContratoTest {
         assertThat(resultado.getResponse().getContentAsString())
                 .contains("COMUN_RECURSO_NO_ENCONTRADO");
         contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnCodigoNuevo_cuandoSeRegistra_entonces201EnPlanificacionSinVersion()
+            throws Exception {
+        MvcResult resultado =
+                pedir(
+                        json(
+                                post("/api/academico/periodos"),
+                                "{\"codigo\":\"2027-1\",\"nombre\":\"Periodo 2027-1\","
+                                        + "\"inicio\":\"2027-03-01\",\"fin\":\"2027-08-15\"}"),
+                        escritura());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(201);
+        assertThat(resultado.getResponse().getContentAsString())
+                .isEqualTo(
+                        "{\"codigo\":\"2027-1\",\"nombre\":\"Periodo 2027-1\","
+                                + "\"inicio\":\"2027-03-01\",\"fin\":\"2027-08-15\","
+                                + "\"estado\":\"PLANIFICACION\"}");
+        assertThat(academico.ultimoUsuario()).isEqualTo("vicerrectorado.demo");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnCodigoQueYaExiste_cuandoSeRegistra_entonces409CodigoRepetido() throws Exception {
+        MvcResult resultado =
+                pedir(
+                        json(
+                                post("/api/academico/periodos"),
+                                "{\"codigo\":\"2026-2\",\"nombre\":\"Otro\","
+                                        + "\"inicio\":\"2027-03-01\",\"fin\":\"2027-08-15\"}"),
+                        escritura());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(409);
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("ACADEMICO_CODIGO_REPETIDO");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnFinAntesDelInicio_cuandoSeRegistra_entonces400ConElCampoFin() throws Exception {
+        MvcResult resultado =
+                pedir(
+                        json(
+                                post("/api/academico/periodos"),
+                                "{\"codigo\":\"2027-1\",\"nombre\":\"Periodo 2027-1\","
+                                        + "\"inicio\":\"2027-08-15\",\"fin\":\"2027-03-01\"}"),
+                        escritura());
+
+        String cuerpo = resultado.getResponse().getContentAsString();
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(400);
+        assertThat(JsonPath.<String>read(cuerpo, "$.codigo")).isEqualTo("COMUN_SOLICITUD_INVALIDA");
+        assertThat(JsonPath.<String>read(cuerpo, "$.detalles[0].campo")).isEqualTo("fin");
+        assertThat(JsonPath.<String>read(cuerpo, "$.detalles[0].descripcion"))
+                .isEqualTo(
+                        "La fecha de fin (2027-03-01) debe ser posterior a la de inicio"
+                                + " (2027-08-15)");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnNombreEnBlanco_cuandoSeRegistra_entonces400ConElCampoNombre() throws Exception {
+        MvcResult resultado =
+                pedir(
+                        json(
+                                post("/api/academico/periodos"),
+                                "{\"codigo\":\"2027-1\",\"nombre\":\"   \","
+                                        + "\"inicio\":\"2027-03-01\",\"fin\":\"2027-08-15\"}"),
+                        escritura());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(400);
+        assertThat(
+                        JsonPath.<String>read(
+                                resultado.getResponse().getContentAsString(),
+                                "$.detalles[0].campo"))
+                .isEqualTo("nombre");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnPeriodoSinVersion_cuandoSeAbre_entonces200ConLaVersion() throws Exception {
+        MvcResult resultado =
+                pedir(
+                        json(put("/api/academico/periodos/2026-2/normativa"), "{\"version\":2}"),
+                        escritura());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(
+                        JsonPath.<Integer>read(
+                                resultado.getResponse().getContentAsString(), "$.version"))
+                .isEqualTo(2);
+        assertThat(academico.ultimoUsuario()).isEqualTo("vicerrectorado.demo");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnPeriodoConOtraVersion_cuandoSeAbre_entonces409PeriodoConVersion() throws Exception {
+        MvcResult resultado =
+                pedir(
+                        json(put("/api/academico/periodos/2026-1/normativa"), "{\"version\":2}"),
+                        escritura());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(409);
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("ACADEMICO_PERIODO_CON_VERSION");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnaVersionQueNoExiste_cuandoSeAbre_entonces400ConElCampoVersion() throws Exception {
+        MvcResult resultado =
+                pedir(
+                        json(put("/api/academico/periodos/2026-2/normativa"), "{\"version\":9}"),
+                        escritura());
+
+        String cuerpo = resultado.getResponse().getContentAsString();
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(400);
+        assertThat(JsonPath.<String>read(cuerpo, "$.detalles[0].campo")).isEqualTo("version");
+        assertThat(JsonPath.<String>read(cuerpo, "$.detalles[0].descripcion"))
+                .isEqualTo("La versión de normativa 9 no existe");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnPeriodoQueNoExiste_cuandoSeAbre_entonces404Comun() throws Exception {
+        MvcResult resultado =
+                pedir(
+                        json(put("/api/academico/periodos/2030-1/normativa"), "{\"version\":1}"),
+                        escritura());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(404);
+        contrato.validar(resultado);
+    }
+
+    static MockHttpServletRequestBuilder json(
+            MockHttpServletRequestBuilder peticion, String cuerpo) {
+        return peticion.contentType(MediaType.APPLICATION_JSON).content(cuerpo);
     }
 
     MvcResult pedir(MockHttpServletRequestBuilder peticion, JwtRequestPostProcessor token)

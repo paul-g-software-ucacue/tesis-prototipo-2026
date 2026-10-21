@@ -7,14 +7,21 @@ import ec.mdd.academico.adaptadores.entrada.api.PeriodoAcademico;
 import ec.mdd.academico.adaptadores.entrada.api.PeriodoNuevo;
 import ec.mdd.academico.adaptadores.entrada.api.PeriodosApi;
 import ec.mdd.academico.adaptadores.entrada.api.VersionDelPeriodo;
+import ec.mdd.academico.dominio.DatoInvalido;
+import ec.mdd.academico.puertos.entrada.AbrirPeriodo;
 import ec.mdd.academico.puertos.entrada.ConsultarPeriodos;
 import ec.mdd.academico.puertos.entrada.PeriodoConsultado;
 import ec.mdd.academico.puertos.entrada.PeriodoNoEncontrado;
+import ec.mdd.academico.puertos.entrada.RegistrarPeriodo;
+import ec.mdd.academico.puertos.entrada.VersionInexistente;
+import ec.mdd.plataforma.errores.nucleo.DetalleRespuesta;
+import ec.mdd.plataforma.errores.nucleo.SolicitudInvalida;
 import java.util.List;
 import java.util.function.Supplier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -35,9 +42,14 @@ class AcademicoControlador implements PeriodosApi {
     private static final String ESCRITURA = "hasAuthority('PERMISO_DISTRIBUTIVO:ESCRITURA')";
 
     private final ConsultarPeriodos consultar;
+    private final RegistrarPeriodo registrar;
+    private final AbrirPeriodo abrir;
 
-    AcademicoControlador(ConsultarPeriodos consultar) {
+    AcademicoControlador(
+            ConsultarPeriodos consultar, RegistrarPeriodo registrar, AbrirPeriodo abrir) {
         this.consultar = consultar;
+        this.registrar = registrar;
+        this.abrir = abrir;
     }
 
     @Override
@@ -56,7 +68,16 @@ class AcademicoControlador implements PeriodosApi {
     @Override
     @PreAuthorize(ESCRITURA)
     public ResponseEntity<PeriodoAcademico> registrarPeriodo(PeriodoNuevo periodoNuevo) {
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED);
+        PeriodoConsultado registrado =
+                valido(
+                        () ->
+                                registrar.registrar(
+                                        periodoNuevo.getCodigo(),
+                                        periodoNuevo.getNombre(),
+                                        periodoNuevo.getInicio(),
+                                        periodoNuevo.getFin(),
+                                        quien()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(respuesta(registrado));
     }
 
     @Override
@@ -70,7 +91,13 @@ class AcademicoControlador implements PeriodosApi {
     @PreAuthorize(ESCRITURA)
     public ResponseEntity<PeriodoAcademico> abrirPeriodo(
             String codigo, VersionDelPeriodo versionDelPeriodo) {
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED);
+        int version = versionDelPeriodo.getVersion();
+        try {
+            return ResponseEntity.ok(
+                    respuesta(existente(() -> abrir.abrir(codigo, version, quien()))));
+        } catch (VersionInexistente error) {
+            throw invalida("version", "La versión de normativa " + version + " no existe");
+        }
     }
 
     @Override
@@ -78,6 +105,23 @@ class AcademicoControlador implements PeriodosApi {
     public ResponseEntity<PeriodoAcademico> cambiarEstadoPeriodo(
             String codigo, EstadoDeDestino estadoDeDestino) {
         throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED);
+    }
+
+    private static String quien() {
+        return SecurityContextHolder.getContext().getAuthentication().getName();
+    }
+
+    // Un dato que no cumple su regla del dominio responde 400 con su campo (FR-006).
+    private static PeriodoConsultado valido(Supplier<PeriodoConsultado> caso) {
+        try {
+            return caso.get();
+        } catch (DatoInvalido error) {
+            throw invalida(error.campo(), error.motivo());
+        }
+    }
+
+    private static SolicitudInvalida invalida(String campo, String descripcion) {
+        return new SolicitudInvalida(List.of(new DetalleRespuesta(campo, descripcion)));
     }
 
     private static PeriodoConsultado existente(Supplier<PeriodoConsultado> caso) {
