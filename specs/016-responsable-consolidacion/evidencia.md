@@ -59,11 +59,16 @@ Registro de las comprobaciones de la historia (issue #45): designar por periodo 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
 | De punta a punta (T020, SC-002 y SC-003) | confirmada | Perfil local reconstruido con la rama (`datos`, `identidad` y `frontend`). `deploy/probar_periodos.sh` dos veces seguidas: los 10 pasos en `OK`. En el paso 10, el aviso del periodo llegó a Roles en menos de 1 s; `rectorado.demo` y el propio Vicerrector dan 400; `docente.demo` queda designado (designar tardó 0,088 y 0,025 s) y su sesión trae `CONSOLIDACION:ESCRITURA`; cerrado el periodo, su sesión nueva ya no lo trae; designar en el periodo cerrado da 409 `ROLES_PERIODO_CERRADO`; un `DESIGNAR_RESPONSABLE` en el registro de Roles. Después de las dos corridas, la base quedó como estaba: 0 periodos, 0 copias, 0 designaciones, 0 eventos recibidos y 0 publicaciones en `eventos_datos`. `shellcheck` sin observaciones. | 2026-10-21 |
+| Backend (T021) | confirmada | `./gradlew check integrationTest jacocoTestReport`: 590 pruebas unitarias y 90 de integración en todo el backend, ninguna falla. Roles con 72,5 % de líneas y Académico con 77,9 %. | 2026-10-21 |
+| SPA (T021) | confirmada | `lint`, `formato:verificar`, `tipos` y `verificar:ruptura` en verde; 115 pruebas de Vitest con 95,4 % de líneas; 57 de Playwright. | 2026-10-21 |
+| Scripts (T021) | confirmada | Con el perfil reconstruido: `probar_autenticacion.sh` (38 `OK`), `probar_errores.sh` (4), `probar_eventos.sh` (6), `probar_spa.sh` (5), `probar_normativa.sh` (24) y `probar_periodos.sh` (28). | 2026-10-21 |
+| Gitleaks y shellcheck (T021) | confirmada | Gitleaks v8.30.1 sobre un clon en el scratchpad, montado con `:ro,Z`: 12 commits, sin fugas. `shellcheck` sin observaciones en `probar_periodos.sh`, `preparar.sh` y `probar_equipo.sh`. | 2026-10-21 |
 
 ## Equipo de demostración
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Equipo simulado (T021) | confirmada | `deploy/equipo/probar_equipo.sh` con la versión de esta rama: pasos 0 a 11 en `OK`, a la primera; memoria 1 380,0 MiB; la versión rota vuelve a la anterior en 126 s; en el paso 11, `preparar.sh` agrega `MDD_CLAVE_PROCESO_DATOS` a un `.env` que no la tenía y deja igual el resto. | 2026-10-21 |
 
 ## Notas
 
