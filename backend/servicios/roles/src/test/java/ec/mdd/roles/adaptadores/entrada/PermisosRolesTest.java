@@ -18,9 +18,9 @@ import org.springframework.test.web.servlet.MockMvc;
  * La prueba de autorización por operación de Roles (RNF-SEG-03, SC-003): cada operación con {@code
  * x-mdd-permiso} responde 403 sin ese permiso y otra cosa con él.
  */
-@WebMvcTest(RolesControlador.class)
+@WebMvcTest({RolesControlador.class, ResponsablesControlador.class})
 @ImportAutoConfiguration({SeguridadProcesoAutoConfiguracion.class, ErroresAutoConfiguracion.class})
-@Import({RolesContratoTest.Dobles.class, ErroresRoles.class})
+@Import({RolesContratoTest.Dobles.class, ResponsablesContratoTest.Dobles.class, ErroresRoles.class})
 @TestPropertySource(
         properties =
                 "spring.security.oauth2.resourceserver.jwt.jwk-set-uri=http://127.0.0.1:9/jwks")
@@ -34,7 +34,14 @@ class PermisosRolesTest {
 
     @Test
     void dadoElContratoDeRoles_cuandoSeVerificaCadaOperacion_entoncesExigeSuPermiso() {
-        assertThat(verificador.operaciones()).hasSize(8);
+        // 8 de F05-H02 y 3 del Responsable de consolidación (F05-H03, D-69).
+        assertThat(verificador.operaciones()).hasSize(11);
+        assertThat(verificador.operaciones())
+                .extracting(VerificadorDePermisos.OperacionProtegida::toString)
+                .contains(
+                        "GET /api/roles/responsables (DISTRIBUTIVO:LECTURA)",
+                        "PUT /api/roles/responsables/2026-2 (DISTRIBUTIVO:ESCRITURA)",
+                        "GET /api/roles/docentes (DISTRIBUTIVO:ESCRITURA)");
 
         verificador.verificar(mvc, conversor);
     }

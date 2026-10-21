@@ -19,6 +19,7 @@ import ec.mdd.roles.puertos.entrada.RolDesconocido;
 import ec.mdd.roles.puertos.salida.CambioDeRoles;
 import ec.mdd.roles.puertos.salida.RegistroDeCambios;
 import ec.mdd.roles.puertos.salida.RepositorioAsignacionesDeRol;
+import ec.mdd.roles.puertos.salida.RepositorioDesignaciones;
 import ec.mdd.roles.puertos.salida.RepositorioRoles;
 import java.time.Clock;
 import java.time.Instant;
@@ -43,6 +44,15 @@ class AutorizacionServiciosTest {
                             new Permiso("MI_DISTRIBUTIVO", TipoDePermiso.LECTURA, Alcance.PROPIO),
                             new Permiso(
                                     "MI_DISTRIBUTIVO", TipoDePermiso.ESCRITURA, Alcance.PROPIO)));
+    private static final Rol RESPONSABLE =
+            new Rol(
+                    "RESPONSABLE_CONSOLIDACION",
+                    "Responsable de consolidación",
+                    "Consolida y firma «Elaborado por».",
+                    true,
+                    List.of(
+                            new Permiso("CONSOLIDACION", TipoDePermiso.ESCRITURA, Alcance.TODO),
+                            new Permiso("DISTRIBUTIVO", TipoDePermiso.FIRMA, Alcance.TODO)));
     private static final Rol COORDINADOR =
             new Rol(
                     "COORDINADOR_CARRERA",
@@ -54,13 +64,57 @@ class AutorizacionServiciosTest {
     private final RepositorioRoles roles = mock(RepositorioRoles.class);
     private final RepositorioAsignacionesDeRol asignaciones =
             mock(RepositorioAsignacionesDeRol.class);
+    private final RepositorioDesignaciones designaciones = mock(RepositorioDesignaciones.class);
     private final RegistroDeCambios registro = mock(RegistroDeCambios.class);
     private final Clock reloj = Clock.fixed(AHORA, ZoneOffset.UTC);
 
     private final ConsultarAutorizacionServicio consultar =
-            new ConsultarAutorizacionServicio(roles, asignaciones);
+            new ConsultarAutorizacionServicio(roles, asignaciones, designaciones);
     private final AsignarRolesInicialesServicio iniciales =
             new AsignarRolesInicialesServicio(roles, asignaciones, registro, reloj);
+
+    @Test
+    void
+            dadoUnDocenteDesignadoEnUnPeriodoAbierto_cuandoSeConsulta_entoncesTieneElRolDeResponsable() {
+        when(asignaciones.rolesDe("docente.demo")).thenReturn(List.of("DOCENTE"));
+        when(designaciones.periodosAbiertosDe("docente.demo")).thenReturn(List.of("2026-2"));
+        when(roles.todos()).thenReturn(List.of(COORDINADOR, DOCENTE, RESPONSABLE));
+
+        Autorizacion autorizacion = consultar.consultar("docente.demo");
+
+        assertThat(autorizacion.roles()).containsExactly("DOCENTE", "RESPONSABLE_CONSOLIDACION");
+        assertThat(autorizacion.permisos())
+                .contains("CONSOLIDACION:ESCRITURA", "DISTRIBUTIVO:FIRMA");
+    }
+
+    @Test
+    void dadoUnDocenteConSuUnicoPeriodoCerrado_cuandoSeConsulta_entoncesYaNoTieneElRol() {
+        when(asignaciones.rolesDe("docente.demo")).thenReturn(List.of("DOCENTE"));
+        when(designaciones.periodosAbiertosDe("docente.demo")).thenReturn(List.of());
+        when(roles.todos()).thenReturn(List.of(COORDINADOR, DOCENTE, RESPONSABLE));
+
+        assertThat(consultar.consultar("docente.demo").roles()).containsExactly("DOCENTE");
+    }
+
+    @Test
+    void dadoElRolAsignadoAMano_cuandoSeConsultaSinDesignaciones_entoncesLoConserva() {
+        when(asignaciones.rolesDe("gestion.demo")).thenReturn(List.of("RESPONSABLE_CONSOLIDACION"));
+        when(designaciones.periodosAbiertosDe("gestion.demo")).thenReturn(List.of());
+        when(roles.todos()).thenReturn(List.of(RESPONSABLE));
+
+        assertThat(consultar.consultar("gestion.demo").roles())
+                .containsExactly("RESPONSABLE_CONSOLIDACION");
+    }
+
+    @Test
+    void dadoUnUsuarioSinRolesPeroDesignado_cuandoSeConsulta_entoncesTieneElRolDeResponsable() {
+        when(asignaciones.rolesDe("sin.roles")).thenReturn(List.of());
+        when(designaciones.periodosAbiertosDe("sin.roles")).thenReturn(List.of("2026-2"));
+        when(roles.todos()).thenReturn(List.of(RESPONSABLE));
+
+        assertThat(consultar.consultar("sin.roles").roles())
+                .containsExactly("RESPONSABLE_CONSOLIDACION");
+    }
 
     @Test
     void dadoUnUsuarioConDosRoles_cuandoSeConsulta_entoncesTieneLaUnionDeSusPermisos() {

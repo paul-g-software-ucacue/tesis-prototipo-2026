@@ -213,16 +213,22 @@ verificar 7 "Sitio del túnel: 401 sin credenciales, 200 con ellas y /api sin ba
     eval '[[ $sin_credenciales == 401 && $con_credenciales == 200 && $api == 200 ]]'
 
 # 11. Contraseñas de la demo (D-59): una por usuario de usuarios-demo.yaml, legibles por la prueba de
-# humo; volver a correr preparar.sh agrega la que falte sin cambiar las demás.
+# humo; volver a correr preparar.sh agrega la que falte sin cambiar las demás. Lo mismo con las
+# claves de proceso del .env que agregan las versiones nuevas (MDD_CLAVE_PROCESO_DATOS, F05-H03).
 usuarios_en_archivo=$(awk '/^  - usuario: / { print $3 }' backend/servicios/usuarios/src/main/resources/usuarios-demo.yaml | sort)
 antes_claves=$(grep -v '^docente.coordinador.demo=' "$equipo/secretos/claves-demo")
 chmod u+w "$equipo/secretos/claves-demo"
 printf '%s\n' "$antes_claves" >"$equipo/secretos/claves-demo"
+antes_env=$(grep -v '^MDD_CLAVE_PROCESO_DATOS=' "$equipo/.env")
+printf '%s\n' "$antes_env" >"$equipo/.env"
 preparar_equipo "$equipo"
 verificar 11 "claves-demo: una contraseña por usuario de la demo, preparar.sh agrega la que falta y no cambia las demás" \
     eval '[[ $(cut -d= -f1 "$equipo/secretos/claves-demo" | sort) == "$usuarios_en_archivo" ]] \
         && [[ $(grep -v "^docente.coordinador.demo=" "$equipo/secretos/claves-demo") == "$antes_claves" ]] \
         && [[ -r $equipo/secretos/claves-demo && $(stat -c %a "$equipo/secretos/claves-demo") == 444 ]]'
+verificar 11 ".env: preparar.sh agrega MDD_CLAVE_PROCESO_DATOS si falta y no cambia las demás líneas" \
+    eval '[[ $(grep -c "^MDD_CLAVE_PROCESO_DATOS=." "$equipo/.env") == 1 ]] \
+        && [[ $(grep -v "^MDD_CLAVE_PROCESO_DATOS=" "$equipo/.env") == "$antes_env" ]]'
 
 # --- Vuelta atrás ----------------------------------------------------------------------------------
 

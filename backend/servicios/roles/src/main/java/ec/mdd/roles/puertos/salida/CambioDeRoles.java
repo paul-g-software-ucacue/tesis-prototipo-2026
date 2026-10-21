@@ -36,6 +36,8 @@ public record CambioDeRoles(
         /** Uno o más roles quitados a un usuario. */
         QUITAR_ROL,
         /** Roles iniciales de un usuario de la demo (research §8). */
-        INICIALIZAR
+        INICIALIZAR,
+        /** Responsable de consolidación designado en un periodo, con el anterior (F05-H03). */
+        DESIGNAR_RESPONSABLE
     }
 }

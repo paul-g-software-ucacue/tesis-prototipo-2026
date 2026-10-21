@@ -96,8 +96,20 @@ if [[ ! -e $raiz/.env ]]; then
     } >"$raiz/.env"
     echo "Creado $raiz/.env."
 else
-    echo "Ya existe $raiz/.env: no se toca."
+    echo "Ya existe $raiz/.env: no se toca, salvo las claves que falten (abajo)."
 fi
+
+# --- Claves de proceso que agregan las versiones nuevas -------------------------------------------
+# En un .env nuevo o que ya existe, agrega la que falte al final, sin tocar las demás líneas: así un
+# equipo ya preparado gana la clave de una versión nueva corriendo otra vez preparar.sh.
+#   MDD_CLAVE_PROCESO_DATOS: Académico, en datos, avisa a Roles de cada periodo (F05-H03, ADR-018).
+claves_nuevas=(MDD_CLAVE_PROCESO_DATOS)
+for clave in "${claves_nuevas[@]}"; do
+    if ! grep -q "^$clave=" "$raiz/.env"; then
+        echo "$clave=$(aleatorio)" >>"$raiz/.env"
+        echo "Agregada $clave a $raiz/.env."
+    fi
+done
 
 # --- Llave de firma persistente (ADR-014) --------------------------------------------------------
 if [[ ! -e $raiz/secretos/jwt.pem ]]; then
