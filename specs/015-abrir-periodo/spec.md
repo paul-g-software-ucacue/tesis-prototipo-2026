@@ -49,7 +49,7 @@ Escenario: Abrir el periodo
 1. **Given** un periodo en Planificación sin versión de normativa, **When** lo abro y elijo una versión, **Then** el periodo queda asociado a esa versión, la consulta del periodo en Normativa devuelve esa versión, y editar esa versión responde 409 con el mensaje que pide crear una versión nueva.
 2. **Given** un periodo que ya tiene versión, **When** intento abrirlo con otra versión, **Then** se rechaza con el motivo en español y sigue con la que tenía; abrirlo otra vez con la misma no cambia nada.
 3. **Given** una versión que ya rige otro periodo, **When** la elijo para este periodo, **Then** se acepta: varias versiones pueden regir periodos distintos y una versión puede regir varios periodos.
-4. **Given** un periodo que no está en Planificación, **When** intento abrirlo o cambiar su versión, **Then** se rechaza con el motivo en español.
+4. **Given** un periodo que no está en Planificación (y que por eso ya tiene versión), **When** intento abrirlo con otra versión, **Then** se rechaza con el motivo en español; abrirlo con la misma no cambia nada, como en el escenario 2.
 5. **Given** que el periodo quedó abierto, **Then** queda registrado quién lo abrió, cuándo y con qué versión.
 
 ---
@@ -123,8 +123,8 @@ Como Vicerrector académico, quiero ver los periodos académicos en una pantalla
 - **De dónde sale el periodo**: se registra a mano en «Periodos», con código, nombre y fechas de inicio y fin. Cuando llegue F01, la carga 3 usará el mismo registro; ninguno llega precargado.
 - **Código del periodo**: es la clave que comparten Académico y Normativa; DEBE cumplir el mismo formato que ya acepta Normativa (letras, números, punto, guion y guion bajo, hasta 20 caracteres) y ser único. Un código repetido se rechaza.
 - **Fechas**: la fecha de fin DEBE ser posterior a la de inicio. Que dos periodos se solapen no se rechaza: puede haber periodos en paralelo.
-- **Versión que no existe**: elegir un número de versión que no existe se rechaza con «no encontrado».
-- **Normativa no responde**: si Normativa no está disponible al abrir el periodo, el periodo no se abre (sigue sin versión) y se informa «servicio no disponible»; no queda un periodo que dice tener una versión que Normativa no registró.
+- **Versión que no existe**: elegir un número de versión que no existe se rechaza con el motivo junto a la versión elegida, y el periodo sigue sin versión. «No encontrado» queda para un periodo que no existe.
+- **La asociación falla**: si Normativa no puede guardar la asociación, el periodo no se abre (sigue sin versión), se informa el error y no queda `PERIODO_ABIERTO` en el registro: Académico solo registra después de que Normativa confirma.
 - **Abrir dos veces a la vez**: si dos personas abren el mismo periodo con versiones distintas al mismo tiempo, una gana y la otra recibe el rechazo de «el periodo ya tiene versión».
 - **Versión con periodos asociados en Normativa sin periodo en Académico**: hoy ninguna versión rige un periodo (el equipo tiene 0 asociaciones el 2026-10-21, y las pruebas de punta a punta borran las suyas). Si existieran, no se migran: Académico empieza vacío.
 - **Datos que no son el estado**: nombre y fechas se pueden corregir mientras el periodo no esté Cerrado; el código no cambia nunca, porque Normativa y las demás partes lo usan como referencia.
@@ -139,7 +139,7 @@ Como Vicerrector académico, quiero ver los periodos académicos en una pantalla
 - **FR-003**: Desde que un periodo tiene versión, esa versión NO DEBE poder modificarse (lo garantiza Normativa, F04-H02), y el periodo NO DEBE poder pasar a otra versión. Abrirlo otra vez con la misma versión no cambia nada.
 - **FR-004**: El estado del periodo DEBE avanzar solo un paso a la vez y en este orden: Planificación → En aprobación → Vigente → Cerrado. Salir de Planificación DEBE exigir que el periodo tenga versión de normativa. Cualquier otro cambio de estado se rechaza con el motivo en español.
 - **FR-005**: Un periodo en Cerrado NO DEBE admitir ningún cambio: ni de datos, ni de estado, ni de versión. El intento responde 409 con un código del catálogo de errores y un mensaje en español.
-- **FR-006**: El código, el nombre y las fechas DEBEN validarse: código con el formato que acepta Normativa y único; nombre no vacío; fin posterior al inicio. Un valor inválido se rechaza entero, con el motivo en español, sin dejar el periodo a medias.
+- **FR-006**: El código, el nombre y las fechas DEBEN validarse: código con el formato que acepta Normativa y único; nombre no vacío y de hasta 120 caracteres; fin posterior al inicio. Un valor inválido se rechaza entero, con el motivo en español, sin dejar el periodo a medias.
 - **FR-007**: Registrar un periodo, corregir sus datos, abrirlo y cambiar su estado DEBEN exigir la escritura de «Distributivo del periodo», validada en el servidor (ADR-021); consultar los periodos DEBE exigir su lectura. La matriz D-65 no cambia. Abrir el periodo no pide además la escritura de «Parámetros y normativa»: Académico se la pide a Normativa dentro del mismo proceso (plan, research §4).
 - **FR-008**: Cada registro, corrección, apertura y cambio de estado DEBE quedar registrado con quién, cuándo, qué cambió, el valor anterior y el nuevo (principio VII).
 - **FR-009**: El sistema DEBE ofrecer la consulta de un periodo por su código y la lista de periodos, con su estado y su versión, para que otras partes (el tablero de F02-H02 y F02-H03, Distributivo, Aprobación por RF-34) sepan en qué estado está y qué normativa lo rige.

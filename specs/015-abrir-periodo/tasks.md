@@ -56,7 +56,7 @@ description: "Tareas de F02-H01: abrir el periodo académico con su versión de 
   - las seis operaciones con su `x-mdd-permiso` (`DISTRIBUTIVO:LECTURA` o `DISTRIBUTIVO:ESCRITURA`) y sus respuestas, incluidas 401, 403, 500 y 503 de `contratos/comun/`;
   - la respuesta `Conflicto` que nombra los cinco códigos `ACADEMICO_*`.
 
-  Agregar los cinco códigos a `contratos/comun/errores.md` con su estado, título, descripción y cuándo. Agregar `academico` a `generar:api` en `frontend/package.json` (`src/api/generado/academico.d.ts`). Regenerar las interfaces (`./gradlew :servicios:academico:openApiGenerate`) y los tipos (`npm run generar:api`); `npm run verificar:ruptura` sigue en verde.
+  Agregar los cinco códigos a `contratos/comun/errores.md` con su estado, título, descripción y cuándo. Agregar `academico` a `generar:api` en `frontend/package.json` (`src/api/generado/academico.d.ts`). Regenerar las interfaces (`./gradlew :servicios:academico:openApiGenerate`) y los tipos (`npm run generar:api`); `npm run verificar:ruptura` sigue en verde. En `contratos/normativa/openapi.yaml`, agregar a la descripción de `asociarPeriodo`: «La SPA abre el periodo desde Académico (`abrirPeriodo`, D-69); esta operación no comprueba que el periodo exista».
 
 ### Dominio (research §1, data-model.md)
 
@@ -67,10 +67,10 @@ description: "Tareas de F02-H01: abrir el periodo académico con su versión de 
 
 ### Persistencia y registro (research §6, data-model.md)
 
-- [ ] T006 Crear `ACA/main/resources/db/migration/academico/V2__periodos_academicos.sql` según data-model.md: `periodo_academico` y `registro_cambio`, con sus `check` (código, nombre, `fin > inicio`, estado y acciones `PERIODO_REGISTRADO`, `PERIODO_CORREGIDO`, `PERIODO_ABIERTO`, `PERIODO_ESTADO_CAMBIADO`). Comentario de cabecera que cite D-35, RF-13 y F02-H01. Sin datos precargados.
+- [ ] T006a Prueba primero, en `IACA/AcademicoEsquemaIntegrationTest.java` (ampliar): después de las migraciones existen `periodo_academico` y `registro_cambio`; sus `check` rechazan un código con otro formato, un nombre vacío, `fin <= inicio`, un estado y una acción que no son de la lista. Tiene que fallar sin V2.
+- [ ] T006 Crear `ACA/main/resources/db/migration/academico/V2__periodos_academicos.sql` según data-model.md: `periodo_academico` y `registro_cambio`, con sus `check` (código, nombre, `fin > inicio`, estado y acciones `PERIODO_REGISTRADO`, `PERIODO_CORREGIDO`, `PERIODO_ABIERTO`, `PERIODO_ESTADO_CAMBIADO`). Comentario de cabecera que cite D-35, RF-13 y F02-H01. Sin datos precargados. T006a pasa.
 - [ ] T007 Crear los puertos de salida en `JACA/puertos/salida/`: `RepositorioPeriodos` (`todos()`, `porCodigo`, `bloquear(codigo)`, `registrar`, `guardar`), `RegistroDeCambios` y su `CambioDePeriodo` (usuario, momento, acción y detalle), `NormativaDelPeriodo` (`versionDe(codigo): OptionalInt`, `asociar(codigo, version, quien)`) y `Transaccion`.
 - [ ] T008 Prueba primero, en `IACA/` (Testcontainers, como en Normativa):
-  - `AcademicoEsquemaIntegrationTest` (ampliar): V2 se aplica sobre el esquema vacío y las dos tablas existen;
   - `RepositorioPeriodosJdbcIntegrationTest`: registra y lee un periodo igual, campo por campo; un código repetido lanza `CodigoRepetido`; `todos()` ordena por inicio descendente; `guardar` cambia el estado y los datos; `bloquear` hace `SELECT … FOR UPDATE`;
   - `RegistroDeCambiosJdbcIntegrationTest`: guarda las cuatro acciones con su detalle en `jsonb`.
 
@@ -79,7 +79,7 @@ description: "Tareas de F02-H01: abrir el periodo académico con su versión de 
 ### Puertos de entrada y configuración
 
 - [ ] T009 Crear los puertos de entrada en `JACA/puertos/entrada/` (interfaz `api` de Spring Modulith, con su `package-info.java` como el de Normativa): `ConsultarPeriodos` (`todos()`, `porCodigo`), `PeriodoConsultado` (el periodo y su versión, `OptionalInt`), `RegistrarPeriodo`, `CorregirPeriodo`, `AbrirPeriodo` y `CambiarEstadoPeriodo`, y las excepciones `PeriodoNoEncontrado`, `CodigoRepetido`, `PeriodoConOtraVersion` y `VersionInexistente`. JavaDoc que diga qué operación del contrato refleja cada uno.
-- [ ] T010 Prueba primero, en `PACA/adaptadores/salida/NormativaDesdePuertosTest.java`, con dobles de los puertos de Normativa: `PeriodoSinVersion` da vacío; `PeriodoConVersion` se traduce a `PeriodoConOtraVersion`; `VersionNoEncontrada`, a `VersionInexistente`. Crear `JACA/adaptadores/salida/NormativaDesdePuertos.java`, que solo importa `ec.mdd.normativa.puertos.entrada`. T010 pasa.
+- [ ] T010 Prueba primero, en `PACA/adaptadores/salida/NormativaDesdePuertosTest.java`, con dobles de los puertos de Normativa: `PeriodoSinVersion` da vacío; `PeriodoConVersion` se traduce a `PeriodoConOtraVersion`; `VersionNoEncontrada`, a `VersionInexistente`. Crear `JACA/adaptadores/salida/NormativaDesdePuertos.java`, que solo importa `ec.mdd.normativa.puertos.entrada`. Las excepciones de Normativa se nombran con el paquete completo, porque Académico tiene `PeriodoSinVersion` y `CodigoRepetido` propios. T010 pasa.
 - [ ] T011 Crear `JACA/infraestructura/ConfiguracionAcademico.java` (los servicios, los adaptadores, el reloj y la transacción, como `ConfiguracionNormativa`). Prueba en `DATOS/test/java/ec/mdd/ModulosTest.java`: sigue en verde con la dependencia nueva, y un uso de una clase de `ec.mdd.normativa.dominio` desde Académico la haría fallar (comprobarlo una vez y anotarlo).
 
 ### Consulta (FR-009)
@@ -99,7 +99,7 @@ description: "Tareas de F02-H01: abrir el periodo académico con su versión de 
 
 - [ ] T014 [US1] Prueba primero, en `PACA/aplicacion/` (Mockito):
   - `RegistrarPeriodoServicioTest`: registra en `PLANIFICACION`, con el usuario y un `PERIODO_REGISTRADO` con código, nombre y fechas; un código repetido lanza `CodigoRepetido` sin registro;
-  - `AbrirPeriodoServicioTest`: un periodo que no existe lanza `PeriodoNoEncontrado`; uno cerrado, `PeriodoCerrado`, sin llamar a Normativa; con la misma versión que ya tiene, termina sin llamar a `asociar` ni registrar; con otra, `PeriodoConOtraVersion`; con una versión inexistente, `VersionInexistente`; si abre, registra `PERIODO_ABIERTO` con la versión; y con `InOrder`, `asociar` se llama **fuera** de `Transaccion.ejecutar` y el registro, dentro (research §3).
+  - `AbrirPeriodoServicioTest`: un periodo que no existe lanza `PeriodoNoEncontrado`; uno cerrado, `PeriodoCerrado`, sin llamar a Normativa; con la misma versión que ya tiene, termina sin llamar a `asociar` ni registrar; con otra, `PeriodoConOtraVersion`; un periodo en `EN_APROBACION` con otra versión, `PeriodoConOtraVersion`, y con la misma, sin cambios; si `asociar` lanza, no registra; con una versión inexistente, `VersionInexistente`; si abre, registra `PERIODO_ABIERTO` con la versión; y con `InOrder`, `asociar` se llama **fuera** de `Transaccion.ejecutar` y el registro, dentro (research §3).
 
   Crear `JACA/aplicacion/RegistrarPeriodoServicio.java` y `AbrirPeriodoServicio.java`. T014 pasa.
 - [ ] T015 [US1] Prueba primero, en `PACA/adaptadores/entrada/AcademicoContratoTest.java`: `registrarPeriodo` responde 201 con el periodo en `PLANIFICACION` y sin `version`; un código repetido, 409 `ACADEMICO_CODIGO_REPETIDO`; fin antes del inicio, 400 `COMUN_SOLICITUD_INVALIDA` con el campo `fin` y su motivo; `abrirPeriodo` responde 200 con la `version`; con otra versión, 409 `ACADEMICO_PERIODO_CON_VERSION`; con una versión inexistente, 400 con el campo `version`. Implementar las dos operaciones en `AcademicoControlador` (el usuario es el `sub` del token) y traducir `DatoInvalido` y `VersionInexistente` a `SolicitudInvalida` con su detalle. T015 pasa.
@@ -107,7 +107,8 @@ description: "Tareas de F02-H01: abrir el periodo académico con su versión de 
   - abrir un periodo con una versión copiada de la 1 deja la asignación en Normativa (`ConsultarNormativa.periodo`), y editar esa versión lanza `VersionEnUso` (escenario 1, SC-002);
   - el registro de Normativa tiene `VERSION_ASOCIADA` y el de Académico `PERIODO_ABIERTO`, con el mismo usuario;
   - si el registro de Académico falla después de asociar (un `RegistroDeCambios` que lanza), la asignación de Normativa queda confirmada: cada servicio con su transacción (research §3);
-  - dos aperturas simultáneas del mismo periodo con versiones distintas dejan una sola, y la otra lanza `PeriodoConOtraVersion`.
+  - dos aperturas simultáneas del mismo periodo con versiones distintas dejan una sola, y la otra lanza `PeriodoConOtraVersion`;
+  - dos periodos abiertos con la misma versión quedan los dos con ella (escenario 3 de US1).
 
   Limpia lo que crea al terminar. T016 pasa.
 
@@ -185,7 +186,7 @@ description: "Tareas de F02-H01: abrir el periodo académico con su versión de 
 ## Dependencies & Execution Order
 
 - **Setup (fase 1)**: T001 y T002 son libres.
-- **Foundational (fase 2)**: T003 después de T002; T004 antes que T005; T006 y T007 después de T005; T008 después de T006 y T007; T009 después de T005; T010 después de T007 y T009; T011 después de T008 y T010; T012 después de T011; T013 después de T003 y T012.
+- **Foundational (fase 2)**: T003 después de T002; T004 antes que T005; T006a antes que T006; T006 y T007 después de T005; T008 después de T006 y T007; T009 después de T005; T010 después de T007 y T009; T011 después de T008 y T010; T012 después de T011; T013 después de T003 y T012.
 - **US1 (fase 3)**: depende de la fase 2. T014 antes que T015; T016 después de T015.
 - **US2 (fase 4)**: depende de la fase 2. T017 antes que T018; T019 después de T018.
 - **US3 (fase 5)**: T020 depende de la fase 2; T021 después de T020; T022 después de T016, T019 y T021 (el script recorre las tres).
