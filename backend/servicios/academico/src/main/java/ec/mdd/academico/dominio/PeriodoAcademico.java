@@ -85,6 +85,33 @@ public record PeriodoAcademico(
         return new Correccion(corregido, cambios);
     }
 
+    /**
+     * El periodo en el estado de destino, que tiene que ser el siguiente: no se salta ni se
+     * retrocede (RF-13, FR-004). Salir de Planificación exige la versión de normativa.
+     *
+     * @param destino el estado pedido; si es el actual, devuelve el mismo periodo
+     * @param tieneVersion si el periodo ya tiene versión de normativa (la guarda Normativa)
+     * @throws PeriodoCerrado si está cerrado
+     * @throws TransicionNoPermitida si el destino no es el siguiente
+     * @throws PeriodoSinVersion si sale de Planificación sin versión
+     */
+    public PeriodoAcademico conEstado(EstadoPeriodo destino, boolean tieneVersion) {
+        Objects.requireNonNull(destino, "destino");
+        if (destino == estado) {
+            return this;
+        }
+        if (estado == EstadoPeriodo.CERRADO) {
+            throw new PeriodoCerrado(codigo);
+        }
+        if (estado.siguiente().filter(destino::equals).isEmpty()) {
+            throw new TransicionNoPermitida(codigo, estado, destino);
+        }
+        if (estado == EstadoPeriodo.PLANIFICACION && !tieneVersion) {
+            throw new PeriodoSinVersion(codigo);
+        }
+        return new PeriodoAcademico(codigo, nombre, inicio, fin, destino);
+    }
+
     private static void agregar(
             List<CambioDeValor> cambios, String campo, String anterior, String nuevo) {
         if (!anterior.equals(nuevo)) {

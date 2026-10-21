@@ -134,8 +134,11 @@ final class AcademicoEnMemoria
 
     @Override
     public PeriodoConsultado cambiar(String codigo, EstadoPeriodo destino, String quien) {
-        // Llega con US2 (T017 a T019).
-        throw new UnsupportedOperationException();
+        PeriodoAcademico periodo = existente(codigo);
+        PeriodoAcademico cambiado = periodo.conEstado(destino, versiones.containsKey(codigo));
+        periodos.put(codigo, cambiado);
+        ultimoUsuario = quien;
+        return consultado(cambiado);
     }
 
     private PeriodoAcademico existente(String codigo) {

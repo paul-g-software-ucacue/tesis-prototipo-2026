@@ -5,9 +5,11 @@ import ec.mdd.academico.adaptadores.salida.RegistroDeCambiosJdbc;
 import ec.mdd.academico.adaptadores.salida.RepositorioPeriodosJdbc;
 import ec.mdd.academico.adaptadores.salida.TransaccionSpring;
 import ec.mdd.academico.aplicacion.AbrirPeriodoServicio;
+import ec.mdd.academico.aplicacion.CambiarEstadoPeriodoServicio;
 import ec.mdd.academico.aplicacion.ConsultarPeriodosServicio;
 import ec.mdd.academico.aplicacion.RegistrarPeriodoServicio;
 import ec.mdd.academico.puertos.entrada.AbrirPeriodo;
+import ec.mdd.academico.puertos.entrada.CambiarEstadoPeriodo;
 import ec.mdd.academico.puertos.entrada.ConsultarPeriodos;
 import ec.mdd.academico.puertos.entrada.RegistrarPeriodo;
 import ec.mdd.academico.puertos.salida.NormativaDelPeriodo;
@@ -85,6 +87,21 @@ public class ConfiguracionAcademico {
             RegistroDeCambios registroDeCambiosAcademico,
             Transaccion transaccionAcademico) {
         return new AbrirPeriodoServicio(
+                repositorio,
+                normativa,
+                registroDeCambiosAcademico,
+                transaccionAcademico,
+                Clock.systemUTC());
+    }
+
+    /** Pasar un periodo al estado siguiente (FR-004). */
+    @Bean
+    public CambiarEstadoPeriodo cambiarEstadoPeriodo(
+            RepositorioPeriodos repositorio,
+            NormativaDelPeriodo normativa,
+            RegistroDeCambios registroDeCambiosAcademico,
+            Transaccion transaccionAcademico) {
+        return new CambiarEstadoPeriodoServicio(
                 repositorio,
                 normativa,
                 registroDeCambiosAcademico,

@@ -9,6 +9,7 @@ import ec.mdd.academico.adaptadores.entrada.api.PeriodosApi;
 import ec.mdd.academico.adaptadores.entrada.api.VersionDelPeriodo;
 import ec.mdd.academico.dominio.DatoInvalido;
 import ec.mdd.academico.puertos.entrada.AbrirPeriodo;
+import ec.mdd.academico.puertos.entrada.CambiarEstadoPeriodo;
 import ec.mdd.academico.puertos.entrada.ConsultarPeriodos;
 import ec.mdd.academico.puertos.entrada.PeriodoConsultado;
 import ec.mdd.academico.puertos.entrada.PeriodoNoEncontrado;
@@ -44,12 +45,17 @@ class AcademicoControlador implements PeriodosApi {
     private final ConsultarPeriodos consultar;
     private final RegistrarPeriodo registrar;
     private final AbrirPeriodo abrir;
+    private final CambiarEstadoPeriodo cambiarEstado;
 
     AcademicoControlador(
-            ConsultarPeriodos consultar, RegistrarPeriodo registrar, AbrirPeriodo abrir) {
+            ConsultarPeriodos consultar,
+            RegistrarPeriodo registrar,
+            AbrirPeriodo abrir,
+            CambiarEstadoPeriodo cambiarEstado) {
         this.consultar = consultar;
         this.registrar = registrar;
         this.abrir = abrir;
+        this.cambiarEstado = cambiarEstado;
     }
 
     @Override
@@ -104,7 +110,11 @@ class AcademicoControlador implements PeriodosApi {
     @PreAuthorize(ESCRITURA)
     public ResponseEntity<PeriodoAcademico> cambiarEstadoPeriodo(
             String codigo, EstadoDeDestino estadoDeDestino) {
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED);
+        ec.mdd.academico.dominio.EstadoPeriodo destino =
+                ec.mdd.academico.dominio.EstadoPeriodo.valueOf(
+                        estadoDeDestino.getEstado().getValue());
+        return ResponseEntity.ok(
+                respuesta(existente(() -> cambiarEstado.cambiar(codigo, destino, quien()))));
     }
 
     private static String quien() {

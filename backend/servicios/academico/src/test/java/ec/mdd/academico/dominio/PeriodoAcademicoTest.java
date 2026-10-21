@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDate;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 /** El periodo académico, sus datos y su corrección (RF-13, FR-006, research §1), sin dobles. */
@@ -123,5 +124,50 @@ class PeriodoAcademicoTest {
                         () -> periodo(EstadoPeriodo.CERRADO).corregido("Otro nombre", INICIO, FIN))
                 .isInstanceOf(PeriodoCerrado.class)
                 .hasMessageContaining("2026-2");
+    }
+
+    @Test
+    void dadoCadaParDeEstados_cuandoSeCambia_entoncesSoloAvanzaUnPaso() {
+        for (EstadoPeriodo origen : EstadoPeriodo.values()) {
+            for (EstadoPeriodo destino : EstadoPeriodo.values()) {
+                PeriodoAcademico periodo = periodo(origen);
+                if (destino == origen) {
+                    assertThat(periodo.conEstado(destino, true)).isEqualTo(periodo);
+                } else if (origen == EstadoPeriodo.CERRADO) {
+                    assertThatThrownBy(() -> periodo.conEstado(destino, true))
+                            .isInstanceOf(PeriodoCerrado.class);
+                } else if (Optional.of(destino).equals(origen.siguiente())) {
+                    assertThat(periodo.conEstado(destino, true)).isEqualTo(periodo(destino));
+                } else {
+                    assertThatThrownBy(() -> periodo.conEstado(destino, true))
+                            .isInstanceOf(TransicionNoPermitida.class)
+                            .extracting("actual", "destino")
+                            .containsExactly(origen, destino);
+                }
+            }
+        }
+    }
+
+    @Test
+    void dadoUnPeriodoSinVersion_cuandoSalePlanificacion_entoncesPeriodoSinVersion() {
+        assertThatThrownBy(
+                        () ->
+                                periodo(EstadoPeriodo.PLANIFICACION)
+                                        .conEstado(EstadoPeriodo.EN_APROBACION, false))
+                .isInstanceOf(PeriodoSinVersion.class)
+                .hasMessageContaining("2026-2");
+        assertThat(
+                        periodo(EstadoPeriodo.PLANIFICACION)
+                                .conEstado(EstadoPeriodo.PLANIFICACION, false))
+                .isEqualTo(periodo(EstadoPeriodo.PLANIFICACION));
+    }
+
+    @Test
+    void dadoUnPeriodoSinVersion_cuandoSaltaAVigente_entoncesTransicionNoPermitida() {
+        assertThatThrownBy(
+                        () ->
+                                periodo(EstadoPeriodo.PLANIFICACION)
+                                        .conEstado(EstadoPeriodo.VIGENTE, false))
+                .isInstanceOf(TransicionNoPermitida.class);
     }
 }

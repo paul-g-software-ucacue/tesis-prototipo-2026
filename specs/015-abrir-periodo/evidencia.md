@@ -36,6 +36,9 @@ Registro de las comprobaciones de la historia (issue #32): registrar el periodo 
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Orden de los estados (T017, SC-003) | confirmada | `PeriodoAcademicoTest` (+3), sin dobles: los 16 pares de origen y destino (el mismo estado no cambia; desde Cerrado, `PeriodoCerrado`; el siguiente cambia; los demás, `TransicionNoPermitida` con el actual y el pedido); salir de Planificación sin versión da `PeriodoSinVersion`; saltar a Vigente sin versión da `TransicionNoPermitida`. Fallaron antes de `conEstado` (no compilaban). | 2026-10-21 |
+| Cambiar el estado (T018) | confirmada | `CambiarEstadoPeriodoServicioTest` (6), con Mockito: consulta a Normativa fuera de la transacción, bloquea, guarda y registra `PERIODO_ESTADO_CAMBIADO` con el anterior y el nuevo; sin versión, salto, retroceso y el mismo estado no guardan ni registran; 404. Fallaron antes del servicio (no compilaban). | 2026-10-21 |
+| Contrato del cambio de estado (T019) | confirmada | `AcademicoContratoTest` (+5): 200 a En aprobación con versión; 409 `ACADEMICO_PERIODO_SIN_VERSION`; 409 `ACADEMICO_TRANSICION_NO_PERMITIDA` al saltar a Vigente y al volver de Vigente a Planificación, con la descripción del catálogo; 400 con un estado que no es del contrato. Fallaron 4 antes (501); la del 400 ya pasaba, porque la valida el contrato antes del controlador. | 2026-10-21 |
 
 ## Escenario «Periodo cerrado» (US3)
 

@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import com.jayway.jsonpath.JsonPath;
+import ec.mdd.academico.dominio.EstadoPeriodo;
 import ec.mdd.plataforma.errores.ErroresAutoConfiguracion;
 import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
 import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
@@ -229,6 +230,75 @@ class AcademicoContratoTest {
 
         assertThat(resultado.getResponse().getStatus()).isEqualTo(404);
         contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnPeriodoAbierto_cuandoPasaAEnAprobacion_entonces200EnSuEstadoNuevo()
+            throws Exception {
+        academico.conEstado("2026-2", EstadoPeriodo.PLANIFICACION, 2);
+
+        MvcResult resultado = estado("2026-2", "EN_APROBACION");
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(JsonPath.<String>read(resultado.getResponse().getContentAsString(), "$.estado"))
+                .isEqualTo("EN_APROBACION");
+        assertThat(academico.ultimoUsuario()).isEqualTo("vicerrectorado.demo");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnPeriodoSinVersion_cuandoPasaAEnAprobacion_entonces409PeriodoSinVersion()
+            throws Exception {
+        MvcResult resultado = estado("2026-2", "EN_APROBACION");
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(409);
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("ACADEMICO_PERIODO_SIN_VERSION");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnPeriodoEnPlanificacion_cuandoSaltaAVigente_entonces409TransicionNoPermitida()
+            throws Exception {
+        academico.conEstado("2026-2", EstadoPeriodo.PLANIFICACION, 2);
+
+        MvcResult resultado = estado("2026-2", "VIGENTE");
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(409);
+        assertThat(JsonPath.<String>read(resultado.getResponse().getContentAsString(), "$.codigo"))
+                .isEqualTo("ACADEMICO_TRANSICION_NO_PERMITIDA");
+        assertThat(
+                        JsonPath.<String>read(
+                                resultado.getResponse().getContentAsString(), "$.descripcion"))
+                .isEqualTo("El periodo solo pasa al estado siguiente, sin saltos ni retrocesos.");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnPeriodoVigente_cuandoVuelveAPlanificacion_entonces409TransicionNoPermitida()
+            throws Exception {
+        MvcResult resultado = estado("2026-1", "PLANIFICACION");
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(409);
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("ACADEMICO_TRANSICION_NO_PERMITIDA");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnEstadoQueNoEsDelContrato_cuandoSeCambia_entonces400() throws Exception {
+        MvcResult resultado = estado("2026-2", "ABIERTO");
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(400);
+        contrato.validar(resultado);
+    }
+
+    private MvcResult estado(String codigo, String destino) throws Exception {
+        return pedir(
+                json(
+                        put("/api/academico/periodos/" + codigo + "/estado"),
+                        "{\"estado\":\"" + destino + "\"}"),
+                escritura());
     }
 
     static MockHttpServletRequestBuilder json(
