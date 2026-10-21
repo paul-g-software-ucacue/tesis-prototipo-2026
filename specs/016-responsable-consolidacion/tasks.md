@@ -39,7 +39,7 @@ description: "Tareas de F05-H03: designar al Responsable de consolidación del p
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear `specs/016-responsable-consolidacion/evidencia.md` con estas secciones: entorno; base (contrato, dominio, migración, eventos); «Designación» (US1); «Quién designa» (US2); «Es un rol, no un cargo» (US3); pantalla (US4); cierre; equipo de demostración; notas.
+- [X] T001 Crear `specs/016-responsable-consolidacion/evidencia.md` con estas secciones: entorno; base (contrato, dominio, migración, eventos); «Designación» (US1); «Quién designa» (US2); «Es un rol, no un cargo» (US3); pantalla (US4); cierre; equipo de demostración; notas.
 
 ---
 
@@ -47,7 +47,7 @@ description: "Tareas de F05-H03: designar al Responsable de consolidación del p
 
 ### Contrato (principio IV, research §4)
 
-- [ ] T002 Cambiar `contratos/roles/openapi.yaml` según contracts/roles.md: esquemas `Responsable` y `Designacion`; `listarResponsables` (`DISTRIBUTIVO:LECTURA`), `designarResponsable` (`DISTRIBUTIVO:ESCRITURA`, 200 · 400 · 404 · 409), `listarDocentes` (`DISTRIBUTIVO:ESCRITURA`) y `recibirEvento` en `/interno/roles/eventos` (sobre de `contratos/comun/eventos.yaml`, 204 · 400), con `example` en el parámetro `periodo`; el comentario de cabecera cita F05-H03, D-13 y ADR-003. Agregar `ROLES_PERIODO_CERRADO` a `contratos/comun/errores.md`. Regenerar (`openApiGenerate`, `generar:api`); `verificar:ruptura` sigue en verde.
+- [X] T002 Cambiar `contratos/roles/openapi.yaml` según contracts/roles.md: esquemas `Responsable` y `Designacion`; `listarResponsables` (`DISTRIBUTIVO:LECTURA`), `designarResponsable` (`DISTRIBUTIVO:ESCRITURA`, 200 · 400 · 404 · 409), `listarDocentes` (`DISTRIBUTIVO:ESCRITURA`) y `recibirEvento` en `/interno/roles/eventos` (sobre de `contratos/comun/eventos.yaml`, 204 · 400), con `example` en el parámetro `periodo`; el comentario de cabecera cita F05-H03, D-13 y ADR-003. Agregar `ROLES_PERIODO_CERRADO` a `contratos/comun/errores.md`. Regenerar (`openApiGenerate`, `generar:api`); `verificar:ruptura` sigue en verde.
 
 ### Dominio de Roles (research §1 a §3, data-model.md)
 

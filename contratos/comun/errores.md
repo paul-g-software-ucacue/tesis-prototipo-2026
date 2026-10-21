@@ -12,6 +12,7 @@ Cada código es estable y no depende del texto ni del mensaje de una excepción 
 | `ROLES_ROL_PREDEFINIDO` | 409 | Rol de la matriz D-16 | Los roles de la matriz D-16 no se pueden cambiar ni borrar. Crea un rol nuevo con los permisos que necesitas. | Editar o borrar uno de los 10 roles de D-16 (D-63). |
 | `ROLES_ROL_ASIGNADO` | 409 | Rol asignado | El rol está asignado a usuarios. Quítaselo antes de borrarlo. | Borrar un rol asignado. La pantalla muestra a cuántos usuarios. |
 | `ROLES_SIN_ADMINISTRADOR` | 409 | Sin administrador | El cambio dejaría al sistema sin nadie que administre los roles. | Un cambio de los roles de un usuario, o la edición de un rol, quitaría el último `USUARIOS_ROLES:ESCRITURA` o se lo quitaría a quien hace el cambio. |
+| `ROLES_PERIODO_CERRADO` | 409 | Periodo cerrado | El periodo está cerrado y ya no admite cambios. | Designar al Responsable de consolidación de un periodo cerrado (F05-H03). |
 | `NORMATIVA_VERSION_EN_USO` | 409 | Versión en uso | La versión rige al menos un periodo y ya no se puede cambiar. Crea una versión nueva a partir de ella. | Editar una versión de normativa asociada a un periodo (RF-19, F04-H02). |
 | `NORMATIVA_CODIGO_REPETIDO` | 409 | Código repetido | Ya existe una versión de normativa con ese código. Elige otro. | Crear una versión, o editar su cabecera, con el código de otra versión. |
 | `NORMATIVA_PERIODO_CON_VERSION` | 409 | Periodo con versión | El periodo ya tiene una versión de normativa. | Asociar una versión a un periodo que ya tiene otra. |
