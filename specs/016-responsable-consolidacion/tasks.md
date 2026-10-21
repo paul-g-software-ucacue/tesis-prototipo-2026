@@ -83,7 +83,7 @@ description: "Tareas de F05-H03: designar al Responsable de consolidación del p
 - [X] T012 [US1] Prueba primero, en `PROL/aplicacion/DesignarResponsableServicioTest.java` (Mockito): designa y registra `DESIGNAR_RESPONSABLE` con el anterior y el nuevo; reemplaza; el mismo usuario no registra; periodo desconocido lanza `PeriodoDesconocido`; cerrado, `PeriodoCerrado`; no docente o quien designa, `DesignacionInvalida`; bloquea el periodo antes de leer la designación. Crear `DesignarResponsable` (puerto de entrada) y su servicio. T012 pasa.
 - [X] T013 [US1] Prueba primero, en `PROL/aplicacion/AutorizacionServiciosTest.java` (ampliar): un docente con una designación en un periodo no cerrado recibe `RESPONSABLE_CONSOLIDACION` y sus permisos (`CONSOLIDACION:ESCRITURA`, `DISTRIBUTIVO:FIRMA`…); con su único periodo cerrado, no; sin designaciones, igual que antes; con el rol asignado a mano, lo conserva. Cambiar `ConsultarAutorizacionServicio`. T013 pasa; `MatrizD16IntegrationTest` sigue en verde.
 - [X] T014 [US1] Prueba primero, en `PROL/adaptadores/entrada/RolesContratoTest.java` (ampliar): `designarResponsable` responde 200 con el `Responsable`; 400 con el detalle en `usuario`; 404 con un periodo desconocido; 409 `ROLES_PERIODO_CERRADO`; `listarResponsables` y `listarDocentes` validan contra el contrato. `ErroresRolesTest` con el código nuevo. Implementar las tres operaciones (en `RolesControlador` o en uno nuevo de designaciones) y la entrada del catálogo. T014 pasa.
-- [ ] T015 [US1] Prueba de integración en `backend/apps/identidad/src/integrationTest/java/ec/mdd/` (Testcontainers, el proceso `identidad` completo): recibir `academico.PeriodoActualizado` por HTTP con un token de proceso, designar a un docente, y que la autorización interna (`/interno/roles/autorizaciones/{usuario}`) tenga el rol; recibir el cierre y que ya no lo tenga.
+- [X] T015 [US1] Prueba de integración en `backend/apps/identidad/src/integrationTest/java/ec/mdd/` (Testcontainers, el proceso `identidad` completo): recibir `academico.PeriodoActualizado` por HTTP con un token de proceso, designar a un docente, y que la autorización interna (`/interno/roles/autorizaciones/{usuario}`) tenga el rol; recibir el cierre y que ya no lo tenga.
 
 **Checkpoint**: la designación funciona por la API y llega al token.
 
@@ -101,7 +101,7 @@ description: "Tareas de F05-H03: designar al Responsable de consolidación del p
 
 **Goal**: la designación no es un cargo ni una actividad (FR-007).
 
-- [ ] T017 [US3] Anotar en la evidencia que la designación solo vive en `roles.designacion_responsable`: no hay cargos ni actividades en el sistema todavía (F03-H05, F07), y ninguna tabla de horas la referencia. Agregar a la sección «Notas» de la evidencia que F07 comprueba con su cálculo que no suma horas, y dejarlo en el issue de F07 como dependencia.
+- [X] T017 [US3] Anotar en la evidencia que la designación solo vive en `roles.designacion_responsable`: no hay cargos ni actividades en el sistema todavía (F03-H05, F07), y ninguna tabla de horas la referencia. Agregar a la sección «Notas» de la evidencia que F07 comprueba con su cálculo que no suma horas, y dejarlo en el issue de F07 como dependencia.
 
 ---
 
