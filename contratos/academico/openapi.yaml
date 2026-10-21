@@ -1,0 +1,331 @@
+# Contrato de Académico (servicio 11, proceso datos). Desde F02-H01: los periodos académicos con sus
+# estados (RF-13): registrarlos, corregirlos, abrirlos con su versión de normativa (RF-19) y hacerlos
+# avanzar de Planificación a En aprobación, a Vigente y a Cerrado, en ese orden (pregunta 4 del
+# modelo de dominio). La versión del periodo la guarda Normativa (asignación normativa); Académico se
+# la pide por su interfaz publicada dentro del proceso.
+# Leer exige «Distributivo del periodo: lectura» y escribir, «Distributivo del periodo: escritura»,
+# con x-mdd-permiso (ADR-021, D-69). Escribe solo el Vicerrector académico (D-65).
+openapi: 3.0.3
+info:
+  title: MDD · Académico
+  version: 1.0.0
+servers:
+  - url: /
+security:
+  - bearer: []
+tags:
+  - name: Periodos
+    description: >-
+      Periodos académicos con su estado y su versión de normativa (RF-13, RF-19). Un periodo cerrado
+      ya no cambia.
+paths:
+  /api/academico/periodos:
+    get:
+      tags: [Periodos]
+      operationId: listarPeriodos
+      summary: Lista los periodos académicos, del más reciente al más antiguo.
+      x-mdd-permiso: DISTRIBUTIVO:LECTURA
+      responses:
+        '200':
+          description: Los periodos, por fecha de inicio descendente.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PeriodoAcademico'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+    post:
+      tags: [Periodos]
+      operationId: registrarPeriodo
+      summary: Registra un periodo académico en Planificación, sin versión de normativa.
+      description: >-
+        El código no cambia después: Normativa y las demás partes lo usan como referencia. Cuando
+        llegue la carga 3 (F01), usará este mismo registro.
+      x-mdd-permiso: DISTRIBUTIVO:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PeriodoNuevo'
+      responses:
+        '201':
+          description: El periodo registrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PeriodoAcademico'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/academico/periodos/{codigo}:
+    parameters:
+      - $ref: '#/components/parameters/Codigo'
+    get:
+      tags: [Periodos]
+      operationId: consultarPeriodo
+      summary: Devuelve un periodo académico con su estado y su versión de normativa.
+      x-mdd-permiso: DISTRIBUTIVO:LECTURA
+      responses:
+        '200':
+          description: El periodo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PeriodoAcademico'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+    put:
+      tags: [Periodos]
+      operationId: corregirPeriodo
+      summary: Corrige el nombre y las fechas de un periodo que no está cerrado.
+      x-mdd-permiso: DISTRIBUTIVO:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatosDelPeriodo'
+      responses:
+        '200':
+          description: El periodo corregido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PeriodoAcademico'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/academico/periodos/{codigo}/normativa:
+    parameters:
+      - $ref: '#/components/parameters/Codigo'
+    put:
+      tags: [Periodos]
+      operationId: abrirPeriodo
+      summary: Abre el periodo asociándole su versión de normativa.
+      description: >-
+        Solo en Planificación. Desde entonces la versión no cambia, y el periodo no pasa a otra.
+        Abrirlo otra vez con la misma versión no cambia nada. Una versión que no existe responde
+        400 con el detalle en version.
+      x-mdd-permiso: DISTRIBUTIVO:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VersionDelPeriodo'
+      responses:
+        '200':
+          description: El periodo con su versión.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PeriodoAcademico'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/academico/periodos/{codigo}/estado:
+    parameters:
+      - $ref: '#/components/parameters/Codigo'
+    put:
+      tags: [Periodos]
+      operationId: cambiarEstadoPeriodo
+      summary: Pasa el periodo al estado siguiente.
+      description: >-
+        Recibe el estado de destino, que tiene que ser el siguiente: Planificación, En aprobación,
+        Vigente y Cerrado, sin saltos ni retrocesos. Salir de Planificación exige la versión de
+        normativa. Pedir el estado en que ya está no cambia nada.
+      x-mdd-permiso: DISTRIBUTIVO:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EstadoDeDestino'
+      responses:
+        '200':
+          description: El periodo en su estado nuevo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PeriodoAcademico'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+components:
+  securitySchemes:
+    bearer:
+      $ref: '../comun/seguridad.yaml#/components/securitySchemes/bearer'
+  parameters:
+    Codigo:
+      name: codigo
+      in: path
+      required: true
+      description: Código del periodo académico, el mismo que usa Normativa.
+      schema:
+        $ref: '#/components/schemas/CodigoDePeriodo'
+      example: 2026-2
+  responses:
+    NoEncontrado:
+      description: El periodo no existe (COMUN_RECURSO_NO_ENCONTRADO).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
+    Conflicto:
+      description: >-
+        El cambio no cumple una regla del periodo: ACADEMICO_CODIGO_REPETIDO,
+        ACADEMICO_PERIODO_CERRADO, ACADEMICO_TRANSICION_NO_PERMITIDA, ACADEMICO_PERIODO_SIN_VERSION
+        o ACADEMICO_PERIODO_CON_VERSION (errores.md).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
+  schemas:
+    CodigoDePeriodo:
+      type: string
+      pattern: '^[A-Za-z0-9._-]{1,20}$'
+      example: 2026-2
+    EstadoPeriodo:
+      type: string
+      enum: [PLANIFICACION, EN_APROBACION, VIGENTE, CERRADO]
+      description: Planificación, En aprobación, Vigente o Cerrado (RF-13).
+    PeriodoAcademico:
+      type: object
+      required: [codigo, nombre, inicio, fin, estado]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 120
+          example: Periodo 2026-2
+        inicio:
+          type: string
+          format: date
+          example: '2026-09-01'
+        fin:
+          type: string
+          format: date
+          example: '2027-02-28'
+        estado:
+          $ref: '#/components/schemas/EstadoPeriodo'
+        version:
+          type: integer
+          minimum: 1
+          description: La versión de normativa que rige el periodo. Sin versión, no viene.
+          example: 2
+    PeriodoNuevo:
+      type: object
+      required: [codigo, nombre, inicio, fin]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 120
+          example: Periodo 2026-2
+        inicio:
+          type: string
+          format: date
+          example: '2026-09-01'
+        fin:
+          type: string
+          format: date
+          description: Posterior al inicio.
+          example: '2027-02-28'
+    DatosDelPeriodo:
+      type: object
+      required: [nombre, inicio, fin]
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 120
+          example: Periodo 2026-2
+        inicio:
+          type: string
+          format: date
+          example: '2026-09-01'
+        fin:
+          type: string
+          format: date
+          description: Posterior al inicio.
+          example: '2027-02-28'
+    VersionDelPeriodo:
+      type: object
+      required: [version]
+      properties:
+        version:
+          type: integer
+          minimum: 1
+          description: El número de la versión de normativa.
+          example: 1
+    EstadoDeDestino:
+      type: object
+      required: [estado]
+      properties:
+        estado:
+          $ref: '#/components/schemas/EstadoPeriodo'

@@ -74,6 +74,12 @@ jobs:
         shell: bash
         run: deploy/probar_normativa.sh
 
+      # F02-H01: registrar el periodo, abrirlo con su versión de normativa, avanzar su estado hasta
+      # Cerrado, quién lo ve (D-69) y su registro.
+      - name: Periodos de punta a punta
+        shell: bash
+        run: deploy/probar_periodos.sh
+
       # shell: bash agrega pipefail, así que tee no oculta el código de salida del script.
       # Después de iniciar sesión (D-34): la medición de referencia de R-19 desde B00-H03.
       - name: Medición de R-19 después de iniciar sesión

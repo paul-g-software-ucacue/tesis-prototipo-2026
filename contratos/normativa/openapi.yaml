@@ -190,7 +190,9 @@ paths:
       summary: Asocia una versión de normativa al periodo.
       description: >-
         Desde entonces la versión no cambia. Asociar otra vez la misma versión no cambia nada; un
-        periodo que ya tiene otra versión responde 409 NORMATIVA_PERIODO_CON_VERSION.
+        periodo que ya tiene otra versión responde 409 NORMATIVA_PERIODO_CON_VERSION. La SPA abre el
+        periodo desde Académico (abrirPeriodo, D-69); esta operación no comprueba que el periodo
+        exista.
       x-mdd-permiso: PARAMETROS:ESCRITURA
       requestBody:
         required: true

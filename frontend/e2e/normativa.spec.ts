@@ -337,7 +337,6 @@ test.describe('accesibilidad de la pantalla «Normativa»', () => {
 
   for (const [boton, titulo] of [
     ['Crear versión nueva', 'Versión nueva a partir de la versión 2'],
-    ['Asociar a un periodo', 'Asociar la versión 2 a un periodo'],
   ] as const) {
     test(`el diálogo «${titulo}»`, async ({ page }) => {
       await simularDosVersiones(page, () => ({ status: 200, json: DOS }));

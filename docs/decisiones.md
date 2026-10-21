@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-69 · ADR-022.
+- **Siguiente número libre:** D-70 · ADR-022.
 
 ## Índice
 
@@ -64,6 +64,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-66 | 2026-10-18 | El Vicerrector académico lee «Parámetros y normativa» | Aceptada | D-65 (un permiso más en la fila del Vicerrector) |
 | D-67 | 2026-10-18 | El Vicerrector académico escribe «Parámetros y normativa» | Aceptada | D-65, D-66 (la escritura además de la lectura) |
 | D-68 | 2026-10-20 | Las reglas del motor y la afinidad por defecto completan las versiones existentes por migración | Aceptada | — (excepción acotada al principio VII para V4 de Normativa) |
+| D-69 | 2026-10-21 | Los periodos académicos se escriben con «Distributivo del periodo» y se abren solo desde Académico | Aceptada | D-65 (interpreta a qué funcionalidad pertenece el periodo), F04-H02 (quita el diálogo «Asociar a un periodo» de «Normativa») |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1147,3 +1148,17 @@ Estado al 2026-10-11. El texto completo está en `lean_inception/adr/`.
 **Alternativas.** Agregarlos solo a las versiones nuevas: las existentes quedarían incompletas. Agregarlos solo a las versiones sin periodo: una versión en uso sin RN-19 rompería F07.
 
 **Consecuencias.** Por la API, una versión en uso sigue sin cambiar (409). Cualquier otra migración que quiera completar versiones en uso necesita su propia decisión.
+
+## D-69. Los periodos académicos se escriben con «Distributivo del periodo» y se abren solo desde Académico
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-21 · **Decidido por:** autor de la tesis (propuesta en el plan de F02-H01)
+- **Origen:** aclaración de la especificación de F02-H01 (`specs/015-abrir-periodo/spec.md`, Clarifications) y `research.md` §7
+- **Modifica a:** D-65 (interpreta a qué funcionalidad de la matriz pertenece el periodo académico) y F04-H02 (la pantalla «Normativa» pierde el diálogo «Asociar a un periodo»)
+
+**Decisión.** Los periodos académicos del servicio Académico se leen con `DISTRIBUTIVO:LECTURA` y se escriben (registrar, corregir, abrir y cambiar el estado) con `DISTRIBUTIVO:ESCRITURA`, la funcionalidad «Distributivo del periodo» de D-65. La matriz no cambia: hoy escribe solo el Vicerrector académico. Abrir el periodo, es decir, asociarle su versión de normativa, se hace desde Académico, que se lo pide a Normativa por su interfaz publicada dentro del proceso `datos`. La pantalla «Normativa» deja de ofrecer «Asociar a un periodo». La operación HTTP `asociarPeriodo` de Normativa se queda, para las pruebas de punta a punta y la integración.
+
+**Por qué.** La historia y la pregunta 4 del modelo de dominio dicen que el Vicerrectorado abre el periodo y cambia su estado, y el autor eligió no cambiar la matriz. «Catálogos y datos maestros» es del Administrador del sistema: dárselo al Vicerrector le daría también las carreras, las mallas y los demás datos maestros. Con el diálogo de «Normativa», un periodo podría quedar con versión sin existir en Académico, o saltarse sus reglas (cerrado, orden de los estados).
+
+**Alternativas.** El Vicerrector gana `CATALOGOS:ESCRITURA`: más permisos de los que pide la historia. Una funcionalidad nueva «Periodos» en la matriz: cambia D-65 para un solo rol. Dejar el diálogo de «Normativa»: dos caminos para lo mismo.
+
+**Consecuencias.** El Administrador del sistema no escribe periodos. La operación HTTP de Normativa no comprueba que el periodo exista en Académico, porque Normativa no puede depender de Académico sin un ciclo; solo la pueden llamar quienes tienen `PARAMETROS:ESCRITURA` (el Administrador y el Vicerrector). La llamada interna de Académico a Normativa no pasa por el `@PreAuthorize` del controlador de Normativa: la autorización es la de la operación de Académico.

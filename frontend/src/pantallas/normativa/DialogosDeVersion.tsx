@@ -1,6 +1,6 @@
-// Los dos diálogos de la pantalla «Normativa» con escritura (F04-H02): crear una versión nueva a
-// partir de la elegida y asociar la elegida a un periodo. El servidor valida todo; aquí solo se
-// muestra lo que responde, sin códigos (ADR-019).
+// El diálogo de la pantalla «Normativa» con escritura (F04-H02): crear una versión nueva a partir
+// de la elegida. Asociarla a un periodo se hace al abrirlo, en «Periodos» (D-69). El servidor
+// valida todo; aquí solo se muestra lo que responde, sin códigos (ADR-019).
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -12,10 +12,10 @@ import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 import { AvisoDeError } from '../../errores/AvisoDeError';
 import { traducirError, type MensajeDeError } from '../../errores/traducir';
-import { asociarPeriodo, crearVersion, type VersionNormativa } from './consultas';
+import { crearVersion, type VersionNormativa } from './consultas';
 
 interface Propiedades {
-  /** La versión elegida: la que se copia o la que se asocia. */
+  /** La versión elegida: la que se copia. */
   numero: number;
   alCerrar: () => void;
 }
@@ -116,69 +116,6 @@ export function DialogoVersionNueva({
         <Button onClick={alCerrar}>Cancelar</Button>
         <Button variant="contained" disabled={enviando} onClick={() => void crear()}>
           Crear
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-}
-
-export function DialogoAsociar({
-  numero,
-  alCerrar,
-  alAsociar,
-}: Propiedades & { alAsociar: () => Promise<void> }) {
-  const [periodo, setPeriodo] = useState('');
-  const [aviso, setAviso] = useState<MensajeDeError | null>(null);
-  const [falta, setFalta] = useState(false);
-  const [enviando, setEnviando] = useState(false);
-
-  const asociar = async () => {
-    if (!periodo.trim()) {
-      setFalta(true);
-      return;
-    }
-    setFalta(false);
-    setAviso(null);
-    setEnviando(true);
-    try {
-      await asociarPeriodo(periodo.trim(), numero);
-      await alAsociar();
-    } catch (fallo) {
-      setAviso(traducirError(fallo));
-    } finally {
-      setEnviando(false);
-    }
-  };
-
-  return (
-    <Dialog open onClose={alCerrar} aria-labelledby="titulo-asociar" fullWidth>
-      <DialogTitle id="titulo-asociar">{`Asociar la versión ${numero} a un periodo`}</DialogTitle>
-      <DialogContent>
-        <Stack spacing={2} sx={{ pt: 1 }}>
-          <Typography>
-            Desde que rige un periodo, la versión ya no se puede cambiar. Un periodo tiene una sola
-            versión.
-          </Typography>
-          {aviso && <AvisoDeError mensaje={aviso} />}
-          {aviso?.detalles.map(({ descripcion }) => (
-            <Typography key={descripcion} color="error">
-              {descripcion}
-            </Typography>
-          ))}
-          <TextField
-            label="Código del periodo"
-            value={periodo}
-            onChange={(evento) => setPeriodo(evento.target.value)}
-            helperText="Por ejemplo, 2025-1."
-            slotProps={{ htmlInput: { maxLength: 20 } }}
-          />
-          {falta && <Typography color="error">Escribe el código del periodo.</Typography>}
-        </Stack>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={alCerrar}>Cancelar</Button>
-        <Button variant="contained" disabled={enviando} onClick={() => void asociar()}>
-          Asociar
         </Button>
       </DialogActions>
     </Dialog>

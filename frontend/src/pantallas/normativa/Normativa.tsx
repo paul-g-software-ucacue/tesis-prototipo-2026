@@ -1,8 +1,9 @@
 // La pantalla «Normativa» (RF-19): las versiones de normativa y, de la elegida, su cabecera, sus
 // reglas con sus parámetros y la tabla de carga horaria, en español (F04-H01). La ven quienes tienen
 // «Parámetros y normativa: lectura» (D-65, D-66). Con escritura (D-67, F04-H02) se crea una versión
-// nueva a partir de la elegida, se edita en pantalla la que no rige ningún periodo y se asocia a un
-// periodo; la que rige uno se ve en solo lectura. El servidor valida cada operación.
+// nueva a partir de la elegida y se edita en pantalla la que no rige ningún periodo; la que rige uno
+// se ve en solo lectura. La versión se asocia a un periodo al abrirlo, en «Periodos» (D-69). El
+// servidor valida cada operación.
 import Button from '@mui/material/Button';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
@@ -30,14 +31,14 @@ import {
   type FilaCargaHoraria,
   type VersionNormativa,
 } from './consultas';
-import { DialogoAsociar, DialogoVersionNueva } from './DialogosDeVersion';
+import { DialogoVersionNueva } from './DialogosDeVersion';
 import { EdicionDeVersion } from './EdicionDeVersion';
 import { fecha, SEVERIDADES, SIN_VALOR, tipoIst } from './formato';
 import { nombreDelPerfil } from './perfiles';
 import { AFINIDAD, nombreDeLaRegla, nombreDelParametro } from './reglas';
 
 /** Lo que está abierto sobre la versión elegida. */
-type Abierto = 'edicion' | 'version-nueva' | 'asociar' | null;
+type Abierto = 'edicion' | 'version-nueva' | null;
 
 function valor(horas: number | undefined): string {
   return horas === undefined ? SIN_VALOR : String(horas);
@@ -97,9 +98,6 @@ export function Normativa() {
                   Editar
                 </Button>
               )}
-              <Button variant="outlined" onClick={() => setAbierto('asociar')}>
-                Asociar a un periodo
-              </Button>
             </Stack>
           )}
           {abierto === 'edicion' ? (
@@ -122,16 +120,6 @@ export function Normativa() {
               alCrear={async (creada) => {
                 await recargar();
                 setElegida(creada.numero);
-                setAbierto(null);
-              }}
-            />
-          )}
-          {abierto === 'asociar' && (
-            <DialogoAsociar
-              numero={version.data.numero}
-              alCerrar={() => setAbierto(null)}
-              alAsociar={async () => {
-                await recargar();
                 setAbierto(null);
               }}
             />

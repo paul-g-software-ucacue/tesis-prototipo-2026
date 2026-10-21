@@ -34,6 +34,11 @@ const ENTRADAS: Entrada[] = [
     texto: 'Normativa',
     permiso: { funcionalidad: 'PARAMETROS', tipo: 'LECTURA' },
   },
+  {
+    ruta: '/periodos',
+    texto: 'Periodos',
+    permiso: { funcionalidad: 'DISTRIBUTIVO', tipo: 'LECTURA' },
+  },
 ];
 
 export function Marco() {

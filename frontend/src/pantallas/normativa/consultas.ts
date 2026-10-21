@@ -49,13 +49,3 @@ export function editarVersion(numero: number, cuerpo: VersionEditada) {
     }),
   );
 }
-
-/** Asocia una versión a un periodo; desde entonces no cambia. */
-export function asociarPeriodo(periodo: string, version: number) {
-  return llamar(
-    apiNormativa.PUT('/api/normativa/periodos/{periodo}', {
-      params: { path: { periodo } },
-      body: { version },
-    }),
-  );
-}
