@@ -168,7 +168,7 @@ description: "Tareas de F02-H01: abrir el periodo académico con su versión de 
 
 ## Phase 7: Cierre
 
-- [ ] T026 Correr:
+- [X] T026 Correr:
   - en el backend, `./gradlew check integrationTest`;
   - en el frontend, `npm run lint`, `formato:verificar`, `tipos`, `test -- --run --coverage`, `test:e2e` y `verificar:ruptura`;
   - `shellcheck` sobre `probar_periodos.sh`, y Gitleaks sobre un clon en el scratchpad, montado con `:ro,Z` (nunca el repositorio);

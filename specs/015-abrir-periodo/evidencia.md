@@ -60,10 +60,15 @@ Registro de las comprobaciones de la historia (issue #32): registrar el periodo 
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Backend (T026) | confirmada | `./gradlew check integrationTest jacocoTestReport`: 549 pruebas unitarias y 83 de integración en todo el backend, ninguna falla. Académico con 100 % de líneas. | 2026-10-21 |
+| SPA (T026) | confirmada | `lint`, `formato:verificar`, `tipos` y `verificar:ruptura` en verde; 112 pruebas de Vitest con 95,5 % de líneas; 55 de Playwright. | 2026-10-21 |
+| Scripts (T026) | confirmada | Perfil local reconstruido con la rama (`datos` y `frontend`). `probar_autenticacion.sh` (38 `OK`), `probar_errores.sh` (4), `probar_eventos.sh` (6), `probar_spa.sh` (5), `probar_normativa.sh` (24) y `probar_periodos.sh` dos veces seguidas (20 y 20): todos los pasos en `OK`. En esta corrida, `abrirPeriodo` tardó 0,040 s y `listarPeriodos` 0,016 s (meta < 200 ms). | 2026-10-21 |
+| Gitleaks y shellcheck (T026) | confirmada | Gitleaks v8.30.1 sobre un clon en el scratchpad, montado con `:ro,Z` (nunca el repositorio): 13 commits, sin fugas. `shellcheck` sin observaciones en `probar_periodos.sh`. | 2026-10-21 |
 
 ## Equipo de demostración
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Equipo simulado (T026) | confirmada | `deploy/equipo/probar_equipo.sh` con la versión de esta rama: pasos 0 a 11 en `OK`, a la primera; memoria 1 345,5 MiB; la versión rota vuelve a la anterior en 132 s. | 2026-10-21 |
 
 ## Notas
