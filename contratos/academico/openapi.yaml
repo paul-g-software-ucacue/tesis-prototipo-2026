@@ -224,6 +224,7 @@ components:
       description: Código del periodo académico, el mismo que usa Normativa.
       schema:
         $ref: '#/components/schemas/CodigoDePeriodo'
+      example: 2026-2
   responses:
     NoEncontrado:
       description: El periodo no existe (COMUN_RECURSO_NO_ENCONTRADO).
