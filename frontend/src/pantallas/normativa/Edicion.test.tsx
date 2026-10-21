@@ -1,5 +1,5 @@
 // La pantalla «Normativa» con escritura (F04-H02): crear una versión nueva, editar en pantalla la
-// de sin periodo, asociarla a un periodo y ver en solo lectura la que ya rige uno.
+// de sin periodo y ver en solo lectura la que ya rige uno (asociarla a un periodo se hace en «Periodos», D-69).
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -297,27 +297,12 @@ describe('Normativa con escritura', () => {
     expect(simulada.peticiones.some((peticion) => peticion.method === 'PUT')).toBe(false);
   });
 
-  it('asocia la versión elegida a un periodo', async () => {
+  it('con escritura, ya no ofrece «Asociar a un periodo»: el periodo se abre en «Periodos» (D-69)', async () => {
     sesionCon(simulada, ESCRITURA);
-    simulada.responder(
-      'PUT',
-      '/api/normativa/periodos/2025-2',
-      json(200, { periodo: '2025-2', version: 2, asociadaEn: '2026-10-18T15:00:00Z' }),
-    );
-    const usuario = userEvent.setup();
     montarSpa('/normativa');
 
-    await usuario.click(await screen.findByRole('button', { name: 'Asociar a un periodo' }));
-    const dialogo = await screen.findByRole('dialog', {
-      name: 'Asociar la versión 2 a un periodo',
-    });
-    await usuario.type(within(dialogo).getByLabelText('Código del periodo'), '2025-2');
-    await usuario.click(within(dialogo).getByRole('button', { name: 'Asociar' }));
-
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(await cuerpoDe(simulada, 'PUT', '/api/normativa/periodos/2025-2')).toEqual({
-      version: 2,
-    });
+    expect(await screen.findByRole('button', { name: 'Crear versión nueva' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Asociar a un periodo' })).not.toBeInTheDocument();
   });
 
   it('una versión que rige un periodo se ve en solo lectura, con «Crear versión nueva»', async () => {
