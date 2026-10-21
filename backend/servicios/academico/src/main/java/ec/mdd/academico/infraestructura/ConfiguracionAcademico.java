@@ -7,10 +7,12 @@ import ec.mdd.academico.adaptadores.salida.TransaccionSpring;
 import ec.mdd.academico.aplicacion.AbrirPeriodoServicio;
 import ec.mdd.academico.aplicacion.CambiarEstadoPeriodoServicio;
 import ec.mdd.academico.aplicacion.ConsultarPeriodosServicio;
+import ec.mdd.academico.aplicacion.CorregirPeriodoServicio;
 import ec.mdd.academico.aplicacion.RegistrarPeriodoServicio;
 import ec.mdd.academico.puertos.entrada.AbrirPeriodo;
 import ec.mdd.academico.puertos.entrada.CambiarEstadoPeriodo;
 import ec.mdd.academico.puertos.entrada.ConsultarPeriodos;
+import ec.mdd.academico.puertos.entrada.CorregirPeriodo;
 import ec.mdd.academico.puertos.entrada.RegistrarPeriodo;
 import ec.mdd.academico.puertos.salida.NormativaDelPeriodo;
 import ec.mdd.academico.puertos.salida.RegistroDeCambios;
@@ -102,6 +104,21 @@ public class ConfiguracionAcademico {
             RegistroDeCambios registroDeCambiosAcademico,
             Transaccion transaccionAcademico) {
         return new CambiarEstadoPeriodoServicio(
+                repositorio,
+                normativa,
+                registroDeCambiosAcademico,
+                transaccionAcademico,
+                Clock.systemUTC());
+    }
+
+    /** Corregir el nombre y las fechas de un periodo que no está cerrado (FR-005, FR-006). */
+    @Bean
+    public CorregirPeriodo corregirPeriodo(
+            RepositorioPeriodos repositorio,
+            NormativaDelPeriodo normativa,
+            RegistroDeCambios registroDeCambiosAcademico,
+            Transaccion transaccionAcademico) {
+        return new CorregirPeriodoServicio(
                 repositorio,
                 normativa,
                 registroDeCambiosAcademico,

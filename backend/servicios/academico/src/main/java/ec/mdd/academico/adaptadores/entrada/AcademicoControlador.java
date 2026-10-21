@@ -11,6 +11,7 @@ import ec.mdd.academico.dominio.DatoInvalido;
 import ec.mdd.academico.puertos.entrada.AbrirPeriodo;
 import ec.mdd.academico.puertos.entrada.CambiarEstadoPeriodo;
 import ec.mdd.academico.puertos.entrada.ConsultarPeriodos;
+import ec.mdd.academico.puertos.entrada.CorregirPeriodo;
 import ec.mdd.academico.puertos.entrada.PeriodoConsultado;
 import ec.mdd.academico.puertos.entrada.PeriodoNoEncontrado;
 import ec.mdd.academico.puertos.entrada.RegistrarPeriodo;
@@ -44,16 +45,19 @@ class AcademicoControlador implements PeriodosApi {
 
     private final ConsultarPeriodos consultar;
     private final RegistrarPeriodo registrar;
+    private final CorregirPeriodo corregir;
     private final AbrirPeriodo abrir;
     private final CambiarEstadoPeriodo cambiarEstado;
 
     AcademicoControlador(
             ConsultarPeriodos consultar,
             RegistrarPeriodo registrar,
+            CorregirPeriodo corregir,
             AbrirPeriodo abrir,
             CambiarEstadoPeriodo cambiarEstado) {
         this.consultar = consultar;
         this.registrar = registrar;
+        this.corregir = corregir;
         this.abrir = abrir;
         this.cambiarEstado = cambiarEstado;
     }
@@ -90,7 +94,18 @@ class AcademicoControlador implements PeriodosApi {
     @PreAuthorize(ESCRITURA)
     public ResponseEntity<PeriodoAcademico> corregirPeriodo(
             String codigo, DatosDelPeriodo datosDelPeriodo) {
-        throw new ResponseStatusException(HttpStatus.NOT_IMPLEMENTED);
+        PeriodoConsultado corregido =
+                existente(
+                        () ->
+                                valido(
+                                        () ->
+                                                corregir.corregir(
+                                                        codigo,
+                                                        datosDelPeriodo.getNombre(),
+                                                        datosDelPeriodo.getInicio(),
+                                                        datosDelPeriodo.getFin(),
+                                                        quien())));
+        return ResponseEntity.ok(respuesta(corregido));
     }
 
     @Override

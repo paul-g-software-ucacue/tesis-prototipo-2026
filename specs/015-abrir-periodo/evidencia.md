@@ -44,6 +44,8 @@ Registro de las comprobaciones de la historia (issue #32): registrar el periodo 
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Corregir (T020) | confirmada | `CorregirPeriodoServicioTest` (4), con Mockito: bloquea, guarda y registra `PERIODO_CORREGIDO` con cada cambio; sin cambios no guarda ni registra; cerrado, `PeriodoCerrado` sin guardar; 404. Fallaron antes del servicio (no compilaban). | 2026-10-21 |
+| Contrato del periodo cerrado (T021, SC-004) | confirmada | `AcademicoContratoTest` (+3): corregir da 200 con los datos nuevos y la versión; con el periodo cerrado, corregir, cambiar el estado y abrir dan 409 `ACADEMICO_PERIODO_CERRADO`; consultarlo da 200 con todos sus datos. Fallaron 2 antes (501). `./gradlew :servicios:academico:check integrationTest :apps:datos:test integrationTest`: 69 pruebas unitarias y 8 de integración en Académico, todas en verde; 100 % de líneas en Académico. | 2026-10-21 |
 
 ## Pantalla «Periodos» (US4)
 

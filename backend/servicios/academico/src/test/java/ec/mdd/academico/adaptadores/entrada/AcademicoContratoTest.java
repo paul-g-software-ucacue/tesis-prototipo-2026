@@ -293,6 +293,66 @@ class AcademicoContratoTest {
         contrato.validar(resultado);
     }
 
+    @Test
+    void dadoUnPeriodoVigente_cuandoSeCorrige_entonces200ConSusDatosNuevos() throws Exception {
+        MvcResult resultado =
+                pedir(
+                        json(
+                                put("/api/academico/periodos/2026-1"),
+                                "{\"nombre\":\"Periodo académico 2026-1\","
+                                        + "\"inicio\":\"2026-03-01\",\"fin\":\"2026-08-31\"}"),
+                        escritura());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(
+                        JsonPath.<Map<String, Object>>read(
+                                resultado.getResponse().getContentAsString(), "$"))
+                .containsEntry("nombre", "Periodo académico 2026-1")
+                .containsEntry("fin", "2026-08-31")
+                .containsEntry("estado", "VIGENTE")
+                .containsEntry("version", 1);
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnPeriodoCerrado_cuandoSeIntentaCambiarlo_entonces409PeriodoCerrado()
+            throws Exception {
+        academico.conEstado("2026-1", EstadoPeriodo.CERRADO, null);
+
+        for (MockHttpServletRequestBuilder peticion :
+                new MockHttpServletRequestBuilder[] {
+                    json(
+                            put("/api/academico/periodos/2026-1"),
+                            "{\"nombre\":\"Otro\",\"inicio\":\"2026-03-01\","
+                                    + "\"fin\":\"2026-08-15\"}"),
+                    json(put("/api/academico/periodos/2026-1/estado"), "{\"estado\":\"VIGENTE\"}"),
+                    json(put("/api/academico/periodos/2026-1/normativa"), "{\"version\":1}")
+                }) {
+            MvcResult resultado = pedir(peticion, escritura());
+
+            assertThat(resultado.getResponse().getStatus()).isEqualTo(409);
+            assertThat(resultado.getResponse().getContentAsString())
+                    .contains("ACADEMICO_PERIODO_CERRADO");
+            contrato.validar(resultado);
+        }
+    }
+
+    @Test
+    void dadoUnPeriodoCerrado_cuandoSeConsulta_entonces200ConTodosSusDatos() throws Exception {
+        academico.conEstado("2026-1", EstadoPeriodo.CERRADO, null);
+
+        MvcResult resultado = pedir(get("/api/academico/periodos/2026-1"), lectura());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(
+                        JsonPath.<Map<String, Object>>read(
+                                resultado.getResponse().getContentAsString(), "$"))
+                .containsEntry("estado", "CERRADO")
+                .containsEntry("version", 1)
+                .containsEntry("nombre", "Periodo 2026-1");
+        contrato.validar(resultado);
+    }
+
     private MvcResult estado(String codigo, String destino) throws Exception {
         return pedir(
                 json(
