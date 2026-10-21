@@ -60,15 +60,15 @@ description: "Tareas de F02-H01: abrir el periodo académico con su versión de 
 
 ### Dominio (research §1, data-model.md)
 
-- [ ] T004 Prueba primero, en `PACA/dominio/`, sin dobles:
+- [X] T004 Prueba primero, en `PACA/dominio/`, sin dobles:
   - `EstadoPeriodoTest`: `siguiente()` de cada estado; vacío en `CERRADO`;
   - `PeriodoAcademicoTest`: se crea en `PLANIFICACION`; un código con otro formato, un nombre vacío o de más de 120 caracteres, y un fin igual o anterior al inicio lanzan `DatoInvalido` con su campo (`codigo`, `nombre`, `fin`) y el motivo en español (por ejemplo «La fecha de fin (2026-01-01) debe ser posterior a la de inicio (2026-03-01)»); `corregido` devuelve el periodo nuevo y la lista de `CambioDeValor` (vacía si no cambia nada) y no cambia el código.
-- [ ] T005 Crear en `JACA/dominio/`: `EstadoPeriodo`, `PeriodoAcademico`, `CambioDeValor`, `DatoInvalido`, y las excepciones de las reglas `PeriodoCerrado`, `TransicionNoPermitida` (con el estado actual y el siguiente permitido) y `PeriodoSinVersion`. JavaDoc en español que cite RF-13, el glosario §7.3 y la pregunta 4. T004 pasa.
+- [X] T005 Crear en `JACA/dominio/`: `EstadoPeriodo`, `PeriodoAcademico`, `CambioDeValor`, `DatoInvalido`, y las excepciones de las reglas `PeriodoCerrado`, `TransicionNoPermitida` (con el estado actual y el siguiente permitido) y `PeriodoSinVersion`. JavaDoc en español que cite RF-13, el glosario §7.3 y la pregunta 4. T004 pasa.
 
 ### Persistencia y registro (research §6, data-model.md)
 
-- [ ] T006a Prueba primero, en `IACA/AcademicoEsquemaIntegrationTest.java` (ampliar): después de las migraciones existen `periodo_academico` y `registro_cambio`; sus `check` rechazan un código con otro formato, un nombre vacío, `fin <= inicio`, un estado y una acción que no son de la lista. Tiene que fallar sin V2.
-- [ ] T006 Crear `ACA/main/resources/db/migration/academico/V2__periodos_academicos.sql` según data-model.md: `periodo_academico` y `registro_cambio`, con sus `check` (código, nombre, `fin > inicio`, estado y acciones `PERIODO_REGISTRADO`, `PERIODO_CORREGIDO`, `PERIODO_ABIERTO`, `PERIODO_ESTADO_CAMBIADO`). Comentario de cabecera que cite D-35, RF-13 y F02-H01. Sin datos precargados. T006a pasa.
+- [X] T006a Prueba primero, en `IACA/AcademicoEsquemaIntegrationTest.java` (ampliar): después de las migraciones existen `periodo_academico` y `registro_cambio`; sus `check` rechazan un código con otro formato, un nombre vacío, `fin <= inicio`, un estado y una acción que no son de la lista. Tiene que fallar sin V2.
+- [X] T006 Crear `ACA/main/resources/db/migration/academico/V2__periodos_academicos.sql` según data-model.md: `periodo_academico` y `registro_cambio`, con sus `check` (código, nombre, `fin > inicio`, estado y acciones `PERIODO_REGISTRADO`, `PERIODO_CORREGIDO`, `PERIODO_ABIERTO`, `PERIODO_ESTADO_CAMBIADO`). Comentario de cabecera que cite D-35, RF-13 y F02-H01. Sin datos precargados. T006a pasa.
 - [ ] T007 Crear los puertos de salida en `JACA/puertos/salida/`: `RepositorioPeriodos` (`todos()`, `porCodigo`, `bloquear(codigo)`, `registrar`, `guardar`), `RegistroDeCambios` y su `CambioDePeriodo` (usuario, momento, acción y detalle), `NormativaDelPeriodo` (`versionDe(codigo): OptionalInt`, `asociar(codigo, version, quien)`) y `Transaccion`.
 - [ ] T008 Prueba primero, en `IACA/` (Testcontainers, como en Normativa):
   - `RepositorioPeriodosJdbcIntegrationTest`: registra y lee un periodo igual, campo por campo; un código repetido lanza `CodigoRepetido`; `todos()` ordena por inicio descendente; `guardar` cambia el estado y los datos; `bloquear` hace `SELECT … FOR UPDATE`;
