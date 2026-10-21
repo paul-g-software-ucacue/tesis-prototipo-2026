@@ -52,6 +52,8 @@ Registro de las comprobaciones de la historia (issue #32): registrar el periodo 
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Pantalla «Periodos» (T023, FR-010) | confirmada | `Periodos.test.tsx` (10), con la API simulada: la tabla con fechas, estado y versión en español; sin escritura, sin acciones; sin `DISTRIBUTIVO:LECTURA`, sin la entrada del menú; registrar; un 400 marca el campo con su motivo y un 409 se muestra con su título; corregir sin el código, y no en un periodo cerrado; abrir eligiendo la versión de la lista («(rige 2026-1)» en la que ya rige uno); «Pasar a En aprobación» deshabilitado sin versión, con el motivo; cerrar pide confirmación. Fallaron 9 antes de la pantalla (la del menú ya pasaba). Vitest completo: 112 pruebas, 95,5 % de líneas (periodos 91,1 %); `lint`, `formato:verificar` y `tipos` en verde. | 2026-10-21 |
+| Playwright y axe (T025, SC-001) | confirmada | `e2e/periodos.spec.ts` (6, Chromium): `vicerrectorado.demo` registra un periodo, lo abre con la versión 2 y lo pasa a En aprobación; axe-core sin fallas WCAG 2.1 AA en la lista y en los diálogos de registrar, abrir, corregir y cerrar. De `normativa.spec.ts` salió la prueba de axe del diálogo de asociar (D-69). Playwright completo: 55 pruebas en verde. | 2026-10-21 |
 | «Normativa» sin asociar (T024, D-69) | confirmada | `Edicion.test.tsx`: la prueba que asociaba una versión a un periodo pasó a comprobar que, con escritura, ya no aparece «Asociar a un periodo»; falló antes del cambio. Se quitaron el botón, `DialogoAsociar` y `asociarPeriodo` de la SPA; «Rige: <periodo>» se queda. Las 18 pruebas de «Normativa» y `tipos` en verde. | 2026-10-21 |
 
 ## Cierre

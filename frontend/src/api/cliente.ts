@@ -5,6 +5,7 @@
 import createClient, { type Middleware } from 'openapi-fetch';
 import { FalloDeApi } from '../errores/traducir';
 import { cerrarSesion, marcarActividad, obtenerToken } from '../sesion/almacen';
+import type { paths as rutasDeAcademico } from './generado/academico';
 import type { paths as rutasDeNormativa } from './generado/normativa';
 import type { paths as rutasDeRoles } from './generado/roles';
 import type { paths } from './generado/usuarios';
@@ -70,3 +71,10 @@ export const apiNormativa = createClient<rutasDeNormativa>({
   fetch: (peticion) => globalThis.fetch(peticion),
 });
 apiNormativa.use(conToken);
+
+/** El cliente de Académico (F02-H01), con el mismo token y la misma actividad. */
+export const apiAcademico = createClient<rutasDeAcademico>({
+  baseUrl: globalThis.location?.origin ?? '',
+  fetch: (peticion) => globalThis.fetch(peticion),
+});
+apiAcademico.use(conToken);

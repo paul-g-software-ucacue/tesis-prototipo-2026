@@ -150,7 +150,7 @@ description: "Tareas de F02-H01: abrir el periodo académico con su versión de 
 
 **Independent Test**: como Vicerrector, registrar, abrir y avanzar un periodo en pantalla; como Rector, verlo sin acciones.
 
-- [ ] T023 [US4] Prueba primero, en `frontend/src/pantallas/periodos/Periodos.test.tsx` (Vitest con `instalarApiSimulada`; datos en `datosDePrueba.ts`):
+- [X] T023 [US4] Prueba primero, en `frontend/src/pantallas/periodos/Periodos.test.tsx` (Vitest con `instalarApiSimulada`; datos en `datosDePrueba.ts`):
   - la tabla con código, nombre, inicio, fin, estado en español y versión o «Sin versión»;
   - «Registrar periodo» envía código, nombre y fechas; un 400 marca el campo con su motivo; un 409 se muestra con su título y su descripción;
   - «Corregir» abre el diálogo sin el código, y no aparece en un periodo cerrado;
@@ -160,7 +160,7 @@ description: "Tareas de F02-H01: abrir el periodo académico con su versión de 
 
   Crear `frontend/src/pantallas/periodos/` (`Periodos.tsx`, `DialogosDePeriodo.tsx`, `consultas.ts`, `estados.ts` con los nombres en español), la ruta en `frontend/src/rutas.tsx` y la entrada «Periodos» con `DISTRIBUTIVO:LECTURA` en `frontend/src/navegacion/Marco.tsx`. T023 pasa.
 - [X] T024 [US4] Prueba primero, en `frontend/src/pantallas/normativa/`: «Normativa» ya no ofrece «Asociar a un periodo» y sigue mostrando «Rige: <periodo>». Quitar el diálogo de `DialogosDeVersion.tsx`, su uso en `Normativa.tsx` y en `consultas.ts`, y sus pruebas (D-69). T024 pasa; las demás pruebas de «Normativa» siguen en verde.
-- [ ] T025 [US4] Prueba con Playwright, en `frontend/e2e/periodos.spec.ts`, con la API simulada: `vicerrectorado.demo` registra un periodo, lo abre eligiendo una versión y lo pasa a En aprobación; axe-core sin fallas WCAG 2.1 AA en la lista y en los diálogos de registrar, abrir y cerrar (solo Chromium). Quitar de `frontend/e2e/normativa.spec.ts` lo del diálogo de asociar, si lo usa.
+- [X] T025 [US4] Prueba con Playwright, en `frontend/e2e/periodos.spec.ts`, con la API simulada: `vicerrectorado.demo` registra un periodo, lo abre eligiendo una versión y lo pasa a En aprobación; axe-core sin fallas WCAG 2.1 AA en la lista y en los diálogos de registrar, abrir y cerrar (solo Chromium). Quitar de `frontend/e2e/normativa.spec.ts` lo del diálogo de asociar, si lo usa.
 
 **Checkpoint**: las cuatro historias pasan de punta a punta.
 
