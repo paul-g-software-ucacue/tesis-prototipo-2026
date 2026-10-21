@@ -51,16 +51,16 @@ description: "Tareas de F05-H03: designar al Responsable de consolidación del p
 
 ### Dominio de Roles (research §1 a §3, data-model.md)
 
-- [ ] T003 Prueba primero, en `PROL/dominio/`, sin dobles:
+- [X] T003 Prueba primero, en `PROL/dominio/`, sin dobles:
   - `EstadoConocidoTest`: `masAvanzado` con los 16 pares (gana el posterior); `cerrado()` solo en `CERRADO`;
   - `PeriodoConocidoTest`: `conEstado` nunca retrocede (un evento viejo no cambia la copia);
   - `DesignacionTest`: con el periodo cerrado, `PeriodoCerrado`; un usuario sin `DOCENTE`, `DesignacionInvalida` en `usuario` con «Solo se puede designar a un usuario con el rol Docente»; quien designa, `DesignacionInvalida` con «No puedes designarte a ti mismo: la consolidación y la revisión van en manos distintas»; con el mismo usuario que la anterior, sin cambios; los nombres se normalizan como en F05-H01.
-- [ ] T004 Crear en `JROL/dominio/`: `EstadoConocido`, `PeriodoConocido`, `Designacion`, `DesignacionInvalida` y `PeriodoCerrado`, con JavaDoc en español que cite D-13, ADR-003 y research §1. T003 pasa.
+- [X] T004 Crear en `JROL/dominio/`: `EstadoConocido`, `PeriodoConocido`, `Designacion`, `DesignacionInvalida` y `PeriodoCerrado`, con JavaDoc en español que cite D-13, ADR-003 y research §1. T003 pasa.
 
 ### Persistencia de Roles (data-model.md)
 
-- [ ] T005 Prueba primero, en `IROL/RolesEsquemaIntegrationTest.java` (ampliar): después de las migraciones existen `periodo_conocido`, `designacion_responsable` y `evento_recibido`; sus `check` rechazan un código o un estado inválidos; `registro_cambio` acepta `DESIGNAR_RESPONSABLE`; una designación de un periodo desconocido viola la clave foránea. Tiene que fallar sin la migración.
-- [ ] T006 Crear `ROL/main/resources/db/migration/roles/V6__responsable_de_consolidacion.sql` según data-model.md, con el comentario de cabecera que cite F05-H03, D-13, ADR-003 y ADR-018. Sin datos precargados. T005 pasa.
+- [X] T005 Prueba primero, en `IROL/RolesEsquemaIntegrationTest.java` (ampliar): después de las migraciones existen `periodo_conocido`, `designacion_responsable` y `evento_recibido`; sus `check` rechazan un código o un estado inválidos; `registro_cambio` acepta `DESIGNAR_RESPONSABLE`; una designación de un periodo desconocido viola la clave foránea. Tiene que fallar sin la migración.
+- [X] T006 Crear `ROL/main/resources/db/migration/roles/V6__responsable_de_consolidacion.sql` según data-model.md, con el comentario de cabecera que cite F05-H03, D-13, ADR-003 y ADR-018. Sin datos precargados. T005 pasa.
 - [ ] T007 Prueba primero, en `IROL/RepositoriosJdbcIntegrationTest.java` (ampliar): la copia de un periodo se guarda y se actualiza; una designación se guarda, se reemplaza y se lee; `bloquearPeriodo` toma el candado; `periodosConDesignacionAbierta(usuario)` solo trae los no cerrados; `registrarSiEsNuevo` devuelve falso con un `idEvento` repetido. Crear los puertos de salida (`RepositorioDesignaciones`, `RepositorioPeriodosConocidos`, `RepositorioEventosRecibidos`) y sus adaptadores JDBC en `JROL/adaptadores/salida/`. T007 pasa.
 
 ### Eventos de Académico hacia Roles (research §1 y §6)

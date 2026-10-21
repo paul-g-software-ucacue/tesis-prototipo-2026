@@ -1,6 +1,7 @@
 package ec.mdd.roles;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ec.mdd.roles.infraestructura.RolesFlywayConfig;
 import java.io.IOException;
@@ -17,6 +18,8 @@ import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
@@ -79,6 +82,68 @@ class RolesEsquemaIntegrationTest {
 
             assertThat(versionAnterior.migrate().success).isTrue();
         }
+    }
+
+    /**
+     * Las tablas del Responsable de consolidación (F05-H03, data-model.md) guardan sus reglas
+     * también en la base.
+     */
+    @Test
+    void dadoLasTablasDelResponsable_cuandoSeGuardaAlgoFueraDeSusReglas_entoncesLaBaseLoRechaza() {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+            postgres.start();
+            DataSource dataSource =
+                    new DriverManagerDataSource(
+                            postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+            new RolesFlywayConfig().flywayRoles(dataSource).migrate();
+            JdbcClient jdbc = JdbcClient.create(dataSource);
+
+            assertThat(periodo(jdbc, "2026-2", "PLANIFICACION")).isEqualTo(1);
+            assertThatThrownBy(() -> periodo(jdbc, "2026 3", "PLANIFICACION"))
+                    .isInstanceOf(DataIntegrityViolationException.class);
+            assertThatThrownBy(() -> periodo(jdbc, "2026-3", "ABIERTO"))
+                    .isInstanceOf(DataIntegrityViolationException.class);
+            assertThat(designacion(jdbc, "2026-2")).isEqualTo(1);
+            // Una designación de un periodo que Roles no conoce viola la clave foránea.
+            assertThatThrownBy(() -> designacion(jdbc, "2030-1"))
+                    .isInstanceOf(DataIntegrityViolationException.class);
+            assertThat(
+                            jdbc.sql(
+                                            "INSERT INTO roles.evento_recibido (id_evento, tipo,"
+                                                    + " origen, recibido_en) VALUES"
+                                                    + " (gen_random_uuid(),"
+                                                    + " 'academico.PeriodoActualizado',"
+                                                    + " 'academico', now())")
+                                    .update())
+                    .isEqualTo(1);
+            assertThat(
+                            jdbc.sql(
+                                            "INSERT INTO roles.registro_cambio (id, momento,"
+                                                    + " usuario, accion, detalle) VALUES"
+                                                    + " (gen_random_uuid(), now(),"
+                                                    + " 'vicerrectorado.demo',"
+                                                    + " 'DESIGNAR_RESPONSABLE', '{}')")
+                                    .update())
+                    .isEqualTo(1);
+        }
+    }
+
+    private static int periodo(JdbcClient jdbc, String codigo, String estado) {
+        return jdbc.sql(
+                        "INSERT INTO roles.periodo_conocido (codigo, estado, actualizado_en)"
+                                + " VALUES (:codigo, :estado, now())")
+                .param("codigo", codigo)
+                .param("estado", estado)
+                .update();
+    }
+
+    private static int designacion(JdbcClient jdbc, String periodo) {
+        return jdbc.sql(
+                        "INSERT INTO roles.designacion_responsable (periodo, usuario,"
+                                + " designado_en, designado_por) VALUES (:periodo,"
+                                + " 'docente.demo', now(), 'vicerrectorado.demo')")
+                .param("periodo", periodo)
+                .update();
     }
 
     private static List<String> tablasDeUsuario(DataSource dataSource) throws SQLException {
