@@ -48,10 +48,10 @@ Escenario: Designación
 
 1. **Given** un periodo en Planificación sin Responsable de consolidación y un usuario que se puede designar, **When** el Vicerrector lo designa, **Then** el periodo queda con ese Responsable de consolidación y el usuario recibe los permisos del rol desde su próxima renovación de sesión (D-62). Las operaciones de consolidación y de firma que lleguen después solo le valdrán para ese periodo (D-64).
 2. **Given** la designación hecha, **Then** queda registrado quién designó, a quién, para qué periodo y cuándo.
-5. **Given** un periodo con Responsable, no cerrado, **When** el Vicerrector designa a otro usuario, **Then** el nuevo reemplaza al anterior, que deja de tener los permisos del rol si no tiene otra designación en un periodo no cerrado.
-6. **Given** que un periodo se cierra, **Then** su Responsable deja de tener los permisos del rol si no tiene otra designación en un periodo no cerrado; la designación se conserva como dato del periodo.
 3. **Given** un usuario que no se puede designar, **When** el Vicerrector lo intenta, **Then** se rechaza con el motivo en español. Se puede designar solo a un usuario activo con el rol Docente, distinto de quien designa.
 4. **Given** un periodo que no existe, **When** se intenta designar, **Then** se rechaza con «no encontrado».
+5. **Given** un periodo con Responsable, no cerrado, **When** el Vicerrector designa a otro usuario, **Then** el nuevo reemplaza al anterior, que deja de tener los permisos del rol si no tiene otra designación en un periodo no cerrado.
+6. **Given** que un periodo se cierra, **Then** su Responsable deja de tener los permisos del rol si no tiene otra designación en un periodo no cerrado; la designación se conserva como dato del periodo.
 
 ---
 
