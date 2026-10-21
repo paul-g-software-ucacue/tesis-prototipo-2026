@@ -10,7 +10,7 @@ Académico gana su primer dato de negocio, el periodo académico:
 - **Periodo:** código, nombre, fechas y estado. Se registra a mano y empieza en Planificación. El dominio guarda tres reglas: el orden de los estados, que un periodo cerrado no cambia y que salir de Planificación exige versión.
 - **Abrir:** Académico pide a Normativa, por su interfaz publicada dentro del proceso `datos`, que asocie la versión al periodo. Normativa sigue siendo la única que guarda la versión (`AsignacionNormativa`), sin una transacción entre los dos servicios (research §3).
 - **Contrato nuevo** `contratos/academico/openapi.yaml`: seis operaciones y cinco códigos de error `ACADEMICO_*`.
-- **Permisos:** se leen con `DISTRIBUTIVO:LECTURA` y se escriben con `DISTRIBUTIVO:ESCRITURA`, sin cambiar la matriz. Es **D-69 (propuesta)**, que también quita el diálogo «Asociar a un periodo» de «Normativa».
+- **Permisos:** se leen con `DISTRIBUTIVO:LECTURA` y se escriben con `DISTRIBUTIVO:ESCRITURA`, sin cambiar la matriz. Es **D-69 (aceptada)**, que también quita el diálogo «Asociar a un periodo» de «Normativa».
 - **SPA:** la pantalla «Periodos».
 - **Punta a punta:** `deploy/probar_periodos.sh`, nuevo.
 
@@ -61,7 +61,7 @@ Los detalles y las alternativas están en [research.md](research.md).
 |---|---|---|
 | I. Capas | Las reglas en `PeriodoAcademico` y `EstadoPeriodo`; la aplicación orquesta; los adaptadores traducen el contrato, la base y la llamada a Normativa. | ✅ |
 | II. DDD según el subdominio | Académico es de soporte: un `record` y un `enum` con sus reglas, sin agregado elaborado ni eventos (research §1). | ✅ |
-| III. Lenguaje ubicuo | Periodo académico y Estado del periodo, del glosario. La frase sobre «abrir» y el orden de los estados se propone para el glosario antes del código (research §10). | ⏳ aprobación del autor |
+| III. Lenguaje ubicuo | Periodo académico y Estado del periodo, del glosario. La frase sobre «abrir» y el orden de los estados se aprobó y aplicó en el glosario antes del código (research §10). | ✅ |
 | IV. API primero | `contratos/academico/openapi.yaml` y los códigos de `errores.md` antes del código. | ✅ |
 | V. Límites | Académico llama a Normativa por `puertos.entrada` con un adaptador de salida, como Usuarios a Roles; sin tablas ajenas; una transacción por servicio (research §3 y §4). `ModulosTest` lo comprueba. | ✅ |
 | VI. Las reglas son datos | El periodo no tiene cifras de la política; su versión de normativa las trae. | ✅ |
@@ -71,9 +71,9 @@ Los detalles y las alternativas están en [research.md](research.md).
 | X. Simplicidad | Sin eventos, sin copia de la versión, sin funcionalidad nueva en la matriz. | ✅ |
 | XI y XII | Un puerto de salida hacia Normativa, porque marca un límite entre servicios. JavaDoc en español en el dominio y los puertos. | ✅ |
 | XIII. Errores | Cinco códigos `ACADEMICO_*` en el catálogo; los errores de Normativa se traducen, no se reenvían. | ✅ |
-| §6.4 Decisiones | D-69 (permisos de los periodos y abrir solo desde Académico), propuesta en research §7. | ⏳ aprobación del autor |
+| §6.4 Decisiones | D-69 (permisos de los periodos y abrir solo desde Académico), aceptada por el autor el 2026-10-21. | ✅ |
 
-**Resultado del gate antes de la fase 0:** pasa, con D-69 y la frase del glosario pendientes de la aprobación del autor antes de las tareas.
+**Resultado del gate antes de la fase 0:** pasa. D-69 y la frase del glosario quedaron aprobadas el 2026-10-21.
 
 **Revisión después de la fase 1:** pasa. [data-model.md](data-model.md) y [contracts/](contracts/) solo agregan lo listado.
 
@@ -126,7 +126,7 @@ docs/decisiones.md                             # D-69
 
 ## Fases de implementación (guía para /speckit-tasks)
 
-1. **D-69 y el glosario:** con la aprobación del autor, D-69 en `docs/decisiones.md` y la frase en el glosario §7.3, con su copia anterior.
+1. **D-69 y el glosario:** aprobados por el autor el 2026-10-21 y ya aplicados: D-69 en `docs/decisiones.md` y la frase en el glosario §7.3, con la copia `modelo_dominio.md.antes-F02-H01`.
 2. **Contrato:** `contratos/academico/openapi.yaml`, los códigos en `errores.md`, `mdd.contrato` en Académico y `generar:api` en la SPA.
 3. **Dominio,** con sus pruebas primero: `EstadoPeriodo`, `PeriodoAcademico` y sus excepciones.
 4. **Aplicación:** los cinco casos de uso con Mockito; abrir sin transacción alrededor de Normativa.

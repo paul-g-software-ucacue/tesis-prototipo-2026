@@ -72,9 +72,9 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 - **Usuario:** el de la sesión (`sub` del token).
 - **Alternativa:** publicar a la bitácora (RF-44). La bitácora no existe todavía; cuando llegue, leerá de los registros de cada servicio o de sus eventos (como en Normativa).
 
-## 7. Quién escribe los periodos: D-69 (propuesta)
+## 7. Quién escribe los periodos: D-69 (aceptada)
 
-- **Decisión propuesta (D-69):**
+- **Decisión (D-69, aceptada por el autor el 2026-10-21):**
   - Los periodos académicos se leen con `DISTRIBUTIVO:LECTURA` y se escriben (registrar, corregir, abrir y cambiar el estado) con `DISTRIBUTIVO:ESCRITURA`, la funcionalidad «Distributivo del periodo» de D-65. La matriz no cambia: escribe solo el Vicerrector académico.
   - Abrir el periodo se hace desde Académico. La pantalla «Normativa» pierde el diálogo «Asociar a un periodo» de F04-H02. La operación HTTP `asociarPeriodo` de Normativa se queda, para las pruebas de punta a punta y la integración, pero ya no la usa la SPA.
 - **Por qué:**
@@ -117,7 +117,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 ## 10. Glosario (principio III)
 
 - El glosario §7.3 tiene «Periodo académico» con sus estados, pero no dice qué es «abrir» el periodo ni el orden de los estados.
-- **Propuesta (antes del código, con copia `modelo_dominio.md.antes-F02-H01`):** en «Periodo académico», agregar: «Se abre al elegir su versión de normativa, mientras está en Planificación. Sus estados solo avanzan, en este orden: Planificación, En aprobación, Vigente y Cerrado; un periodo cerrado no cambia.».
+- **Decisión, aprobada por el autor el 2026-10-21 y ya aplicada (copia en `modelo_dominio.md.antes-F02-H01`):** en «Periodo académico» se agregó: «Se abre al elegir su versión de normativa, mientras está en Planificación. Sus estados solo avanzan, en este orden: Planificación, En aprobación, Vigente y Cerrado; un periodo cerrado no cambia.».
 - En el código se usan `PeriodoAcademico`, `EstadoPeriodo` y `abrir`; «ciclo» no se usa (MD-10).
 
 ## 11. Pruebas
