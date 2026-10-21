@@ -58,6 +58,7 @@ Registro de las comprobaciones de la historia (issue #45): designar por periodo 
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| De punta a punta (T020, SC-002 y SC-003) | confirmada | Perfil local reconstruido con la rama (`datos`, `identidad` y `frontend`). `deploy/probar_periodos.sh` dos veces seguidas: los 10 pasos en `OK`. En el paso 10, el aviso del periodo llegó a Roles en menos de 1 s; `rectorado.demo` y el propio Vicerrector dan 400; `docente.demo` queda designado (designar tardó 0,088 y 0,025 s) y su sesión trae `CONSOLIDACION:ESCRITURA`; cerrado el periodo, su sesión nueva ya no lo trae; designar en el periodo cerrado da 409 `ROLES_PERIODO_CERRADO`; un `DESIGNAR_RESPONSABLE` en el registro de Roles. Después de las dos corridas, la base quedó como estaba: 0 periodos, 0 copias, 0 designaciones, 0 eventos recibidos y 0 publicaciones en `eventos_datos`. `shellcheck` sin observaciones. | 2026-10-21 |
 
 ## Equipo de demostración
 
