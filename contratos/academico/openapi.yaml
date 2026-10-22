@@ -5,6 +5,11 @@
 # la pide por su interfaz publicada dentro del proceso.
 # Leer exige «Distributivo del periodo: lectura» y escribir, «Distributivo del periodo: escritura»,
 # con x-mdd-permiso (ADR-021, D-69). Escribe solo el Vicerrector académico (D-65).
+# Desde F03-H01: la estructura orgánica (RF-12), con su jerarquía y las 21 gestiones autorizadas de
+# POL 6 como catálogo fijo (RN-10, V-02; nadie lo amplía, D-70). Las comisiones son un dato
+# informativo, sin horas (C-12). Mantenerla exige «Catálogos y datos maestros: escritura»; la leen
+# quienes tienen «Distributivo del periodo: lectura» o «Catálogos y datos maestros: lectura»: una
+# lista en x-mdd-permiso son permisos alternativos (D-70).
 openapi: 3.0.3
 info:
   title: MDD · Académico
@@ -18,6 +23,10 @@ tags:
     description: >-
       Periodos académicos con su estado y su versión de normativa (RF-13, RF-19). Un periodo cerrado
       ya no cambia.
+  - name: Estructura
+    description: >-
+      La estructura orgánica de la institución (RF-12): sedes, órganos, coordinaciones, gestiones y
+      comisiones, cada una debajo de la unidad de la que depende. Ninguna unidad se borra.
 paths:
   /api/academico/periodos:
     get:
@@ -212,6 +221,186 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/academico/gestiones-autorizadas:
+    get:
+      tags: [Estructura]
+      operationId: listarGestionesAutorizadas
+      summary: Lista las 21 gestiones autorizadas de POL 6, por código.
+      description: >-
+        El catálogo es fijo: ninguna operación lo cambia, y se amplía solo con una migración si la
+        norma cambia (RN-10, D-70).
+      x-mdd-permiso: [DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]
+      responses:
+        '200':
+          description: Las gestiones autorizadas, de G01 a G21.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GestionAutorizada'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/academico/unidades:
+    get:
+      tags: [Estructura]
+      operationId: listarUnidades
+      summary: Lista todas las unidades de la estructura, activas e inactivas, por código.
+      description: Cada unidad trae el código de su padre; la jerarquía se arma con él.
+      x-mdd-permiso: [DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]
+      responses:
+        '200':
+          description: Las unidades, por código.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UnidadOrganica'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+    post:
+      tags: [Estructura]
+      operationId: registrarUnidad
+      summary: Registra una unidad activa debajo de una unidad activa.
+      description: >-
+        Solo la sede matriz no tiene padre, y hay una sola. El padre existe, está activo y no forma
+        un ciclo. Una gestión lleva una gestión autorizada del catálogo, una comisión no lleva
+        ninguna y los demás tipos pueden llevarla. Una comisión lleva si es permanente; los demás
+        tipos, no. El código y el tipo no cambian después.
+      x-mdd-permiso: CATALOGOS:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnidadNueva'
+      responses:
+        '201':
+          description: La unidad registrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnidadOrganica'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '409':
+          $ref: '#/components/responses/ConflictoDeUnidad'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/academico/unidades/{codigo}:
+    parameters:
+      - $ref: '#/components/parameters/CodigoDeUnidad'
+    get:
+      tags: [Estructura]
+      operationId: consultarUnidad
+      summary: Devuelve una unidad de la estructura.
+      x-mdd-permiso: [DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]
+      responses:
+        '200':
+          description: La unidad.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnidadOrganica'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/UnidadNoEncontrada'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+    put:
+      tags: [Estructura]
+      operationId: corregirUnidad
+      summary: Corrige el nombre, el padre y los datos de su tipo; el código y el tipo no cambian.
+      x-mdd-permiso: CATALOGOS:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatosDeUnidad'
+      responses:
+        '200':
+          description: La unidad corregida.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnidadOrganica'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/UnidadNoEncontrada'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/academico/unidades/{codigo}/estado:
+    parameters:
+      - $ref: '#/components/parameters/CodigoDeUnidad'
+    put:
+      tags: [Estructura]
+      operationId: cambiarEstadoUnidad
+      summary: Inactiva o reactiva una unidad.
+      description: >-
+        Inactivar exige que ninguna unidad activa dependa de ella; reactivar, que su padre esté
+        activo. Pedir el estado que ya tiene no cambia nada.
+      x-mdd-permiso: CATALOGOS:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EstadoDeUnidad'
+      responses:
+        '200':
+          description: La unidad en su estado nuevo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnidadOrganica'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/UnidadNoEncontrada'
+        '409':
+          $ref: '#/components/responses/ConflictoDeUnidad'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
 components:
   securitySchemes:
     bearer:
@@ -225,6 +414,14 @@ components:
       schema:
         $ref: '#/components/schemas/CodigoDePeriodo'
       example: 2026-2
+    CodigoDeUnidad:
+      name: codigo
+      in: path
+      required: true
+      description: Código de la unidad orgánica.
+      schema:
+        $ref: '#/components/schemas/CodigoDeUnidad'
+      example: MATRIZ
   responses:
     NoEncontrado:
       description: El periodo no existe (COMUN_RECURSO_NO_ENCONTRADO).
@@ -237,6 +434,20 @@ components:
         El cambio no cumple una regla del periodo: ACADEMICO_CODIGO_REPETIDO,
         ACADEMICO_PERIODO_CERRADO, ACADEMICO_TRANSICION_NO_PERMITIDA, ACADEMICO_PERIODO_SIN_VERSION
         o ACADEMICO_PERIODO_CON_VERSION (errores.md).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
+    UnidadNoEncontrada:
+      description: La unidad no existe (COMUN_RECURSO_NO_ENCONTRADO).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
+    ConflictoDeUnidad:
+      description: >-
+        El cambio no cumple una regla de la estructura: ACADEMICO_UNIDAD_REPETIDA,
+        ACADEMICO_SEDE_MATRIZ_EXISTENTE o ACADEMICO_UNIDAD_CON_DEPENDIENTES (errores.md).
       content:
         application/json:
           schema:
@@ -329,3 +540,93 @@ components:
       properties:
         estado:
           $ref: '#/components/schemas/EstadoPeriodo'
+    CodigoDeUnidad:
+      type: string
+      pattern: '^[A-Z0-9_-]{1,20}$'
+      description: Mayúsculas, dígitos, «-» o «_», como en la carga 01.
+      example: G-INV
+    CodigoDeGestion:
+      type: string
+      pattern: '^G(0[1-9]|1[0-9]|2[01])$'
+      description: Una de las 21 gestiones autorizadas de POL 6.
+      example: G07
+    TipoDeUnidad:
+      type: string
+      enum: [SEDE_MATRIZ, SEDE, EXTENSION, CAMPUS, GOBIERNO, UNIDAD_ACADEMICA, GESTION, COMISION]
+      description: >-
+        Sede matriz, Sede, Extensión, Campus, Gobierno, Unidad académica, Gestión o Comisión. Una
+        comisión es un dato informativo, sin horas (C-12).
+    GestionAutorizada:
+      type: object
+      required: [codigo, nombre]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDeGestion'
+        nombre:
+          type: string
+          example: Gestor de Investigación, Desarrollo Tecnológico e Innovación
+    UnidadOrganica:
+      type: object
+      required: [codigo, nombre, tipo, activa]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDeUnidad'
+        tipo:
+          $ref: '#/components/schemas/TipoDeUnidad'
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 150
+          example: Gestión de Investigación
+        padre:
+          $ref: '#/components/schemas/CodigoDeUnidad'
+        gestionAutorizada:
+          $ref: '#/components/schemas/CodigoDeGestion'
+        comisionPermanente:
+          type: boolean
+          description: Solo en una comisión, y obligatorio en ella.
+        activa:
+          type: boolean
+    UnidadNueva:
+      type: object
+      required: [codigo, nombre, tipo]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDeUnidad'
+        tipo:
+          $ref: '#/components/schemas/TipoDeUnidad'
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 150
+          example: Gestión de Investigación
+        padre:
+          $ref: '#/components/schemas/CodigoDeUnidad'
+        gestionAutorizada:
+          $ref: '#/components/schemas/CodigoDeGestion'
+        comisionPermanente:
+          type: boolean
+          description: Solo en una comisión, y obligatorio en ella.
+    DatosDeUnidad:
+      type: object
+      required: [nombre]
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 150
+          example: Gestión de Investigación
+        padre:
+          $ref: '#/components/schemas/CodigoDeUnidad'
+        gestionAutorizada:
+          $ref: '#/components/schemas/CodigoDeGestion'
+        comisionPermanente:
+          type: boolean
+          description: Solo en una comisión, y obligatorio en ella.
+    EstadoDeUnidad:
+      type: object
+      required: [activa]
+      properties:
+        activa:
+          type: boolean
+          description: true para reactivar, false para inactivar.

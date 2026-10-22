@@ -106,7 +106,7 @@ Como Administrador del sistema, o como Responsable de consolidación o Vicerrect
 
 **Acceptance Scenarios**:
 
-1. **Given** una estructura registrada, **When** abro «Estructura orgánica», **Then** veo cada unidad debajo de la que depende, con su código, nombre, tipo en español, estado y, si es gestión, su gestión autorizada; las comisiones se distinguen como informativas.
+1. **Given** una estructura registrada, **When** abro «Estructura orgánica», **Then** veo cada unidad debajo de la que depende, con su código, nombre, tipo en español, estado y, si la tiene, su gestión autorizada; las comisiones se distinguen como informativas.
 2. **Given** el permiso de escritura, **When** registro, corrijo o inactivo una unidad, **Then** el cambio se ve en la estructura; un valor inválido muestra su motivo junto al campo.
 3. **Given** un usuario sin el permiso de escritura, **When** abre «Estructura orgánica», **Then** la ve en solo lectura, sin acciones.
 

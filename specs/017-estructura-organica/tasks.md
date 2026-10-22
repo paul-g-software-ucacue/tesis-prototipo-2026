@@ -51,7 +51,7 @@ description: "Tareas de F03-H01: mantener la estructura orgánica"
 
 ### Contrato (principio IV, research §5 y §7)
 
-- [ ] T003 Cambiar `contratos/academico/openapi.yaml` según contracts/academico.md: los 6 esquemas y las 6 operaciones, las de lectura con `x-mdd-permiso: [DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]` y las de escritura con `CATALOGOS:ESCRITURA`; `example` en el parámetro `codigo` de unidad; la respuesta `Conflicto` con los 3 códigos nuevos; el comentario de cabecera cita F03-H01, RF-12 y D-70. Agregar los 3 códigos a `contratos/comun/errores.md`. Regenerar (`openApiGenerate`, `generar:api`); `verificar:ruptura` en verde.
+- [X] T003 Cambiar `contratos/academico/openapi.yaml` según contracts/academico.md: los 6 esquemas y las 6 operaciones, las de lectura con `x-mdd-permiso: [DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]` y las de escritura con `CATALOGOS:ESCRITURA`; `example` en el parámetro `codigo` de unidad; la respuesta `Conflicto` con los 3 códigos nuevos; el comentario de cabecera cita F03-H01, RF-12 y D-70. Agregar los 3 códigos a `contratos/comun/errores.md`. Regenerar (`openApiGenerate`, `generar:api`); `verificar:ruptura` en verde.
 
 ### Dominio (research §1 y §3, data-model.md)
 
