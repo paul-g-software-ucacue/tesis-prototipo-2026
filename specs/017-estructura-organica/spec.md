@@ -42,7 +42,7 @@ Como Administrador del sistema, que mantiene la estructura orgánica (aclaració
 
 1. **Given** una unidad con código, nombre, tipo y la unidad de la que depende, **When** la registro, **Then** queda activa en la estructura, debajo de su unidad padre, y el registro guarda quién y cuándo.
 2. **Given** una unidad registrada, **When** corrijo su nombre o la unidad de la que depende, **Then** queda corregida y el registro guarda el valor anterior y el nuevo.
-3. **Given** una unidad activa, **When** la inactivo, **Then** sigue en la estructura como inactiva y no se ofrece para lo nuevo (por ejemplo, como padre de otra unidad); se puede volver a activar.
+3. **Given** una unidad activa, **When** la inactivo, **Then** sigue en la estructura como inactiva y no se ofrece para lo nuevo (por ejemplo, como padre de otra unidad); se puede volver a activar si su padre está activo.
 4. **Given** un padre que no existe, o uno que haría que la unidad dependa de sí misma o de una de las que dependen de ella, **When** guardo, **Then** se rechaza con el motivo en español.
 5. **Given** un código que ya usa otra unidad, **When** registro, **Then** se rechaza: el código no se repite ni cambia después.
 
@@ -115,9 +115,9 @@ Como Administrador del sistema, o como Responsable de consolidación o Vicerrect
 
 - **Raíz de la estructura**: la sede matriz no depende de ninguna unidad; las demás unidades sí. Hay una sola sede matriz.
 - **Ciclos**: una unidad no puede depender de sí misma ni de una que dependa de ella, directa o indirectamente.
-- **Inactivar una unidad con dependientes**: [se decide en el plan si se rechaza o se permite dejando a sus dependientes como están]; nunca se borra una unidad.
+- **Inactivar una unidad con dependientes**: si tiene unidades activas debajo, se rechaza con 409 y el motivo; primero se inactivan las de abajo. Así ninguna unidad activa queda debajo de una inactiva. Nunca se borra una unidad.
 - **Tipo de unidad**: uno de SEDE_MATRIZ, SEDE, EXTENSION, CAMPUS, GOBIERNO, UNIDAD_ACADEMICA, GESTION o COMISION, mostrado en español. Solo una gestión lleva gestión autorizada; solo una comisión lleva la indicación de permanente.
-- **Dos unidades con la misma gestión autorizada**: [se decide en el plan; la carga de prueba usa una unidad por gestión].
+- **Dos unidades con la misma gestión autorizada**: se permite, porque RN-10 cuenta docentes con cargo, no unidades. La carga de prueba usa una unidad por gestión.
 - **Código**: letras mayúsculas, dígitos, guion y guion bajo, hasta 20 caracteres; único; no cambia después.
 - **Usuario sin permiso**: quien no tenga el permiso de escritura ve la estructura en solo lectura y el servidor responde «Acceso no autorizado» (403) si intenta cambiarla. Escribe solo quien tiene «Catálogos y datos maestros: escritura» (hoy, el Administrador del sistema); leen quienes tienen «Distributivo del periodo: lectura» o «Catálogos y datos maestros: lectura» (aclaración 1).
 

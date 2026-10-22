@@ -47,7 +47,7 @@ description: "Tareas de F03-H01: mantener la estructura orgánica"
 
 ### Permisos alternativos (D-70, research §4)
 
-- [ ] T002 Prueba primero, en `PRU/test/java/ec/mdd/plataforma/pruebas/VerificadorDePermisosTest.java` (ampliar): un contrato de prueba con una operación de `x-mdd-permiso: [A:LECTURA, B:LECTURA]`; `operaciones()` la trae con sus dos permisos; `verificar` falla si sin ninguno no responde 403, o si con uno de los dos responde 403; pasa con un controlador de `hasAnyAuthority`. Las pruebas de una sola permiso siguen en verde. Cambiar `VerificadorDePermisos` (y `OperacionProtegida`, que guarda la lista y la muestra como `[A:LECTURA, B:LECTURA]`). T002 pasa; los `Permisos*Test` de todos los servicios siguen en verde.
+- [ ] T002 Prueba primero, en `PRU/test/java/ec/mdd/plataforma/pruebas/VerificadorDePermisosTest.java` (ampliar): un contrato de prueba con una operación de `x-mdd-permiso: [A:LECTURA, B:LECTURA]`; `operaciones()` la trae con sus dos permisos; `verificar` falla si sin ninguno no responde 403, o si con uno de los dos responde 403; pasa con un controlador de `hasAnyAuthority`. Las pruebas de un solo permiso siguen en verde. Cambiar `VerificadorDePermisos` (y `OperacionProtegida`, que guarda la lista y la muestra como `[A:LECTURA, B:LECTURA]`). T002 pasa; los `Permisos*Test` de todos los servicios siguen en verde.
 
 ### Contrato (principio IV, research §5 y §7)
 
@@ -88,7 +88,7 @@ description: "Tareas de F03-H01: mantener la estructura orgánica"
 
 **Goal**: una gestión solo con un código del catálogo; nadie lo amplía (FR-004, FR-005; SC-003).
 
-- [ ] T012 [US2] Prueba en `EstructuraContratoTest`: una gestión con `G07` da 201 y muestra el nombre; con `G99` o sin código, 400 con el campo `gestionAutorizada` y su motivo; también con `CATALOGOS:ESCRITURA` (el Administrador): no hay forma de agregar una gestión al catálogo (aclaración 2); `listarGestionesAutorizadas` trae las 21. T012 pasa (el dominio y el controlador ya lo cubren; si no, completarlos).
+- [ ] T012 [US2] Prueba en `EstructuraContratoTest`: una gestión con `G07` da 201 y muestra el nombre; con `G99` o sin código, 400 con el campo `gestionAutorizada` y su motivo; también con `CATALOGOS:ESCRITURA` (el Administrador): no hay forma de agregar una gestión al catálogo (aclaración 2); `listarGestionesAutorizadas` trae las 21. Como el dominio y el controlador ya lo cubren, la prueba pasa a la primera: comprobar una vez que falla si se quita la regla a mano (la de la gestión), restaurarla y anotarlo en la evidencia.
 
 ---
 
@@ -96,7 +96,7 @@ description: "Tareas de F03-H01: mantener la estructura orgánica"
 
 **Goal**: la comisión, con «permanente», sin gestión ni horas (FR-006).
 
-- [ ] T013 [US3] Prueba en `EstructuraContratoTest`: una comisión con `comisionPermanente: true` da 201 y la respuesta la trae; sin él, o con un código de gestión, 400 con su campo. Anotar en la evidencia que la estructura no tiene horas: no hay campo de horas en ninguna unidad, y F07 no las toma de las comisiones (C-12). T013 pasa.
+- [ ] T013 [US3] Prueba en `EstructuraContratoTest`: una comisión con `comisionPermanente: true` da 201 y la respuesta la trae; sin él, o con un código de gestión, 400 con su campo. Anotar en la evidencia que la estructura no tiene horas: no hay campo de horas en ninguna unidad, y F07 no las toma de las comisiones (C-12). Como el dominio y el controlador ya lo cubren, la prueba pasa a la primera: comprobar una vez que falla si se quita la regla a mano (la de «permanente»), restaurarla y anotarlo en la evidencia.
 
 ---
 

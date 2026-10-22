@@ -32,4 +32,4 @@
 ## Notes
 
 - Los 3 marcadores [NEEDS CLARIFICATION] se resolvieron el 2026-10-21 (sección Clarifications): escribe el Administrador y leen quienes usan la estructura (D-70 la propone el plan), solo las 21 gestiones, y las carreras van con F03-H02.
-- Dos casos límite (inactivar una unidad con dependientes y dos unidades con la misma gestión autorizada) quedan para el plan: no cambian el alcance.
+- Los dos casos límite que la spec dejó al plan (inactivar con dependientes y la misma gestión en dos unidades) quedaron decididos en el plan y escritos en la spec tras el analyze.
