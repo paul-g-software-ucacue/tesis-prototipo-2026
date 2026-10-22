@@ -6,10 +6,12 @@ import { IniciarSesion } from './pantallas/IniciarSesion';
 import { Inicio } from './pantallas/Inicio';
 import { NoEncontrada } from './pantallas/NoEncontrada';
 import { Normativa } from './pantallas/normativa/Normativa';
+import { Estructura } from './pantallas/estructura/Estructura';
 import { Periodos } from './pantallas/periodos/Periodos';
 import { Roles } from './pantallas/roles/Roles';
 import { RutaConPermiso } from './sesion/RutaConPermiso';
 import { RutaProtegida } from './sesion/RutaProtegida';
+import { LECTURA_DE_LA_ESTRUCTURA } from './sesion/funcionalidades';
 
 export const rutasDeLaSpa: RouteObject[] = [
   { path: '/iniciar-sesion', element: <IniciarSesion /> },
@@ -42,6 +44,14 @@ export const rutasDeLaSpa: RouteObject[] = [
         element: (
           <RutaConPermiso funcionalidad="DISTRIBUTIVO" tipo="LECTURA">
             <Periodos />
+          </RutaConPermiso>
+        ),
+      },
+      {
+        path: 'estructura',
+        element: (
+          <RutaConPermiso cualquieraDe={LECTURA_DE_LA_ESTRUCTURA}>
+            <Estructura />
           </RutaConPermiso>
         ),
       },

@@ -23,6 +23,23 @@ function partes(permiso: string) {
   return { funcionalidad, tipo, propio: alcance === 'PROPIO' };
 }
 
+/** Un permiso que exige una pantalla o una entrada del menú. */
+export interface PermisoRequerido {
+  funcionalidad: string;
+  tipo: TipoDePermiso;
+}
+
+/**
+ * Si el usuario tiene al menos uno de los permisos alternativos (D-70), con cualquier alcance. Sin
+ * permisos requeridos, no.
+ */
+export function tieneAlguno(
+  permisos: readonly string[] | undefined,
+  requeridos: readonly PermisoRequerido[],
+): boolean {
+  return requeridos.some(({ funcionalidad, tipo }) => tienePermiso(permisos, funcionalidad, tipo));
+}
+
 /** Si el usuario tiene ese permiso, con cualquier alcance. */
 export function tienePermiso(
   permisos: readonly string[] | undefined,

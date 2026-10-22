@@ -49,6 +49,10 @@ Registro de las comprobaciones de la historia (issue #35): mantener la estructur
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| T014 · Permisos alternativos en la ruta y el menú | ✅ Fallaron antes del cambio; `tieneAlguno` y `RutaConPermiso cualquieraDe`; las rutas de un solo permiso siguen igual | `permisos.test.ts`, `RutaConPermiso.test.tsx` | 2026-10-21 |
+| T015 · La pantalla, con Vitest | ✅ 12 pruebas, que fallaron antes de la pantalla: el árbol con sangría y «Depende de», tipos en español, gestión con su nombre, comisión «Informativa, sin horas»; registrar (padre de las activas, gestión de la lista, «¿Es permanente?» solo en comisión), corregir sin código ni tipo, inactivar y reactivar con confirmación; el 400 marca su campo y el 409 muestra su título; sin escritura, sin acciones; menú con cualquiera de los dos permisos | `Estructura.test.tsx` | 2026-10-21 |
+| SPA completa | ✅ 18 archivos, 133 pruebas; cobertura de líneas 95,3 % (la carpeta `estructura`, 94,1 %); lint, formato, tipos y `verificar:ruptura` en verde | `npm test -- --run --coverage` | 2026-10-21 |
+| T016 · Playwright y axe | ✅ 5 pruebas nuevas: registrar la sede matriz y una gestión debajo, inactivarla; sin fallas WCAG 2.1 AA en el árbol y en los diálogos de registrar, corregir e inactivar. Toda la suite: 62 pasan | `e2e/estructura.spec.ts` | 2026-10-21 |
 
 ## Cierre
 

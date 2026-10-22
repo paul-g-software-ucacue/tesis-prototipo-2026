@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { funcionesDelUsuario, tienePermiso } from './permisos';
+import { funcionesDelUsuario, tieneAlguno, tienePermiso } from './permisos';
 
 const COORDINADOR_Y_DOCENTE = [
   'DISTRIBUTIVO:LECTURA:PROPIO',
@@ -18,6 +18,18 @@ describe('permisos de la sesión', () => {
     expect(tienePermiso(['USUARIOS_ROLES:LECTURA'], 'USUARIOS_ROLES', 'ESCRITURA')).toBe(false);
     expect(tienePermiso(['USUARIOS_ROLES_EXTRA:LECTURA'], 'USUARIOS_ROLES', 'LECTURA')).toBe(false);
     expect(tienePermiso(undefined, 'USUARIOS_ROLES', 'LECTURA')).toBe(false);
+  });
+
+  it('tieneAlguno acepta cualquiera de los permisos alternativos (D-70)', () => {
+    const lectura = [
+      { funcionalidad: 'DISTRIBUTIVO', tipo: 'LECTURA' },
+      { funcionalidad: 'CATALOGOS', tipo: 'LECTURA' },
+    ] as const;
+    expect(tieneAlguno(['DISTRIBUTIVO:LECTURA:PROPIO'], lectura)).toBe(true);
+    expect(tieneAlguno(['CATALOGOS:LECTURA'], lectura)).toBe(true);
+    expect(tieneAlguno(['CATALOGOS:ESCRITURA', 'PARAMETROS:LECTURA'], lectura)).toBe(false);
+    expect(tieneAlguno(undefined, lectura)).toBe(false);
+    expect(tieneAlguno(['CATALOGOS:LECTURA'], [])).toBe(false);
   });
 
   it('las funciones del usuario agrupan sus permisos por funcionalidad, en orden y sin repetir', () => {
