@@ -1,6 +1,5 @@
 package ec.mdd.academico.aplicacion;
 
-import ec.mdd.academico.dominio.CambioDeValor;
 import ec.mdd.academico.dominio.PeriodoAcademico;
 import ec.mdd.academico.puertos.entrada.CorregirPeriodo;
 import ec.mdd.academico.puertos.entrada.PeriodoConsultado;
@@ -13,7 +12,6 @@ import ec.mdd.academico.puertos.salida.RepositorioPeriodos;
 import ec.mdd.academico.puertos.salida.Transaccion;
 import java.time.Clock;
 import java.time.LocalDate;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -65,21 +63,11 @@ public final class CorregirPeriodoServicio implements CorregirPeriodo {
                                                         codigo,
                                                         "cambios",
                                                         correccion.cambios().stream()
-                                                                .map(
-                                                                        CorregirPeriodoServicio
-                                                                                ::detalle)
+                                                                .map(Detalles::de)
                                                                 .toList())));
                             }
                             return correccion.periodo();
                         });
         return new PeriodoConsultado(corregido, normativa.versionDe(codigo));
-    }
-
-    private static Map<String, Object> detalle(CambioDeValor cambio) {
-        Map<String, Object> detalle = new LinkedHashMap<>();
-        detalle.put("campo", cambio.campo());
-        detalle.put("anterior", cambio.anterior());
-        detalle.put("nuevo", cambio.nuevo());
-        return detalle;
     }
 }
