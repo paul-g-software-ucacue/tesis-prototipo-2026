@@ -28,7 +28,8 @@ unidad_organica
   registrada_en        timestamptz  not null
   registrada_por       varchar(64)  not null
   check ((tipo = 'SEDE_MATRIZ') = (padre is null))
-  check ((tipo = 'GESTION') = (gestion_autorizada is not null))
+  check (tipo <> 'GESTION' or gestion_autorizada is not null)
+  check (tipo <> 'COMISION' or gestion_autorizada is null)
   check ((tipo = 'COMISION') = (comision_permanente is not null))
   unique index una_sede_matriz on unidad_organica ((true)) where tipo = 'SEDE_MATRIZ'
 

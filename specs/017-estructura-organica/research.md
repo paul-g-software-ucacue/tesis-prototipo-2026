@@ -28,7 +28,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 | Nombre: no vacío, hasta 150 | dominio y `check` |
 | La sede matriz no tiene padre; todas las demás sí; hay una sola | dominio (`EstructuraOrganica`) e índice único parcial |
 | El padre existe y está activo; no se forma un ciclo | dominio (`EstructuraOrganica`) |
-| Una gestión lleva un código de `gestion_autorizada`; ningún otro tipo lo lleva | dominio, `check` y clave foránea |
+| Una gestión lleva un código de `gestion_autorizada`; una comisión no; los demás tipos pueden llevarlo (el Rectorado con G01 en la carga de prueba), siempre del catálogo | dominio, `check` y clave foránea |
 | Una comisión lleva «permanente» (S o N); ningún otro tipo lo lleva | dominio y `check` |
 | El tipo no cambia | dominio (`corregida`) |
 
@@ -51,7 +51,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 | `ACADEMICO_SEDE_MATRIZ_EXISTENTE` | 409 | Registrar una segunda sede matriz. |
 | `ACADEMICO_UNIDAD_CON_DEPENDIENTES` | 409 | Inactivar una unidad que tiene unidades activas debajo. |
 
-- **Datos inválidos** (código, nombre, padre inexistente o inactivo, ciclo, gestión fuera del catálogo o en otro tipo, comisión sin «permanente»): 400 `COMUN_SOLICITUD_INVALIDA` con un detalle por campo (`codigo`, `nombre`, `padre`, `gestionAutorizada`, `comisionPermanente`), en español.
+- **Datos inválidos** (código, nombre, padre inexistente o inactivo, ciclo, gestión fuera del catálogo o en una comisión, comisión sin «permanente»): 400 `COMUN_SOLICITUD_INVALIDA` con un detalle por campo (`codigo`, `nombre`, `padre`, `gestionAutorizada`, `comisionPermanente`), en español.
 - **Unidad que no existe** (en la ruta): 404 común.
 
 ## 6. Registro (principio VII)
@@ -75,8 +75,8 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 ## 8. Pantalla «Estructura orgánica»
 
 - Entrada del menú con `[DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]`.
-- Una tabla en árbol: cada unidad con sangría bajo su padre, con código, nombre, tipo en español, estado y, si es gestión, su gestión autorizada; las comisiones con la marca «Informativa, sin horas».
-- Con `CATALOGOS:ESCRITURA`: «Registrar unidad» (código, nombre, tipo, padre de una lista de las activas, gestión autorizada de la lista de 21 si es gestión, permanente si es comisión), «Corregir» e «Inactivar» o «Reactivar», que pide confirmación.
+- Una tabla en árbol: cada unidad con sangría bajo su padre, con código, nombre, tipo en español, estado y, si la tiene, su gestión autorizada; las comisiones con la marca «Informativa, sin horas».
+- Con `CATALOGOS:ESCRITURA`: «Registrar unidad» (código, nombre, tipo, padre de una lista de las activas, gestión autorizada de la lista de 21 (obligatoria si es gestión, oculta si es comisión), permanente si es comisión), «Corregir» e «Inactivar» o «Reactivar», que pide confirmación.
 
 ## 9. Glosario (principio III)
 

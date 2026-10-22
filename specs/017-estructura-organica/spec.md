@@ -24,6 +24,7 @@
 
 - Q: ¿Quién mantiene la estructura orgánica y con qué permiso? → A: El Administrador del sistema, con «Catálogos y datos maestros: escritura», como dicen la matriz D-65 y la ERS §8.3 («Parametrización: Administrador / Vicerrectorado»); no cambia quién escribe. La leen quienes la usan: quien tenga «Distributivo del periodo: lectura» (entre ellos el Vicerrector académico y el Responsable de consolidación) o «Catálogos y datos maestros: lectura». Que una consulta admita cualquiera de los dos permisos es una decisión nueva (D-70), que el plan propone.
 - Q: ¿Qué significa el criterio de RF-12 «sin permiso de administrador»? → A: Nadie registra una gestión fuera de las 21, ni con permiso de administrador: V-02, D-07 y RN-10 solo admiten las 21 de POL 6. El catálogo es un dato precargado y, si la norma cambia, se amplía con una migración. Se documenta como la interpretación de RF-12.
+- Q: ¿Qué unidades pueden llevar una gestión autorizada? (al implementar: la carga 01 de prueba tiene el Rectorado con G01 y el Vicerrectorado con G02, ambos de tipo Gobierno) → A: Como dice el diccionario de la carga 01: una gestión la exige, una comisión no puede llevarla (C-12) y los demás tipos pueden llevarla o no.
 - Q: ¿Las carreras entran en esta historia? → A: No. Esta historia mantiene las unidades de la carga 01, incluidas las coordinaciones de carrera. Las carreras de la carga 02 van con las mallas (F03-H02), que las necesitan, y se anota en el issue #36.
 
 ## User Scenarios & Testing *(mandatory)*
@@ -116,7 +117,7 @@ Como Administrador del sistema, o como Responsable de consolidación o Vicerrect
 - **Raíz de la estructura**: la sede matriz no depende de ninguna unidad; las demás unidades sí. Hay una sola sede matriz.
 - **Ciclos**: una unidad no puede depender de sí misma ni de una que dependa de ella, directa o indirectamente.
 - **Inactivar una unidad con dependientes**: si tiene unidades activas debajo, se rechaza con 409 y el motivo; primero se inactivan las de abajo. Así ninguna unidad activa queda debajo de una inactiva. Nunca se borra una unidad.
-- **Tipo de unidad**: uno de SEDE_MATRIZ, SEDE, EXTENSION, CAMPUS, GOBIERNO, UNIDAD_ACADEMICA, GESTION o COMISION, mostrado en español. Solo una gestión lleva gestión autorizada; solo una comisión lleva la indicación de permanente.
+- **Tipo de unidad**: uno de SEDE_MATRIZ, SEDE, EXTENSION, CAMPUS, GOBIERNO, UNIDAD_ACADEMICA, GESTION o COMISION, mostrado en español. Una gestión siempre lleva gestión autorizada, una comisión nunca, y los demás tipos pueden llevarla (por ejemplo, el Rectorado, G01); solo una comisión lleva la indicación de permanente.
 - **Dos unidades con la misma gestión autorizada**: se permite, porque RN-10 cuenta docentes con cargo, no unidades. La carga de prueba usa una unidad por gestión.
 - **Código**: letras mayúsculas, dígitos, guion y guion bajo, hasta 20 caracteres; único; no cambia después.
 - **Usuario sin permiso**: quien no tenga el permiso de escritura ve la estructura en solo lectura y el servidor responde «Acceso no autorizado» (403) si intenta cambiarla. Escribe solo quien tiene «Catálogos y datos maestros: escritura» (hoy, el Administrador del sistema); leen quienes tienen «Distributivo del periodo: lectura» o «Catálogos y datos maestros: lectura» (aclaración 1).
@@ -128,7 +129,7 @@ Como Administrador del sistema, o como Responsable de consolidación o Vicerrect
 - **FR-001**: El sistema DEBE guardar las unidades de la estructura orgánica con código único, nombre, tipo, la unidad de la que dependen (salvo la sede matriz), estado (activa o inactiva) y, según el tipo, su gestión autorizada o la indicación de comisión permanente.
 - **FR-002**: Se DEBE poder registrar, consultar, corregir (nombre, padre y los datos de su tipo) e inactivar o reactivar una unidad; el código y el tipo no cambian después. Ninguna unidad se borra.
 - **FR-003**: La unidad padre DEBE existir y estar activa, y NO DEBE formarse un ciclo. Solo la sede matriz no tiene padre, y hay una sola.
-- **FR-004**: Una unidad de tipo gestión DEBE llevar uno de los 21 códigos de gestión autorizada de POL 6; las demás NO DEBEN llevar ninguno (ver US2).
+- **FR-004**: Una unidad de tipo gestión DEBE llevar uno de los 21 códigos de gestión autorizada de POL 6; una comisión NO DEBE llevar ninguno; los demás tipos PUEDEN llevar uno, siempre del catálogo (ver US2).
 - **FR-005**: El catálogo de las 21 gestiones autorizadas DEBE estar disponible para consultar, con su código y su nombre, como dato y no como código (principio VI).
 - **FR-006**: Una unidad de tipo comisión DEBE llevar la indicación de si es permanente y quedar como dato informativo, sin gestión autorizada ni horas (C-12).
 - **FR-007**: Cada dato inválido DEBE rechazarse entero, con el motivo en español y sin dejar la estructura a medias.
