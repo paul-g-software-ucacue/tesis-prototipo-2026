@@ -1,0 +1,25 @@
+openapi: 3.0.3
+info:
+  title: Contrato de prueba de VerificadorDePermisos con permisos alternativos (D-70)
+  version: 1.0.0
+paths:
+  /api/prueba/alternativa:
+    get:
+      operationId: consultarAlternativa
+      x-mdd-permiso: [PRUEBA:LECTURA, OTRA:LECTURA]
+      responses:
+        '200':
+          description: Basta con uno de los dos permisos.
+  /api/prueba/registros:
+    post:
+      operationId: crearRegistro
+      x-mdd-permiso: PRUEBA:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Un solo permiso, como antes.

@@ -58,6 +58,32 @@ class VerificadorDePermisosTest {
     }
 
     @Test
+    void dadoUnaOperacionConPermisosAlternativos_cuandoSeLee_entoncesLosTraeTodos() {
+        assertThat(verificador("permisos-alternativos.yaml").operaciones())
+                .extracting(VerificadorDePermisos.OperacionProtegida::toString)
+                .containsExactlyInAnyOrder(
+                        "GET /api/prueba/alternativa ([PRUEBA:LECTURA, OTRA:LECTURA])",
+                        "POST /api/prueba/registros (PRUEBA:ESCRITURA)");
+    }
+
+    @Test
+    void dadoElCodigoQueAceptaCualquieraDeLosPermisos_cuandoSeVerifica_entoncesPasa() {
+        assertThatCode(() -> verificador("permisos-alternativos.yaml").verificar(mvc, conversor))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void dadoElCodigoQueSoloAceptaUnoDeLosPermisos_cuandoSeVerifica_entoncesInformaElOtro() {
+        assertThatThrownBy(
+                        () ->
+                                verificador("permisos-alternativos-con-errores.yaml")
+                                        .verificar(mvc, conversor))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("GET /api/prueba/solo-una")
+                .hasMessageContaining("con OTRA:LECTURA respondió 403");
+    }
+
+    @Test
     void dadoUnContratoSinOperacionesProtegidas_cuandoSeVerifica_entoncesFalla() {
         assertThatThrownBy(
                         () ->

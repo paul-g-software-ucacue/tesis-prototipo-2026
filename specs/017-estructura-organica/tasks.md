@@ -39,7 +39,7 @@ description: "Tareas de F03-H01: mantener la estructura orgánica"
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear `specs/017-estructura-organica/evidencia.md` con estas secciones: entorno; base (permisos alternativos, contrato, dominio, migración y repositorio); «Mantener las unidades» (US1); «Gestión fuera del catálogo» (US2); «Comisión informativa» (US3); pantalla (US4); cierre; equipo de demostración; notas.
+- [X] T001 Crear `specs/017-estructura-organica/evidencia.md` con estas secciones: entorno; base (permisos alternativos, contrato, dominio, migración y repositorio); «Mantener las unidades» (US1); «Gestión fuera del catálogo» (US2); «Comisión informativa» (US3); pantalla (US4); cierre; equipo de demostración; notas.
 
 ---
 
@@ -47,7 +47,7 @@ description: "Tareas de F03-H01: mantener la estructura orgánica"
 
 ### Permisos alternativos (D-70, research §4)
 
-- [ ] T002 Prueba primero, en `PRU/test/java/ec/mdd/plataforma/pruebas/VerificadorDePermisosTest.java` (ampliar): un contrato de prueba con una operación de `x-mdd-permiso: [A:LECTURA, B:LECTURA]`; `operaciones()` la trae con sus dos permisos; `verificar` falla si sin ninguno no responde 403, o si con uno de los dos responde 403; pasa con un controlador de `hasAnyAuthority`. Las pruebas de un solo permiso siguen en verde. Cambiar `VerificadorDePermisos` (y `OperacionProtegida`, que guarda la lista y la muestra como `[A:LECTURA, B:LECTURA]`). T002 pasa; los `Permisos*Test` de todos los servicios siguen en verde.
+- [X] T002 Prueba primero, en `PRU/test/java/ec/mdd/plataforma/pruebas/VerificadorDePermisosTest.java` (ampliar): un contrato de prueba con una operación de `x-mdd-permiso: [A:LECTURA, B:LECTURA]`; `operaciones()` la trae con sus dos permisos; `verificar` falla si sin ninguno no responde 403, o si con uno de los dos responde 403; pasa con un controlador de `hasAnyAuthority`. Las pruebas de un solo permiso siguen en verde. Cambiar `VerificadorDePermisos` (y `OperacionProtegida`, que guarda la lista y la muestra como `[A:LECTURA, B:LECTURA]`). T002 pasa; los `Permisos*Test` de todos los servicios siguen en verde.
 
 ### Contrato (principio IV, research §5 y §7)
 
