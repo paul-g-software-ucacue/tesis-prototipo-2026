@@ -5,8 +5,8 @@ import ec.mdd.academico.puertos.entrada.CodigoRepetido;
 import ec.mdd.academico.puertos.entrada.PeriodoConsultado;
 import ec.mdd.academico.puertos.entrada.RegistrarPeriodo;
 import ec.mdd.academico.puertos.salida.AvisosDelPeriodo;
-import ec.mdd.academico.puertos.salida.CambioDePeriodo;
-import ec.mdd.academico.puertos.salida.CambioDePeriodo.Accion;
+import ec.mdd.academico.puertos.salida.CambioRegistrado;
+import ec.mdd.academico.puertos.salida.CambioRegistrado.Accion;
 import ec.mdd.academico.puertos.salida.NormativaDelPeriodo;
 import ec.mdd.academico.puertos.salida.RegistroDeCambios;
 import ec.mdd.academico.puertos.salida.RepositorioPeriodos;
@@ -56,7 +56,7 @@ public final class RegistrarPeriodoServicio implements RegistrarPeriodo {
                         throw new CodigoRepetido(codigo);
                     }
                     registro.registrar(
-                            new CambioDePeriodo(
+                            new CambioRegistrado(
                                     ahora,
                                     quien,
                                     Accion.PERIODO_REGISTRADO,

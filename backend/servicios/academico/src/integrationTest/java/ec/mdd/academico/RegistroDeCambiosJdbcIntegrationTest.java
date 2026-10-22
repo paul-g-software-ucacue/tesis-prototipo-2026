@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ec.mdd.academico.adaptadores.salida.RegistroDeCambiosJdbc;
 import ec.mdd.academico.infraestructura.AcademicoFlywayConfig;
-import ec.mdd.academico.puertos.salida.CambioDePeriodo;
-import ec.mdd.academico.puertos.salida.CambioDePeriodo.Accion;
+import ec.mdd.academico.puertos.salida.CambioRegistrado;
+import ec.mdd.academico.puertos.salida.CambioRegistrado.Accion;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -46,13 +46,13 @@ class RegistroDeCambiosJdbcIntegrationTest {
         Instant momento = Instant.parse("2026-10-21T15:00:00Z");
 
         registro.registrar(
-                new CambioDePeriodo(
+                new CambioRegistrado(
                         momento,
                         "vicerrectorado.demo",
                         Accion.PERIODO_REGISTRADO,
                         Map.of("codigo", "2026-2", "nombre", "Periodo 2026-2")));
         registro.registrar(
-                new CambioDePeriodo(
+                new CambioRegistrado(
                         momento,
                         "vicerrectorado.demo",
                         Accion.PERIODO_CORREGIDO,
@@ -66,13 +66,13 @@ class RegistroDeCambiosJdbcIntegrationTest {
                                                 "anterior", "2027-02-28",
                                                 "nuevo", "2027-03-15")))));
         registro.registrar(
-                new CambioDePeriodo(
+                new CambioRegistrado(
                         momento,
                         "vicerrectorado.demo",
                         Accion.PERIODO_ABIERTO,
                         Map.of("codigo", "2026-2", "version", 2)));
         registro.registrar(
-                new CambioDePeriodo(
+                new CambioRegistrado(
                         momento,
                         "vicerrectorado.demo",
                         Accion.PERIODO_ESTADO_CAMBIADO,
