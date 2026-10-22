@@ -88,7 +88,7 @@ description: "Tareas de F03-H01: mantener la estructura orgánica"
 
 **Goal**: una gestión solo con un código del catálogo; nadie lo amplía (FR-004, FR-005; SC-003).
 
-- [ ] T012 [US2] Prueba en `EstructuraContratoTest`: una gestión con `G07` da 201 y muestra el nombre; con `G99` o sin código, 400 con el campo `gestionAutorizada` y su motivo; también con `CATALOGOS:ESCRITURA` (el Administrador): no hay forma de agregar una gestión al catálogo (aclaración 2); `listarGestionesAutorizadas` trae las 21. Como el dominio y el controlador ya lo cubren, la prueba pasa a la primera: comprobar una vez que falla si se quita la regla a mano (la de la gestión), restaurarla y anotarlo en la evidencia.
+- [X] T012 [US2] Prueba en `EstructuraContratoTest`: una gestión con `G07` da 201 y muestra el nombre; con `G99` o sin código, 400 con el campo `gestionAutorizada` y su motivo; también con `CATALOGOS:ESCRITURA` (el Administrador): no hay forma de agregar una gestión al catálogo (aclaración 2); `listarGestionesAutorizadas` trae las 21. Como el dominio y el controlador ya lo cubren, la prueba pasa a la primera: comprobar una vez que falla si se quita la regla a mano (la de la gestión), restaurarla y anotarlo en la evidencia.
 
 ---
 
@@ -96,7 +96,7 @@ description: "Tareas de F03-H01: mantener la estructura orgánica"
 
 **Goal**: la comisión, con «permanente», sin gestión ni horas (FR-006).
 
-- [ ] T013 [US3] Prueba en `EstructuraContratoTest`: una comisión con `comisionPermanente: true` da 201 y la respuesta la trae; sin él, o con un código de gestión, 400 con su campo. Anotar en la evidencia que la estructura no tiene horas: no hay campo de horas en ninguna unidad, y F07 no las toma de las comisiones (C-12). Como el dominio y el controlador ya lo cubren, la prueba pasa a la primera: comprobar una vez que falla si se quita la regla a mano (la de «permanente»), restaurarla y anotarlo en la evidencia.
+- [X] T013 [US3] Prueba en `EstructuraContratoTest`: una comisión con `comisionPermanente: true` da 201 y la respuesta la trae; sin él, o con un código de gestión, 400 con su campo. Anotar en la evidencia que la estructura no tiene horas: no hay campo de horas en ninguna unidad, y F07 no las toma de las comisiones (C-12). Como el dominio y el controlador ya lo cubren, la prueba pasa a la primera: comprobar una vez que falla si se quita la regla a mano (la de «permanente»), restaurarla y anotarlo en la evidencia.
 
 ---
 

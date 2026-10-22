@@ -243,6 +243,98 @@ class EstructuraContratoTest {
         contrato.validar(resultado);
     }
 
+    // US2 · Solo las 21 gestiones autorizadas (FR-004, FR-005, SC-003).
+
+    @Test
+    void dadaUnaGestionFueraDelCatalogo_cuandoElAdministradorLaRegistra_entonces400()
+            throws Exception {
+        for (String codigo : new String[] {"G99", "G00", "G22"}) {
+            MvcResult resultado =
+                    registrar(
+                            "{\"codigo\":\"G-OTRA\",\"nombre\":\"Otra gestión\","
+                                    + "\"tipo\":\"GESTION\",\"padre\":\"RECT\","
+                                    + "\"gestionAutorizada\":\""
+                                    + codigo
+                                    + "\"}");
+
+            assertThat(resultado.getResponse().getStatus()).as(codigo).isEqualTo(400);
+            assertThat(
+                            JsonPath.<List<String>>read(
+                                    resultado.getResponse().getContentAsString(),
+                                    "$.detalles[*].campo"))
+                    .containsExactly("gestionAutorizada");
+            contrato.validar(resultado);
+        }
+        assertThat(estructura.unidades()).extracting("codigo").doesNotContain("G-OTRA");
+    }
+
+    @Test
+    void dadaUnaGestionSinGestionAutorizada_cuandoSeRegistra_entonces400ConSuMotivo()
+            throws Exception {
+        MvcResult resultado =
+                registrar(
+                        "{\"codigo\":\"G-OTRA\",\"nombre\":\"Otra gestión\","
+                                + "\"tipo\":\"GESTION\",\"padre\":\"RECT\"}");
+
+        invalido(
+                resultado,
+                "gestionAutorizada",
+                "Una gestión tiene que representar una de las 21 gestiones autorizadas");
+    }
+
+    @Test
+    void dadoElCatalogo_cuandoSeBuscaComoAmpliarlo_entoncesNoHayOperacion() throws Exception {
+        MvcResult resultado =
+                pedir(
+                        json(
+                                post("/api/academico/gestiones-autorizadas"),
+                                "{\"codigo\":\"G22\",\"nombre\":\"Nueva\"}"),
+                        escritura());
+
+        assertThat(resultado.getResponse().getStatus()).isIn(404, 405);
+    }
+
+    // US3 · La comisión, dato informativo (FR-006, C-12).
+
+    @Test
+    void dadaUnaComisionPermanente_cuandoSeRegistra_entonces201ConSuIndicacion() throws Exception {
+        MvcResult resultado =
+                registrar(
+                        "{\"codigo\":\"COM-INV\",\"nombre\":\"Comisión de Investigación\","
+                                + "\"tipo\":\"COMISION\",\"padre\":\"RECT\","
+                                + "\"comisionPermanente\":true}");
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(201);
+        assertThat(
+                        JsonPath.<Map<String, Object>>read(
+                                resultado.getResponse().getContentAsString(), "$"))
+                .containsEntry("comisionPermanente", true)
+                .doesNotContainKey("gestionAutorizada");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadaUnaComisionSinPermanente_cuandoSeRegistra_entonces400ConSuMotivo() throws Exception {
+        invalido(
+                registrar(
+                        "{\"codigo\":\"COM-INV\",\"nombre\":\"Comisión\","
+                                + "\"tipo\":\"COMISION\",\"padre\":\"RECT\"}"),
+                "comisionPermanente",
+                "Indica si la comisión es permanente");
+    }
+
+    @Test
+    void dadaUnaComisionConGestionAutorizada_cuandoSeRegistra_entonces400ConSuMotivo()
+            throws Exception {
+        invalido(
+                registrar(
+                        "{\"codigo\":\"COM-INV\",\"nombre\":\"Comisión\","
+                                + "\"tipo\":\"COMISION\",\"padre\":\"RECT\","
+                                + "\"gestionAutorizada\":\"G07\",\"comisionPermanente\":true}"),
+                "gestionAutorizada",
+                "Una comisión es un dato informativo: no representa una gestión autorizada");
+    }
+
     private MvcResult registrar(String cuerpo) throws Exception {
         return pedir(json(post("/api/academico/unidades"), cuerpo), escritura());
     }
