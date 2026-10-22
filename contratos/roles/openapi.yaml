@@ -2,6 +2,9 @@
 # funcionalidades, los roles con sus permisos (D-65) y las asignaciones de rol a usuarios (RF-02,
 # RF-03). Cada operación de /api/ declara el permiso que exige con x-mdd-permiso; sin él responde
 # 403 AccesoNoAutorizado (ADR-021). VerificadorDePermisos comprueba que el código lo respeta.
+# Desde F05-H03: el Responsable de consolidación de cada periodo (D-13, ADR-003), que designa el
+# Vicerrector académico con «Distributivo del periodo: escritura» (D-69), y el receptor de los
+# eventos de Académico con los periodos y su estado (ADR-018).
 openapi: 3.0.3
 info:
   title: MDD · Roles
@@ -19,6 +22,12 @@ tags:
     description: Asignaciones de rol a usuarios; un usuario puede tener varios roles (RF-03).
   - name: Autorizacion
     description: Roles y permisos efectivos de un usuario, entre procesos (ADR-018, ADR-021).
+  - name: Responsables
+    description: >-
+      El Responsable de consolidación de cada periodo académico: uno por periodo, que se reemplaza
+      mientras el periodo no esté cerrado (D-13, ADR-003).
+  - name: Eventos
+    description: Eventos de otros procesos, con un token de proceso (ADR-018).
 paths:
   /api/roles/funcionalidades:
     get:
@@ -240,6 +249,128 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/roles/responsables:
+    get:
+      tags: [Responsables]
+      operationId: listarResponsables
+      summary: Lista el Responsable de consolidación de cada periodo que tiene uno.
+      x-mdd-permiso: DISTRIBUTIVO:LECTURA
+      responses:
+        '200':
+          description: Los responsables, por código de periodo.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Responsable'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/roles/responsables/{periodo}:
+    parameters:
+      - $ref: '#/components/parameters/Periodo'
+    put:
+      tags: [Responsables]
+      operationId: designarResponsable
+      summary: Designa al Responsable de consolidación del periodo, o lo reemplaza.
+      description: >-
+        Solo a un usuario con el rol DOCENTE, y nunca a quien designa: un usuario que no se puede
+        designar responde 400 con el detalle en usuario. Un periodo cerrado responde 409; uno que
+        Roles todavía no conoce, 404. Designar a quien ya es el Responsable no cambia nada. Los
+        permisos del rol llegan al designado desde su próxima renovación de sesión (D-62).
+      x-mdd-permiso: DISTRIBUTIVO:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Designacion'
+      responses:
+        '200':
+          description: El Responsable del periodo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Responsable'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/PeriodoNoEncontrado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/roles/docentes:
+    get:
+      tags: [Responsables]
+      operationId: listarDocentes
+      summary: Lista los usuarios que se pueden designar Responsable de consolidación.
+      description: Los nombres de usuario con el rol DOCENTE, ordenados; solo para designar.
+      x-mdd-permiso: DISTRIBUTIVO:ESCRITURA
+      responses:
+        '200':
+          description: Los nombres de usuario.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example: [docente.coordinador.demo, docente.demo]
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /interno/roles/eventos:
+    post:
+      tags: [Eventos]
+      operationId: recibirEvento
+      summary: Registra un evento de otro proceso una sola vez por idEvento.
+      description: >-
+        Solo admite academico.PeriodoActualizado, con {codigo, estado}: Roles guarda una copia de
+        cada periodo con su estado, y nunca la hace retroceder. Solo con un token de proceso (rol
+        PROCESO). Un evento ya registrado también responde 204, sin aplicarlo de nuevo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../comun/eventos.yaml#/components/schemas/EventoEntreProcesos'
+      responses:
+        '204':
+          description: Evento aplicado, o ya aplicado antes.
+        '400':
+          description: >-
+            El cuerpo no cumple el contrato (COMUN_SOLICITUD_INVALIDA, con detalles) o el tipo no
+            tiene manejador (COMUN_EVENTO_NO_RECONOCIDO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
   /interno/roles/autorizaciones/{usuario}:
     parameters:
       - $ref: '#/components/parameters/Usuario'
@@ -290,6 +421,15 @@ components:
         minLength: 1
         maxLength: 64
       example: docente.demo
+    Periodo:
+      name: periodo
+      in: path
+      required: true
+      description: Código del periodo académico, el que usa Académico.
+      schema:
+        type: string
+        pattern: '^[A-Za-z0-9._-]{1,20}$'
+      example: 2026-2
   responses:
     NoEncontrado:
       description: El rol no existe (COMUN_RECURSO_NO_ENCONTRADO).
@@ -297,10 +437,17 @@ components:
         application/json:
           schema:
             $ref: '../comun/errores.yaml#/components/schemas/Error'
+    PeriodoNoEncontrado:
+      description: Roles todavía no conoce ese periodo (COMUN_RECURSO_NO_ENCONTRADO).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
     Conflicto:
       description: >-
         El cambio no cumple una regla de la administración de roles: ROLES_NOMBRE_REPETIDO,
-        ROLES_ROL_PREDEFINIDO, ROLES_ROL_ASIGNADO o ROLES_SIN_ADMINISTRADOR (errores.md).
+        ROLES_ROL_PREDEFINIDO, ROLES_ROL_ASIGNADO, ROLES_SIN_ADMINISTRADOR o ROLES_PERIODO_CERRADO
+        (errores.md).
       content:
         application/json:
           schema:
@@ -440,3 +587,27 @@ components:
           items:
             type: string
           example: ['DOCENTES:LECTURA', 'MI_DISTRIBUTIVO:LECTURA:PROPIO']
+    Responsable:
+      type: object
+      required: [periodo, usuario, designadoEn]
+      properties:
+        periodo:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+          example: 2026-2
+        usuario:
+          type: string
+          example: docente.demo
+        designadoEn:
+          type: string
+          format: date-time
+    Designacion:
+      type: object
+      required: [usuario]
+      properties:
+        usuario:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Nombre de usuario de un docente; no distingue mayúsculas y minúsculas.
+          example: docente.demo

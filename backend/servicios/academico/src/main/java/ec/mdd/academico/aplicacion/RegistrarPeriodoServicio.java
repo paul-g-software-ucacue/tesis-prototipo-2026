@@ -4,6 +4,7 @@ import ec.mdd.academico.dominio.PeriodoAcademico;
 import ec.mdd.academico.puertos.entrada.CodigoRepetido;
 import ec.mdd.academico.puertos.entrada.PeriodoConsultado;
 import ec.mdd.academico.puertos.entrada.RegistrarPeriodo;
+import ec.mdd.academico.puertos.salida.AvisosDelPeriodo;
 import ec.mdd.academico.puertos.salida.CambioDePeriodo;
 import ec.mdd.academico.puertos.salida.CambioDePeriodo.Accion;
 import ec.mdd.academico.puertos.salida.NormativaDelPeriodo;
@@ -16,14 +17,15 @@ import java.time.LocalDate;
 import java.util.Map;
 
 /**
- * Registrar un periodo: se guarda y se registra en la misma transacción. Un código repetido no se
- * guarda, sin una consulta previa que otra transacción podría adelantar.
+ * Registrar un periodo: se guarda, se registra y se avisa a Roles en la misma transacción. Un
+ * código repetido no se guarda, sin una consulta previa que otra transacción podría adelantar.
  */
 public final class RegistrarPeriodoServicio implements RegistrarPeriodo {
 
     private final RepositorioPeriodos repositorio;
     private final NormativaDelPeriodo normativa;
     private final RegistroDeCambios registro;
+    private final AvisosDelPeriodo avisos;
     private final Transaccion transaccion;
     private final Clock reloj;
 
@@ -32,11 +34,13 @@ public final class RegistrarPeriodoServicio implements RegistrarPeriodo {
             RepositorioPeriodos repositorio,
             NormativaDelPeriodo normativa,
             RegistroDeCambios registro,
+            AvisosDelPeriodo avisos,
             Transaccion transaccion,
             Clock reloj) {
         this.repositorio = repositorio;
         this.normativa = normativa;
         this.registro = registro;
+        this.avisos = avisos;
         this.transaccion = transaccion;
         this.reloj = reloj;
     }
@@ -61,6 +65,7 @@ public final class RegistrarPeriodoServicio implements RegistrarPeriodo {
                                             "nombre", periodo.nombre(),
                                             "inicio", periodo.inicio().toString(),
                                             "fin", periodo.fin().toString())));
+                    avisos.actualizado(periodo);
                     return null;
                 });
         // Normativa no comprueba que el periodo exista (D-69): si alguien ya asoció su código, se

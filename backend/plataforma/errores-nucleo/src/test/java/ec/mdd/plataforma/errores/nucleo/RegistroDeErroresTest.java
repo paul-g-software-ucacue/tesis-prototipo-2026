@@ -78,6 +78,51 @@ class RegistroDeErroresTest {
                 .hasMessageContaining("PRUEBA_BASE");
     }
 
+    /**
+     * Dos servicios del mismo proceso con su receptor de eventos (Usuarios y Roles en identidad,
+     * F05-H03) traducen cada uno su excepción al mismo código común de ADR-018: no es ambiguo.
+     */
+    @Test
+    void dadoDosCatalogosConElMismoCodigoComun_cuandoSeArma_entoncesCadaExcepcionUsaEseCodigo() {
+        CatalogoDeErrores uno =
+                () ->
+                        List.of(
+                                new EntradaCatalogo(
+                                        ErrorBase.class, CodigosComunes.EVENTO_NO_RECONOCIDO));
+        CatalogoDeErrores otro =
+                () ->
+                        List.of(
+                                new EntradaCatalogo(
+                                        OtroError.class, CodigosComunes.EVENTO_NO_RECONOCIDO));
+
+        RegistroDeErrores registro = new RegistroDeErrores(List.of(uno, otro));
+
+        assertThat(registro.buscar(ErrorBase.class)).contains(CodigosComunes.EVENTO_NO_RECONOCIDO);
+        assertThat(registro.buscar(OtroError.class)).contains(CodigosComunes.EVENTO_NO_RECONOCIDO);
+    }
+
+    @Test
+    void dadoElMismoCodigoComunConOtraDefinicion_cuandoSeArma_entoncesFalla() {
+        CatalogoDeErrores uno =
+                () ->
+                        List.of(
+                                new EntradaCatalogo(
+                                        ErrorBase.class, CodigosComunes.EVENTO_NO_RECONOCIDO));
+        CatalogoDeErrores otro =
+                () ->
+                        List.of(
+                                EntradaCatalogo.de(
+                                        OtroError.class,
+                                        "COMUN_EVENTO_NO_RECONOCIDO",
+                                        409,
+                                        "Otro",
+                                        "Otro."));
+
+        assertThatThrownBy(() -> new RegistroDeErrores(List.of(uno, otro)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("COMUN_EVENTO_NO_RECONOCIDO");
+    }
+
     @Test
     void dadoDosCatalogosConLaMismaExcepcion_cuandoSeArma_entoncesFallaYDiceCual() {
         CatalogoDeErrores otro =

@@ -30,8 +30,14 @@ class ErroresRolesTest {
                         org.assertj.core.groups.Tuple.tuple(
                                 RolAsignado.class, "ROLES_ROL_ASIGNADO"),
                         org.assertj.core.groups.Tuple.tuple(
-                                SinAdministrador.class, "ROLES_SIN_ADMINISTRADOR"));
+                                SinAdministrador.class, "ROLES_SIN_ADMINISTRADOR"),
+                        org.assertj.core.groups.Tuple.tuple(
+                                ec.mdd.roles.dominio.PeriodoCerrado.class, "ROLES_PERIODO_CERRADO"),
+                        org.assertj.core.groups.Tuple.tuple(
+                                ec.mdd.roles.aplicacion.EventoNoReconocido.class,
+                                "COMUN_EVENTO_NO_RECONOCIDO"));
         assertThat(new ErroresRoles().entradas())
+                .filteredOn(entrada -> entrada.definicion().codigo().startsWith("ROLES_"))
                 .allMatch(entrada -> entrada.definicion().estado() == 409);
     }
 }

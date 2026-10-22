@@ -1,6 +1,7 @@
 package ec.mdd.academico.infraestructura;
 
 import ec.mdd.academico.adaptadores.salida.NormativaDesdePuertos;
+import ec.mdd.academico.adaptadores.salida.PublicadorDeAvisosSpring;
 import ec.mdd.academico.adaptadores.salida.RegistroDeCambiosJdbc;
 import ec.mdd.academico.adaptadores.salida.RepositorioPeriodosJdbc;
 import ec.mdd.academico.adaptadores.salida.TransaccionSpring;
@@ -14,6 +15,7 @@ import ec.mdd.academico.puertos.entrada.CambiarEstadoPeriodo;
 import ec.mdd.academico.puertos.entrada.ConsultarPeriodos;
 import ec.mdd.academico.puertos.entrada.CorregirPeriodo;
 import ec.mdd.academico.puertos.entrada.RegistrarPeriodo;
+import ec.mdd.academico.puertos.salida.AvisosDelPeriodo;
 import ec.mdd.academico.puertos.salida.NormativaDelPeriodo;
 import ec.mdd.academico.puertos.salida.RegistroDeCambios;
 import ec.mdd.academico.puertos.salida.RepositorioPeriodos;
@@ -21,6 +23,7 @@ import ec.mdd.academico.puertos.salida.Transaccion;
 import ec.mdd.normativa.puertos.entrada.AsociarVersionAPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarNormativa;
 import java.time.Clock;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
@@ -59,6 +62,12 @@ public class ConfiguracionAcademico {
         return new NormativaDesdePuertos(consultar, asociar);
     }
 
+    /** Los avisos a Roles de cada periodo registrado o con un estado nuevo (F05-H03, ADR-018). */
+    @Bean
+    public AvisosDelPeriodo avisosDelPeriodo(ApplicationEventPublisher eventos) {
+        return new PublicadorDeAvisosSpring(eventos, Clock.systemUTC());
+    }
+
     /** La consulta de los periodos con su versión (FR-009). */
     @Bean
     public ConsultarPeriodos consultarPeriodos(
@@ -72,11 +81,13 @@ public class ConfiguracionAcademico {
             RepositorioPeriodos repositorio,
             NormativaDelPeriodo normativa,
             RegistroDeCambios registroDeCambiosAcademico,
+            AvisosDelPeriodo avisos,
             Transaccion transaccionAcademico) {
         return new RegistrarPeriodoServicio(
                 repositorio,
                 normativa,
                 registroDeCambiosAcademico,
+                avisos,
                 transaccionAcademico,
                 Clock.systemUTC());
     }
@@ -102,11 +113,13 @@ public class ConfiguracionAcademico {
             RepositorioPeriodos repositorio,
             NormativaDelPeriodo normativa,
             RegistroDeCambios registroDeCambiosAcademico,
+            AvisosDelPeriodo avisos,
             Transaccion transaccionAcademico) {
         return new CambiarEstadoPeriodoServicio(
                 repositorio,
                 normativa,
                 registroDeCambiosAcademico,
+                avisos,
                 transaccionAcademico,
                 Clock.systemUTC());
     }

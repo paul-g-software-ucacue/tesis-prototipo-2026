@@ -19,6 +19,7 @@ import ec.mdd.academico.dominio.DatoInvalido;
 import ec.mdd.academico.dominio.EstadoPeriodo;
 import ec.mdd.academico.puertos.entrada.CodigoRepetido;
 import ec.mdd.academico.puertos.entrada.PeriodoConsultado;
+import ec.mdd.academico.puertos.salida.AvisosDelPeriodo;
 import ec.mdd.academico.puertos.salida.CambioDePeriodo;
 import ec.mdd.academico.puertos.salida.CambioDePeriodo.Accion;
 import ec.mdd.academico.puertos.salida.NormativaDelPeriodo;
@@ -34,13 +35,12 @@ class RegistrarPeriodoServicioTest {
     private final RepositorioPeriodos repositorio = mock(RepositorioPeriodos.class);
     private final NormativaDelPeriodo normativa = mock(NormativaDelPeriodo.class);
     private final RegistroDeCambios registro = mock(RegistroDeCambios.class);
+    private final AvisosDelPeriodo avisos = mock(AvisosDelPeriodo.class);
+    private final DatosDePrueba.TransaccionDePrueba transaccion =
+            new DatosDePrueba.TransaccionDePrueba();
     private final RegistrarPeriodoServicio servicio =
             new RegistrarPeriodoServicio(
-                    repositorio,
-                    normativa,
-                    registro,
-                    new DatosDePrueba.TransaccionDePrueba(),
-                    RELOJ);
+                    repositorio, normativa, registro, avisos, transaccion, RELOJ);
 
     @Test
     void dadoUnCodigoNuevo_cuandoSeRegistra_entoncesQuedaEnPlanificacionYSeRegistra() {
@@ -69,12 +69,33 @@ class RegistrarPeriodoServicioTest {
     }
 
     @Test
+    void dadoUnCodigoNuevo_cuandoSeRegistra_entoncesAvisaARolesDentroDeLaTransaccion() {
+        when(repositorio.registrar(periodo(EstadoPeriodo.PLANIFICACION), QUIEN, AHORA))
+                .thenReturn(true);
+        when(normativa.versionDe(CODIGO)).thenReturn(OptionalInt.empty());
+        java.util.List<Boolean> dentro = new java.util.ArrayList<>();
+        org.mockito.Mockito.doAnswer(
+                        llamada -> {
+                            dentro.add(transaccion.dentro());
+                            return null;
+                        })
+                .when(avisos)
+                .actualizado(periodo(EstadoPeriodo.PLANIFICACION));
+
+        servicio.registrar(CODIGO, "Periodo 2026-2", INICIO, FIN, QUIEN);
+
+        // Con el registro de publicaciones, el aviso sale solo si la transacción se confirma.
+        assertThat(dentro).containsExactly(true);
+    }
+
+    @Test
     void dadoUnCodigoQueYaExiste_cuandoSeRegistra_entoncesCodigoRepetidoSinRegistro() {
         when(repositorio.registrar(any(), any(), any())).thenReturn(false);
 
         assertThatThrownBy(() -> servicio.registrar(CODIGO, "Otro", INICIO, FIN, QUIEN))
                 .isInstanceOf(CodigoRepetido.class);
         verify(registro, never()).registrar(any());
+        verify(avisos, never()).actualizado(any());
     }
 
     @Test

@@ -8,9 +8,12 @@
 # no puede avanzar; crea una versión de normativa a partir de la 1, abre el periodo con ella, y desde
 # entonces esa versión no se edita y el periodo no acepta otra. El estado no salta, avanza hasta
 # Cerrado y, cerrado, el periodo no cambia. El Rector lo ve sin poder escribir y un docente no lo ve
-# (D-69). El registro de Académico tiene las cuatro acciones. Al terminar, aunque un paso falle,
-# borra en la base solo el periodo de prueba y la versión que creó, con sus registros: la API no
-# borra periodos ni versiones (principio VII).
+# (D-69). El registro de Académico tiene las cuatro acciones. Desde F05-H03 (paso 10), el aviso del
+# periodo llega a Roles, el Vicerrector designa a docente.demo Responsable de consolidación, su
+# sesión gana los permisos del rol y los pierde cuando el periodo se cierra. Al terminar, aunque un
+# paso falle, borra en la base solo el periodo de prueba y la versión que creó, con sus registros,
+# su designación, su copia en Roles y sus eventos: la API no borra periodos ni versiones (principio
+# VII).
 # Termina con 0 si todos los pasos pasan y con 1 si alguno falla. Nunca imprime el token ni la
 # contraseña.
 set -euo pipefail
@@ -96,13 +99,40 @@ edicion_de() {
         tablaCargaHoraria: [.tablaCargaHoraria[] | del(.severidad, .referencia, .observacion)]}' <<<"$1"
 }
 
+# Si la sesión del token tiene el permiso (ADR-021): sesion_tiene <token> <permiso>
+sesion_tiene() {
+    pedir GET "$GATEWAY/api/usuarios/sesion" "Bearer $1"
+    [[ $estado == 200 ]] && jq -e --arg p "$2" '.permisos | index($p)' <<<"$cuerpo" >/dev/null
+}
+
+# Designa al Responsable del periodo de prueba: designar <usuario>
+designar() {
+    pedir PUT "$GATEWAY/api/roles/responsables/$periodo" "Bearer $token_vicerrector" \
+        "$(jq -cn --arg u "$1" '{usuario: $u}')"
+}
+
+# Espera hasta 30 s a que la condición se cumpla: el aviso de Académico llega a Roles por un evento.
+esperar() {
+    for _ in $(seq 30); do
+        "$@" && return 0
+        sleep 1
+    done
+    return 1
+}
+
 # La limpieza: solo el periodo de prueba y la versión que este script creó, con sus filas, reglas,
 # parámetros y registros. Corre al salir, aunque falle un paso.
 periodo="prueba-$RANDOM$RANDOM"
 version_creada=""
 limpiar() {
     local sql
-    sql="delete from academico.registro_cambio where detalle ->> 'codigo' = '$periodo';
+    sql="delete from roles.designacion_responsable where periodo = '$periodo';
+delete from roles.periodo_conocido where codigo = '$periodo';
+delete from roles.registro_cambio where detalle ->> 'periodo' = '$periodo';
+delete from roles.evento_recibido where id_evento in (select (serialized_event::jsonb ->> 'idEvento')::uuid
+    from eventos_datos.event_publication where serialized_event::jsonb -> 'contenido' ->> 'codigo' = '$periodo');
+delete from eventos_datos.event_publication where serialized_event::jsonb -> 'contenido' ->> 'codigo' = '$periodo';
+delete from academico.registro_cambio where detalle ->> 'codigo' = '$periodo';
 delete from academico.periodo_academico where codigo = '$periodo';
 delete from normativa.asignacion_normativa where periodo = '$periodo';
 delete from normativa.registro_cambio where accion = 'VERSION_ASOCIADA'
@@ -177,6 +207,29 @@ pedir PUT "$GATEWAY/api/academico/periodos/$periodo/estado" "Bearer $token_vicer
 verificar 5 "Saltar de Planificación a Vigente: 409 ACADEMICO_TRANSICION_NO_PERMITIDA (recibido: $estado)" \
     es_codigo 409 ACADEMICO_TRANSICION_NO_PERMITIDA
 
+# 10. El Responsable de consolidación (F05-H03, escenario «Designación», SC-002 y SC-003): el aviso
+# del periodo llega a Roles; no se designa a un no docente ni al propio Vicerrector; docente.demo
+# sí, y su sesión gana los permisos del rol.
+designado() { designar docente.demo; [[ $estado == 200 ]]; }
+inicio_espera=$SECONDS
+if esperar designado; then llego=si; else llego=no; fi
+espera=$((SECONDS - inicio_espera))
+llego_a_roles() { [[ $llego == si ]]; }
+verificar 10 "El aviso del periodo llega a Roles y docente.demo queda designado: 200 (en ${espera} s)" llego_a_roles
+tiempo_designar=$tiempo
+designar rectorado.demo
+verificar 10 "Designar a rectorado.demo, que no es docente: 400 (recibido: $estado)" es_codigo 400 COMUN_SOLICITUD_INVALIDA
+designar vicerrectorado.demo
+verificar 10 "El Vicerrector no se designa a sí mismo: 400 (recibido: $estado)" es_codigo 400 COMUN_SOLICITUD_INVALIDA
+pedir GET "$GATEWAY/api/roles/responsables" "Bearer $token_vicerrector"
+lo_lista() {
+    [[ $estado == 200 && $(jq -r --arg p "$periodo" '.[] | select(.periodo == $p) | .usuario' <<<"$cuerpo") == docente.demo ]]
+}
+verificar 10 "listarResponsables muestra a docente.demo en $periodo (designar tardó ${tiempo_designar} s)" lo_lista
+iniciar docente.demo
+token_docente=$token
+verificar 10 "La sesión de docente.demo trae CONSOLIDACION:ESCRITURA" sesion_tiene "$token_docente" CONSOLIDACION:ESCRITURA
+
 # 6. Corregir el nombre y avanzar paso a paso hasta Cerrado
 pedir PUT "$GATEWAY/api/academico/periodos/$periodo" "Bearer $token_vicerrector" \
     '{"nombre":"Periodo de prueba corregido","inicio":"2026-09-01","fin":"2027-02-28"}'
@@ -213,6 +266,20 @@ verificar 8 "rectorado.demo no registra periodos: 403 con el cuerpo común (reci
 iniciar docente.demo
 pedir GET "$GATEWAY/api/academico/periodos" "Bearer $token"
 verificar 8 "docente.demo no lista periodos: 403 con el cuerpo común (recibido: $estado)" es_403_comun
+
+# 10 (sigue). Cerrado el periodo, docente.demo pierde el rol en su próxima sesión, y no se designa en
+# un periodo cerrado.
+sin_el_rol() { iniciar docente.demo; ! sesion_tiene "$token" CONSOLIDACION:ESCRITURA; }
+verificar 10 "Con el periodo cerrado, la sesión nueva de docente.demo ya no trae CONSOLIDACION:ESCRITURA" \
+    esperar sin_el_rol
+designar docente.coordinador.demo
+verificar 10 "Designar en el periodo cerrado: 409 ROLES_PERIODO_CERRADO (recibido: $estado)" \
+    es_codigo 409 ROLES_PERIODO_CERRADO
+designaciones=$(consultar_base "select count(*) from roles.registro_cambio where accion = 'DESIGNAR_RESPONSABLE'
+    and usuario = 'vicerrectorado.demo' and detalle ->> 'periodo' = '$periodo'" 2>/dev/null || true)
+un_registro() { [[ $designaciones == 1 ]]; }
+verificar 10 "El registro de Roles tiene un DESIGNAR_RESPONSABLE de vicerrectorado.demo (recibido: ${designaciones:-?})" \
+    un_registro
 
 # 9. El registro de Académico tiene las cuatro acciones, con el usuario (FR-008, SC-005)
 acciones=$(consultar_base "select string_agg(accion || ':' || usuario, ' ' order by momento, accion)

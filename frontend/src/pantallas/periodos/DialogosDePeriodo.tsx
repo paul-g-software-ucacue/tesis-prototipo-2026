@@ -11,12 +11,14 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 import { AvisoDeError } from '../../errores/AvisoDeError';
-import { traducirError, type MensajeDeError } from '../../errores/traducir';
+import { FalloDeApi, traducirError, type MensajeDeError } from '../../errores/traducir';
 import { useVersiones } from '../normativa/consultas';
 import {
   abrirPeriodo,
   corregirPeriodo,
+  designarResponsable,
   registrarPeriodo,
+  useDocentes,
   type PeriodoAcademico,
 } from './consultas';
 
@@ -239,6 +241,89 @@ export function DialogoCerrar({
         <Button onClick={alCerrar}>Cancelar</Button>
         <Button variant="contained" color="error" onClick={alConfirmar}>
           Cerrar el periodo
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+// La copia del periodo llega a Roles por un evento de Académico (research §7 de F05-H03): un periodo
+// recién registrado puede tardar unos instantes en aceptar la designación.
+const TODAVIA_NO_LLEGO =
+  'El periodo todavía no está disponible para designar. Inténtalo en unos segundos.';
+
+export function DialogoDesignar({
+  periodo,
+  actual,
+  alCerrar,
+  alTerminar,
+}: PropiedadesDelPeriodo & { actual?: string }) {
+  const docentes = useDocentes();
+  const [elegido, setElegido] = useState('');
+  const [aviso, setAviso] = useState<MensajeDeError | null>(null);
+  const [noLlego, setNoLlego] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const valor = elegido || actual || docentes.data?.[0] || '';
+
+  const designar = async () => {
+    if (!valor) {
+      return;
+    }
+    setAviso(null);
+    setNoLlego(false);
+    setEnviando(true);
+    try {
+      await designarResponsable(periodo.codigo, valor);
+      await alTerminar();
+    } catch (fallo) {
+      if (fallo instanceof FalloDeApi && fallo.estado === 404) {
+        setNoLlego(true);
+      } else {
+        setAviso(traducirError(fallo));
+      }
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  return (
+    <Dialog open onClose={alCerrar} aria-labelledby="titulo-designar" fullWidth>
+      <DialogTitle id="titulo-designar">
+        {`Designar al Responsable de consolidación de ${periodo.codigo}`}
+      </DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ pt: 1 }}>
+          <Typography>
+            Consolida el distributivo del periodo y firma «Elaborado por». Es un rol, no un cargo:
+            no le suma horas. Recibe sus permisos en su próxima sesión.
+          </Typography>
+          {docentes.error && <AvisoDeError mensaje={traducirError(docentes.error)} />}
+          {aviso && <AvisoDeError mensaje={aviso} />}
+          {aviso?.detalles.map(({ descripcion }) => (
+            <Typography key={descripcion} color="error">
+              {descripcion}
+            </Typography>
+          ))}
+          {noLlego && <Typography color="error">{TODAVIA_NO_LLEGO}</Typography>}
+          <TextField
+            select
+            label="Docente"
+            value={valor}
+            onChange={(evento) => setElegido(evento.target.value)}
+            slotProps={{ select: { native: true }, inputLabel: { shrink: true } }}
+          >
+            {(docentes.data ?? []).map((docente) => (
+              <option key={docente} value={docente}>
+                {docente}
+              </option>
+            ))}
+          </TextField>
+        </Stack>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={alCerrar}>Cancelar</Button>
+        <Button variant="contained" disabled={enviando || !valor} onClick={() => void designar()}>
+          Designar
         </Button>
       </DialogActions>
     </Dialog>

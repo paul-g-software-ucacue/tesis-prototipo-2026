@@ -5,6 +5,7 @@ import ec.mdd.academico.dominio.PeriodoAcademico;
 import ec.mdd.academico.puertos.entrada.CambiarEstadoPeriodo;
 import ec.mdd.academico.puertos.entrada.PeriodoConsultado;
 import ec.mdd.academico.puertos.entrada.PeriodoNoEncontrado;
+import ec.mdd.academico.puertos.salida.AvisosDelPeriodo;
 import ec.mdd.academico.puertos.salida.CambioDePeriodo;
 import ec.mdd.academico.puertos.salida.CambioDePeriodo.Accion;
 import ec.mdd.academico.puertos.salida.NormativaDelPeriodo;
@@ -28,6 +29,7 @@ public final class CambiarEstadoPeriodoServicio implements CambiarEstadoPeriodo 
     private final RepositorioPeriodos repositorio;
     private final NormativaDelPeriodo normativa;
     private final RegistroDeCambios registro;
+    private final AvisosDelPeriodo avisos;
     private final Transaccion transaccion;
     private final Clock reloj;
 
@@ -36,11 +38,13 @@ public final class CambiarEstadoPeriodoServicio implements CambiarEstadoPeriodo 
             RepositorioPeriodos repositorio,
             NormativaDelPeriodo normativa,
             RegistroDeCambios registro,
+            AvisosDelPeriodo avisos,
             Transaccion transaccion,
             Clock reloj) {
         this.repositorio = repositorio;
         this.normativa = normativa;
         this.registro = registro;
+        this.avisos = avisos;
         this.transaccion = transaccion;
         this.reloj = reloj;
     }
@@ -73,6 +77,7 @@ public final class CambiarEstadoPeriodoServicio implements CambiarEstadoPeriodo 
                                                     "codigo", codigo,
                                                     "anterior", actual.estado().name(),
                                                     "nuevo", nuevo.estado().name())));
+                            avisos.actualizado(nuevo);
                             return nuevo;
                         });
         return new PeriodoConsultado(cambiado, normativa.versionDe(codigo));

@@ -72,6 +72,8 @@ services:
       <<: *jvm
       DB_CLAVE_IDENTIDAD: ${DB_CLAVE_IDENTIDAD}
       MDD_CLAVE_PROCESO_DISTRIBUTIVO: ${MDD_CLAVE_PROCESO_DISTRIBUTIVO:?falta MDD_CLAVE_PROCESO_DISTRIBUTIVO}
+      # Académico avisa a Roles de cada periodo con el token de proceso de datos (F05-H03, D-49).
+      MDD_CLAVE_PROCESO_DATOS: ${MDD_CLAVE_PROCESO_DATOS:?falta MDD_CLAVE_PROCESO_DATOS; correr preparar.sh}
       # autor.prueba ya no entra al equipo de demostración: lo reemplazan los usuarios de la demo
       # (D-57, F05-H01). Si existe de una versión anterior, identidad lo desactiva al arrancar.
       MDD_USUARIO_PRUEBA_HABILITADO: "false"
@@ -93,6 +95,7 @@ services:
     environment:
       <<: *jvm
       DB_CLAVE_DATOS: ${DB_CLAVE_DATOS}
+      MDD_CLAVE_PROCESO_DATOS: ${MDD_CLAVE_PROCESO_DATOS}
 
   distributivo:
     <<: *proceso

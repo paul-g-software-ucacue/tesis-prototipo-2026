@@ -1,8 +1,11 @@
 package ec.mdd.roles.adaptadores.entrada;
 
 import ec.mdd.plataforma.errores.nucleo.CatalogoDeErrores;
+import ec.mdd.plataforma.errores.nucleo.CodigosComunes;
 import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
+import ec.mdd.roles.aplicacion.EventoNoReconocido;
 import ec.mdd.roles.dominio.NombreRepetido;
+import ec.mdd.roles.dominio.PeriodoCerrado;
 import ec.mdd.roles.dominio.RolAsignado;
 import ec.mdd.roles.dominio.RolPredefinido;
 import ec.mdd.roles.dominio.SinAdministrador;
@@ -44,6 +47,13 @@ class ErroresRoles implements CatalogoDeErrores {
                         "ROLES_SIN_ADMINISTRADOR",
                         409,
                         "Sin administrador",
-                        "El cambio dejaría al sistema sin nadie que administre los roles."));
+                        "El cambio dejaría al sistema sin nadie que administre los roles."),
+                EntradaCatalogo.de(
+                        PeriodoCerrado.class,
+                        "ROLES_PERIODO_CERRADO",
+                        409,
+                        "Periodo cerrado",
+                        "El periodo está cerrado y ya no admite cambios."),
+                new EntradaCatalogo(EventoNoReconocido.class, CodigosComunes.EVENTO_NO_RECONOCIDO));
     }
 }

@@ -69,6 +69,24 @@ async function simularAcademico(pagina: Page) {
     },
   ];
   await pagina.route('**/api/normativa/versiones', (ruta) => ruta.fulfill({ json: VERSIONES }));
+  // F05-H03: el Responsable de consolidación de cada periodo, que guarda Roles.
+  const responsables: { periodo: string; usuario: string; designadoEn: string }[] = [];
+  await pagina.route('**/api/roles/responsables', (ruta) => ruta.fulfill({ json: responsables }));
+  await pagina.route('**/api/roles/docentes', (ruta) =>
+    ruta.fulfill({ json: ['docente.coordinador.demo', 'docente.demo'] }),
+  );
+  await pagina.route(/\/api\/roles\/responsables\/[^/]+$/, async (ruta) => {
+    const periodo = /responsables\/([^/]+)$/.exec(ruta.request().url())?.[1] ?? '';
+    const { usuario } = ruta.request().postDataJSON() as { usuario: string };
+    const designado = { periodo, usuario, designadoEn: '2026-10-21T15:00:00Z' };
+    responsables.splice(
+      0,
+      responsables.length,
+      ...responsables.filter((uno) => uno.periodo !== periodo),
+      designado,
+    );
+    await ruta.fulfill({ json: designado });
+  });
   await pagina.route('**/api/academico/periodos', async (ruta) => {
     if (ruta.request().method() === 'POST') {
       const nuevo = { ...(ruta.request().postDataJSON() as Periodo), estado: 'PLANIFICACION' };
@@ -148,6 +166,20 @@ test('el Vicerrector registra un periodo, lo abre con su versión y lo pasa a En
   await expect(fila(page, '2027-1')).toContainText('En aprobación');
 });
 
+test('el Vicerrector designa al Responsable de consolidación de un periodo', async ({ page }) => {
+  await abrirPeriodos(page);
+  await expect(fila(page, '2026-2')).toContainText('Sin designar');
+
+  await fila(page, '2026-2').getByRole('button', { name: 'Designar responsable 2026-2' }).click();
+  const dialogo = page.getByRole('dialog', {
+    name: 'Designar al Responsable de consolidación de 2026-2',
+  });
+  await dialogo.getByLabel('Docente').selectOption('docente.demo');
+  await dialogo.getByRole('button', { name: 'Designar' }).click();
+
+  await expect(fila(page, '2026-2')).toContainText('docente.demo');
+});
+
 test('la lista de periodos con sus acciones', async ({ page }) => {
   await abrirPeriodos(page);
   await expect(fila(page, '2026-2')).toContainText('Ábrelo antes con su versión de normativa.');
@@ -160,6 +192,7 @@ for (const [codigo, boton, titulo] of [
   ['2026-2', 'Abrir 2026-2', 'Abrir el periodo 2026-2'],
   ['2026-2', 'Corregir 2026-2', 'Corregir el periodo 2026-2'],
   ['2026-1', 'Pasar 2026-1 a Cerrado', 'Cerrar el periodo 2026-1'],
+  ['2026-2', 'Designar responsable 2026-2', 'Designar al Responsable de consolidación de 2026-2'],
 ] as const) {
   test(`el diálogo «${titulo}»`, async ({ page }) => {
     await abrirPeriodos(page);

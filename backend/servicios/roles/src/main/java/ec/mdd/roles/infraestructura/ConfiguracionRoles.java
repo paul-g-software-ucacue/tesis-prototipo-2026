@@ -2,18 +2,29 @@ package ec.mdd.roles.infraestructura;
 
 import ec.mdd.roles.adaptadores.salida.RegistroDeCambiosJdbc;
 import ec.mdd.roles.adaptadores.salida.RepositorioAsignacionesDeRolJdbc;
+import ec.mdd.roles.adaptadores.salida.RepositorioDesignacionesJdbc;
+import ec.mdd.roles.adaptadores.salida.RepositorioEventosRecibidosJdbc;
+import ec.mdd.roles.adaptadores.salida.RepositorioPeriodosConocidosJdbc;
 import ec.mdd.roles.adaptadores.salida.RepositorioRolesJdbc;
+import ec.mdd.roles.adaptadores.salida.TransaccionSpring;
 import ec.mdd.roles.aplicacion.AsignarRolesInicialesServicio;
 import ec.mdd.roles.aplicacion.AsignarRolesServicio;
 import ec.mdd.roles.aplicacion.ConsultarAutorizacionServicio;
+import ec.mdd.roles.aplicacion.DesignarResponsableServicio;
 import ec.mdd.roles.aplicacion.GestionarRolesServicio;
+import ec.mdd.roles.aplicacion.RecibirEventosServicio;
 import ec.mdd.roles.puertos.entrada.AsignarRoles;
 import ec.mdd.roles.puertos.entrada.AsignarRolesIniciales;
 import ec.mdd.roles.puertos.entrada.ConsultarAutorizacion;
 import ec.mdd.roles.puertos.entrada.GestionarRoles;
+import ec.mdd.roles.puertos.entrada.RecibirEventos;
 import ec.mdd.roles.puertos.salida.RegistroDeCambios;
 import ec.mdd.roles.puertos.salida.RepositorioAsignacionesDeRol;
+import ec.mdd.roles.puertos.salida.RepositorioDesignaciones;
+import ec.mdd.roles.puertos.salida.RepositorioEventosRecibidos;
+import ec.mdd.roles.puertos.salida.RepositorioPeriodosConocidos;
 import ec.mdd.roles.puertos.salida.RepositorioRoles;
+import ec.mdd.roles.puertos.salida.Transaccion;
 import java.time.Clock;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -49,11 +60,62 @@ public class ConfiguracionRoles {
         return new RegistroDeCambiosJdbc(jdbc);
     }
 
+    @Bean
+    @DependsOn("flywayRoles")
+    public RepositorioPeriodosConocidos repositorioPeriodosConocidos(JdbcClient jdbc) {
+        return new RepositorioPeriodosConocidosJdbc(jdbc);
+    }
+
+    @Bean
+    @DependsOn("flywayRoles")
+    public RepositorioDesignaciones repositorioDesignaciones(JdbcClient jdbc) {
+        return new RepositorioDesignacionesJdbc(jdbc);
+    }
+
+    @Bean
+    @DependsOn("flywayRoles")
+    public RepositorioEventosRecibidos repositorioEventosRecibidosRoles(JdbcClient jdbc) {
+        return new RepositorioEventosRecibidosJdbc(jdbc);
+    }
+
+    @Bean
+    public Transaccion transaccionRoles(TransactionOperations transactionTemplate) {
+        return new TransaccionSpring(transactionTemplate);
+    }
+
+    /** Designar al Responsable de consolidación y consultarlos (F05-H03, D-13, ADR-003). */
+    @Bean
+    public DesignarResponsableServicio designarResponsable(
+            RepositorioPeriodosConocidos periodos,
+            RepositorioDesignaciones designaciones,
+            RepositorioAsignacionesDeRol asignaciones,
+            RegistroDeCambios registro,
+            Transaccion transaccionRoles) {
+        return new DesignarResponsableServicio(
+                periodos,
+                designaciones,
+                asignaciones,
+                registro,
+                transaccionRoles,
+                Clock.systemUTC());
+    }
+
+    /** Los avisos de Académico con cada periodo y su estado (F05-H03, ADR-018). */
+    @Bean
+    public RecibirEventos recibirEventosRoles(
+            RepositorioEventosRecibidos eventos,
+            RepositorioPeriodosConocidos periodos,
+            Transaccion transaccionRoles) {
+        return new RecibirEventosServicio(eventos, periodos, transaccionRoles, Clock.systemUTC());
+    }
+
     /** Roles y permisos efectivos, para el token de sesión (ADR-021). */
     @Bean
     public ConsultarAutorizacion consultarAutorizacion(
-            RepositorioRoles roles, RepositorioAsignacionesDeRol asignaciones) {
-        return new ConsultarAutorizacionServicio(roles, asignaciones);
+            RepositorioRoles roles,
+            RepositorioAsignacionesDeRol asignaciones,
+            RepositorioDesignaciones designaciones) {
+        return new ConsultarAutorizacionServicio(roles, asignaciones, designaciones);
     }
 
     /** La administración de roles (RF-02, FR-004). */
