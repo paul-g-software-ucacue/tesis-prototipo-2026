@@ -55,10 +55,10 @@ description: "Tareas de F03-H01: mantener la estructura orgánica"
 
 ### Dominio (research §1 y §3, data-model.md)
 
-- [ ] T004 Prueba primero, en `PACA/dominio/`, sin dobles:
+- [X] T004 Prueba primero, en `PACA/dominio/`, sin dobles:
   - `UnidadOrganicaTest`: cada regla de su tipo (código con otro formato, nombre vacío o de más de 150, sede matriz con padre, otra sin padre, gestión sin código o con uno que no está en el catálogo, comisión con código de gestión, un órgano de gobierno con y sin código (los dos válidos), comisión sin «permanente», otro tipo con «permanente»), con su campo y su motivo en español en `DatoInvalido`; `corregida` no cambia código ni tipo;
   - `EstructuraOrganicaTest`: registrar con un padre inexistente o inactivo da `DatoInvalido` en `padre`; un ciclo al corregir el padre (directo y de varios niveles) también; una segunda sede matriz lanza `SedeMatrizExistente`; inactivar con dependientes activos lanza `UnidadConDependientes`, y sin ellos, se inactiva; reactivar con el padre inactivo da `DatoInvalido`; las **24 unidades de la carga 01 de prueba** (en `PACA/dominio/EstructuraDePrueba.java`, ficticias, con el catálogo de las 21 gestiones) se registran todas en orden.
-- [ ] T005 Crear en `JACA/dominio/`: `TipoDeUnidad`, `GestionAutorizada`, `UnidadOrganica`, `EstructuraOrganica`, `SedeMatrizExistente` y `UnidadConDependientes` (reusar `DatoInvalido` y `CambioDeValor`), con JavaDoc en español que cite RF-12, RN-10, C-12 y el glosario §7.3. T004 pasa.
+- [X] T005 Crear en `JACA/dominio/`: `TipoDeUnidad`, `GestionAutorizada`, `UnidadOrganica`, `EstructuraOrganica`, `SedeMatrizExistente` y `UnidadConDependientes` (reusar `DatoInvalido` y `CambioDeValor`), con JavaDoc en español que cite RF-12, RN-10, C-12 y el glosario §7.3. T004 pasa.
 
 ### Persistencia (data-model.md)
 

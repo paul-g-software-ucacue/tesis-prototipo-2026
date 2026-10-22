@@ -1,9 +1,9 @@
 package ec.mdd.academico.dominio;
 
 /**
- * Un valor que cambió al corregir un periodo, para el registro (FR-008, principio VII).
+ * Un valor que cambió al corregir un periodo o una unidad, para el registro (principio VII).
  *
- * @param campo qué cambió: {@code nombre}, {@code inicio} o {@code fin}
+ * @param campo qué cambió, por ejemplo {@code nombre}, {@code inicio} o {@code padre}
  * @param anterior el valor anterior, en texto
  * @param nuevo el valor nuevo, en texto
  */
