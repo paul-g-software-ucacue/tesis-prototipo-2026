@@ -36,9 +36,9 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 - **Dos unidades con la misma gestión autorizada** (caso límite): **se permite**. RN-10 cuenta docentes con cargo, no unidades, y nada en la ERS lo prohíbe; la carga de prueba usa una por gestión.
 - **Reactivar** exige que el padre esté activo.
 
-## 4. Quién lee: D-70 (propuesta)
+## 4. Quién lee: D-70 (aceptada)
 
-- **Decisión propuesta (D-70):** una operación puede declarar **varios permisos alternativos** en `x-mdd-permiso` (una lista); basta con tener uno. Las consultas de la estructura declaran `[DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]`: las leen el Administrador y todos los que leen el distributivo (el Vicerrector, el Responsable de consolidación, el Rector y los demás de D-65). La escritura sigue siendo un solo permiso, `CATALOGOS:ESCRITURA`.
+- **Decisión (D-70, aceptada por el autor el 2026-10-21):** una operación puede declarar **varios permisos alternativos** en `x-mdd-permiso` (una lista); basta con tener uno. Las consultas de la estructura declaran `[DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]`: las leen el Administrador y todos los que leen el distributivo (el Vicerrector, el Responsable de consolidación, el Rector y los demás de D-65). La escritura sigue siendo un solo permiso, `CATALOGOS:ESCRITURA`.
 - `VerificadorDePermisos` se amplía: con varios permisos, sin ninguno responde 403 y con **cada uno** por separado no; con uno solo, como hoy. El `@PreAuthorize` usa `hasAnyAuthority`. La SPA acepta varios permisos en una entrada del menú y en `RutaConPermiso`.
 - **Por qué:** la aclaración 1 pide que la lean quienes la usan, sin cambiar la matriz ni dar «Catálogos y datos maestros: lectura» a siete roles más (que también les daría los catálogos que lleguen después).
 - **Alternativas:** dar `CATALOGOS:LECTURA` a los roles que leen el distributivo (cambia D-65 para siete roles); leer con `DISTRIBUTIVO:LECTURA` solamente (el Administrador también lo tiene, pero mezcla la funcionalidad).
@@ -81,7 +81,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 ## 9. Glosario (principio III)
 
 - «Sede», «Unidad», «Gestión autorizada» y «Comisión» ya están en §7.3. En el código: `UnidadOrganica` para «Unidad» (para no confundirla con otras «unidades»), `TipoDeUnidad`, `GestionAutorizada`.
-- **Propuesta:** en «Unidad», agregar «Depende de otra unidad, salvo la sede matriz; se inactiva, nunca se borra». Se aplica antes del código, con copia `modelo_dominio.md.antes-F03-H01`.
+- **Decisión, aprobada por el autor el 2026-10-21 y ya aplicada (copia `modelo_dominio.md.antes-F03-H01`):** en «Unidad» se agregó «Depende de otra unidad, salvo la sede matriz; se inactiva, nunca se borra».
 
 ## 10. Pruebas
 

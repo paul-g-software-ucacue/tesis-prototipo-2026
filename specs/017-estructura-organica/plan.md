@@ -9,7 +9,7 @@
 - **La estructura orgánica en Académico:** unidades con código, nombre, tipo, padre y estado. El dominio guarda las reglas de cada tipo, de la jerarquía (padre activo, sin ciclos, una sede matriz) y de la inactivación (sin dependientes activos). Ninguna unidad se borra.
 - **Las 21 gestiones autorizadas** de POL 6 llegan precargadas como dato, y nadie registra una gestión fuera de ellas (aclaración 2).
 - **Las comisiones** quedan como dato informativo, con su «permanente» y sin gestión ni horas.
-- **Permisos:** escribe el Administrador con `CATALOGOS:ESCRITURA`; leen quienes tienen `DISTRIBUTIVO:LECTURA` o `CATALOGOS:LECTURA`. Para eso, una operación puede declarar varios permisos alternativos: es **D-70 (propuesta)**.
+- **Permisos:** escribe el Administrador con `CATALOGOS:ESCRITURA`; leen quienes tienen `DISTRIBUTIVO:LECTURA` o `CATALOGOS:LECTURA`. Para eso, una operación puede declarar varios permisos alternativos: es **D-70 (aceptada)**.
 - **Contrato:** 6 operaciones y 3 códigos de error `ACADEMICO_*`.
 - **SPA:** la pantalla «Estructura orgánica», en árbol.
 - **Punta a punta:** `deploy/probar_estructura.sh`, nuevo, con las 24 unidades de la carga 01 de prueba.
@@ -48,19 +48,19 @@ Los detalles y las alternativas están en [research.md](research.md).
 |---|---|---|
 | I. Capas | Reglas en `UnidadOrganica` y `EstructuraOrganica`; la aplicación orquesta; los adaptadores traducen. | ✅ |
 | II. DDD según el subdominio | Académico es de soporte: valores con sus reglas, sin agregado elaborado ni eventos (research §1). | ✅ |
-| III. Lenguaje ubicuo | Sede, Unidad, Gestión autorizada y Comisión, del glosario; la frase de «Unidad» se propone antes del código (research §9). | ⏳ aprobación del autor |
+| III. Lenguaje ubicuo | Sede, Unidad, Gestión autorizada y Comisión, del glosario; la frase de «Unidad» se aprobó y aplicó antes del código (research §9). | ✅ |
 | IV. API primero | Las 6 operaciones y los 3 códigos en el contrato antes del código. | ✅ |
 | V. Límites | Todo en Académico; las historias que lo usen (F03-H02, F03-H04, F01) lo consultarán por su API. | ✅ |
 | VI. Las reglas son datos | Las 21 gestiones son filas, no un enum. | ✅ |
 | VII. Inmutabilidad y trazabilidad | Nada se borra; cada cambio en `registro_cambio`. | ✅ |
 | VIII. Pruebas | Primero las pruebas del dominio, sin dobles, con la carga 01 de prueba como caso grande. | ✅ |
-| IX. Seguridad | Escribe solo `CATALOGOS:ESCRITURA`; la lectura, con dos permisos alternativos validados en el servidor (D-70). | ⏳ aprobación del autor |
+| IX. Seguridad | Escribe solo `CATALOGOS:ESCRITURA`; la lectura, con dos permisos alternativos validados en el servidor (D-70). | ✅ |
 | X. Simplicidad | La estructura se carga entera para validar; sin consultas recursivas. | ✅ |
 | XI y XII | Sin abstracciones nuevas; JavaDoc en español. | ✅ |
 | XIII. Errores | 3 códigos en el catálogo; los datos inválidos, 400 con su campo. | ✅ |
-| §6.4 Decisiones | D-70 (permisos alternativos en `x-mdd-permiso`), propuesta en research §4. | ⏳ aprobación del autor |
+| §6.4 Decisiones | D-70 (permisos alternativos en `x-mdd-permiso`), aceptada por el autor el 2026-10-21. | ✅ |
 
-**Resultado del gate antes de la fase 0:** pasa, con D-70 y la frase del glosario pendientes de la aprobación del autor antes de las tareas.
+**Resultado del gate antes de la fase 0:** pasa. D-70 y la frase del glosario quedaron aprobadas el 2026-10-21.
 
 **Revisión después de la fase 1:** pasa. [data-model.md](data-model.md) y [contracts/](contracts/) solo agregan lo listado.
 
@@ -105,7 +105,7 @@ docs/decisiones.md                             # D-70
 
 ## Fases de implementación (guía para /speckit-tasks)
 
-1. **D-70 y el glosario,** con la aprobación del autor.
+1. **D-70 y el glosario:** aprobados por el autor el 2026-10-21 y ya aplicados (copia `modelo_dominio.md.antes-F03-H01`).
 2. **Permisos alternativos:** `VerificadorDePermisos` con listas, con su prueba primero.
 3. **Contrato y catálogo:** las 6 operaciones y los 3 códigos.
 4. **Dominio,** con las pruebas primero: `UnidadOrganica` y `EstructuraOrganica`, con la carga 01 de prueba.
