@@ -12,7 +12,7 @@
 - **Contrato:** 3 operaciones en `contratos/cargas/openapi.yaml`; sin códigos de error nuevos.
 - **SPA:** la pantalla «Plantillas de carga», con las 10 cargas, sus descargas y el diccionario desplegable.
 - **Punta a punta:** `deploy/probar_plantillas.sh`, nuevo.
-- **Glosario:** propone el término «Diccionario de datos», pendiente de la aprobación del autor antes del código (research §11).
+- **Glosario:** el término «Diccionario de datos», aprobado por el autor y aplicado el 2026-10-23 (research §11).
 
 Los detalles y las alternativas están en [research.md](research.md).
 
@@ -48,7 +48,7 @@ Los detalles y las alternativas están en [research.md](research.md).
 |---|---|---|
 | I. Capas | Reglas de la definición en `DiccionarioDeDatos`; la aplicación orquesta; la lectura del YAML y la escritura del CSV son adaptadores. | ✅ |
 | II. DDD según el subdominio | Ingesta es de soporte: valores validados, sin agregado ni repositorio (research §1). | ✅ |
-| III. Lenguaje ubicuo | Carga, Plantilla de carga y Carga obligatoria, del glosario. «Diccionario de datos» se propone al glosario antes del código (research §11). | ⏳ pendiente de aprobación |
+| III. Lenguaje ubicuo | Carga, Plantilla de carga y Carga obligatoria, del glosario. «Diccionario de datos» se aprobó y aplicó al glosario antes del código (research §11). | ✅ |
 | IV. API primero | Las 3 operaciones en el contrato antes del código. | ✅ |
 | V. Límites | Todo en Cargas. Los catálogos del diccionario son una copia para documentar; quién manda al validar es de F01-H02 (research §5). | ✅ |
 | VI. Las reglas son datos | Las 10 cargas son un YAML versionado, no clases (research §2). | ✅ |
@@ -60,7 +60,7 @@ Los detalles y las alternativas están en [research.md](research.md).
 | XIII. Errores | 404 y 400 comunes; sin códigos nuevos. | ✅ |
 | §6.4 Decisiones | Ninguna nueva: aplica D-70. Siguiente número libre: D-71 · ADR-022. | ✅ |
 
-**Resultado del gate antes de la fase 0:** pasa, con una condición: la frase del glosario (research §11) se aprueba y se aplica antes del código, como en F03-H01.
+**Resultado del gate antes de la fase 0:** pasa. La frase del glosario (research §11) quedó aprobada y aplicada el 2026-10-23.
 
 **Revisión después de la fase 1:** pasa. [data-model.md](data-model.md) y [contracts/](contracts/) solo agregan lo listado.
 
@@ -105,7 +105,7 @@ deploy/probar_plantillas.sh, .github/workflows/perfil-consolidado.yml
 
 ## Fases de implementación (guía para /speckit-tasks)
 
-1. **Glosario:** el autor aprueba la frase de «Diccionario de datos» y se aplica (copia `modelo_dominio.md.antes-F01-H01`).
+1. **Glosario:** aprobado por el autor el 2026-10-23 y ya aplicado (copia `modelo_dominio.md.antes-F01-H01`).
 2. **Contrato:** las 3 operaciones y sus esquemas.
 3. **Dominio,** con las pruebas primero: `DiccionarioDeDatos` y sus valores; la definición YAML con el oráculo de la ERS.
 4. **Lectura y aplicación:** `DiccionarioYaml`, `ConsultarPlantillasServicio`.

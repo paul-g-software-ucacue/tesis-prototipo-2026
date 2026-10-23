@@ -99,7 +99,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 
 ## 11. Glosario (principio III)
 
-- La spec usa «diccionario de datos» y «columna», que aparecen en la definición de «Plantilla de carga» pero no son términos del glosario, y el código necesita `DiccionarioDeDatos` y `ColumnaDeCarga`. **Propuesta, pendiente de la aprobación del autor antes del código**: agregar a la sección 7 de `sdd/modelo_dominio.md`, después de «Plantilla de carga»:
+- La spec usa «diccionario de datos» y «columna», que aparecen en la definición de «Plantilla de carga» pero no son términos del glosario, y el código necesita `DiccionarioDeDatos` y `ColumnaDeCarga`. **Aprobada por el autor y aplicada el 2026-10-23** (copia `modelo_dominio.md.antes-F01-H01`): se agregó a la sección 7 de `sdd/modelo_dominio.md`, después de «Plantilla de carga»:
 
   | Término | Significado | En el código | Contexto | Fuente |
   |---|---|---|---|---|
