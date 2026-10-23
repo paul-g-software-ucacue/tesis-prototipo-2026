@@ -1,0 +1,12 @@
+openapi: 3.0.3
+info:
+  title: Contrato de prueba de VerificadorDePermisos con permisos alternativos que el código no cumple
+  version: 1.0.0
+paths:
+  /api/prueba/solo-una:
+    get:
+      operationId: consultarSoloUna
+      x-mdd-permiso: [PRUEBA:LECTURA, OTRA:LECTURA]
+      responses:
+        '200':
+          description: El controlador solo acepta PRUEBA:LECTURA, no OTRA:LECTURA.

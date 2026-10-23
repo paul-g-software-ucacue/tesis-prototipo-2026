@@ -37,3 +37,12 @@ export const FUNCIONALIDADES: readonly { codigo: string; nombre: string }[] = [
 export function nombreDelTipo(tipo: TipoDePermiso): string {
   return TIPOS_DE_PERMISO.find((candidato) => candidato.tipo === tipo)?.nombre ?? tipo;
 }
+
+/**
+ * Quién lee la estructura orgánica: quien lee el distributivo o los catálogos (D-70). Lo comparten
+ * la ruta y la entrada del menú.
+ */
+export const LECTURA_DE_LA_ESTRUCTURA: readonly { funcionalidad: string; tipo: TipoDePermiso }[] = [
+  { funcionalidad: 'DISTRIBUTIVO', tipo: 'LECTURA' },
+  { funcionalidad: 'CATALOGOS', tipo: 'LECTURA' },
+];

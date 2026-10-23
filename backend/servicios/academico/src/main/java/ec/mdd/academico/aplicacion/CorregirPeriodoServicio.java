@@ -1,19 +1,17 @@
 package ec.mdd.academico.aplicacion;
 
-import ec.mdd.academico.dominio.CambioDeValor;
 import ec.mdd.academico.dominio.PeriodoAcademico;
 import ec.mdd.academico.puertos.entrada.CorregirPeriodo;
 import ec.mdd.academico.puertos.entrada.PeriodoConsultado;
 import ec.mdd.academico.puertos.entrada.PeriodoNoEncontrado;
-import ec.mdd.academico.puertos.salida.CambioDePeriodo;
-import ec.mdd.academico.puertos.salida.CambioDePeriodo.Accion;
+import ec.mdd.academico.puertos.salida.CambioRegistrado;
+import ec.mdd.academico.puertos.salida.CambioRegistrado.Accion;
 import ec.mdd.academico.puertos.salida.NormativaDelPeriodo;
 import ec.mdd.academico.puertos.salida.RegistroDeCambios;
 import ec.mdd.academico.puertos.salida.RepositorioPeriodos;
 import ec.mdd.academico.puertos.salida.Transaccion;
 import java.time.Clock;
 import java.time.LocalDate;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -56,7 +54,7 @@ public final class CorregirPeriodoServicio implements CorregirPeriodo {
                             if (!correccion.cambios().isEmpty()) {
                                 repositorio.guardar(correccion.periodo());
                                 registro.registrar(
-                                        new CambioDePeriodo(
+                                        new CambioRegistrado(
                                                 reloj.instant(),
                                                 quien,
                                                 Accion.PERIODO_CORREGIDO,
@@ -65,21 +63,11 @@ public final class CorregirPeriodoServicio implements CorregirPeriodo {
                                                         codigo,
                                                         "cambios",
                                                         correccion.cambios().stream()
-                                                                .map(
-                                                                        CorregirPeriodoServicio
-                                                                                ::detalle)
+                                                                .map(Detalles::de)
                                                                 .toList())));
                             }
                             return correccion.periodo();
                         });
         return new PeriodoConsultado(corregido, normativa.versionDe(codigo));
-    }
-
-    private static Map<String, Object> detalle(CambioDeValor cambio) {
-        Map<String, Object> detalle = new LinkedHashMap<>();
-        detalle.put("campo", cambio.campo());
-        detalle.put("anterior", cambio.anterior());
-        detalle.put("nuevo", cambio.nuevo());
-        return detalle;
     }
 }

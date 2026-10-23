@@ -1,6 +1,9 @@
 package ec.mdd.academico.dominio;
 
-/** Un dato del periodo que no cumple su regla (FR-006), con el campo y el motivo en español. */
+/**
+ * Un dato del periodo (FR-006 de F02-H01) o de una unidad de la estructura (FR-007 de F03-H01) que
+ * no cumple su regla, con el campo y el motivo en español.
+ */
 public class DatoInvalido extends IllegalArgumentException {
 
     private static final long serialVersionUID = 1L;
@@ -9,7 +12,8 @@ public class DatoInvalido extends IllegalArgumentException {
     private final String motivo;
 
     /**
-     * @param campo {@code codigo}, {@code nombre} o {@code fin}
+     * @param campo el campo, por ejemplo {@code codigo}, {@code nombre}, {@code fin} o {@code
+     *     padre}
      * @param motivo qué está mal, en español
      */
     public DatoInvalido(String campo, String motivo) {

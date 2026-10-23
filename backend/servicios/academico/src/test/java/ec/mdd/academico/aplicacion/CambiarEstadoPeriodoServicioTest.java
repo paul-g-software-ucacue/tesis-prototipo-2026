@@ -20,8 +20,8 @@ import ec.mdd.academico.dominio.TransicionNoPermitida;
 import ec.mdd.academico.puertos.entrada.PeriodoConsultado;
 import ec.mdd.academico.puertos.entrada.PeriodoNoEncontrado;
 import ec.mdd.academico.puertos.salida.AvisosDelPeriodo;
-import ec.mdd.academico.puertos.salida.CambioDePeriodo;
-import ec.mdd.academico.puertos.salida.CambioDePeriodo.Accion;
+import ec.mdd.academico.puertos.salida.CambioRegistrado;
+import ec.mdd.academico.puertos.salida.CambioRegistrado.Accion;
 import ec.mdd.academico.puertos.salida.NormativaDelPeriodo;
 import ec.mdd.academico.puertos.salida.RegistroDeCambios;
 import ec.mdd.academico.puertos.salida.RepositorioPeriodos;
@@ -75,7 +75,7 @@ class CambiarEstadoPeriodoServicioTest {
         orden.verify(repositorio).guardar(periodo(EstadoPeriodo.EN_APROBACION));
         orden.verify(registro)
                 .registrar(
-                        new CambioDePeriodo(
+                        new CambioRegistrado(
                                 AHORA,
                                 QUIEN,
                                 Accion.PERIODO_ESTADO_CAMBIADO,

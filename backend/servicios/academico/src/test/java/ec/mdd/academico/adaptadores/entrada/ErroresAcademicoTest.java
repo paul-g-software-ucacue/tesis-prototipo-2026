@@ -5,9 +5,12 @@ import static org.assertj.core.groups.Tuple.tuple;
 
 import ec.mdd.academico.dominio.PeriodoCerrado;
 import ec.mdd.academico.dominio.PeriodoSinVersion;
+import ec.mdd.academico.dominio.SedeMatrizExistente;
 import ec.mdd.academico.dominio.TransicionNoPermitida;
+import ec.mdd.academico.dominio.UnidadConDependientes;
 import ec.mdd.academico.puertos.entrada.CodigoRepetido;
 import ec.mdd.academico.puertos.entrada.PeriodoConOtraVersion;
+import ec.mdd.academico.puertos.entrada.UnidadRepetida;
 import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
 import ec.mdd.plataforma.pruebas.VerificadorDeCatalogo;
 import org.junit.jupiter.api.Test;
@@ -21,7 +24,7 @@ class ErroresAcademicoTest {
     }
 
     @Test
-    void dadoLasReglasDeLosPeriodos_cuandoSeBuscanSusEntradas_entoncesSonLos409() {
+    void dadoLasReglasDeLosPeriodosYLaEstructura_cuandoSeBuscanSusEntradas_entoncesSonLos409() {
         assertThat(new ErroresAcademico().entradas())
                 .extracting(EntradaCatalogo::excepcion, entrada -> entrada.definicion().codigo())
                 .containsExactlyInAnyOrder(
@@ -29,7 +32,10 @@ class ErroresAcademicoTest {
                         tuple(PeriodoCerrado.class, "ACADEMICO_PERIODO_CERRADO"),
                         tuple(TransicionNoPermitida.class, "ACADEMICO_TRANSICION_NO_PERMITIDA"),
                         tuple(PeriodoSinVersion.class, "ACADEMICO_PERIODO_SIN_VERSION"),
-                        tuple(PeriodoConOtraVersion.class, "ACADEMICO_PERIODO_CON_VERSION"));
+                        tuple(PeriodoConOtraVersion.class, "ACADEMICO_PERIODO_CON_VERSION"),
+                        tuple(UnidadRepetida.class, "ACADEMICO_UNIDAD_REPETIDA"),
+                        tuple(SedeMatrizExistente.class, "ACADEMICO_SEDE_MATRIZ_EXISTENTE"),
+                        tuple(UnidadConDependientes.class, "ACADEMICO_UNIDAD_CON_DEPENDIENTES"));
         assertThat(new ErroresAcademico().entradas())
                 .allMatch(entrada -> entrada.definicion().estado() == 409);
     }

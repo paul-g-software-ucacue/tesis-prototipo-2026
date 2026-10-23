@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-70 · ADR-022.
+- **Siguiente número libre:** D-71 · ADR-022.
 
 ## Índice
 
@@ -65,6 +65,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-67 | 2026-10-18 | El Vicerrector académico escribe «Parámetros y normativa» | Aceptada | D-65, D-66 (la escritura además de la lectura) |
 | D-68 | 2026-10-20 | Las reglas del motor y la afinidad por defecto completan las versiones existentes por migración | Aceptada | — (excepción acotada al principio VII para V4 de Normativa) |
 | D-69 | 2026-10-21 | Los periodos académicos se escriben con «Distributivo del periodo» y se abren solo desde Académico | Aceptada | D-65 (interpreta a qué funcionalidad pertenece el periodo), F04-H02 (quita el diálogo «Asociar a un periodo» de «Normativa») |
+| D-70 | 2026-10-21 | Una operación puede declarar varios permisos alternativos; la estructura orgánica la leen quienes leen el distributivo o los catálogos | Aceptada | ADR-021 (`x-mdd-permiso` admite una lista), RF-12 (interpreta «sin permiso de administrador») |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1162,3 +1163,17 @@ Estado al 2026-10-11. El texto completo está en `lean_inception/adr/`.
 **Alternativas.** El Vicerrector gana `CATALOGOS:ESCRITURA`: más permisos de los que pide la historia. Una funcionalidad nueva «Periodos» en la matriz: cambia D-65 para un solo rol. Dejar el diálogo de «Normativa»: dos caminos para lo mismo.
 
 **Consecuencias.** El Administrador del sistema no escribe periodos. La operación HTTP de Normativa no comprueba que el periodo exista en Académico, porque Normativa no puede depender de Académico sin un ciclo; solo la pueden llamar quienes tienen `PARAMETROS:ESCRITURA` (el Administrador y el Vicerrector). La llamada interna de Académico a Normativa no pasa por el `@PreAuthorize` del controlador de Normativa: la autorización es la de la operación de Académico.
+
+## D-70. Una operación puede declarar varios permisos alternativos; la estructura orgánica la leen quienes leen el distributivo o los catálogos
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-21 · **Decidido por:** autor de la tesis (propuesta en el plan de F03-H01)
+- **Origen:** aclaraciones de la especificación de F03-H01 (`specs/017-estructura-organica/spec.md`, Clarifications) y `research.md` §2 y §4
+- **Modifica a:** ADR-021 (`x-mdd-permiso` admite una lista de permisos alternativos) e interpreta RF-12
+
+**Decisión.** Una operación del contrato puede declarar en `x-mdd-permiso` una lista de permisos alternativos: basta con tener uno. El `@PreAuthorize` usa `hasAnyAuthority`, y `VerificadorDePermisos` comprueba que sin ninguno responde 403 y con cada uno por separado no. Las consultas de la estructura orgánica de Académico declaran `[DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]`; mantenerla sigue exigiendo un solo permiso, `CATALOGOS:ESCRITURA`, que hoy tiene solo el Administrador del sistema. Además, el criterio de RF-12 («no se puede crear una gestión fuera del catálogo autorizado sin permiso de administrador») se interpreta como que nadie la crea: el catálogo de las 21 gestiones de POL 6 es un dato precargado y solo se amplía con una migración (V-02, D-07, RN-10).
+
+**Por qué.** La estructura la usan quienes leen el distributivo (el Vicerrector académico, el Responsable de consolidación, el Rector y los demás de D-65) y la mantiene el Administrador, como dice la ERS §8.3. Sin permisos alternativos habría que dar «Catálogos y datos maestros: lectura» a siete roles, lo que también les daría los catálogos que lleguen después. RN-10 solo admite las 21 gestiones, así que dejar que el Administrador agregue otras la contradiría.
+
+**Alternativas.** Dar `CATALOGOS:LECTURA` a los roles que leen el distributivo (cambia D-65 para siete roles). Leer solo con `DISTRIBUTIVO:LECTURA` (mezcla la funcionalidad de los catálogos con la del distributivo). Que el Administrador amplíe el catálogo de gestiones (literal a RF-12, contrario a RN-10).
+
+**Consecuencias.** Cada operación sigue declarando sus permisos en el contrato, y la prueba de permisos de cada servicio los cubre todos. La SPA acepta varios permisos en una entrada del menú y en una ruta.

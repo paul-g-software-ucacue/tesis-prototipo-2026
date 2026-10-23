@@ -5,18 +5,19 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Un cambio de un periodo, con quién lo hizo y cuándo, para la bitácora (FR-008, principio VII).
+ * Un cambio de un periodo (F02-H01) o de la estructura orgánica (F03-H01), con quién lo hizo y
+ * cuándo, para la bitácora (principio VII).
  *
  * @param momento cuándo
  * @param usuario quién
  * @param accion qué
- * @param detalle sobre qué: el código del periodo y lo que cambió
+ * @param detalle sobre qué: el código del periodo o de la unidad, y lo que cambió
  */
-public record CambioDePeriodo(
+public record CambioRegistrado(
         Instant momento, String usuario, Accion accion, Map<String, Object> detalle) {
 
     /** Exige todo y copia el detalle. */
-    public CambioDePeriodo {
+    public CambioRegistrado {
         Objects.requireNonNull(momento, "momento");
         Objects.requireNonNull(usuario, "usuario");
         Objects.requireNonNull(accion, "accion");
@@ -32,6 +33,14 @@ public record CambioDePeriodo(
         /** Periodo abierto con su versión de normativa. */
         PERIODO_ABIERTO,
         /** Estado cambiado, con el anterior y el nuevo. */
-        PERIODO_ESTADO_CAMBIADO
+        PERIODO_ESTADO_CAMBIADO,
+        /** Unidad registrada, con todos sus datos. */
+        UNIDAD_REGISTRADA,
+        /** Nombre, padre o datos de su tipo corregidos, con cada valor anterior y nuevo. */
+        UNIDAD_CORREGIDA,
+        /** Unidad inactivada. */
+        UNIDAD_INACTIVADA,
+        /** Unidad reactivada. */
+        UNIDAD_REACTIVADA
     }
 }

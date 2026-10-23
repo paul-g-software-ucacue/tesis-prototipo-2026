@@ -33,13 +33,17 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
  * La prueba de autorización por operación de RNF-SEG-03 (ADR-021): une el permiso que el contrato
  * declara con {@code x-mdd-permiso} y el {@code @PreAuthorize} del controlador.
  *
- * <p>Por cada operación con {@code x-mdd-permiso}, llama dos veces con MockMvc:
+ * <p>Por cada operación con {@code x-mdd-permiso}, llama con MockMvc:
  *
  * <ul>
- *   <li>con un token que tiene todos los demás permisos del contrato, pero no ese: espera 403 con
- *       {@code SEGURIDAD_ACCESO_NO_AUTORIZADO};
- *   <li>con un token que solo tiene ese permiso: espera algo distinto de 403.
+ *   <li>con un token que tiene todos los demás permisos del contrato, pero ninguno de los suyos:
+ *       espera 403 con {@code SEGURIDAD_ACCESO_NO_AUTORIZADO};
+ *   <li>con un token que solo tiene uno de sus permisos, una vez por cada uno: espera algo distinto
+ *       de 403.
  * </ul>
+ *
+ * <p>{@code x-mdd-permiso} es un permiso o una lista de permisos alternativos, de los que basta con
+ * uno (D-70).
  *
  * <p>Las operaciones con cuerpo se llaman con {@code {}}: con el permiso, un 400 basta para saber
  * que la autorización pasó. Los parámetros de la ruta toman su {@code example} del contrato.
@@ -97,20 +101,21 @@ public final class VerificadorDePermisos {
             throw new AssertionError("El contrato no tiene operaciones con " + EXTENSION);
         }
         TreeSet<String> todos = new TreeSet<>();
-        operaciones.forEach(operacion -> todos.add(operacion.permiso()));
+        operaciones.forEach(operacion -> todos.addAll(operacion.permisos()));
         List<String> fallas = new ArrayList<>();
         for (OperacionProtegida operacion : operaciones) {
             List<String> demas = new ArrayList<>(todos);
-            demas.remove(operacion.permiso());
+            demas.removeAll(operacion.permisos());
             MockHttpServletResponse sin = llamar(mvc, conversor, operacion, demas);
             if (sin.getStatus() != 403 || !cuerpo(sin).contains(CODIGO_403)) {
                 fallas.add(
                         operacion + ": sin el permiso respondió " + sin.getStatus() + ", no 403");
             }
-            MockHttpServletResponse con =
-                    llamar(mvc, conversor, operacion, List.of(operacion.permiso()));
-            if (con.getStatus() == 403) {
-                fallas.add(operacion + ": con el permiso respondió 403");
+            for (String permiso : operacion.permisos()) {
+                MockHttpServletResponse con = llamar(mvc, conversor, operacion, List.of(permiso));
+                if (con.getStatus() == 403) {
+                    fallas.add(operacion + ": con " + permiso + " respondió 403");
+                }
             }
         }
         if (!fallas.isEmpty()) {
@@ -200,7 +205,9 @@ public final class VerificadorDePermisos {
                 new OperacionProtegida(
                         metodo.name().toUpperCase(Locale.ROOT),
                         conEjemplos(ruta, parametros),
-                        permiso.toString(),
+                        permiso instanceof List<?> lista
+                                ? lista.stream().map(Object::toString).toList()
+                                : List.of(permiso.toString()),
                         operacion.getRequestBody() != null));
     }
 
@@ -234,19 +241,26 @@ public final class VerificadorDePermisos {
     }
 
     /**
-     * Una operación del contrato con su permiso.
+     * Una operación del contrato con sus permisos.
      *
      * @param metodo método HTTP, en mayúsculas
      * @param ruta ruta con los parámetros ya reemplazados por sus ejemplos
-     * @param permiso valor de {@code x-mdd-permiso}, por ejemplo {@code USUARIOS_ROLES:LECTURA}
+     * @param permisos los de {@code x-mdd-permiso}, por ejemplo {@code USUARIOS_ROLES:LECTURA}; si
+     *     son varios, alternativos: basta con uno (D-70)
      * @param conCuerpo si la operación recibe un cuerpo
      */
     public record OperacionProtegida(
-            String metodo, String ruta, String permiso, boolean conCuerpo) {
+            String metodo, String ruta, List<String> permisos, boolean conCuerpo) {
+
+        /** Copia la lista. */
+        public OperacionProtegida {
+            permisos = List.copyOf(permisos);
+        }
 
         @Override
         public String toString() {
-            return metodo + " " + ruta + " (" + permiso + ")";
+            String declarados = permisos.size() == 1 ? permisos.getFirst() : permisos.toString();
+            return metodo + " " + ruta + " (" + declarados + ")";
         }
     }
 }

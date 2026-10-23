@@ -1,8 +1,8 @@
 package ec.mdd.academico.puertos.salida;
 
-/** Guarda cada cambio de los periodos, para la bitácora (FR-008). */
+/** Guarda cada cambio de los periodos y de la estructura orgánica, para la bitácora. */
 public interface RegistroDeCambios {
 
     /** Guarda el cambio en la transacción en curso. */
-    void registrar(CambioDePeriodo cambio);
+    void registrar(CambioRegistrado cambio);
 }

@@ -23,8 +23,8 @@ import ec.mdd.academico.puertos.entrada.PeriodoConOtraVersion;
 import ec.mdd.academico.puertos.entrada.PeriodoConsultado;
 import ec.mdd.academico.puertos.entrada.PeriodoNoEncontrado;
 import ec.mdd.academico.puertos.entrada.VersionInexistente;
-import ec.mdd.academico.puertos.salida.CambioDePeriodo;
-import ec.mdd.academico.puertos.salida.CambioDePeriodo.Accion;
+import ec.mdd.academico.puertos.salida.CambioRegistrado;
+import ec.mdd.academico.puertos.salida.CambioRegistrado.Accion;
 import ec.mdd.academico.puertos.salida.NormativaDelPeriodo;
 import ec.mdd.academico.puertos.salida.RegistroDeCambios;
 import ec.mdd.academico.puertos.salida.RepositorioPeriodos;
@@ -83,7 +83,7 @@ class AbrirPeriodoServicioTest {
         assertThat(pasos).containsExactly("asociar dentro=false", "registrar dentro=true");
         verify(registro)
                 .registrar(
-                        new CambioDePeriodo(
+                        new CambioRegistrado(
                                 AHORA,
                                 QUIEN,
                                 Accion.PERIODO_ABIERTO,

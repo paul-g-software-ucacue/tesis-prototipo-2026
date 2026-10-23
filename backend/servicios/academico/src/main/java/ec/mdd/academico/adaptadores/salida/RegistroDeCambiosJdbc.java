@@ -1,6 +1,6 @@
 package ec.mdd.academico.adaptadores.salida;
 
-import ec.mdd.academico.puertos.salida.CambioDePeriodo;
+import ec.mdd.academico.puertos.salida.CambioRegistrado;
 import ec.mdd.academico.puertos.salida.RegistroDeCambios;
 import java.sql.Timestamp;
 import java.util.UUID;
@@ -8,8 +8,8 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Los cambios de los periodos en {@code academico.registro_cambio}, con el detalle en {@code
- * jsonb}.
+ * Los cambios de los periodos y de la estructura en {@code academico.registro_cambio}, con el
+ * detalle en {@code jsonb}.
  */
 public final class RegistroDeCambiosJdbc implements RegistroDeCambios {
 
@@ -27,7 +27,7 @@ public final class RegistroDeCambiosJdbc implements RegistroDeCambios {
     }
 
     @Override
-    public void registrar(CambioDePeriodo cambio) {
+    public void registrar(CambioRegistrado cambio) {
         jdbc.sql(REGISTRAR)
                 .param("id", UUID.randomUUID())
                 .param("momento", Timestamp.from(cambio.momento()))

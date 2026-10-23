@@ -37,6 +37,18 @@ class AplicacionDePermisos {
         @ResponseStatus(HttpStatus.NO_CONTENT)
         void borrar(@PathVariable String codigo) {}
 
+        @PreAuthorize("hasAnyAuthority('PERMISO_PRUEBA:LECTURA', 'PERMISO_OTRA:LECTURA')")
+        @GetMapping("/api/prueba/alternativa")
+        String alternativa() {
+            return "con cualquiera de los dos";
+        }
+
+        @PreAuthorize("hasAuthority('PERMISO_PRUEBA:LECTURA')")
+        @GetMapping("/api/prueba/solo-una")
+        String soloUna() {
+            return "solo con uno";
+        }
+
         @GetMapping("/api/prueba/libre")
         String libre() {
             return "libre";

@@ -3,21 +3,27 @@ package ec.mdd.academico.infraestructura;
 import ec.mdd.academico.adaptadores.salida.NormativaDesdePuertos;
 import ec.mdd.academico.adaptadores.salida.PublicadorDeAvisosSpring;
 import ec.mdd.academico.adaptadores.salida.RegistroDeCambiosJdbc;
+import ec.mdd.academico.adaptadores.salida.RepositorioEstructuraJdbc;
 import ec.mdd.academico.adaptadores.salida.RepositorioPeriodosJdbc;
 import ec.mdd.academico.adaptadores.salida.TransaccionSpring;
 import ec.mdd.academico.aplicacion.AbrirPeriodoServicio;
 import ec.mdd.academico.aplicacion.CambiarEstadoPeriodoServicio;
+import ec.mdd.academico.aplicacion.ConsultarEstructuraServicio;
 import ec.mdd.academico.aplicacion.ConsultarPeriodosServicio;
 import ec.mdd.academico.aplicacion.CorregirPeriodoServicio;
+import ec.mdd.academico.aplicacion.MantenerEstructuraServicio;
 import ec.mdd.academico.aplicacion.RegistrarPeriodoServicio;
 import ec.mdd.academico.puertos.entrada.AbrirPeriodo;
 import ec.mdd.academico.puertos.entrada.CambiarEstadoPeriodo;
+import ec.mdd.academico.puertos.entrada.ConsultarEstructura;
 import ec.mdd.academico.puertos.entrada.ConsultarPeriodos;
 import ec.mdd.academico.puertos.entrada.CorregirPeriodo;
+import ec.mdd.academico.puertos.entrada.MantenerEstructura;
 import ec.mdd.academico.puertos.entrada.RegistrarPeriodo;
 import ec.mdd.academico.puertos.salida.AvisosDelPeriodo;
 import ec.mdd.academico.puertos.salida.NormativaDelPeriodo;
 import ec.mdd.academico.puertos.salida.RegistroDeCambios;
+import ec.mdd.academico.puertos.salida.RepositorioEstructura;
 import ec.mdd.academico.puertos.salida.RepositorioPeriodos;
 import ec.mdd.academico.puertos.salida.Transaccion;
 import ec.mdd.normativa.puertos.entrada.AsociarVersionAPeriodo;
@@ -33,8 +39,8 @@ import org.springframework.transaction.support.TransactionOperations;
 /**
  * Ensambla Académico: el repositorio del esquema {@code academico}, su registro de cambios, la
  * transacción, la versión de normativa de cada periodo, pedida a Normativa por su interfaz
- * publicada (research §4), y los casos de uso. Los nombres de los beans no se repiten con los de
- * Normativa, que vive en el mismo proceso.
+ * publicada (research §4), el repositorio de la estructura orgánica (F03-H01) y los casos de uso.
+ * Los nombres de los beans no se repiten con los de Normativa, que vive en el mismo proceso.
  */
 @Configuration(proxyBeanMethods = false)
 public class ConfiguracionAcademico {
@@ -137,5 +143,27 @@ public class ConfiguracionAcademico {
                 registroDeCambiosAcademico,
                 transaccionAcademico,
                 Clock.systemUTC());
+    }
+
+    @Bean
+    @DependsOn("flywayAcademico")
+    public RepositorioEstructura repositorioEstructura(JdbcClient jdbc) {
+        return new RepositorioEstructuraJdbc(jdbc);
+    }
+
+    /** La consulta de la estructura orgánica y del catálogo de gestiones (F03-H01). */
+    @Bean
+    public ConsultarEstructura consultarEstructura(RepositorioEstructura repositorio) {
+        return new ConsultarEstructuraServicio(repositorio);
+    }
+
+    /** Mantener la estructura orgánica, con su registro (F03-H01). */
+    @Bean
+    public MantenerEstructura mantenerEstructura(
+            RepositorioEstructura repositorio,
+            RegistroDeCambios registroDeCambiosAcademico,
+            Transaccion transaccionAcademico) {
+        return new MantenerEstructuraServicio(
+                repositorio, registroDeCambiosAcademico, transaccionAcademico, Clock.systemUTC());
     }
 }
