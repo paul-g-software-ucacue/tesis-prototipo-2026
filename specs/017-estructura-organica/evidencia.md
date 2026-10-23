@@ -58,6 +58,10 @@ Registro de las comprobaciones de la historia (issue #35): mantener la estructur
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Perfil reconstruido con el código de la rama | ✅ Académico en V3 con las 21 gestiones. Tras el reinicio del PC, BuildKit del daemon tenía una instantánea rota (`snapshots/4782`) y `node:24-alpine` no construía; se construyó con un builder `docker-container` limpio (`--builder mdd-limpio`) sin tocar las imágenes del equipo | `docker compose build --builder mdd-limpio` | 2026-10-22 |
+| T017 · `probar_estructura.sh`, dos corridas seguidas | ✅ 14 de 14 pasos en cada una: las 24 unidades con su padre, G99 y comisión sin «permanente» 400, ciclo 400, segunda sede matriz 409, dependientes 409, hoja inactivada y reactivada, Vicerrector lee y recibe 403 al escribir, docente 403, registro 24/1/1. La limpieza deja 0 unidades y 0 registros | salida del script | 2026-10-22 |
+| T017 · Con una sede matriz previa en la base | ✅ 23 de 23 unidades debajo de la matriz existente; todos los pasos pasan | matriz temporal `TMP-MATRIZ`, borrada después | 2026-10-22 |
+| `shellcheck` del script | ✅ Sin observaciones | `koalaman/shellcheck:stable` | 2026-10-22 |
 
 ## Equipo de demostración
 
