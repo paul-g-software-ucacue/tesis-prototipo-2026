@@ -72,5 +72,8 @@ Registro de las comprobaciones de la historia (issue #35): mantener la estructur
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Despliegue automático (T019) | ✅ Al fusionar #129 (`a7b8f30`), el CD publicó las imágenes y `mdd-actualizar.timer` desplegó `a7b8f30743d9` (anterior: `bec1497af89e`): «Sano en 61 s» y la prueba de humo en `OK`. `academico` en V3 con las 21 gestiones y sin unidades | `journalctl -u mdd-actualizar.service`, base del equipo | 2026-10-23 |
+| Registrar en el equipo (T019, SC-001) | ✅ Con `admin.demo` en `https://mdd.localhost`, el autor registró la sede matriz `001` («IST-02», con G02) a las 06:04:35 y la extensión `002` debajo (con G01) a las 06:08:51; después, la gestión `003` («IST-EXT»), de tipo Gestión, con padre `001` y G01, a las 06:10:53. El autor no anotó la hora de inicio, así que el minuto de SC-001 no quedó medido: entre la unidad anterior (06:08:51) y la gestión pasaron 2 min 2 s, que incluyen leer las instrucciones del paso. La pantalla muestra las 3 unidades con su padre y su gestión. El registro tiene los 3 `UNIDAD_REGISTRADA` de `admin.demo`, con su tipo, padre y gestión | captura del autor, `academico.unidad_organica` y `registro_cambio` | 2026-10-23 |
+| Lectura con `vicerrectorado.demo` (T019) | ✅ El autor entró con `vicerrectorado.demo`: ve la estructura y no tiene acciones de escritura | informe del autor | 2026-10-23 |
 
 ## Notas
