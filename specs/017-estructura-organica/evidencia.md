@@ -62,6 +62,11 @@ Registro de las comprobaciones de la historia (issue #35): mantener la estructur
 | T017 · `probar_estructura.sh`, dos corridas seguidas | ✅ 14 de 14 pasos en cada una: las 24 unidades con su padre, G99 y comisión sin «permanente» 400, ciclo 400, segunda sede matriz 409, dependientes 409, hoja inactivada y reactivada, Vicerrector lee y recibe 403 al escribir, docente 403, registro 24/1/1. La limpieza deja 0 unidades y 0 registros | salida del script | 2026-10-22 |
 | T017 · Con una sede matriz previa en la base | ✅ 23 de 23 unidades debajo de la matriz existente; todos los pasos pasan | matriz temporal `TMP-MATRIZ`, borrada después | 2026-10-22 |
 | `shellcheck` del script | ✅ Sin observaciones | `koalaman/shellcheck:stable` | 2026-10-22 |
+| T018 · Backend: `./gradlew check integrationTest` | ✅ 753 pruebas, 0 fallas; ArchUnit, Modulith y cobertura en verde | `backend/**/build/test-results` | 2026-10-22 |
+| T018 · SPA | ✅ lint, formato, tipos, 133 pruebas de Vitest con cobertura, 62 de Playwright y `verificar:ruptura` | ver US4 | 2026-10-22 |
+| T018 · Los 7 scripts del perfil | ✅ autenticacion, errores, eventos, normativa, periodos, spa y estructura: todos los pasos pasan | `deploy/probar_*.sh` | 2026-10-22 |
+| T018 · `probar_equipo.sh` | ✅ 0 a 11: todos pasan. Con `BUILDX_BUILDER` apuntando a un builder `docker-container` limpio con `default-load=true`, por la instantánea rota de BuildKit del daemon; el equipo real («mdd») siguió sano y sin cambios | `deploy/equipo/probar_equipo.sh` | 2026-10-22 |
+| T018 · Gitleaks sobre un clon en el scratchpad | ✅ 15 commits de la rama, sin fugas | gitleaks v8.30.1, `--log-opts=origin/main..HEAD` | 2026-10-22 |
 
 ## Equipo de demostración
 
