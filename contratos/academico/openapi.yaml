@@ -10,6 +10,10 @@
 # informativo, sin horas (C-12). Mantenerla exige «Catálogos y datos maestros: escritura»; la leen
 # quienes tienen «Distributivo del periodo: lectura» o «Catálogos y datos maestros: lectura»: una
 # lista en x-mdd-permiso son permisos alternativos (D-70).
+# Desde F03-H02: las carreras (carga 2), sus mallas con su código de versión y su estado, y sus
+# asignaturas (carga 4) con los datos para la afinidad (RF-12, RF-14, RN-19, RN-24). Las mantienen
+# quienes tienen «Catálogos y datos maestros: escritura» o «Distributivo del periodo: escritura»: el
+# Administrador y el Vicerrector; las leen quienes leen la estructura (D-70). Nada se borra.
 openapi: 3.0.3
 info:
   title: MDD · Académico
@@ -27,6 +31,10 @@ tags:
     description: >-
       La estructura orgánica de la institución (RF-12): sedes, órganos, coordinaciones, gestiones y
       comisiones, cada una debajo de la unidad de la que depende. Ninguna unidad se borra.
+  - name: Carreras
+    description: >-
+      Las carreras, sus mallas y sus asignaturas (RF-12, RF-14, cargas 2 y 4), con los datos para la
+      afinidad (RN-19, RN-24). Nada se borra.
 paths:
   /api/academico/periodos:
     get:
@@ -401,6 +409,400 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/academico/campos-amplios:
+    get:
+      tags: [Carreras]
+      operationId: listarCamposAmplios
+      summary: Lista los 11 campos amplios de la CINE, con su nombre.
+      x-mdd-permiso: [DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]
+      responses:
+        '200':
+          description: La lista.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CampoAmplio'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/academico/carreras:
+    get:
+      tags: [Carreras]
+      operationId: listarCarreras
+      summary: Lista las carreras, por código, cada una con el resumen de sus mallas.
+      description: >-
+        Cada malla trae sus asignaturas activas y el total de sus horas semanales de clase,
+        para que la oferta aplique RN-18 (F03-H03).
+      x-mdd-permiso: [DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]
+      responses:
+        '200':
+          description: La lista.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Carrera'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+    post:
+      tags: [Carreras]
+      operationId: registrarCarrera
+      summary: Registra una carrera vigente en una sede, extensión o campus activo.
+      description: >-
+        El código SENESCYT y las siglas son únicos. El campo específico empieza por el amplio y
+        el detallado, si viene, por el específico. El código no cambia después.
+      x-mdd-permiso: [CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CarreraNueva'
+      responses:
+        '201':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Carrera'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '409':
+          $ref: '#/components/responses/ConflictoDeCarrera'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/academico/carreras/{codigo}:
+    parameters:
+      - $ref: '#/components/parameters/CodigoDeCarrera'
+    get:
+      tags: [Carreras]
+      operationId: consultarCarrera
+      summary: Devuelve una carrera con el resumen de sus mallas.
+      x-mdd-permiso: [DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]
+      responses:
+        '200':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Carrera'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+    put:
+      tags: [Carreras]
+      operationId: corregirCarrera
+      summary: Corrige los datos de una carrera; el código no cambia.
+      description: >-
+        El número de ciclos no baja del ciclo de una asignatura activa de la carrera.
+      x-mdd-permiso: [CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatosDeCarrera'
+      responses:
+        '200':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Carrera'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/ConflictoDeCarrera'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/academico/carreras/{codigo}/estado:
+    parameters:
+      - $ref: '#/components/parameters/CodigoDeCarrera'
+    put:
+      tags: [Carreras]
+      operationId: cambiarEstadoCarrera
+      summary: 'Cambia el estado de una carrera: vigente, no vigente o en cierre.'
+      x-mdd-permiso: [CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EstadoDeCarreraNuevo'
+      responses:
+        '200':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Carrera'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/academico/carreras/{codigo}/mallas:
+    parameters:
+      - $ref: '#/components/parameters/CodigoDeCarrera'
+    post:
+      tags: [Carreras]
+      operationId: registrarMalla
+      summary: Registra una malla vigente de una carrera vigente.
+      description: >-
+        El código de versión (por ejemplo, DS-2019) es único y no cambia después.
+      x-mdd-permiso: [CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MallaNueva'
+      responses:
+        '201':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResumenDeMalla'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/ConflictoDeCarrera'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/academico/carreras/{codigo}/asignaturas:
+    parameters:
+      - $ref: '#/components/parameters/CodigoDeCarrera'
+    get:
+      tags: [Carreras]
+      operationId: listarAsignaturasDeCarrera
+      summary: Lista las asignaturas de una carrera, de todas sus mallas, por código.
+      x-mdd-permiso: [DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]
+      responses:
+        '200':
+          description: La lista.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Asignatura'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/academico/mallas/{codigo}/estado:
+    parameters:
+      - $ref: '#/components/parameters/CodigoDeMalla'
+    put:
+      tags: [Carreras]
+      operationId: cambiarEstadoMalla
+      summary: Deroga una malla o la vuelve a poner vigente; una derogada no admite asignaturas nuevas.
+      x-mdd-permiso: [CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EstadoDeMallaNuevo'
+      responses:
+        '200':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResumenDeMalla'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/academico/asignaturas:
+    post:
+      tags: [Carreras]
+      operationId: registrarAsignatura
+      summary: Registra una asignatura activa en una malla vigente de su carrera vigente.
+      description: >-
+        Sin carrera o sin horas semanales de clase no se guarda, y la respuesta dice qué falta
+        (RF-14). El ciclo no pasa el número de ciclos de la carrera. El código, la carrera y la
+        malla no cambian después.
+      x-mdd-permiso: [CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AsignaturaNueva'
+      responses:
+        '201':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asignatura'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '409':
+          $ref: '#/components/responses/ConflictoDeCarrera'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/academico/asignaturas/{codigo}:
+    parameters:
+      - $ref: '#/components/parameters/CodigoDeAsignatura'
+    get:
+      tags: [Carreras]
+      operationId: consultarAsignatura
+      summary: 'Devuelve una asignatura con los datos para la afinidad: campos, palabras clave y tronco común.'
+      x-mdd-permiso: [DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]
+      responses:
+        '200':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asignatura'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+    put:
+      tags: [Carreras]
+      operationId: corregirAsignatura
+      summary: Corrige los datos de una asignatura; el código, la carrera y la malla no cambian.
+      x-mdd-permiso: [CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatosDeAsignatura'
+      responses:
+        '200':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asignatura'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/academico/asignaturas/{codigo}/estado:
+    parameters:
+      - $ref: '#/components/parameters/CodigoDeAsignatura'
+    put:
+      tags: [Carreras]
+      operationId: cambiarEstadoAsignatura
+      summary: Inactiva o reactiva una asignatura; reactivarla exige su malla vigente.
+      x-mdd-permiso: [CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EstadoDeAsignatura'
+      responses:
+        '200':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asignatura'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
 components:
   securitySchemes:
     bearer:
@@ -422,6 +824,30 @@ components:
       schema:
         $ref: '#/components/schemas/CodigoDeUnidad'
       example: MATRIZ
+    CodigoDeCarrera:
+      name: codigo
+      in: path
+      required: true
+      description: Código SENESCYT de la carrera.
+      schema:
+        $ref: '#/components/schemas/CodigoDeCarrera'
+      example: 550613A01-P-0301
+    CodigoDeMalla:
+      name: codigo
+      in: path
+      required: true
+      description: Código de versión de la malla.
+      schema:
+        $ref: '#/components/schemas/CodigoDeMalla'
+      example: DS-2019
+    CodigoDeAsignatura:
+      name: codigo
+      in: path
+      required: true
+      description: Código de la asignatura.
+      schema:
+        $ref: '#/components/schemas/CodigoDeAsignatura'
+      example: DS-B-I-MD-101
   responses:
     NoEncontrado:
       description: El periodo no existe (COMUN_RECURSO_NO_ENCONTRADO).
@@ -448,6 +874,14 @@ components:
       description: >-
         El cambio no cumple una regla de la estructura: ACADEMICO_UNIDAD_REPETIDA,
         ACADEMICO_SEDE_MATRIZ_EXISTENTE o ACADEMICO_UNIDAD_CON_DEPENDIENTES (errores.md).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
+    ConflictoDeCarrera:
+      description: >-
+        Un código o unas siglas repetidos: ACADEMICO_CARRERA_REPETIDA, ACADEMICO_SIGLAS_REPETIDAS,
+        ACADEMICO_MALLA_REPETIDA o ACADEMICO_ASIGNATURA_REPETIDA (errores.md).
       content:
         application/json:
           schema:
@@ -624,6 +1058,371 @@ components:
           type: boolean
           description: Solo en una comisión, y obligatorio en ella.
     EstadoDeUnidad:
+      type: object
+      required: [activa]
+      properties:
+        activa:
+          type: boolean
+          description: true para reactivar, false para inactivar.
+    CodigoDeCarrera:
+      type: string
+      pattern: '^[0-9A-Z-]{1,20}$'
+      example: 550613A01-P-0301
+    CodigoDeMalla:
+      type: string
+      pattern: '^[0-9A-Z-]{1,20}$'
+      example: DS-2019
+    CodigoDeAsignatura:
+      type: string
+      pattern: '^[0-9A-Z-]{1,30}$'
+      example: DS-B-I-MD-101
+    CodigoDeCampoAmplio:
+      type: string
+      pattern: '^(0[0-9]|10)$'
+      example: '06'
+    CodigoDeCampoEspecifico:
+      type: string
+      pattern: '^[0-9]{3}$'
+      example: '061'
+    NivelDeFormacion:
+      description: Nivel de formación de la carrera (carga 2).
+      type: string
+      enum: [TECNICO_SUPERIOR, TECNOLOGICO_SUPERIOR, TECNOLOGICO_SUPERIOR_UNIVERSITARIO]
+    Modalidad:
+      description: Modalidad de estudios (RRA art. 54).
+      type: string
+      enum: [PRESENCIAL, SEMIPRESENCIAL, EN_LINEA, A_DISTANCIA, DUAL, HIBRIDA]
+    Jornada:
+      description: Jornada en que se oferta la carrera.
+      type: string
+      enum: [MATUTINA, VESPERTINA, NOCTURNA, INTENSIVA]
+    UnidadDeOrganizacionCurricular:
+      description: Unidad de organización curricular de la asignatura.
+      type: string
+      enum: [BASICA, PROFESIONAL, INTEGRACION_CURRICULAR]
+    EstadoDeCarrera:
+      description: Solo una carrera vigente admite mallas y asignaturas nuevas, y oferta.
+      type: string
+      enum: [VIGENTE, NO_VIGENTE, EN_CIERRE]
+    EstadoDeMalla:
+      description: Una malla derogada conserva sus asignaturas, pero no admite nuevas.
+      type: string
+      enum: [VIGENTE, DEROGADA]
+    CampoAmplio:
+      type: object
+      required: [codigo, nombre]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDeCampoAmplio'
+        nombre:
+          type: string
+          example: Tecnologías de la información y la comunicación
+    ResumenDeMalla:
+      type: object
+      required: [codigo, estado, asignaturas, horasSemanalesClase]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDeMalla'
+        estado:
+          $ref: '#/components/schemas/EstadoDeMalla'
+        asignaturas:
+          description: Las asignaturas activas de la malla.
+          type: integer
+          minimum: 0
+        horasSemanalesClase:
+          description: La suma de las horas semanales de clase de sus asignaturas activas (RN-18).
+          type: number
+          minimum: 0
+    Carrera:
+      type: object
+      required: [codigo, nombre, siglas, sede, nivelFormacion, modalidad, jornadas, campoAmplio, campoEspecifico, numeroCiclos, estado, mallas]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDeCarrera'
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 150
+          example: DESARROLLO DE SOFTWARE
+        siglas:
+          type: string
+          pattern: '^[0-9A-Z]{1,10}$'
+          example: DS
+        sede:
+          $ref: '#/components/schemas/CodigoDeUnidad'
+        nivelFormacion:
+          $ref: '#/components/schemas/NivelDeFormacion'
+        modalidad:
+          $ref: '#/components/schemas/Modalidad'
+        jornadas:
+          type: array
+          minItems: 1
+          maxItems: 4
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/Jornada'
+        campoAmplio:
+          $ref: '#/components/schemas/CodigoDeCampoAmplio'
+        campoEspecifico:
+          $ref: '#/components/schemas/CodigoDeCampoEspecifico'
+        campoDetallado:
+          type: string
+          pattern: '^[0-9]{4}$'
+          example: '0613'
+        numeroCiclos:
+          type: integer
+          minimum: 1
+          maximum: 10
+          example: 5
+        estado:
+          $ref: '#/components/schemas/EstadoDeCarrera'
+        mallas:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResumenDeMalla'
+    CarreraNueva:
+      type: object
+      required: [codigo, nombre, siglas, sede, nivelFormacion, modalidad, jornadas, campoAmplio, campoEspecifico, numeroCiclos]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDeCarrera'
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 150
+          example: DESARROLLO DE SOFTWARE
+        siglas:
+          type: string
+          pattern: '^[0-9A-Z]{1,10}$'
+          example: DS
+        sede:
+          $ref: '#/components/schemas/CodigoDeUnidad'
+        nivelFormacion:
+          $ref: '#/components/schemas/NivelDeFormacion'
+        modalidad:
+          $ref: '#/components/schemas/Modalidad'
+        jornadas:
+          type: array
+          minItems: 1
+          maxItems: 4
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/Jornada'
+        campoAmplio:
+          $ref: '#/components/schemas/CodigoDeCampoAmplio'
+        campoEspecifico:
+          $ref: '#/components/schemas/CodigoDeCampoEspecifico'
+        campoDetallado:
+          type: string
+          pattern: '^[0-9]{4}$'
+          example: '0613'
+        numeroCiclos:
+          type: integer
+          minimum: 1
+          maximum: 10
+          example: 5
+    DatosDeCarrera:
+      type: object
+      required: [nombre, siglas, sede, nivelFormacion, modalidad, jornadas, campoAmplio, campoEspecifico, numeroCiclos]
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 150
+          example: DESARROLLO DE SOFTWARE
+        siglas:
+          type: string
+          pattern: '^[0-9A-Z]{1,10}$'
+          example: DS
+        sede:
+          $ref: '#/components/schemas/CodigoDeUnidad'
+        nivelFormacion:
+          $ref: '#/components/schemas/NivelDeFormacion'
+        modalidad:
+          $ref: '#/components/schemas/Modalidad'
+        jornadas:
+          type: array
+          minItems: 1
+          maxItems: 4
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/Jornada'
+        campoAmplio:
+          $ref: '#/components/schemas/CodigoDeCampoAmplio'
+        campoEspecifico:
+          $ref: '#/components/schemas/CodigoDeCampoEspecifico'
+        campoDetallado:
+          type: string
+          pattern: '^[0-9]{4}$'
+          example: '0613'
+        numeroCiclos:
+          type: integer
+          minimum: 1
+          maximum: 10
+          example: 5
+    EstadoDeCarreraNuevo:
+      type: object
+      required: [estado]
+      properties:
+        estado:
+          $ref: '#/components/schemas/EstadoDeCarrera'
+    MallaNueva:
+      type: object
+      required: [codigo]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDeMalla'
+    EstadoDeMallaNuevo:
+      type: object
+      required: [estado]
+      properties:
+        estado:
+          $ref: '#/components/schemas/EstadoDeMalla'
+    Asignatura:
+      type: object
+      required: [codigo, carrera, malla, nombre, ciclo, unidadOrganizacionCurricular, horasSemanalesClase, troncoComun, campoAmplio, campoEspecifico, palabrasClave, activa]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDeAsignatura'
+        carrera:
+          $ref: '#/components/schemas/CodigoDeCarrera'
+        malla:
+          $ref: '#/components/schemas/CodigoDeMalla'
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 150
+          example: MATEMÁTICA DISCRETA
+        ciclo:
+          type: integer
+          minimum: 1
+          maximum: 10
+          example: 1
+        unidadOrganizacionCurricular:
+          $ref: '#/components/schemas/UnidadDeOrganizacionCurricular'
+        horasSemanalesClase:
+          type: number
+          minimum: 0.5
+          maximum: 20
+          example: 3
+        horasPracticasSemanales:
+          type: number
+          minimum: 0
+          maximum: 20
+        creditos:
+          type: number
+          exclusiveMinimum: true
+          minimum: 0
+        troncoComun:
+          type: boolean
+        campoEspecifico:
+          $ref: '#/components/schemas/CodigoDeCampoEspecifico'
+        palabrasClave:
+          type: array
+          minItems: 2
+          items:
+            type: string
+            minLength: 1
+            maxLength: 300
+          example: [matemática, lógica, conjuntos]
+        campoAmplio:
+          $ref: '#/components/schemas/CampoAmplio'
+        activa:
+          type: boolean
+    AsignaturaNueva:
+      description: Sin carrera o sin horas semanales de clase no se guarda (RF-14).
+      type: object
+      required: [codigo, carrera, malla, nombre, ciclo, unidadOrganizacionCurricular, horasSemanalesClase, troncoComun, campoAmplio, campoEspecifico, palabrasClave]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDeAsignatura'
+        carrera:
+          $ref: '#/components/schemas/CodigoDeCarrera'
+        malla:
+          $ref: '#/components/schemas/CodigoDeMalla'
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 150
+          example: MATEMÁTICA DISCRETA
+        ciclo:
+          type: integer
+          minimum: 1
+          maximum: 10
+          example: 1
+        unidadOrganizacionCurricular:
+          $ref: '#/components/schemas/UnidadDeOrganizacionCurricular'
+        horasSemanalesClase:
+          type: number
+          minimum: 0.5
+          maximum: 20
+          example: 3
+        horasPracticasSemanales:
+          type: number
+          minimum: 0
+          maximum: 20
+        creditos:
+          type: number
+          exclusiveMinimum: true
+          minimum: 0
+        troncoComun:
+          type: boolean
+        campoEspecifico:
+          $ref: '#/components/schemas/CodigoDeCampoEspecifico'
+        palabrasClave:
+          type: array
+          minItems: 2
+          items:
+            type: string
+            minLength: 1
+            maxLength: 300
+          example: [matemática, lógica, conjuntos]
+        campoAmplio:
+          $ref: '#/components/schemas/CodigoDeCampoAmplio'
+    DatosDeAsignatura:
+      type: object
+      required: [nombre, ciclo, unidadOrganizacionCurricular, horasSemanalesClase, troncoComun, campoAmplio, campoEspecifico, palabrasClave]
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 150
+          example: MATEMÁTICA DISCRETA
+        ciclo:
+          type: integer
+          minimum: 1
+          maximum: 10
+          example: 1
+        unidadOrganizacionCurricular:
+          $ref: '#/components/schemas/UnidadDeOrganizacionCurricular'
+        horasSemanalesClase:
+          type: number
+          minimum: 0.5
+          maximum: 20
+          example: 3
+        horasPracticasSemanales:
+          type: number
+          minimum: 0
+          maximum: 20
+        creditos:
+          type: number
+          exclusiveMinimum: true
+          minimum: 0
+        troncoComun:
+          type: boolean
+        campoEspecifico:
+          $ref: '#/components/schemas/CodigoDeCampoEspecifico'
+        palabrasClave:
+          type: array
+          minItems: 2
+          items:
+            type: string
+            minLength: 1
+            maxLength: 300
+          example: [matemática, lógica, conjuntos]
+        campoAmplio:
+          $ref: '#/components/schemas/CodigoDeCampoAmplio'
+    EstadoDeAsignatura:
       type: object
       required: [activa]
       properties:

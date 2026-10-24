@@ -99,6 +99,12 @@ jobs:
         shell: bash
         run: deploy/probar_subida.sh
 
+      # F03-H02: las 7 carreras, 12 mallas y 300 asignaturas de prueba, sus reglas, los datos para la
+      # afinidad y quién las lee y escribe (D-70). Borra lo que creó.
+      - name: Carreras, mallas y asignaturas de punta a punta
+        shell: bash
+        run: deploy/probar_carreras.sh
+
       # shell: bash agrega pipefail, así que tee no oculta el código de salida del script.
       # Después de iniciar sesión (D-34): la medición de referencia de R-19 desde B00-H03.
       - name: Medición de R-19 después de iniciar sesión

@@ -16,15 +16,18 @@ import org.springframework.test.web.servlet.MockMvc;
 
 /**
  * La prueba de autorización por operación de Académico (RNF-SEG-03): sin su permiso, cada una de
- * las doce operaciones responde 403. Los periodos exigen «Distributivo del periodo» (D-69); la
+ * las 25 operaciones responde 403. Los periodos exigen «Distributivo del periodo» (D-69); la
  * estructura orgánica se lee con «Distributivo del periodo: lectura» o «Catálogos y datos maestros:
- * lectura», y se mantiene con «Catálogos y datos maestros: escritura» (D-70).
+ * lectura», y se mantiene con «Catálogos y datos maestros: escritura» (D-70). Las carreras, mallas
+ * y asignaturas se leen igual y se mantienen con «Catálogos y datos maestros: escritura» o
+ * «Distributivo del periodo: escritura» (F03-H02).
  */
-@WebMvcTest({AcademicoControlador.class, EstructuraControlador.class})
+@WebMvcTest({AcademicoControlador.class, EstructuraControlador.class, CarrerasControlador.class})
 @ImportAutoConfiguration({SeguridadProcesoAutoConfiguracion.class, ErroresAutoConfiguracion.class})
 @Import({
     AcademicoContratoTest.Dobles.class,
     EstructuraContratoTest.Dobles.class,
+    CarrerasContratoTest.Dobles.class,
     ErroresAcademico.class
 })
 @TestPropertySource(
@@ -56,7 +59,33 @@ class PermisosAcademicoTest {
                         "GET /api/academico/unidades/MATRIZ"
                                 + " ([DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA])",
                         "PUT /api/academico/unidades/MATRIZ (CATALOGOS:ESCRITURA)",
-                        "PUT /api/academico/unidades/MATRIZ/estado (CATALOGOS:ESCRITURA)");
+                        "PUT /api/academico/unidades/MATRIZ/estado (CATALOGOS:ESCRITURA)",
+                        "GET /api/academico/campos-amplios"
+                                + " ([DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA])",
+                        "GET /api/academico/carreras"
+                                + " ([DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA])",
+                        "POST /api/academico/carreras"
+                                + " ([CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA])",
+                        "GET /api/academico/carreras/550613A01-P-0301"
+                                + " ([DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA])",
+                        "PUT /api/academico/carreras/550613A01-P-0301"
+                                + " ([CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA])",
+                        "PUT /api/academico/carreras/550613A01-P-0301/estado"
+                                + " ([CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA])",
+                        "POST /api/academico/carreras/550613A01-P-0301/mallas"
+                                + " ([CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA])",
+                        "GET /api/academico/carreras/550613A01-P-0301/asignaturas"
+                                + " ([DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA])",
+                        "PUT /api/academico/mallas/DS-2019/estado"
+                                + " ([CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA])",
+                        "POST /api/academico/asignaturas"
+                                + " ([CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA])",
+                        "GET /api/academico/asignaturas/DS-B-I-MD-101"
+                                + " ([DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA])",
+                        "PUT /api/academico/asignaturas/DS-B-I-MD-101"
+                                + " ([CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA])",
+                        "PUT /api/academico/asignaturas/DS-B-I-MD-101/estado"
+                                + " ([CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA])");
 
         verificador.verificar(mvc, conversor);
     }
