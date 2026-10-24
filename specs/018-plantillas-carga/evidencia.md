@@ -63,5 +63,8 @@ Registro de las comprobaciones de la historia (issue #27): descargar la plantill
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Despliegue automático (T015) | ✅ Al fusionar #131 (`d07faa0`), el CD publicó las imágenes y `mdd-actualizar.timer` desplegó `d07faa0a0b22` (anterior: `c5e5e26560e0`): «Sano en 54 s» y la prueba de humo en `OK`. Antes de fusionar, el autor entró con `consolidacion.demo` y no vio «Plantillas de carga», porque el equipo seguía en `c5e5e26` | `journalctl -u mdd-actualizar.service` | 2026-10-23 |
+| Plantilla en LibreOffice Calc (T015, SC-003) | ✅ Con `consolidacion.demo` en `https://mdd.localhost`, el autor descargó `06_docentes.csv` y la abrió en LibreOffice Calc: cada encabezado en su columna (`tipo_identificacion`, `numero_identificacion`, `primer_apellido`…) y «Peñafiel» y «Muñoz» escritos en `primer_apellido` y `segundo_apellido` se ven con la «ñ». El autor informó «sí se ve bien». La captura no muestra si la volvió a abrir después de guardarla, ni el diccionario | captura del autor (21:35) | 2026-10-23 |
+| SC-001 (menos de 30 s por descarga) | ⚠️ No medido: el autor no anotó la hora de inicio. Del despliegue (21:21:56) a la captura de la plantilla llena (21:35) pasaron unos 13 minutos, que incluyen iniciar sesión, abrir LibreOffice y escribir | — | 2026-10-23 |
 
 ## Notas
