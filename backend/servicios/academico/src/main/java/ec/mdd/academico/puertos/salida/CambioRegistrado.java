@@ -59,6 +59,14 @@ public record CambioRegistrado(
         /** Asignatura inactivada. */
         ASIGNATURA_INACTIVADA,
         /** Asignatura reactivada. */
-        ASIGNATURA_REACTIVADA
+        ASIGNATURA_REACTIVADA,
+        /** Asignatura ofertada en un paralelo del periodo, con sus datos (F03-H03). */
+        ASIGNATURA_PARALELO_REGISTRADA,
+        /** Datos de una asignatura-paralelo corregidos, con cada valor anterior y nuevo. */
+        ASIGNATURA_PARALELO_CORREGIDA,
+        /** Asignatura-paralelo retirada de la oferta. */
+        ASIGNATURA_PARALELO_RETIRADA,
+        /** Asignatura-paralelo vuelta a ofertar. */
+        ASIGNATURA_PARALELO_REOFERTADA
     }
 }

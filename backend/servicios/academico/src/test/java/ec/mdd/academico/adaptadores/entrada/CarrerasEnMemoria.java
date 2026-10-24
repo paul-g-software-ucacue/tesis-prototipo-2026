@@ -72,7 +72,8 @@ final class CarrerasEnMemoria implements RepositorioCarreras {
                 this, estructura(), cambio -> {}, directa, Clock.systemUTC());
     }
 
-    private static RepositorioEstructura estructura() {
+    /** La estructura de prueba: la sede matriz y el Rectorado. */
+    static RepositorioEstructura estructura() {
         List<UnidadOrganica> unidades =
                 List.of(
                         UnidadOrganica.nueva(

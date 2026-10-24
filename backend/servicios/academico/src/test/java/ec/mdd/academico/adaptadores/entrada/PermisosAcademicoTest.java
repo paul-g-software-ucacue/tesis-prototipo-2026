@@ -16,18 +16,25 @@ import org.springframework.test.web.servlet.MockMvc;
 
 /**
  * La prueba de autorización por operación de Académico (RNF-SEG-03): sin su permiso, cada una de
- * las 25 operaciones responde 403. Los periodos exigen «Distributivo del periodo» (D-69); la
+ * las 30 operaciones responde 403. Los periodos exigen «Distributivo del periodo» (D-69); la
  * estructura orgánica se lee con «Distributivo del periodo: lectura» o «Catálogos y datos maestros:
  * lectura», y se mantiene con «Catálogos y datos maestros: escritura» (D-70). Las carreras, mallas
  * y asignaturas se leen igual y se mantienen con «Catálogos y datos maestros: escritura» o
- * «Distributivo del periodo: escritura» (F03-H02).
+ * «Distributivo del periodo: escritura» (F03-H02). La oferta del periodo la leen, además, quienes
+ * tienen «Oferta y propuesta de docentes: lectura» (F03-H03).
  */
-@WebMvcTest({AcademicoControlador.class, EstructuraControlador.class, CarrerasControlador.class})
+@WebMvcTest({
+    AcademicoControlador.class,
+    EstructuraControlador.class,
+    CarrerasControlador.class,
+    OfertaControlador.class
+})
 @ImportAutoConfiguration({SeguridadProcesoAutoConfiguracion.class, ErroresAutoConfiguracion.class})
 @Import({
     AcademicoContratoTest.Dobles.class,
     EstructuraContratoTest.Dobles.class,
     CarrerasContratoTest.Dobles.class,
+    OfertaContratoTest.Dobles.class,
     ErroresAcademico.class
 })
 @TestPropertySource(
@@ -85,6 +92,16 @@ class PermisosAcademicoTest {
                         "PUT /api/academico/asignaturas/DS-B-I-MD-101"
                                 + " ([CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA])",
                         "PUT /api/academico/asignaturas/DS-B-I-MD-101/estado"
+                                + " ([CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA])",
+                        "GET /api/academico/periodos/2026-2/oferta"
+                                + " ([OFERTA:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA])",
+                        "POST /api/academico/periodos/2026-2/oferta"
+                                + " ([CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA])",
+                        "GET /api/academico/periodos/2026-2/oferta/DS-P-II-POO-204/A_NOCTURNA"
+                                + " ([OFERTA:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA])",
+                        "PUT /api/academico/periodos/2026-2/oferta/DS-P-II-POO-204/A_NOCTURNA"
+                                + " ([CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA])",
+                        "PUT /api/academico/periodos/2026-2/oferta/DS-P-II-POO-204/A_NOCTURNA/estado"
                                 + " ([CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA])");
 
         verificador.verificar(mvc, conversor);

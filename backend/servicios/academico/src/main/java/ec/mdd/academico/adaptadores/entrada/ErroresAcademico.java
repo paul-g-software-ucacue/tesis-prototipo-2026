@@ -1,5 +1,7 @@
 package ec.mdd.academico.adaptadores.entrada;
 
+import ec.mdd.academico.dominio.AsignaturaParaleloRepetida;
+import ec.mdd.academico.dominio.OfertaCerrada;
 import ec.mdd.academico.dominio.PeriodoCerrado;
 import ec.mdd.academico.dominio.PeriodoSinVersion;
 import ec.mdd.academico.dominio.SedeMatrizExistente;
@@ -19,8 +21,9 @@ import org.springframework.stereotype.Component;
 
 /**
  * Los errores de Académico en el catálogo (ADR-016): las reglas de los periodos académicos
- * (F02-H01), de la estructura orgánica (F03-H01) y de las carreras, mallas y asignaturas (F03-H02).
- * Sus textos son los de {@code contratos/comun/errores.md}; una prueba lo comprueba.
+ * (F02-H01), de la estructura orgánica (F03-H01), de las carreras, mallas y asignaturas (F03-H02) y
+ * de la oferta del periodo (F03-H03). Sus textos son los de {@code contratos/comun/errores.md}; una
+ * prueba lo comprueba.
  */
 @Component
 class ErroresAcademico implements CatalogoDeErrores {
@@ -102,6 +105,19 @@ class ErroresAcademico implements CatalogoDeErrores {
                         "ACADEMICO_ASIGNATURA_REPETIDA",
                         409,
                         "Asignatura repetida",
-                        "Ya existe una asignatura con ese código. Elige otro."));
+                        "Ya existe una asignatura con ese código. Elige otro."),
+                EntradaCatalogo.de(
+                        AsignaturaParaleloRepetida.class,
+                        "ACADEMICO_ASIGNATURA_PARALELO_REPETIDA",
+                        409,
+                        "Asignatura-paralelo repetida",
+                        "Esa asignatura ya está en ese paralelo del periodo. Si está retirada,"
+                                + " vuelve a ofertarla."),
+                EntradaCatalogo.de(
+                        OfertaCerrada.class,
+                        "ACADEMICO_OFERTA_CERRADA",
+                        409,
+                        "Oferta cerrada",
+                        "La oferta solo cambia mientras el periodo está en Planificación."));
     }
 }

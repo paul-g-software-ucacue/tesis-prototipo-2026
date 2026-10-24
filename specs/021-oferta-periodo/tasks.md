@@ -95,13 +95,13 @@ description: "Tareas de F03-H03: mantener la oferta del periodo"
 
 **Independent Test**: en un periodo en Planificación, ofertar una asignatura activa en `A_NOCTURNA` y verla con las horas de su asignatura; el registro tiene la acción.
 
-- [ ] T008 [US1] Prueba primero, en `PACA/aplicacion/MantenerOfertaServicioTest.java` (Mockito):
+- [X] T008 [US1] Prueba primero, en `PACA/aplicacion/MantenerOfertaServicioTest.java` (Mockito):
   - ofertar bloquea el periodo, las carreras y la oferta, valida con `OfertaDelPeriodo`, guarda y registra `ASIGNATURA_PARALELO_REGISTRADA` con periodo, asignatura y paralelo;
   - una repetida lanza `AsignaturaParaleloRepetida`, y con el periodo fuera de Planificación, `OfertaCerrada`, sin registro;
   - un periodo que no existe lanza `PeriodoNoEncontrado`.
 
   Crear los puertos de entrada `ConsultarOferta` y `MantenerOferta` y el servicio `MantenerOfertaServicio`. T008 pasa.
-- [ ] T009 [US1] Prueba primero, en `PACA/adaptadores/entrada/OfertaContratoTest.java`, con un doble en memoria que usa las reglas reales del dominio:
+- [X] T009 [US1] Prueba primero, en `PACA/adaptadores/entrada/OfertaContratoTest.java`, con un doble en memoria que usa las reglas reales del dominio:
   - `ofertarAsignatura` 201;
   - 400 con el campo `jornada`, `horasSemanales`, `asignatura` y `sede`;
   - 409 `ACADEMICO_ASIGNATURA_PARALELO_REPETIDA` y `ACADEMICO_OFERTA_CERRADA`;
@@ -113,7 +113,7 @@ description: "Tareas de F03-H03: mantener la oferta del periodo"
   - escrituras con `hasAnyAuthority('PERMISO_CATALOGOS:ESCRITURA','PERMISO_DISTRIBUTIVO:ESCRITURA')`.
 
   T009 pasa.
-- [ ] T010 [US1] Ampliar `PACA/adaptadores/entrada/PermisosAcademicoTest.java` con `OfertaControlador`: las 5 operaciones nuevas exigen sus permisos alternativos (30 en total). Comprobar una vez que falla si la lectura deja fuera `OFERTA:LECTURA`, restaurarla y anotarlo en la evidencia. Registrar los beans en `ConfiguracionAcademico`, con nombres que no choquen con los de Normativa ni con los de F03-H02. T010 pasa.
+- [X] T010 [US1] Ampliar `PACA/adaptadores/entrada/PermisosAcademicoTest.java` con `OfertaControlador`: las 5 operaciones nuevas exigen sus permisos alternativos (30 en total). Comprobar una vez que falla si la lectura deja fuera `OFERTA:LECTURA`, restaurarla y anotarlo en la evidencia. Registrar los beans en `ConfiguracionAcademico`, con nombres que no choquen con los de Normativa ni con los de F03-H02. T010 pasa.
 
 **Checkpoint**: la oferta se registra por la API.
 
