@@ -191,6 +191,173 @@ class CarrerasContratoTest {
         contrato.validar(resultado);
     }
 
+    @Test
+    void dadaUnaCarrera_cuandoSeRegistraYSeDerogaSuMalla_entonces201Y200YUnaRepetida409()
+            throws Exception {
+        pedir(json(post("/api/academico/carreras"), DS), escritura());
+
+        MvcResult malla =
+                pedir(
+                        json(
+                                post("/api/academico/carreras/550613A01-P-0301/mallas"),
+                                "{\"codigo\":\"DS-2019\"}"),
+                        escritura());
+        MvcResult repetida =
+                pedir(
+                        json(
+                                post("/api/academico/carreras/550613A01-P-0301/mallas"),
+                                "{\"codigo\":\"DS-2019\"}"),
+                        escritura());
+        MvcResult derogada =
+                pedir(
+                        json(
+                                put("/api/academico/mallas/DS-2019/estado"),
+                                "{\"estado\":\"DEROGADA\"}"),
+                        escritura());
+
+        assertThat(malla.getResponse().getStatus()).isEqualTo(201);
+        assertThat(cuerpo(repetida)).contains("ACADEMICO_MALLA_REPETIDA");
+        assertThat(JsonPath.<String>read(cuerpo(derogada), "$.estado")).isEqualTo("DEROGADA");
+        contrato.validar(malla);
+        contrato.validar(repetida);
+        contrato.validar(derogada);
+    }
+
+    @Test
+    void dadaUnaAsignaturaSinCarreraNiHoras_cuandoSeRegistra_entonces400ConLosDosCampos()
+            throws Exception {
+        String incompleta =
+                MD.replace("\"carrera\":\"550613A01-P-0301\",", "")
+                        .replace("\"horasSemanalesClase\":3,", "");
+
+        MvcResult resultado =
+                pedir(json(post("/api/academico/asignaturas"), incompleta), escritura());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(400);
+        assertThat(JsonPath.<String>read(cuerpo(resultado), "$.codigo"))
+                .isEqualTo("COMUN_SOLICITUD_INVALIDA");
+        assertThat(JsonPath.<List<String>>read(cuerpo(resultado), "$.detalles[*].campo"))
+                .containsExactlyInAnyOrder("carrera", "horasSemanalesClase");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadaUnaMallaVigente_cuandoSeRegistraUnaAsignatura_entonces201YLasReglasDeSuMalla()
+            throws Exception {
+        pedir(json(post("/api/academico/carreras"), DS), escritura());
+        pedir(
+                json(
+                        post("/api/academico/carreras/550613A01-P-0301/mallas"),
+                        "{\"codigo\":\"DS-2019\"}"),
+                escritura());
+
+        MvcResult registrada = pedir(json(post("/api/academico/asignaturas"), MD), escritura());
+        MvcResult repetida = pedir(json(post("/api/academico/asignaturas"), MD), escritura());
+        MvcResult cicloDeMas =
+                pedir(
+                        json(
+                                post("/api/academico/asignaturas"),
+                                MD.replace("DS-B-I-MD-101", "A-2")
+                                        .replace("\"ciclo\":1", "\"ciclo\":6")),
+                        escritura());
+        MvcResult unaPalabra =
+                pedir(
+                        json(
+                                post("/api/academico/asignaturas"),
+                                MD.replace("DS-B-I-MD-101", "A-3")
+                                        .replace(
+                                                "\"matemática\",\"lógica\",\"conjuntos\"",
+                                                "\"matemática\",\"Matemática\"")),
+                        escritura());
+        pedir(
+                json(put("/api/academico/mallas/DS-2019/estado"), "{\"estado\":\"DEROGADA\"}"),
+                escritura());
+        MvcResult derogada =
+                pedir(
+                        json(
+                                post("/api/academico/asignaturas"),
+                                MD.replace("DS-B-I-MD-101", "A-4")),
+                        escritura());
+
+        assertThat(registrada.getResponse().getStatus()).isEqualTo(201);
+        contrato.validar(registrada);
+        assertThat(cuerpo(repetida)).contains("ACADEMICO_ASIGNATURA_REPETIDA");
+        assertThat(JsonPath.<String>read(cuerpo(cicloDeMas), "$.detalles[0].campo"))
+                .isEqualTo("ciclo");
+        assertThat(JsonPath.<String>read(cuerpo(unaPalabra), "$.detalles[0].campo"))
+                .isEqualTo("palabrasClave");
+        assertThat(JsonPath.<String>read(cuerpo(derogada), "$.detalles[0].campo"))
+                .isEqualTo("malla");
+        MvcResult carreras = pedir(get("/api/academico/carreras"), lectura());
+        assertThat(JsonPath.<Integer>read(cuerpo(carreras), "$[0].mallas[0].asignaturas"))
+                .isEqualTo(1);
+        assertThat(
+                        JsonPath.<Number>read(
+                                        cuerpo(carreras), "$[0].mallas[0].horasSemanalesClase")
+                                .doubleValue())
+                .isEqualTo(3.0);
+    }
+
+    @Test
+    void dadaUnaAsignatura_cuandoSeListaSeCorrigeYSeInactiva_entoncesCumpleElContrato()
+            throws Exception {
+        pedir(json(post("/api/academico/carreras"), DS), escritura());
+        pedir(
+                json(
+                        post("/api/academico/carreras/550613A01-P-0301/mallas"),
+                        "{\"codigo\":\"DS-2019\"}"),
+                escritura());
+        pedir(json(post("/api/academico/asignaturas"), MD), escritura());
+        String datos =
+                "{\"nombre\":\"MATEMÁTICA\",\"ciclo\":2,\"unidadOrganizacionCurricular\":\"BASICA\","
+                        + "\"horasSemanalesClase\":4.5,\"horasPracticasSemanales\":1,"
+                        + "\"troncoComun\":false,\"campoAmplio\":\"05\",\"campoEspecifico\":\"054\","
+                        + "\"palabrasClave\":[\"matemática\",\"lógica\"]}";
+
+        MvcResult lista =
+                pedir(get("/api/academico/carreras/550613A01-P-0301/asignaturas"), lectura());
+        MvcResult corregida =
+                pedir(json(put("/api/academico/asignaturas/DS-B-I-MD-101"), datos), escritura());
+        MvcResult inactiva =
+                pedir(
+                        json(
+                                put("/api/academico/asignaturas/DS-B-I-MD-101/estado"),
+                                "{\"activa\":false}"),
+                        escritura());
+
+        assertThat(JsonPath.<List<String>>read(cuerpo(lista), "$[*].codigo"))
+                .containsExactly("DS-B-I-MD-101");
+        assertThat(JsonPath.<Integer>read(cuerpo(corregida), "$.ciclo")).isEqualTo(2);
+        assertThat(JsonPath.<Boolean>read(cuerpo(inactiva), "$.activa")).isFalse();
+        contrato.validar(lista);
+        contrato.validar(corregida);
+        contrato.validar(inactiva);
+    }
+
+    @Test
+    void dadaUnaAsignaturaGuardada_cuandoSeConsulta_entoncesTraeLosDatosParaLaAfinidad()
+            throws Exception {
+        pedir(json(post("/api/academico/carreras"), DS), escritura());
+        pedir(
+                json(
+                        post("/api/academico/carreras/550613A01-P-0301/mallas"),
+                        "{\"codigo\":\"DS-2019\"}"),
+                escritura());
+        pedir(json(post("/api/academico/asignaturas"), MD), escritura());
+
+        MvcResult resultado = pedir(get("/api/academico/asignaturas/DS-B-I-MD-101"), lectura());
+
+        String cuerpo = cuerpo(resultado);
+        assertThat(JsonPath.<Map<String, Object>>read(cuerpo, "$.campoAmplio"))
+                .containsEntry("codigo", "05")
+                .containsEntry("nombre", "Ciencias naturales, matemáticas y estadística");
+        assertThat(JsonPath.<String>read(cuerpo, "$.campoEspecifico")).isEqualTo("054");
+        assertThat(JsonPath.<List<String>>read(cuerpo, "$.palabrasClave"))
+                .containsExactly("matemática", "lógica", "conjuntos");
+        assertThat(JsonPath.<Boolean>read(cuerpo, "$.troncoComun")).isTrue();
+        contrato.validar(resultado);
+    }
+
     MvcResult pedir(MockHttpServletRequestBuilder peticion, JwtRequestPostProcessor token)
             throws Exception {
         return mvc.perform(peticion.with(token)).andReturn();

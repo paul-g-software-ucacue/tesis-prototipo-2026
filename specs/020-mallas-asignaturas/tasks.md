@@ -85,7 +85,7 @@ description: "Tareas de F03-H02: mantener carreras, mallas y asignaturas"
 **Goal**: mallas con su versión y su estado, y asignaturas en ellas (FR-002 a FR-005, FR-009, FR-012; SC-002, SC-003).
 
 - [X] T012 [US2] Prueba primero, en `MantenerCarrerasServicioTest` (ampliar): registrar una malla registra `MALLA_REGISTRADA`; un código repetido lanza `MallaRepetida`; cambiar su estado registra `MALLA_ESTADO_CAMBIADO`; registrar una asignatura registra `ASIGNATURA_REGISTRADA`, y una repetida lanza `AsignaturaRepetida`; corregirla registra `ASIGNATURA_CORREGIDA`; inactivarla y reactivarla, `ASIGNATURA_INACTIVADA` y `ASIGNATURA_REACTIVADA`; corregir el número de ciclos de una carrera revalida sus asignaturas. Ampliar los servicios. T012 pasa.
-- [ ] T013 [US2] Prueba primero, en `PACA/adaptadores/entrada/CarrerasContratoTest.java` (ampliar): `registrarMalla` 201 y 409 `ACADEMICO_MALLA_REPETIDA`; `cambiarEstadoMalla` 200; **una asignatura sin `carrera` y sin `horasSemanalesClase` da 400 `COMUN_SOLICITUD_INVALIDA` con un detalle por cada uno** (escenario 1); `registrarAsignatura` 201; con malla derogada, 400 en `malla`; con ciclo de más, 400 en `ciclo`; con una palabra clave, 400 en `palabrasClave`; 409 `ACADEMICO_ASIGNATURA_REPETIDA`; `listarAsignaturasDeCarrera`, `corregirAsignatura` y `cambiarEstadoAsignatura` validan contra el contrato; `listarCarreras` trae en cada malla sus asignaturas activas y sus horas. Ampliar el controlador. T013 pasa.
+- [X] T013 [US2] Prueba primero, en `PACA/adaptadores/entrada/CarrerasContratoTest.java` (ampliar): `registrarMalla` 201 y 409 `ACADEMICO_MALLA_REPETIDA`; `cambiarEstadoMalla` 200; **una asignatura sin `carrera` y sin `horasSemanalesClase` da 400 `COMUN_SOLICITUD_INVALIDA` con un detalle por cada uno** (escenario 1); `registrarAsignatura` 201; con malla derogada, 400 en `malla`; con ciclo de más, 400 en `ciclo`; con una palabra clave, 400 en `palabrasClave`; 409 `ACADEMICO_ASIGNATURA_REPETIDA`; `listarAsignaturasDeCarrera`, `corregirAsignatura` y `cambiarEstadoAsignatura` validan contra el contrato; `listarCarreras` trae en cada malla sus asignaturas activas y sus horas. Ampliar el controlador. T013 pasa.
 
 ---
 
@@ -93,7 +93,7 @@ description: "Tareas de F03-H02: mantener carreras, mallas y asignaturas"
 
 **Goal**: la asignatura con su campo amplio y su nombre, su campo específico, sus palabras clave y su tronco común (FR-007).
 
-- [ ] T014 [US3] Prueba en `CarrerasContratoTest`: `consultarAsignatura` trae `campoAmplio` con su código y su nombre CINE (por ejemplo, `05` «Ciencias naturales, matemáticas y estadística»), `campoEspecifico`, `palabrasClave` una por una y `troncoComun` (escenario 2). Si el controlador ya lo cubre y pasa a la primera, comprobar una vez que falla si se quita el nombre del campo amplio, restaurarlo y anotarlo en la evidencia.
+- [X] T014 [US3] Prueba en `CarrerasContratoTest`: `consultarAsignatura` trae `campoAmplio` con su código y su nombre CINE (por ejemplo, `05` «Ciencias naturales, matemáticas y estadística»), `campoEspecifico`, `palabrasClave` una por una y `troncoComun` (escenario 2). Si el controlador ya lo cubre y pasa a la primera, comprobar una vez que falla si se quita el nombre del campo amplio, restaurarlo y anotarlo en la evidencia.
 
 ---
 
