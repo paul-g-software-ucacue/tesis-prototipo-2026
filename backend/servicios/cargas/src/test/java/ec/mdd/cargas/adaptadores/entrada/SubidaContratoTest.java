@@ -12,11 +12,15 @@ import ec.mdd.cargas.infraestructura.ConfiguracionCargas;
 import ec.mdd.plataforma.errores.ErroresAutoConfiguracion;
 import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
 import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockMultipartFile;
@@ -37,6 +41,7 @@ import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequ
 @TestPropertySource(
         properties =
                 "spring.security.oauth2.resourceserver.jwt.jwk-set-uri=http://127.0.0.1:9/jwks")
+@ExtendWith(OutputCaptureExtension.class)
 class SubidaContratoTest {
 
     private final ValidadorDeContrato contrato = ValidadorDeContrato.para("cargas");
@@ -111,6 +116,111 @@ class SubidaContratoTest {
         assertThat(resultado.getResponse().getStatus()).isEqualTo(404);
         assertThat(cuerpo(resultado)).contains("COMUN_RECURSO_NO_ENCONTRADO");
         contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoCadaArchivoQueNoSePuedeLeer_cuandoSeSube_entoncesSuCodigoSegunElContrato()
+            throws Exception {
+        String carreras =
+                "codigo_carrera,nombre,siglas,codigo_unidad_sede,nivel_formacion,"
+                        + "modalidad,jornadas,campo_amplio,campo_especifico,campo_detallado,numero_ciclos,"
+                        + "estado";
+        String fila = "C1,Uno,U,MATRIZ,TECNOLOGICO_SUPERIOR,PRESENCIAL,MATUTINA,04,041,,4,VIGENTE";
+        byte[] conDosHojas;
+        try (org.apache.poi.xssf.usermodel.XSSFWorkbook libro =
+                new org.apache.poi.xssf.usermodel.XSSFWorkbook()) {
+            libro.createSheet("Uno");
+            libro.createSheet("Dos");
+            conDosHojas = LibroDePrueba.bytes(libro);
+        }
+        Object[][] casos = {
+            {"carreras.pdf", "%PDF-1.7".getBytes(UTF_8), 400, "CARGAS_FORMATO_NO_ADMITIDO"},
+            {
+                "carreras.csv",
+                (carreras + "\nC1,Peñafiel\n").getBytes(Charset.forName("windows-1252")),
+                400,
+                "CARGAS_CODIFICACION_NO_ADMITIDA"
+            },
+            {"carreras.xlsx", conDosHojas, 400, "CARGAS_VARIAS_HOJAS"},
+            {
+                "carreras.csv",
+                (carreras + "\n" + fila + "\n\"sin cerrar\n").getBytes(UTF_8),
+                400,
+                "CARGAS_ARCHIVO_ILEGIBLE"
+            },
+            {
+                "carreras.csv",
+                (carreras + "\n").getBytes(UTF_8),
+                400,
+                "CARGAS_ARCHIVO_SIN_REGISTROS"
+            },
+            {
+                "carreras.csv",
+                new byte[ec.mdd.cargas.aplicacion.ValidarArchivoServicio.MAXIMO + 1],
+                413,
+                "CARGAS_ARCHIVO_DEMASIADO_GRANDE"
+            },
+        };
+        for (Object[] caso : casos) {
+            MvcResult resultado = subir("carreras", (String) caso[0], (byte[]) caso[1]);
+
+            assertThat(resultado.getResponse().getStatus()).as((String) caso[3]).isEqualTo(caso[2]);
+            assertThat(JsonPath.<String>read(cuerpo(resultado), "$.codigo")).isEqualTo(caso[3]);
+            contrato.validar(resultado);
+        }
+    }
+
+    @Test
+    void dadoUnArchivoIlegible_cuandoSeSube_entoncesElDetalleDiceLaFila() throws Exception {
+        MvcResult resultado =
+                subir(
+                        "matriculados_carrera",
+                        "m.csv",
+                        "codigo_periodo,codigo_carrera,total_matriculados,fecha_corte,fuente\n1,2\n"
+                                .getBytes(UTF_8));
+
+        assertThat(JsonPath.<List<Map<String, String>>>read(cuerpo(resultado), "$.detalles"))
+                .containsExactly(
+                        Map.of(
+                                "campo",
+                                "archivo",
+                                "descripcion",
+                                "La fila 2 tiene 2 valores y los encabezados, 5."));
+    }
+
+    @Test
+    void dadoUnArchivoDeCarrerasSinCodigoYConUnaDeMas_cuandoSeSube_entoncesNombraLasColumnas()
+            throws Exception {
+        String sinCodigo =
+                "nombre,siglas,codigo_unidad_sede,nivel_formacion,modalidad,jornadas,campo_amplio,"
+                        + "campo_especifico,campo_detallado,numero_ciclos,estado,extra\n"
+                        + "Uno,U,MATRIZ,TECNOLOGICO_SUPERIOR,PRESENCIAL,MATUTINA,04,041,,4,VIGENTE,x\n";
+
+        MvcResult resultado = subir("carreras", "carreras.csv", sinCodigo.getBytes(UTF_8));
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(400);
+        assertThat(JsonPath.<String>read(cuerpo(resultado), "$.codigo"))
+                .isEqualTo("CARGAS_ENCABEZADOS_DISTINTOS");
+        assertThat(JsonPath.<List<Map<String, String>>>read(cuerpo(resultado), "$.detalles"))
+                .containsExactly(
+                        Map.of("campo", "codigo_carrera", "descripcion", "Falta en el archivo."),
+                        Map.of("campo", "extra", "descripcion", "No está en la plantilla."));
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnArchivoConUnaCedulaYUnError_cuandoSeSube_entoncesLaCedulaNoApareceEnNingunLado(
+            CapturedOutput salida) throws Exception {
+        String csv = new String(DatosDePrueba.contenido("06_docentes.csv"), UTF_8);
+        String[] lineas = csv.split("\r\n");
+        String conCedula =
+                lineas[0] + ",extra\r\n" + lineas[1].replace("0109990010", "0999999999") + ",x\r\n";
+
+        MvcResult resultado = subir("docentes", "06_docentes.csv", conCedula.getBytes(UTF_8));
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(400);
+        assertThat(cuerpo(resultado)).doesNotContain("0999999999");
+        assertThat(salida.getAll()).doesNotContain("0999999999");
     }
 
     MvcResult subir(String carga, String nombre, byte[] contenido) throws Exception {

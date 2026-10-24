@@ -2,10 +2,15 @@ package ec.mdd.cargas.adaptadores.salida;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ec.mdd.cargas.dominio.Carga;
 import ec.mdd.cargas.dominio.DiccionarioDeDatos;
 import ec.mdd.cargas.dominio.TablaDeDatos;
+import ec.mdd.cargas.puertos.salida.ArchivoIlegible;
+import ec.mdd.cargas.puertos.salida.CodificacionNoAdmitida;
+import ec.mdd.cargas.puertos.salida.FormatoNoAdmitido;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -86,6 +91,49 @@ class LectorCsvTest {
     void dadoUnArchivoVacioOSoloConElBom_cuandoSeLee_entoncesUnaTablaVacia() {
         assertThat(lector.leer(new byte[0])).isEqualTo(new TablaDeDatos(List.of(), List.of()));
         assertThat(lector.leer(bytes("\uFEFF"))).isEqualTo(new TablaDeDatos(List.of(), List.of()));
+    }
+
+    @Test
+    void dadoUnCsvEnWindows1252ConTildes_cuandoSeLee_entoncesCodificacionNoAdmitida() {
+        byte[] latino = "codigo,apellido\nC1,Peñafiel\n".getBytes(Charset.forName("windows-1252"));
+
+        assertThatThrownBy(() -> lector.leer(latino)).isInstanceOf(CodificacionNoAdmitida.class);
+    }
+
+    @Test
+    void dadoUnCsvQueEsOtroFormatoRenombrado_cuandoSeLee_entoncesFormatoNoAdmitido() {
+        byte[] pdf = "%PDF-1.7\n1 0 obj".getBytes(UTF_8);
+        byte[] zip = {'P', 'K', 3, 4, 20, 0, 0, 0};
+        byte[] ole2 = {
+            (byte) 0xD0, (byte) 0xCF, 0x11, (byte) 0xE0, (byte) 0xA1, (byte) 0xB1, 0x1A, (byte) 0xE1
+        };
+        byte[] conNulo = {'a', ',', 'b', '\n', '1', 0, ',', '2', '\n'};
+
+        for (byte[] contenido : List.of(pdf, zip, ole2, conNulo)) {
+            assertThatThrownBy(() -> lector.leer(contenido)).isInstanceOf(FormatoNoAdmitido.class);
+        }
+    }
+
+    @Test
+    void dadasComillasSinCerrar_cuandoSeLee_entoncesIlegibleConSuFila() {
+        assertThatThrownBy(() -> lector.leer(bytes("a,b\n1,2\n3,\"cuatro\n5,6\n")))
+                .isInstanceOf(ArchivoIlegible.class)
+                .hasMessage("La fila 3 tiene comillas sin cerrar.");
+    }
+
+    @Test
+    void dadaUnaFilaConOtroNumeroDeValores_cuandoSeLee_entoncesIlegibleConSuFilaPeroNoUnaVacia() {
+        assertThatThrownBy(() -> lector.leer(bytes("a,b,c\n1,2,3\n4,5\n")))
+                .isInstanceOf(ArchivoIlegible.class)
+                .hasMessage("La fila 3 tiene 2 valores y los encabezados, 3.");
+        assertThat(lector.leer(bytes("a,b,c\n1,2,3\n\n4,5,6\n")).registros()).isEqualTo(3);
+    }
+
+    @Test
+    void dadoTextoDespuesDeCerrarLasComillas_cuandoSeLee_entoncesIlegible() {
+        assertThatThrownBy(() -> lector.leer(bytes("a,b\n\"1\"x,2\n")))
+                .isInstanceOf(ArchivoIlegible.class)
+                .hasMessageContaining("fila 2");
     }
 
     private static Carga cargaDe(String archivo) {

@@ -2,6 +2,7 @@ package ec.mdd.cargas.adaptadores.salida;
 
 import ec.mdd.cargas.dominio.TablaDeDatos;
 import ec.mdd.cargas.puertos.salida.ArchivoIlegible;
+import ec.mdd.cargas.puertos.salida.FormatoNoAdmitido;
 import ec.mdd.cargas.puertos.salida.VariasHojas;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -9,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
@@ -29,10 +31,17 @@ final class LectorXlsx {
      *
      * @param contenido los bytes del XLSX
      * @return sus encabezados y sus filas; vacía si la hoja no tiene nada
+     * @throws FormatoNoAdmitido si no es un XLSX, como un XLS antiguo o un texto renombrado
      * @throws VariasHojas si tiene más de una hoja
-     * @throws ArchivoIlegible si está dañado o tiene valores fuera de las columnas
+     * @throws ArchivoIlegible si está dañado o cifrado, o tiene valores fuera de las columnas
      */
     TablaDeDatos leer(byte[] contenido) {
+        if (Firmas.esOle2(contenido)) {
+            throw cifradoOAntiguo(contenido);
+        }
+        if (!Firmas.esZip(contenido)) {
+            throw new FormatoNoAdmitido();
+        }
         try (XSSFWorkbook libro = new XSSFWorkbook(new ByteArrayInputStream(contenido))) {
             if (libro.getNumberOfSheets() > 1) {
                 throw new VariasHojas();
@@ -43,6 +52,22 @@ final class LectorXlsx {
                 throw (RuntimeException) e;
             }
             throw new ArchivoIlegible("El archivo XLSX está dañado o no se puede abrir.");
+        }
+    }
+
+    /**
+     * Un OLE2 es un XLSX cifrado, que no se puede leer, o un XLS antiguo, que no se admite: lo dice
+     * la entrada {@code EncryptionInfo}.
+     */
+    private static RuntimeException cifradoOAntiguo(byte[] contenido) {
+        try (POIFSFileSystem ole2 = new POIFSFileSystem(new ByteArrayInputStream(contenido))) {
+            if (ole2.getRoot().hasEntryCaseInsensitive("EncryptionInfo")) {
+                return new ArchivoIlegible(
+                        "El archivo XLSX está protegido con contraseña. Quítala y vuelve a subirlo.");
+            }
+            return new FormatoNoAdmitido();
+        } catch (IOException | RuntimeException e) {
+            return new FormatoNoAdmitido();
         }
     }
 

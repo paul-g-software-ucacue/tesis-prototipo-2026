@@ -3,6 +3,7 @@ package ec.mdd.cargas.adaptadores.salida;
 import ec.mdd.cargas.dominio.TablaDeDatos;
 import ec.mdd.cargas.puertos.salida.ArchivoIlegible;
 import ec.mdd.cargas.puertos.salida.CodificacionNoAdmitida;
+import ec.mdd.cargas.puertos.salida.FormatoNoAdmitido;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
@@ -27,10 +28,14 @@ final class LectorCsv {
      *
      * @param contenido los bytes del CSV
      * @return sus encabezados y sus filas; vacía si el archivo no tiene nada
+     * @throws FormatoNoAdmitido si es un PDF, un ZIP o un OLE2 renombrado, o tiene bytes nulos
      * @throws CodificacionNoAdmitida si no es UTF-8 válido
      * @throws ArchivoIlegible si no se puede leer, con la fila
      */
     TablaDeDatos leer(byte[] contenido) {
+        if (Firmas.esBinario(contenido)) {
+            throw new FormatoNoAdmitido();
+        }
         String texto = sinBom(utf8(contenido));
         if (texto.isEmpty()) {
             return new TablaDeDatos(List.of(), List.of());

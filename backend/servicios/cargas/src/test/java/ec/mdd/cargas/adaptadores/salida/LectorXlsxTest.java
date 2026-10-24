@@ -1,11 +1,22 @@
 package ec.mdd.cargas.adaptadores.salida;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ec.mdd.cargas.dominio.TablaDeDatos;
+import ec.mdd.cargas.puertos.salida.ArchivoIlegible;
+import ec.mdd.cargas.puertos.salida.FormatoNoAdmitido;
+import ec.mdd.cargas.puertos.salida.VariasHojas;
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import org.apache.poi.poifs.crypt.EncryptionInfo;
+import org.apache.poi.poifs.crypt.EncryptionMode;
+import org.apache.poi.poifs.crypt.Encryptor;
+import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -74,5 +85,70 @@ class LectorXlsxTest {
         assertThat(tabla.filas())
                 .containsExactly(List.of("1", "", ""), List.of("", "", ""), List.of("4", "5", ""));
         assertThat(tabla.registros()).isEqualTo(3);
+    }
+
+    @Test
+    void dadoUnXlsxConDosHojas_cuandoSeLee_entoncesVariasHojas() throws Exception {
+        try (XSSFWorkbook libro = new XSSFWorkbook()) {
+            libro.createSheet("Datos").createRow(0).createCell(0).setCellValue("a");
+            libro.createSheet("Otra");
+
+            byte[] contenido = LibroDePrueba.bytes(libro);
+            assertThatThrownBy(() -> lector.leer(contenido)).isInstanceOf(VariasHojas.class);
+        }
+    }
+
+    @Test
+    void dadoUnValorFueraDeLasColumnas_cuandoSeLee_entoncesIlegibleConSuFila() throws Exception {
+        try (XSSFWorkbook libro = new XSSFWorkbook()) {
+            Sheet hoja = libro.createSheet("Datos");
+            hoja.createRow(0).createCell(0).setCellValue("a");
+            hoja.getRow(0).createCell(1).setCellValue("b");
+            hoja.createRow(1).createCell(0).setCellValue("1");
+            hoja.getRow(1).createCell(2).setCellValue("de más");
+
+            byte[] contenido = LibroDePrueba.bytes(libro);
+            assertThatThrownBy(() -> lector.leer(contenido))
+                    .isInstanceOf(ArchivoIlegible.class)
+                    .hasMessage(
+                            "La fila 2 tiene valores fuera de las columnas de los encabezados.");
+        }
+    }
+
+    @Test
+    void dadoUnXlsxQueEsOtraCosa_cuandoSeLee_entoncesFormatoNoAdmitido() throws Exception {
+        byte[] texto = "codigo,nombre\n".getBytes(StandardCharsets.UTF_8);
+        ByteArrayOutputStream xls = new ByteArrayOutputStream();
+        try (POIFSFileSystem ole2 = new POIFSFileSystem()) {
+            ole2.createDocument(new java.io.ByteArrayInputStream(new byte[8]), "Workbook");
+            ole2.writeFilesystem(xls);
+        }
+
+        assertThatThrownBy(() -> lector.leer(texto)).isInstanceOf(FormatoNoAdmitido.class);
+        assertThatThrownBy(() -> lector.leer(xls.toByteArray()))
+                .isInstanceOf(FormatoNoAdmitido.class);
+    }
+
+    @Test
+    void dadoUnXlsxCifradoODanado_cuandoSeLee_entoncesIlegible() throws Exception {
+        byte[] xlsx = LibroDePrueba.deTexto(List.of("a"), List.of(List.of("1")));
+        ByteArrayOutputStream cifrado = new ByteArrayOutputStream();
+        try (POIFSFileSystem ole2 = new POIFSFileSystem()) {
+            EncryptionInfo info = new EncryptionInfo(EncryptionMode.agile);
+            Encryptor cifrador = info.getEncryptor();
+            cifrador.confirmPassword("clave-de-prueba");
+            try (OutputStream salida = cifrador.getDataStream(ole2)) {
+                salida.write(xlsx);
+            }
+            ole2.writeFilesystem(cifrado);
+        }
+        byte[] danado = java.util.Arrays.copyOf(xlsx, xlsx.length / 2);
+
+        assertThatThrownBy(() -> lector.leer(cifrado.toByteArray()))
+                .isInstanceOf(ArchivoIlegible.class)
+                .hasMessageContaining("contraseña");
+        assertThatThrownBy(() -> lector.leer(danado))
+                .isInstanceOf(ArchivoIlegible.class)
+                .hasMessageContaining("dañado");
     }
 }

@@ -2,9 +2,11 @@ package ec.mdd.cargas.adaptadores.salida;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ec.mdd.cargas.puertos.salida.ArchivoLeido;
 import ec.mdd.cargas.puertos.salida.Formato;
+import ec.mdd.cargas.puertos.salida.FormatoNoAdmitido;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -34,5 +36,15 @@ class LectorPorFormatoTest {
 
         assertThat(leido.formato()).isEqualTo(Formato.XLSX);
         assertThat(leido.tabla().filas()).containsExactly(List.of("C1", "Uno"));
+    }
+
+    @Test
+    void dadoUnArchivoQueNoEsCsvNiXlsx_cuandoSeLee_entoncesFormatoNoAdmitido() {
+        for (String nombre :
+                List.of("carreras.pdf", "carreras.xls", "carreras", "carreras.csv.txt")) {
+            assertThatThrownBy(() -> lector.leer(nombre, CSV))
+                    .as(nombre)
+                    .isInstanceOf(FormatoNoAdmitido.class);
+        }
     }
 }

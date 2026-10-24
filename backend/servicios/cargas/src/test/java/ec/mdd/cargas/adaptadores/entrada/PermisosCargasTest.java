@@ -18,8 +18,8 @@ import org.springframework.test.web.servlet.MockMvc;
 /**
  * La prueba de autorización por operación de Cargas (RNF-SEG-03): sin «Cargas: lectura» ni
  * «Distributivo del periodo: lectura», cada operación de las plantillas responde 403, y con
- * cualquiera de los dos, no (D-70). Subir un archivo exige «Cargas: escritura» (D-71). La sesión
- * no exige permiso.
+ * cualquiera de los dos, no (D-70). Subir un archivo exige «Cargas: escritura» (D-71). La sesión no
+ * exige permiso.
  */
 @WebMvcTest({SesionControlador.class, PlantillasControlador.class, SubidaControlador.class})
 @ImportAutoConfiguration({SeguridadProcesoAutoConfiguracion.class, ErroresAutoConfiguracion.class})
