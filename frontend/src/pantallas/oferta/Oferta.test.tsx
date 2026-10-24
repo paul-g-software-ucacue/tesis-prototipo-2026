@@ -139,6 +139,27 @@ describe('Oferta del periodo', () => {
     });
   });
 
+  it('antes de elegir la carrera, la asignatura y la jornada están desactivadas y dicen por qué', async () => {
+    sesionCon(simulada, 'vicerrectorado.demo', VICERRECTOR);
+    const usuario = userEvent.setup();
+    montarSpa('/oferta');
+
+    await usuario.click(await screen.findByRole('button', { name: 'Ofertar asignatura' }));
+    const dialogo = await screen.findByRole('dialog', { name: 'Ofertar asignatura' });
+
+    for (const nombre of ['Asignatura', 'Jornada']) {
+      const campo = within(dialogo).getByRole('combobox', { name: nombre });
+      expect(campo).toBeDisabled();
+      expect(campo).toHaveAccessibleDescription('Elige primero la carrera.');
+    }
+    await usuario.selectOptions(within(dialogo).getByLabelText('Carrera'), '550613A01-P-0301');
+    expect(within(dialogo).getByRole('combobox', { name: 'Asignatura' })).toBeEnabled();
+    expect(within(dialogo).getByRole('combobox', { name: 'Jornada' })).toBeEnabled();
+    expect(within(dialogo).getByRole('combobox', { name: 'Jornada' })).toHaveAccessibleDescription(
+      'Una de las jornadas de la carrera: Matutina, Nocturna.',
+    );
+  });
+
   it('un 400 muestra el motivo junto a la pista y un 409 su título', async () => {
     sesionCon(simulada, 'admin.demo', [
       'CATALOGOS:LECTURA',

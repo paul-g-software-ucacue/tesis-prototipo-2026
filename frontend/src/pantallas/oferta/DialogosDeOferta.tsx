@@ -28,6 +28,9 @@ const CAMPOS = [
   'horasSemanales',
 ];
 
+// La asignatura y la jornada salen de la carrera: hasta elegirla, sus campos lo dicen (F03-H03).
+const PRIMERO_LA_CARRERA = 'Elige primero la carrera.';
+
 function pistaDeHoras(horasDeLaAsignatura: number | undefined) {
   return horasDeLaAsignatura === undefined
     ? 'Vacío: las de la asignatura; si las indicas, no pueden pasarlas.'
@@ -71,8 +74,19 @@ function DatosDelParalelo({
         label="Jornada"
         value={jornada}
         onChange={(evento) => cambiar('jornada', evento.target.value)}
+        disabled={!carrera}
         error={Boolean(detalleDe(aviso, 'jornada'))}
-        helperText={ayuda(aviso, 'jornada', 'Una de las jornadas de la carrera.')}
+        helperText={
+          carrera
+            ? ayuda(
+                aviso,
+                'jornada',
+                `Una de las jornadas de la carrera: ${carrera.jornadas
+                  .map((valor) => NOMBRE_DE_LA_JORNADA[valor])
+                  .join(', ')}.`,
+              )
+            : PRIMERO_LA_CARRERA
+        }
         slotProps={SELECCION}
       >
         <option value="">Elige una</option>
@@ -245,24 +259,23 @@ export function DialogoOfertar({
           </option>
         ))}
       </TextField>
-      {carrera && (
-        <TextField
-          select
-          label="Asignatura"
-          value={asignatura}
-          onChange={(evento) => setAsignatura(evento.target.value)}
-          error={Boolean(detalleDe(aviso, 'asignatura'))}
-          helperText={ayuda(aviso, 'asignatura', 'Solo las activas.')}
-          slotProps={SELECCION}
-        >
-          <option value="">Elige una</option>
-          {activas.map((una) => (
-            <option key={una.codigo} value={una.codigo}>
-              {`Ciclo ${String(una.ciclo)} · ${una.codigo} · ${una.nombre}`}
-            </option>
-          ))}
-        </TextField>
-      )}
+      <TextField
+        select
+        label="Asignatura"
+        value={asignatura}
+        onChange={(evento) => setAsignatura(evento.target.value)}
+        disabled={!carrera}
+        error={Boolean(detalleDe(aviso, 'asignatura'))}
+        helperText={carrera ? ayuda(aviso, 'asignatura', 'Solo las activas.') : PRIMERO_LA_CARRERA}
+        slotProps={SELECCION}
+      >
+        <option value="">Elige una</option>
+        {activas.map((una) => (
+          <option key={una.codigo} value={una.codigo}>
+            {`Ciclo ${String(una.ciclo)} · ${una.codigo} · ${una.nombre}`}
+          </option>
+        ))}
+      </TextField>
       <TextField
         label="Paralelo"
         value={paralelo}
