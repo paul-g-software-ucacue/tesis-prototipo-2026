@@ -56,6 +56,13 @@ Registro de las comprobaciones de la historia (issue #37): mantener la oferta de
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| `deploy/probar_oferta.sh` sobre el perfil reconstruido, dos veces seguidas | Todos los pasos pasan las dos veces, en unos 22 s: 320 de 320 datos maestros de prueba; 165 de 165 asignaturas-paralelo con 660 horas y el total de cada carrera; 3 paralelos de 4 h dan 12, con uno retirado 8 y al volver a ofertarlo 12; repetida 409; horas de más, jornada ajena y asignatura inactiva, 400 en su campo; los datos para la afinidad; consultar la oferta tarda 11 y 10 ms (máximo 300 ms); con el periodo En aprobación, 409 `ACADEMICO_OFERTA_CERRADA`; quién lee y escribe; el registro. Sin sede matriz en la base, usó una temporal; la limpieza deja 0 asignaturas-paralelo, 0 carreras y 0 periodos de prueba, también en Roles | Salida del script. El estado En aprobación se pone en la base, como dice research §9 | 2026-10-24 |
+| Los 11 scripts de punta a punta sobre el perfil | 11 de 11 terminan con 0 | `probar_autenticacion`, `errores`, `eventos`, `spa`, `normativa`, `periodos`, `estructura`, `plantillas`, `subida`, `carreras` y `oferta` | 2026-10-24 |
+| Backend completo: `./gradlew check integrationTest` | 937 pruebas, 0 fallas; BUILD SUCCESSFUL en 2 min 26 s |  | 2026-10-24 |
+| Playwright completo | 78 de 78 pasan en 1,7 min | `npx playwright test` | 2026-10-24 |
+| `shellcheck` de `probar_oferta.sh` | Sin observaciones | `koalaman/shellcheck:stable` | 2026-10-24 |
+| `deploy/equipo/probar_equipo.sh` con un constructor limpio (`BUILDX_BUILDER=mdd-limpio`) | 13 de 13 pasos OK; memoria del equipo después de iniciar sesión: 1385,1 MiB | Salida del script | 2026-10-24 |
+| Gitleaks v8.30.1 sobre un clon en el scratchpad (montado `:ro,Z`) | Sin fugas | `gitleaks git --redact` | 2026-10-24 |
 
 ## Equipo de demostración
 
