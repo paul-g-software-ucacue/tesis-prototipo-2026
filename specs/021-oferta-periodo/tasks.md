@@ -175,7 +175,7 @@ description: "Tareas de F03-H03: mantener la oferta del periodo"
 
 ## Phase 7: Punta a punta y cierre
 
-- [ ] T015 Crear `deploy/probar_oferta.sh`, con el estilo de `probar_carreras.sh` y los 7 pasos de research §9:
+- [X] T015 Crear `deploy/probar_oferta.sh`, con el estilo de `probar_carreras.sh` y los 7 pasos de research §9:
   - **Datos:** registra con un prefijo `P` + 3 dígitos al azar las carreras, mallas y asignaturas de las cargas 02 y 04, con las carreras en la sede matriz que ya tenga la base o en una temporal, como `probar_carreras.sh`, y un periodo `<prefijo>2026-I` en Planificación; luego oferta la carga 05 de `backend/servicios/cargas/src/test/resources/cargas/datos-de-prueba/`, con los códigos de asignatura con prefijo.
   - **Estado del periodo:** lo pone en `EN_APROBACION` directamente en la base para el paso 5, con un comentario que diga por qué.
   - **Tiempo:** mide cuánto tarda `consultarOferta` con las 165 asignaturas-paralelo, lo muestra en la salida y falla si pasa de 300 ms (meta del plan). Anotarlo en la evidencia.

@@ -105,6 +105,13 @@ jobs:
         shell: bash
         run: deploy/probar_carreras.sh
 
+      # F03-H03: las 165 asignaturas-paralelo de prueba y sus 660 horas a cubrir, 4 horas en 3
+      # paralelos son 12, las reglas, la oferta cerrada fuera de Planificación y quién la lee y la
+      # escribe (D-70). Borra lo que creó.
+      - name: Oferta del periodo de punta a punta
+        shell: bash
+        run: deploy/probar_oferta.sh
+
       # shell: bash agrega pipefail, así que tee no oculta el código de salida del script.
       # Después de iniciar sesión (D-34): la medición de referencia de R-19 desde B00-H03.
       - name: Medición de R-19 después de iniciar sesión
