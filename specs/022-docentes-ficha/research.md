@@ -68,7 +68,7 @@ En `Docente` y su ficha, sin dobles, con el año actual como parámetro:
 
 ## 9. Los valores permitidos (FR-012, principio VI)
 
-- **Decisión:** enumeraciones del dominio de Docentes (`TipoDeIdentificacion`, `TipoDePersonal`, `CategoriaDeEscalafon`, `Dedicacion`, `CondicionEspecial`, `TipoDeTituloDeCuartoNivel`, `EstadoLaboral`), los enums del contrato con los mismos valores y las restricciones `check` de la migración. `ValoresPermitidosTest` de Docentes los compara con la carga 6 de `diccionario-de-datos.yaml`, como ya hace Académico con las cargas 2 y 4.
+- **Decisión:** enumeraciones del dominio de Docentes (`TipoDeIdentificacion`, `TipoPersonal`, `CategoriaDeEscalafon`, `Dedicacion`, `CondicionEspecial`, `TipoDeTituloDeCuartoNivel`, `EstadoLaboral`), los enums del contrato con los mismos valores y las restricciones `check` de la migración. `ValoresPermitidosTest` de Docentes los compara con la carga 6 de `diccionario-de-datos.yaml`, como ya hace Académico con las cargas 2 y 4.
 - **Campos amplios:** de Académico (§4).
 - **Nombres en la SPA:** las etiquetas en español («Tiempo completo», «Medio tiempo», «Tiempo parcial (hasta 19 h)»…) en un módulo de la pantalla, como las jornadas y modalidades de F03-H02.
 
@@ -81,19 +81,19 @@ En `Docente` y su ficha, sin dobles, con el año actual como parámetro:
 - **Permisos:** la ruta y el menú piden la lectura; sin escritura, la pantalla queda en solo lectura y dice por qué.
 - **Ruta:** `/docentes`; menú «Docentes» en el grupo de datos maestros.
 
-## 11. Glosario (principio III) — propuesta para el autor
+## 11. Glosario (principio III) — aprobado por el autor el 2026-10-24
 
 `modelo_dominio.md` §7.1 ya tiene Docente, Tipo de personal, Dedicación, Condición especial y Ficha académica. La historia usa cuatro nombres de la carga 6 que no están, y uno que cambia:
 
 | Término | Definición propuesta | Código | Contexto | Origen |
 |---|---|---|---|---|
 | Tipo de personal *(cambia)* | Titular, ocasional, invitado u honorario (RCE art. 137). | `TipoPersonal` | Datos maestros | RF-16, carga 6 |
-| Categoría de escalafón *(nuevo)* | Categoría y nivel de un docente titular en el escalafón (auxiliar, agregado o principal, con su nivel); los demás no la tienen. | `CategoriaEscalafon` | Datos maestros | RF-16, carga 6 |
+| Categoría de escalafón *(nuevo)* | Categoría y nivel de un docente titular en el escalafón (auxiliar, agregado o principal, con su nivel); los demás no la tienen. | `CategoriaDeEscalafon` | Datos maestros | RF-16, carga 6 |
 | Carrera base *(nuevo)* | Carrera a la que pertenece un docente. No limita las carreras en las que puede dictar clase. | `carreraBase` | Datos maestros | Carga 6 |
 | Asignatura afín declarada *(nuevo)* | Asignatura que la ficha académica de un docente marca como afín; suma al puntaje de afinidad cuando el coordinador la valida. | `asignaturasAfines` | Datos maestros | RF-17, carga 6 |
 | Estado laboral *(nuevo)* | Activo, en licencia o inactivo. Solo un docente activo recibe asignaciones. | `EstadoLaboral` | Datos maestros | Carga 6 |
 
-Se aplica con una copia `modelo_dominio.md.antes-F03-H04`, antes del código, si el autor lo aprueba.
+Aprobado por el autor el 2026-10-24 y aplicado antes del código, con la copia `modelo_dominio.md.antes-F03-H04`.
 
 ## 12. Datos de prueba
 

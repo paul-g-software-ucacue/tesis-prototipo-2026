@@ -8,7 +8,7 @@
 |---|---|
 | `NumeroDeIdentificacion` | `^[0-9A-Z]{1,13}$`, ejemplo `0109990010` (ficticio) |
 | `TipoDeIdentificacion` | `CEDULA`, `PASAPORTE` |
-| `TipoDePersonal` | `TITULAR`, `OCASIONAL`, `INVITADO`, `HONORARIO` |
+| `TipoPersonal` | `TITULAR`, `OCASIONAL`, `INVITADO`, `HONORARIO` |
 | `CategoriaDeEscalafon` | `AUXILIAR_1`, `AUXILIAR_2`, `AGREGADO_1`, `AGREGADO_2`, `AGREGADO_3`, `PRINCIPAL_1`, `PRINCIPAL_2`, `PRINCIPAL_3`, `NO_APLICA` |
 | `Dedicacion` | `TC`, `MT`, `TP` |
 | `CondicionEspecial` | `CUIDADOR_SUSTITUTO`, `MATERNIDAD_LACTANCIA`, `APOYO_SIES`, `NINGUNA` |
