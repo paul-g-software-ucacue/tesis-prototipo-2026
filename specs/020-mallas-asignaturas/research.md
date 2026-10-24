@@ -20,7 +20,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 
 - **Decisión:**
   - Los niveles de formación, las modalidades, las jornadas, las unidades de organización curricular y los estados son **enumeraciones del dominio** (`NivelDeFormacion`, `Modalidad`, `Jornada`, `UnidadDeOrganizacionCurricular`, `EstadoDeCarrera`, `EstadoDeMalla`), como `TipoDeUnidad` en F03-H01, con su `check` en la base. Cada lista vive en un solo lugar.
-  - **Una prueba de Académico compara cada enumeración con el diccionario de datos** de las cargas 2 y 4 (`backend/servicios/cargas/src/main/resources/cargas/diccionario-de-datos.yaml`, leído como archivo, sin depender del módulo Cargas): si el diccionario cambia, la prueba falla.
+  - **Una prueba de Académico compara cada enumeración con el diccionario de datos** de las cargas 2 y 4 (`backend/servicios/cargas/src/main/resources/cargas/diccionario-de-datos.yaml`, leído como archivo, sin depender del módulo Cargas): si el diccionario cambia, la prueba falla. `EstadoDeMalla` no se compara: el diccionario no tiene la malla como entidad (aclaración 2). El estado de la asignatura del diccionario (`ACTIVA`, `INACTIVA`) se compara con lo que guarda `activa`.
   - Los **11 campos amplios CINE** son una tabla, `campo_amplio`, precargada por la migración con su código y su nombre (los de la hoja de catálogos del diccionario), porque la pantalla muestra su nombre (US3). Los campos específicos y detallados se validan por su forma (3 y 4 dígitos que empiezan por el anterior): el diccionario no trae su lista.
 - **Por qué:** son catálogos fijos de la norma (RRA, CINE), no cifras de la política; cambiarlos es cambiar la ERS. La prueba contra el diccionario evita que las dos listas se desalineen.
 - **Ajuste de la spec (aprobado y aplicado el 2026-10-24):** FR-006 pasa a decir «los valores permitidos DEBEN ser los del diccionario de datos, en un solo lugar, y una prueba lo comprueba». US3, escenario 1, dice «con su nombre CINE» para el campo amplio; el específico solo tiene código.
@@ -92,7 +92,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 
 ## 9. Punta a punta
 
-- **Decisión:** `deploy/probar_carreras.sh`, con el estilo de `probar_estructura.sh`. Lee las cargas 02 y 04 de los datos de prueba de la ERS que ya están en el repositorio (`backend/servicios/cargas/src/test/resources/cargas/datos-de-prueba/`, sintéticos) y los registra con un prefijo al azar en cada código (los códigos se recortan para no pasar su largo):
+- **Decisión:** `deploy/probar_carreras.sh`, con el estilo de `probar_estructura.sh`. Lee las cargas 02 y 04 de los datos de prueba de la ERS que ya están en el repositorio (`backend/servicios/cargas/src/test/resources/cargas/datos-de-prueba/`, sintéticos) y los registra con un prefijo de 4 caracteres al azar (`P` y 3 dígitos) delante de cada código, que cabe en todos los largos:
   1. el Vicerrector registra las 7 carreras, sus 12 mallas y las 300 asignaturas; cada malla suma 100 horas (SC-002);
   2. una asignatura sin carrera y sin horas da 400 con los dos campos (escenario 1); una con una palabra clave o un ciclo de más, 400 con su campo;
   3. códigos y siglas repetidos, 409;

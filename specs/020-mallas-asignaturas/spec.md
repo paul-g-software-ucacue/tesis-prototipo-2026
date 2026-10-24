@@ -137,11 +137,11 @@ Como quien mantiene los datos maestros, o como quien los consulta, quiero una pa
 - **FR-005**: Cada dato inválido DEBE rechazarse entero, con su campo y el motivo en español, sin dejar nada a medias.
 - **FR-006**: Los valores permitidos (niveles, modalidades, jornadas, unidades de organización curricular, campos CINE, estados) DEBEN ser los del diccionario de datos, cada lista en un solo lugar, y una prueba DEBE comprobar que coinciden (principio VI).
 - **FR-007**: La consulta de una asignatura DEBE mostrar su campo amplio y específico, sus palabras clave y si es de tronco común (RN-19, RN-24).
-- **FR-008**: Mantener carreras y asignaturas DEBE exigir un permiso de escritura, y consultarlas un permiso de lectura, validados en el servidor (ADR-021). Mantener DEBE exigir «Catálogos y datos maestros: escritura» o «Distributivo del periodo: escritura», y consultar, «Distributivo del periodo: lectura» o «Catálogos y datos maestros: lectura» (D-70, aclaración 1).
+- **FR-008**: Mantener carreras, mallas y asignaturas DEBE exigir un permiso de escritura, y consultarlas un permiso de lectura, validados en el servidor (ADR-021). Mantener DEBE exigir «Catálogos y datos maestros: escritura» o «Distributivo del periodo: escritura», y consultar, «Distributivo del periodo: lectura» o «Catálogos y datos maestros: lectura» (D-70, aclaración 1).
 - **FR-009**: Cada registro, corrección y cambio de estado DEBE quedar registrado con quién, cuándo, qué cambió, el valor anterior y el nuevo (principio VII).
 - **FR-010**: El sistema DEBE ofrecer la consulta de las carreras y de las asignaturas de una carrera, para que la oferta (F03-H03), las cargas (F01-H04) y la afinidad (F07) las usen.
 - **FR-011**: La pantalla DEBE mostrar las carreras y, en cada una, sus mallas con sus asignaturas por ciclo y las horas de cada ciclo y de cada malla, y permitir a quien tenga el permiso registrar, corregir y cambiar el estado de carreras, mallas y asignaturas.
-- **FR-012**: La consulta de una malla DEBE dar el total de horas semanales de clase de sus asignaturas activas, para que la oferta (F03-H03) aplique RN-18.
+- **FR-012**: La consulta de las carreras DEBE dar, por cada malla, el total de horas semanales de clase de sus asignaturas activas, para que la oferta (F03-H03) aplique RN-18.
 
 ### Key Entities
 
@@ -160,7 +160,7 @@ Como quien mantiene los datos maestros, o como quien los consulta, quiero una pa
 - **SC-001**: Quien mantiene los datos registra una asignatura completa de una carrera existente en menos de 2 minutos, sin ayuda.
 - **SC-002**: Las 7 carreras, sus 12 mallas y las 300 asignaturas de los datos de prueba de las cargas 2 y 4 se pueden registrar todas, y la pantalla muestra las horas de clase de cada malla (100 en cada una).
 - **SC-003**: El 100 % de los intentos de guardar una asignatura sin carrera o sin horas, o con un dato fuera de las reglas del diccionario, se rechazan con su campo, también llamando directamente al servidor.
-- **SC-004**: Cada cambio de una carrera o una asignatura aparece en el registro con quién, cuándo, el valor anterior y el nuevo.
+- **SC-004**: Cada cambio de una carrera, una malla o una asignatura aparece en el registro con quién, cuándo, el valor anterior y el nuevo.
 
 ## Assumptions
 
