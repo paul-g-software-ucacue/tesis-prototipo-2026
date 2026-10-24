@@ -110,8 +110,8 @@ Como quien ejecuta las cargas, quiero un botón «Subir archivo» en cada carga,
 - **Separador**: coma (RFC 4180) o punto y coma, como dicen las convenciones; el sistema lo detecta en la fila de encabezados. Otro separador no deja reconocer los encabezados y se rechaza por columnas faltantes.
 - **Comillas**: un valor entre comillas dobles puede tener el separador, comillas duplicadas o saltos de línea; no parte la fila. Unas comillas sin cerrar hacen que el archivo no se pueda leer.
 - **Encabezados**: se comparan como los escribe la plantilla, en minúsculas; los espacios al inicio o al final se ignoran. Una columna repetida se rechaza.
-- **Filas con otro número de columnas**: una fila de datos con más o menos valores que el encabezado hace que el archivo no se pueda leer, con su número de fila.
-- **Filas vacías**: las del final no cuentan como registros; una fila vacía entre registros sí se cuenta y su contenido lo revisa F01-H03.
+- **Filas con otro número de columnas**: una fila de datos con más o menos valores que el encabezado hace que el archivo no se pueda leer, con su número de fila. Una línea sin caracteres, o solo con separadores, no cuenta como otro número de valores: es una fila vacía.
+- **Filas vacías**: una fila vacía es una línea sin caracteres, una solo con separadores o una con todos sus valores en blanco. Las del final no cuentan como registros; una entre registros sí se cuenta, y su contenido lo revisa F01-H03.
 - **Tamaño**: un archivo de más de 5 MB se rechaza con el tamaño máximo. Los datos de prueba más grandes son de decenas de kilobytes.
 - **XLSX**: la hoja tiene los encabezados en la primera fila; las celdas de fecha o número se leen como el texto que muestran, para no perder el 0 inicial de una cédula.
 - **El nombre del archivo** no importa: lo que cuenta es la carga en que se sube.
@@ -127,7 +127,7 @@ Como quien ejecuta las cargas, quiero un botón «Subir archivo» en cada carga,
 - **FR-003**: Un CSV DEBE estar en UTF-8, con o sin la marca de UTF-8 al inicio; si no lo está, se rechaza diciendo que se espera UTF-8.
 - **FR-004**: El sistema DEBE detectar si el CSV usa coma o punto y coma, y leer las comillas dobles según RFC 4180.
 - **FR-005**: Los encabezados DEBEN ser exactamente las columnas de la plantilla de la carga, en su orden; si no, el archivo se rechaza nombrando las columnas que faltan, las que sobran, las repetidas o la primera fuera de lugar.
-- **FR-006**: Un XLSX DEBE tener una sola hoja, con los encabezados en la primera fila, y leerse con las mismas reglas que un CSV.
+- **FR-006**: Un XLSX DEBE tener una sola hoja, con los encabezados en la primera fila, y leerse con las mismas reglas que un CSV; las celdas vacías al final de una fila son valores en blanco, y un valor fuera de las columnas de los encabezados hace que no se pueda leer.
 - **FR-007**: Un archivo válido DEBE informar el número de registros leídos; un archivo sin registros se rechaza.
 - **FR-008**: Un archivo de más de 5 MB DEBE rechazarse diciendo el tamaño máximo.
 - **FR-009**: Cada rechazo DEBE decir el motivo en español, con un código del catálogo de errores (ADR-016), y no dejar nada guardado a medias.

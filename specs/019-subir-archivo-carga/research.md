@@ -51,17 +51,20 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 - **Por qué la extensión:** es lo que el usuario ve y elige; el contenido se comprueba después (paso 3), para que un archivo renombrado no pase. Un CSV en Windows-1252 con solo caracteres ASCII es también UTF-8 válido, así que se acepta: lo que se pierde son las tildes, y esas fallan el paso 4.
 - **El orden de los pasos** hace que cada archivo tenga un solo motivo, el primero que lo explica.
 - **El tamaño:** el proceso `datos` acepta partes de hasta 10 MB (`spring.servlet.multipart.max-file-size`), y el servicio rechaza más de 5 MB con su código, que dice el máximo. Más de 10 MB lo corta Spring con 413; hoy ese 413 llega con `COMUN_SOLICITUD_INVALIDA`, porque `CodigosComunes.segunEstado` no tiene el 413. Se agrega **`COMUN_CONTENIDO_DEMASIADO_GRANDE`** (413) al catálogo común, para que cualquier proceso lo responda bien.
+- **nginx:** en el perfil local, la SPA llega a `/api` por el nginx del frontend, que por defecto acepta 1 MB: `location /api/` de `frontend/nginx.conf` gana `client_max_body_size 10m;`. En el equipo, Caddy envía `/api` directo al gateway, sin límite propio.
 - **Alternativa:** limitar a 5 MB solo con Spring. El mensaje sería genérico y no diría el máximo.
 
 ## 4. Leer el CSV
 
 - **Decisión:** un lector propio en el adaptador (`LectorCsv`), de unas 100 líneas: RFC 4180 con comillas dobles, comillas duplicadas y saltos de línea dentro de un valor; separador coma o punto y coma, el que aparezca primero fuera de comillas en la fila de encabezados (convenciones); fin de línea LF o CRLF.
+- **Filas vacías:** una línea sin caracteres o solo con separadores se lee como una fila de N valores en blanco, no como una fila con otro número de valores. Así la regla del ancho solo marca filas con datos de otro ancho.
 - **Por qué:** las reglas son pocas y las fijan las convenciones; un lector propio no agrega una dependencia (principio X) y deja controlar los mensajes de cada error.
 - **Alternativa:** Apache Commons CSV. Es pequeño y conocido, pero sería una dependencia más para lo que el JDK resuelve, y sus excepciones no dicen la fila en el formato que necesitamos.
 
 ## 5. Leer el XLSX
 
 - **Decisión:** **Apache POI 5.5.1** (`poi-ooxml`), solo en el adaptador `LectorXlsx`, con la versión en `gradle.properties` (`versionApachePoi`). Lee la única hoja con `XSSFWorkbook` y convierte cada celda con `DataFormatter`, que devuelve el texto que muestra la celda: una cédula con formato de texto conserva su 0 inicial y una fecha sale como la muestra la hoja.
+- **Ancho de las filas:** POI omite las celdas vacías del final, así que se completan como valores en blanco hasta el número de encabezados. Un valor más allá de la última columna de los encabezados da `CARGAS_ARCHIVO_ILEGIBLE`, con su fila; una celda vacía ahí no cuenta.
 - **Por qué POI:** es el lector de referencia de OOXML, con protección contra XXE y contra los ZIP que se inflan de más (`ZipSecureFile`), y su `DataFormatter` da el «texto que muestra la celda» que pide la spec. Con el límite de 5 MB, cargar la hoja entera en memoria no pesa.
 - **Versión:** la 6.0.0 salió el 19/10/2026, hace 4 días; la regla del proyecto pide versiones con más de dos semanas. La 5.5.1 es del 26/11/2025.
 - **Riesgo:** POI trae sus dependencias (`poi`, `xmlbeans`, `commons-compress`, `commons-io`, `commons-collections4`, `commons-math3`, `SparseBitSet`, `curvesapi`, `log4j-api`). El SBOM y Grype de la etapa 4 las revisan; si alguna tiene una vulnerabilidad alta con versión corregida, se fija como Jackson y Tomcat en `gradle.properties`.
@@ -94,7 +97,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 ## 10. Punta a punta
 
 - **Decisión:** `deploy/probar_subida.sh`, con el estilo de `probar_plantillas.sh`. Arma los archivos en una carpeta temporal con datos ficticios: un CSV de carreras, el mismo con punto y coma, el mismo en XLSX (con `python3 -I` y `zipfile`, sin binarios en el repositorio), uno sin `codigo_carrera`, uno en Windows-1252, uno con una columna de más, uno sin registros, un PDF mínimo y uno de 6 MB. Pasos:
-  1. `datos.demo` sube el CSV y el XLSX: 200 con el mismo número de registros;
+  1. `datos.demo` sube el CSV y el XLSX: 200 con el mismo número de registros; y un CSV de unos 2 MB a través del frontend (`MDD_FRONTEND`, por defecto `http://localhost:8081`) da 200, para comprobar el límite de nginx;
   2. el de punto y coma, también;
   3. cada archivo inválido da su código, y el de la columna faltante dice `codigo_carrera`;
   4. `consolidacion.demo` y `vicerrectorado.demo` suben (D-71);

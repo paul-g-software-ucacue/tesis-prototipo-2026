@@ -30,7 +30,7 @@ Como `V5__vicerrector_escribe_normativa.sql`: `insert … select` por identifica
 | Puerto | Tipo | Qué hace |
 |---|---|---|
 | `ValidarArchivo` | entrada | `validar(codigo, ArchivoSubido)`: `LecturaDeArchivo` (carga, nombre, formato, registros); lanza `CargaNoEncontrada`, `ArchivoDemasiadoGrande` y las del lector y del dominio |
-| `LectorDeArchivo` | salida | `leer(nombre, contenido)`: `TablaDeDatos` y su `Formato` (`CSV`, `XLSX`); lanza `FormatoNoAdmitido`, `CodificacionNoAdmitida`, `VariasHojas` o `ArchivoIlegible` (con la fila, si la hay) |
+| `LectorDeArchivo` | salida | `leer(nombre, contenido)`: `ArchivoLeido(Formato formato, TablaDeDatos tabla)`, con `Formato` `CSV` o `XLSX`; lanza `FormatoNoAdmitido`, `CodificacionNoAdmitida`, `VariasHojas` o `ArchivoIlegible` (con la fila, si la hay) |
 
 `ArchivoSubido` (record del puerto de entrada): nombre (sin ruta, hasta 255) y contenido (bytes). `ArchivoDemasiadoGrande` lo lanza el servicio si el contenido pasa de 5 MB.
 
@@ -49,3 +49,4 @@ Como `V5__vicerrector_escribe_normativa.sql`: `insert … select` por identifica
 - `EntradaCatalogo.conDetalles(…)` y su uso en `ManejadorDeErrores` (research §6).
 - `CodigosComunes.CONTENIDO_DEMASIADO_GRANDE` (`COMUN_CONTENIDO_DEMASIADO_GRANDE`, 413) y su caso en `segunEstado`.
 - `spring.servlet.multipart.max-file-size: 10MB` y `max-request-size: 10MB` en el proceso `datos`.
+- `client_max_body_size 10m;` en `location /api/` de `frontend/nginx.conf`.
