@@ -69,7 +69,7 @@ description: "Tareas de F03-H04: mantener los docentes con su ficha académica"
 
 ### Dominio (research §1 a §3, §6, §9; data-model.md)
 
-- [ ] T004 [P] Prueba primero, en `PDOC/dominio/IdentificacionTest.java` y `PDOC/dominio/DocenteTest.java`, sin dobles, con el año actual como parámetro. Cada regla de research §3 con su campo y su motivo en español en `DatoInvalido`:
+- [X] T004 [P] Prueba primero, en `PDOC/dominio/IdentificacionTest.java` y `PDOC/dominio/DocenteTest.java`, sin dobles, con el año actual como parámetro. Cada regla de research §3 con su campo y su motivo en español en `DatoInvalido`:
   - cédula con 9 u 11 dígitos, con letras, con provincia 00 o 25, o con el dígito verificador mal; pasaporte vacío, de 14 caracteres o con signos;
   - primer apellido o primer nombre vacíos o de 61 caracteres; los nombres se guardan en mayúsculas y sin espacios en los extremos;
   - correo sin `@` o de 101 caracteres; se guarda en minúsculas; teléfono con letras o de 6 u 11 dígitos;
@@ -79,7 +79,7 @@ description: "Tareas de F03-H04: mantener los docentes con su ficha académica"
   - un docente nuevo queda `ACTIVO`; `corregido` no cambia la identificación ni el estado y devuelve cada cambio con su valor anterior y el nuevo; `conEstado` cambia solo el estado; el mensaje de ningún `DatoInvalido` contiene la identificación, el correo ni el teléfono.
 
   Crear en `JDOC/dominio/` `Identificacion`, `NombresDelDocente`, `Docente`, `DatoInvalido`, `CambioDeValor`, `Cambios` y las enumeraciones de data-model.md, con JavaDoc en español que cite RF-16, RN-01 y el glosario.
-- [ ] T005 [P] Prueba primero, en `PDOC/dominio/FichaAcademicaTest.java`, sin dobles:
+- [X] T005 [P] Prueba primero, en `PDOC/dominio/FichaAcademicaTest.java`, sin dobles:
   - el título de tercer nivel vacío o de 151 caracteres, el registro SENESCYT de 31, un campo amplio de 3 dígitos y un específico que no empieza por el amplio;
   - un título de cuarto nivel con año 1949 o el año siguiente al actual; un curso con 0 horas o 2001; una experiencia con 0 años o 61;
   - una lista de 21 elementos; una asignatura afín repetida;
@@ -87,7 +87,7 @@ description: "Tareas de F03-H04: mantener los docentes con su ficha académica"
   - el campo amplio de un título de cuarto nivel, de un curso o de una experiencia son los dos primeros dígitos de su específico.
 
   Crear `FichaAcademica`, `TituloTercerNivel`, `TituloCuartoNivel`, `Curso`, `ExperienciaLaboral` y `CampoConocimiento` en `JDOC/dominio/`, con JavaDoc que cite RF-17.
-- [ ] T006 Prueba primero, en `PDOC/dominio/ReferenciasTest.java`, `PDOC/dominio/BusquedaDeDocentesTest.java` y `PDOC/dominio/ValoresPermitidosTest.java`, sin dobles:
+- [X] T006 Prueba primero, en `PDOC/dominio/ReferenciasTest.java`, `PDOC/dominio/BusquedaDeDocentesTest.java` y `PDOC/dominio/ValoresPermitidosTest.java`, sin dobles:
   - `Referencias.verificar` rechaza una carrera base inexistente (en `carreraBase`), una asignatura afín inexistente (en `ficha.asignaturasAfines[i]`) y un campo amplio fuera de los 11 (en `ficha.tercerNivel.campoAmplio`), y acepta una carrera en cierre;
   - `BusquedaDeDocentes` encuentra «peralta», «PERALTA» y «Peraltá» en «PERALTA MALDONADO JUAN ANDRES», encuentra por el inicio de la identificación, filtra por carrera y por estado, y sin criterios trae todos;
   - **los 47 docentes de la carga 06 de prueba**, leídos con un `DocentesDePrueba` de prueba sobre las referencias de las cargas 02 y 04 de prueba, son todos válidos, y cada uno se encuentra por su cédula (SC-002);
