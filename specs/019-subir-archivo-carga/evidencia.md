@@ -66,5 +66,10 @@ Registro de las comprobaciones de la historia (issue #28): subir el CSV o XLSX d
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| GitHub Actions (T017) | ✅ Los 12 checks de #134 en verde, con el SCA (Grype sin hallazgos altos en Apache POI ni en sus dependencias) y `perfil-consolidado` (run 40060720422: «Subida de archivos de punta a punta: todos los pasos pasan.»). `sbom-backend` falló una vez porque el portal de plugins de Gradle no entregó dos artefactos; al relanzarlo pasó | PR #134 | 2026-10-24 |
+| Despliegue automático (T018) | ✅ Al fusionar #134 (`ecf5dcc`), el CD publicó las imágenes y `mdd-actualizar.timer` desplegó `ecf5dcc66602` (anterior: `b5cfa3c96de9`): «Sano en 54 s» y la prueba de humo en `OK`. En la base del equipo, `roles` en V7: `RESPONSABLE_CONSOLIDACION` y `VICERRECTOR` con `CARGAS` lectura y escritura (D-71), además de `OPERADOR_DATOS` | `journalctl -u mdd-actualizar.service`, `roles.rol_permiso` | 2026-10-23 |
+| Subir en el equipo (T018) | ✅ Con `consolidacion.demo` en `https://mdd.localhost`, después de volver a iniciar sesión, el autor ve «Subir archivo» en las 10 cargas, subió `06_docentes.csv` de los datos de prueba y la pantalla muestra «06_docentes.csv: 47 registros leídos.». Además subió un archivo de asignaturas en «Docentes contratados» y se rechazó con «Encabezados distintos de la plantilla» (informe del autor; no hay captura de ese rechazo, y el servidor no registra las subidas, principio IX) | captura del autor (24/10, 05:28) | 2026-10-24 |
+| SC-001 (menos de 5 s) | ⚠️ No medido: el autor no anotó la hora de inicio | — | 2026-10-24 |
+| Escenario «Columna faltante» en el equipo | El autor no subió el archivo de carreras sin `codigo_carrera`; la regla es la misma que rechazó el archivo de asignaturas, y el caso exacto pasa en `probar_subida.sh` (paso 4) en el perfil y en la CI | `probar_subida.sh` | 2026-10-24 |
 
 ## Notas
