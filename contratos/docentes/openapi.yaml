@@ -394,10 +394,11 @@ components:
           items:
             $ref: '#/components/schemas/ExperienciaLaboral'
         asignaturasAfines:
-          description: Códigos de asignaturas de Académico, sin repetir.
+          description: >-
+            Códigos de asignaturas de Académico, sin repetir; una repetida responde 400 con su
+            posición (el dominio la rechaza, en lugar de quitarla sin avisar).
           type: array
           maxItems: 20
-          uniqueItems: true
           items:
             $ref: '#/components/schemas/CodigoDeAsignatura'
     Nombre60:

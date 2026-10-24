@@ -230,6 +230,39 @@ class ManejadorDeErroresTest {
     }
 
     @Test
+    void dadoUnValorFueraDeUnaEnumeracion_cuandoLlega_entonces400ConSuCampoYLosValoresPermitidos()
+            throws Exception {
+        HttpResponse<String> arriba =
+                pedir(
+                        "POST",
+                        "/api/prueba/datos",
+                        "application/json",
+                        null,
+                        "{\"nombre\":\"N\",\"dedicacion\":\"XX\"}");
+        HttpResponse<String> enUnaLista =
+                pedir(
+                        "POST",
+                        "/api/prueba/datos",
+                        "application/json",
+                        null,
+                        "{\"nombre\":\"N\",\"titulos\":[{\"nombre\":\"A\",\"tipo\":\"TC\"},"
+                                + "{\"nombre\":\"B\",\"tipo\":\"OTRO\"}]}");
+
+        assertThat(arriba.statusCode()).isEqualTo(400);
+        assertThat(arriba.body())
+                .contains("\"codigo\":\"COMUN_SOLICITUD_INVALIDA\"")
+                .contains(
+                        "{\"campo\":\"dedicacion\",\"descripcion\":\"no es un valor permitido:"
+                                + " usa TC, MT o TP\"}")
+                .doesNotContain("XX")
+                .doesNotContainIgnoringCase("unexpected");
+        assertThat(enUnaLista.body())
+                .contains(
+                        "{\"campo\":\"titulos[1].tipo\",\"descripcion\":\"no es un valor"
+                                + " permitido: usa TC, MT o TP\"}");
+    }
+
+    @Test
     void dadoUnCuerpoMalFormado_cuandoLlega_entonces400CuerpoIlegibleSinElMensajeDelAnalizador()
             throws Exception {
         HttpResponse<String> respuesta =

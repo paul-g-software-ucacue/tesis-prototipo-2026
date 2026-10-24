@@ -83,15 +83,24 @@ public final class DocentesDePrueba {
 
     /** Las referencias de las cargas 02 y 04 de prueba, más la carrera C1 y la asignatura A1. */
     public static Referencias referencias() {
-        Map<String, String> carreras = new LinkedHashMap<>();
-        carreras.put("C1", "DESARROLLO DE SOFTWARE");
+        Map<String, Referencias.Carrera> carreras = new LinkedHashMap<>();
+        carreras.put("C1", new Referencias.Carrera("DESARROLLO DE SOFTWARE", "DS"));
         filas("02_carreras.csv")
-                .forEach(fila -> carreras.put(fila.get("codigo_carrera"), fila.get("nombre")));
-        Map<String, String> asignaturas = new LinkedHashMap<>();
-        asignaturas.put("A1", "PROGRAMACIÓN");
+                .forEach(
+                        fila ->
+                                carreras.put(
+                                        fila.get("codigo_carrera"),
+                                        new Referencias.Carrera(
+                                                fila.get("nombre"), fila.get("siglas"))));
+        Map<String, Referencias.Asignatura> asignaturas = new LinkedHashMap<>();
+        asignaturas.put("A1", new Referencias.Asignatura("PROGRAMACIÓN", "C1"));
         filas("04_asignaturas_malla.csv")
                 .forEach(
-                        fila -> asignaturas.put(fila.get("codigo_asignatura"), fila.get("nombre")));
+                        fila ->
+                                asignaturas.put(
+                                        fila.get("codigo_asignatura"),
+                                        new Referencias.Asignatura(
+                                                fila.get("nombre"), fila.get("codigo_carrera"))));
         return new Referencias(carreras, asignaturas, CAMPOS_AMPLIOS);
     }
 

@@ -120,13 +120,13 @@ description: "Tareas de F03-H04: mantener los docentes con su ficha académica"
 
 **Independent Test**: registrar un docente ocasional a tiempo completo con su ficha y verlo; el registro tiene la acción.
 
-- [ ] T011 [US1] Prueba primero, en `PDOC/aplicacion/MantenerDocentesServicioTest.java` (Mockito):
+- [X] T011 [US1] Prueba primero, en `PDOC/aplicacion/MantenerDocentesServicioTest.java` (Mockito):
   - registrar bloquea la tabla, comprueba la identificación y el correo, verifica las referencias, guarda y registra `DOCENTE_REGISTRADO` con la identificación;
   - una identificación repetida lanza `DocenteRepetido`, y un correo de otro, `CorreoRepetido`, sin registro;
   - una carrera base inexistente lanza `DatoInvalido` sin guardar.
 
   Crear los puertos de entrada `ConsultarDocentes` y `MantenerDocentes`, sus excepciones y `MantenerDocentesServicio`. T011 pasa.
-- [ ] T012 [US1] Prueba primero, en `PDOC/adaptadores/entrada/DocentesContratoTest.java`, con dobles en memoria que usan las reglas reales del dominio:
+- [X] T012 [US1] Prueba primero, en `PDOC/adaptadores/entrada/DocentesContratoTest.java`, con dobles en memoria que usan las reglas reales del dominio:
   - `registrarDocente` 201;
   - 400 con el campo `horasContratadas`, `identificacion`, `carreraBase` y `ficha.cursos[0].horas`;
   - **una dedicación que no existe da 400 y el detalle dice los valores permitidos** (escenario del issue);
@@ -138,7 +138,7 @@ description: "Tareas de F03-H04: mantener los docentes con su ficha académica"
   - escrituras con `hasAnyAuthority('PERMISO_DOCENTES:ESCRITURA','PERMISO_CATALOGOS:ESCRITURA','PERMISO_DISTRIBUTIVO:ESCRITURA')`.
 
   Crear `JDOC/infraestructura/ConfiguracionDocentes.java` con los beans. T012 pasa.
-- [ ] T013 [US1] Prueba primero, en `PDOC/adaptadores/entrada/PermisosDocentesTest.java` con `VerificadorDePermisos`: las 6 operaciones exigen sus permisos alternativos. Comprobar una vez que falla si la escritura deja fuera `DOCENTES:ESCRITURA`, restaurarla y anotarlo en la evidencia. T013 pasa.
+- [X] T013 [US1] Prueba primero, en `PDOC/adaptadores/entrada/PermisosDocentesTest.java` con `VerificadorDePermisos`: las 6 operaciones exigen sus permisos alternativos. Comprobar una vez que falla si la escritura deja fuera `DOCENTES:ESCRITURA`, restaurarla y anotarlo en la evidencia. T013 pasa.
 
 **Checkpoint**: un docente se registra por la API.
 
@@ -148,7 +148,7 @@ description: "Tareas de F03-H04: mantener los docentes con su ficha académica"
 
 **Goal**: buscar por nombre o identificación y consultar la ficha con los nombres de Académico (FR-007, FR-008; SC-001, SC-003).
 
-- [ ] T014 [US2] Prueba primero, en `PDOC/aplicacion/ConsultarDocentesServicioTest.java` (Mockito) y en `DocentesContratoTest` (ampliar):
+- [X] T014 [US2] Prueba primero, en `PDOC/aplicacion/ConsultarDocentesServicioTest.java` (Mockito) y en `DocentesContratoTest` (ampliar):
   - `buscarDocentes` con `texto`, `carrera` y `estado` trae los resúmenes que coinciden, con el nombre de la carrera base, ordenados por apellidos;
   - `consultarDocente` trae todos los datos y la ficha; **cada título trae su campo amplio con su nombre y su específico, y cada curso sus horas** (escenario del issue);
   - cada asignatura afín trae su nombre;
@@ -163,7 +163,7 @@ description: "Tareas de F03-H04: mantener los docentes con su ficha académica"
 
 **Goal**: corregir con las mismas reglas, sin cambiar la identificación, con su registro (FR-003, FR-006, FR-010).
 
-- [ ] T015 [US3] Prueba primero, en `MantenerDocentesServicioTest` y `DocentesContratoTest` (ampliar):
+- [X] T015 [US3] Prueba primero, en `MantenerDocentesServicioTest` y `DocentesContratoTest` (ampliar):
   - corregir registra `DOCENTE_CORREGIDO` con cada campo cambiado (una lista, entera antes y después), y sin cambios no registra;
   - agregar un curso y quitar una experiencia quedan así;
   - el correo de otro docente da 409 `DOCENTES_CORREO_REPETIDO`; el propio, no;
@@ -179,7 +179,7 @@ description: "Tareas de F03-H04: mantener los docentes con su ficha académica"
 
 **Goal**: licencia, inactivo y vuelta a activo, sin borrar (FR-003, FR-010).
 
-- [ ] T016 [US4] Prueba primero, en `MantenerDocentesServicioTest` y `DocentesContratoTest` (ampliar): cambiar de `ACTIVO` a `LICENCIA`, a `INACTIVO` y de vuelta a `ACTIVO` registra `DOCENTE_ESTADO_CAMBIADO` con el anterior y el nuevo; el mismo estado no registra; un estado fuera del enum da 400 con los valores permitidos; 404 con un docente que no existe; `cambiarEstadoDocente` valida contra el contrato. Ampliar el servicio y el controlador. T016 pasa.
+- [X] T016 [US4] Prueba primero, en `MantenerDocentesServicioTest` y `DocentesContratoTest` (ampliar): cambiar de `ACTIVO` a `LICENCIA`, a `INACTIVO` y de vuelta a `ACTIVO` registra `DOCENTE_ESTADO_CAMBIADO` con el anterior y el nuevo; el mismo estado no registra; un estado fuera del enum da 400 con los valores permitidos; 404 con un docente que no existe; `cambiarEstadoDocente` valida contra el contrato. Ampliar el servicio y el controlador. T016 pasa.
 
 **Checkpoint**: los docentes se mantienen enteros por la API.
 

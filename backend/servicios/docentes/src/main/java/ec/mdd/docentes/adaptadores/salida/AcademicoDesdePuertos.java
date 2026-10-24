@@ -32,12 +32,18 @@ public final class AcademicoDesdePuertos implements ReferenciasAcademicas {
                 todas.carreras().stream()
                         .collect(
                                 Collectors.toMap(
-                                        CarreraDeReferencia::codigo, CarreraDeReferencia::nombre)),
+                                        CarreraDeReferencia::codigo,
+                                        carrera ->
+                                                new Referencias.Carrera(
+                                                        carrera.nombre(), carrera.siglas()))),
                 todas.asignaturas().stream()
                         .collect(
                                 Collectors.toMap(
                                         AsignaturaDeReferencia::codigo,
-                                        AsignaturaDeReferencia::nombre)),
+                                        asignatura ->
+                                                new Referencias.Asignatura(
+                                                        asignatura.nombre(),
+                                                        asignatura.carrera()))),
                 todas.camposAmplios().stream()
                         .collect(
                                 Collectors.toMap(

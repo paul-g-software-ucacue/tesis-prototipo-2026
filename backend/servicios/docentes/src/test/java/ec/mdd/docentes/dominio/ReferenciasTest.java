@@ -77,8 +77,8 @@ class ReferenciasTest {
         // Las referencias traen las carreras en cualquier estado: una en cierre también está.
         Referencias conCarreraEnCierre =
                 new Referencias(
-                        Map.of("C9", "CARRERA EN CIERRE"),
-                        Map.of("A1", "PROGRAMACIÓN"),
+                        Map.of("C9", new Referencias.Carrera("CARRERA EN CIERRE", "CC")),
+                        Map.of("A1", new Referencias.Asignatura("PROGRAMACIÓN", "C9")),
                         DocentesDePrueba.CAMPOS_AMPLIOS);
 
         conCarreraEnCierre.verificar(

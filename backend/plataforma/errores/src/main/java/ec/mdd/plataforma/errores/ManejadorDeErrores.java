@@ -39,6 +39,9 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
  *   <li>Un cuerpo o un parámetro que no pasa la validación del contrato, o una {@link
  *       SolicitudInvalida}, responde 400 {@code COMUN_SOLICITUD_INVALIDA}, con un detalle por
  *       campo.
+ *   <li>Un valor que no es de una enumeración del contrato responde 400 {@code
+ *       COMUN_SOLICITUD_INVALIDA}, con su campo y los valores permitidos (F03-H04); otro cuerpo que
+ *       no se puede leer, {@code COMUN_CUERPO_ILEGIBLE}.
  *   <li>Los errores de Spring MVC antes del controlador responden con su código común.
  *   <li>Cualquier otra excepción responde 500 {@code COMUN_ERROR_INTERNO} con un {@code
  *       idIncidente}, y se registra con su traza saneada.
@@ -174,7 +177,17 @@ public class ManejadorDeErrores extends ResponseEntityExceptionHandler {
                             excepcion, servlet.getMethod(), servlet.getRequestURI());
             respuesta = RespuestaError.deIncidente(CodigosComunes.ERROR_INTERNO, id);
         } else if (excepcion instanceof HttpMessageNotReadableException) {
-            respuesta = RespuestaError.deCatalogo(CodigosComunes.CUERPO_ILEGIBLE);
+            respuesta =
+                    ValorNoPermitido.de(excepcion)
+                            .map(
+                                    detalle ->
+                                            RespuestaError.conDetalles(
+                                                    CodigosComunes.SOLICITUD_INVALIDA,
+                                                    List.of(detalle)))
+                            .orElseGet(
+                                    () ->
+                                            RespuestaError.deCatalogo(
+                                                    CodigosComunes.CUERPO_ILEGIBLE));
         } else {
             respuesta = RespuestaError.deCatalogo(CodigosComunes.segunEstado(codigo));
         }

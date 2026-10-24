@@ -30,21 +30,29 @@ Registro de las comprobaciones de la historia (issue #38): mantener los docentes
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| El servicio bloquea, decide la identificación y el correo repetidos, guarda y registra; las referencias se verifican antes de la transacción | 9 de 9 pasan (también corregir y cambiar de estado, US3 y US4); los mensajes de los 409 no repiten la cédula ni el correo | `MantenerDocentesServicioTest` (Mockito) | 2026-10-24 |
+| Registrar 201; 400 en `horasContratadas`, `identificacion`, `carreraBase` y `ficha.cursos[0].horas`; 409 `DOCENTES_DOCENTE_REPETIDO` y `DOCENTES_CORREO_REPETIDO` | Pasan, y cada respuesta cumple el contrato | `DocentesContratoTest`, con los servicios reales sobre dobles en memoria | 2026-10-24 |
+| **Escenario del issue «Edición inválida»:** una dedicación «XX» no se guarda y el 400 dice «no es un valor permitido: usa TC, MT o TP» en `dedicacion` | Pasa; el docente queda como estaba. Antes, un valor fuera de una enumeración respondía `COMUN_CUERPO_ILEGIBLE` sin campo: `ManejadorDeErrores` (plataforma) ahora responde `COMUN_SOLICITUD_INVALIDA` con el campo, su posición en las listas y los valores permitidos, sin repetir el valor recibido. Sirve a los 4 procesos | `DocentesContratoTest`; `ManejadorDeErroresTest` (16 de 16, uno nuevo con un valor arriba y otro dentro de una lista) | 2026-10-24 |
+| Las 6 operaciones exigen sus permisos alternativos (D-70) | Pasa; sin `DOCENTES:ESCRITURA` en la escritura, falla con «con DOCENTES:ESCRITURA respondió 403» (mutación revertida) | `PermisosDocentesTest` con `VerificadorDePermisos`; `ErroresDocentesTest` (2) | 2026-10-24 |
+| Docentes, Académico, la plataforma de errores y el proceso `datos` completos | `./gradlew :servicios:docentes:check :servicios:docentes:integrationTest :servicios:academico:check :plataforma:errores:check :apps:datos:check` en verde: Docentes 77 pruebas (80,8 % de líneas en el informe de las unitarias; los adaptadores de salida los cubren las de integración), Académico 242 (77,9 %), errores 21 (77,2 %), `datos` 6 | JaCoCo (mínimo 60 %) | 2026-10-24 |
 
 ## Consultar y buscar (US2)
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| **Escenarios del issue «Consulta» y «Ficha académica»:** «peraltá» y la cédula encuentran al docente; la ficha trae el campo amplio y específico de cada título, las horas de cada curso, los nombres de los campos amplios y de las asignaturas afines | Pasan, y cada respuesta cumple el contrato; las referencias traen las carreras, las asignaturas con su carrera y los 11 campos amplios; 404 con un docente que no existe | `DocentesContratoTest`; `ConsultarDocentesServicioTest` (3, con los 47 de prueba) | 2026-10-24 |
 
 ## Corregir (US3)
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Corregir la dedicación, agregar un curso y quitar la experiencia; el correo de otro docente da 409 y el propio no; una asignatura afín que no existe da 400 en `ficha.asignaturasAfines[1]` | Pasan; el registro tiene `DOCENTE_CORREGIDO` con cada cambio; sin cambios no registra | `DocentesContratoTest`, `MantenerDocentesServicioTest` | 2026-10-24 |
 
 ## Estado laboral (US4)
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Activo → licencia → activo, con su registro; el mismo estado no registra; «JUBILADO» da 400 con «usa ACTIVO, LICENCIA o INACTIVO» | Pasan | `DocentesContratoTest`, `MantenerDocentesServicioTest` | 2026-10-24 |
 
 ## Pantalla (US5)
 
