@@ -8,6 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import com.jayway.jsonpath.JsonPath;
 import ec.mdd.academico.dominio.Asignatura;
@@ -188,6 +189,184 @@ class OfertaContratoTest {
             assertThat(resultado.getResponse().getStatus()).isEqualTo(404);
             contrato.validar(resultado);
         }
+    }
+
+    @Test
+    void
+            dadaUnaAsignaturaDe4HorasEn3Paralelos_cuandoSeConsultaLaOferta_entoncesSuma12YConUnaRetirada8()
+                    throws Exception {
+        for (String paralelo : List.of("A_NOCTURNA", "B_NOCTURNA", "C_NOCTURNA")) {
+            pedir(json(post(RUTA), NOCTURNA.replace("A_NOCTURNA", paralelo)), escritura());
+        }
+
+        MvcResult tres = pedir(get(RUTA), oferta());
+        pedir(
+                json(put(RUTA + "/" + POO + "/C_NOCTURNA/estado"), "{\"estado\":\"RETIRADA\"}"),
+                escritura());
+        MvcResult dos = pedir(get(RUTA), lectura());
+
+        assertThat(tres.getResponse().getStatus()).isEqualTo(200);
+        assertThat(JsonPath.<Map<String, Object>>read(cuerpo(tres), "$"))
+                .containsEntry("periodo", "2026-I")
+                .containsEntry("estadoDelPeriodo", "PLANIFICACION")
+                .containsEntry("modificable", true);
+        assertThat(JsonPath.<Number>read(cuerpo(tres), "$.horasACubrir").doubleValue())
+                .isEqualTo(12.0);
+        assertThat(
+                        JsonPath.<Number>read(
+                                        cuerpo(tres), "$.carreras[0].asignaturas[0].horasACubrir")
+                                .doubleValue())
+                .isEqualTo(12.0);
+        assertThat(JsonPath.<Integer>read(cuerpo(tres), "$.carreras[0].asignaturas[0].paralelos"))
+                .isEqualTo(3);
+        assertThat(JsonPath.<String>read(cuerpo(tres), "$.carreras[0].nombre"))
+                .isEqualTo("DESARROLLO DE SOFTWARE");
+        assertThat(JsonPath.<Number>read(cuerpo(dos), "$.horasACubrir").doubleValue())
+                .isEqualTo(8.0);
+        assertThat(JsonPath.<List<String>>read(cuerpo(dos), "$.asignaturasParalelo[*].estado"))
+                .containsExactly("OFERTADA", "OFERTADA", "RETIRADA");
+        contrato.validar(tres);
+        contrato.validar(dos);
+    }
+
+    @Test
+    void dadaUnaAsignaturaParalelo_cuandoSeConsulta_entoncesTraeLosDatosParaLaAfinidadYSusHoras()
+            throws Exception {
+        pedir(json(post(RUTA), NOCTURNA), escritura());
+
+        MvcResult resultado = pedir(get(RUTA + "/" + POO + "/A_NOCTURNA"), oferta());
+
+        String cuerpo = cuerpo(resultado);
+        assertThat(JsonPath.<Map<String, Object>>read(cuerpo, "$"))
+                .containsEntry("ciclo", 2)
+                .containsEntry("troncoComun", false)
+                .containsEntry("campoEspecifico", "061")
+                .containsEntry("horasIndicadas", false)
+                .containsEntry("porEncimaDeLaAsignatura", false);
+        assertThat(JsonPath.<Map<String, Object>>read(cuerpo, "$.campoAmplio"))
+                .containsEntry("codigo", "06")
+                .containsEntry("nombre", "Tecnologías de la información y la comunicación");
+        assertThat(JsonPath.<List<String>>read(cuerpo, "$.palabrasClave"))
+                .containsExactly("programación", "objetos");
+        contrato.validar(resultado);
+        MvcResult noEsta = pedir(get(RUTA + "/" + POO + "/Z_NOCTURNA"), oferta());
+        assertThat(noEsta.getResponse().getStatus()).isEqualTo(404);
+        contrato.validar(noEsta);
+    }
+
+    @Test
+    void
+            dadasHorasIndicadasYSuAsignaturaCorregidaDespues_cuandoSeConsulta_entoncesSeMarcaPorEncima()
+                    throws Exception {
+        pedir(
+                json(
+                        post(RUTA),
+                        NOCTURNA.replace(
+                                "\"estudiantes\":28", "\"estudiantes\":28,\"horasSemanales\":4")),
+                escritura());
+        Asignatura poo =
+                carreras.asignaturas().stream()
+                        .filter(una -> una.codigo().equals(POO))
+                        .findFirst()
+                        .orElseThrow();
+        carreras.guardar(
+                poo.corregida(
+                                poo.nombre(),
+                                poo.ciclo(),
+                                poo.unidadOrganizacionCurricular(),
+                                new BigDecimal("3"),
+                                poo.horasPracticasSemanales(),
+                                poo.creditos(),
+                                poo.troncoComun(),
+                                poo.campo(),
+                                poo.palabrasClave())
+                        .asignatura());
+
+        MvcResult resultado = pedir(get(RUTA + "/" + POO + "/A_NOCTURNA"), lectura());
+
+        assertThat(JsonPath.<Map<String, Object>>read(cuerpo(resultado), "$"))
+                .containsEntry("horasIndicadas", true)
+                .containsEntry("porEncimaDeLaAsignatura", true);
+        assertThat(JsonPath.<Number>read(cuerpo(resultado), "$.horasDeLaAsignatura").doubleValue())
+                .isEqualTo(3.0);
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadaUnaOfertada_cuandoSeCorrigeYSeRetiraYSeVuelveAOfertar_entoncesCumpleElContrato()
+            throws Exception {
+        pedir(json(post(RUTA), NOCTURNA), escritura());
+        String datos =
+                "{\"jornada\":\"NOCTURNA\",\"modalidad\":\"DUAL\",\"estudiantes\":31,"
+                        + "\"sede\":\"MATRIZ\",\"horasSemanales\":3.5}";
+
+        MvcResult corregida =
+                pedir(json(put(RUTA + "/" + POO + "/A_NOCTURNA"), datos), escritura());
+        MvcResult retirada =
+                pedir(
+                        json(
+                                put(RUTA + "/" + POO + "/A_NOCTURNA/estado"),
+                                "{\"estado\":\"RETIRADA\"}"),
+                        escritura());
+        MvcResult otraVez =
+                pedir(
+                        json(
+                                put(RUTA + "/" + POO + "/A_NOCTURNA/estado"),
+                                "{\"estado\":\"OFERTADA\"}"),
+                        escritura());
+        MvcResult invalida =
+                pedir(
+                        json(
+                                put(RUTA + "/" + POO + "/A_NOCTURNA"),
+                                datos.replace("NOCTURNA", "MATUTINA")),
+                        escritura());
+
+        assertThat(JsonPath.<Map<String, Object>>read(cuerpo(corregida), "$"))
+                .containsEntry("modalidad", "DUAL")
+                .containsEntry("estudiantes", 31)
+                .containsEntry("sedeIndicada", true);
+        assertThat(JsonPath.<String>read(cuerpo(retirada), "$.estado")).isEqualTo("RETIRADA");
+        assertThat(JsonPath.<String>read(cuerpo(otraVez), "$.estado")).isEqualTo("OFERTADA");
+        assertThat(JsonPath.<String>read(cuerpo(invalida), "$.detalles[0].campo"))
+                .isEqualTo("jornada");
+        for (MvcResult resultado : List.of(corregida, retirada, otraVez, invalida)) {
+            contrato.validar(resultado);
+        }
+    }
+
+    @Test
+    void dadaUnaOfertaDeUnPeriodoVigente_cuandoSeCorrigeOSeRetira_entonces409OfertaCerrada()
+            throws Exception {
+        oferta.registrar(
+                ec.mdd.academico.dominio.AsignaturaParalelo.nueva(
+                        "2025-II",
+                        POO,
+                        "A_NOCTURNA",
+                        Jornada.NOCTURNA,
+                        Modalidad.PRESENCIAL,
+                        null,
+                        28,
+                        null),
+                "x",
+                Instant.now());
+        String vigente = "/api/academico/periodos/2025-II/oferta/" + POO + "/A_NOCTURNA";
+
+        MvcResult corregir =
+                pedir(
+                        json(
+                                put(vigente),
+                                "{\"jornada\":\"NOCTURNA\",\"modalidad\":\"DUAL\",\"estudiantes\":1}"),
+                        escritura());
+        MvcResult retirar =
+                pedir(json(put(vigente + "/estado"), "{\"estado\":\"RETIRADA\"}"), escritura());
+        MvcResult consultar = pedir(get("/api/academico/periodos/2025-II/oferta"), lectura());
+
+        assertThat(cuerpo(corregir)).contains("ACADEMICO_OFERTA_CERRADA");
+        assertThat(cuerpo(retirar)).contains("ACADEMICO_OFERTA_CERRADA");
+        assertThat(JsonPath.<Boolean>read(cuerpo(consultar), "$.modificable")).isFalse();
+        contrato.validar(corregir);
+        contrato.validar(retirar);
+        contrato.validar(consultar);
     }
 
     MvcResult pedir(MockHttpServletRequestBuilder peticion, JwtRequestPostProcessor token)

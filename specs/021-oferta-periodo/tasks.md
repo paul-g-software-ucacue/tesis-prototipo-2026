@@ -123,7 +123,7 @@ description: "Tareas de F03-H03: mantener la oferta del periodo"
 
 **Goal**: la consulta de la oferta con las horas a cubrir por asignatura, por carrera y del periodo, y la de una asignatura-paralelo con los datos para la afinidad (FR-007, FR-008; SC-002, SC-003).
 
-- [ ] T011 [US2] Prueba primero, en `PACA/aplicacion/ConsultarOfertaServicioTest.java` (Mockito) y en `OfertaContratoTest` (ampliar):
+- [X] T011 [US2] Prueba primero, en `PACA/aplicacion/ConsultarOfertaServicioTest.java` (Mockito) y en `OfertaContratoTest` (ampliar):
   - `consultarOferta` trae las asignaturas-paralelo, los totales por asignatura con sus paralelos, por carrera y del periodo, el estado del periodo y `modificable`;
   - **4 horas en 3 paralelos dan 12** (escenario del issue);
   - las retiradas se ven y no suman;
@@ -139,7 +139,7 @@ description: "Tareas de F03-H03: mantener la oferta del periodo"
 
 **Goal**: corregir, retirar y volver a ofertar sin borrar, con su registro (FR-002, FR-003, FR-010).
 
-- [ ] T012 [US3] Prueba primero, en `MantenerOfertaServicioTest` y `OfertaContratoTest` (ampliar):
+- [X] T012 [US3] Prueba primero, en `MantenerOfertaServicioTest` y `OfertaContratoTest` (ampliar):
   - corregir registra `ASIGNATURA_PARALELO_CORREGIDA` con cada cambio, y sin cambios no registra;
   - retirar registra `ASIGNATURA_PARALELO_RETIRADA`, y volver a ofertar `ASIGNATURA_PARALELO_REOFERTADA`;
   - volver a ofertar revalida como corregir; el mismo estado no registra;
