@@ -52,7 +52,11 @@ class AcademicoEsquemaIntegrationTest {
                             "academico.periodo_academico",
                             "academico.registro_cambio",
                             "academico.gestion_autorizada",
-                            "academico.unidad_organica");
+                            "academico.unidad_organica",
+                            "academico.campo_amplio",
+                            "academico.carrera",
+                            "academico.malla",
+                            "academico.asignatura");
         }
     }
 
@@ -173,6 +177,173 @@ class AcademicoEsquemaIntegrationTest {
                         .isEqualTo(1);
             }
         }
+    }
+
+    @Test
+    void dadaLaMigracion_cuandoSeLeenLosCamposAmplios_entoncesTraeLos11DeCine() {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+            postgres.start();
+            JdbcClient jdbc = migrada(postgres);
+
+            assertThat(
+                            jdbc.sql("SELECT codigo FROM academico.campo_amplio ORDER BY codigo")
+                                    .query(String.class)
+                                    .list())
+                    .hasSize(11)
+                    .startsWith("00")
+                    .endsWith("10");
+            assertThat(
+                            jdbc.sql(
+                                            "SELECT nombre FROM academico.campo_amplio WHERE codigo = '06'")
+                                    .query(String.class)
+                                    .single())
+                    .isEqualTo("Tecnologías de la información y la comunicación");
+        }
+    }
+
+    @Test
+    void
+            dadasLasTablasDeCarrerasMallasYAsignaturas_cuandoSeGuardaAlgoFueraDeSusReglas_entoncesLaBaseLoRechaza() {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+            postgres.start();
+            JdbcClient jdbc = migrada(postgres);
+            assertThat(unidad(jdbc, "MATRIZ", "SEDE_MATRIZ", null, null, null)).isEqualTo(1);
+
+            assertThat(carrera(jdbc, "C1", "DS", "{NOCTURNA}", "06", "061", 5)).isEqualTo(1);
+            assertThat(carrera(jdbc, "C2", "CO", "{MATUTINA,VESPERTINA}", "04", "041", 5))
+                    .isEqualTo(1);
+            assertThat(malla(jdbc, "M1", "C1")).isEqualTo(1);
+            assertThat(malla(jdbc, "M2", "C2")).isEqualTo(1);
+            assertThat(asignatura(jdbc, "A1", "C1", "M1", "3", "{uno,dos}")).isEqualTo(1);
+            for (Object[] invalida :
+                    new Object[][] {
+                        {"C3", "DS", "{NOCTURNA}", "06", "061", 5},
+                        {"C3", "D3", "{}", "06", "061", 5},
+                        {"C3", "D3", "{NOCHE}", "06", "061", 5},
+                        {"C3", "D3", "{NOCTURNA}", "06", "071", 5},
+                        {"C3", "D3", "{NOCTURNA}", "11", "111", 5},
+                        {"C3", "D3", "{NOCTURNA}", "06", "061", 0},
+                        {"c3", "D3", "{NOCTURNA}", "06", "061", 5}
+                    }) {
+                assertThatThrownBy(
+                                () ->
+                                        carrera(
+                                                jdbc,
+                                                (String) invalida[0],
+                                                (String) invalida[1],
+                                                (String) invalida[2],
+                                                (String) invalida[3],
+                                                (String) invalida[4],
+                                                (Integer) invalida[5]))
+                        .as("carrera %s %s %s", invalida[0], invalida[1], invalida[2])
+                        .isInstanceOf(DataIntegrityViolationException.class);
+            }
+            assertThatThrownBy(() -> malla(jdbc, "M3", "C9"))
+                    .isInstanceOf(DataIntegrityViolationException.class);
+            for (Object[] invalida :
+                    new Object[][] {
+                        {"A2", "C1", "M2", "3", "{uno,dos}"},
+                        {"A2", "C1", "M1", "0.4", "{uno,dos}"},
+                        {"A2", "C1", "M1", "3", "{uno}"},
+                        {"A1", "C1", "M1", "3", "{uno,dos}"}
+                    }) {
+                assertThatThrownBy(
+                                () ->
+                                        asignatura(
+                                                jdbc,
+                                                (String) invalida[0],
+                                                (String) invalida[1],
+                                                (String) invalida[2],
+                                                (String) invalida[3],
+                                                (String) invalida[4]))
+                        .as("asignatura %s %s %s", invalida[0], invalida[2], invalida[3])
+                        .isInstanceOf(DataIntegrityViolationException.class);
+            }
+            for (String accion :
+                    new String[] {
+                        "CARRERA_REGISTRADA",
+                        "CARRERA_CORREGIDA",
+                        "CARRERA_ESTADO_CAMBIADO",
+                        "MALLA_REGISTRADA",
+                        "MALLA_ESTADO_CAMBIADO",
+                        "ASIGNATURA_REGISTRADA",
+                        "ASIGNATURA_CORREGIDA",
+                        "ASIGNATURA_INACTIVADA",
+                        "ASIGNATURA_REACTIVADA",
+                        "UNIDAD_REACTIVADA",
+                        "PERIODO_REGISTRADO"
+                    }) {
+                assertThat(
+                                jdbc.sql(
+                                                "INSERT INTO academico.registro_cambio (id, momento,"
+                                                        + " usuario, accion, detalle) VALUES"
+                                                        + " (gen_random_uuid(), now(), 'x', :accion,"
+                                                        + " '{}')")
+                                        .param("accion", accion)
+                                        .update())
+                        .as(accion)
+                        .isEqualTo(1);
+            }
+        }
+    }
+
+    private static int carrera(
+            JdbcClient jdbc,
+            String codigo,
+            String siglas,
+            String jornadas,
+            String amplio,
+            String especifico,
+            int ciclos) {
+        return jdbc.sql(
+                        "INSERT INTO academico.carrera (codigo, nombre, siglas, sede,"
+                                + " nivel_formacion, modalidad, jornadas, campo_amplio,"
+                                + " campo_especifico, campo_detallado, numero_ciclos, estado,"
+                                + " registrada_en, registrada_por) VALUES (:codigo, 'Carrera',"
+                                + " :siglas, 'MATRIZ', 'TECNOLOGICO_SUPERIOR', 'PRESENCIAL',"
+                                + " CAST(:jornadas AS varchar(15)[]), :amplio, :especifico, null,"
+                                + " :ciclos, 'VIGENTE', now(), 'vicerrectorado.demo')")
+                .param("codigo", codigo)
+                .param("siglas", siglas)
+                .param("jornadas", jornadas)
+                .param("amplio", amplio)
+                .param("especifico", especifico)
+                .param("ciclos", ciclos)
+                .update();
+    }
+
+    private static int malla(JdbcClient jdbc, String codigo, String carrera) {
+        return jdbc.sql(
+                        "INSERT INTO academico.malla (codigo, carrera, estado, registrada_en,"
+                                + " registrada_por) VALUES (:codigo, :carrera, 'VIGENTE', now(),"
+                                + " 'vicerrectorado.demo')")
+                .param("codigo", codigo)
+                .param("carrera", carrera)
+                .update();
+    }
+
+    private static int asignatura(
+            JdbcClient jdbc,
+            String codigo,
+            String carrera,
+            String malla,
+            String horas,
+            String palabras) {
+        return jdbc.sql(
+                        "INSERT INTO academico.asignatura (codigo, carrera, malla, nombre, ciclo,"
+                                + " unidad_organizacion_curricular, horas_semanales_clase,"
+                                + " horas_practicas_semanales, creditos, tronco_comun,"
+                                + " campo_amplio, campo_especifico, palabras_clave, activa,"
+                                + " registrada_en, registrada_por) VALUES (:codigo, :carrera,"
+                                + " :malla, 'Asignatura', 1, 'BASICA', CAST(:horas AS numeric),"
+                                + " null, null, false, '05', '054', CAST(:palabras AS"
+                                + " varchar(300)[]), true, now(), 'vicerrectorado.demo')")
+                .param("codigo", codigo)
+                .param("carrera", carrera)
+                .param("malla", malla)
+                .param("horas", horas)
+                .param("palabras", palabras)
+                .update();
     }
 
     private static JdbcClient migrada(PostgreSQLContainer postgres) {
