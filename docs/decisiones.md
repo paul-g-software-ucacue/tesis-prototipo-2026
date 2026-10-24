@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-71 · ADR-022.
+- **Siguiente número libre:** D-72 · ADR-022.
 
 ## Índice
 
@@ -66,6 +66,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-68 | 2026-10-20 | Las reglas del motor y la afinidad por defecto completan las versiones existentes por migración | Aceptada | — (excepción acotada al principio VII para V4 de Normativa) |
 | D-69 | 2026-10-21 | Los periodos académicos se escriben con «Distributivo del periodo» y se abren solo desde Académico | Aceptada | D-65 (interpreta a qué funcionalidad pertenece el periodo), F04-H02 (quita el diálogo «Asociar a un periodo» de «Normativa») |
 | D-70 | 2026-10-21 | Una operación puede declarar varios permisos alternativos; la estructura orgánica la leen quienes leen el distributivo o los catálogos | Aceptada | ADR-021 (`x-mdd-permiso` admite una lista), RF-12 (interpreta «sin permiso de administrador») |
+| D-71 | 2026-10-23 | El Responsable de consolidación y el Vicerrector académico ejecutan las cargas | Aceptada | D-65 (matriz D-16) |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1177,3 +1178,17 @@ Estado al 2026-10-11. El texto completo está en `lean_inception/adr/`.
 **Alternativas.** Dar `CATALOGOS:LECTURA` a los roles que leen el distributivo (cambia D-65 para siete roles). Leer solo con `DISTRIBUTIVO:LECTURA` (mezcla la funcionalidad de los catálogos con la del distributivo). Que el Administrador amplíe el catálogo de gestiones (literal a RF-12, contrario a RN-10).
 
 **Consecuencias.** Cada operación sigue declarando sus permisos en el contrato, y la prueba de permisos de cada servicio los cubre todos. La SPA acepta varios permisos en una entrada del menú y en una ruta.
+
+## D-71. El Responsable de consolidación y el Vicerrector académico ejecutan las cargas
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-23 · **Decidido por:** autor de la tesis (aclaración 1 de F01-H02; propuesta en su plan)
+- **Origen:** `specs/019-subir-archivo-carga/spec.md` (Clarifications) y `research.md` §1
+- **Modifica a:** D-65 (matriz D-16)
+
+**Decisión.** El Responsable de consolidación y el Vicerrector académico reciben «Cargas de datos: lectura» y «Cargas de datos: escritura», con alcance «todo». Talento Humano las conserva. Una migración nueva de Roles (`V7__cargas_para_quien_inicia.sql`) las agrega (D-63).
+
+**Por qué.** La ERS §8.3 dice que «el rol que inicia el proceso de construcción del distributivo (por defecto, el Vicerrectorado o el Responsable de consolidación) ejecuta las cargas» y delega en Talento Humano; la historia F01-H02 la pide el Responsable de consolidación. En D-65 solo Talento Humano tenía «Cargas: escritura», porque la matriz en prosa de D-16 lo nombraba a él («Cargas que se le deleguen»).
+
+**Alternativas.** Permisos alternativos de D-70 (`[CARGAS:ESCRITURA, CONSOLIDACION:ESCRITURA, DISTRIBUTIVO:ESCRITURA]`): no cambia la matriz, pero autoriza la carga de datos con permisos de otras funcionalidades. Solo Talento Humano: la historia no se cumpliría.
+
+**Consecuencias.** Los dos roles suben archivos de carga y ven «Plantillas de carga» también por «Cargas: lectura». Al desplegar, los usuarios con esos roles reciben los permisos en su próximo inicio de sesión. La prueba de la matriz (`MatrizD16IntegrationTest`) se pone al día; la tabla «Matriz D-16» de `specs/011-roles-permisos/data-model.md` queda como la interpretación original de D-65, como con D-67.

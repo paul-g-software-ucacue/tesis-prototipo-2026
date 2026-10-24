@@ -8,7 +8,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 
 ## 1. D-71: «Cargas» para quien inicia el proceso (aclaración 1)
 
-- **Propuesta, pendiente de la aprobación del autor antes del código:**
+- **Aceptada por el autor el 2026-10-23** y registrada en `docs/decisiones.md` con este texto (salvo el estado):
 
   > **D-71. El Responsable de consolidación y el Vicerrector académico ejecutan las cargas**
   >

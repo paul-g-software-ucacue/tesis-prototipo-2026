@@ -18,7 +18,7 @@
 - **La fuente de datos (RF-57):** un puerto `LectorDeArchivo` entrega una `TablaDeDatos`; el dominio compara los encabezados y cuenta los registros sin saber el formato.
 - **XLSX con Apache POI 5.5.1**, la única dependencia nueva; **CSV** con un lector propio de RFC 4180.
 - **Errores:** 7 códigos `CARGAS_*`, dos con detalles por columna o por fila; para eso `EntradaCatalogo` admite detalles. Además, `COMUN_CONTENIDO_DEMASIADO_GRANDE` para el 413.
-- **Permisos:** subir exige `CARGAS:ESCRITURA`. **D-71 (propuesta)** da «Cargas» al Responsable de consolidación y al Vicerrector, con una migración de Roles (aclaración 1).
+- **Permisos:** subir exige `CARGAS:ESCRITURA`. **D-71 (aceptada el 2026-10-23)** da «Cargas» al Responsable de consolidación y al Vicerrector, con una migración de Roles (aclaración 1).
 - **SPA:** «Subir archivo» en cada carga de «Plantillas de carga».
 - **Punta a punta:** `deploy/probar_subida.sh`, nuevo.
 
@@ -67,9 +67,9 @@ Los detalles y las alternativas están en [research.md](research.md).
 | X. Simplicidad | Un lector CSV propio en lugar de otra dependencia; POI solo para XLSX. | ✅ |
 | XI y XII | `EntradaCatalogo.conDetalles` amplía lo que ya existe para encabezados; JavaDoc en español. | ✅ |
 | XIII. Errores | 7 códigos `CARGAS_*` y uno común, con detalles que nunca llevan valores del archivo. | ✅ |
-| §6.4 Decisiones | **D-71** (Cargas para quien inicia el proceso), propuesta en research §1, pendiente de la aprobación del autor antes del código. | ⏳ |
+| §6.4 Decisiones | **D-71** (Cargas para quien inicia el proceso), aceptada por el autor el 2026-10-23 y registrada en `docs/decisiones.md`. Siguiente número libre: D-72 · ADR-022. | ✅ |
 
-**Resultado del gate antes de la fase 0:** pasa, con una condición: D-71 se aprueba y se registra en `docs/decisiones.md` antes del código.
+**Resultado del gate antes de la fase 0:** pasa. D-71 quedó aprobada y registrada el 2026-10-23.
 
 **Revisión después de la fase 1:** pasa. [data-model.md](data-model.md) y [contracts/](contracts/) solo agregan lo listado.
 
@@ -117,7 +117,7 @@ deploy/probar_subida.sh, .github/workflows/perfil-consolidado.yml
 
 ## Fases de implementación (guía para /speckit-tasks)
 
-1. **D-71:** el autor la aprueba; se registra en `docs/decisiones.md` y en la tabla «Matriz D-16».
+1. **D-71:** aprobada por el autor el 2026-10-23 y ya registrada en `docs/decisiones.md`.
 2. **Plataforma:** `EntradaCatalogo.conDetalles` y `COMUN_CONTENIDO_DEMASIADO_GRANDE`, con sus pruebas primero.
 3. **Roles:** `V7` con su prueba de la matriz primero.
 4. **Contrato y catálogo:** la operación, sus esquemas y los 8 códigos.

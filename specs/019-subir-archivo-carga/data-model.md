@@ -2,7 +2,7 @@
 
 No hay tablas nuevas en `cargas`: el archivo se lee, se valida y se descarta (aclaración 3). La única migración es la de Roles para D-71.
 
-## Roles: `V7__cargas_para_quien_inicia.sql` (D-71, pendiente de aprobación)
+## Roles: `V7__cargas_para_quien_inicia.sql` (D-71, aceptada)
 
 | Rol | Funcionalidad | Tipo | Alcance |
 |---|---|---|---|
