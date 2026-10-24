@@ -1,0 +1,670 @@
+# Contrato de Docentes (servicio 4, proceso datos). Desde F03-H04: los docentes con su ficha
+# académica (RF-16, RF-17, carga 6): registrarlos, buscarlos por nombre o identificación,
+# consultarlos, corregirlos y cambiar su estado laboral. La ficha (títulos de tercer y cuarto nivel,
+# cursos, experiencia y asignaturas afines declaradas) vive dentro del registro del docente. La
+# carrera base y las asignaturas afines son de Académico, que las publica por consultarReferencias.
+# Las dedicaciones son las de RN-01; que las horas contratadas cuadren con la dedicación lo revisa la
+# validación del distributivo con la normativa del periodo (principio VI).
+# Los mantienen quienes tienen «Docentes: escritura» (Talento Humano), «Catálogos y datos maestros:
+# escritura» (Administrador) o «Distributivo del periodo: escritura» (Vicerrector); los leen quienes
+# tienen la lectura de cualquiera de las tres: una lista en x-mdd-permiso son permisos alternativos
+# (D-70). Nada se borra: un docente pasa a licencia o inactivo.
+openapi: 3.0.3
+info:
+  title: MDD · Docentes
+  version: 1.0.0
+servers:
+  - url: /
+security:
+  - bearer: []
+tags:
+  - name: Docentes
+    description: >-
+      Los docentes con su ficha académica (RF-16, RF-17, carga 6). Ninguno se borra: cambia su
+      estado laboral.
+paths:
+  /api/docentes/docentes:
+    get:
+      tags: [Docentes]
+      operationId: buscarDocentes
+      summary: Busca docentes por nombre o identificación, y por carrera base y estado laboral.
+      description: >-
+        El texto se compara sin mayúsculas ni tildes con los nombres y apellidos, o con el inicio de
+        la identificación. Sin criterios, trae todos. Ordenados por apellidos y nombres.
+      x-mdd-permiso: [DOCENTES:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]
+      parameters:
+        - name: texto
+          in: query
+          required: false
+          description: Parte del nombre o de los apellidos, o el inicio de la identificación.
+          schema:
+            type: string
+            maxLength: 100
+          example: peralta
+        - name: carrera
+          in: query
+          required: false
+          description: Código de la carrera base.
+          schema:
+            $ref: '#/components/schemas/CodigoDeCarrera'
+          example: 550411C02-P-0301
+        - name: estado
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/EstadoLaboral'
+          example: ACTIVO
+      responses:
+        '200':
+          description: La lista.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ResumenDeDocente'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+    post:
+      tags: [Docentes]
+      operationId: registrarDocente
+      summary: Registra un docente con su ficha académica; queda activo.
+      description: >-
+        La carrera base y las asignaturas afines tienen que existir en Académico, y el campo amplio
+        del título de tercer nivel tiene que ser uno de los 11 de la CINE.
+      x-mdd-permiso: [DOCENTES:ESCRITURA, CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocenteNuevo'
+      responses:
+        '201':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Docente'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '409':
+          $ref: '#/components/responses/ConflictoDeDocente'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/docentes/docentes/{identificacion}:
+    parameters:
+      - $ref: '#/components/parameters/Identificacion'
+    get:
+      tags: [Docentes]
+      operationId: consultarDocente
+      summary: Devuelve un docente con su ficha académica y los nombres de sus referencias.
+      x-mdd-permiso: [DOCENTES:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]
+      responses:
+        '200':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Docente'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+    put:
+      tags: [Docentes]
+      operationId: corregirDocente
+      summary: Corrige los datos de un docente y su ficha académica; la identificación y el estado no cambian.
+      x-mdd-permiso: [DOCENTES:ESCRITURA, CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatosDeDocente'
+      responses:
+        '200':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Docente'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/ConflictoDeDocente'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/docentes/docentes/{identificacion}/estado:
+    parameters:
+      - $ref: '#/components/parameters/Identificacion'
+    put:
+      tags: [Docentes]
+      operationId: cambiarEstadoDocente
+      summary: Pasa a un docente a activo, en licencia o inactivo; ninguno se borra.
+      description: Solo un docente activo recibe asignaciones.
+      x-mdd-permiso: [DOCENTES:ESCRITURA, CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EstadoLaboralNuevo'
+      responses:
+        '200':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Docente'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/docentes/referencias:
+    get:
+      tags: [Docentes]
+      operationId: consultarReferenciasDeDocentes
+      summary: 'Devuelve lo que se elige al registrar un docente: las carreras, las asignaturas y los campos amplios de Académico.'
+      x-mdd-permiso: [DOCENTES:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]
+      responses:
+        '200':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferenciasDeDocentes'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+components:
+  securitySchemes:
+    bearer:
+      $ref: '../comun/seguridad.yaml#/components/securitySchemes/bearer'
+  parameters:
+    Identificacion:
+      name: identificacion
+      in: path
+      required: true
+      description: Cédula o pasaporte del docente.
+      schema:
+        $ref: '#/components/schemas/NumeroDeIdentificacion'
+      example: '0109990010'
+  responses:
+    NoEncontrado:
+      description: El docente no existe (COMUN_RECURSO_NO_ENCONTRADO).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
+    ConflictoDeDocente:
+      description: >-
+        Una identificación o un correo repetidos: DOCENTES_DOCENTE_REPETIDO o
+        DOCENTES_CORREO_REPETIDO (errores.md).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
+  schemas:
+    NumeroDeIdentificacion:
+      description: Cédula de 10 dígitos o pasaporte de hasta 13 letras mayúsculas o dígitos.
+      type: string
+      pattern: '^[0-9A-Z]{1,13}$'
+      example: '0109990010'
+    CodigoDeCarrera:
+      type: string
+      pattern: '^[0-9A-Z-]{1,20}$'
+      example: 550613A01-P-0301
+    CodigoDeAsignatura:
+      type: string
+      pattern: '^[0-9A-Z-]{1,30}$'
+      example: DS-P-II-POO-204
+    CodigoDeCampoAmplio:
+      type: string
+      pattern: '^[0-9]{2}$'
+      example: '06'
+    CodigoDeCampoEspecifico:
+      type: string
+      pattern: '^[0-9]{3}$'
+      example: '061'
+    Anio:
+      description: De 1950 al año actual.
+      type: integer
+      minimum: 1950
+      maximum: 2100
+      example: 2022
+    Texto150:
+      type: string
+      minLength: 1
+      maxLength: 150
+    TipoDeIdentificacion:
+      description: Tipo de documento (carga 6).
+      type: string
+      enum: [CEDULA, PASAPORTE]
+    TipoPersonal:
+      description: Tipo de personal académico (RCE art. 137).
+      type: string
+      enum: [TITULAR, OCASIONAL, INVITADO, HONORARIO]
+    CategoriaDeEscalafon:
+      description: Categoría y nivel del titular; los demás tipos llevan NO_APLICA.
+      type: string
+      enum: [AUXILIAR_1, AUXILIAR_2, AGREGADO_1, AGREGADO_2, AGREGADO_3, PRINCIPAL_1, PRINCIPAL_2, PRINCIPAL_3, NO_APLICA]
+    Dedicacion:
+      description: Tiempo completo, medio tiempo o tiempo parcial (RN-01).
+      type: string
+      enum: [TC, MT, TP]
+    CondicionEspecial:
+      description: Condición que cambia las horas que le corresponden (RN-14 a RN-16).
+      type: string
+      enum: [CUIDADOR_SUSTITUTO, MATERNIDAD_LACTANCIA, APOYO_SIES, NINGUNA]
+    EstadoLaboral:
+      description: Solo un docente activo recibe asignaciones.
+      type: string
+      enum: [ACTIVO, LICENCIA, INACTIVO]
+    TipoDeTituloDeCuartoNivel:
+      type: string
+      enum: [MAESTRIA, ESPECIALIZACION, DOCTORADO]
+    CampoAmplio:
+      type: object
+      required: [codigo, nombre]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDeCampoAmplio'
+        nombre:
+          type: string
+          example: Tecnologías de la información y la comunicación
+    TituloDeTercerNivel:
+      type: object
+      required: [titulo, campoAmplio, campoEspecifico]
+      properties:
+        titulo:
+          $ref: '#/components/schemas/Texto150'
+        registroSenescyt:
+          type: string
+          minLength: 1
+          maxLength: 30
+        campoAmplio:
+          $ref: '#/components/schemas/CodigoDeCampoAmplio'
+        campoEspecifico:
+          $ref: '#/components/schemas/CodigoDeCampoEspecifico'
+    TituloDeCuartoNivel:
+      type: object
+      required: [titulo, tipo, campoEspecifico, anio]
+      properties:
+        titulo:
+          $ref: '#/components/schemas/Texto150'
+        tipo:
+          $ref: '#/components/schemas/TipoDeTituloDeCuartoNivel'
+        campoEspecifico:
+          $ref: '#/components/schemas/CodigoDeCampoEspecifico'
+        anio:
+          $ref: '#/components/schemas/Anio'
+    Curso:
+      type: object
+      required: [nombre, campoEspecifico, horas, anio]
+      properties:
+        nombre:
+          $ref: '#/components/schemas/Texto150'
+        campoEspecifico:
+          $ref: '#/components/schemas/CodigoDeCampoEspecifico'
+        horas:
+          type: integer
+          minimum: 1
+          maximum: 2000
+          example: 40
+        anio:
+          $ref: '#/components/schemas/Anio'
+    ExperienciaLaboral:
+      type: object
+      required: [cargo, institucion, campoEspecifico, anios]
+      properties:
+        cargo:
+          $ref: '#/components/schemas/Texto150'
+        institucion:
+          $ref: '#/components/schemas/Texto150'
+        campoEspecifico:
+          $ref: '#/components/schemas/CodigoDeCampoEspecifico'
+        anios:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 60
+          example: 3
+    FichaAcademica:
+      description: Formación y experiencia del docente, dentro de su registro (RF-17).
+      type: object
+      required: [tercerNivel]
+      properties:
+        tercerNivel:
+          $ref: '#/components/schemas/TituloDeTercerNivel'
+        cuartoNivel:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/TituloDeCuartoNivel'
+        cursos:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/Curso'
+        experiencia:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/ExperienciaLaboral'
+        asignaturasAfines:
+          description: Códigos de asignaturas de Académico, sin repetir.
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/CodigoDeAsignatura'
+    Nombre60:
+      type: string
+      minLength: 1
+      maxLength: 60
+    DatosDeDocente:
+      type: object
+      required: [primerApellido, primerNombre, correoInstitucional, tipoPersonal, categoriaEscalafon, dedicacion, horasContratadas, fechaIngreso, inicioContrato, carreraBase, ficha]
+      properties:
+        primerApellido:
+          $ref: '#/components/schemas/Nombre60'
+        segundoApellido:
+          $ref: '#/components/schemas/Nombre60'
+        primerNombre:
+          $ref: '#/components/schemas/Nombre60'
+        segundoNombre:
+          $ref: '#/components/schemas/Nombre60'
+        correoInstitucional:
+          type: string
+          minLength: 3
+          maxLength: 100
+          example: juan.peralta@instituto-prueba.edu.ec
+        telefono:
+          type: string
+          pattern: '^[0-9]{7,10}$'
+          example: '0990000001'
+        tipoPersonal:
+          $ref: '#/components/schemas/TipoPersonal'
+        categoriaEscalafon:
+          $ref: '#/components/schemas/CategoriaDeEscalafon'
+        dedicacion:
+          $ref: '#/components/schemas/Dedicacion'
+        horasContratadas:
+          description: Horas semanales contratadas; que cuadren con la dedicación lo revisa la normativa del periodo.
+          type: integer
+          minimum: 1
+          maximum: 40
+          example: 40
+        fechaIngreso:
+          type: string
+          format: date
+          example: '2019-10-01'
+        inicioContrato:
+          type: string
+          format: date
+          example: '2026-04-01'
+        finContrato:
+          description: Obligatorio para un ocasional; posterior al inicio.
+          type: string
+          format: date
+          example: '2026-08-31'
+        condicionEspecial:
+          $ref: '#/components/schemas/CondicionEspecial'
+        carreraBase:
+          $ref: '#/components/schemas/CodigoDeCarrera'
+        ficha:
+          $ref: '#/components/schemas/FichaAcademica'
+    DocenteNuevo:
+      type: object
+      required: [tipoIdentificacion, identificacion, primerApellido, primerNombre, correoInstitucional, tipoPersonal, categoriaEscalafon, dedicacion, horasContratadas, fechaIngreso, inicioContrato, carreraBase, ficha]
+      properties:
+        tipoIdentificacion:
+          $ref: '#/components/schemas/TipoDeIdentificacion'
+        identificacion:
+          $ref: '#/components/schemas/NumeroDeIdentificacion'
+        primerApellido:
+          $ref: '#/components/schemas/Nombre60'
+        segundoApellido:
+          $ref: '#/components/schemas/Nombre60'
+        primerNombre:
+          $ref: '#/components/schemas/Nombre60'
+        segundoNombre:
+          $ref: '#/components/schemas/Nombre60'
+        correoInstitucional:
+          type: string
+          minLength: 3
+          maxLength: 100
+          example: juan.peralta@instituto-prueba.edu.ec
+        telefono:
+          type: string
+          pattern: '^[0-9]{7,10}$'
+          example: '0990000001'
+        tipoPersonal:
+          $ref: '#/components/schemas/TipoPersonal'
+        categoriaEscalafon:
+          $ref: '#/components/schemas/CategoriaDeEscalafon'
+        dedicacion:
+          $ref: '#/components/schemas/Dedicacion'
+        horasContratadas:
+          description: Horas semanales contratadas; que cuadren con la dedicación lo revisa la normativa del periodo.
+          type: integer
+          minimum: 1
+          maximum: 40
+          example: 40
+        fechaIngreso:
+          type: string
+          format: date
+          example: '2019-10-01'
+        inicioContrato:
+          type: string
+          format: date
+          example: '2026-04-01'
+        finContrato:
+          description: Obligatorio para un ocasional; posterior al inicio.
+          type: string
+          format: date
+          example: '2026-08-31'
+        condicionEspecial:
+          $ref: '#/components/schemas/CondicionEspecial'
+        carreraBase:
+          $ref: '#/components/schemas/CodigoDeCarrera'
+        ficha:
+          $ref: '#/components/schemas/FichaAcademica'
+    AsignaturaAfin:
+      type: object
+      required: [codigo]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDeAsignatura'
+        nombre:
+          description: Falta si la asignatura ya no está en Académico.
+          type: string
+          example: PROGRAMACIÓN ORIENTADA A OBJETOS
+    Docente:
+      description: Lo de DocenteNuevo, con el estado laboral y los nombres de sus referencias.
+      type: object
+      required: [tipoIdentificacion, identificacion, nombreCompleto, primerApellido, primerNombre, correoInstitucional, tipoPersonal, categoriaEscalafon, dedicacion, horasContratadas, fechaIngreso, inicioContrato, carreraBase, ficha, condicionEspecial, estado, camposAmplios, asignaturasAfines]
+      properties:
+        tipoIdentificacion:
+          $ref: '#/components/schemas/TipoDeIdentificacion'
+        identificacion:
+          $ref: '#/components/schemas/NumeroDeIdentificacion'
+        nombreCompleto:
+          type: string
+          example: PERALTA MALDONADO JUAN ANDRES
+        primerApellido:
+          $ref: '#/components/schemas/Nombre60'
+        segundoApellido:
+          $ref: '#/components/schemas/Nombre60'
+        primerNombre:
+          $ref: '#/components/schemas/Nombre60'
+        segundoNombre:
+          $ref: '#/components/schemas/Nombre60'
+        correoInstitucional:
+          type: string
+          minLength: 3
+          maxLength: 100
+          example: juan.peralta@instituto-prueba.edu.ec
+        telefono:
+          type: string
+          pattern: '^[0-9]{7,10}$'
+          example: '0990000001'
+        tipoPersonal:
+          $ref: '#/components/schemas/TipoPersonal'
+        categoriaEscalafon:
+          $ref: '#/components/schemas/CategoriaDeEscalafon'
+        dedicacion:
+          $ref: '#/components/schemas/Dedicacion'
+        horasContratadas:
+          description: Horas semanales contratadas; que cuadren con la dedicación lo revisa la normativa del periodo.
+          type: integer
+          minimum: 1
+          maximum: 40
+          example: 40
+        fechaIngreso:
+          type: string
+          format: date
+          example: '2019-10-01'
+        inicioContrato:
+          type: string
+          format: date
+          example: '2026-04-01'
+        finContrato:
+          description: Obligatorio para un ocasional; posterior al inicio.
+          type: string
+          format: date
+          example: '2026-08-31'
+        condicionEspecial:
+          $ref: '#/components/schemas/CondicionEspecial'
+        carreraBase:
+          $ref: '#/components/schemas/CodigoDeCarrera'
+        ficha:
+          $ref: '#/components/schemas/FichaAcademica'
+        nombreDeCarreraBase:
+          description: Falta si la carrera ya no está en Académico.
+          type: string
+          example: CONTABILIDAD
+        estado:
+          $ref: '#/components/schemas/EstadoLaboral'
+        camposAmplios:
+          description: Los campos amplios de los títulos, cursos y experiencia de la ficha, con su nombre.
+          type: array
+          items:
+            $ref: '#/components/schemas/CampoAmplio'
+        asignaturasAfines:
+          description: Las asignaturas afines declaradas, con su nombre.
+          type: array
+          items:
+            $ref: '#/components/schemas/AsignaturaAfin'
+    ResumenDeDocente:
+      type: object
+      required: [identificacion, nombreCompleto, carreraBase, tipoPersonal, dedicacion, horasContratadas, condicionEspecial, estado]
+      properties:
+        identificacion:
+          $ref: '#/components/schemas/NumeroDeIdentificacion'
+        nombreCompleto:
+          type: string
+          example: PERALTA MALDONADO JUAN ANDRES
+        carreraBase:
+          $ref: '#/components/schemas/CodigoDeCarrera'
+        nombreDeCarreraBase:
+          type: string
+          example: CONTABILIDAD
+        tipoPersonal:
+          $ref: '#/components/schemas/TipoPersonal'
+        dedicacion:
+          $ref: '#/components/schemas/Dedicacion'
+        horasContratadas:
+          type: integer
+          example: 40
+        condicionEspecial:
+          $ref: '#/components/schemas/CondicionEspecial'
+        estado:
+          $ref: '#/components/schemas/EstadoLaboral'
+    EstadoLaboralNuevo:
+      type: object
+      required: [estado]
+      properties:
+        estado:
+          $ref: '#/components/schemas/EstadoLaboral'
+    CarreraDeReferencia:
+      type: object
+      required: [codigo, nombre, siglas]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDeCarrera'
+        nombre:
+          type: string
+          example: DESARROLLO DE SOFTWARE
+        siglas:
+          type: string
+          example: DS
+    AsignaturaDeReferencia:
+      type: object
+      required: [codigo, nombre, carrera]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDeAsignatura'
+        nombre:
+          type: string
+          example: PROGRAMACIÓN ORIENTADA A OBJETOS
+        carrera:
+          $ref: '#/components/schemas/CodigoDeCarrera'
+    ReferenciasDeDocentes:
+      type: object
+      required: [carreras, asignaturas, camposAmplios]
+      properties:
+        carreras:
+          type: array
+          items:
+            $ref: '#/components/schemas/CarreraDeReferencia'
+        asignaturas:
+          type: array
+          items:
+            $ref: '#/components/schemas/AsignaturaDeReferencia'
+        camposAmplios:
+          type: array
+          items:
+            $ref: '#/components/schemas/CampoAmplio'

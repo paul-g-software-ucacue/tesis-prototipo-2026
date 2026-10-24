@@ -45,7 +45,7 @@ description: "Tareas de F03-H04: mantener los docentes con su ficha académica"
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear `specs/022-docentes-ficha/evidencia.md` con estas secciones: entorno; base (contrato, referencias de Académico, dominio, migración y repositorios); registrar (US1); consultar y buscar (US2); corregir (US3); estado laboral (US4); pantalla (US5); cierre; equipo de demostración; notas. Copiar `02_carreras.csv`, `04_asignaturas_malla.csv` y `06_docentes.csv` a `DOC/test/resources/docentes/datos-de-prueba/`, con su origen en la evidencia.
+- [X] T001 Crear `specs/022-docentes-ficha/evidencia.md` con estas secciones: entorno; base (contrato, referencias de Académico, dominio, migración y repositorios); registrar (US1); consultar y buscar (US2); corregir (US3); estado laboral (US4); pantalla (US5); cierre; equipo de demostración; notas. Copiar `02_carreras.csv`, `04_asignaturas_malla.csv` y `06_docentes.csv` a `DOC/test/resources/docentes/datos-de-prueba/`, con su origen en la evidencia.
 
 ---
 
@@ -53,7 +53,7 @@ description: "Tareas de F03-H04: mantener los docentes con su ficha académica"
 
 ### Contrato (principio IV, ADR-015, contracts/docentes.md)
 
-- [ ] T002 Crear `contratos/docentes/openapi.yaml` según contracts/docentes.md y `backend/plantillas/README.md` («Agregar un contrato a un servicio»):
+- [X] T002 Crear `contratos/docentes/openapi.yaml` según contracts/docentes.md y `backend/plantillas/README.md` («Agregar un contrato a un servicio»):
   - OpenAPI 3.0.3, `security: [bearer: []]` global, el tag `Docentes`, los esquemas y las 6 operaciones;
   - las de lectura con `x-mdd-permiso: [DOCENTES:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]` y las de escritura con `[DOCENTES:ESCRITURA, CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]`;
   - las respuestas de error con `$ref` a `../comun/errores.yaml` y `../comun/seguridad.yaml`;

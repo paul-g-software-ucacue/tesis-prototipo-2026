@@ -21,8 +21,8 @@
 | `ExperienciaLaboral` | `cargo`, `institucion` (1–150), `campoEspecifico`, `anios` (> 0, ≤ 60) |
 | `FichaAcademica` | `tercerNivel`, `cuartoNivel`, `cursos`, `experiencia` (listas de hasta 20), `asignaturasAfines` (hasta 20 códigos, únicos) |
 | `DatosDeDocente` | `primerApellido`, `segundoApellido`, `primerNombre`, `segundoNombre`, `correoInstitucional`, `telefono`, `tipoPersonal`, `categoriaEscalafon`, `dedicacion`, `horasContratadas` (obligatorio, 1–40), `fechaIngreso`, `inicioContrato`, `finContrato`, `condicionEspecial` (por omisión `NINGUNA`), `carreraBase`, `ficha` |
-| `DocenteNuevo` | `tipoIdentificacion`, `identificacion` + `DatosDeDocente` |
-| `Docente` | lo de `DocenteNuevo` con `nombreCompleto`, `nombreDeCarreraBase`, `estado`; la ficha con el `CampoAmplio` (con nombre) de cada título y el nombre de cada asignatura afín |
+| `DocenteNuevo` | `tipoIdentificacion`, `identificacion` y los mismos campos de `DatosDeDocente`, al mismo nivel (así un error dice el mismo campo al registrar y al corregir) |
+| `Docente` | lo de `DocenteNuevo` con `nombreCompleto`, `nombreDeCarreraBase`, `estado`, `camposAmplios` (los de la ficha, con su nombre) y `asignaturasAfines` (código y nombre) |
 | `ResumenDeDocente` | `identificacion`, `nombreCompleto`, `carreraBase`, `nombreDeCarreraBase`, `tipoPersonal`, `dedicacion`, `horasContratadas`, `condicionEspecial`, `estado` |
 | `EstadoLaboralNuevo` | `estado` |
 | `ReferenciasDeDocentes` | `carreras` (`codigo`, `nombre`, `siglas`), `asignaturas` (`codigo`, `nombre`, `carrera`), `camposAmplios` (`CampoAmplio`) |
