@@ -50,6 +50,14 @@ Registro de las comprobaciones de la historia (issue #27): descargar la plantill
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Perfil reconstruido con el código de la rama | ✅ El builder del daemon sigue con la instantánea rota de BuildKit (`snapshots/4782`, igual que en F03-H01): `docker compose build` falla en el frontend. Se construyó con un builder `docker-container` limpio (`mdd-limpio`, `default-load=true`), sin tocar las imágenes del equipo | `docker compose build --builder mdd-limpio` | 2026-10-23 |
+| T013 · `probar_plantillas.sh`, dos corridas seguidas | ✅ 8 de 8 pasos en cada una: 10 cargas y 115 columnas con tipo, obligatoriedad y ejemplo; las 10 plantillas con `text/csv`, su nombre, el BOM y una línea con sus columnas; el diccionario de la estructura con 7 columnas, las 21 gestiones y las 13 convenciones; `datos.demo` y `coordinacion.demo` descargan; `gestion.demo` y `docente.demo`, 403; una carga inexistente, 404. La primera corrida falló en el paso 2 por un error del script (contaba los campos con `wc -l` sin el último salto de línea); corregido con `awk` | salida del script | 2026-10-23 |
+| `shellcheck` del script | ✅ Sin observaciones | `koalaman/shellcheck:stable` | 2026-10-23 |
+| T014 · Backend: `./gradlew check integrationTest` | ✅ 793 pruebas (696 unitarias y 97 de integración), 0 fallas; ArchUnit, Modulith y cobertura en verde | `backend/**/build/test-results` | 2026-10-23 |
+| T014 · SPA | ✅ lint, formato, tipos, 65 de Playwright y `verificar:ruptura`. Vitest: 142 pruebas, 95,5 % de líneas (`plantillas`, 100 %). Con el límite de 5 s, `Roles › crea un rol con un selector por cada tipo…` (y una vez `Normativa › edita en pantalla…`) agotan el tiempo con cobertura en este PC, con la carga media en 5 a 9; **lo mismo pasa en `main`** en un *worktree* aparte, así que no lo causa la historia. Con `--testTimeout=15000` desde la línea de comandos, sin cambiar la configuración, pasan las 142 | `npx vitest run --coverage` | 2026-10-23 |
+| T014 · Los 8 scripts del perfil | ✅ autenticacion, errores, eventos, normativa, periodos, spa, estructura y plantillas: todos los pasos pasan | `deploy/probar_*.sh` | 2026-10-23 |
+| T014 · `probar_equipo.sh` | ✅ 0 a 11: todos pasan, a la primera; memoria 1 365,4 MiB. Con `BUILDX_BUILDER=mdd-limpio`, por la instantánea rota de BuildKit del daemon; el builder se borró después | `deploy/equipo/probar_equipo.sh` | 2026-10-23 |
+| T014 · Gitleaks sobre un clon en el scratchpad | ✅ 8 commits de la rama, sin fugas | gitleaks v8.30.1, `--log-opts=origin/main..HEAD` | 2026-10-23 |
 
 ## Equipo de demostración
 
