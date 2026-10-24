@@ -97,9 +97,9 @@ description: "Tareas de F03-H04: mantener los docentes con su ficha académica"
 
 ### Persistencia (data-model.md)
 
-- [ ] T007 Prueba primero, en `IDOC/DocentesEsquemaIntegrationTest.java` (ampliar): `docente` y sus `check` rechazan cada combinación inválida (tipo de identificación, tipo de personal, categoría, dedicación, condición especial o estado fuera de su catálogo, horas 0 o 41, fin de contrato igual al inicio, un específico que no empieza por el amplio, un correo repetido con otras mayúsculas, la misma identificación dos veces); `registro_cambio` acepta las 3 acciones y rechaza otra. Tiene que fallar sin la migración.
-- [ ] T008 Crear `DOC/main/resources/db/migration/docentes/V2__docentes.sql` según data-model.md, con un comentario que cite RF-16, RF-17 y F03-H04. T007 pasa.
-- [ ] T009 Prueba primero, en `IDOC/RepositorioDocentesJdbcIntegrationTest.java`:
+- [X] T007 Prueba primero, en `IDOC/DocentesEsquemaIntegrationTest.java` (ampliar): `docente` y sus `check` rechazan cada combinación inválida (tipo de identificación, tipo de personal, categoría, dedicación, condición especial o estado fuera de su catálogo, horas 0 o 41, fin de contrato igual al inicio, un específico que no empieza por el amplio, un correo repetido con otras mayúsculas, la misma identificación dos veces); `registro_cambio` acepta las 3 acciones y rechaza otra. Tiene que fallar sin la migración.
+- [X] T008 Crear `DOC/main/resources/db/migration/docentes/V2__docentes.sql` según data-model.md, con un comentario que cite RF-16, RF-17 y F03-H04. T007 pasa.
+- [X] T009 Prueba primero, en `IDOC/RepositorioDocentesJdbcIntegrationTest.java`:
   - guarda y lee un docente igual, campo por campo, con la ficha completa y con la ficha mínima;
   - `todos` los trae ordenados por apellidos y nombres;
   - `actualizar` cambia cada dato, la ficha y el estado;
@@ -108,7 +108,7 @@ description: "Tareas de F03-H04: mantener los docentes con su ficha académica"
   - `RegistroDeCambiosJdbc` guarda la acción y el detalle.
 
   Crear `JDOC/puertos/salida/RepositorioDocentes.java` y `RegistroDeCambios.java`, y `JDOC/adaptadores/salida/RepositorioDocentesJdbc.java` y `RegistroDeCambiosJdbc.java` (JdbcClient y Jackson para el `jsonb`). T009 pasa.
-- [ ] T010 Prueba primero, en `PDOC/adaptadores/salida/AcademicoDesdePuertosTest.java` (con un doble de `ConsultarReferencias` escrito a mano, sin Mockito, como `NormativaDesdePuertosTest`): traduce `ReferenciasDeAcademico` a `Referencias`. Crear `JDOC/puertos/salida/ReferenciasAcademicas.java` y `JDOC/adaptadores/salida/AcademicoDesdePuertos.java`, y agregar `implementation project(':servicios:academico')` a Docentes con su comentario. `./gradlew :apps:datos:test` corre `ModulosTest` y pasa. T010 pasa.
+- [X] T010 Prueba primero, en `PDOC/adaptadores/salida/AcademicoDesdePuertosTest.java` (con un doble de `ConsultarReferencias` escrito a mano, sin Mockito, como `NormativaDesdePuertosTest`): traduce `ReferenciasDeAcademico` a `Referencias`. Crear `JDOC/puertos/salida/ReferenciasAcademicas.java` y `JDOC/adaptadores/salida/AcademicoDesdePuertos.java`, y agregar `implementation project(':servicios:academico')` a Docentes con su comentario. `./gradlew :apps:datos:test` corre `ModulosTest` y pasa. T010 pasa.
 
 **Checkpoint**: el contrato, las referencias, el dominio, V2 y los repositorios están listos.
 

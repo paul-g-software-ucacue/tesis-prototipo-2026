@@ -1,0 +1,47 @@
+package ec.mdd.docentes.adaptadores.salida;
+
+import ec.mdd.academico.puertos.entrada.AsignaturaDeReferencia;
+import ec.mdd.academico.puertos.entrada.CampoAmplioDeReferencia;
+import ec.mdd.academico.puertos.entrada.CarreraDeReferencia;
+import ec.mdd.academico.puertos.entrada.ConsultarReferencias;
+import ec.mdd.academico.puertos.entrada.ReferenciasDeAcademico;
+import ec.mdd.docentes.dominio.Referencias;
+import ec.mdd.docentes.puertos.salida.ReferenciasAcademicas;
+import java.util.stream.Collectors;
+
+/**
+ * Las referencias de Académico, pedidas por su interfaz publicada dentro del proceso: solo {@code
+ * ec.mdd.academico.puertos.entrada}, como Académico con Normativa; {@code ModulosTest} del proceso
+ * {@code datos} lo comprueba (principio V, research §4). El puerto refleja la operación {@code
+ * consultarReferencias} del contrato de Académico. La autorización es la de la operación de
+ * Docentes.
+ */
+public final class AcademicoDesdePuertos implements ReferenciasAcademicas {
+
+    private final ConsultarReferencias consultar;
+
+    /** Recibe el puerto publicado de Académico. */
+    public AcademicoDesdePuertos(ConsultarReferencias consultar) {
+        this.consultar = consultar;
+    }
+
+    @Override
+    public Referencias referencias() {
+        ReferenciasDeAcademico todas = consultar.referencias();
+        return new Referencias(
+                todas.carreras().stream()
+                        .collect(
+                                Collectors.toMap(
+                                        CarreraDeReferencia::codigo, CarreraDeReferencia::nombre)),
+                todas.asignaturas().stream()
+                        .collect(
+                                Collectors.toMap(
+                                        AsignaturaDeReferencia::codigo,
+                                        AsignaturaDeReferencia::nombre)),
+                todas.camposAmplios().stream()
+                        .collect(
+                                Collectors.toMap(
+                                        CampoAmplioDeReferencia::codigo,
+                                        CampoAmplioDeReferencia::nombre)));
+    }
+}

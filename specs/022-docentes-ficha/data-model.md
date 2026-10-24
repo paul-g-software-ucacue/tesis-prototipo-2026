@@ -71,6 +71,8 @@ docente
   experiencia          jsonb        not null default '[]'
   asignaturas_afines   jsonb        not null default '[]'
   estado               varchar(10)  check in (ACTIVO, LICENCIA, INACTIVO)
+  registrado_en        timestamptz  not null
+  registrado_por       varchar(64)  not null
 
 registro_cambio
   id uuid PK · momento timestamptz · usuario varchar(64)
