@@ -87,6 +87,12 @@ jobs:
         shell: bash
         run: deploy/probar_estructura.sh
 
+      # F01-H01: las 10 plantillas y el diccionario de datos, con sus permisos alternativos (D-70).
+      # No crea nada.
+      - name: Plantillas de carga de punta a punta
+        shell: bash
+        run: deploy/probar_plantillas.sh
+
       # shell: bash agrega pipefail, así que tee no oculta el código de salida del script.
       # Después de iniciar sesión (D-34): la medición de referencia de R-19 desde B00-H03.
       - name: Medición de R-19 después de iniciar sesión
