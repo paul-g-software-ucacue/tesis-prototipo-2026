@@ -111,7 +111,7 @@ Como quien mantiene los datos maestros, o como quien los consulta, quiero una pa
 - **Jornada**: una de las jornadas de su carrera (carga 5).
 - **Modalidad**: una del catálogo de modalidades de la carrera (presencial, semipresencial, en línea, a distancia, dual o híbrida); puede ser distinta de la de la carrera. En los datos de prueba siempre es la de la carrera.
 - **Sede**: opcional; si se omite, la de la carrera. Si se indica, una sede matriz, sede, extensión o campus activa de la estructura orgánica.
-- **Estudiantes previstos**: entero, 0 o más (en los datos de prueba, de 5 a 32).
+- **Estudiantes previstos**: entero de 0 a 9999, por la longitud 4 del diccionario (en los datos de prueba, de 5 a 32).
 - **Horas semanales**: opcionales; si se omiten, las de clase de la asignatura. Si se indican, de 0,5 a las de la asignatura (RN-18, aclaración 3). Si la asignatura se corrige después, la oferta que tomó sus horas las sigue (no guarda una copia); la que indicó las suyas las conserva, y la consulta la marca si quedaron por encima.
 - **Retirada**: no suma horas a cubrir ni recibe propuestas; se puede volver a ofertar mientras el periodo está en planificación.
 - **Franjas horarias**: la columna opcional de la carga 5 (RF-60) no se guarda en esta historia: es Should y el MVP no maneja horarios (F22).
@@ -132,7 +132,7 @@ Como quien mantiene los datos maestros, o como quien los consulta, quiero una pa
 - **FR-009**: Mantener la oferta DEBE exigir «Catálogos y datos maestros: escritura» o «Distributivo del periodo: escritura», y consultarla, «Oferta y propuesta de docentes: lectura», «Distributivo del periodo: lectura» o «Catálogos y datos maestros: lectura», validados en el servidor (ADR-021, D-70, aclaración 1).
 - **FR-010**: Cada registro, corrección, retiro y vuelta a la oferta DEBE quedar registrado con quién, cuándo, qué cambió, el valor anterior y el nuevo (principio VII).
 - **FR-011**: La pantalla DEBE mostrar la oferta del periodo elegido agrupada por carrera, con sus asignaturas-paralelo por ciclo y las horas a cubrir de cada asignatura, de cada carrera y del periodo, y permitir a quien tenga el permiso registrar, corregir, retirar y volver a ofertar mientras el periodo está en Planificación.
-- **FR-012**: Los valores permitidos (jornadas, modalidades, estados) DEBEN ser los del diccionario de datos, en un solo lugar, los mismos de F03-H02 (principio VI).
+- **FR-012**: Las jornadas y las modalidades DEBEN ser las del diccionario de datos, las mismas enumeraciones de F03-H02; el estado de una asignatura-paralelo (ofertada o retirada), que no está en el diccionario, DEBE vivir en un solo lugar (principio VI).
 
 ### Key Entities
 
@@ -160,4 +160,5 @@ Como quien mantiene los datos maestros, o como quien los consulta, quiero una pa
 - La malla de la asignatura puede estar derogada: el diccionario solo pide que la asignatura esté activa.
 - Registrar por pantalla es la vía de esta historia; la carga 5 por archivo se aplica con F01-H04 sobre las mismas reglas, y cómo se traduce el estado «APROBADO» de la carga 3 lo decide F01-H03.
 - La consulta de la oferta queda disponible para el distributivo, que la usa desde la Ola 2.
+- El Coordinador de carrera tiene «Oferta» solo de lo propio (D-65). Mientras el servidor no sepa de qué carrera es cada coordinador, lee la oferta de todas las carreras, como hoy lee las carreras y la estructura, y no la mantiene. El filtro de lo propio lo aplica F03-H05, con los cargos (D-64).
 - Fuera de alcance: la carga 5 por archivo (F01-H03 y F01-H04), las franjas horarias y los choques (RF-60, RN-26, Should; F22), las propuestas de docentes y el distributivo, el coordinador de carrera como persona y su permiso de lo propio (F03-H05), los matriculados (carga 10).

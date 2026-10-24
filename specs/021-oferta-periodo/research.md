@@ -58,6 +58,7 @@ En `OfertaDelPeriodo`, con `DatosMaestros`:
 
 - Ruta `/oferta`, en el menú después de «Carreras y mallas», con la lista de lectura de §5.
 - Un selector de periodo (por omisión, el más reciente en Planificación; si no hay, el más reciente). Un aviso dice por qué está en solo lectura: sin permiso de escritura, o el periodo ya no está en Planificación.
+- El selector usa `listarPeriodos`, que exige `DISTRIBUTIVO:LECTURA`. Hoy todos los roles que leen la oferta lo tienen: el Administrador, el Vicerrector, el Responsable de consolidación y el coordinador. Si la lista responde 403, la pantalla lo dice y no se rompe.
 - Por carrera, con su total de horas a cubrir: una tabla con una fila por asignatura (ciclo, código, nombre, sus paralelos con jornada, modalidad, estudiantes, horas y estado, y sus horas a cubrir). Arriba, el total del periodo.
 - «Ofertar asignatura»: carrera vigente → asignatura activa → paralelo, jornada (las de la carrera), modalidad (la de la carrera por omisión), sede (por omisión «la de la carrera»), estudiantes y horas (vacío = las de la asignatura, que se muestran en la pista). Corregir, retirar y volver a ofertar, con confirmación al retirar. Los errores con su motivo junto a la pista, como dejó el PR #137.
 

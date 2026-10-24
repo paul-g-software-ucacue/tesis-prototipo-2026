@@ -128,6 +128,7 @@ description: "Tareas de F03-H03: mantener la oferta del periodo"
   - **4 horas en 3 paralelos dan 12** (escenario del issue);
   - las retiradas se ven y no suman;
   - `consultarAsignaturaParalelo` trae el ciclo, `troncoComun`, `campoAmplio` con su nombre, `campoEspecifico`, `palabrasClave`, las horas efectivas y si son indicadas;
+  - con horas indicadas que quedaron por encima de las de su asignatura (porque se corrigió después), `porEncimaDeLaAsignatura` viene en `true`, y en `false` en los demás casos;
   - 404 con una asignatura-paralelo que no existe.
 
   Crear `ConsultarOfertaServicio` y ampliar el controlador. T011 pasa.
@@ -156,7 +157,7 @@ description: "Tareas de F03-H03: mantener la oferta del periodo"
 **Goal**: «Oferta del periodo» agrupada por carrera, con las horas a cubrir (FR-011; SC-001).
 
 - [ ] T013 [US4] Prueba primero, en `frontend/src/pantallas/oferta/Oferta.test.tsx` (Vitest con la API simulada):
-  - **Periodo:** el selector elige por omisión el más reciente en Planificación.
+  - **Periodo:** el selector elige por omisión el más reciente en Planificación; si la lista de periodos responde 403, la pantalla muestra «Acceso no autorizado» y no se rompe.
   - **Totales:** el total del periodo; por carrera, su total y una fila por asignatura con su ciclo, su código, su nombre, sus paralelos (jornada, modalidad, estudiantes, horas y estado en español) y sus horas a cubrir; «12 h» con 3 paralelos de 4 h.
   - **Con escritura** (`CATALOGOS:ESCRITURA` o `DISTRIBUTIVO:ESCRITURA`) y el periodo en Planificación:
     - «Ofertar asignatura»: la carrera de las vigentes, la asignatura de sus activas, la jornada de las de la carrera, la modalidad con la de la carrera por omisión, la sede con «La de la carrera» por omisión, y las horas vacías con la pista de las de la asignatura;
@@ -175,8 +176,9 @@ description: "Tareas de F03-H03: mantener la oferta del periodo"
 ## Phase 7: Punta a punta y cierre
 
 - [ ] T015 Crear `deploy/probar_oferta.sh`, con el estilo de `probar_carreras.sh` y los 7 pasos de research §9:
-  - **Datos:** registra con un prefijo `P` + 3 dígitos al azar las carreras, mallas y asignaturas de las cargas 02 y 04, y un periodo `<prefijo>2026-I` en Planificación; luego oferta la carga 05 de `backend/servicios/cargas/src/test/resources/cargas/datos-de-prueba/`, con los códigos de asignatura con prefijo.
+  - **Datos:** registra con un prefijo `P` + 3 dígitos al azar las carreras, mallas y asignaturas de las cargas 02 y 04, con las carreras en la sede matriz que ya tenga la base o en una temporal, como `probar_carreras.sh`, y un periodo `<prefijo>2026-I` en Planificación; luego oferta la carga 05 de `backend/servicios/cargas/src/test/resources/cargas/datos-de-prueba/`, con los códigos de asignatura con prefijo.
   - **Estado del periodo:** lo pone en `EN_APROBACION` directamente en la base para el paso 5, con un comentario que diga por qué.
+  - **Tiempo:** mide cuánto tarda `consultarOferta` con las 165 asignaturas-paralelo, lo muestra en la salida y falla si pasa de 300 ms (meta del plan). Anotarlo en la evidencia.
   - **Limpieza:** borra en la base solo lo que creó (la oferta, las asignaturas, mallas y carreras, el periodo y sus registros, y lo que el registro del periodo dejó en Roles y en los eventos, como `probar_periodos.sh`).
 
   Agregar su paso a `.github/workflows/perfil-consolidado.yml`. Correrlo dos veces seguidas y anotarlo; `shellcheck` sin observaciones.
@@ -224,6 +226,6 @@ description: "Tareas de F03-H03: mantener la oferta del periodo"
 ## Notes
 
 - Las franjas horarias (RF-60) no se guardan: son Should y el MVP no maneja horarios (F22).
-- El coordinador de carrera mantiene la oferta de lo propio cuando F03-H05 diga de qué carrera es.
+- **Lo propio (D-64):** el coordinador lee hoy la oferta de todas las carreras y no la mantiene. F03-H05 aplica el filtro de lo propio de `OFERTA` (lectura y escritura) con los cargos. Anotarlo en la evidencia como limitación conocida.
 - La carga 5 por archivo se aplica con F01-H04, sobre las mismas reglas.
 - Hacer commit por tarea o por grupo lógico en `021-oferta-periodo`, con `Refs #37`.
