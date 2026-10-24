@@ -9,6 +9,7 @@ export type DiccionarioDeDatos = components['schemas']['DiccionarioDeDatos'];
 export type Carga = components['schemas']['Carga'];
 export type ColumnaDeCarga = components['schemas']['ColumnaDeCarga'];
 export type Obligatoriedad = components['schemas']['Obligatoriedad'];
+export type LecturaDeArchivo = components['schemas']['LecturaDeArchivo'];
 
 /** El diccionario de datos de las 10 cargas; no cambia mientras el servidor corre. */
 export function useDiccionario() {
@@ -49,4 +50,33 @@ function guardar(contenido: Blob, nombre: string) {
   enlace.click();
   enlace.remove();
   URL.revokeObjectURL(enlace.href);
+}
+
+/** El tamaño máximo de un archivo de carga, el mismo del servidor (F01-H02, research §3). */
+export const MAXIMO_DE_UN_ARCHIVO = 5 * 1024 * 1024;
+
+/** El mismo texto de CARGAS_ARCHIVO_DEMASIADO_GRANDE, para no subir en vano un archivo grande. */
+export const ARCHIVO_DEMASIADO_GRANDE = {
+  titulo: 'Archivo demasiado grande',
+  descripcion: 'El archivo pasa de 5 MB, el tamaño máximo de una carga.',
+  detalles: [],
+};
+
+/**
+ * Sube el archivo a su carga para validar su estructura (F01-H02). El servidor no lo guarda; responde
+ * cuántos registros leyó o rechaza con su código.
+ */
+export function subirArchivo(carga: Carga, archivo: File): Promise<LecturaDeArchivo> {
+  return llamar(
+    apiCargas.POST('/api/cargas/plantillas/{codigo}/archivo', {
+      params: { path: { codigo: carga.codigo } },
+      // El contrato tipa la parte binaria como texto; va el archivo tal cual, en un FormData.
+      body: { archivo: archivo as unknown as string },
+      bodySerializer: (cuerpo) => {
+        const formulario = new FormData();
+        formulario.append('archivo', cuerpo.archivo as unknown as File);
+        return formulario;
+      },
+    }),
+  );
 }

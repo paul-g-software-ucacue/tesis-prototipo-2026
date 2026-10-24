@@ -1,0 +1,25 @@
+codigo_unidad,nombre,tipo_unidad,codigo_unidad_padre,codigo_gestion_autorizada,es_comision_permanente,estado
+MATRIZ,Sede matriz,SEDE_MATRIZ,,,,ACTIVO
+OCS,Órgano Colegiado Superior,GOBIERNO,MATRIZ,,,ACTIVO
+RECT,Rectorado,GOBIERNO,MATRIZ,G01,,ACTIVO
+VRA,Vicerrectorado Académico,GOBIERNO,RECT,G02,,ACTIVO
+CAI,Coordinación Académica Institucional,UNIDAD_ACADEMICA,VRA,,,ACTIVO
+CC-CONT,Coordinación de la carrera de Contabilidad,UNIDAD_ACADEMICA,CAI,,,ACTIVO
+CC-DS,Coordinación de la carrera de Desarrollo De Software,UNIDAD_ACADEMICA,CAI,,,ACTIVO
+CC-ELE,Coordinación de la carrera de Electricidad,UNIDAD_ACADEMICA,CAI,,,ACTIVO
+CC-MA,Coordinación de la carrera de Mecanica Automotriz,UNIDAD_ACADEMICA,CAI,,,ACTIVO
+CC-CYGOC,Coordinación de la carrera de Construccion Y Gestion De Obra Civil,UNIDAD_ACADEMICA,CAI,,,ACTIVO
+CC-PP,Coordinación de la carrera de Produccion Pecuaria,UNIDAD_ACADEMICA,CAI,,,ACTIVO
+CC-TSCIOR,Coordinación de la carrera de Tecnologia Superior En Control De Incendios Y Operaciones De Rescate,UNIDAD_ACADEMICA,CAI,,,ACTIVO
+G-VIN,Gestión de Vinculación con la Sociedad,GESTION,VRA,G06,,ACTIVO
+G-INV,"Gestión de Investigación, Desarrollo Tecnológico e Innovación",GESTION,VRA,G07,,ACTIVO
+G-CAL,Coordinación de Aseguramiento de la Calidad,GESTION,RECT,G10,,ACTIVO
+G-SEC,Secretaría General Académica,GESTION,RECT,G11,,ACTIVO
+G-BIE,Gestión de Bienestar Institucional,GESTION,VRA,G13,,ACTIVO
+G-PLA,Gestión de Planificación Estratégica,GESTION,RECT,G15,,ACTIVO
+G-BIB,Unidad de Servicios de Biblioteca,GESTION,VRA,G17,,ACTIVO
+G-TIC,Unidad de TIC,GESTION,VRA,G20,,ACTIVO
+G-EST,Unidad de Estadísticas,GESTION,VRA,G21,,ACTIVO
+COM-EVAL,Comisión de Evaluación Interna,COMISION,G-CAL,,S,ACTIVO
+COM-INV,Comisión de Investigación,COMISION,G-INV,,S,ACTIVO
+COM-DIST,Comisión de elaboración del distributivo 2026-I,COMISION,VRA,,N,ACTIVO

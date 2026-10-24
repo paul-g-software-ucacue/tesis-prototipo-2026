@@ -2,6 +2,9 @@
 // las cargas de las que depende cada una, si es obligatoria y cuántas columnas tiene; la descarga de
 // su plantilla y de su diccionario de datos, y el diccionario desplegable, con las convenciones
 // comunes. La ven quienes leen las cargas o el distributivo (D-70); el servidor valida cada descarga.
+// Con «Cargas: escritura» (F01-H02, D-71), cada carga tiene «Subir archivo»: el servidor valida la
+// estructura del CSV o XLSX y responde cuántos registros leyó, o por qué lo rechaza; no lo guarda.
+import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
@@ -11,16 +14,22 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
-import { Fragment, useState } from 'react';
+import { Fragment, useRef, useState, type ChangeEvent } from 'react';
 import { AvisoDeError } from '../../errores/AvisoDeError';
 import { traducirError, type MensajeDeError } from '../../errores/traducir';
 import { useTitulo } from '../../navegacion/useTitulo';
+import { tienePermiso } from '../../sesion/permisos';
+import { useSesionActual } from '../../sesion/useSesionActual';
 import {
+  ARCHIVO_DEMASIADO_GRANDE,
+  MAXIMO_DE_UN_ARCHIVO,
   descargar,
+  subirArchivo,
   useDiccionario,
   type Carga,
   type ColumnaDeCarga,
   type Descarga,
+  type LecturaDeArchivo,
   type Obligatoriedad,
 } from './consultas';
 
@@ -77,9 +86,45 @@ function DiccionarioDeLaCarga({ carga }: { carga: Carga }) {
   );
 }
 
+/** El botón «Subir archivo» de una carga y su selector de archivos, oculto. */
+function SubirArchivo({ carga, alElegir }: { carga: Carga; alElegir: (archivo: File) => void }) {
+  const selector = useRef<HTMLInputElement>(null);
+  const elegido = (evento: ChangeEvent<HTMLInputElement>) => {
+    const archivo = evento.target.files?.[0];
+    // Vacía el selector para poder elegir el mismo archivo después de corregirlo.
+    evento.target.value = '';
+    if (archivo) {
+      alElegir(archivo);
+    }
+  };
+  return (
+    <>
+      <Button
+        size="small"
+        variant="contained"
+        aria-label={`Subir un archivo de ${carga.nombre}`}
+        onClick={() => selector.current?.click()}
+      >
+        Subir archivo
+      </Button>
+      <input
+        ref={selector}
+        type="file"
+        accept=".csv,.xlsx"
+        aria-label={`Archivo de ${carga.nombre}`}
+        hidden
+        onChange={elegido}
+      />
+    </>
+  );
+}
+
 export function Plantillas() {
   useTitulo('Plantillas de carga');
   const diccionario = useDiccionario();
+  const sesion = useSesionActual();
+  const escritura = tienePermiso(sesion.data?.permisos, 'CARGAS', 'ESCRITURA');
+  const [lectura, setLectura] = useState<LecturaDeArchivo | null>(null);
   const [desplegada, setDesplegada] = useState<number | null>(null);
   const [convenciones, setConvenciones] = useState(false);
   const [aviso, setAviso] = useState<MensajeDeError | null>(null);
@@ -87,8 +132,23 @@ export function Plantillas() {
   const nombreDe = (numero: number) =>
     diccionario.data?.cargas.find((carga) => carga.numero === numero)?.nombre ?? String(numero);
 
+  const subir = async (carga: Carga, archivo: File) => {
+    setAviso(null);
+    setLectura(null);
+    if (archivo.size > MAXIMO_DE_UN_ARCHIVO) {
+      setAviso(ARCHIVO_DEMASIADO_GRANDE);
+      return;
+    }
+    try {
+      setLectura(await subirArchivo(carga, archivo));
+    } catch (fallo) {
+      setAviso(traducirError(fallo));
+    }
+  };
+
   const bajar = async (carga: Carga, que: Descarga) => {
     setAviso(null);
+    setLectura(null);
     try {
       await descargar(carga, que);
     } catch (fallo) {
@@ -106,7 +166,24 @@ export function Plantillas() {
         Las cargas van en este orden, porque cada una depende de las anteriores.
       </Typography>
       {diccionario.error && <AvisoDeError mensaje={traducirError(diccionario.error)} />}
-      {aviso && <AvisoDeError mensaje={aviso} />}
+      {aviso && (
+        <AvisoDeError mensaje={aviso}>
+          {aviso.detalles.length > 0 && (
+            <ul>
+              {aviso.detalles.map((detalle) => (
+                <li key={`${detalle.campo}-${detalle.descripcion}`}>
+                  {`${detalle.campo}: ${detalle.descripcion}`}
+                </li>
+              ))}
+            </ul>
+          )}
+        </AvisoDeError>
+      )}
+      {lectura && (
+        <Alert severity="success" role="status" sx={{ mb: 1 }}>
+          {`${lectura.archivo}: ${lectura.registros} registros leídos.`}
+        </Alert>
+      )}
       {diccionario.data && (
         <>
           <Button
@@ -190,6 +267,12 @@ export function Plantillas() {
                             >
                               Diccionario
                             </Button>
+                            {escritura && (
+                              <SubirArchivo
+                                carga={carga}
+                                alElegir={(archivo) => void subir(carga, archivo)}
+                              />
+                            )}
                           </Stack>
                         </TableCell>
                       </TableRow>

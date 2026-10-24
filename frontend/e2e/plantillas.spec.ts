@@ -1,6 +1,7 @@
 // F01-H01 en un navegador, con la API simulada: el Responsable de consolidación descarga la
 // plantilla de docentes y el diccionario de la estructura orgánica; un gestor no ve la pantalla.
-// También la accesibilidad de «Plantillas de carga» con axe-core (WCAG 2.1 AA).
+// F01-H02: sube el CSV de docentes y ve los registros leídos; uno de carreras sin una columna
+// muestra cuál falta. También la accesibilidad de «Plantillas de carga» con axe-core (WCAG 2.1 AA).
 import { readFile } from 'node:fs/promises';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
@@ -12,7 +13,13 @@ const CONSOLIDACION = {
     usuario: 'consolidacion.demo',
     nombre: 'Responsable de consolidación (demo)',
     roles: ['RESPONSABLE_CONSOLIDACION'],
-    permisos: ['DISTRIBUTIVO:LECTURA', 'CONSOLIDACION:LECTURA'],
+    // D-71: el Responsable de consolidación también lee y escribe las cargas.
+    permisos: [
+      'DISTRIBUTIVO:LECTURA',
+      'CONSOLIDACION:LECTURA',
+      'CARGAS:LECTURA',
+      'CARGAS:ESCRITURA',
+    ],
   },
 };
 
@@ -122,6 +129,42 @@ async function simularCargas(pagina: Page) {
   );
 }
 
+// Lo que recibió el servidor simulado en cada subida, para comprobar el pedido real del navegador.
+interface Subida {
+  autorizacion: string | null;
+  tipo: string | null;
+  cuerpo: string;
+}
+
+async function simularSubidas(pagina: Page): Promise<Subida[]> {
+  const subidas: Subida[] = [];
+  await pagina.route('**/api/cargas/plantillas/*/archivo', async (ruta) => {
+    const peticion = ruta.request();
+    subidas.push({
+      autorizacion: await peticion.headerValue('Authorization'),
+      tipo: await peticion.headerValue('Content-Type'),
+      cuerpo: peticion.postDataBuffer()?.toString('utf8') ?? '',
+    });
+    if (peticion.url().includes('/docentes/')) {
+      await ruta.fulfill({
+        json: { carga: 'docentes', archivo: '06_docentes.csv', formato: 'CSV', registros: 47 },
+      });
+      return;
+    }
+    await ruta.fulfill({
+      status: 400,
+      json: {
+        titulo: 'Encabezados distintos de la plantilla',
+        descripcion:
+          'Las columnas del archivo no son las de la plantilla de la carga, en su orden. Revisa las columnas marcadas.',
+        codigo: 'CARGAS_ENCABEZADOS_DISTINTOS',
+        detalles: [{ campo: 'codigo_carrera', descripcion: 'Falta en el archivo.' }],
+      },
+    });
+  });
+  return subidas;
+}
+
 async function abrirPlantillas(pagina: Page) {
   await simularApi(pagina, { sesion: CONSOLIDACION });
   await simularCargas(pagina);
@@ -187,5 +230,43 @@ test('«Plantillas de carga» no tiene fallas WCAG 2.1 AA, ni con un diccionario
     page.getByRole('table', { name: 'Diccionario de Estructura orgánica' }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Convenciones de todas las cargas' }).click();
+  await sinFallas(page);
+});
+
+test('el Responsable de consolidación sube el CSV de docentes y ve los registros leídos', async ({
+  page,
+}) => {
+  const subidas = await simularSubidas(page);
+  await abrirPlantillas(page);
+
+  await page
+    .getByLabel('Archivo de Docentes contratados (con ficha académica)', { exact: true })
+    .setInputFiles({
+      name: '06_docentes.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.from(DOCENTES.join(',') + '\r\n'),
+    });
+
+  await expect(page.getByRole('status')).toHaveText('06_docentes.csv: 47 registros leídos.');
+  expect(subidas).toHaveLength(1);
+  expect(subidas[0]?.autorizacion).toMatch(/^Bearer /);
+  expect(subidas[0]?.tipo).toMatch(/^multipart\/form-data; boundary=/);
+  expect(subidas[0]?.cuerpo).toContain('name="archivo"; filename="06_docentes.csv"');
+  await sinFallas(page);
+});
+
+test('un archivo de carreras sin una columna muestra cuál falta', async ({ page }) => {
+  await simularSubidas(page);
+  await abrirPlantillas(page);
+
+  await page.getByLabel('Archivo de Carreras', { exact: true }).setInputFiles({
+    name: 'carreras.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from('nombre,siglas\r\nUno,U\r\n'),
+  });
+
+  const aviso = page.getByRole('alert');
+  await expect(aviso).toContainText('Encabezados distintos de la plantilla');
+  await expect(aviso).toContainText('codigo_carrera: Falta en el archivo.');
   await sinFallas(page);
 });

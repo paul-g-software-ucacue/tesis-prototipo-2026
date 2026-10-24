@@ -10,4 +10,6 @@ dependencies {
     // Lectura del JWT ya validado en la sesión actual (D-39).
     implementation 'org.springframework.security:spring-security-oauth2-resource-server'
     implementation 'org.springframework.security:spring-security-oauth2-jose'
+    // Los XLSX de las cargas (F01-H02, research §5): solo en adaptadores.salida.
+    implementation "org.apache.poi:poi-ooxml:${versionApachePoi}"
 }

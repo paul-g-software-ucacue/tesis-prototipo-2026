@@ -22,12 +22,15 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.RequestBuilder;
+import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 /**
  * La prueba de autorización por operación de RNF-SEG-03 (ADR-021): une el permiso que el contrato
@@ -130,18 +133,32 @@ public final class VerificadorDePermisos {
             Converter<Jwt, ? extends AbstractAuthenticationToken> conversor,
             OperacionProtegida operacion,
             List<String> permisos) {
-        MockHttpServletRequestBuilder peticion =
-                MockMvcRequestBuilders.request(
-                                HttpMethod.valueOf(operacion.metodo()), operacion.ruta())
-                        .with(
-                                jwt().jwt(
-                                                token ->
-                                                        token.subject("verificador.permisos")
-                                                                .claim("roles", List.of())
-                                                                .claim("permisos", permisos))
-                                        .authorities((Jwt token) -> autoridades(conversor, token)));
-        if (operacion.conCuerpo()) {
-            peticion.contentType(MediaType.APPLICATION_JSON).content("{}");
+        RequestPostProcessor token =
+                jwt().jwt(
+                                jwt ->
+                                        jwt.subject("verificador.permisos")
+                                                .claim("roles", List.of())
+                                                .claim("permisos", permisos))
+                        .authorities((Jwt jwt) -> autoridades(conversor, jwt));
+        HttpMethod metodo = HttpMethod.valueOf(operacion.metodo());
+        RequestBuilder peticion;
+        if (!operacion.partes().isEmpty()) {
+            // Un archivo de prueba en cada parte, para que el 403 no lo tape un 400 o un 415.
+            MockMultipartHttpServletRequestBuilder multipart =
+                    MockMvcRequestBuilders.multipart(metodo, operacion.ruta());
+            for (String parte : operacion.partes()) {
+                multipart.file(
+                        new MockMultipartFile(parte, "verificador.csv", null, new byte[] {'x'}));
+            }
+            peticion = multipart.with(token);
+        } else if (operacion.conCuerpo()) {
+            peticion =
+                    MockMvcRequestBuilders.request(metodo, operacion.ruta())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}")
+                            .with(token);
+        } else {
+            peticion = MockMvcRequestBuilders.request(metodo, operacion.ruta()).with(token);
         }
         try {
             return mvc.perform(peticion).andReturn().getResponse();
@@ -208,7 +225,22 @@ public final class VerificadorDePermisos {
                         permiso instanceof List<?> lista
                                 ? lista.stream().map(Object::toString).toList()
                                 : List.of(permiso.toString()),
-                        operacion.getRequestBody() != null));
+                        operacion.getRequestBody() != null,
+                        partes(operacion)));
+    }
+
+    // Las partes de un cuerpo multipart/form-data, para mandar un archivo en cada una (F01-H02).
+    private static List<String> partes(Operation operacion) {
+        if (operacion.getRequestBody() == null || operacion.getRequestBody().getContent() == null) {
+            return List.of();
+        }
+        var multipart = operacion.getRequestBody().getContent().get("multipart/form-data");
+        if (multipart == null
+                || multipart.getSchema() == null
+                || multipart.getSchema().getProperties() == null) {
+            return List.of();
+        }
+        return List.copyOf(multipart.getSchema().getProperties().keySet());
     }
 
     // Cambia cada {parametro} de la ruta por su ejemplo del contrato, o por «x» si no tiene.
@@ -248,13 +280,20 @@ public final class VerificadorDePermisos {
      * @param permisos los de {@code x-mdd-permiso}, por ejemplo {@code USUARIOS_ROLES:LECTURA}; si
      *     son varios, alternativos: basta con uno (D-70)
      * @param conCuerpo si la operación recibe un cuerpo
+     * @param partes las partes de un cuerpo {@code multipart/form-data}, donde va un archivo de
+     *     prueba; vacía si el cuerpo es JSON o no hay cuerpo
      */
     public record OperacionProtegida(
-            String metodo, String ruta, List<String> permisos, boolean conCuerpo) {
+            String metodo,
+            String ruta,
+            List<String> permisos,
+            boolean conCuerpo,
+            List<String> partes) {
 
-        /** Copia la lista. */
+        /** Copia las listas. */
         public OperacionProtegida {
             permisos = List.copyOf(permisos);
+            partes = List.copyOf(partes);
         }
 
         @Override

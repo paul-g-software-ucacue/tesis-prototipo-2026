@@ -9,8 +9,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /** Aplicación mínima para probar {@link VerificadorDePermisos} con la seguridad de los procesos. */
 @SpringBootApplication
@@ -47,6 +49,12 @@ class AplicacionDePermisos {
         @GetMapping("/api/prueba/solo-una")
         String soloUna() {
             return "solo con uno";
+        }
+
+        @PreAuthorize("hasAuthority('PERMISO_PRUEBA:ESCRITURA')")
+        @PostMapping(value = "/api/prueba/archivo", consumes = "multipart/form-data")
+        String archivo(@RequestPart("archivo") MultipartFile archivo) {
+            return "recibido";
         }
 
         @GetMapping("/api/prueba/libre")

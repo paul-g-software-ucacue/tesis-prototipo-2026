@@ -18,11 +18,12 @@ import org.springframework.test.web.servlet.MockMvc;
 /**
  * La prueba de autorización por operación de Cargas (RNF-SEG-03): sin «Cargas: lectura» ni
  * «Distributivo del periodo: lectura», cada operación de las plantillas responde 403, y con
- * cualquiera de los dos, no (D-70, aclaración 1). La sesión no exige permiso.
+ * cualquiera de los dos, no (D-70). Subir un archivo exige «Cargas: escritura» (D-71). La sesión no
+ * exige permiso.
  */
-@WebMvcTest({SesionControlador.class, PlantillasControlador.class})
+@WebMvcTest({SesionControlador.class, PlantillasControlador.class, SubidaControlador.class})
 @ImportAutoConfiguration({SeguridadProcesoAutoConfiguracion.class, ErroresAutoConfiguracion.class})
-@Import(ConfiguracionCargas.class)
+@Import({ConfiguracionCargas.class, ErroresCargas.class})
 @TestPropertySource(
         properties =
                 "spring.security.oauth2.resourceserver.jwt.jwk-set-uri=http://127.0.0.1:9/jwks")
@@ -43,7 +44,9 @@ class PermisosCargasTest {
                         "GET /api/cargas/plantillas/estructura_organica/plantilla"
                                 + " ([CARGAS:LECTURA, DISTRIBUTIVO:LECTURA])",
                         "GET /api/cargas/plantillas/estructura_organica/diccionario"
-                                + " ([CARGAS:LECTURA, DISTRIBUTIVO:LECTURA])");
+                                + " ([CARGAS:LECTURA, DISTRIBUTIVO:LECTURA])",
+                        "POST /api/cargas/plantillas/estructura_organica/archivo"
+                                + " (CARGAS:ESCRITURA)");
 
         verificador.verificar(mvc, conversor);
     }

@@ -3,14 +3,17 @@
 import Alert from '@mui/material/Alert';
 import AlertTitle from '@mui/material/AlertTitle';
 import Typography from '@mui/material/Typography';
+import type { ReactNode } from 'react';
 import type { TextoDeError } from './mensajes';
 
 interface Propiedades {
   mensaje: TextoDeError & { idIncidente?: string };
   gravedad?: 'error' | 'warning' | 'info';
+  /** Lo que la pantalla agrega debajo de la descripción, como los detalles de un archivo. */
+  children?: ReactNode;
 }
 
-export function AvisoDeError({ mensaje, gravedad = 'error' }: Propiedades) {
+export function AvisoDeError({ mensaje, gravedad = 'error', children }: Propiedades) {
   return (
     <Alert severity={gravedad} role="alert">
       <AlertTitle>{mensaje.titulo}</AlertTitle>
@@ -20,6 +23,7 @@ export function AvisoDeError({ mensaje, gravedad = 'error' }: Propiedades) {
           Identificador del incidente: {mensaje.idIncidente}
         </Typography>
       )}
+      {children}
     </Alert>
   );
 }

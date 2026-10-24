@@ -93,6 +93,12 @@ jobs:
         shell: bash
         run: deploy/probar_plantillas.sh
 
+      # F01-H02: subir el CSV o XLSX de una carga, por el gateway y por el frontend (nginx), cada
+      # rechazo con su código y quién sube (D-71). No crea nada.
+      - name: Subida de archivos de punta a punta
+        shell: bash
+        run: deploy/probar_subida.sh
+
       # shell: bash agrega pipefail, así que tee no oculta el código de salida del script.
       # Después de iniciar sesión (D-34): la medición de referencia de R-19 desde B00-H03.
       - name: Medición de R-19 después de iniciar sesión

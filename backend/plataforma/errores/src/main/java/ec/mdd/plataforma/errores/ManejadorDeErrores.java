@@ -97,7 +97,11 @@ public class ManejadorDeErrores extends ResponseEntityExceptionHandler {
                     ResponseEntity.status(entrada.get().definicion().estado())
                             .contentType(MediaType.APPLICATION_JSON);
             entrada.get().encabezados(excepcion).forEach(respuesta::header);
-            return respuesta.body(RespuestaError.deCatalogo(entrada.get().definicion()));
+            List<DetalleRespuesta> detalles = entrada.get().detalles(excepcion);
+            return respuesta.body(
+                    detalles.isEmpty()
+                            ? RespuestaError.deCatalogo(entrada.get().definicion())
+                            : RespuestaError.conDetalles(entrada.get().definicion(), detalles));
         }
         String id =
                 RegistroDeIncidentes.registrar(

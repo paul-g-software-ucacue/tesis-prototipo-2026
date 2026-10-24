@@ -6,8 +6,17 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { instalarApiSimulada, json, type ApiSimulada } from '../../pruebas/apiSimulada';
 import { montarSpa } from '../../pruebas/montarSpa';
+import { FalloDeApi } from '../../errores/traducir';
 import { cerrarSesion, iniciarSesion } from '../../sesion/almacen';
+import { subirArchivo } from './consultas';
 import { DICCIONARIO } from './datosDePrueba';
+
+// En jsdom, FormData y File son de jsdom y el Request de Node no los acepta: la subida se simula
+// aquí, y que el pedido real lleve la parte «archivo» y el token lo comprueba Playwright.
+vi.mock('./consultas', async (original) => ({
+  ...(await original<typeof import('./consultas')>()),
+  subirArchivo: vi.fn(),
+}));
 
 function sesionCon(simulada: ApiSimulada, usuario: string, permisos: string[]) {
   simulada.responder(
@@ -68,6 +77,7 @@ describe('Plantillas de carga', () => {
   afterEach(() => {
     cerrarSesion();
     vi.restoreAllMocks();
+    vi.mocked(subirArchivo).mockReset();
   });
 
   it('muestra las 10 cargas en su orden, con sus dependencias, su obligatoriedad y sus columnas', async () => {
@@ -197,6 +207,84 @@ describe('Plantillas de carga', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Servicio no disponible');
     expect(descargas).toEqual([]);
+  });
+
+  it('con «Cargas: escritura» sube un archivo a su carga y muestra los registros leídos', async () => {
+    sesionCon(simulada, 'consolidacion.demo', ['DISTRIBUTIVO:LECTURA', 'CARGAS:ESCRITURA']);
+    vi.mocked(subirArchivo).mockResolvedValue({
+      carga: 'docentes',
+      archivo: '06_docentes.csv',
+      formato: 'CSV',
+      registros: 47,
+    });
+    const usuario = userEvent.setup();
+    montarSpa('/plantillas');
+
+    const boton = await screen.findByRole('button', {
+      name: 'Subir un archivo de Docentes contratados (con ficha académica)',
+    });
+    expect(boton).toBeInTheDocument();
+    const archivo = new File(['tipo_identificacion\n'], '06_docentes.csv', { type: 'text/csv' });
+    await usuario.upload(
+      screen.getByLabelText('Archivo de Docentes contratados (con ficha académica)'),
+      archivo,
+    );
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      '06_docentes.csv: 47 registros leídos.',
+    );
+    expect(subirArchivo).toHaveBeenCalledWith(
+      expect.objectContaining({ codigo: 'docentes' }),
+      archivo,
+    );
+  });
+
+  it('si el archivo se rechaza, muestra el título, la descripción y cada detalle', async () => {
+    sesionCon(simulada, 'datos.demo', ['CARGAS:LECTURA', 'CARGAS:ESCRITURA']);
+    vi.mocked(subirArchivo).mockRejectedValue(
+      new FalloDeApi(400, {
+        titulo: 'Encabezados distintos de la plantilla',
+        descripcion:
+          'Las columnas del archivo no son las de la plantilla de la carga, en su orden.',
+        codigo: 'CARGAS_ENCABEZADOS_DISTINTOS',
+        detalles: [{ campo: 'codigo_carrera', descripcion: 'Falta en el archivo.' }],
+      }),
+    );
+    const usuario = userEvent.setup();
+    montarSpa('/plantillas');
+
+    await usuario.upload(
+      await screen.findByLabelText('Archivo de Carreras'),
+      new File(['nombre\n'], 'carreras.csv', { type: 'text/csv' }),
+    );
+
+    const aviso = await screen.findByRole('alert');
+    expect(aviso).toHaveTextContent('Encabezados distintos de la plantilla');
+    expect(aviso).toHaveTextContent('codigo_carrera: Falta en el archivo.');
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  it('rechaza en la pantalla un archivo de más de 5 MB, sin enviarlo', async () => {
+    sesionCon(simulada, 'datos.demo', ['CARGAS:LECTURA', 'CARGAS:ESCRITURA']);
+    const usuario = userEvent.setup();
+    montarSpa('/plantillas');
+
+    const grande = new File([new Uint8Array(5 * 1024 * 1024 + 1)], 'grande.csv', {
+      type: 'text/csv',
+    });
+    await usuario.upload(await screen.findByLabelText('Archivo de Carreras'), grande);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Archivo demasiado grande');
+    expect(subirArchivo).not.toHaveBeenCalled();
+  });
+
+  it('sin «Cargas: escritura» no ofrece subir archivos', async () => {
+    sesionCon(simulada, 'coordinacion.demo', ['DISTRIBUTIVO:LECTURA:PROPIO']);
+    montarSpa('/plantillas');
+
+    await filaDe('Carreras');
+    expect(screen.queryByRole('button', { name: /^Subir un archivo/ })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/^Archivo de/)).not.toBeInTheDocument();
   });
 
   it.each([['CARGAS:LECTURA'], ['DISTRIBUTIVO:LECTURA'], ['DISTRIBUTIVO:LECTURA:PROPIO']])(

@@ -67,6 +67,34 @@ class ManejadorDeErroresTest {
     }
 
     @Test
+    void dadaUnaEntradaConDetalles_cuandoSeProduceSuError_entoncesRespondeSuCodigoYSusDetalles()
+            throws Exception {
+        HttpResponse<String> respuesta = pedir("GET", "/api/prueba/columnas", null, null, null);
+
+        assertThat(respuesta.statusCode()).isEqualTo(400);
+        assertThat(respuesta.body())
+                .isEqualTo(
+                        "{\"titulo\":\"Columnas\",\"descripcion\":\"Revisa las columnas.\","
+                                + "\"codigo\":\"PRUEBA_COLUMNAS\",\"detalles\":["
+                                + "{\"campo\":\"codigo_carrera\",\"descripcion\":\"Falta en el archivo.\"},"
+                                + "{\"campo\":\"siglas\",\"descripcion\":\"Falta en el archivo.\"}]}");
+    }
+
+    @Test
+    void dadoUnContenidoQueSuperaElMaximo_cuandoSpringLoCorta_entonces413ConSuCodigoComun()
+            throws Exception {
+        HttpResponse<String> respuesta =
+                pedir("GET", "/api/prueba/demasiado-grande", null, null, null);
+
+        assertThat(respuesta.statusCode()).isEqualTo(413);
+        assertThat(respuesta.body())
+                .isEqualTo(
+                        "{\"titulo\":\"Contenido demasiado grande\",\"descripcion\":\"El"
+                                + " contenido enviado supera el tamaño máximo que admite el"
+                                + " sistema.\",\"codigo\":\"COMUN_CONTENIDO_DEMASIADO_GRANDE\"}");
+    }
+
+    @Test
     void dadoUnParametroDeRutaQueNoCumpleSuPatron_cuandoSeValida_entonces400ConSuCampo()
             throws Exception {
         HttpResponse<String> respuesta =
