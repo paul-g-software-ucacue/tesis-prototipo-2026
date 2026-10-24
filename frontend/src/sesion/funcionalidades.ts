@@ -46,3 +46,12 @@ export const LECTURA_DE_LA_ESTRUCTURA: readonly { funcionalidad: string; tipo: T
   { funcionalidad: 'DISTRIBUTIVO', tipo: 'LECTURA' },
   { funcionalidad: 'CATALOGOS', tipo: 'LECTURA' },
 ];
+
+/**
+ * Quién descarga las plantillas de carga: quien lee las cargas o el distributivo (D-70, F01-H01).
+ * Lo comparten la ruta y la entrada del menú.
+ */
+export const DESCARGA_DE_PLANTILLAS: readonly { funcionalidad: string; tipo: TipoDePermiso }[] = [
+  { funcionalidad: 'CARGAS', tipo: 'LECTURA' },
+  { funcionalidad: 'DISTRIBUTIVO', tipo: 'LECTURA' },
+];

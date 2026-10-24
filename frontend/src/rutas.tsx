@@ -7,11 +7,12 @@ import { Inicio } from './pantallas/Inicio';
 import { NoEncontrada } from './pantallas/NoEncontrada';
 import { Normativa } from './pantallas/normativa/Normativa';
 import { Estructura } from './pantallas/estructura/Estructura';
+import { Plantillas } from './pantallas/plantillas/Plantillas';
 import { Periodos } from './pantallas/periodos/Periodos';
 import { Roles } from './pantallas/roles/Roles';
 import { RutaConPermiso } from './sesion/RutaConPermiso';
 import { RutaProtegida } from './sesion/RutaProtegida';
-import { LECTURA_DE_LA_ESTRUCTURA } from './sesion/funcionalidades';
+import { DESCARGA_DE_PLANTILLAS, LECTURA_DE_LA_ESTRUCTURA } from './sesion/funcionalidades';
 
 export const rutasDeLaSpa: RouteObject[] = [
   { path: '/iniciar-sesion', element: <IniciarSesion /> },
@@ -52,6 +53,14 @@ export const rutasDeLaSpa: RouteObject[] = [
         element: (
           <RutaConPermiso cualquieraDe={LECTURA_DE_LA_ESTRUCTURA}>
             <Estructura />
+          </RutaConPermiso>
+        ),
+      },
+      {
+        path: 'plantillas',
+        element: (
+          <RutaConPermiso cualquieraDe={DESCARGA_DE_PLANTILLAS}>
+            <Plantillas />
           </RutaConPermiso>
         ),
       },

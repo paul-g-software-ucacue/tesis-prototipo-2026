@@ -14,7 +14,7 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import { NavLink, Outlet } from 'react-router';
 import { cerrarSesion } from '../sesion/almacen';
-import { LECTURA_DE_LA_ESTRUCTURA } from '../sesion/funcionalidades';
+import { DESCARGA_DE_PLANTILLAS, LECTURA_DE_LA_ESTRUCTURA } from '../sesion/funcionalidades';
 import { tieneAlguno, type PermisoRequerido } from '../sesion/permisos';
 import { useSesionActual } from '../sesion/useSesionActual';
 
@@ -42,6 +42,7 @@ const ENTRADAS: Entrada[] = [
     permiso: { funcionalidad: 'DISTRIBUTIVO', tipo: 'LECTURA' },
   },
   { ruta: '/estructura', texto: 'Estructura orgánica', permiso: LECTURA_DE_LA_ESTRUCTURA },
+  { ruta: '/plantillas', texto: 'Plantillas de carga', permiso: DESCARGA_DE_PLANTILLAS },
 ];
 
 export function Marco() {
