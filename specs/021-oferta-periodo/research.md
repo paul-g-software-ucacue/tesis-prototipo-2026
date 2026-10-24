@@ -77,7 +77,7 @@ En `OfertaDelPeriodo`, con `DatosMaestros`:
 
 ## 10. Glosario (principio III)
 
-Los términos de la historia ya están: Oferta, Asignatura-paralelo, Paralelo, Jornada, Modalidad y Periodo académico. Faltan dos cosas que usa la spec, y se proponen al autor antes del código (como en F03-H02):
+Los términos de la historia ya están: Oferta, Asignatura-paralelo, Paralelo, Jornada, Modalidad y Periodo académico. Faltaban dos cosas que usa la spec; el autor las aprobó y quedaron aplicadas el 2026-10-24, antes del código (copia `modelo_dominio.md.antes-F03-H03`):
 
 - **Asignatura-paralelo** (ampliar la definición): «… Es lo que recibe una propuesta. Se **retira** de la oferta en lugar de borrarse; retirada, no suma horas a cubrir ni recibe propuestas, y se puede volver a ofertar mientras el periodo está en Planificación.»
 - **Horas a cubrir** (término nuevo, contexto Datos maestros, RF-15): «Horas semanales de clase de la oferta que hay que asignar a docentes: la suma de las horas de cada asignatura-paralelo ofertada, por asignatura, por carrera o del periodo.»

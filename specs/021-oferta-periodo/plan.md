@@ -13,7 +13,7 @@
 - **Contrato:** 5 operaciones y 2 códigos `ACADEMICO_*`.
 - **SPA:** la pantalla «Oferta del periodo».
 - **Punta a punta:** `deploy/probar_oferta.sh`, con las 165 asignaturas-paralelo de prueba, que suman 660 horas.
-- **Glosario:** se propone ampliar «Asignatura-paralelo» con el retiro y agregar «Horas a cubrir» (research §10); pendiente de la aprobación del autor.
+- **Glosario:** «Asignatura-paralelo» se amplía con el retiro y se agrega «Horas a cubrir»; aprobado por el autor y aplicado el 2026-10-24 (research §10).
 
 Los detalles y las alternativas están en [research.md](research.md).
 
@@ -54,7 +54,7 @@ Los detalles y las alternativas están en [research.md](research.md).
 |---|---|---|
 | I. Capas | Reglas en `AsignaturaParalelo` y `OfertaDelPeriodo`; la aplicación orquesta; los adaptadores traducen. | ✅ |
 | II. DDD según el subdominio | Académico es de soporte: valores con sus reglas y un valor para las reglas entre entidades, sin agregado ni eventos (research §1). | ✅ |
-| III. Lenguaje ubicuo | Oferta, Asignatura-paralelo, Paralelo, Jornada y Modalidad, del glosario. «Retirada» y «Horas a cubrir» se proponen antes del código (research §10). | ⚠️ pendiente de aprobación |
+| III. Lenguaje ubicuo | Oferta, Asignatura-paralelo, Paralelo, Jornada y Modalidad, del glosario. «Retirada» y «Horas a cubrir» se aprobaron y aplicaron antes del código (research §10). | ✅ |
 | IV. API primero | Las 5 operaciones y los 2 códigos en el contrato antes del código. | ✅ |
 | V. Límites | Todo en Académico. El distributivo la consumirá por la API publicada (Ola 2). | ✅ |
 | VI. Las reglas son datos | Jornadas y modalidades, las enumeraciones de F03-H02, ya comparadas con el diccionario; el estado, una enumeración nueva. | ✅ |
@@ -66,7 +66,7 @@ Los detalles y las alternativas están en [research.md](research.md).
 | XIII. Errores | 2 códigos en el catálogo; los datos inválidos, 400 con su campo. | ✅ |
 | §6.4 Decisiones | Ninguna nueva: aplica D-69 y D-70. Siguiente número libre: D-72 · ADR-022. | ✅ |
 
-**Resultado del gate antes de la fase 0:** pasa, con el principio III pendiente. Los dos cambios del glosario tienen que estar aprobados y aplicados antes de escribir el código, como en F03-H02.
+**Resultado del gate antes de la fase 0:** pasa. Los dos cambios del glosario quedaron aprobados por el autor y aplicados el 2026-10-24 (copia `modelo_dominio.md.antes-F03-H03`).
 
 **Revisión después de la fase 1:** pasa. [data-model.md](data-model.md) y [contracts/](contracts/) solo agregan lo listado.
 
@@ -109,7 +109,7 @@ deploy/probar_oferta.sh, .github/workflows/perfil-consolidado.yml
 
 ## Fases de implementación (guía para /speckit-tasks)
 
-1. **Glosario:** aplicar los dos cambios de research §10, con la aprobación del autor y una copia `modelo_dominio.md.antes-F03-H03`.
+1. **Glosario:** aprobado por el autor el 2026-10-24 y ya aplicado (copia `modelo_dominio.md.antes-F03-H03`).
 2. **Contrato y catálogo:** las 5 operaciones y los 2 códigos.
 3. **Dominio,** con las pruebas primero: `AsignaturaParalelo`, `OfertaDelPeriodo` y `HorasACubrir`, con las cargas 02, 04 y 05 de prueba (660 horas, y los totales de cada carrera).
 4. **Persistencia:** V5 y el repositorio, con Testcontainers.
