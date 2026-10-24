@@ -10,7 +10,7 @@
 
 **Origen**: issue #38 · F03-H04 · sub-issue de F03 (Mantener los datos maestros: estructura, mallas, oferta, docentes y proyectos) · milestone «Ola 1 · Datos listos» · Ola del secuenciador MVP · etiquetas `tipo:historia`, `prioridad:must`, `modulo:04-docentes`, `RF-16`, `RF-17`, `RN-01` · tamaño propuesto L · depende de #35 (F03-H01), cerrada.
 
-**Requerimientos que cubre**: RF-16 (los datos del docente; criterio: «La consulta por nombre o cédula muestra los datos. Una edición con datos inválidos no se guarda»), RF-17 (la ficha académica dentro del registro del docente, que alimenta el puntaje de afinidad), RN-01 (dedicaciones: tiempo completo 40 h, medio tiempo 20 h, tiempo parcial hasta 19 h), C-02 (la condición especial va aparte de la dedicación) y la ERS §8.3, carga 6. **Decisiones que aplica** (`docs/decisiones.md`): D-16 y D-65 (matriz de permisos), D-69 (el Vicerrector escribe con «Distributivo del periodo: escritura»), D-70 (permisos alternativos), ADR-010 y MD-02 (el puntaje de afinidad lo calcula Generación, no Docentes), ADR-016 (catálogo de errores), ADR-021 (permisos). **Principios de la constitución**: II (Datos maestros es de soporte), III (lenguaje ubicuo), IV (API primero), VI (las reglas son datos), VII (nada se borra y toda acción relevante deja registro) y IX (mínimo privilegio).
+**Requerimientos que cubre**: RF-16 (los datos del docente; criterio: «La consulta por nombre o cédula muestra los datos. Una edición con datos inválidos no se guarda»), RF-17 (la ficha académica dentro del registro del docente, que alimenta el puntaje de afinidad), RN-01 (dedicaciones: tiempo completo 40 h, medio tiempo 20 h, tiempo parcial hasta 19 h); aquí, el catálogo de dedicaciones; que las horas cuadren con la dedicación lo revisa la validación del distributivo con la normativa del periodo, C-02 (la condición especial va aparte de la dedicación) y la ERS §8.3, carga 6. **Decisiones que aplica** (`docs/decisiones.md`): D-16 y D-65 (matriz de permisos), D-69 (el Vicerrector escribe con «Distributivo del periodo: escritura»), D-70 (permisos alternativos), ADR-010 y MD-02 (el puntaje de afinidad lo calcula Generación, no Docentes), ADR-016 (catálogo de errores), ADR-021 (permisos). **Principios de la constitución**: II (Datos maestros es de soporte), III (lenguaje ubicuo), IV (API primero), VI (las reglas son datos), VII (nada se borra y toda acción relevante deja registro) y IX (mínimo privilegio).
 
 **Historia (tal como está en el issue)**: Como Responsable de consolidación, quiero consultar y corregir los datos de cada docente y su ficha académica, para que la afinidad y las reglas usen datos correctos.
 
@@ -42,7 +42,7 @@ Como quien mantiene los datos de los docentes, quiero registrar un docente con s
 
 1. **Given** una carrera existente y los datos completos de un docente, **When** lo registro, **Then** queda guardado, activo, con su ficha académica, y el registro guarda quién y cuándo.
 2. **Given** un número de identificación ya registrado o un correo institucional que ya usa otro docente, **When** registro, **Then** se rechaza con el motivo en español.
-3. **Given** una cédula cuyo dígito verificador no cuadra, unas horas contratadas que no corresponden a la dedicación, un docente titular sin categoría de escalafón, un docente ocasional sin fin de contrato, un fin de contrato anterior al inicio, una carrera base que no existe o un campo específico que no empieza por su campo amplio, **When** guardo, **Then** se rechaza con su campo y el motivo, y no se guarda nada.
+3. **Given** una cédula cuyo dígito verificador no cuadra, unas horas contratadas fuera de 1 a 40, un docente titular sin categoría de escalafón, un docente ocasional sin fin de contrato, un fin de contrato anterior al inicio, una carrera base que no existe o un campo específico que no empieza por su campo amplio, **When** guardo, **Then** se rechaza con su campo y el motivo, y no se guarda nada.
 
 ---
 
@@ -130,19 +130,19 @@ Como quien mantiene los datos de los docentes, o como quien los consulta, quiero
 
 ### Edge Cases
 
-- **Identificación**: tipo cédula o pasaporte. La cédula tiene 10 dígitos como texto, con el 0 inicial, y su dígito verificador cumple el módulo 10. El pasaporte tiene hasta 13 caracteres, letras y números. Es la clave del docente y no cambia.
+- **Identificación**: tipo cédula o pasaporte. La cédula tiene 10 dígitos como texto, con el 0 inicial, y su dígito verificador cumple el módulo 10; sus dos primeros dígitos son una provincia (01 a 24, o 30 para quienes viven en el exterior) y el tercero es menor que 6. El pasaporte tiene hasta 13 caracteres, letras y números. Es la clave del docente y no cambia.
 - **Nombres**: primer apellido y primer nombre obligatorios; segundo apellido y segundo nombre opcionales; hasta 60 caracteres cada uno, en mayúsculas (se guardan en mayúsculas aunque se escriban en minúsculas).
-- **Correo institucional**: con formato de correo, hasta 100 caracteres, único entre los docentes. **Teléfono**: opcional, hasta 10 dígitos.
+- **Correo institucional**: con formato de correo, hasta 100 caracteres, único entre los docentes. **Teléfono**: opcional, de 7 a 10 dígitos.
 - **Tipo de personal**: titular, ocasional, invitado u honorario (RCE art. 137; el glosario nombra los dos primeros).
 - **Categoría de escalafón**: auxiliar 1 y 2, agregado 1 a 3, principal 1 a 3 o «no aplica». Un titular necesita una categoría que no sea «no aplica»; los demás tipos, «no aplica».
-- **Dedicación y horas contratadas** (RN-01): tiempo completo con 40 horas, medio tiempo con 20, tiempo parcial con 1 a 19. Si se omiten las horas, se toman las de la dedicación (40 o 20); en tiempo parcial son obligatorias.
+- **Dedicación y horas contratadas**: la dedicación es tiempo completo, medio tiempo o tiempo parcial; las horas contratadas son obligatorias, enteras, de 1 a 40. Que cuadren con la dedicación (RN-01: 40, 20 o hasta 19) es una regla de la normativa versionada (principio VI): la revisa la validación del distributivo con la normativa del periodo, no el registro del docente.
 - **Fechas**: ingreso, inicio y fin de contrato. El fin es obligatorio para un ocasional y, si se indica, es posterior al inicio. Que el contrato cubra el periodo depende del periodo y lo revisa la validación del distributivo, no esta historia.
 - **Condición especial**: cuidador sustituto, maternidad o lactancia, apoyo a la SIES o ninguna (por omisión, ninguna). Va aparte de la dedicación (C-02); cómo cambia las horas lo dice la normativa (RN-14 a RN-16).
 - **Carrera base**: una carrera existente de Académico, en cualquier estado: un docente puede seguir perteneciendo a una carrera en cierre.
 - **Título de tercer nivel**: obligatorio, hasta 150 caracteres, como consta en la SENESCYT; registro SENESCYT opcional, hasta 30; campo amplio del catálogo CINE (2 dígitos) y campo específico de 3 dígitos que empieza por el amplio.
 - **Títulos de cuarto nivel**: lista opcional; cada uno con su título, su tipo (maestría, especialización o doctorado), su campo específico y su año (1950 al año actual). Su campo amplio son los dos primeros dígitos del específico.
-- **Cursos y capacitaciones**: lista opcional; cada uno con su nombre, campo específico, horas mayores que 0 y año.
-- **Experiencia laboral**: lista opcional; cada una con su cargo, institución, campo específico y años (decimal mayor que 0).
+- **Cursos y capacitaciones**: lista opcional; cada uno con su nombre, campo específico, horas enteras de 1 a 2000 y año.
+- **Experiencia laboral**: lista opcional; cada una con su cargo, institución, campo específico y años (decimal mayor que 0 y hasta 60).
 - **Asignaturas afines declaradas**: lista opcional de códigos de asignaturas existentes en Académico, sin repetir. Que el coordinador las valide, y que sumen al puntaje, queda fuera de esta historia.
 - **Tamaño de la ficha**: el diccionario limita cada lista de la carga 6 a 600 o 1000 caracteres en el archivo; en pantalla, cada lista admite hasta 20 elementos, que cubren esos límites.
 - **Estado laboral**: activo, en licencia o inactivo; un docente nuevo queda activo. Solo los activos reciben asignaciones (lo aplica el distributivo).
@@ -157,7 +157,7 @@ Como quien mantiene los datos de los docentes, o como quien los consulta, quiero
 - **FR-001**: El sistema DEBE guardar cada docente con su identificación, sus nombres, su correo institucional, su teléfono, su tipo de personal, su categoría de escalafón, su dedicación con sus horas contratadas, sus fechas de ingreso, inicio y fin de contrato, su condición especial, su carrera base, su ficha académica y su estado laboral, como en la carga 6.
 - **FR-002**: La ficha académica DEBE guardarse dentro del registro del docente: el título de tercer nivel con su registro SENESCYT, su campo amplio y su campo específico; los títulos de cuarto nivel con su tipo, campo específico y año; los cursos y capacitaciones con su campo específico, horas y año; la experiencia laboral con su cargo, institución, campo específico y años; y las asignaturas afines declaradas (RF-17).
 - **FR-003**: Se DEBE poder registrar, buscar, consultar, corregir y cambiar el estado laboral de un docente; el número de identificación no cambia y nada se borra (aclaración 2).
-- **FR-004**: Cada dato DEBE cumplir las reglas de la carga 6 del diccionario de datos descritas en los casos límite: cédula con dígito verificador válido, identificación y correo únicos, horas coherentes con la dedicación (RN-01), categoría según el tipo de personal, fin de contrato del ocasional, campo específico que empieza por su campo amplio, años y horas de la ficha en su rango.
+- **FR-004**: Cada dato DEBE cumplir las reglas de la carga 6 del diccionario de datos descritas en los casos límite: cédula con dígito verificador válido, identificación y correo únicos, horas contratadas de 1 a 40, categoría según el tipo de personal, fin de contrato del ocasional, campo específico que empieza por su campo amplio, años y horas de la ficha en su rango.
 - **FR-005**: La carrera base y las asignaturas afines declaradas DEBEN existir en Académico al registrar o corregir (aclaración 3).
 - **FR-006**: Cada dato inválido DEBE rechazarse entero, con su campo (y, en las listas de la ficha, su elemento) y el motivo en español; un valor fuera de un catálogo DEBE decir los valores permitidos. No se guarda nada a medias.
 - **FR-007**: La búsqueda DEBE encontrar docentes por una parte de su nombre o apellidos, sin distinguir mayúsculas ni tildes, o por su número de identificación, y permitir filtrar por carrera base y estado laboral.
@@ -189,7 +189,7 @@ Como quien mantiene los datos de los docentes, o como quien los consulta, quiero
 ## Assumptions
 
 - Las reglas de cada columna son las del diccionario de datos de la carga 6 (F01-H01); si la ERS cambia, cambian allí.
-- La restricción de POL 5.1 (el personal ocasional solo a tiempo completo o medio tiempo) y las horas que cambia la condición especial son reglas de la normativa (F04) y las revisa la validación del distributivo; el diccionario de la carga 6 no las pide, y aquí no se rechazan.
+- La restricción de POL 5.1 (el personal ocasional solo a tiempo completo o medio tiempo), que las horas contratadas cuadren con la dedicación (RN-01) y las horas que cambia la condición especial son reglas de la normativa (F04) y las revisa la validación del distributivo; el diccionario de la carga 6 no las pide, y aquí no se rechazan.
 - Que el fin de contrato cubra el periodo depende del periodo: lo revisa la validación del distributivo, no el registro del docente.
 - Registrar por pantalla es la vía de esta historia; la carga 6 por archivo se aplica con F01-H04 sobre las mismas reglas.
 - La consulta de los docentes con su ficha queda disponible para Generación, que calcula el puntaje de afinidad desde la Ola 2 (F06-H01, MD-02).

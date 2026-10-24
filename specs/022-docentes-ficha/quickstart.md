@@ -17,6 +17,6 @@ Cómo comprobar la historia de punta a punta. Los detalles del contrato están e
 1. Con `datos.demo` (Talento Humano), abrir «Docentes» y registrar un docente ocasional a tiempo completo, con una carrera base que exista, un título de tercer nivel, una maestría, dos cursos y una experiencia. Medir cuánto tarda (SC-001 es buscar y abrir, no registrar).
 2. Buscarlo por una parte del apellido escrita en minúsculas y sin tilde, y por su cédula; abrir su ficha: cada título con su campo amplio y específico, cada curso con sus horas (SC-001, SC-003).
 3. Corregir la dedicación a medio tiempo con 20 horas; agregar un curso y quitar la experiencia.
-4. Intentar guardar 30 horas a medio tiempo, o una cédula con el dígito verificador mal: el motivo aparece junto al campo.
+4. Intentar guardar 0 horas contratadas, o una cédula con el dígito verificador mal: el motivo aparece junto al campo.
 5. Marcarlo en licencia y volver a activarlo.
 6. Con `consolidacion.demo`, ver los mismos docentes y su ficha sin acciones.

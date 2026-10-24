@@ -20,9 +20,9 @@
 | `Curso` | `nombre` (1–150), `campoEspecifico`, `horas` (1–2000), `anio` |
 | `ExperienciaLaboral` | `cargo`, `institucion` (1–150), `campoEspecifico`, `anios` (> 0, ≤ 60) |
 | `FichaAcademica` | `tercerNivel`, `cuartoNivel`, `cursos`, `experiencia` (listas de hasta 20), `asignaturasAfines` (hasta 20 códigos, únicos) |
-| `DatosDeDocente` | `tipoIdentificacion`, `primerApellido`, `segundoApellido`, `primerNombre`, `segundoNombre`, `correoInstitucional`, `telefono`, `tipoPersonal`, `categoriaEscalafon`, `dedicacion`, `horasContratadas` (opcional), `fechaIngreso`, `inicioContrato`, `finContrato`, `condicionEspecial` (por omisión `NINGUNA`), `carreraBase`, `ficha` |
-| `DocenteNuevo` | `identificacion` + `DatosDeDocente` |
-| `Docente` | lo de `DocenteNuevo` con `nombreCompleto`, `nombreDeCarreraBase`, `horasContratadas` (las efectivas), `estado`; la ficha con el `CampoAmplio` (con nombre) de cada título y el nombre de cada asignatura afín |
+| `DatosDeDocente` | `primerApellido`, `segundoApellido`, `primerNombre`, `segundoNombre`, `correoInstitucional`, `telefono`, `tipoPersonal`, `categoriaEscalafon`, `dedicacion`, `horasContratadas` (obligatorio, 1–40), `fechaIngreso`, `inicioContrato`, `finContrato`, `condicionEspecial` (por omisión `NINGUNA`), `carreraBase`, `ficha` |
+| `DocenteNuevo` | `tipoIdentificacion`, `identificacion` + `DatosDeDocente` |
+| `Docente` | lo de `DocenteNuevo` con `nombreCompleto`, `nombreDeCarreraBase`, `estado`; la ficha con el `CampoAmplio` (con nombre) de cada título y el nombre de cada asignatura afín |
 | `ResumenDeDocente` | `identificacion`, `nombreCompleto`, `carreraBase`, `nombreDeCarreraBase`, `tipoPersonal`, `dedicacion`, `horasContratadas`, `condicionEspecial`, `estado` |
 | `EstadoLaboralNuevo` | `estado` |
 | `ReferenciasDeDocentes` | `carreras` (`codigo`, `nombre`, `siglas`), `asignaturas` (`codigo`, `nombre`, `carrera`), `camposAmplios` (`CampoAmplio`) |
@@ -41,6 +41,20 @@
 - **Lectura:** `[DOCENTES:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]`. **Escritura:** `[DOCENTES:ESCRITURA, CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]` (D-70).
 - Todas responden también 401 y 403 comunes (`../comun/seguridad.yaml`) y 500 (`../comun/errores.yaml`).
 - Un 400 trae `COMUN_SOLICITUD_INVALIDA` con un detalle por campo; en las listas, con su posición (`ficha.cursos[1].horas`). Un valor fuera de un enum dice los valores permitidos.
+
+## Cambio en el contrato de Académico (`contratos/academico/openapi.yaml`)
+
+El puerto `ConsultarReferencias` refleja esta operación (research §4, principio V).
+
+| Esquema | Campos |
+|---|---|
+| `CarreraDeReferencia` | `codigo`, `nombre`, `siglas` |
+| `AsignaturaDeReferencia` | `codigo`, `nombre`, `carrera` |
+| `ReferenciasDeAcademico` | `carreras`, `asignaturas`, `camposAmplios` (`CampoAmplio`, ya existe) |
+
+| Operación | Ruta | `x-mdd-permiso` | Respuestas |
+|---|---|---|---|
+| `consultarReferencias` | `GET /api/academico/referencias` | `[CATALOGOS:LECTURA, DISTRIBUTIVO:LECTURA, DOCENTES:LECTURA]` | 200 · 401 · 403 · 500 |
 
 ## Códigos nuevos (`contratos/comun/errores.md`)
 

@@ -10,7 +10,7 @@
 - **Las reglas:** las de la carga 6. Entre ellas:
   - la cédula con su dígito verificador;
   - la identificación y el correo únicos;
-  - las horas según la dedicación (RN-01);
+  - las horas contratadas de 1 a 40; su coherencia con la dedicación (RN-01) queda para la normativa del periodo;
   - la categoría según el tipo de personal;
   - el fin de contrato del ocasional;
   - los campos de conocimiento y los rangos de la ficha.
@@ -22,7 +22,7 @@
   - escriben `[DOCENTES:ESCRITURA, CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]`: Talento Humano, el Administrador y el Vicerrector;
   - leen `[DOCENTES:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]`: además, el Responsable de consolidación y los coordinadores (D-70, aclaración 1);
   - sin decisiones nuevas.
-- **Contrato:** 6 operaciones y 2 códigos `DOCENTES_*`.
+- **Contrato:** 6 operaciones en Docentes, 1 en Académico (`consultarReferencias`) y 2 códigos `DOCENTES_*`.
 - **SPA:** la pantalla «Docentes», con la lista, la ficha y el formulario con listas editables.
 - **Punta a punta:** `deploy/probar_docentes.sh`, con los 47 docentes de prueba.
 - **Glosario:** «Tipo de personal» cambia y se agregan «Categoría de escalafón», «Carrera base», «Asignatura afín declarada» y «Estado laboral»; aprobado por el autor y aplicado el 2026-10-24 (research §11).
@@ -66,7 +66,7 @@ Los detalles y las alternativas están en [research.md](research.md).
 - sin claves foráneas entre esquemas (principio V);
 - 60 % de líneas por módulo.
 
-**Scale/Scope**: 2 tablas; 6 operaciones y 2 códigos; 1 puerto publicado en Académico; 1 pantalla; 1 script.
+**Scale/Scope**: 2 tablas; 6 operaciones en Docentes, 1 en Académico y 2 códigos; 1 puerto publicado en Académico; 1 pantalla; 1 script.
 
 ## Constitution Check
 
@@ -115,6 +115,7 @@ specs/022-docentes-ficha/
 
 ```text
 contratos/docentes/openapi.yaml, contratos/comun/errores.md      # 6 operaciones y 2 códigos
+contratos/academico/openapi.yaml                                 # consultarReferencias
 backend/servicios/docentes/build.gradle
 backend/servicios/docentes/src/main/java/ec/mdd/docentes/
 ├── dominio/                 # Docente, FichaAcademica y sus títulos, cursos y experiencia, Identificacion,
@@ -146,7 +147,7 @@ deploy/probar_docentes.sh, .github/workflows/perfil-consolidado.yml
    - los 2 códigos;
    - `mdd.contrato` en Docentes;
    - el tipo generado y `apiDocentes` en la SPA.
-3. **Académico:** `ConsultarReferencias`, con su prueba.
+3. **Académico:** `consultarReferencias` y su puerto `ConsultarReferencias`, con sus pruebas de aplicación, contrato y permisos.
 4. **Dominio,** con las pruebas primero: `Docente`, la ficha, `Identificacion`, `Referencias` y `BusquedaDeDocentes`, con `ValoresPermitidosTest` y los 47 docentes de prueba.
 5. **Persistencia:** V2 y los dos repositorios, con Testcontainers.
 6. **Aplicación y API:**
@@ -166,5 +167,5 @@ deploy/probar_docentes.sh, .github/workflows/perfil-consolidado.yml
 
 | Pieza | Por qué hace falta | Alternativa más simple descartada porque |
 |---|---|---|
-| `ConsultarReferencias` en Académico | Docentes tiene que validar la carrera base, las asignaturas afines y el campo amplio, y mostrar sus nombres, sin tocar el esquema ni el dominio de Académico. | Usar `ConsultarCarreras`: devuelve tipos del dominio de Académico, que `ModulosTest` prohíbe a Docentes. Copiar los catálogos: dos lugares para el mismo dato. |
+| `ConsultarReferencias` en Académico | Docentes tiene que validar la carrera base, las asignaturas afines y el campo amplio, y mostrar sus nombres, sin tocar el esquema ni el dominio de Académico. Refleja la operación `consultarReferencias` de su contrato (principio V). | Usar `ConsultarCarreras`: devuelve tipos del dominio de Académico, que `ModulosTest` prohíbe a Docentes. Copiar los catálogos: dos lugares para el mismo dato. |
 | La ficha en `jsonb` | RF-17 la pone dentro del registro del docente, y se lee y se guarda entera. | Cuatro tablas hijas: joins y borrados de filas al corregir, sin consulta que los necesite. |

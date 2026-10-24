@@ -38,7 +38,7 @@ description: "Tareas de F03-H04: mantener los docentes con su ficha académica"
 - **Principio VII:** nada se borra (estado laboral); cada cambio, en `docentes.registro_cambio`.
 - **Datos personales (principio IX):** solo los datos de prueba ficticios de la ERS. Ningún mensaje de excepción ni log lleva una identificación, un correo ni un teléfono.
 - **Datos de prueba:** las cargas 02, 04 y 06 de `backend/servicios/cargas/src/test/resources/cargas/datos-de-prueba/`, copiadas a `DOC/test/resources/docentes/datos-de-prueba/`.
-- **Pruebas:** Mockito solo en la aplicación y en el adaptador hacia Académico (como `NormativaDesdePuertosTest`); repositorios con Testcontainers; contrato con swagger-request-validator; 60 % de líneas por módulo.
+- **Pruebas:** Mockito solo en la aplicación; el adaptador hacia Académico, con un doble de `ConsultarReferencias` escrito a mano, como `NormativaDesdePuertosTest`; repositorios con Testcontainers; contrato con swagger-request-validator; 60 % de líneas por módulo.
 - **Idioma, formato y commits:** como en las historias anteriores; la evidencia va en `specs/022-docentes-ficha/evidencia.md` y los commits llevan `Refs #38`.
 
 ---
@@ -58,14 +58,14 @@ description: "Tareas de F03-H04: mantener los docentes con su ficha académica"
   - las de lectura con `x-mdd-permiso: [DOCENTES:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]` y las de escritura con `[DOCENTES:ESCRITURA, CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]`;
   - las respuestas de error con `$ref` a `../comun/errores.yaml` y `../comun/seguridad.yaml`;
   - `example` en cada parámetro (`0109990010`, ficticio);
-  - en `DocenteNuevo`, obligatorios los campos obligatorios de la carga 6, y opcionales `segundoApellido`, `segundoNombre`, `telefono`, `horasContratadas`, `finContrato`, `condicionEspecial` y las listas de la ficha;
+  - en `DocenteNuevo`, obligatorios los campos obligatorios de la carga 6, y opcionales `segundoApellido`, `segundoNombre`, `telefono`, `finContrato`, `condicionEspecial` y las listas de la ficha;
   - el comentario de cabecera cita F03-H04, RF-16, RF-17, RN-01 y D-70.
 
-  Agregar los 2 códigos a `contratos/comun/errores.md`. En `backend/servicios/docentes/build.gradle`, agregar `id 'mdd.contrato'` y las dependencias de plan.md, cada una con su comentario. En la SPA, agregar `docentes` a `generar:api` de `frontend/package.json` y `apiDocentes` a `frontend/src/api/cliente.ts`. Regenerar (`openApiGenerate`, `generar:api`); `verificar:ruptura` en verde. Los `summary` con «: » van entre comillas.
+  Agregar a `contratos/academico/openapi.yaml` la operación `consultarReferencias` según contracts/docentes.md («Cambio en el contrato de Académico»). Agregar los 2 códigos a `contratos/comun/errores.md`. En `backend/servicios/docentes/build.gradle`, agregar `id 'mdd.contrato'` y las dependencias de plan.md, cada una con su comentario. En la SPA, agregar `docentes` a `generar:api` de `frontend/package.json` y `apiDocentes` a `frontend/src/api/cliente.ts`. Regenerar (`openApiGenerate`, `generar:api`); `verificar:ruptura` en verde. Los `summary` con «: » van entre comillas.
 
 ### Referencias de Académico (research §4)
 
-- [ ] T003 Prueba primero, en `PACA/aplicacion/ConsultarReferenciasServicioTest.java` (Mockito): `referencias()` trae todas las carreras (código, nombre, siglas, en cualquier estado), todas las asignaturas (código, nombre, carrera, en cualquier estado) y los 11 campos amplios, ordenados por código. Crear en `JACA/puertos/entrada/` el puerto `ConsultarReferencias` y los *records* `ReferenciasDeAcademico`, `CarreraDeReferencia`, `AsignaturaDeReferencia` y `CampoAmplioDeReferencia`, con JavaDoc que diga que es la API publicada para Docentes (F03-H04). Crear `JACA/aplicacion/ConsultarReferenciasServicio.java` con los repositorios que ya existen, y su bean en `ConfiguracionAcademico`. T003 pasa.
+- [ ] T003 Prueba primero, en `PACA/aplicacion/ConsultarReferenciasServicioTest.java` (Mockito): `referencias()` trae todas las carreras (código, nombre, siglas, en cualquier estado), todas las asignaturas (código, nombre, carrera, en cualquier estado) y los 11 campos amplios, ordenados por código. Crear en `JACA/puertos/entrada/` el puerto `ConsultarReferencias` y los *records* `ReferenciasDeAcademico`, `CarreraDeReferencia`, `AsignaturaDeReferencia` y `CampoAmplioDeReferencia`, con JavaDoc que diga que es la API publicada para Docentes (F03-H04). Crear `JACA/aplicacion/ConsultarReferenciasServicio.java` con los repositorios que ya existen, y su bean en `ConfiguracionAcademico`. Prueba primero también en `PACA/adaptadores/entrada/ReferenciasContratoTest.java` (200 validado contra el contrato) y ampliar `PermisosAcademicoTest` a 31 operaciones; crear `JACA/adaptadores/entrada/ReferenciasControlador.java` con `hasAnyAuthority('PERMISO_CATALOGOS:LECTURA','PERMISO_DISTRIBUTIVO:LECTURA','PERMISO_DOCENTES:LECTURA')`. T003 pasa.
 
 ### Dominio (research §1 a §3, §6, §9; data-model.md)
 
@@ -74,7 +74,7 @@ description: "Tareas de F03-H04: mantener los docentes con su ficha académica"
   - primer apellido o primer nombre vacíos o de 61 caracteres; los nombres se guardan en mayúsculas y sin espacios en los extremos;
   - correo sin `@` o de 101 caracteres; se guarda en minúsculas; teléfono con letras o de 6 u 11 dígitos;
   - titular con `NO_APLICA`, y ocasional con `AGREGADO_1`;
-  - `TC` con 39 horas, `MT` con 40, `TP` con 0 o 20; sin horas, `TC` da 40 y `MT` 20, y `TP` sin horas falla;
+  - horas contratadas vacías, 0 o 41; `TP` con 40 horas **se acepta**, porque la coherencia con la dedicación es de la normativa (RN-01, principio VI);
   - ocasional sin fin de contrato; fin igual o anterior al inicio;
   - un docente nuevo queda `ACTIVO`; `corregido` no cambia la identificación ni el estado y devuelve cada cambio con su valor anterior y el nuevo; `conEstado` cambia solo el estado; el mensaje de ningún `DatoInvalido` contiene la identificación, el correo ni el teléfono.
 
@@ -108,7 +108,7 @@ description: "Tareas de F03-H04: mantener los docentes con su ficha académica"
   - `RegistroDeCambiosJdbc` guarda la acción y el detalle.
 
   Crear `JDOC/puertos/salida/RepositorioDocentes.java` y `RegistroDeCambios.java`, y `JDOC/adaptadores/salida/RepositorioDocentesJdbc.java` y `RegistroDeCambiosJdbc.java` (JdbcClient y Jackson para el `jsonb`). T009 pasa.
-- [ ] T010 Prueba primero, en `PDOC/adaptadores/salida/AcademicoDesdePuertosTest.java` (Mockito, como `NormativaDesdePuertosTest`): traduce `ReferenciasDeAcademico` a `Referencias`. Crear `JDOC/puertos/salida/ReferenciasAcademicas.java` y `JDOC/adaptadores/salida/AcademicoDesdePuertos.java`, y agregar `implementation project(':servicios:academico')` a Docentes con su comentario. `./gradlew :apps:datos:test` corre `ModulosTest` y pasa. T010 pasa.
+- [ ] T010 Prueba primero, en `PDOC/adaptadores/salida/AcademicoDesdePuertosTest.java` (con un doble de `ConsultarReferencias` escrito a mano, sin Mockito, como `NormativaDesdePuertosTest`): traduce `ReferenciasDeAcademico` a `Referencias`. Crear `JDOC/puertos/salida/ReferenciasAcademicas.java` y `JDOC/adaptadores/salida/AcademicoDesdePuertos.java`, y agregar `implementation project(':servicios:academico')` a Docentes con su comentario. `./gradlew :apps:datos:test` corre `ModulosTest` y pasa. T010 pasa.
 
 **Checkpoint**: el contrato, las referencias, el dominio, V2 y los repositorios están listos.
 
@@ -193,7 +193,7 @@ description: "Tareas de F03-H04: mantener los docentes con su ficha académica"
   - **Lista:** el buscador filtra por nombre o identificación; los filtros por carrera base y estado; «N docentes»; cada fila con el nombre completo, la identificación, la carrera, el tipo de personal, la dedicación con sus horas y el estado, en español.
   - **Ficha:** al abrir un docente, sus datos y su ficha; cada título con su campo amplio (código y nombre) y su específico; cada curso con sus horas; las asignaturas afines con su nombre.
   - **Con escritura** (`DOCENTES:ESCRITURA`, `CATALOGOS:ESCRITURA` o `DISTRIBUTIVO:ESCRITURA`):
-    - «Registrar docente» con sus secciones; las horas se llenan con las de la dedicación (40 o 20) y en tiempo parcial piden un número; la categoría solo se activa para un titular; el fin de contrato es obligatorio para un ocasional;
+    - «Registrar docente» con sus secciones; las horas contratadas son obligatorias, con la pista «De 1 a 40. Tiempo completo suele ser 40; medio tiempo, 20.»; la categoría solo se activa para un titular; el fin de contrato es obligatorio para un ocasional;
     - las listas de la ficha agregan y quitan filas; las asignaturas afines se eligen de las de Académico, agrupadas por carrera;
     - «Corregir» con los datos actuales y la identificación fija; «Cambiar estado».
   - **Errores:** un 400 marca su campo y, en una lista, su fila, con el motivo; un 409 muestra su título.
@@ -212,11 +212,11 @@ description: "Tareas de F03-H04: mantener los docentes con su ficha académica"
 - [ ] T019 Crear `deploy/probar_docentes.sh`, con el estilo de `probar_oferta.sh`:
   - **Datos:** registra con un prefijo `P` + 3 dígitos al azar las carreras y asignaturas de las cargas 02 y 04 que usan los docentes (en la sede matriz que ya tenga la base o en una temporal, como `probar_carreras.sh`) y luego los 47 docentes de la carga 06, con `datos.demo`, con las carreras y asignaturas con prefijo. Las identificaciones de prueba ya son ficticias; si alguna existe en la base, el script falla sin tocarla.
   - **Pasos:** cada docente se encuentra por su cédula; la búsqueda «peralta» lo encuentra; una corrección; un 400 con los valores permitidos de la dedicación; los dos 409; licencia y vuelta a activo; `consolidacion.demo` lee y recibe 403 al escribir; un usuario sin lectura recibe 403.
-  - **Tiempo:** mide cuánto tarda `buscarDocentes` con los 47, lo muestra y falla si pasa de 300 ms con holgura (meta del plan). Anotarlo en la evidencia.
+  - **Tiempo:** mide cuánto tarda `buscarDocentes` con los 47, lo muestra y falla si pasa de 500 ms (la meta del plan es 300 ms; el resto es holgura). Anotarlo en la evidencia.
   - **Limpieza:** borra en la base solo lo que creó (los docentes y sus registros, las asignaturas, mallas y carreras con prefijo y sus registros).
 
   Agregar su paso a `.github/workflows/perfil-consolidado.yml`. Correrlo dos veces seguidas y anotarlo; `shellcheck` sin observaciones.
-- [ ] T020 Correr todo, como en las historias anteriores: backend, SPA, los 12 scripts con el perfil reconstruido, `probar_equipo.sh`, `shellcheck` y Gitleaks sobre un clon. Hacer commit y push, abrir el PR en borrador con `Refs #38` y marcarlo listo después de sus runs.
+- [ ] T020 Correr todo, como en las historias anteriores: backend, SPA, los 12 scripts con el perfil reconstruido, `probar_equipo.sh`, `shellcheck` y Gitleaks sobre un clon. Después de `probar_docentes.sh`, buscar una cédula de prueba en `docker compose logs gateway datos` y anotar en la evidencia que no aparece (principio IX). Hacer commit y push, abrir el PR en borrador con `Refs #38` y marcarlo listo después de sus runs.
 - [ ] T021 Completar la evidencia y el PR. Fusionar con *squash* con la aprobación del autor. Después:
   1. esperar el despliegue («Sano en N s»), con `docentes` en V2;
   2. el autor entra con `datos.demo`, registra un docente con su ficha, lo busca por nombre y por cédula y abre su ficha en menos de 30 s (SC-001), y corrige su dedicación;

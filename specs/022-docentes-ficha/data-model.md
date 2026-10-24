@@ -17,7 +17,7 @@ Las reglas de cada campo están en [research.md](research.md) §3; aquí, lo que
 | `CampoConocimiento` | *record* | `amplio`, `especifico`; el específico empieza por el amplio |
 | `Referencias` | *record* | los códigos de carreras, asignaturas y campos amplios que existen, con sus nombres; `verificar(Docente)` lanza `DatoInvalido` en `carreraBase`, `ficha.asignaturasAfines[i]` o `ficha.tercerNivel.campoAmplio` |
 | `BusquedaDeDocentes` | *record* | `texto`, `carrera`, `estado` (todos opcionales); `aplicaA(Docente)` sin mayúsculas ni tildes |
-| Enumeraciones | `enum` | `TipoDeIdentificacion` (`CEDULA`, `PASAPORTE`), `TipoPersonal` (`TITULAR`, `OCASIONAL`, `INVITADO`, `HONORARIO`), `CategoriaDeEscalafon` (`AUXILIAR_1`, `AUXILIAR_2`, `AGREGADO_1`–`3`, `PRINCIPAL_1`–`3`, `NO_APLICA`), `Dedicacion` (`TC`, `MT`, `TP`, con sus horas), `CondicionEspecial` (`CUIDADOR_SUSTITUTO`, `MATERNIDAD_LACTANCIA`, `APOYO_SIES`, `NINGUNA`), `TipoDeTituloDeCuartoNivel` (`MAESTRIA`, `ESPECIALIZACION`, `DOCTORADO`), `EstadoLaboral` (`ACTIVO`, `LICENCIA`, `INACTIVO`) |
+| Enumeraciones | `enum` | `TipoDeIdentificacion` (`CEDULA`, `PASAPORTE`), `TipoPersonal` (`TITULAR`, `OCASIONAL`, `INVITADO`, `HONORARIO`), `CategoriaDeEscalafon` (`AUXILIAR_1`, `AUXILIAR_2`, `AGREGADO_1`–`3`, `PRINCIPAL_1`–`3`, `NO_APLICA`), `Dedicacion` (`TC`, `MT`, `TP`), `CondicionEspecial` (`CUIDADOR_SUSTITUTO`, `MATERNIDAD_LACTANCIA`, `APOYO_SIES`, `NINGUNA`), `TipoDeTituloDeCuartoNivel` (`MAESTRIA`, `ESPECIALIZACION`, `DOCTORADO`), `EstadoLaboral` (`ACTIVO`, `LICENCIA`, `INACTIVO`) |
 | `DatoInvalido` | excepción | `campo` y motivo (400) |
 | `CambioDeValor`, `Cambios` | *record* | campo, valor anterior y nuevo, como en Académico |
 
@@ -79,12 +79,5 @@ registro_cambio
 ```
 
 ## Estados
-
-```text
-           cambiarEstado              cambiarEstado
-ACTIVO  ─────────────────▶ LICENCIA ─────────────────▶ INACTIVO
-   ▲  ◀─────────────────────────────────────────────────── │
-   └──────────────── cualquier estado pasa a cualquiera ───┘
-```
 
 Cualquier estado pasa a cualquier otro; pedir el mismo estado no cambia nada y no se registra. Ninguno borra al docente.
