@@ -343,7 +343,7 @@ function DetalleDeMalla({
         {`Malla ${malla.codigo}`}
       </Typography>
       <Typography color="text.secondary">
-        {`${carrera.nombre} · ${NOMBRE_DEL_ESTADO_DE_MALLA[malla.estado]} · ${String(malla.asignaturas)} asignaturas · ${horas(malla.horasSemanalesClase)} horas semanales de clase`}
+        {`${carrera.nombre} · ${NOMBRE_DEL_ESTADO_DE_MALLA[malla.estado]} · ${String(malla.asignaturas)} ${malla.asignaturas === 1 ? 'asignatura' : 'asignaturas'} · ${horas(malla.horasSemanalesClase)} horas semanales de clase`}
       </Typography>
       {asignaturas.error && <AvisoDeError mensaje={traducirError(asignaturas.error)} />}
       {escritura && (

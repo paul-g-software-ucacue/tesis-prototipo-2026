@@ -90,7 +90,7 @@ describe('Carreras y mallas', () => {
     await usuario.click(await screen.findByRole('button', { name: 'Ver la malla DS-2019' }));
 
     const malla = await screen.findByRole('region', { name: 'Malla DS-2019' });
-    expect(malla).toHaveTextContent('11 horas semanales de clase');
+    expect(malla).toHaveTextContent('3 asignaturas · 11 horas semanales de clase');
     const ciclo1 = within(malla).getByRole('table', { name: 'Ciclo 1' });
     expect(within(ciclo1).getAllByRole('row').slice(1)).toHaveLength(2);
     expect(within(malla).getByRole('heading', { name: 'Ciclo 1 · 8 h' })).toBeInTheDocument();
@@ -198,8 +198,60 @@ describe('Carreras y mallas', () => {
     await usuario.type(within(dialogo).getByLabelText('Número de ciclos'), '4');
     await usuario.click(within(dialogo).getByRole('button', { name: 'Registrar' }));
 
-    expect(await within(dialogo).findByText('La sede está inactiva')).toBeInTheDocument();
+    expect(
+      await within(dialogo).findByText(
+        'La sede está inactiva. La sede matriz, una sede, una extensión o un campus.',
+      ),
+    ).toBeInTheDocument();
     expect(within(dialogo).getByLabelText('Sede')).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('un error de formato muestra el motivo junto a la pista, que dice por qué dígitos empieza', async () => {
+    sesionCon(simulada, 'vicerrectorado.demo', VICERRECTOR);
+    simulada.responder(
+      'POST',
+      '/api/academico/asignaturas',
+      json(400, {
+        titulo: 'Solicitud inválida',
+        descripcion: 'Revisa los campos marcados y vuelve a intentarlo.',
+        codigo: 'COMUN_SOLICITUD_INVALIDA',
+        detalles: [
+          { campo: 'campoEspecifico', descripcion: 'no tiene el formato esperado' },
+          { campo: 'palabrasClave', descripcion: 'debe tener al menos 2 elementos' },
+        ],
+      }),
+    );
+    const usuario = userEvent.setup();
+    montarSpa('/carreras');
+
+    await usuario.click(await screen.findByRole('button', { name: 'Ver la malla DS-2019' }));
+    await usuario.click(
+      await screen.findByRole('button', { name: 'Registrar asignatura en DS-2019' }),
+    );
+    const dialogo = await screen.findByRole('dialog', { name: 'Registrar asignatura' });
+    await usuario.type(within(dialogo).getByLabelText('Código'), 'A-1');
+    await usuario.type(within(dialogo).getByLabelText('Nombre'), 'A');
+    await usuario.type(within(dialogo).getByLabelText('Ciclo'), '1');
+    await usuario.selectOptions(
+      within(dialogo).getByLabelText('Unidad de organización curricular'),
+      'BASICA',
+    );
+    await usuario.type(within(dialogo).getByLabelText('Horas semanales de clase'), '3');
+    await usuario.selectOptions(within(dialogo).getByLabelText('Campo amplio'), '04');
+    await usuario.type(within(dialogo).getByLabelText('Campo específico'), '04');
+    await usuario.type(within(dialogo).getByLabelText('Palabras clave'), 'QW');
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Registrar' }));
+
+    expect(
+      await within(dialogo).findByText(
+        'No tiene el formato esperado. Tres dígitos que empiezan por 04, el campo amplio.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(dialogo).getByText(
+        'Debe tener al menos 2 elementos. Al menos dos, separadas por punto y coma.',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('registra una malla y una asignatura en ella, con las palabras clave separadas por punto y coma', async () => {
