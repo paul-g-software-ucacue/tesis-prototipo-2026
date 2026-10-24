@@ -11,6 +11,9 @@ export default mergeConfig(
       setupFiles: ['src/pruebas/configuracion.ts'],
       include: ['src/**/*.test.{ts,tsx}'],
       restoreMocks: true,
+      // Llenar un formulario largo con user-event (los de carreras, asignaturas y oferta) pasa de
+      // los 5 s por omisión en un runner o una PC cargados, sin que nada esté mal (PR #139).
+      testTimeout: 15_000,
       coverage: {
         provider: 'v8',
         include: ['src/**'],

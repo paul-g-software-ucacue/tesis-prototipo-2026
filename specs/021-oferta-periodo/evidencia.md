@@ -72,3 +72,4 @@ Registro de las comprobaciones de la historia (issue #37): mantener la oferta de
 ## Notas
 
 - **Lo propio (D-64):** el coordinador de carrera lee la oferta de todas las carreras y no la mantiene; F03-H05 aplica el filtro de lo propio de `OFERTA` con los cargos. Es una limitación conocida, como en F03-H02.
+- **Límite de tiempo de Vitest:** en el primer run del PR #139, `test-frontend` falló porque una prueba de «Carreras y mallas» que llena un formulario largo tardó 5,03 s y el límite por omisión era 5 s. No había un error de lógica: en local pasa, y en el PR #136 pasó en la CI. El límite pasó a 15 s en `frontend/vitest.config.ts`, con un comentario que dice por qué; ahora la suite pasa sin el `--testTimeout` de la línea de comandos (168 de 168).
