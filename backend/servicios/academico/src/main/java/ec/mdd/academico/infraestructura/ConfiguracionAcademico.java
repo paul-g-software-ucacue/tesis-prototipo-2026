@@ -14,6 +14,7 @@ import ec.mdd.academico.aplicacion.ConsultarCarrerasServicio;
 import ec.mdd.academico.aplicacion.ConsultarEstructuraServicio;
 import ec.mdd.academico.aplicacion.ConsultarOfertaServicio;
 import ec.mdd.academico.aplicacion.ConsultarPeriodosServicio;
+import ec.mdd.academico.aplicacion.ConsultarReferenciasServicio;
 import ec.mdd.academico.aplicacion.CorregirPeriodoServicio;
 import ec.mdd.academico.aplicacion.MantenerCarrerasServicio;
 import ec.mdd.academico.aplicacion.MantenerEstructuraServicio;
@@ -25,6 +26,7 @@ import ec.mdd.academico.puertos.entrada.ConsultarCarreras;
 import ec.mdd.academico.puertos.entrada.ConsultarEstructura;
 import ec.mdd.academico.puertos.entrada.ConsultarOferta;
 import ec.mdd.academico.puertos.entrada.ConsultarPeriodos;
+import ec.mdd.academico.puertos.entrada.ConsultarReferencias;
 import ec.mdd.academico.puertos.entrada.CorregirPeriodo;
 import ec.mdd.academico.puertos.entrada.MantenerCarreras;
 import ec.mdd.academico.puertos.entrada.MantenerEstructura;
@@ -52,8 +54,9 @@ import org.springframework.transaction.support.TransactionOperations;
  * Ensambla Académico: el repositorio del esquema {@code academico}, su registro de cambios, la
  * transacción, la versión de normativa de cada periodo, pedida a Normativa por su interfaz
  * publicada (research §4), los repositorios de la estructura orgánica (F03-H01) y de las carreras
- * (F03-H02), de la oferta (F03-H03) y los casos de uso. Los nombres de los beans no se repiten con
- * los de Normativa, que vive en el mismo proceso.
+ * (F03-H02), de la oferta (F03-H03), las referencias que publica para Docentes (F03-H04) y los
+ * casos de uso. Los nombres de los beans no se repiten con los de Normativa, que vive en el mismo
+ * proceso.
  */
 @Configuration(proxyBeanMethods = false)
 public class ConfiguracionAcademico {
@@ -190,6 +193,12 @@ public class ConfiguracionAcademico {
     @Bean
     public ConsultarCarreras consultarCarreras(RepositorioCarreras repositorio) {
         return new ConsultarCarrerasServicio(repositorio);
+    }
+
+    /** Las referencias que Docentes valida y muestra (F03-H04): su API publicada en el proceso. */
+    @Bean
+    public ConsultarReferencias consultarReferencias(RepositorioCarreras repositorio) {
+        return new ConsultarReferenciasServicio(repositorio);
     }
 
     /** Mantener las carreras, sus mallas y sus asignaturas, con su registro (F03-H02). */

@@ -16,12 +16,13 @@ import org.springframework.test.web.servlet.MockMvc;
 
 /**
  * La prueba de autorización por operación de Académico (RNF-SEG-03): sin su permiso, cada una de
- * las 30 operaciones responde 403. Los periodos exigen «Distributivo del periodo» (D-69); la
+ * las 31 operaciones responde 403. Los periodos exigen «Distributivo del periodo» (D-69); la
  * estructura orgánica se lee con «Distributivo del periodo: lectura» o «Catálogos y datos maestros:
  * lectura», y se mantiene con «Catálogos y datos maestros: escritura» (D-70). Las carreras, mallas
  * y asignaturas se leen igual y se mantienen con «Catálogos y datos maestros: escritura» o
  * «Distributivo del periodo: escritura» (F03-H02). La oferta del periodo la leen, además, quienes
- * tienen «Oferta y propuesta de docentes: lectura» (F03-H03).
+ * tienen «Oferta y propuesta de docentes: lectura» (F03-H03), y las referencias para Docentes,
+ * quienes tienen «Docentes: lectura» (F03-H04).
  */
 @WebMvcTest({
     AcademicoControlador.class,
@@ -71,6 +72,8 @@ class PermisosAcademicoTest {
                                 + " ([DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA])",
                         "GET /api/academico/carreras"
                                 + " ([DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA])",
+                        "GET /api/academico/referencias"
+                                + " ([CATALOGOS:LECTURA, DISTRIBUTIVO:LECTURA, DOCENTES:LECTURA])",
                         "POST /api/academico/carreras"
                                 + " ([CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA])",
                         "GET /api/academico/carreras/550613A01-P-0301"

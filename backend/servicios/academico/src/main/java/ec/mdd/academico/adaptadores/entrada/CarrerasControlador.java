@@ -1,9 +1,11 @@
 package ec.mdd.academico.adaptadores.entrada;
 
 import ec.mdd.academico.adaptadores.entrada.api.Asignatura;
+import ec.mdd.academico.adaptadores.entrada.api.AsignaturaDeReferencia;
 import ec.mdd.academico.adaptadores.entrada.api.AsignaturaNueva;
 import ec.mdd.academico.adaptadores.entrada.api.CampoAmplio;
 import ec.mdd.academico.adaptadores.entrada.api.Carrera;
+import ec.mdd.academico.adaptadores.entrada.api.CarreraDeReferencia;
 import ec.mdd.academico.adaptadores.entrada.api.CarreraNueva;
 import ec.mdd.academico.adaptadores.entrada.api.CarrerasApi;
 import ec.mdd.academico.adaptadores.entrada.api.DatosDeAsignatura;
@@ -17,6 +19,7 @@ import ec.mdd.academico.adaptadores.entrada.api.Jornada;
 import ec.mdd.academico.adaptadores.entrada.api.MallaNueva;
 import ec.mdd.academico.adaptadores.entrada.api.Modalidad;
 import ec.mdd.academico.adaptadores.entrada.api.NivelDeFormacion;
+import ec.mdd.academico.adaptadores.entrada.api.ReferenciasDeAcademico;
 import ec.mdd.academico.adaptadores.entrada.api.ResumenDeMalla;
 import ec.mdd.academico.adaptadores.entrada.api.UnidadDeOrganizacionCurricular;
 import ec.mdd.academico.dominio.CampoConocimiento;
@@ -25,6 +28,7 @@ import ec.mdd.academico.puertos.entrada.AsignaturaNoEncontrada;
 import ec.mdd.academico.puertos.entrada.CarreraConMallas;
 import ec.mdd.academico.puertos.entrada.CarreraNoEncontrada;
 import ec.mdd.academico.puertos.entrada.ConsultarCarreras;
+import ec.mdd.academico.puertos.entrada.ConsultarReferencias;
 import ec.mdd.academico.puertos.entrada.MallaNoEncontrada;
 import ec.mdd.academico.puertos.entrada.MantenerCarreras;
 import ec.mdd.plataforma.errores.nucleo.DetalleRespuesta;
@@ -49,6 +53,8 @@ import org.springframework.web.server.ResponseStatusException;
  * «Distributivo del periodo: escritura», como dice su {@code x-mdd-permiso} (ADR-021, D-70); {@code
  * PermisosAcademicoTest} lo comprueba.
  *
+ * <p>Las referencias para Docentes (F03-H04) las leen, además, quienes tienen «Docentes: lectura».
+ *
  * <p>Lo que no existe responde 404 con el código común; un dato inválido, 400 con su campo; un
  * código o unas siglas repetidos, su 409 (research §4). Los modelos del contrato se llaman como los
  * del dominio: los del dominio van con su nombre completo.
@@ -60,13 +66,44 @@ class CarrerasControlador implements CarrerasApi {
             "hasAnyAuthority('PERMISO_DISTRIBUTIVO:LECTURA', 'PERMISO_CATALOGOS:LECTURA')";
     private static final String ESCRITURA =
             "hasAnyAuthority('PERMISO_CATALOGOS:ESCRITURA', 'PERMISO_DISTRIBUTIVO:ESCRITURA')";
+    private static final String LECTURA_DE_REFERENCIAS =
+            "hasAnyAuthority('PERMISO_CATALOGOS:LECTURA', 'PERMISO_DISTRIBUTIVO:LECTURA',"
+                    + " 'PERMISO_DOCENTES:LECTURA')";
 
     private final ConsultarCarreras consultar;
     private final MantenerCarreras mantener;
+    private final ConsultarReferencias referencias;
 
-    CarrerasControlador(ConsultarCarreras consultar, MantenerCarreras mantener) {
+    CarrerasControlador(
+            ConsultarCarreras consultar,
+            MantenerCarreras mantener,
+            ConsultarReferencias referencias) {
         this.consultar = consultar;
         this.mantener = mantener;
+        this.referencias = referencias;
+    }
+
+    @Override
+    @PreAuthorize(LECTURA_DE_REFERENCIAS)
+    public ResponseEntity<ReferenciasDeAcademico> consultarReferencias() {
+        ec.mdd.academico.puertos.entrada.ReferenciasDeAcademico todas = referencias.referencias();
+        return ResponseEntity.ok(
+                new ReferenciasDeAcademico(
+                        todas.carreras().stream()
+                                .map(
+                                        c ->
+                                                new CarreraDeReferencia(
+                                                        c.codigo(), c.nombre(), c.siglas()))
+                                .toList(),
+                        todas.asignaturas().stream()
+                                .map(
+                                        a ->
+                                                new AsignaturaDeReferencia(
+                                                        a.codigo(), a.nombre(), a.carrera()))
+                                .toList(),
+                        todas.camposAmplios().stream()
+                                .map(c -> new CampoAmplio(c.codigo(), c.nombre()))
+                                .toList()));
     }
 
     @Override

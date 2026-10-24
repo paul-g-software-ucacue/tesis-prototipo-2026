@@ -16,6 +16,8 @@ Registro de las comprobaciones de la historia (issue #38): mantener los docentes
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
 | Datos de prueba de las cargas 02, 04 y 06 en Docentes | `02_carreras.csv`, `04_asignaturas_malla.csv` y `06_docentes.csv` (47 docentes ficticios, RNF-SEG-06), copiados de `backend/servicios/cargas/src/test/resources/cargas/datos-de-prueba/` a `backend/servicios/docentes/src/test/resources/docentes/datos-de-prueba/` | SHA-256 `a4ee44cea177…`, `eb1417c75800…`, `b06fe68e66fd…` | 2026-10-24 |
+| Los contratos: Docentes con 6 operaciones y 2 códigos 409; Académico con `consultarReferencias` | Los YAML cargan; los modelos de Java y los tipos de la SPA se generan; `verificar:ruptura` pasa. `DocenteNuevo` y `Docente` llevan los campos al mismo nivel que `DatosDeDocente`, para que un 400 diga el mismo campo al registrar y al corregir | `contratos/docentes/openapi.yaml`, `contratos/academico/openapi.yaml`, `contratos/comun/errores.md` | 2026-10-24 |
+| Académico publica sus referencias: `ConsultarReferencias` y la operación `consultarReferencias`, que la lee también «Docentes: lectura» | `ConsultarReferenciasServicioTest` (Mockito), `CarrerasContratoTest` (200 contra el contrato) y `PermisosAcademicoTest` con 31 operaciones pasan. La operación quedó en el tag `Carreras`, así que la implementa `CarrerasControlador` en lugar de un `ReferenciasControlador` aparte | `./gradlew :servicios:academico:test` | 2026-10-24 |
 
 ## Registrar (US1)
 
