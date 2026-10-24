@@ -183,7 +183,7 @@ description: "Tareas de F03-H03: mantener la oferta del periodo"
 
   Agregar su paso a `.github/workflows/perfil-consolidado.yml`. Correrlo dos veces seguidas y anotarlo; `shellcheck` sin observaciones.
 - [X] T016 Correr todo, como en las historias anteriores: backend, SPA, los 11 scripts con el perfil reconstruido, `probar_equipo.sh`, `shellcheck` y Gitleaks sobre un clon. Hacer commit y push, abrir el PR en borrador con `Refs #37` y marcarlo listo después de sus runs.
-- [ ] T017 Completar la evidencia y el PR. Fusionar con *squash* con la aprobación del autor. Después:
+- [X] T017 Completar la evidencia y el PR. Fusionar con *squash* con la aprobación del autor. Después:
   1. esperar el despliegue («Sano en N s»), con `academico` en V5;
   2. el autor entra con `vicerrectorado.demo`, oferta en un periodo en Planificación una asignatura en varios paralelos en menos de 1 minuto cada una (SC-001), y ve sus horas a cubrir;
   3. la ve con `consolidacion.demo` en solo lectura;

@@ -63,13 +63,24 @@ Registro de las comprobaciones de la historia (issue #37): mantener la oferta de
 | `shellcheck` de `probar_oferta.sh` | Sin observaciones | `koalaman/shellcheck:stable` | 2026-10-24 |
 | `deploy/equipo/probar_equipo.sh` con un constructor limpio (`BUILDX_BUILDER=mdd-limpio`) | 13 de 13 pasos OK; memoria del equipo después de iniciar sesión: 1385,1 MiB | Salida del script | 2026-10-24 |
 | Gitleaks v8.30.1 sobre un clon en el scratchpad (montado `:ro,Z`) | Sin fugas | `gitleaks git --redact` | 2026-10-24 |
+| Runs del PR #139 | El primero falló en `test-frontend` por el límite de 5 s de Vitest (ver Notas); después, 12 de 12 en verde, incluido `perfil-consolidado` con `probar_oferta.sh` | PR #139 | 2026-10-24 |
+| Fusión con *squash*, con la aprobación del autor | `2a300ad` | PR #139 | 2026-10-24 |
 
 ## Equipo de demostración
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Despliegue de `2a300ad` | «Sano en 47 s»; `academico` en V5, con la oferta vacía | Estado del deployment `demostracion` en GitHub; consulta de solo lectura a `mdd-postgres-1` | 2026-10-24 |
+| Con el periodo `002` (Vigente), la pantalla está en solo lectura y dice por qué | «El periodo está en Vigente: la oferta solo cambia en Planificación.», sin «Ofertar asignatura» | Captura del autor | 2026-10-24 |
+| El autor, con `vicerrectorado.demo`, registra el periodo `003` en Planificación y oferta SOC en 4 paralelos | A (4 h), A_NOCTURNA (10 h), B (5 h) y D (5 h), con jornada vespertina, sus modalidades y la sede `001`: SOC y el periodo suman **24 h a cubrir · 4 paralelos**. Las horas indicadas no pasan las 13 de la asignatura | Capturas del autor; `academico.asignatura_paralelo` y `academico.registro_cambio` | 2026-10-24 |
+| El autor retira D | SOC y el periodo bajan a **19 h · 3 paralelos**; D se sigue viendo como «Retirada», con «Volver a ofertar»; `ASIGNATURA_PARALELO_RETIRADA` a las 14:08:32 | Captura del autor; `academico.registro_cambio` | 2026-10-24 |
+| SC-001: ofertar una asignatura-paralelo en menos de 1 minuto | **Se cumple**: A a las 14:06:02, B a las 14:06:34 y D a las 14:07:08, unos 32 y 34 s entre una y otra. La primera (A_NOCTURNA, 14:00:34) tomó como mucho 1 min 6 s desde el registro del periodo (13:59:28), contando el paso de «Periodos» a «Oferta del periodo»: cumplido con holgura. El AS-IS del ISTA tarda unas 3 semanas en generar el distributivo | `academico.registro_cambio` | 2026-10-24 |
+| El autor, con `consolidacion.demo`, ve la oferta en solo lectura | «Solo lectura: tu rol no cambia la oferta.», sin acciones | Captura del autor | 2026-10-24 |
 
 ## Notas
 
 - **Lo propio (D-64):** el coordinador de carrera lee la oferta de todas las carreras y no la mantiene; F03-H05 aplica el filtro de lo propio de `OFERTA` con los cargos. Es una limitación conocida, como en F03-H02.
 - **Límite de tiempo de Vitest:** en el primer run del PR #139, `test-frontend` falló porque una prueba de «Carreras y mallas» que llena un formulario largo tardó 5,03 s y el límite por omisión era 5 s. No había un error de lógica: en local pasa, y en el PR #136 pasó en la CI. El límite pasó a 15 s en `frontend/vitest.config.ts`, con un comentario que dice por qué; ahora la suite pasa sin el `--testTimeout` de la línea de comandos (168 de 168).
+- **El escenario del issue en el equipo:** el autor ofertó SOC con horas indicadas distintas (4 + 10 + 5 + 5 = 24) en lugar de 3 paralelos de 4 h. Demuestra el criterio de RF-15, que el número de paralelos se refleja en las horas a cubrir, también al retirar uno (19 h). El caso exacto de 4 h en 3 paralelos (12 h, y 8 con uno retirado) está comprobado en `OfertaDelPeriodoTest`, `OfertaContratoTest`, `e2e/oferta.spec.ts` y `probar_oferta.sh`.
+- **Una mejora de la pantalla que vio el autor:** en «Ofertar asignatura», «Jornada» queda sin opciones y «Asignatura» no aparece hasta elegir la carrera, sin que el diálogo lo diga. Queda propuesta para un PR pequeño.
+- Los datos del equipo de demostración (el periodo `003` y la oferta de SOC) son del autor y se quedan; las consultas a la base fueron de solo lectura.
