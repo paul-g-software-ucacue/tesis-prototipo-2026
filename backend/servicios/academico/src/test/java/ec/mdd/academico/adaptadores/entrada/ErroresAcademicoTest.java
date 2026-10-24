@@ -3,6 +3,8 @@ package ec.mdd.academico.adaptadores.entrada;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
+import ec.mdd.academico.dominio.AsignaturaParaleloRepetida;
+import ec.mdd.academico.dominio.OfertaCerrada;
 import ec.mdd.academico.dominio.PeriodoCerrado;
 import ec.mdd.academico.dominio.PeriodoSinVersion;
 import ec.mdd.academico.dominio.SedeMatrizExistente;
@@ -29,7 +31,7 @@ class ErroresAcademicoTest {
 
     @Test
     void
-            dadoLasReglasDeLosPeriodosLaEstructuraYLasCarreras_cuandoSeBuscanSusEntradas_entoncesSonLos409() {
+            dadoLasReglasDeLosPeriodosLaEstructuraLasCarrerasYLaOferta_cuandoSeBuscanSusEntradas_entoncesSonLos409() {
         assertThat(new ErroresAcademico().entradas())
                 .extracting(EntradaCatalogo::excepcion, entrada -> entrada.definicion().codigo())
                 .containsExactlyInAnyOrder(
@@ -44,7 +46,11 @@ class ErroresAcademicoTest {
                         tuple(CarreraRepetida.class, "ACADEMICO_CARRERA_REPETIDA"),
                         tuple(SiglasRepetidas.class, "ACADEMICO_SIGLAS_REPETIDAS"),
                         tuple(MallaRepetida.class, "ACADEMICO_MALLA_REPETIDA"),
-                        tuple(AsignaturaRepetida.class, "ACADEMICO_ASIGNATURA_REPETIDA"));
+                        tuple(AsignaturaRepetida.class, "ACADEMICO_ASIGNATURA_REPETIDA"),
+                        tuple(
+                                AsignaturaParaleloRepetida.class,
+                                "ACADEMICO_ASIGNATURA_PARALELO_REPETIDA"),
+                        tuple(OfertaCerrada.class, "ACADEMICO_OFERTA_CERRADA"));
         assertThat(new ErroresAcademico().entradas())
                 .allMatch(entrada -> entrada.definicion().estado() == 409);
     }

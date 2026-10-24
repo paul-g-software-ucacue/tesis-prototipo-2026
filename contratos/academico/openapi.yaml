@@ -14,6 +14,12 @@
 # asignaturas (carga 4) con los datos para la afinidad (RF-12, RF-14, RN-19, RN-24). Las mantienen
 # quienes tienen «Catálogos y datos maestros: escritura» o «Distributivo del periodo: escritura»: el
 # Administrador y el Vicerrector; las leen quienes leen la estructura (D-70). Nada se borra.
+# Desde F03-H03: la oferta del periodo (RF-15, carga 5): las asignaturas-paralelo con su jornada, su
+# modalidad, sus estudiantes y sus horas, que no pasan las de su asignatura (RN-18), y las horas a
+# cubrir por asignatura, por carrera y del periodo. Solo cambia mientras el periodo está en
+# Planificación. La mantienen el Administrador y el Vicerrector, como las carreras; la leen quienes
+# tienen «Oferta y propuesta de docentes: lectura», «Distributivo del periodo: lectura» o
+# «Catálogos y datos maestros: lectura» (D-70). Nada se borra: una asignatura-paralelo se retira.
 openapi: 3.0.3
 info:
   title: MDD · Académico
@@ -35,6 +41,11 @@ tags:
     description: >-
       Las carreras, sus mallas y sus asignaturas (RF-12, RF-14, cargas 2 y 4), con los datos para la
       afinidad (RN-19, RN-24). Nada se borra.
+  - name: Oferta
+    description: >-
+      La oferta del periodo (RF-15, carga 5): las asignaturas-paralelo y las horas a cubrir. Solo
+      cambia mientras el periodo está en Planificación; una asignatura-paralelo se retira, no se
+      borra.
 paths:
   /api/academico/periodos:
     get:
@@ -803,6 +814,167 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/academico/periodos/{codigo}/oferta:
+    parameters:
+      - $ref: '#/components/parameters/Codigo'
+    get:
+      tags: [Oferta]
+      operationId: consultarOferta
+      summary: 'Devuelve la oferta del periodo con las horas a cubrir: por asignatura, por carrera y del periodo.'
+      description: >-
+        Las retiradas se ven, pero no suman (RF-15). Dice si la oferta se puede cambiar: solo
+        mientras el periodo está en Planificación.
+      x-mdd-permiso: [OFERTA:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]
+      responses:
+        '200':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OfertaDelPeriodo'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+    post:
+      tags: [Oferta]
+      operationId: ofertarAsignatura
+      summary: Oferta una asignatura activa de una carrera vigente en un paralelo del periodo.
+      description: >-
+        La jornada es una de las de su carrera. Sin horas, son las de la asignatura, y si se
+        indican no las pasan (RN-18); sin sede, es la de la carrera. El periodo tiene que estar en
+        Planificación.
+      x-mdd-permiso: [CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AsignaturaParaleloNueva'
+      responses:
+        '201':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsignaturaParalelo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/ConflictoDeOferta'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/academico/periodos/{codigo}/oferta/{asignatura}/{paralelo}:
+    parameters:
+      - $ref: '#/components/parameters/Codigo'
+      - $ref: '#/components/parameters/AsignaturaDeLaOferta'
+      - $ref: '#/components/parameters/Paralelo'
+    get:
+      tags: [Oferta]
+      operationId: consultarAsignaturaParalelo
+      summary: 'Devuelve una asignatura-paralelo con los datos de su asignatura para la afinidad: campos, palabras clave y tronco común.'
+      x-mdd-permiso: [OFERTA:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]
+      responses:
+        '200':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsignaturaParalelo'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+    put:
+      tags: [Oferta]
+      operationId: corregirAsignaturaParalelo
+      summary: Corrige la jornada, la modalidad, la sede, los estudiantes o las horas; el periodo, la asignatura y el paralelo no cambian.
+      x-mdd-permiso: [CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatosDeAsignaturaParalelo'
+      responses:
+        '200':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsignaturaParalelo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/ConflictoDeOferta'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/academico/periodos/{codigo}/oferta/{asignatura}/{paralelo}/estado:
+    parameters:
+      - $ref: '#/components/parameters/Codigo'
+      - $ref: '#/components/parameters/AsignaturaDeLaOferta'
+      - $ref: '#/components/parameters/Paralelo'
+    put:
+      tags: [Oferta]
+      operationId: cambiarEstadoAsignaturaParalelo
+      summary: Retira una asignatura-paralelo de la oferta o la vuelve a ofertar; ninguna se borra.
+      description: Volver a ofertarla comprueba las mismas reglas que corregirla.
+      x-mdd-permiso: [CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EstadoDeAsignaturaParaleloNuevo'
+      responses:
+        '200':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AsignaturaParalelo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          $ref: '#/components/responses/ConflictoDeOferta'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
 components:
   securitySchemes:
     bearer:
@@ -848,6 +1020,22 @@ components:
       schema:
         $ref: '#/components/schemas/CodigoDeAsignatura'
       example: DS-B-I-MD-101
+    AsignaturaDeLaOferta:
+      name: asignatura
+      in: path
+      required: true
+      description: Código de la asignatura ofertada.
+      schema:
+        $ref: '#/components/schemas/CodigoDeAsignatura'
+      example: DS-P-II-POO-204
+    Paralelo:
+      name: paralelo
+      in: path
+      required: true
+      description: El paralelo de la asignatura en el periodo.
+      schema:
+        $ref: '#/components/schemas/CodigoDeParalelo'
+      example: A_NOCTURNA
   responses:
     NoEncontrado:
       description: El periodo no existe (COMUN_RECURSO_NO_ENCONTRADO).
@@ -882,6 +1070,14 @@ components:
       description: >-
         Un código o unas siglas repetidos: ACADEMICO_CARRERA_REPETIDA, ACADEMICO_SIGLAS_REPETIDAS,
         ACADEMICO_MALLA_REPETIDA o ACADEMICO_ASIGNATURA_REPETIDA (errores.md).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
+    ConflictoDeOferta:
+      description: >-
+        El cambio no cumple una regla de la oferta: ACADEMICO_ASIGNATURA_PARALELO_REPETIDA o
+        ACADEMICO_OFERTA_CERRADA (errores.md).
       content:
         application/json:
           schema:
@@ -1429,3 +1625,174 @@ components:
         activa:
           type: boolean
           description: true para reactivar, false para inactivar.
+    CodigoDeParalelo:
+      type: string
+      pattern: '^[0-9A-Z_-]{1,20}$'
+      example: A_NOCTURNA
+    EstadoDeAsignaturaParalelo:
+      type: string
+      enum: [OFERTADA, RETIRADA]
+      description: Una retirada no suma horas a cubrir ni recibe propuestas; se puede volver a ofertar.
+    Estudiantes:
+      type: integer
+      minimum: 0
+      maximum: 9999
+      example: 28
+    HorasIndicadas:
+      type: number
+      minimum: 0.5
+      maximum: 20
+      description: Si se omiten, las de clase de la asignatura; si se indican, no las pasan (RN-18).
+      example: 4
+    AsignaturaParalelo:
+      type: object
+      required: [periodo, asignatura, nombre, carrera, malla, ciclo, paralelo, jornada, modalidad, sede, sedeIndicada, estudiantes, horasSemanales, horasIndicadas, horasDeLaAsignatura, porEncimaDeLaAsignatura, troncoComun, campoAmplio, campoEspecifico, palabrasClave, estado]
+      properties:
+        periodo:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        asignatura:
+          $ref: '#/components/schemas/CodigoDeAsignatura'
+        nombre:
+          type: string
+          example: PROGRAMACIÓN ORIENTADA A OBJETOS
+        carrera:
+          $ref: '#/components/schemas/CodigoDeCarrera'
+        malla:
+          $ref: '#/components/schemas/CodigoDeMalla'
+        ciclo:
+          type: integer
+          minimum: 1
+          maximum: 10
+        paralelo:
+          $ref: '#/components/schemas/CodigoDeParalelo'
+        jornada:
+          $ref: '#/components/schemas/Jornada'
+        modalidad:
+          $ref: '#/components/schemas/Modalidad'
+        sede:
+          $ref: '#/components/schemas/CodigoDeUnidad'
+        sedeIndicada:
+          type: boolean
+          description: false si la sede es la de la carrera.
+        estudiantes:
+          $ref: '#/components/schemas/Estudiantes'
+        horasSemanales:
+          type: number
+          description: Las horas efectivas, las que suman a las horas a cubrir.
+          example: 4
+        horasIndicadas:
+          type: boolean
+          description: false si son las de la asignatura.
+        horasDeLaAsignatura:
+          type: number
+          example: 4
+        porEncimaDeLaAsignatura:
+          type: boolean
+          description: true si las horas indicadas pasan las de la asignatura, que se corrigió después.
+        troncoComun:
+          type: boolean
+        campoAmplio:
+          $ref: '#/components/schemas/CampoAmplio'
+        campoEspecifico:
+          $ref: '#/components/schemas/CodigoDeCampoEspecifico'
+        palabrasClave:
+          type: array
+          items:
+            type: string
+        estado:
+          $ref: '#/components/schemas/EstadoDeAsignaturaParalelo'
+    AsignaturaParaleloNueva:
+      type: object
+      required: [asignatura, paralelo, jornada, modalidad, estudiantes]
+      properties:
+        asignatura:
+          $ref: '#/components/schemas/CodigoDeAsignatura'
+        paralelo:
+          $ref: '#/components/schemas/CodigoDeParalelo'
+        jornada:
+          $ref: '#/components/schemas/Jornada'
+        modalidad:
+          $ref: '#/components/schemas/Modalidad'
+        sede:
+          $ref: '#/components/schemas/CodigoDeUnidad'
+        estudiantes:
+          $ref: '#/components/schemas/Estudiantes'
+        horasSemanales:
+          $ref: '#/components/schemas/HorasIndicadas'
+    DatosDeAsignaturaParalelo:
+      description: Sin sede ni horas, quedan las de la carrera y las de la asignatura.
+      type: object
+      required: [jornada, modalidad, estudiantes]
+      properties:
+        jornada:
+          $ref: '#/components/schemas/Jornada'
+        modalidad:
+          $ref: '#/components/schemas/Modalidad'
+        sede:
+          $ref: '#/components/schemas/CodigoDeUnidad'
+        estudiantes:
+          $ref: '#/components/schemas/Estudiantes'
+        horasSemanales:
+          $ref: '#/components/schemas/HorasIndicadas'
+    EstadoDeAsignaturaParaleloNuevo:
+      type: object
+      required: [estado]
+      properties:
+        estado:
+          $ref: '#/components/schemas/EstadoDeAsignaturaParalelo'
+    HorasDeAsignatura:
+      type: object
+      required: [asignatura, nombre, ciclo, paralelos, horasACubrir]
+      properties:
+        asignatura:
+          $ref: '#/components/schemas/CodigoDeAsignatura'
+        nombre:
+          type: string
+        ciclo:
+          type: integer
+        paralelos:
+          type: integer
+          minimum: 0
+          description: Los paralelos ofertados.
+        horasACubrir:
+          type: number
+          example: 12
+    HorasDeCarrera:
+      type: object
+      required: [carrera, nombre, horasACubrir, asignaturas]
+      properties:
+        carrera:
+          $ref: '#/components/schemas/CodigoDeCarrera'
+        nombre:
+          type: string
+        horasACubrir:
+          type: number
+        asignaturas:
+          type: array
+          description: Por ciclo y código.
+          items:
+            $ref: '#/components/schemas/HorasDeAsignatura'
+    OfertaDelPeriodo:
+      type: object
+      required: [periodo, estadoDelPeriodo, modificable, horasACubrir, carreras, asignaturasParalelo]
+      properties:
+        periodo:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        estadoDelPeriodo:
+          $ref: '#/components/schemas/EstadoPeriodo'
+        modificable:
+          type: boolean
+          description: true solo mientras el periodo está en Planificación.
+        horasACubrir:
+          type: number
+          example: 660
+        carreras:
+          type: array
+          description: Por código de carrera.
+          items:
+            $ref: '#/components/schemas/HorasDeCarrera'
+        asignaturasParalelo:
+          type: array
+          description: Por carrera, ciclo, asignatura y paralelo.
+          items:
+            $ref: '#/components/schemas/AsignaturaParalelo'

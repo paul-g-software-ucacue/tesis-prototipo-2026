@@ -48,6 +48,16 @@ export const LECTURA_DE_LA_ESTRUCTURA: readonly { funcionalidad: string; tipo: T
 ];
 
 /**
+ * Quién lee la oferta del periodo: quien lee la oferta, el distributivo o los catálogos (D-70,
+ * F03-H03). La mantienen los mismos que las carreras.
+ */
+export const LECTURA_DE_LA_OFERTA: readonly { funcionalidad: string; tipo: TipoDePermiso }[] = [
+  { funcionalidad: 'OFERTA', tipo: 'LECTURA' },
+  { funcionalidad: 'DISTRIBUTIVO', tipo: 'LECTURA' },
+  { funcionalidad: 'CATALOGOS', tipo: 'LECTURA' },
+];
+
+/**
  * Quién mantiene las carreras, sus mallas y sus asignaturas: el Administrador o el Vicerrector
  * (D-70, F03-H02).
  */

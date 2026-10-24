@@ -14,7 +14,11 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import { NavLink, Outlet } from 'react-router';
 import { cerrarSesion } from '../sesion/almacen';
-import { DESCARGA_DE_PLANTILLAS, LECTURA_DE_LA_ESTRUCTURA } from '../sesion/funcionalidades';
+import {
+  DESCARGA_DE_PLANTILLAS,
+  LECTURA_DE_LA_ESTRUCTURA,
+  LECTURA_DE_LA_OFERTA,
+} from '../sesion/funcionalidades';
 import { tieneAlguno, type PermisoRequerido } from '../sesion/permisos';
 import { useSesionActual } from '../sesion/useSesionActual';
 
@@ -43,6 +47,7 @@ const ENTRADAS: Entrada[] = [
   },
   { ruta: '/estructura', texto: 'Estructura orgánica', permiso: LECTURA_DE_LA_ESTRUCTURA },
   { ruta: '/carreras', texto: 'Carreras y mallas', permiso: LECTURA_DE_LA_ESTRUCTURA },
+  { ruta: '/oferta', texto: 'Oferta del periodo', permiso: LECTURA_DE_LA_OFERTA },
   { ruta: '/plantillas', texto: 'Plantillas de carga', permiso: DESCARGA_DE_PLANTILLAS },
 ];
 

@@ -56,7 +56,8 @@ class AcademicoEsquemaIntegrationTest {
                             "academico.campo_amplio",
                             "academico.carrera",
                             "academico.malla",
-                            "academico.asignatura");
+                            "academico.asignatura",
+                            "academico.asignatura_paralelo");
         }
     }
 
@@ -285,6 +286,188 @@ class AcademicoEsquemaIntegrationTest {
                         .isEqualTo(1);
             }
         }
+    }
+
+    @Test
+    void dadaLaTablaDeLaOferta_cuandoSeGuardaAlgoFueraDeSusReglas_entoncesLaBaseLoRechaza() {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+            postgres.start();
+            JdbcClient jdbc = migrada(postgres);
+            unidad(jdbc, "MATRIZ", "SEDE_MATRIZ", null, null, null);
+            carrera(jdbc, "C1", "DS", "{NOCTURNA}", "06", "061", 5);
+            malla(jdbc, "M1", "C1");
+            asignatura(jdbc, "A1", "C1", "M1", "3", "{uno,dos}");
+            jdbc.sql(
+                            "INSERT INTO academico.periodo_academico (codigo, nombre, inicio, fin,"
+                                    + " estado, registrado_en, registrado_por) VALUES ('2026-I',"
+                                    + " 'Periodo', '2026-04-06', '2026-08-07', 'PLANIFICACION',"
+                                    + " now(), 'vicerrectorado.demo')")
+                    .update();
+
+            assertThat(
+                            ofertada(
+                                    jdbc,
+                                    "2026-I",
+                                    "A1",
+                                    "A_NOCTURNA",
+                                    "NOCTURNA",
+                                    "PRESENCIAL",
+                                    28,
+                                    null,
+                                    "OFERTADA"))
+                    .isEqualTo(1);
+            assertThat(
+                            ofertada(
+                                    jdbc,
+                                    "2026-I",
+                                    "A1",
+                                    "B_NOCTURNA",
+                                    "NOCTURNA",
+                                    "DUAL",
+                                    0,
+                                    "2.5",
+                                    "RETIRADA"))
+                    .isEqualTo(1);
+            for (Object[] invalida :
+                    new Object[][] {
+                        {
+                            "2026-I",
+                            "A1",
+                            "c_nocturna",
+                            "NOCTURNA",
+                            "PRESENCIAL",
+                            28,
+                            null,
+                            "OFERTADA"
+                        },
+                        {"2026-I", "A1", "C_NOCTURNA", "NOCHE", "PRESENCIAL", 28, null, "OFERTADA"},
+                        {"2026-I", "A1", "C_NOCTURNA", "NOCTURNA", "REMOTA", 28, null, "OFERTADA"},
+                        {
+                            "2026-I",
+                            "A1",
+                            "C_NOCTURNA",
+                            "NOCTURNA",
+                            "PRESENCIAL",
+                            -1,
+                            null,
+                            "OFERTADA"
+                        },
+                        {
+                            "2026-I",
+                            "A1",
+                            "C_NOCTURNA",
+                            "NOCTURNA",
+                            "PRESENCIAL",
+                            28,
+                            "0.4",
+                            "OFERTADA"
+                        },
+                        {
+                            "2026-I",
+                            "A1",
+                            "C_NOCTURNA",
+                            "NOCTURNA",
+                            "PRESENCIAL",
+                            28,
+                            null,
+                            "BORRADA"
+                        },
+                        {
+                            "2026-I",
+                            "A1",
+                            "A_NOCTURNA",
+                            "NOCTURNA",
+                            "PRESENCIAL",
+                            28,
+                            null,
+                            "OFERTADA"
+                        },
+                        {
+                            "2027-I",
+                            "A1",
+                            "C_NOCTURNA",
+                            "NOCTURNA",
+                            "PRESENCIAL",
+                            28,
+                            null,
+                            "OFERTADA"
+                        },
+                        {
+                            "2026-I",
+                            "A9",
+                            "C_NOCTURNA",
+                            "NOCTURNA",
+                            "PRESENCIAL",
+                            28,
+                            null,
+                            "OFERTADA"
+                        }
+                    }) {
+                assertThatThrownBy(
+                                () ->
+                                        ofertada(
+                                                jdbc,
+                                                (String) invalida[0],
+                                                (String) invalida[1],
+                                                (String) invalida[2],
+                                                (String) invalida[3],
+                                                (String) invalida[4],
+                                                (Integer) invalida[5],
+                                                (String) invalida[6],
+                                                (String) invalida[7]))
+                        .as(
+                                "asignatura-paralelo %s %s %s %s",
+                                invalida[0], invalida[1], invalida[2], invalida[3])
+                        .isInstanceOf(DataIntegrityViolationException.class);
+            }
+            for (String accion :
+                    new String[] {
+                        "ASIGNATURA_PARALELO_REGISTRADA",
+                        "ASIGNATURA_PARALELO_CORREGIDA",
+                        "ASIGNATURA_PARALELO_RETIRADA",
+                        "ASIGNATURA_PARALELO_REOFERTADA",
+                        "ASIGNATURA_REACTIVADA",
+                        "PERIODO_REGISTRADO"
+                    }) {
+                assertThat(
+                                jdbc.sql(
+                                                "INSERT INTO academico.registro_cambio (id, momento,"
+                                                        + " usuario, accion, detalle) VALUES"
+                                                        + " (gen_random_uuid(), now(), 'x', :accion,"
+                                                        + " '{}')")
+                                        .param("accion", accion)
+                                        .update())
+                        .as(accion)
+                        .isEqualTo(1);
+            }
+        }
+    }
+
+    private static int ofertada(
+            JdbcClient jdbc,
+            String periodo,
+            String asignatura,
+            String paralelo,
+            String jornada,
+            String modalidad,
+            int estudiantes,
+            String horas,
+            String estado) {
+        return jdbc.sql(
+                        "INSERT INTO academico.asignatura_paralelo (periodo, asignatura, paralelo,"
+                                + " jornada, modalidad, sede, estudiantes, horas_semanales, estado,"
+                                + " registrada_en, registrada_por) VALUES (:periodo, :asignatura,"
+                                + " :paralelo, :jornada, :modalidad, null, :estudiantes,"
+                                + " CAST(:horas AS numeric), :estado, now(), 'vicerrectorado.demo')")
+                .param("periodo", periodo)
+                .param("asignatura", asignatura)
+                .param("paralelo", paralelo)
+                .param("jornada", jornada)
+                .param("modalidad", modalidad)
+                .param("estudiantes", estudiantes)
+                .param("horas", horas)
+                .param("estado", estado)
+                .update();
     }
 
     private static int carrera(

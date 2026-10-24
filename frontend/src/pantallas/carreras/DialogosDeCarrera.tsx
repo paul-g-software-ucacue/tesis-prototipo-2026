@@ -13,12 +13,13 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import FormGroup from '@mui/material/FormGroup';
 import FormHelperText from '@mui/material/FormHelperText';
 import FormLabel from '@mui/material/FormLabel';
-import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { useState, type ReactNode } from 'react';
-import { AvisoDeError } from '../../errores/AvisoDeError';
-import { traducirError, type MensajeDeError } from '../../errores/traducir';
+import { useState } from 'react';
+import { type MensajeDeError } from '../../errores/traducir';
+import { Avisos, Marco } from '../comun/Formulario';
+import { ayuda, detalleDe, numero, queFalta, SELECCION, TIPOS_DE_SEDE } from '../comun/formulario';
+import { useEnvio } from '../comun/useEnvio';
 import type { UnidadOrganica } from '../estructura/consultas';
 import {
   cambiarEstadoCarrera,
@@ -44,117 +45,11 @@ import {
   NOMBRE_DEL_NIVEL,
 } from './nombres';
 
-const SELECCION = { select: { native: true }, inputLabel: { shrink: true } } as const;
-
-/** Los tipos de unidad que pueden ser la sede de una carrera (carga 02). */
-const TIPOS_DE_SEDE = new Set(['SEDE_MATRIZ', 'SEDE', 'EXTENSION', 'CAMPUS']);
-
-function detalleDe(aviso: MensajeDeError | null, campo: string) {
-  return aviso?.detalles.find((detalle) => detalle.campo === campo)?.descripcion;
-}
-
-/**
- * El texto bajo un campo: la pista y, si el servidor lo rechazó, su motivo antes de ella, para que
- * se sepa qué corregir (F03-H02).
- */
-function ayuda(aviso: MensajeDeError | null, campo: string, pista?: string) {
-  const motivo = detalleDe(aviso, campo);
-  if (!motivo) {
-    return pista;
-  }
-  const frase = motivo.charAt(0).toUpperCase() + motivo.slice(1);
-  const conPunto = /[.!?]$/.test(frase) ? frase : `${frase}.`;
-  return pista ? `${conPunto} ${pista}` : conPunto;
-}
-
 /** La pista del campo específico, con los dígitos del amplio elegido. */
 function pistaDelEspecifico(amplio: string) {
   return amplio
     ? `Tres dígitos que empiezan por ${amplio}, el campo amplio.`
     : 'Tres dígitos que empiezan por el campo amplio.';
-}
-
-/** Lo que falta para enviar, por su nombre en pantalla, o nada. */
-function queFalta(campos: readonly [string, boolean][]) {
-  const faltan = campos.filter(([, lleno]) => !lleno).map(([nombre]) => nombre);
-  return faltan.length ? `Falta: ${faltan.join(', ')}.` : null;
-}
-
-/** Un número escrito en un campo, o nada si está vacío. */
-function numero(texto: string): number | undefined {
-  return texto.trim() ? Number(texto.replace(',', '.')) : undefined;
-}
-
-/** El aviso del servidor y los detalles que no son de un campo del diálogo. */
-function Avisos({ aviso, campos }: { aviso: MensajeDeError | null; campos: readonly string[] }) {
-  return (
-    <>
-      {aviso && <AvisoDeError mensaje={aviso} />}
-      {(aviso?.detalles ?? [])
-        .filter(({ campo }) => !campos.includes(campo))
-        .map(({ descripcion }) => (
-          <Typography key={descripcion} color="error">
-            {descripcion}
-          </Typography>
-        ))}
-    </>
-  );
-}
-
-/** Envía, muestra el error del servidor si lo hay y avisa cuando terminó bien. */
-function useEnvio(alGuardar: () => Promise<void>) {
-  const [aviso, setAviso] = useState<MensajeDeError | null>(null);
-  const [enviando, setEnviando] = useState(false);
-  const enviar = (operacion: () => Promise<unknown>) => {
-    setAviso(null);
-    setEnviando(true);
-    void (async () => {
-      try {
-        await operacion();
-        await alGuardar();
-      } catch (fallo) {
-        setAviso(traducirError(fallo));
-      } finally {
-        setEnviando(false);
-      }
-    })();
-  };
-  return { aviso, enviando, enviar };
-}
-
-function Marco({
-  id,
-  titulo,
-  accion,
-  enviando,
-  alCerrar,
-  alEnviar,
-  children,
-}: {
-  id: string;
-  titulo: string;
-  accion: string;
-  enviando: boolean;
-  alCerrar: () => void;
-  alEnviar: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <Dialog open onClose={alCerrar} aria-labelledby={id} fullWidth>
-      <DialogTitle id={id}>{titulo}</DialogTitle>
-      <DialogContent>
-        <Stack spacing={2} sx={{ pt: 1 }}>
-          {children}
-        </Stack>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={alCerrar}>Cancelar</Button>
-        <Button variant="contained" disabled={enviando} onClick={alEnviar}>
-          {accion}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
 }
 
 function SeleccionDeCampoAmplio({
