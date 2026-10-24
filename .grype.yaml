@@ -16,6 +16,17 @@ ignore:
     reason: "Las imágenes oficiales de PostgreSQL 18.6 y Caddy 2.11.7 traen zlib 1.3.2-r0 de Alpine; el arreglo exige que las reconstruyan. Las imágenes propias del MDD ya actualizan zlib (B00-H08)."
     desde: 2026-10-17
     vence: 2026-11-16
+  # PostgreSQL y Caddy: brotli-libs de Alpine
+  - vulnerability: CVE-2026-111497
+    package: { name: brotli-libs, version: "1.2.0-r1", type: apk }
+    reason: "La imagen oficial de PostgreSQL 18.6 trae brotli-libs 1.2.0-r1 de Alpine; el arreglo (1.2.1-r0) exige que la reconstruyan. PostgreSQL no se expone fuera de la red de Docker. La imagen del frontend ya actualiza brotli-libs."
+    desde: 2026-10-24
+    vence: 2026-11-16
+  - vulnerability: CVE-2026-111497
+    package: { name: brotli-libs, version: "1.2.0-r0", type: apk }
+    reason: "La imagen oficial de Caddy 2.11.7 trae brotli-libs 1.2.0-r0 de Alpine; el arreglo (1.2.1-r0) exige que la reconstruyan. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1 (B00-H08)."
+    desde: 2026-10-24
+    vence: 2026-11-16
   # Caddy: Go y x/net del binario
   - vulnerability: GO-2026-6603
     package: { name: golang.org/x/net, version: "v0.59.0", type: go-module, location: "/usr/bin/caddy" }
