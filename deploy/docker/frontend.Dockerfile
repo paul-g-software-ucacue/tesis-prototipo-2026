@@ -14,10 +14,11 @@ RUN npm run build
 
 FROM nginxinc/nginx-unprivileged:stable-alpine
 # Paquetes de la base con vulnerabilidades altas ya corregidas (Grype): zlib 1.3.2-r0 → 1.3.2-r1
-# (B00-H08) y libexpat 2.8.5-r0 → 2.9.0-r0 (CVE-2026-77214, F05-H02). Se actualizan como root y se
-# vuelve al usuario sin privilegios de la imagen (101).
+# (B00-H08), libexpat 2.8.5-r0 → 2.9.0-r0 (CVE-2026-77214, F05-H02) y brotli-libs 1.2.0-r1 → 1.2.1-r0
+# (CVE-2026-111497, crítica). Se actualizan como root y se vuelve al usuario sin privilegios de la
+# imagen (101).
 USER root
-RUN apk upgrade --no-cache zlib libexpat
+RUN apk upgrade --no-cache zlib libexpat brotli-libs
 USER 101
 # El API Gateway del perfil consolidado; se cambia con la variable (contracts/perfil.md).
 ENV MDD_URI_GATEWAY=http://gateway:8080
