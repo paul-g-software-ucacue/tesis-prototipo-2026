@@ -139,7 +139,7 @@ Como quien ejecuta las cargas, quiero un botón «Subir archivo» en cada carga,
 ### Key Entities
 
 - **Carga**: una de las 10 entidades del diccionario de datos (glosario, `Carga`); el archivo se sube en una de ellas.
-- **Archivo de carga**: el CSV o XLSX que se sube, con su nombre, su formato y su tamaño; es la fuente de datos de una carga.
+- **El archivo de una carga**: el CSV o XLSX que se sube, con su nombre, su formato y su tamaño; es la fuente de datos de la carga (el glosario define «Carga» como ese archivo; aquí no se le da otro nombre).
 - **Resultado de la lectura**: si el archivo se puede leer y cuántos registros tiene, o el motivo del rechazo.
 - **Plantilla de carga** y **Diccionario de datos**: las columnas esperadas y su orden (F01-H01).
 
