@@ -1,0 +1,23 @@
+openapi: 3.0.3
+info:
+  title: Contrato de prueba de VerificadorDePermisos con un archivo en multipart (F01-H02)
+  version: 1.0.0
+paths:
+  /api/prueba/archivo:
+    post:
+      operationId: subirArchivo
+      x-mdd-permiso: PRUEBA:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [archivo]
+              properties:
+                archivo:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Recibe la parte archivo.

@@ -67,6 +67,12 @@ class VerificadorDePermisosTest {
     }
 
     @Test
+    void dadaUnaOperacionQueRecibeUnArchivo_cuandoSeVerifica_entoncesLoMandaEnMultipartYPasa() {
+        assertThatCode(() -> verificador("permisos-multipart.yaml").verificar(mvc, conversor))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
     void dadoElCodigoQueAceptaCualquieraDeLosPermisos_cuandoSeVerifica_entoncesPasa() {
         assertThatCode(() -> verificador("permisos-alternativos.yaml").verificar(mvc, conversor))
                 .doesNotThrowAnyException();

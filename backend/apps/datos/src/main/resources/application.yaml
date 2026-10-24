@@ -30,3 +30,7 @@ mdd.eventos.token-proceso: ${MDD_URI_IDENTIDAD:http://identidad:8080}/interno/us
 mdd.eventos.proceso: datos
 # Clave del proceso (D-49); vacía, el proceso arranca y las entregas fallan hasta configurarla.
 mdd.eventos.clave: ${MDD_CLAVE_PROCESO_DATOS:}
+# Archivos de carga (F01-H02, research §3): el proceso acepta hasta 10 MB y Cargas rechaza más de
+# 5 MB con CARGAS_ARCHIVO_DEMASIADO_GRANDE; más de 10 MB responde COMUN_CONTENIDO_DEMASIADO_GRANDE.
+spring.servlet.multipart.max-file-size: 10MB
+spring.servlet.multipart.max-request-size: 10MB

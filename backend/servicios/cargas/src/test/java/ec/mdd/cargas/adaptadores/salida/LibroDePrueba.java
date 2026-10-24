@@ -9,12 +9,12 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 /** Arma XLSX de prueba con POI: una hoja con los encabezados y las filas como texto. */
-final class LibroDePrueba {
+public final class LibroDePrueba {
 
     private LibroDePrueba() {}
 
     /** Un XLSX de una hoja con esos encabezados y esas filas, cada celda como texto. */
-    static byte[] deTexto(List<String> encabezados, List<List<String>> filas) {
+    public static byte[] deTexto(List<String> encabezados, List<List<String>> filas) {
         try (XSSFWorkbook libro = new XSSFWorkbook()) {
             Sheet hoja = libro.createSheet("Datos");
             escribir(hoja.createRow(0), encabezados);
@@ -28,7 +28,7 @@ final class LibroDePrueba {
     }
 
     /** Los bytes del libro. */
-    static byte[] bytes(XSSFWorkbook libro) throws IOException {
+    public static byte[] bytes(XSSFWorkbook libro) throws IOException {
         ByteArrayOutputStream salida = new ByteArrayOutputStream();
         libro.write(salida);
         return salida.toByteArray();

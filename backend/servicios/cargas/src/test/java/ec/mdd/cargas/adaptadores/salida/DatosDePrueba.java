@@ -10,10 +10,10 @@ import java.util.Map;
  * Los 10 CSV de los datos de prueba de la ERS ({@code cargas/datos_prueba/}, sintéticos,
  * RNF-SEG-06), copiados a los recursos de prueba, con su número de registros.
  */
-final class DatosDePrueba {
+public final class DatosDePrueba {
 
     /** Cada archivo con su número de registros. */
-    static final Map<String, Integer> REGISTROS = new LinkedHashMap<>();
+    public static final Map<String, Integer> REGISTROS = new LinkedHashMap<>();
 
     static {
         REGISTROS.put("01_estructura_organica.csv", 24);
@@ -31,7 +31,7 @@ final class DatosDePrueba {
     private DatosDePrueba() {}
 
     /** El contenido del archivo, tal como está. */
-    static byte[] contenido(String archivo) {
+    public static byte[] contenido(String archivo) {
         try (InputStream entrada =
                 DatosDePrueba.class.getResourceAsStream("/cargas/datos-de-prueba/" + archivo)) {
             return entrada.readAllBytes();
