@@ -1,0 +1,1092 @@
+# Diccionario de datos de las 10 cargas (RF-05, ERS §8.3; glosario «Diccionario de datos»).
+# Transcrito una sola vez de las listas L, CONV y CAT de cargas/scripts/build_diccionario.py
+# (ERS v2.1) con specs/018-plantillas-carga. De aquí salen la plantilla y el diccionario de cada
+# carga, y con esto se validarán las cargas (F01-H02). Si la ERS cambia, se cambia este archivo;
+# las pruebas comparan los encabezados con los de cargas/plantillas/ (anexo-ers-encabezados.csv).
+# Cambios frente a la ERS: «hoja Catálogos» e «índice» remiten a los valores permitidos y a
+# «Depende de», porque esas hojas no viajan con los CSV; las listas de los catálogos se separan en
+# valores; el ejemplo de cada columna es el de la primera fila de cargas/ejemplos/ con valor, y
+# los escritos a mano lo dicen en su comentario (research §4). Los datos son ficticios.
+fuente: "ERS v2.1, sección 8.3 y anexo cargas/"
+convenciones:
+  - tema: "Formato de archivo"
+    regla: "CSV (UTF-8, con encabezado en la primera fila) o XLSX (una hoja, mismos encabezados). Se recomienda XLSX para evitar problemas de separadores."
+  - tema: "Separador de columnas CSV"
+    regla: "Coma (,) según RFC 4180. El sistema también detecta punto y coma (;) si el encabezado lo usa."
+  - tema: "Encabezados"
+    regla: "Exactamente los nombres de la columna «campo», en minúsculas y en el mismo orden de la plantilla."
+  - tema: "Comillas"
+    regla: "Si un valor contiene el separador, comillas o saltos de línea, debe ir entre comillas dobles. Duplicar las comillas internas."
+  - tema: "Listas"
+    regla: "Varios valores en una celda se separan con «;». Cuando cada elemento tiene partes, se separan con «|». Ej.: «MÁSTER EN X|MAESTRIA|061|2022; DOCTORADO EN Y|DOCTORADO|061|2025»."
+  - tema: "Fechas"
+    regla: "aaaa-mm-dd (ISO 8601)."
+  - tema: "Decimales"
+    regla: "Punto como separador decimal (ej.: 2.5). Sin separador de miles."
+  - tema: "Booleanos"
+    regla: "S o N."
+  - tema: "Catálogos"
+    regla: "Se escriben con el código exacto en mayúsculas (ver los valores permitidos de cada columna). El sistema puede mapear etiquetas equivalentes si se configura (RF-08)."
+  - tema: "Cédula"
+    regla: "Siempre como texto de 10 dígitos, conservando el 0 inicial. En Excel, formatear la columna como Texto antes de pegar."
+  - tema: "Campos opcionales vacíos"
+    regla: "Dejar la celda vacía (no escribir NA ni guiones)."
+  - tema: "Datos de prueba"
+    regla: "Usar solo datos ficticios (RNF-SEG-06). Las cédulas de los ejemplos son ficticias con dígito verificador válido."
+  - tema: "Orden de carga"
+    regla: "1 → 10, respetando «Depende de» de cada carga."
+catalogos:
+  - codigo: GESTIONES_AUTORIZADAS
+    nombre: "Gestiones autorizadas (POL 6)"
+    valores:
+      - codigo: "G01"
+        descripcion: "Rector"
+      - codigo: "G02"
+        descripcion: "Vicerrector"
+      - codigo: "G03"
+        descripcion: "Coordinador Académico Institucional"
+      - codigo: "G04"
+        descripcion: "Coordinador de Sede, Extensión o Campus"
+      - codigo: "G05"
+        descripcion: "Coordinadores de Carrera"
+      - codigo: "G06"
+        descripcion: "Gestor de Vinculación con la Sociedad"
+      - codigo: "G07"
+        descripcion: "Gestor de Investigación, Desarrollo Tecnológico e Innovación"
+      - codigo: "G08"
+        descripcion: "Gestor de Centro de Idiomas"
+      - codigo: "G09"
+        descripcion: "Gestor de Centro de Formación Integral y Servicios Especializados"
+      - codigo: "G10"
+        descripcion: "Coordinador de Aseguramiento de la Calidad"
+      - codigo: "G11"
+        descripcion: "Secretario General Académico"
+      - codigo: "G12"
+        descripcion: "Procurador"
+      - codigo: "G13"
+        descripcion: "Gestor de Bienestar Institucional"
+      - codigo: "G14"
+        descripcion: "Gestor Administrativo Financiero"
+      - codigo: "G15"
+        descripcion: "Gestor de Planificación Estratégica"
+      - codigo: "G16"
+        descripcion: "Gestor Unidad de Talento Humano"
+      - codigo: "G17"
+        descripcion: "Gestor Unidad de Servicios de Biblioteca"
+      - codigo: "G18"
+        descripcion: "Gestor Unidad de Comunicación"
+      - codigo: "G19"
+        descripcion: "Gestor Unidad de Relaciones Internacionales e Institucionales"
+      - codigo: "G20"
+        descripcion: "Gestor Unidad de TIC"
+      - codigo: "G21"
+        descripcion: "Gestor Unidad de Estadísticas"
+  - codigo: CARGOS
+    nombre: "Cargos (08.codigo_cargo)"
+    valores:
+      - codigo: "RECTOR"
+        descripcion: "Autoridades y coordinaciones"
+      - codigo: "VICERRECTOR"
+        descripcion: "Autoridades y coordinaciones"
+      - codigo: "COORDINADOR_ACADEMICO_INSTITUCIONAL"
+        descripcion: "Autoridades y coordinaciones"
+      - codigo: "COORDINADOR_SEDE"
+        descripcion: "Autoridades y coordinaciones"
+      - codigo: "COORDINADOR_CARRERA"
+        descripcion: "Autoridades y coordinaciones"
+      - codigo: "G06_GESTOR_VINCULACION … G21_GESTOR_ESTADISTICAS"
+        descripcion: "Prefijo con el código de gestión autorizada"
+      - codigo: "MIEMBRO_COMISION"
+        descripcion: "Integrante de una comisión (requiere codigo_unidad de tipo COMISION)"
+  - codigo: PERFILES_DE_CARGA
+    nombre: "Perfiles de carga (07.perfil)"
+    valores:
+      - codigo: "DOCENTE_TC"
+        descripcion: ""
+      - codigo: "DOCENTE_MT"
+        descripcion: ""
+      - codigo: "DOCENTE_TP"
+        descripcion: ""
+      - codigo: "COORDINADOR_CARRERA_SEDE"
+        descripcion: ""
+      - codigo: "GESTOR"
+        descripcion: ""
+      - codigo: "COORDINADOR_ACADEMICO_INSTITUCIONAL"
+        descripcion: ""
+      - codigo: "RECTOR_VICERRECTOR"
+        descripcion: ""
+      - codigo: "SECRETARIA_GENERAL_ACADEMICA"
+        descripcion: ""
+      - codigo: "DOCENTE_PROYECTO_NACIONAL_SIES"
+        descripcion: ""
+      - codigo: "DOCENTE_INVESTIGACION_VINCULACION"
+        descripcion: ""
+      - codigo: "CUIDADOR_SUSTITUTO"
+        descripcion: ""
+  - codigo: CAMPOS_AMPLIOS_CINE
+    nombre: "Campos amplios CINE"
+    valores:
+      - codigo: "00"
+        descripcion: "Programas genéricos"
+      - codigo: "01"
+        descripcion: "Educación"
+      - codigo: "02"
+        descripcion: "Artes y humanidades"
+      - codigo: "03"
+        descripcion: "Ciencias sociales, periodismo e información"
+      - codigo: "04"
+        descripcion: "Administración de empresas y derecho"
+      - codigo: "05"
+        descripcion: "Ciencias naturales, matemáticas y estadística"
+      - codigo: "06"
+        descripcion: "Tecnologías de la información y la comunicación"
+      - codigo: "07"
+        descripcion: "Ingeniería, industria y construcción"
+      - codigo: "08"
+        descripcion: "Agricultura, silvicultura, pesca y veterinaria"
+      - codigo: "09"
+        descripcion: "Salud y bienestar"
+      - codigo: "10"
+        descripcion: "Servicios"
+  - codigo: TIPOS_DE_IST
+    nombre: "Tipo de IST (RN-06)"
+    valores:
+      - codigo: "T1"
+        descripcion: "1–300 estudiantes"
+      - codigo: "T2"
+        descripcion: "301–600 estudiantes"
+      - codigo: "T3"
+        descripcion: "601–1200 estudiantes"
+      - codigo: "T4"
+        descripcion: "1201–1800 estudiantes"
+      - codigo: "T5"
+        descripcion: "1801–3500 estudiantes"
+cargas:
+  - numero: 1
+    codigo: estructura_organica
+    nombre: "Estructura orgánica"
+    archivo: 01_estructura_organica.csv
+    dependeDe: []
+    obligatoriedad: OBLIGATORIA
+    columnas:
+      - campo: codigo_unidad
+        descripcion: "Código único de la unidad"
+        tipo: "Texto"
+        longitud: 20
+        obligatorio: "Sí"
+        formato: "Mayúsculas, dígitos, «-» o «_»"
+        clave: "PK"
+        validacion: "Único en el archivo"
+        ejemplo: "MATRIZ"
+      - campo: nombre
+        descripcion: "Nombre de la unidad"
+        tipo: "Texto"
+        longitud: 150
+        obligatorio: "Sí"
+        ejemplo: "Sede matriz Cuenca"
+      - campo: tipo_unidad
+        descripcion: "Tipo de unidad"
+        tipo: "Catálogo"
+        longitud: 30
+        obligatorio: "Sí"
+        formato: "SEDE_MATRIZ, SEDE, EXTENSION, CAMPUS, GOBIERNO, UNIDAD_ACADEMICA, GESTION, COMISION"
+        validacion: "COMISION solo como dato informativo, sin horas (ERS C-12)"
+        ejemplo: "SEDE_MATRIZ"
+      - campo: codigo_unidad_padre
+        descripcion: "Unidad de la que depende"
+        tipo: "Texto"
+        longitud: 20
+        obligatorio: "No"
+        clave: "FK → codigo_unidad (mismo archivo)"
+        validacion: "Debe existir; no puede formar ciclos"
+        ejemplo: "MATRIZ"
+      - campo: codigo_gestion_autorizada
+        descripcion: "Gestión autorizada por SENESCYT que representa"
+        tipo: "Catálogo"
+        longitud: 3
+        obligatorio: "Sí si tipo_unidad = GESTION"
+        formato: "G01–G21 (ver los valores permitidos)"
+        validacion: "Solo las 21 gestiones de POL 6"
+        ejemplo: "G07"
+        catalogo: GESTIONES_AUTORIZADAS
+      - campo: es_comision_permanente
+        descripcion: "Si la comisión es permanente"
+        tipo: "S/N"
+        longitud: 1
+        obligatorio: "Sí si tipo_unidad = COMISION"
+        formato: "S o N"
+        ejemplo: "S"
+      - campo: estado
+        descripcion: "Estado"
+        tipo: "Catálogo"
+        longitud: 10
+        obligatorio: "Sí"
+        formato: "ACTIVO, INACTIVO"
+        ejemplo: "ACTIVO"
+  - numero: 2
+    codigo: carreras
+    nombre: "Carreras"
+    archivo: 02_carreras.csv
+    dependeDe: [1]
+    obligatoriedad: OBLIGATORIA
+    columnas:
+      - campo: codigo_carrera
+        descripcion: "Código SENESCYT de la carrera"
+        tipo: "Texto"
+        longitud: 20
+        obligatorio: "Sí"
+        formato: "Ej.: 550613A01-P-0301"
+        clave: "PK"
+        validacion: "Único"
+        ejemplo: "550613A01-P-0301"
+      - campo: nombre
+        descripcion: "Nombre de la carrera"
+        tipo: "Texto"
+        longitud: 150
+        obligatorio: "Sí"
+        formato: "Mayúsculas"
+        ejemplo: "DESARROLLO DE SOFTWARE"
+      - campo: siglas
+        descripcion: "Siglas"
+        tipo: "Texto"
+        longitud: 10
+        obligatorio: "Sí"
+        validacion: "Única"
+        ejemplo: "DS"
+      - campo: codigo_unidad_sede
+        descripcion: "Sede, extensión o campus donde se oferta"
+        tipo: "Texto"
+        longitud: 20
+        obligatorio: "Sí"
+        clave: "FK → 01.codigo_unidad"
+        validacion: "La unidad debe ser SEDE_MATRIZ, SEDE, EXTENSION o CAMPUS"
+        ejemplo: "MATRIZ"
+      - campo: nivel_formacion
+        descripcion: "Nivel de formación"
+        tipo: "Catálogo"
+        longitud: 40
+        obligatorio: "Sí"
+        formato: "TECNICO_SUPERIOR, TECNOLOGICO_SUPERIOR, TECNOLOGICO_SUPERIOR_UNIVERSITARIO"
+        ejemplo: "TECNOLOGICO_SUPERIOR"
+      - campo: modalidad
+        descripcion: "Modalidad de estudios"
+        tipo: "Catálogo"
+        longitud: 15
+        obligatorio: "Sí"
+        formato: "PRESENCIAL, SEMIPRESENCIAL, EN_LINEA, A_DISTANCIA, DUAL, HIBRIDA"
+        validacion: "RRA art. 54"
+        ejemplo: "PRESENCIAL"
+      - campo: jornadas
+        descripcion: "Jornadas en que se oferta"
+        tipo: "Lista (;)"
+        longitud: 60
+        obligatorio: "Sí"
+        formato: "MATUTINA; VESPERTINA; NOCTURNA; INTENSIVA"
+        ejemplo: "MATUTINA; NOCTURNA"
+      - campo: campo_amplio
+        descripcion: "Campo amplio CINE"
+        tipo: "Catálogo"
+        longitud: 2
+        obligatorio: "Sí"
+        formato: "2 dígitos (ver los valores permitidos)"
+        validacion: "Debe coincidir con los dígitos del código de carrera si aplica"
+        ejemplo: "06"
+        catalogo: CAMPOS_AMPLIOS_CINE
+      - campo: campo_especifico
+        descripcion: "Campo específico CINE"
+        tipo: "Catálogo"
+        longitud: 3
+        obligatorio: "Sí"
+        formato: "3 dígitos"
+        validacion: "Debe empezar por campo_amplio"
+        ejemplo: "061"
+      - campo: campo_detallado
+        descripcion: "Campo detallado CINE"
+        tipo: "Catálogo"
+        longitud: 4
+        obligatorio: "No"
+        formato: "4 dígitos"
+        validacion: "Debe empezar por campo_especifico"
+        ejemplo: "0613"
+      - campo: numero_ciclos
+        descripcion: "Número de ciclos de la malla"
+        tipo: "Entero"
+        longitud: 2
+        obligatorio: "Sí"
+        formato: "1–10"
+        ejemplo: "5"
+      - campo: estado
+        descripcion: "Estado"
+        tipo: "Catálogo"
+        longitud: 12
+        obligatorio: "Sí"
+        formato: "VIGENTE, NO_VIGENTE, EN_CIERRE"
+        validacion: "Solo VIGENTE admite oferta"
+        ejemplo: "VIGENTE"
+  - numero: 3
+    codigo: ciclos_academicos
+    nombre: "Ciclos académicos aprobados"
+    archivo: 03_ciclos_academicos.csv
+    dependeDe: []
+    obligatoriedad: OBLIGATORIA
+    columnas:
+      - campo: codigo_periodo
+        descripcion: "Código del periodo académico"
+        tipo: "Texto"
+        longitud: 10
+        obligatorio: "Sí"
+        formato: "AAAA-I o AAAA-II (ej.: 2026-I)"
+        clave: "PK"
+        validacion: "Único"
+        ejemplo: "2026-I"
+      - campo: nombre
+        descripcion: "Nombre del periodo"
+        tipo: "Texto"
+        longitud: 80
+        obligatorio: "Sí"
+        ejemplo: "Periodo académico 2026-I"
+      - campo: fecha_inicio
+        descripcion: "Inicio de clases"
+        tipo: "Fecha"
+        longitud: 10
+        obligatorio: "Sí"
+        formato: "aaaa-mm-dd"
+        ejemplo: "2026-04-06"
+      - campo: fecha_fin
+        descripcion: "Fin del periodo"
+        tipo: "Fecha"
+        longitud: 10
+        obligatorio: "Sí"
+        formato: "aaaa-mm-dd"
+        validacion: "Posterior a fecha_inicio"
+        ejemplo: "2026-08-14"
+      - campo: semanas
+        descripcion: "Semanas de duración"
+        tipo: "Entero"
+        longitud: 2
+        obligatorio: "Sí"
+        formato: "1–30"
+        validacion: "Coherente con las fechas (±1 semana)"
+        ejemplo: "18"
+      - campo: fecha_limite_envio_senescyt
+        descripcion: "Fecha límite para remitir el distributivo"
+        tipo: "Fecha"
+        longitud: 10
+        obligatorio: "No"
+        formato: "aaaa-mm-dd"
+        validacion: "Si se omite: fecha_inicio − 30 días (RN-23)"
+        ejemplo: "2026-03-07"  # escrito a mano: 30 días antes del inicio del ejemplo (RN-23)
+      - campo: resolucion_aprobacion
+        descripcion: "Documento que aprueba el calendario"
+        tipo: "Texto"
+        longitud: 60
+        obligatorio: "No"
+        ejemplo: "SENESCYT-CAL-2026"
+      - campo: estado
+        descripcion: "Estado del periodo"
+        tipo: "Catálogo"
+        longitud: 12
+        obligatorio: "Sí"
+        formato: "APROBADO, PLANIFICADO"
+        validacion: "Solo APROBADO permite crear distributivo"
+        ejemplo: "APROBADO"
+  - numero: 4
+    codigo: asignaturas_malla
+    nombre: "Asignaturas y malla"
+    archivo: 04_asignaturas_malla.csv
+    dependeDe: [2]
+    obligatoriedad: OBLIGATORIA
+    columnas:
+      - campo: codigo_carrera
+        descripcion: "Carrera a la que pertenece"
+        tipo: "Texto"
+        longitud: 20
+        obligatorio: "Sí"
+        clave: "FK → 02.codigo_carrera"
+        validacion: "Carrera VIGENTE"
+        ejemplo: "550613A01-P-0301"
+      - campo: codigo_asignatura
+        descripcion: "Código de la asignatura"
+        tipo: "Texto"
+        longitud: 30
+        obligatorio: "Sí"
+        formato: "Ej.: DS-P-II-POO-204"
+        clave: "PK"
+        validacion: "Único"
+        ejemplo: "DS-P-II-POO-204"
+      - campo: nombre
+        descripcion: "Nombre de la asignatura"
+        tipo: "Texto"
+        longitud: 150
+        obligatorio: "Sí"
+        formato: "Mayúsculas"
+        ejemplo: "PROGRAMACIÓN ORIENTADA A OBJETOS"
+      - campo: ciclo
+        descripcion: "Ciclo o nivel de la malla"
+        tipo: "Entero"
+        longitud: 2
+        obligatorio: "Sí"
+        formato: "1–10"
+        validacion: "≤ 02.numero_ciclos"
+        ejemplo: "2"
+      - campo: unidad_organizacion_curricular
+        descripcion: "Unidad curricular"
+        tipo: "Catálogo"
+        longitud: 25
+        obligatorio: "Sí"
+        formato: "BASICA, PROFESIONAL, INTEGRACION_CURRICULAR"
+        ejemplo: "PROFESIONAL"
+      - campo: horas_semanales_clase
+        descripcion: "Horas semanales de clase (contacto con el docente)"
+        tipo: "Decimal"
+        longitud: 4
+        obligatorio: "Sí"
+        formato: "0,5–20 (punto decimal)"
+        validacion: "> 0"
+        ejemplo: "4"
+      - campo: horas_practicas_semanales
+        descripcion: "Horas semanales de práctica-experimental con docente"
+        tipo: "Decimal"
+        longitud: 4
+        obligatorio: "No"
+        formato: "0–20"
+        ejemplo: "2"
+      - campo: creditos
+        descripcion: "Créditos"
+        tipo: "Decimal"
+        longitud: 4
+        obligatorio: "No"
+        ejemplo: "3.5"  # escrito a mano
+      - campo: tronco_comun
+        descripcion: "Asignatura común a varias carreras"
+        tipo: "S/N"
+        longitud: 1
+        obligatorio: "Sí"
+        formato: "S o N"
+        validacion: "Si S, se relaja la regla de afinidad (RN-19)"
+        ejemplo: "N"
+      - campo: campo_amplio
+        descripcion: "Campo amplio CINE de la asignatura"
+        tipo: "Catálogo"
+        longitud: 2
+        obligatorio: "Sí"
+        formato: "2 dígitos"
+        validacion: "Se usa para el puntaje de afinidad"
+        ejemplo: "06"
+        catalogo: CAMPOS_AMPLIOS_CINE
+      - campo: campo_especifico
+        descripcion: "Campo específico CINE"
+        tipo: "Catálogo"
+        longitud: 3
+        obligatorio: "Sí"
+        formato: "3 dígitos"
+        validacion: "Empieza por campo_amplio"
+        ejemplo: "061"
+      - campo: palabras_clave
+        descripcion: "Términos que describen el contenido"
+        tipo: "Lista (;)"
+        longitud: 300
+        obligatorio: "Sí"
+        formato: "Ej.: programación; objetos; java"
+        validacion: "Al menos 2 términos"
+        ejemplo: "programación; objetos; clases; java"
+      - campo: codigo_version_malla
+        descripcion: "Versión de la malla aprobada"
+        tipo: "Texto"
+        longitud: 20
+        obligatorio: "No"
+        ejemplo: "DS-2023"
+      - campo: estado
+        descripcion: "Estado"
+        tipo: "Catálogo"
+        longitud: 10
+        obligatorio: "Sí"
+        formato: "ACTIVA, INACTIVA"
+        ejemplo: "ACTIVA"
+  - numero: 5
+    codigo: oferta_periodo
+    nombre: "Oferta del periodo"
+    archivo: 05_oferta_periodo.csv
+    dependeDe: [3, 4]
+    obligatoriedad: OBLIGATORIA
+    columnas:
+      - campo: codigo_periodo
+        descripcion: "Periodo"
+        tipo: "Texto"
+        longitud: 10
+        obligatorio: "Sí"
+        clave: "FK → 03.codigo_periodo"
+        validacion: "Periodo APROBADO"
+        ejemplo: "2026-I"
+      - campo: codigo_asignatura
+        descripcion: "Asignatura ofertada"
+        tipo: "Texto"
+        longitud: 30
+        obligatorio: "Sí"
+        clave: "FK → 04.codigo_asignatura"
+        validacion: "Asignatura ACTIVA"
+        ejemplo: "DS-P-II-POO-204"
+      - campo: paralelo
+        descripcion: "Paralelo"
+        tipo: "Texto"
+        longitud: 20
+        obligatorio: "Sí"
+        formato: "Ej.: A_NOCTURNA"
+        clave: "PK compuesta: periodo + asignatura + paralelo"
+        ejemplo: "A_NOCTURNA"
+      - campo: jornada
+        descripcion: "Jornada"
+        tipo: "Catálogo"
+        longitud: 12
+        obligatorio: "Sí"
+        formato: "MATUTINA, VESPERTINA, NOCTURNA, INTENSIVA"
+        validacion: "Debe estar en 02.jornadas de la carrera"
+        ejemplo: "NOCTURNA"
+      - campo: modalidad
+        descripcion: "Modalidad"
+        tipo: "Catálogo"
+        longitud: 15
+        obligatorio: "Sí"
+        formato: "Igual catálogo que 02.modalidad"
+        ejemplo: "PRESENCIAL"
+      - campo: codigo_unidad_sede
+        descripcion: "Sede donde se dicta"
+        tipo: "Texto"
+        longitud: 20
+        obligatorio: "No"
+        clave: "FK → 01.codigo_unidad"
+        validacion: "Si se omite, la de la carrera"
+        ejemplo: "MATRIZ"  # escrito a mano: la sede matriz de la carga 1
+      - campo: numero_estudiantes
+        descripcion: "Estudiantes previstos"
+        tipo: "Entero"
+        longitud: 4
+        obligatorio: "Sí"
+        formato: "≥ 0"
+        ejemplo: "28"
+      - campo: horas_semanales
+        descripcion: "Horas semanales a cubrir"
+        tipo: "Decimal"
+        longitud: 4
+        obligatorio: "No"
+        validacion: "Si se omite, 04.horas_semanales_clase"
+        ejemplo: "4"  # escrito a mano
+      - campo: franjas_horarias
+        descripcion: "Franjas semanales de clase (sin aulas)"
+        tipo: "Lista (;) de «día|inicio|fin»"
+        longitud: 200
+        obligatorio: "No"
+        formato: "día: LUN, MAR, MIE, JUE, VIE, SAB; horas HH:MM"
+        validacion: "Inicio < fin; la suma coincide con las horas semanales; un docente no puede tener franjas solapadas (RF-60)"
+        ejemplo: "LUN|18:30|20:30; MIE|18:30|20:30"
+  - numero: 6
+    codigo: docentes
+    nombre: "Docentes contratados (con ficha académica)"
+    archivo: 06_docentes.csv
+    dependeDe: [1, 2]
+    obligatoriedad: OBLIGATORIA
+    columnas:
+      - campo: tipo_identificacion
+        descripcion: "Tipo de documento"
+        tipo: "Catálogo"
+        longitud: 10
+        obligatorio: "Sí"
+        formato: "CEDULA, PASAPORTE"
+        ejemplo: "CEDULA"
+      - campo: numero_identificacion
+        descripcion: "Cédula o pasaporte"
+        tipo: "Texto"
+        longitud: 13
+        obligatorio: "Sí"
+        formato: "Cédula: 10 dígitos como TEXTO (conservar el 0 inicial)"
+        clave: "PK"
+        validacion: "Cédula con dígito verificador válido (módulo 10)"
+        ejemplo: "0100000017"
+      - campo: primer_apellido
+        descripcion: "Primer apellido"
+        tipo: "Texto"
+        longitud: 60
+        obligatorio: "Sí"
+        formato: "Mayúsculas"
+        ejemplo: "PEREZ"
+      - campo: segundo_apellido
+        descripcion: "Segundo apellido"
+        tipo: "Texto"
+        longitud: 60
+        obligatorio: "No"
+        formato: "Mayúsculas"
+        ejemplo: "LOPEZ"
+      - campo: primer_nombre
+        descripcion: "Primer nombre"
+        tipo: "Texto"
+        longitud: 60
+        obligatorio: "Sí"
+        formato: "Mayúsculas"
+        ejemplo: "JUAN"
+      - campo: segundo_nombre
+        descripcion: "Segundo nombre"
+        tipo: "Texto"
+        longitud: 60
+        obligatorio: "No"
+        formato: "Mayúsculas; vacío si no tiene"
+        ejemplo: "CARLOS"
+      - campo: correo_institucional
+        descripcion: "Correo institucional"
+        tipo: "Texto"
+        longitud: 100
+        obligatorio: "Sí"
+        formato: "usuario@dominio"
+        validacion: "Formato de correo; único"
+        ejemplo: "juan.perez@instituto.edu.ec"
+      - campo: telefono
+        descripcion: "Teléfono de contacto"
+        tipo: "Texto"
+        longitud: 10
+        obligatorio: "No"
+        ejemplo: "0999999999"  # escrito a mano: ficticio
+      - campo: tipo_personal
+        descripcion: "Tipo de personal académico"
+        tipo: "Catálogo"
+        longitud: 10
+        obligatorio: "Sí"
+        formato: "TITULAR, OCASIONAL, INVITADO, HONORARIO"
+        validacion: "RCE art. 137"
+        ejemplo: "OCASIONAL"
+      - campo: categoria_escalafon
+        descripcion: "Categoría y nivel"
+        tipo: "Catálogo"
+        longitud: 12
+        obligatorio: "Sí si TITULAR"
+        formato: "AUXILIAR_1, AUXILIAR_2, AGREGADO_1..3, PRINCIPAL_1..3, NO_APLICA"
+        ejemplo: "NO_APLICA"
+      - campo: dedicacion
+        descripcion: "Tiempo de dedicación"
+        tipo: "Catálogo"
+        longitud: 2
+        obligatorio: "Sí"
+        formato: "TC, MT, TP"
+        validacion: "RN-01"
+        ejemplo: "TC"
+      - campo: horas_contratadas
+        descripcion: "Horas semanales contratadas"
+        tipo: "Entero"
+        longitud: 2
+        obligatorio: "Sí"
+        formato: "TC = 40, MT = 20, TP ≤ 19"
+        validacion: "Coherente con dedicacion"
+        ejemplo: "40"
+      - campo: fecha_ingreso
+        descripcion: "Ingreso a la institución"
+        tipo: "Fecha"
+        longitud: 10
+        obligatorio: "Sí"
+        formato: "aaaa-mm-dd"
+        ejemplo: "2019-10-01"
+      - campo: inicio_contrato
+        descripcion: "Inicio del contrato o nombramiento vigente"
+        tipo: "Fecha"
+        longitud: 10
+        obligatorio: "Sí"
+        formato: "aaaa-mm-dd"
+        ejemplo: "2026-04-01"
+      - campo: fin_contrato
+        descripcion: "Fin del contrato"
+        tipo: "Fecha"
+        longitud: 10
+        obligatorio: "Sí si OCASIONAL"
+        formato: "aaaa-mm-dd"
+        validacion: "Posterior a inicio; debe cubrir el periodo"
+        ejemplo: "2026-08-31"
+      - campo: condicion_especial
+        descripcion: "Condición que modifica la carga"
+        tipo: "Catálogo"
+        longitud: 25
+        obligatorio: "No"
+        formato: "CUIDADOR_SUSTITUTO, MATERNIDAD_LACTANCIA, APOYO_SIES, NINGUNA"
+        validacion: "RN-15, RN-16, RN-14"
+        ejemplo: "NINGUNA"
+      - campo: codigo_carrera_base
+        descripcion: "Carrera a la que pertenece"
+        tipo: "Texto"
+        longitud: 20
+        obligatorio: "Sí"
+        clave: "FK → 02.codigo_carrera"
+        ejemplo: "550613A01-P-0301"
+      - campo: titulo_tercer_nivel
+        descripcion: "Título de tercer nivel"
+        tipo: "Texto"
+        longitud: 150
+        obligatorio: "Sí"
+        formato: "Como consta en SENESCYT"
+        ejemplo: "INGENIERO DE SISTEMAS"
+      - campo: registro_senescyt_3n
+        descripcion: "Número de registro del título"
+        tipo: "Texto"
+        longitud: 30
+        obligatorio: "No"
+        ejemplo: "1031-2020-0000001"  # escrito a mano: ficticio
+      - campo: campo_amplio_3n
+        descripcion: "Campo amplio CINE del título"
+        tipo: "Catálogo"
+        longitud: 2
+        obligatorio: "Sí"
+        formato: "2 dígitos"
+        validacion: "Afinidad (RN-24)"
+        ejemplo: "06"
+        catalogo: CAMPOS_AMPLIOS_CINE
+      - campo: campo_especifico_3n
+        descripcion: "Campo específico CINE del título"
+        tipo: "Catálogo"
+        longitud: 3
+        obligatorio: "Sí"
+        formato: "3 dígitos"
+        ejemplo: "061"
+      - campo: titulos_cuarto_nivel
+        descripcion: "Maestrías, especializaciones, doctorados"
+        tipo: "Lista (;) de «título|tipo|campo_especifico|año»"
+        longitud: 600
+        obligatorio: "No"
+        formato: "tipo: MAESTRIA, ESPECIALIZACION, DOCTORADO"
+        validacion: "Cada elemento con 4 partes; año 1950–actual"
+        ejemplo: "MÁSTER EN DESARROLLO DE APLICACIONES MÓVILES|MAESTRIA|061|2022"
+      - campo: cursos_capacitaciones
+        descripcion: "Cursos y capacitaciones"
+        tipo: "Lista (;) de «nombre|campo_especifico|horas|año»"
+        longitud: 1000
+        obligatorio: "No"
+        validacion: "horas > 0"
+        ejemplo: "Programación en Java|061|40|2023; Docencia universitaria|011|60|2021"
+      - campo: experiencia_laboral
+        descripcion: "Experiencia laboral relacionada"
+        tipo: "Lista (;) de «cargo|institución|campo_especifico|años»"
+        longitud: 1000
+        obligatorio: "No"
+        formato: "años decimal"
+        ejemplo: "Desarrollador de software|Empresa XYZ|061|3"
+      - campo: asignaturas_afines_declaradas
+        descripcion: "Asignaturas marcadas como afines en la ficha (opcional)"
+        tipo: "Lista (;) de códigos"
+        longitud: 600
+        obligatorio: "No"
+        clave: "FK → 04.codigo_asignatura"
+        validacion: "Suman al puntaje si están validadas por el coordinador"
+        ejemplo: "DS-P-II-POO-204"
+      - campo: estado
+        descripcion: "Estado laboral"
+        tipo: "Catálogo"
+        longitud: 10
+        obligatorio: "Sí"
+        formato: "ACTIVO, LICENCIA, INACTIVO"
+        validacion: "Solo ACTIVO recibe asignaciones"
+        ejemplo: "ACTIVO"
+  - numero: 7
+    codigo: politica_carga_horaria
+    nombre: "Horas según la política de contratación"
+    archivo: 07_politica_carga_horaria.csv
+    dependeDe: []
+    obligatoriedad: OBLIGATORIA
+    columnas:
+      - campo: codigo_version_politica
+        descripcion: "Versión de la política"
+        tipo: "Texto"
+        longitud: 30
+        obligatorio: "Sí"
+        formato: "Ej.: SENESCYT-2024-03"
+        clave: "PK compuesta: versión + tipo_ist + perfil"
+        ejemplo: "SENESCYT-2024-03"
+      - campo: fecha_vigencia_desde
+        descripcion: "Desde cuándo aplica"
+        tipo: "Fecha"
+        longitud: 10
+        obligatorio: "Sí"
+        formato: "aaaa-mm-dd"
+        ejemplo: "2024-03-11"
+      - campo: tipo_ist
+        descripcion: "Tipo de instituto"
+        tipo: "Catálogo"
+        longitud: 5
+        obligatorio: "Sí"
+        formato: "T1, T2, T3, T4, T5, TODOS"
+        validacion: "RN-06"
+        ejemplo: "TODOS"
+      - campo: perfil
+        descripcion: "Perfil de docente o cargo"
+        tipo: "Catálogo"
+        longitud: 40
+        obligatorio: "Sí"
+        formato: "Ver los valores permitidos"
+        ejemplo: "DOCENTE_TC"
+        catalogo: PERFILES_DE_CARGA
+      - campo: dedicacion_total
+        descripcion: "Horas semanales totales"
+        tipo: "Entero"
+        longitud: 2
+        obligatorio: "Sí"
+        formato: "≤ 40"
+        validacion: "RN-02"
+        ejemplo: "40"
+      - campo: horas_clase
+        descripcion: "Horas de clase por defecto"
+        tipo: "Decimal"
+        longitud: 4
+        obligatorio: "Sí"
+        validacion: "Entre min y max"
+        ejemplo: "22"
+      - campo: horas_clase_min
+        descripcion: "Mínimo de horas de clase"
+        tipo: "Decimal"
+        longitud: 4
+        obligatorio: "Sí"
+        ejemplo: "18"
+      - campo: horas_clase_max
+        descripcion: "Máximo de horas de clase"
+        tipo: "Decimal"
+        longitud: 4
+        obligatorio: "Sí"
+        validacion: "≥ min"
+        ejemplo: "24"
+      - campo: horas_otras_docencia
+        descripcion: "Otras actividades de docencia"
+        tipo: "Decimal"
+        longitud: 4
+        obligatorio: "Sí"
+        ejemplo: "18"
+      - campo: horas_gestion
+        descripcion: "Horas de gestión administrativa"
+        tipo: "Decimal"
+        longitud: 4
+        obligatorio: "Sí"
+        ejemplo: "0"
+      - campo: horas_investigacion_vinculacion_max
+        descripcion: "Máximo para investigación y vinculación"
+        tipo: "Decimal"
+        longitud: 4
+        obligatorio: "No"
+        ejemplo: "24"
+      - campo: tipo_regla
+        descripcion: "Si incumplirla bloquea o advierte"
+        tipo: "Catálogo"
+        longitud: 7
+        obligatorio: "Sí"
+        formato: "DURA, BLANDA"
+        ejemplo: "DURA"
+      - campo: referencia_normativa
+        descripcion: "Artículo o sección que la sustenta"
+        tipo: "Texto"
+        longitud: 120
+        obligatorio: "Sí"
+        ejemplo: "POL 6; RCE arts. 146 y 149"
+      - campo: observacion
+        descripcion: "Notas o interpretación"
+        tipo: "Texto"
+        longitud: 300
+        obligatorio: "No"
+        ejemplo: "Por defecto 22 h clase + 18 otras de docencia (C-01)"
+  - numero: 8
+    codigo: cargos_autoridades
+    nombre: "Cargos y autoridades"
+    archivo: 08_cargos_autoridades.csv
+    dependeDe: [1, 2, 6]
+    obligatoriedad: OBLIGATORIA
+    columnas:
+      - campo: numero_identificacion
+        descripcion: "Docente designado"
+        tipo: "Texto"
+        longitud: 13
+        obligatorio: "Sí"
+        clave: "FK → 06.numero_identificacion"
+        validacion: "Docente ACTIVO a tiempo completo (POL 5.4)"
+        ejemplo: "0100000017"
+      - campo: codigo_cargo
+        descripcion: "Cargo"
+        tipo: "Catálogo"
+        longitud: 40
+        obligatorio: "Sí"
+        formato: "Ver los valores permitidos"
+        clave: "PK compuesta: identificación + cargo + fecha_designacion"
+        ejemplo: "COORDINADOR_CARRERA"
+        catalogo: CARGOS
+      - campo: codigo_unidad
+        descripcion: "Unidad que dirige"
+        tipo: "Texto"
+        longitud: 20
+        obligatorio: "Sí salvo coordinador de carrera"
+        clave: "FK → 01.codigo_unidad"
+        ejemplo: "G-INV"
+      - campo: codigo_carrera
+        descripcion: "Carrera que coordina"
+        tipo: "Texto"
+        longitud: 20
+        obligatorio: "Sí si COORDINADOR_CARRERA"
+        clave: "FK → 02.codigo_carrera"
+        validacion: "Un solo coordinador vigente por carrera (RN-12)"
+        ejemplo: "550613A01-P-0301"
+      - campo: fecha_designacion
+        descripcion: "Inicio de funciones"
+        tipo: "Fecha"
+        longitud: 10
+        obligatorio: "Sí"
+        formato: "aaaa-mm-dd"
+        ejemplo: "2025-04-01"
+      - campo: fecha_fin
+        descripcion: "Fin de funciones"
+        tipo: "Fecha"
+        longitud: 10
+        obligatorio: "No"
+        formato: "aaaa-mm-dd"
+        validacion: "Máx. 2 años por periodo de designación (POL 5.4)"
+        ejemplo: "2027-03-31"
+      - campo: documento_designacion
+        descripcion: "Resolución o acción de personal"
+        tipo: "Texto"
+        longitud: 60
+        obligatorio: "Sí"
+        ejemplo: "RES-R-2025-015"
+      - campo: estado
+        descripcion: "Estado"
+        tipo: "Catálogo"
+        longitud: 10
+        obligatorio: "Sí"
+        formato: "VIGENTE, FINALIZADO"
+        validacion: "Nº de gestores dentro del rango por tipo de IST (RN-10)"
+        ejemplo: "VIGENTE"
+  - numero: 9
+    codigo: proyectos_practicas
+    nombre: "Proyectos y prácticas aprobados"
+    archivo: 09_proyectos_practicas.csv
+    dependeDe: [2, 3, 6]
+    obligatoriedad: OBLIGATORIA_SALVO_SIN_PROYECTOS
+    columnas:
+      - campo: codigo_proyecto
+        descripcion: "Código del proyecto"
+        tipo: "Texto"
+        longitud: 30
+        obligatorio: "Sí"
+        clave: "PK"
+        validacion: "Único"
+        ejemplo: "INV-2025-03"
+      - campo: nombre
+        descripcion: "Nombre del proyecto"
+        tipo: "Texto"
+        longitud: 250
+        obligatorio: "Sí"
+        ejemplo: "Sistema de monitoreo de cultivos con IoT"
+      - campo: tipo_proyecto
+        descripcion: "Tipo"
+        tipo: "Catálogo"
+        longitud: 30
+        obligatorio: "Sí"
+        formato: "INVESTIGACION, VINCULACION, PRACTICAS_PREPROFESIONALES, SERVICIO_COMUNITARIO"
+        validacion: "POL 5.3"
+        ejemplo: "INVESTIGACION"
+      - campo: codigos_carrera
+        descripcion: "Carreras involucradas"
+        tipo: "Lista (;) de códigos"
+        longitud: 200
+        obligatorio: "Sí"
+        clave: "FK → 02.codigo_carrera"
+        ejemplo: "550613A01-P-0301"
+      - campo: resolucion_ocs
+        descripcion: "Resolución del OCS que lo aprueba"
+        tipo: "Texto"
+        longitud: 60
+        obligatorio: "Sí"
+        validacion: "Obligatoria (RN-13, RN-25)"
+        ejemplo: "RES-OCS-2025-040"
+      - campo: fecha_resolucion
+        descripcion: "Fecha de la resolución"
+        tipo: "Fecha"
+        longitud: 10
+        obligatorio: "Sí"
+        formato: "aaaa-mm-dd"
+        ejemplo: "2025-03-20"
+      - campo: estado
+        descripcion: "Estado"
+        tipo: "Catálogo"
+        longitud: 15
+        obligatorio: "Sí"
+        formato: "APROBADO, EN_EJECUCION, FINALIZADO, SUSPENDIDO"
+        validacion: "Solo APROBADO o EN_EJECUCION reciben horas"
+        ejemplo: "EN_EJECUCION"
+      - campo: vigencia_inicio
+        descripcion: "Inicio"
+        tipo: "Fecha"
+        longitud: 10
+        obligatorio: "Sí"
+        formato: "aaaa-mm-dd"
+        ejemplo: "2025-04-01"
+      - campo: vigencia_fin
+        descripcion: "Fin"
+        tipo: "Fecha"
+        longitud: 10
+        obligatorio: "Sí"
+        formato: "aaaa-mm-dd"
+        validacion: "Debe solaparse con el periodo; duración típica 1–2 años"
+        ejemplo: "2026-12-31"
+      - campo: director_identificacion
+        descripcion: "Director del proyecto"
+        tipo: "Texto"
+        longitud: 13
+        obligatorio: "Sí"
+        clave: "FK → 06.numero_identificacion"
+        ejemplo: "1100000031"
+      - campo: participantes
+        descripcion: "Docentes participantes con sus horas"
+        tipo: "Lista (;) de «identificación|rol|horas_semanales»"
+        longitud: 1000
+        obligatorio: "Sí"
+        formato: "rol: DIRECTOR, INVESTIGADOR, DOCENTE_APOYO, TUTOR_PRACTICAS"
+        clave: "FK → 06.numero_identificacion"
+        validacion: "Suma de horas ≤ horas_semanales_aprobadas"
+        ejemplo: "1100000031|DIRECTOR|10; 0100000017|INVESTIGADOR|4"
+      - campo: horas_semanales_aprobadas
+        descripcion: "Total de horas semanales aprobadas"
+        tipo: "Decimal"
+        longitud: 5
+        obligatorio: "Sí"
+        formato: "> 0"
+        ejemplo: "14"
+  - numero: 10
+    codigo: matriculados_carrera
+    nombre: "Matriculados por carrera"
+    archivo: 10_matriculados_carrera.csv
+    dependeDe: [2, 3]
+    obligatoriedad: RECOMENDADA
+    columnas:
+      - campo: codigo_periodo
+        descripcion: "Periodo"
+        tipo: "Texto"
+        longitud: 10
+        obligatorio: "Sí"
+        clave: "FK → 03.codigo_periodo"
+        ejemplo: "2026-I"
+      - campo: codigo_carrera
+        descripcion: "Carrera"
+        tipo: "Texto"
+        longitud: 20
+        obligatorio: "Sí"
+        clave: "FK → 02.codigo_carrera"
+        validacion: "PK compuesta: periodo + carrera"
+        ejemplo: "550613A01-P-0301"
+      - campo: total_matriculados
+        descripcion: "Estudiantes matriculados"
+        tipo: "Entero"
+        longitud: 5
+        obligatorio: "Sí"
+        formato: "≥ 0"
+        validacion: "La suma institucional define el tipo de IST (RN-06)"
+        ejemplo: "44"
+      - campo: fecha_corte
+        descripcion: "Fecha de corte del dato"
+        tipo: "Fecha"
+        longitud: 10
+        obligatorio: "Sí"
+        formato: "aaaa-mm-dd"
+        ejemplo: "2026-04-20"
+      - campo: fuente
+        descripcion: "Origen del dato"
+        tipo: "Texto"
+        longitud: 60
+        obligatorio: "No"
+        formato: "Ej.: SIGA, Secretaría"
+        ejemplo: "SECRETARIA"

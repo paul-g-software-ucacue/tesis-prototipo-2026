@@ -1,5 +1,8 @@
-# Contrato de cargas. En B00-H03 solo tiene la sesión actual, para probar la autenticación de
-# punta a punta (D-39); las operaciones de negocio llegan con sus historias.
+# Contrato de Cargas (servicio 3, proceso datos). En B00-H03 solo tenía la sesión actual, para probar
+# la autenticación de punta a punta (D-39).
+# Desde F01-H01: las plantillas de las 10 cargas de la ERS §8.3 y su diccionario de datos (RF-05),
+# que salen de una sola definición versionada. Se descargan con «Cargas: lectura» o con «Distributivo
+# del periodo: lectura»: una lista en x-mdd-permiso son permisos alternativos (D-70).
 openapi: 3.0.3
 info:
   title: MDD · cargas
@@ -11,6 +14,8 @@ security:
 tags:
   - name: Sesion
     description: Sesión actual.
+  - name: Plantillas
+    description: Las plantillas de las 10 cargas y su diccionario de datos (RF-05).
 paths:
   /api/cargas/sesion:
     get:
@@ -30,7 +35,211 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/cargas/plantillas:
+    get:
+      tags: [Plantillas]
+      operationId: listarCargas
+      summary: Devuelve el diccionario de datos completo, con las 10 cargas en su orden.
+      x-mdd-permiso: [CARGAS:LECTURA, DISTRIBUTIVO:LECTURA]
+      responses:
+        '200':
+          description: Las convenciones comunes y las 10 cargas, cada una con sus columnas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiccionarioDeDatos'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/cargas/plantillas/{codigo}/plantilla:
+    parameters:
+      - $ref: '#/components/parameters/CodigoDeCarga'
+    get:
+      tags: [Plantillas]
+      operationId: descargarPlantilla
+      summary: Descarga la plantilla CSV de una carga, con solo su fila de encabezados.
+      description: >-
+        UTF-8 con BOM, separador coma y fin de línea CRLF (RFC 4180). Los encabezados son los
+        campos de la carga, en el orden del diccionario.
+      x-mdd-permiso: [CARGAS:LECTURA, DISTRIBUTIVO:LECTURA]
+      responses:
+        '200':
+          $ref: '#/components/responses/ArchivoCsv'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/CargaNoEncontrada'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/cargas/plantillas/{codigo}/diccionario:
+    parameters:
+      - $ref: '#/components/parameters/CodigoDeCarga'
+    get:
+      tags: [Plantillas]
+      operationId: descargarDiccionario
+      summary: Descarga el diccionario de datos de una carga en CSV.
+      description: >-
+        Una fila por columna de la plantilla, en su orden, con descripción, tipo, longitud máxima,
+        obligatoriedad, formato o valores permitidos, clave, validación y un ejemplo; después, una
+        fila vacía y las convenciones comunes. Mismo formato que la plantilla.
+      x-mdd-permiso: [CARGAS:LECTURA, DISTRIBUTIVO:LECTURA]
+      responses:
+        '200':
+          $ref: '#/components/responses/ArchivoCsv'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/CargaNoEncontrada'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
 components:
   securitySchemes:
     bearer:
       $ref: '../comun/seguridad.yaml#/components/securitySchemes/bearer'
+  parameters:
+    CodigoDeCarga:
+      name: codigo
+      in: path
+      required: true
+      description: Código de la carga, el nombre de su archivo sin el número.
+      schema:
+        type: string
+        pattern: '^[a-z_]{1,40}$'
+      example: estructura_organica
+  responses:
+    ArchivoCsv:
+      description: El archivo CSV, para guardarlo con el nombre de Content-Disposition.
+      headers:
+        Content-Disposition:
+          description: 'attachment; filename="01_estructura_organica.csv"'
+          schema:
+            type: string
+      content:
+        text/csv:
+          schema:
+            type: string
+    CargaNoEncontrada:
+      description: No hay una carga con ese código (COMUN_RECURSO_NO_ENCONTRADO).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
+  schemas:
+    Obligatoriedad:
+      description: >-
+        Si la carga es obligatoria para crear el distributivo: las 8 primeras; la 9, salvo que se
+        confirme «sin proyectos» (RF-18); la 10 es recomendada (ERS §8.3).
+      type: string
+      enum: [OBLIGATORIA, OBLIGATORIA_SALVO_SIN_PROYECTOS, RECOMENDADA]
+    ValorDeCatalogo:
+      type: object
+      required: [codigo, descripcion]
+      properties:
+        codigo:
+          type: string
+          example: G07
+        descripcion:
+          type: string
+          example: Gestor de Investigación, Desarrollo Tecnológico e Innovación
+    ColumnaDeCarga:
+      description: Una columna de la plantilla, tal como la describe el diccionario de datos.
+      type: object
+      required: [campo, descripcion, tipo, obligatorio, ejemplo]
+      properties:
+        campo:
+          type: string
+          pattern: '^[a-z0-9_]+$'
+          example: codigo_gestion_autorizada
+        descripcion:
+          type: string
+        tipo:
+          type: string
+          example: Catálogo
+        longitud:
+          description: Longitud máxima, si la tiene.
+          type: integer
+          minimum: 1
+        obligatorio:
+          description: Sí, No o la condición, como «Sí si tipo_unidad = GESTION».
+          type: string
+        formato:
+          type: string
+        clave:
+          type: string
+        validacion:
+          type: string
+        ejemplo:
+          type: string
+        valores:
+          description: Los valores permitidos, si la columna toma los de un catálogo.
+          type: array
+          items:
+            $ref: '#/components/schemas/ValorDeCatalogo'
+    Carga:
+      description: Una de las 10 cargas de la ERS §8.3.
+      type: object
+      required: [numero, codigo, nombre, archivo, dependeDe, obligatoriedad, columnas]
+      properties:
+        numero:
+          type: integer
+          minimum: 1
+          maximum: 10
+        codigo:
+          type: string
+          pattern: '^[a-z_]{1,40}$'
+          example: estructura_organica
+        nombre:
+          type: string
+          example: Estructura orgánica
+        archivo:
+          type: string
+          example: 01_estructura_organica.csv
+        dependeDe:
+          description: Los números de las cargas de las que depende.
+          type: array
+          items:
+            type: integer
+        obligatoriedad:
+          $ref: '#/components/schemas/Obligatoriedad'
+        columnas:
+          type: array
+          items:
+            $ref: '#/components/schemas/ColumnaDeCarga'
+    Convencion:
+      description: Una regla común a todas las cargas, como el separador o el formato de las fechas.
+      type: object
+      required: [tema, regla]
+      properties:
+        tema:
+          type: string
+        regla:
+          type: string
+    DiccionarioDeDatos:
+      type: object
+      required: [convenciones, cargas]
+      properties:
+        convenciones:
+          type: array
+          items:
+            $ref: '#/components/schemas/Convencion'
+        cargas:
+          type: array
+          items:
+            $ref: '#/components/schemas/Carga'
