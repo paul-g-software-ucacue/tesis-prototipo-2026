@@ -54,6 +54,13 @@ Registro de las comprobaciones de la historia (issue #36): mantener carreras, ma
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| `deploy/probar_carreras.sh` sobre el perfil reconstruido, dos veces seguidas | Todos los pasos pasan las dos veces, en unos 14 s cada una: 7 de 7 carreras, 12 de 12 mallas y 300 de 300 asignaturas; las 12 mallas con 25 asignaturas y 100 horas; los dos escenarios; los 4 códigos 409; quién lee y escribe; el registro con sus acciones. Sin sede matriz en la base, usó una temporal; la limpieza deja 0 carreras y los 11 campos amplios | Salida del script. La primera corrida falló en un solo paso, del script: Académico responde `100.00` y jq comparaba el literal; ahora compara el número | 2026-10-24 |
+| Los 10 scripts de punta a punta sobre el perfil | 10 de 10 terminan con 0 | `probar_autenticacion`, `errores`, `eventos`, `spa`, `normativa`, `periodos`, `estructura`, `plantillas`, `subida` y `carreras` | 2026-10-24 |
+| Backend completo: `./gradlew check integrationTest` | 898 pruebas, 0 fallas; BUILD SUCCESSFUL en 2 min 40 s |  | 2026-10-24 |
+| Playwright completo | 73 de 73 pasan en 2,5 min | `npx playwright test` | 2026-10-24 |
+| `shellcheck` de `probar_carreras.sh` | Sin observaciones | `koalaman/shellcheck:stable` | 2026-10-24 |
+| `deploy/equipo/probar_equipo.sh` con un constructor limpio (`BUILDX_BUILDER=mdd-limpio`) | 13 de 13 pasos OK en 4 min 57 s; memoria del equipo después de iniciar sesión: 1378,6 MiB | Salida del script | 2026-10-24 |
+| Gitleaks v8.30.1 sobre un clon en el scratchpad (montado `:ro,Z`) | Sin fugas | `gitleaks git --redact` | 2026-10-24 |
 
 ## Equipo de demostración
 
