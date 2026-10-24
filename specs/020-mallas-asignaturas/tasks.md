@@ -40,7 +40,7 @@ description: "Tareas de F03-H02: mantener carreras, mallas y asignaturas"
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear `specs/020-mallas-asignaturas/evidencia.md` con estas secciones: entorno; base (contrato, dominio, migración y repositorio); carreras (US1); mallas y asignaturas (US2); datos para la afinidad (US3); pantalla (US4); cierre; equipo de demostración; notas. Copiar `02_carreras.csv` y `04_asignaturas_malla.csv` de `backend/servicios/cargas/src/test/resources/cargas/datos-de-prueba/` a `ACA/test/resources/academico/datos-de-prueba/`, con su origen en la evidencia.
+- [X] T001 Crear `specs/020-mallas-asignaturas/evidencia.md` con estas secciones: entorno; base (contrato, dominio, migración y repositorio); carreras (US1); mallas y asignaturas (US2); datos para la afinidad (US3); pantalla (US4); cierre; equipo de demostración; notas. Copiar `02_carreras.csv` y `04_asignaturas_malla.csv` de `backend/servicios/cargas/src/test/resources/cargas/datos-de-prueba/` a `ACA/test/resources/academico/datos-de-prueba/`, con su origen en la evidencia.
 
 ---
 
@@ -48,7 +48,7 @@ description: "Tareas de F03-H02: mantener carreras, mallas y asignaturas"
 
 ### Contrato (principio IV, research §7)
 
-- [ ] T002 Cambiar `contratos/academico/openapi.yaml` según contracts/academico.md: el tag `Carreras`, los esquemas y las 13 operaciones, las de lectura con `x-mdd-permiso: [DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]` y las de escritura con `[CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]`; `example` en cada parámetro de ruta (`550613A01-P-0301`, `DS-2019`, `DS-B-I-MD-101`); en `AsignaturaNueva`, `carrera` y `horasSemanalesClase` obligatorios (escenario 1); el comentario de cabecera cita F03-H02, RF-12, RF-14 y D-70. Agregar los 4 códigos a `contratos/comun/errores.md`. Regenerar (`openApiGenerate`, `generar:api`); `verificar:ruptura` en verde.
+- [X] T002 Cambiar `contratos/academico/openapi.yaml` según contracts/academico.md: el tag `Carreras`, los esquemas y las 13 operaciones, las de lectura con `x-mdd-permiso: [DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]` y las de escritura con `[CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]`; `example` en cada parámetro de ruta (`550613A01-P-0301`, `DS-2019`, `DS-B-I-MD-101`); en `AsignaturaNueva`, `carrera` y `horasSemanalesClase` obligatorios (escenario 1); el comentario de cabecera cita F03-H02, RF-12, RF-14 y D-70. Agregar los 4 códigos a `contratos/comun/errores.md`. Regenerar (`openApiGenerate`, `generar:api`); `verificar:ruptura` en verde.
 
 ### Dominio (research §1 a §4, data-model.md)
 

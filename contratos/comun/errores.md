@@ -24,6 +24,10 @@ Cada código es estable y no depende del texto ni del mensaje de una excepción 
 | `ACADEMICO_UNIDAD_REPETIDA` | 409 | Unidad repetida | Ya existe una unidad con ese código. Elige otro. | Registrar una unidad de la estructura orgánica con el código de otra (F03-H01). |
 | `ACADEMICO_SEDE_MATRIZ_EXISTENTE` | 409 | Sede matriz existente | La institución ya tiene su sede matriz. Registra las demás como sede, extensión o campus. | Registrar una segunda sede matriz. |
 | `ACADEMICO_UNIDAD_CON_DEPENDIENTES` | 409 | Unidad con dependientes | La unidad tiene unidades activas que dependen de ella. Inactívalas antes. | Inactivar una unidad con unidades activas debajo (F03-H01). |
+| `ACADEMICO_CARRERA_REPETIDA` | 409 | Carrera repetida | Ya existe una carrera con ese código. Revisa el código SENESCYT. | Registrar una carrera con el código de otra (F03-H02). |
+| `ACADEMICO_SIGLAS_REPETIDAS` | 409 | Siglas repetidas | Otra carrera ya usa esas siglas. Elige otras. | Registrar o corregir una carrera con las siglas de otra. |
+| `ACADEMICO_MALLA_REPETIDA` | 409 | Malla repetida | Ya existe una malla con ese código de versión. Elige otro. | Registrar una malla con el código de versión de otra. |
+| `ACADEMICO_ASIGNATURA_REPETIDA` | 409 | Asignatura repetida | Ya existe una asignatura con ese código. Elige otro. | Registrar una asignatura con el código de otra. |
 | `CARGAS_FORMATO_NO_ADMITIDO` | 400 | Formato no admitido | Solo se admiten archivos CSV y XLSX. Descarga la plantilla de la carga y guárdala en uno de esos formatos. | Subir un archivo de carga que no termina en `.csv` ni `.xlsx`, o cuyo contenido no corresponde a su extensión, como un XLS antiguo renombrado (F01-H02). |
 | `CARGAS_CODIFICACION_NO_ADMITIDA` | 400 | Codificación no admitida | El CSV tiene que estar en UTF-8. Guárdalo como «CSV UTF-8» y vuelve a subirlo. | Subir un CSV que no es UTF-8 válido, por ejemplo uno en Windows-1252 con tildes. |
 | `CARGAS_VARIAS_HOJAS` | 400 | Varias hojas | El archivo XLSX tiene que tener una sola hoja, con los encabezados en la primera fila. | Subir un XLSX con más de una hoja. |
