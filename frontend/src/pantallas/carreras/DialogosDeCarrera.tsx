@@ -53,6 +53,27 @@ function detalleDe(aviso: MensajeDeError | null, campo: string) {
   return aviso?.detalles.find((detalle) => detalle.campo === campo)?.descripcion;
 }
 
+/**
+ * El texto bajo un campo: la pista y, si el servidor lo rechazó, su motivo antes de ella, para que
+ * se sepa qué corregir (F03-H02).
+ */
+function ayuda(aviso: MensajeDeError | null, campo: string, pista?: string) {
+  const motivo = detalleDe(aviso, campo);
+  if (!motivo) {
+    return pista;
+  }
+  const frase = motivo.charAt(0).toUpperCase() + motivo.slice(1);
+  const conPunto = /[.!?]$/.test(frase) ? frase : `${frase}.`;
+  return pista ? `${conPunto} ${pista}` : conPunto;
+}
+
+/** La pista del campo específico, con los dígitos del amplio elegido. */
+function pistaDelEspecifico(amplio: string) {
+  return amplio
+    ? `Tres dígitos que empiezan por ${amplio}, el campo amplio.`
+    : 'Tres dígitos que empiezan por el campo amplio.';
+}
+
 /** Lo que falta para enviar, por su nombre en pantalla, o nada. */
 function queFalta(campos: readonly [string, boolean][]) {
   const faltan = campos.filter(([, lleno]) => !lleno).map(([nombre]) => nombre);
@@ -154,7 +175,7 @@ function SeleccionDeCampoAmplio({
       value={valor}
       onChange={(evento) => alCambiar(evento.target.value)}
       error={Boolean(detalleDe(aviso, 'campoAmplio'))}
-      helperText={detalleDe(aviso, 'campoAmplio') ?? 'De la CINE.'}
+      helperText={ayuda(aviso, 'campoAmplio', 'De la CINE.')}
       slotProps={SELECCION}
     >
       <option value="">Elige uno</option>
@@ -282,7 +303,7 @@ export function DialogoDatosDeCarrera({
           value={codigo}
           onChange={(evento) => setCodigo(evento.target.value.toUpperCase())}
           error={Boolean(detalleDe(aviso, 'codigo'))}
-          helperText={detalleDe(aviso, 'codigo') ?? 'Por ejemplo, 550613A01-P-0301.'}
+          helperText={ayuda(aviso, 'codigo', 'Por ejemplo, 550613A01-P-0301.')}
           slotProps={{ htmlInput: { maxLength: 20 } }}
         />
       )}
@@ -291,7 +312,7 @@ export function DialogoDatosDeCarrera({
         value={nombre}
         onChange={(evento) => setNombre(evento.target.value.toUpperCase())}
         error={Boolean(detalleDe(aviso, 'nombre'))}
-        helperText={detalleDe(aviso, 'nombre')}
+        helperText={ayuda(aviso, 'nombre')}
         slotProps={{ htmlInput: { maxLength: 150 } }}
       />
       <TextField
@@ -299,7 +320,7 @@ export function DialogoDatosDeCarrera({
         value={siglas}
         onChange={(evento) => setSiglas(evento.target.value.toUpperCase())}
         error={Boolean(detalleDe(aviso, 'siglas'))}
-        helperText={detalleDe(aviso, 'siglas') ?? 'Únicas entre las carreras.'}
+        helperText={ayuda(aviso, 'siglas', 'Únicas entre las carreras.')}
         slotProps={{ htmlInput: { maxLength: 10 } }}
       />
       <TextField
@@ -308,9 +329,7 @@ export function DialogoDatosDeCarrera({
         value={sede}
         onChange={(evento) => setSede(evento.target.value)}
         error={Boolean(detalleDe(aviso, 'sede'))}
-        helperText={
-          detalleDe(aviso, 'sede') ?? 'La sede matriz, una sede, una extensión o un campus.'
-        }
+        helperText={ayuda(aviso, 'sede', 'La sede matriz, una sede, una extensión o un campus.')}
         slotProps={SELECCION}
       >
         <option value="">Elige una</option>
@@ -326,7 +345,7 @@ export function DialogoDatosDeCarrera({
         value={nivel}
         onChange={(evento) => setNivel(evento.target.value as NivelDeFormacion | '')}
         error={Boolean(detalleDe(aviso, 'nivelFormacion'))}
-        helperText={detalleDe(aviso, 'nivelFormacion')}
+        helperText={ayuda(aviso, 'nivelFormacion')}
         slotProps={SELECCION}
       >
         <option value="">Elige uno</option>
@@ -342,7 +361,7 @@ export function DialogoDatosDeCarrera({
         value={modalidad}
         onChange={(evento) => setModalidad(evento.target.value as Modalidad | '')}
         error={Boolean(detalleDe(aviso, 'modalidad'))}
-        helperText={detalleDe(aviso, 'modalidad')}
+        helperText={ayuda(aviso, 'modalidad')}
         slotProps={SELECCION}
       >
         <option value="">Elige una</option>
@@ -366,7 +385,7 @@ export function DialogoDatosDeCarrera({
           ))}
         </FormGroup>
         {detalleDe(aviso, 'jornadas') && (
-          <FormHelperText>{detalleDe(aviso, 'jornadas')}</FormHelperText>
+          <FormHelperText>{ayuda(aviso, 'jornadas')}</FormHelperText>
         )}
       </FormControl>
       <SeleccionDeCampoAmplio valor={amplio} campos={campos} aviso={aviso} alCambiar={setAmplio} />
@@ -375,9 +394,7 @@ export function DialogoDatosDeCarrera({
         value={especifico}
         onChange={(evento) => setEspecifico(evento.target.value)}
         error={Boolean(detalleDe(aviso, 'campoEspecifico'))}
-        helperText={
-          detalleDe(aviso, 'campoEspecifico') ?? 'Tres dígitos que empiezan por el campo amplio.'
-        }
+        helperText={ayuda(aviso, 'campoEspecifico', pistaDelEspecifico(amplio))}
         slotProps={{ htmlInput: { maxLength: 3, inputMode: 'numeric' } }}
       />
       <TextField
@@ -385,7 +402,11 @@ export function DialogoDatosDeCarrera({
         value={detallado}
         onChange={(evento) => setDetallado(evento.target.value)}
         error={Boolean(detalleDe(aviso, 'campoDetallado'))}
-        helperText={detalleDe(aviso, 'campoDetallado') ?? 'Opcional; cuatro dígitos.'}
+        helperText={ayuda(
+          aviso,
+          'campoDetallado',
+          'Opcional; cuatro dígitos que empiezan por el campo específico.',
+        )}
         slotProps={{ htmlInput: { maxLength: 4, inputMode: 'numeric' } }}
       />
       <TextField
@@ -394,7 +415,7 @@ export function DialogoDatosDeCarrera({
         value={ciclos}
         onChange={(evento) => setCiclos(evento.target.value)}
         error={Boolean(detalleDe(aviso, 'numeroCiclos'))}
-        helperText={detalleDe(aviso, 'numeroCiclos') ?? 'De 1 a 10.'}
+        helperText={ayuda(aviso, 'numeroCiclos', 'De 1 a 10.')}
         slotProps={{ htmlInput: { min: 1, max: 10 } }}
       />
       {falta && <Typography color="error">{falta}</Typography>}
@@ -439,7 +460,7 @@ export function DialogoMalla({
         value={codigo}
         onChange={(evento) => setCodigo(evento.target.value.toUpperCase())}
         error={Boolean(detalleDe(aviso, 'codigo'))}
-        helperText={detalleDe(aviso, 'codigo') ?? 'Por ejemplo, DS-2019.'}
+        helperText={ayuda(aviso, 'codigo', 'Por ejemplo, DS-2019.')}
         slotProps={{ htmlInput: { maxLength: 20 } }}
       />
       {falta && <Typography color="error">{falta}</Typography>}
@@ -609,7 +630,7 @@ export function DialogoDatosDeAsignatura({
           value={codigo}
           onChange={(evento) => setCodigo(evento.target.value.toUpperCase())}
           error={Boolean(detalleDe(aviso, 'codigo'))}
-          helperText={detalleDe(aviso, 'codigo') ?? 'Por ejemplo, DS-P-II-POO-204.'}
+          helperText={ayuda(aviso, 'codigo', 'Por ejemplo, DS-P-II-POO-204.')}
           slotProps={{ htmlInput: { maxLength: 30 } }}
         />
       )}
@@ -618,7 +639,7 @@ export function DialogoDatosDeAsignatura({
         value={nombre}
         onChange={(evento) => setNombre(evento.target.value)}
         error={Boolean(detalleDe(aviso, 'nombre'))}
-        helperText={detalleDe(aviso, 'nombre')}
+        helperText={ayuda(aviso, 'nombre')}
         slotProps={{ htmlInput: { maxLength: 150 } }}
       />
       <TextField
@@ -627,9 +648,11 @@ export function DialogoDatosDeAsignatura({
         value={ciclo}
         onChange={(evento) => setCiclo(evento.target.value)}
         error={Boolean(detalleDe(aviso, 'ciclo'))}
-        helperText={
-          detalleDe(aviso, 'ciclo') ?? `De 1 a ${String(carrera.numeroCiclos)}, los de la carrera.`
-        }
+        helperText={ayuda(
+          aviso,
+          'ciclo',
+          `De 1 a ${String(carrera.numeroCiclos)}, los de la carrera.`,
+        )}
         slotProps={{ htmlInput: { min: 1, max: carrera.numeroCiclos } }}
       />
       <TextField
@@ -638,7 +661,7 @@ export function DialogoDatosDeAsignatura({
         value={unidad}
         onChange={(evento) => setUnidad(evento.target.value as UnidadDeOrganizacionCurricular | '')}
         error={Boolean(detalleDe(aviso, 'unidadOrganizacionCurricular'))}
-        helperText={detalleDe(aviso, 'unidadOrganizacionCurricular')}
+        helperText={ayuda(aviso, 'unidadOrganizacionCurricular')}
         slotProps={SELECCION}
       >
         <option value="">Elige una</option>
@@ -654,7 +677,7 @@ export function DialogoDatosDeAsignatura({
         value={clase}
         onChange={(evento) => setClase(evento.target.value)}
         error={Boolean(detalleDe(aviso, 'horasSemanalesClase'))}
-        helperText={detalleDe(aviso, 'horasSemanalesClase') ?? 'De 0,5 a 20.'}
+        helperText={ayuda(aviso, 'horasSemanalesClase', 'De 0,5 a 20.')}
         slotProps={{ htmlInput: { min: 0.5, max: 20, step: 0.5 } }}
       />
       <TextField
@@ -663,7 +686,7 @@ export function DialogoDatosDeAsignatura({
         value={practicas}
         onChange={(evento) => setPracticas(evento.target.value)}
         error={Boolean(detalleDe(aviso, 'horasPracticasSemanales'))}
-        helperText={detalleDe(aviso, 'horasPracticasSemanales') ?? 'Opcional; de 0 a 20.'}
+        helperText={ayuda(aviso, 'horasPracticasSemanales', 'Opcional; de 0 a 20.')}
         slotProps={{ htmlInput: { min: 0, max: 20, step: 0.5 } }}
       />
       <TextField
@@ -672,7 +695,7 @@ export function DialogoDatosDeAsignatura({
         value={creditos}
         onChange={(evento) => setCreditos(evento.target.value)}
         error={Boolean(detalleDe(aviso, 'creditos'))}
-        helperText={detalleDe(aviso, 'creditos') ?? 'Opcional.'}
+        helperText={ayuda(aviso, 'creditos', 'Opcional.')}
         slotProps={{ htmlInput: { min: 0, step: 0.5 } }}
       />
       <FormControlLabel
@@ -690,9 +713,7 @@ export function DialogoDatosDeAsignatura({
         value={especifico}
         onChange={(evento) => setEspecifico(evento.target.value)}
         error={Boolean(detalleDe(aviso, 'campoEspecifico'))}
-        helperText={
-          detalleDe(aviso, 'campoEspecifico') ?? 'Tres dígitos que empiezan por el campo amplio.'
-        }
+        helperText={ayuda(aviso, 'campoEspecifico', pistaDelEspecifico(amplio))}
         slotProps={{ htmlInput: { maxLength: 3, inputMode: 'numeric' } }}
       />
       <TextField
@@ -700,9 +721,7 @@ export function DialogoDatosDeAsignatura({
         value={palabras}
         onChange={(evento) => setPalabras(evento.target.value)}
         error={Boolean(detalleDe(aviso, 'palabrasClave'))}
-        helperText={
-          detalleDe(aviso, 'palabrasClave') ?? 'Al menos dos, separadas por punto y coma.'
-        }
+        helperText={ayuda(aviso, 'palabrasClave', 'Al menos dos, separadas por punto y coma.')}
         slotProps={{ htmlInput: { maxLength: 300 } }}
       />
       {falta && <Typography color="error">{falta}</Typography>}

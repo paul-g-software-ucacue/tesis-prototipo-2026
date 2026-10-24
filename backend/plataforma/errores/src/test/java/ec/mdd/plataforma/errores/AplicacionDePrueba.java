@@ -67,7 +67,9 @@ class AplicacionDePrueba {
     record Datos(
             @NotNull String nombre,
             @Size(min = 3, max = 10) String codigo,
-            @Pattern(regexp = "[a-z]+") String clave) {}
+            @Pattern(regexp = "[a-z]+") String clave,
+            @Size(min = 2) List<String> etiquetas,
+            @Size(min = 1, max = 4) List<String> jornadas) {}
 
     @RestController
     static class Prueba {

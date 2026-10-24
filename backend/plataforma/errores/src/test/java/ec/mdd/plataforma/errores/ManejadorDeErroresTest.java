@@ -211,6 +211,25 @@ class ManejadorDeErroresTest {
     }
 
     @Test
+    void dadasListasCortasOVacias_cuandoLlegaLaSolicitud_entoncesHablaDeElementosNoDeCaracteres()
+            throws Exception {
+        HttpResponse<String> respuesta =
+                pedir(
+                        "POST",
+                        "/api/prueba/datos",
+                        "application/json",
+                        null,
+                        "{\"nombre\":\"N\",\"etiquetas\":[\"QW\"],\"jornadas\":[]}");
+
+        assertThat(respuesta.statusCode()).isEqualTo(400);
+        assertThat(respuesta.body())
+                .contains(
+                        "{\"campo\":\"etiquetas\",\"descripcion\":\"debe tener al menos 2 elementos\"}")
+                .contains("{\"campo\":\"jornadas\",\"descripcion\":\"es obligatorio\"}")
+                .doesNotContain("caracteres");
+    }
+
+    @Test
     void dadoUnCuerpoMalFormado_cuandoLlega_entonces400CuerpoIlegibleSinElMensajeDelAnalizador()
             throws Exception {
         HttpResponse<String> respuesta =
