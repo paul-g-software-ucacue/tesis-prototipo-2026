@@ -61,10 +61,22 @@ Registro de las comprobaciones de la historia (issue #36): mantener carreras, ma
 | `shellcheck` de `probar_carreras.sh` | Sin observaciones | `koalaman/shellcheck:stable` | 2026-10-24 |
 | `deploy/equipo/probar_equipo.sh` con un constructor limpio (`BUILDX_BUILDER=mdd-limpio`) | 13 de 13 pasos OK en 4 min 57 s; memoria del equipo después de iniciar sesión: 1378,6 MiB | Salida del script | 2026-10-24 |
 | Gitleaks v8.30.1 sobre un clon en el scratchpad (montado `:ro,Z`) | Sin fugas | `gitleaks git --redact` | 2026-10-24 |
+| Runs del PR #136, como borrador y listo | 12 de 12 en verde, incluido `perfil-consolidado` con `probar_carreras.sh` | PR #136 | 2026-10-24 |
+| Fusión con *squash*, con la aprobación del autor | `f9cf77e` | PR #136 | 2026-10-24 |
+| Corrección de los mensajes que encontró el autor (ver Notas) | 11 de 11 runs en verde; fusionado como `d3762af` | PR #137 | 2026-10-24 |
 
 ## Equipo de demostración
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Despliegue de `f9cf77e` | «Sano en 44 s»; `academico` en V4 con los 11 campos amplios y 0 carreras | Estado del deployment `demostracion` en GitHub; consulta de solo lectura a `mdd-postgres-1` | 2026-10-24 |
+| El autor, con `vicerrectorado.demo`, registra una carrera en su sede matriz `001`, una malla y una asignatura | Registradas: carrera `001-` (08:29:25), malla `MAT-2026` (08:30:38), asignatura `MAT` (08:36:18), cada una con su acción en el registro | Capturas del autor; `academico.registro_cambio` | 2026-10-24 |
+| SC-001, primera medición: registrar una asignatura en menos de 2 minutos | **No se cumplió**: unos 5 min 40 s entre la malla y la asignatura, con tres rechazos. «debe tener al menos 2 caracteres» en una lista de un solo término, y el motivo «no tiene el formato esperado» tapaba la pista del campo específico | Capturas del autor; `academico.registro_cambio` | 2026-10-24 |
+| El autor, con `consolidacion.demo`, ve la carrera y su malla en solo lectura | Sin «Registrar carrera» ni la columna «Acciones» | Captura del autor | 2026-10-24 |
+| Despliegue de `d3762af` (PR #137) | «Sano en 51 s» | Estado del deployment `demostracion` en GitHub | 2026-10-24 |
+| SC-001, segunda medición, con los mensajes corregidos | **Se cumple**: la malla `SOC-2026` a las 09:20:00 y la asignatura `SOC` a las 09:21:19, como mucho 1 min 19 s, sin rechazos. El autor no dio la hora de inicio; la cota es el registro de la malla. Antes, «Falta: modalidad, número de ciclos» y la pista «Tres dígitos que empiezan por 07» guiaron una carrera sin enviarla | Capturas del autor; `academico.registro_cambio` | 2026-10-24 |
 
 ## Notas
+
+- La comprobación del autor encontró dos mensajes que no decían qué corregir, y eso hizo fallar SC-001 la primera vez. El PR #137 los corrigió: la plataforma cuenta el tamaño de una lista en elementos, y una lista vacía es «es obligatorio»; la pantalla muestra el motivo antes de la pista. La segunda medición cumple SC-001.
+- Los datos del equipo de demostración (carreras `001-` e `IST-023`, mallas `MAT-2026` y `SOC-2026`, asignaturas `MAT` y `SOC`) son del autor y se quedan; las consultas a la base fueron de solo lectura.
