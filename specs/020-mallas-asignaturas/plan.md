@@ -13,7 +13,7 @@
 - **Contrato:** 13 operaciones y 4 códigos `ACADEMICO_*`.
 - **SPA:** la pantalla «Carreras y mallas».
 - **Punta a punta:** `deploy/probar_carreras.sh`, con las 7 carreras, 12 mallas y 300 asignaturas de los datos de prueba.
-- **Glosario:** «Jornada» gana vespertina, y se agregan «Modalidad» y «Nivel de formación», pendiente de la aprobación del autor antes del código (research §10).
+- **Glosario:** «Jornada» gana vespertina, y se agregan «Modalidad» y «Nivel de formación»; aprobado por el autor y aplicado el 2026-10-24 (research §10).
 
 Los detalles y las alternativas están en [research.md](research.md).
 
@@ -49,7 +49,7 @@ Los detalles y las alternativas están en [research.md](research.md).
 |---|---|---|
 | I. Capas | Reglas en `Carrera`, `Malla`, `Asignatura` y `DatosMaestros`; la aplicación orquesta; los adaptadores traducen. | ✅ |
 | II. DDD según el subdominio | Académico es de soporte: valores con sus reglas y un valor para las reglas entre entidades, sin agregado elaborado ni eventos (research §1). | ✅ |
-| III. Lenguaje ubicuo | Carrera, Malla, Asignatura, Ciclo, Tronco común y Campo de conocimiento, del glosario; «Jornada», «Modalidad» y «Nivel de formación» se ponen al día antes del código (research §10). | ⏳ pendiente de aprobación |
+| III. Lenguaje ubicuo | Carrera, Malla, Asignatura, Ciclo, Tronco común y Campo de conocimiento, del glosario; «Jornada», «Modalidad» y «Nivel de formación» se aprobaron y aplicaron antes del código (research §10). | ✅ |
 | IV. API primero | Las 13 operaciones y los 4 códigos en el contrato antes del código. | ✅ |
 | V. Límites | Todo en Académico; la sede se valida con su propia estructura orgánica. El diccionario de datos solo lo lee una prueba, como archivo. | ✅ |
 | VI. Las reglas son datos | Los campos amplios son filas; los demás catálogos, enumeraciones únicas comparadas con el diccionario (research §2). | ✅ |
@@ -61,9 +61,9 @@ Los detalles y las alternativas están en [research.md](research.md).
 | XIII. Errores | 4 códigos en el catálogo; los datos inválidos, 400 con su campo. | ✅ |
 | §6.4 Decisiones | Ninguna nueva: aplica D-69 y D-70. Siguiente número libre: D-72 · ADR-022. | ✅ |
 
-**Resultado del gate antes de la fase 0:** pasa, con una condición: los tres términos del glosario (research §10) se aprueban y se aplican antes del código.
+**Resultado del gate antes de la fase 0:** pasa. Los tres términos del glosario quedaron aprobados y aplicados el 2026-10-24.
 
-**Revisión después de la fase 1:** pasa. [data-model.md](data-model.md) y [contracts/](contracts/) solo agregan lo listado. Dos ajustes menores de la spec se proponen en research §2 (FR-006 y el nombre CINE del campo específico).
+**Revisión después de la fase 1:** pasa. [data-model.md](data-model.md) y [contracts/](contracts/) solo agregan lo listado. Los dos ajustes de la spec de research §2 (FR-006 y el nombre CINE del campo específico) quedaron aprobados y aplicados.
 
 ## Project Structure
 
@@ -104,7 +104,7 @@ deploy/probar_carreras.sh, .github/workflows/perfil-consolidado.yml
 
 ## Fases de implementación (guía para /speckit-tasks)
 
-1. **Glosario:** el autor aprueba los tres términos y se aplican (copia `modelo_dominio.md.antes-F03-H02`); los dos ajustes de la spec de research §2.
+1. **Glosario y spec:** aprobados por el autor el 2026-10-24 y ya aplicados (copia `modelo_dominio.md.antes-F03-H02`).
 2. **Contrato y catálogo:** las 13 operaciones y los 4 códigos.
 3. **Dominio,** con las pruebas primero: enumeraciones (comparadas con el diccionario), `CampoConocimiento`, `Carrera`, `Malla`, `Asignatura`, `DatosMaestros`, con las cargas 02 y 04 de prueba.
 4. **Persistencia:** V4 con los 11 campos amplios, y el repositorio, con Testcontainers.

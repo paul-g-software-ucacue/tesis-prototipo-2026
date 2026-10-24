@@ -89,7 +89,7 @@ Escenario: Datos para la afinidad
   Entonces muestra su campo amplio y específico, sus palabras clave y si es de tronco común
 ```
 
-1. **Given** una asignatura guardada, **When** la consulto, **Then** veo su campo amplio y su campo específico con su nombre CINE, sus palabras clave una por una y si es de tronco común.
+1. **Given** una asignatura guardada, **When** la consulto, **Then** veo su campo amplio con su nombre CINE, su campo específico, sus palabras clave una por una y si es de tronco común. El diccionario no trae los nombres de los campos específicos, así que se muestra su código.
 
 ---
 
@@ -135,7 +135,7 @@ Como quien mantiene los datos maestros, o como quien los consulta, quiero una pa
 - **FR-003**: Se DEBE poder registrar, consultar, corregir y cambiar el estado de carreras, mallas y asignaturas; los códigos no cambian y nada se borra.
 - **FR-004**: Una asignatura NO DEBE guardarse sin carrera ni sin horas semanales de clase, y el rechazo DEBE decir cada dato que falta (RF-14).
 - **FR-005**: Cada dato inválido DEBE rechazarse entero, con su campo y el motivo en español, sin dejar nada a medias.
-- **FR-006**: Los valores permitidos (niveles, modalidades, jornadas, unidades de organización curricular, campos CINE, estados) DEBEN ser los del diccionario de datos, como datos y no como código repartido (principio VI).
+- **FR-006**: Los valores permitidos (niveles, modalidades, jornadas, unidades de organización curricular, campos CINE, estados) DEBEN ser los del diccionario de datos, cada lista en un solo lugar, y una prueba DEBE comprobar que coinciden (principio VI).
 - **FR-007**: La consulta de una asignatura DEBE mostrar su campo amplio y específico, sus palabras clave y si es de tronco común (RN-19, RN-24).
 - **FR-008**: Mantener carreras y asignaturas DEBE exigir un permiso de escritura, y consultarlas un permiso de lectura, validados en el servidor (ADR-021). Mantener DEBE exigir «Catálogos y datos maestros: escritura» o «Distributivo del periodo: escritura», y consultar, «Distributivo del periodo: lectura» o «Catálogos y datos maestros: lectura» (D-70, aclaración 1).
 - **FR-009**: Cada registro, corrección y cambio de estado DEBE quedar registrado con quién, cuándo, qué cambió, el valor anterior y el nuevo (principio VII).

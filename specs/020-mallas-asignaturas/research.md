@@ -23,7 +23,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
   - **Una prueba de Académico compara cada enumeración con el diccionario de datos** de las cargas 2 y 4 (`backend/servicios/cargas/src/main/resources/cargas/diccionario-de-datos.yaml`, leído como archivo, sin depender del módulo Cargas): si el diccionario cambia, la prueba falla.
   - Los **11 campos amplios CINE** son una tabla, `campo_amplio`, precargada por la migración con su código y su nombre (los de la hoja de catálogos del diccionario), porque la pantalla muestra su nombre (US3). Los campos específicos y detallados se validan por su forma (3 y 4 dígitos que empiezan por el anterior): el diccionario no trae su lista.
 - **Por qué:** son catálogos fijos de la norma (RRA, CINE), no cifras de la política; cambiarlos es cambiar la ERS. La prueba contra el diccionario evita que las dos listas se desalineen.
-- **Ajuste de la spec (propuesto):** FR-006 pasa a decir «los valores permitidos DEBEN ser los del diccionario de datos, en un solo lugar, y una prueba lo comprueba». US3, escenario 1, dice «con su nombre CINE» para el campo amplio; el específico solo tiene código.
+- **Ajuste de la spec (aprobado y aplicado el 2026-10-24):** FR-006 pasa a decir «los valores permitidos DEBEN ser los del diccionario de datos, en un solo lugar, y una prueba lo comprueba». US3, escenario 1, dice «con su nombre CINE» para el campo amplio; el específico solo tiene código.
 - **Alternativa:** una tabla por catálogo. Agrega tablas y lecturas para listas que no cambian sin cambiar la ERS.
 
 ## 3. Las reglas de cada entidad
@@ -106,7 +106,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 
 ## 10. Glosario (principio III)
 
-- La spec y el código usan «Modalidad», «Nivel de formación» y «Jornada». «Jornada» está en el glosario, pero como «Matutina, nocturna o intensiva», y la carga 02 admite también **vespertina**. «Modalidad» y «Nivel de formación» no están. **Propuesta, pendiente de la aprobación del autor antes del código** (copia `modelo_dominio.md.antes-F03-H02`):
+- La spec y el código usan «Modalidad», «Nivel de formación» y «Jornada». «Jornada» está en el glosario, pero como «Matutina, nocturna o intensiva», y la carga 02 admite también **vespertina**. «Modalidad» y «Nivel de formación» no están. **Aprobada por el autor y aplicada el 2026-10-24** (copia `modelo_dominio.md.antes-F03-H02`):
 
   | Término | Significado | En el código | Contexto | Fuente |
   |---|---|---|---|---|
