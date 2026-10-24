@@ -40,7 +40,7 @@ description: "Tareas de F03-H03: mantener la oferta del periodo"
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear `specs/021-oferta-periodo/evidencia.md` con estas secciones: entorno; base (contrato, dominio, migración y repositorio); registrar la oferta (US1); paralelos y horas a cubrir (US2); corregir y retirar (US3); pantalla (US4); cierre; equipo de demostración; notas. Copiar `05_oferta_periodo.csv` de `backend/servicios/cargas/src/test/resources/cargas/datos-de-prueba/` a `ACA/test/resources/academico/datos-de-prueba/`, con su origen en la evidencia.
+- [X] T001 Crear `specs/021-oferta-periodo/evidencia.md` con estas secciones: entorno; base (contrato, dominio, migración y repositorio); registrar la oferta (US1); paralelos y horas a cubrir (US2); corregir y retirar (US3); pantalla (US4); cierre; equipo de demostración; notas. Copiar `05_oferta_periodo.csv` de `backend/servicios/cargas/src/test/resources/cargas/datos-de-prueba/` a `ACA/test/resources/academico/datos-de-prueba/`, con su origen en la evidencia.
 
 ---
 
@@ -48,7 +48,7 @@ description: "Tareas de F03-H03: mantener la oferta del periodo"
 
 ### Contrato (principio IV, research §7)
 
-- [ ] T002 Cambiar `contratos/academico/openapi.yaml` según contracts/academico.md:
+- [X] T002 Cambiar `contratos/academico/openapi.yaml` según contracts/academico.md:
   - el tag `Oferta`, los esquemas y las 5 operaciones;
   - las de lectura con `x-mdd-permiso: [OFERTA:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]` y las de escritura con `[CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]`;
   - `example` en cada parámetro de ruta (`2026-I`, `DS-P-II-POO-204`, `A_NOCTURNA`);
