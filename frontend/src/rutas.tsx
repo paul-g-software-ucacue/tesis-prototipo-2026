@@ -6,6 +6,7 @@ import { IniciarSesion } from './pantallas/IniciarSesion';
 import { Inicio } from './pantallas/Inicio';
 import { NoEncontrada } from './pantallas/NoEncontrada';
 import { Normativa } from './pantallas/normativa/Normativa';
+import { Carreras } from './pantallas/carreras/Carreras';
 import { Estructura } from './pantallas/estructura/Estructura';
 import { Plantillas } from './pantallas/plantillas/Plantillas';
 import { Periodos } from './pantallas/periodos/Periodos';
@@ -53,6 +54,14 @@ export const rutasDeLaSpa: RouteObject[] = [
         element: (
           <RutaConPermiso cualquieraDe={LECTURA_DE_LA_ESTRUCTURA}>
             <Estructura />
+          </RutaConPermiso>
+        ),
+      },
+      {
+        path: 'carreras',
+        element: (
+          <RutaConPermiso cualquieraDe={LECTURA_DE_LA_ESTRUCTURA}>
+            <Carreras />
           </RutaConPermiso>
         ),
       },

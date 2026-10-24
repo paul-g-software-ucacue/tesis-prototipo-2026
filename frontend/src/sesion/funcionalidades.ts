@@ -39,13 +39,23 @@ export function nombreDelTipo(tipo: TipoDePermiso): string {
 }
 
 /**
- * Quién lee la estructura orgánica: quien lee el distributivo o los catálogos (D-70). Lo comparten
- * la ruta y la entrada del menú.
+ * Quién lee la estructura orgánica y las carreras y mallas: quien lee el distributivo o los
+ * catálogos (D-70, F03-H02). Lo comparten las rutas y las entradas del menú.
  */
 export const LECTURA_DE_LA_ESTRUCTURA: readonly { funcionalidad: string; tipo: TipoDePermiso }[] = [
   { funcionalidad: 'DISTRIBUTIVO', tipo: 'LECTURA' },
   { funcionalidad: 'CATALOGOS', tipo: 'LECTURA' },
 ];
+
+/**
+ * Quién mantiene las carreras, sus mallas y sus asignaturas: el Administrador o el Vicerrector
+ * (D-70, F03-H02).
+ */
+export const ESCRITURA_DE_LAS_CARRERAS: readonly { funcionalidad: string; tipo: TipoDePermiso }[] =
+  [
+    { funcionalidad: 'CATALOGOS', tipo: 'ESCRITURA' },
+    { funcionalidad: 'DISTRIBUTIVO', tipo: 'ESCRITURA' },
+  ];
 
 /**
  * Quién descarga las plantillas de carga: quien lee las cargas o el distributivo (D-70, F01-H01).

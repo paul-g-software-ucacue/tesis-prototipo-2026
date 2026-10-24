@@ -42,6 +42,7 @@ const ENTRADAS: Entrada[] = [
     permiso: { funcionalidad: 'DISTRIBUTIVO', tipo: 'LECTURA' },
   },
   { ruta: '/estructura', texto: 'Estructura orgánica', permiso: LECTURA_DE_LA_ESTRUCTURA },
+  { ruta: '/carreras', texto: 'Carreras y mallas', permiso: LECTURA_DE_LA_ESTRUCTURA },
   { ruta: '/plantillas', texto: 'Plantillas de carga', permiso: DESCARGA_DE_PLANTILLAS },
 ];
 
