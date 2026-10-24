@@ -19,7 +19,7 @@ Lo que agrega la historia al esquema `academico` y al dominio de Académico. Las
 | `estado` | `varchar(10)` | `OFERTADA`, `RETIRADA` |
 | `registrada_en`, `registrada_por` | `timestamptz`, `varchar(64)` | quién y cuándo |
 
-Clave primaria `(periodo, asignatura, paralelo)`. Índice por `periodo` para la consulta.
+Clave primaria `(periodo, asignatura, paralelo)`; como empieza por `periodo`, también sirve de índice para la consulta.
 
 ### `registro_cambio`
 
@@ -31,7 +31,7 @@ El `check` de `accion` gana `ASIGNATURA_PARALELO_REGISTRADA`, `ASIGNATURA_PARALE
 |---|---|
 | `EstadoDeAsignaturaParalelo` | `OFERTADA`, `RETIRADA` |
 | `AsignaturaParalelo` | *record*: `periodo`, `asignatura`, `paralelo`, `jornada` (`Jornada`), `modalidad` (`Modalidad`), `sede` (opcional), `estudiantes`, `horasIndicadas` (opcional, `BigDecimal`), `estado`; `nueva(...)`, `corregida(...)` → `Correccion(asignaturaParalelo, cambios)`, `conEstado(...)` |
-| `OfertaDelPeriodo` | el periodo, sus asignaturas-paralelo y los `DatosMaestros`; `ofertar(...)`, `corregir(...)`, `retirar(...)`, `volverAOfertar(...)`; `horasDe(asignaturaParalelo)` (las efectivas), `horasACubrir()` por asignatura, por carrera y del periodo |
+| `OfertaDelPeriodo` | el periodo, sus asignaturas-paralelo y los `DatosMaestros`; `ofertar(...)`, `corregir(...)`, `cambiarEstado(...)` (retirar o volver a ofertar), `con(...)`; `horasDe`, `sedeDe` (las efectivas), `porEncimaDeLaAsignatura`, `horasACubrir()` por asignatura, por carrera y del periodo |
 | `HorasACubrir` | *record* con los totales: del periodo, por carrera y por asignatura, con el número de paralelos ofertados |
 | `OfertaCerrada`, `AsignaturaParaleloRepetida` | las excepciones que lanza `OfertaDelPeriodo`, en el dominio como `PeriodoCerrado` |
 

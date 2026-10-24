@@ -75,9 +75,9 @@ description: "Tareas de F03-H03: mantener la oferta del periodo"
 
 ### Persistencia (data-model.md)
 
-- [ ] T005 Prueba primero, en `IACA/AcademicoEsquemaIntegrationTest.java` (ampliar): `asignatura_paralelo` y sus `check` rechazan cada combinación inválida (paralelo en minúsculas, jornada o modalidad fuera del catálogo, estudiantes negativos, horas 0,4, estado desconocido, la misma clave dos veces, un periodo o una asignatura que no existen); `registro_cambio` acepta las 4 acciones nuevas y sigue aceptando las 17 de antes. Tiene que fallar sin la migración.
-- [ ] T006 Crear `ACA/main/resources/db/migration/academico/V5__oferta_del_periodo.sql` según data-model.md, con un comentario que cite RF-15 y F03-H03. T005 pasa.
-- [ ] T007 Prueba primero, en `IACA/RepositorioOfertaJdbcIntegrationTest.java`:
+- [X] T005 Prueba primero, en `IACA/AcademicoEsquemaIntegrationTest.java` (ampliar): `asignatura_paralelo` y sus `check` rechazan cada combinación inválida (paralelo en minúsculas, jornada o modalidad fuera del catálogo, estudiantes negativos, horas 0,4, estado desconocido, la misma clave dos veces, un periodo o una asignatura que no existen); `registro_cambio` acepta las 4 acciones nuevas y sigue aceptando las 17 de antes. Tiene que fallar sin la migración.
+- [X] T006 Crear `ACA/main/resources/db/migration/academico/V5__oferta_del_periodo.sql` según data-model.md, con un comentario que cite RF-15 y F03-H03. T005 pasa.
+- [X] T007 Prueba primero, en `IACA/RepositorioOfertaJdbcIntegrationTest.java`:
   - registra y lee una asignatura-paralelo igual, campo por campo, con y sin horas y sede;
   - `delPeriodo` trae solo las del periodo, ordenadas por asignatura y paralelo;
   - `guardar` cambia cada dato y el estado;
