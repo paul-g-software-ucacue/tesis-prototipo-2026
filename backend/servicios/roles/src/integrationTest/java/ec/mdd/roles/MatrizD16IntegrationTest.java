@@ -67,7 +67,8 @@ class MatrizD16IntegrationTest {
                             "PROYECTOS:LECTURA:PROPIO"),
                     "RESPONSABLE_CONSOLIDACION",
                     List.of(
-                            // D-71: ejecuta las cargas, como el rol que inicia el proceso (F01-H02).
+                            // D-71: ejecuta las cargas, como el rol que inicia el proceso
+                            // (F01-H02).
                             "CARGAS:ESCRITURA",
                             "CARGAS:LECTURA",
                             "CONSOLIDACION:APROBACION",
@@ -80,7 +81,8 @@ class MatrizD16IntegrationTest {
                     "VICERRECTOR",
                     List.of(
                             "BITACORA:LECTURA",
-                            // D-71: ejecuta las cargas, como el rol que inicia el proceso (F01-H02).
+                            // D-71: ejecuta las cargas, como el rol que inicia el proceso
+                            // (F01-H02).
                             "CARGAS:ESCRITURA",
                             "CARGAS:LECTURA",
                             "DISTRIBUTIVO:APROBACION",
