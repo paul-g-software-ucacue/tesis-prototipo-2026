@@ -46,10 +46,12 @@ class RespuestaErrorTest {
         assertThat(CodigosComunes.segunEstado(405)).isEqualTo(CodigosComunes.METODO_NO_PERMITIDO);
         assertThat(CodigosComunes.segunEstado(406)).isEqualTo(CodigosComunes.FORMATO_NO_ACEPTADO);
         assertThat(CodigosComunes.segunEstado(415)).isEqualTo(CodigosComunes.TIPO_NO_SOPORTADO);
+        assertThat(CodigosComunes.segunEstado(413))
+                .isEqualTo(CodigosComunes.CONTENIDO_DEMASIADO_GRANDE);
         assertThat(CodigosComunes.segunEstado(409)).isEqualTo(CodigosComunes.SOLICITUD_INVALIDA);
         assertThat(CodigosComunes.segunEstado(503))
                 .isEqualTo(CodigosComunes.SERVICIO_NO_DISPONIBLE);
         assertThat(CodigosComunes.segunEstado(502)).isEqualTo(CodigosComunes.ERROR_INTERNO);
-        assertThat(CodigosComunes.TODOS).hasSize(11);
+        assertThat(CodigosComunes.TODOS).hasSize(12);
     }
 }

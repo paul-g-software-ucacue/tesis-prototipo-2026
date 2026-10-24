@@ -38,7 +38,7 @@ description: "Tareas de F01-H02: subir un archivo y validar su estructura"
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear `specs/019-subir-archivo-carga/evidencia.md` con estas secciones: entorno; base (plataforma, D-71, contrato y dominio); «Archivo válido» (US1); «Archivo que no se puede leer» (US2); pantalla (US3); cierre; equipo de demostración; notas. Agregar `versionApachePoi=5.5.1` a `backend/gradle.properties`, con el comentario de research §5 (la 6.0.0 tiene 4 días), y `implementation "org.apache.poi:poi-ooxml:${versionApachePoi}"` a `backend/servicios/cargas/build.gradle`; `./gradlew :servicios:cargas:dependencies` muestra el árbol, que se anota en la evidencia.
+- [X] T001 Crear `specs/019-subir-archivo-carga/evidencia.md` con estas secciones: entorno; base (plataforma, D-71, contrato y dominio); «Archivo válido» (US1); «Archivo que no se puede leer» (US2); pantalla (US3); cierre; equipo de demostración; notas. Agregar `versionApachePoi=5.5.1` a `backend/gradle.properties`, con el comentario de research §5 (la 6.0.0 tiene 4 días), y `implementation "org.apache.poi:poi-ooxml:${versionApachePoi}"` a `backend/servicios/cargas/build.gradle`; `./gradlew :servicios:cargas:dependencies` muestra el árbol, que se anota en la evidencia.
 
 ---
 
@@ -46,15 +46,15 @@ description: "Tareas de F01-H02: subir un archivo y validar su estructura"
 
 ### Plataforma de errores (research §3 y §6)
 
-- [ ] T002 Prueba primero, en `ERR/src/test/java/…/ManejadorDeErroresTest.java` (ampliar) y en las pruebas de `ERRN`: una entrada `EntradaCatalogo.conDetalles(excepcion, definicion, error -> detalles)` responde su estado y su código con los detalles que calcula la función; una entrada sin detalles sigue igual; un `MaxUploadSizeExceededException` responde 413 `COMUN_CONTENIDO_DEMASIADO_GRANDE` (hoy, `COMUN_SOLICITUD_INVALIDA`). Agregar `conDetalles` a `EntradaCatalogo`, el uso en `ManejadorDeErrores`, `CodigosComunes.CONTENIDO_DEMASIADO_GRANDE` y su caso 413 en `segunEstado`, y la fila en `contratos/comun/errores.md`. T002 pasa; las pruebas de errores de todos los servicios siguen en verde.
+- [X] T002 Prueba primero, en `ERR/src/test/java/…/ManejadorDeErroresTest.java` (ampliar) y en las pruebas de `ERRN`: una entrada `EntradaCatalogo.conDetalles(excepcion, definicion, error -> detalles)` responde su estado y su código con los detalles que calcula la función; una entrada sin detalles sigue igual; un `MaxUploadSizeExceededException` responde 413 `COMUN_CONTENIDO_DEMASIADO_GRANDE` (hoy, `COMUN_SOLICITUD_INVALIDA`). Agregar `conDetalles` a `EntradaCatalogo`, el uso en `ManejadorDeErrores`, `CodigosComunes.CONTENIDO_DEMASIADO_GRANDE` y su caso 413 en `segunEstado`, y la fila en `contratos/comun/errores.md`. T002 pasa; las pruebas de errores de todos los servicios siguen en verde.
 
 ### D-71 en Roles (data-model.md)
 
-- [ ] T003 Prueba primero, en `ROL/integrationTest/java/ec/mdd/roles/MatrizD16IntegrationTest.java` (ampliar): `RESPONSABLE_CONSOLIDACION` y `VICERRECTOR` tienen `CARGAS:LECTURA` y `CARGAS:ESCRITURA` con alcance `TODO`; los demás roles, sin cambios. Tiene que fallar sin la migración. Crear `ROL/main/resources/db/migration/roles/V7__cargas_para_quien_inicia.sql` como `V5__vicerrector_escribe_normativa.sql`, con un comentario que cite D-71 y D-63. Ajustar, si fijan los permisos de esos dos roles, `AutorizacionServiciosTest` (Roles) y `AutorizacionEnMemoria` (Usuarios). T003 pasa.
+- [X] T003 Prueba primero, en `ROL/integrationTest/java/ec/mdd/roles/MatrizD16IntegrationTest.java` (ampliar): `RESPONSABLE_CONSOLIDACION` y `VICERRECTOR` tienen `CARGAS:LECTURA` y `CARGAS:ESCRITURA` con alcance `TODO`; los demás roles, sin cambios. Tiene que fallar sin la migración. Crear `ROL/main/resources/db/migration/roles/V7__cargas_para_quien_inicia.sql` como `V5__vicerrector_escribe_normativa.sql`, con un comentario que cite D-71 y D-63. Ajustar, si fijan los permisos de esos dos roles, `AutorizacionServiciosTest` (Roles) y `AutorizacionEnMemoria` (Usuarios). T003 pasa.
 
 ### Contrato (principio IV, research §7)
 
-- [ ] T004 Cambiar `contratos/cargas/openapi.yaml` según contracts/cargas.md: el tag `Subida`, los esquemas `FormatoDeArchivo` y `LecturaDeArchivo` (`archivo` hasta 255, `registros` ≥ 1), la operación `validarArchivo` (`POST /api/cargas/plantillas/{codigo}/archivo`, `multipart/form-data` con la parte `archivo` en `format: binary`, `x-mdd-permiso: CARGAS:ESCRITURA`) con sus respuestas 200, 400, 404 y 413; el comentario de cabecera cita F01-H02, RF-06, RF-07, RF-57 y D-71. Agregar los 7 códigos `CARGAS_*` a `contratos/comun/errores.md` con los textos de contracts/cargas.md. Regenerar (`openApiGenerate`, `generar:api`); `verificar:ruptura` en verde.
+- [X] T004 Cambiar `contratos/cargas/openapi.yaml` según contracts/cargas.md: el tag `Subida`, los esquemas `FormatoDeArchivo` y `LecturaDeArchivo` (`archivo` hasta 255, `registros` ≥ 1), la operación `validarArchivo` (`POST /api/cargas/plantillas/{codigo}/archivo`, `multipart/form-data` con la parte `archivo` en `format: binary`, `x-mdd-permiso: CARGAS:ESCRITURA`) con sus respuestas 200, 400, 404 y 413; el comentario de cabecera cita F01-H02, RF-06, RF-07, RF-57 y D-71. Agregar los 7 códigos `CARGAS_*` a `contratos/comun/errores.md` con los textos de contracts/cargas.md. Regenerar (`openApiGenerate`, `generar:api`); `verificar:ruptura` en verde.
 
 ### Dominio (research §2, data-model.md)
 

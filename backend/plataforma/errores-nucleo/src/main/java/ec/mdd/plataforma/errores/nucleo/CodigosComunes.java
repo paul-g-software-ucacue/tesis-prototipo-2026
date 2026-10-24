@@ -59,6 +59,17 @@ public final class CodigosComunes {
                     "Formato no disponible",
                     "La respuesta no está disponible en el formato solicitado.");
 
+    /**
+     * 413: el cuerpo supera el máximo que acepta el proceso, por ejemplo un archivo de carga de más
+     * de 10 MB (F01-H02).
+     */
+    public static final DefinicionDeCodigo CONTENIDO_DEMASIADO_GRANDE =
+            new DefinicionDeCodigo(
+                    "COMUN_CONTENIDO_DEMASIADO_GRANDE",
+                    413,
+                    "Contenido demasiado grande",
+                    "El contenido enviado supera el tamaño máximo que admite el sistema.");
+
     /** 415: el tipo de contenido no está soportado. */
     public static final DefinicionDeCodigo TIPO_NO_SOPORTADO =
             new DefinicionDeCodigo(
@@ -112,6 +123,7 @@ public final class CodigosComunes {
                     RECURSO_NO_ENCONTRADO,
                     METODO_NO_PERMITIDO,
                     FORMATO_NO_ACEPTADO,
+                    CONTENIDO_DEMASIADO_GRANDE,
                     TIPO_NO_SOPORTADO,
                     SERVICIO_NO_DISPONIBLE,
                     EVENTO_NO_RECONOCIDO,
@@ -131,6 +143,7 @@ public final class CodigosComunes {
             case 404 -> RECURSO_NO_ENCONTRADO;
             case 405 -> METODO_NO_PERMITIDO;
             case 406 -> FORMATO_NO_ACEPTADO;
+            case 413 -> CONTENIDO_DEMASIADO_GRANDE;
             case 415 -> TIPO_NO_SOPORTADO;
             case 503 -> SERVICIO_NO_DISPONIBLE;
             default -> estado >= 500 ? ERROR_INTERNO : SOLICITUD_INVALIDA;

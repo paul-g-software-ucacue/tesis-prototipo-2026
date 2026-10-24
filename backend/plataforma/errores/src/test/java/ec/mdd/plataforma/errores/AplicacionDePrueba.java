@@ -1,5 +1,6 @@
 package ec.mdd.plataforma.errores;
 
+import ec.mdd.plataforma.errores.fixtures.dominio.ColumnasDistintas;
 import ec.mdd.plataforma.errores.fixtures.dominio.EsperaParaReintentar;
 import ec.mdd.plataforma.errores.fixtures.dominio.HorasExcedidas;
 import ec.mdd.plataforma.errores.fixtures.dominio.HorasExcedidasEnFeriado;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 /** Aplicación mínima para probar la traducción de errores con un servidor real. */
 @SpringBootApplication
@@ -46,7 +48,19 @@ class AplicacionDePrueba {
                             EsperaParaReintentar.class,
                             new DefinicionDeCodigo(
                                     "PRUEBA_ESPERA", 429, "Espera", "Vuelve a intentarlo luego."),
-                            error -> Map.of("Retry-After", String.valueOf(error.segundos()))));
+                            error -> Map.of("Retry-After", String.valueOf(error.segundos()))),
+                    EntradaCatalogo.conDetalles(
+                            ColumnasDistintas.class,
+                            new DefinicionDeCodigo(
+                                    "PRUEBA_COLUMNAS", 400, "Columnas", "Revisa las columnas."),
+                            error ->
+                                    error.faltan().stream()
+                                            .map(
+                                                    columna ->
+                                                            new DetalleRespuesta(
+                                                                    columna,
+                                                                    "Falta en el archivo."))
+                                            .toList()));
         }
     }
 
@@ -57,6 +71,16 @@ class AplicacionDePrueba {
 
     @RestController
     static class Prueba {
+
+        @GetMapping("/api/prueba/columnas")
+        void columnas() {
+            throw new ColumnasDistintas(List.of("codigo_carrera", "siglas"));
+        }
+
+        @GetMapping("/api/prueba/demasiado-grande")
+        void demasiadoGrande() {
+            throw new MaxUploadSizeExceededException(10);
+        }
 
         @GetMapping("/api/prueba/horas")
         String horas() {

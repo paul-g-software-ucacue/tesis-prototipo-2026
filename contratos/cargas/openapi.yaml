@@ -3,6 +3,10 @@
 # Desde F01-H01: las plantillas de las 10 cargas de la ERS §8.3 y su diccionario de datos (RF-05),
 # que salen de una sola definición versionada. Se descargan con «Cargas: lectura» o con «Distributivo
 # del periodo: lectura»: una lista en x-mdd-permiso son permisos alternativos (D-70).
+# Desde F01-H02: subir el CSV o XLSX de una carga y validar su estructura (RF-06, RF-07): formato,
+# UTF-8, separador, una hoja, encabezados de la plantilla y número de registros. El archivo pasa
+# por una fuente de datos (RF-57) y no se guarda. Exige «Cargas: escritura», que tienen Talento
+# Humano, el Responsable de consolidación y el Vicerrector académico (D-71).
 openapi: 3.0.3
 info:
   title: MDD · cargas
@@ -16,6 +20,8 @@ tags:
     description: Sesión actual.
   - name: Plantillas
     description: Las plantillas de las 10 cargas y su diccionario de datos (RF-05).
+  - name: Subida
+    description: Subir el archivo de una carga y validar su estructura (RF-06, RF-07).
 paths:
   /api/cargas/sesion:
     get:
@@ -109,6 +115,51 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/cargas/plantillas/{codigo}/archivo:
+    parameters:
+      - $ref: '#/components/parameters/CodigoDeCarga'
+    post:
+      tags: [Subida]
+      operationId: validarArchivo
+      summary: Lee el CSV o XLSX de una carga y responde cuántos registros tiene, sin guardarlo.
+      description: >-
+        Valida la estructura del archivo, en este orden: hasta 5 MB; CSV o XLSX, por la extensión
+        y el contenido; UTF-8 (con o sin BOM); una sola hoja; que se pueda leer; los encabezados de
+        la plantilla, en su orden; al menos un registro. El contenido de cada fila lo revisa
+        F01-H03. Los detalles de un error nunca traen valores del archivo.
+      x-mdd-permiso: CARGAS:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [archivo]
+              properties:
+                archivo:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: El archivo se puede leer.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LecturaDeArchivo'
+        '400':
+          $ref: '#/components/responses/ArchivoNoValido'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/CargaNoEncontrada'
+        '413':
+          $ref: '#/components/responses/ArchivoDemasiadoGrande'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
 components:
   securitySchemes:
     bearer:
@@ -135,6 +186,24 @@ components:
         text/csv:
           schema:
             type: string
+    ArchivoNoValido:
+      description: >-
+        El archivo no se puede leer: CARGAS_FORMATO_NO_ADMITIDO, CARGAS_CODIFICACION_NO_ADMITIDA,
+        CARGAS_VARIAS_HOJAS, CARGAS_ARCHIVO_ILEGIBLE (con la fila en el detalle),
+        CARGAS_ENCABEZADOS_DISTINTOS (un detalle por columna) o CARGAS_ARCHIVO_SIN_REGISTROS; o
+        COMUN_SOLICITUD_INVALIDA sin la parte archivo (errores.md).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
+    ArchivoDemasiadoGrande:
+      description: >-
+        CARGAS_ARCHIVO_DEMASIADO_GRANDE, con más de 5 MB, o COMUN_CONTENIDO_DEMASIADO_GRANDE, con
+        más de 10 MB, que corta el proceso (errores.md).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
     CargaNoEncontrada:
       description: No hay una carga con ese código (COMUN_RECURSO_NO_ENCONTRADO).
       content:
@@ -243,3 +312,27 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Carga'
+    FormatoDeArchivo:
+      type: string
+      enum: [CSV, XLSX]
+    LecturaDeArchivo:
+      description: El resultado de leer un archivo que se puede usar.
+      type: object
+      required: [carga, archivo, formato, registros]
+      properties:
+        carga:
+          type: string
+          pattern: '^[a-z_]{1,40}$'
+          example: docentes
+        archivo:
+          description: El nombre del archivo, sin ruta.
+          type: string
+          maxLength: 255
+          example: 06_docentes.csv
+        formato:
+          $ref: '#/components/schemas/FormatoDeArchivo'
+        registros:
+          description: Las filas de datos, sin el encabezado ni las filas vacías del final.
+          type: integer
+          minimum: 1
+          example: 47
