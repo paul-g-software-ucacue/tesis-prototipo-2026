@@ -53,6 +53,14 @@ Registro de las comprobaciones de la historia (issue #28): subir el CSV o XLSX d
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Perfil reconstruido con el código de la rama | ✅ Con el builder `docker-container` limpio (`mdd-limpio`), por la instantánea rota de BuildKit del daemon; `roles` en V7 | `docker compose build --builder mdd-limpio` | 2026-10-23 |
+| T016 · `probar_subida.sh`, dos corridas seguidas | ✅ 10 de 10 pasos en cada una, a la primera: el CSV y el XLSX de carreras, 2 registros; uno de 22 000 registros (unos 2 MB) por el frontend (nginx); uno con punto y coma; sin `codigo_carrera`, 400 con su columna; columna de más, Windows-1252, sin registros, PDF, 6 MB (413 `CARGAS_ARCHIVO_DEMASIADO_GRANDE`) y 11 MB (413 `COMUN_CONTENIDO_DEMASIADO_GRANDE`); `consolidacion.demo` y `vicerrectorado.demo` suben (D-71); `coordinacion.demo` y `docente.demo`, 403; una carga inexistente, 404 | salida del script | 2026-10-23 |
+| `shellcheck` del script | ✅ Sin observaciones | `koalaman/shellcheck:stable` | 2026-10-23 |
+| T017 · Backend: `./gradlew check integrationTest` | ✅ 845 pruebas (748 unitarias y 97 de integración), 0 fallas. La primera corrida falló en `spotlessJavaCheck` de Roles (el formato de `MatrizD16IntegrationTest`); corregido con `spotlessApply` | `backend/**/build/test-results` | 2026-10-23 |
+| T017 · SPA | ✅ lint, formato, tipos, `verificar:ruptura` y 67 de Playwright. Vitest: 146 pruebas, 95,1 % de líneas, con `--testTimeout=15000` desde la línea de comandos por la carga del PC (como en F01-H01) | `npx vitest run --coverage` | 2026-10-23 |
+| T017 · Los 9 scripts del perfil | ✅ autenticacion, errores, eventos, normativa, periodos, spa, estructura, plantillas y subida: todos los pasos pasan | `deploy/probar_*.sh` | 2026-10-23 |
+| T017 · `probar_equipo.sh` | ✅ 0 a 11: todos pasan, a la primera; memoria 1 381,7 MiB (F01-H01: 1 365,4 MiB; POI suma unos 16 MiB). Con `BUILDX_BUILDER=mdd-limpio`; el builder se borró después | `deploy/equipo/probar_equipo.sh` | 2026-10-23 |
+| T017 · Gitleaks sobre un clon en el scratchpad | ✅ 13 commits de la rama, sin fugas | gitleaks v8.30.1, `--log-opts=origin/main..HEAD` | 2026-10-23 |
 
 ## Equipo de demostración
 
