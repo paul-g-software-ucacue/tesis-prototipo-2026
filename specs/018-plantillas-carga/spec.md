@@ -49,7 +49,7 @@ Escenario: Plantilla de una carga
 ```
 
 1. **Given** cualquiera de las 10 cargas, **When** descargo su plantilla, **Then** recibo un archivo CSV con un nombre que dice qué carga es (por ejemplo, `01_estructura_organica.csv`), con una sola fila: los encabezados de la carga, en minúsculas y en el orden del diccionario.
-2. **Given** la plantilla descargada, **When** la abro en una hoja de cálculo, **Then** las tildes y la «ñ» se ven bien y cada encabezado queda en su columna.
+2. **Given** la plantilla descargada, **When** la abro en una hoja de cálculo, escribo un valor con tilde o «ñ» (por ejemplo, «Peñafiel Muñoz») y la guardo como CSV, **Then** cada encabezado queda en su columna y el valor se conserva igual al volver a abrirla.
 
 ---
 
@@ -67,6 +67,7 @@ Como quien prepara los archivos de carga, quiero el diccionario de datos de cada
 2. **Given** una columna cuyo formato remite a un catálogo, **When** la consulto, **Then** el diccionario dice qué valores admite.
 3. **Given** el diccionario, **When** lo consulto, **Then** también trae las convenciones comunes a todas las cargas: separador, comillas, listas con «;» y «|», fechas aaaa-mm-dd, decimales con punto, S o N, cédula como texto y celdas vacías para lo opcional.
 4. **Given** una carga, **When** descargo su diccionario, **Then** recibo un CSV aparte (por ejemplo, `01_estructura_organica_diccionario.csv`) con una fila por columna; y en la pantalla, al desplegar la carga, veo lo mismo (aclaración 2).
+5. **Given** el diccionario descargado, **When** lo abro en una hoja de cálculo, **Then** las tildes y la «ñ» de las descripciones se ven bien y cada dato queda en su columna.
 
 ---
 
@@ -80,7 +81,7 @@ Como quien prepara los archivos de carga, quiero una pantalla «Plantillas de ca
 
 **Acceptance Scenarios**:
 
-1. **Given** las 10 cargas, **When** abro «Plantillas de carga», **Then** las veo en el orden de la ERS §8.3 (1 Estructura orgánica a 10 Matriculados por carrera), cada una con su nombre, las cargas de las que depende, si es obligatoria (las 9 primeras; la 10 es recomendada) y su número de columnas.
+1. **Given** las 10 cargas, **When** abro «Plantillas de carga», **Then** las veo en el orden de la ERS §8.3 (1 Estructura orgánica a 10 Matriculados por carrera), cada una con su nombre, las cargas de las que depende, si es obligatoria (las 9 primeras; la 10 es recomendada) y su número de columnas; una carga que no depende de otra muestra «—».
 2. **Given** una carga en la pantalla, **When** pulso descargar la plantilla o el diccionario, **Then** recibo ese CSV; al desplegar la carga veo su diccionario.
 3. **Given** un usuario sin el permiso, **When** intenta abrir la pantalla o descargar, **Then** no la ve en el menú y el servidor responde «Acceso no autorizado» (403).
 
@@ -113,7 +114,8 @@ Como quien prepara los archivos de carga, quiero una pantalla «Plantillas de ca
 
 - **Carga**: archivo de una de las 10 entidades que entra al MDD con validación y vista previa (glosario §7, `Carga`, Ingesta de datos); tiene número de orden, nombre, nombre de archivo, las cargas de las que depende y si es obligatoria. No es la carga horaria.
 - **Plantilla de carga**: CSV vacío con su diccionario de datos para una carga (`PlantillaCarga`).
-- **Columna de la plantilla**: una entrada del diccionario, con su nombre, descripción, tipo, longitud máxima, obligatoriedad, formato o valores permitidos, clave, validación y ejemplo.
+- **Diccionario de datos**: la descripción de las columnas de las 10 cargas y las convenciones comunes (glosario, `DiccionarioDeDatos`).
+- **Columna**: una entrada del diccionario de datos (`ColumnaDeCarga`), con su nombre, descripción, tipo, longitud máxima, obligatoriedad, formato o valores permitidos, clave, validación y ejemplo.
 - **Carga obligatoria**: carga sin la cual no se crea el distributivo: las 9 primeras (`obligatoria`).
 
 ## Success Criteria *(mandatory)*
@@ -122,7 +124,7 @@ Como quien prepara los archivos de carga, quiero una pantalla «Plantillas de ca
 
 - **SC-001**: Quien prepara los archivos descarga la plantilla y el diccionario de cualquier carga desde la pantalla en menos de 30 segundos, sin ayuda.
 - **SC-002**: Las 10 plantillas traen exactamente las 115 columnas de los anexos de la ERS, en su orden, y el 100 % de esas columnas tienen en el diccionario tipo, obligatoriedad y un ejemplo.
-- **SC-003**: Una plantilla abierta en una hoja de cálculo muestra bien las tildes y la «ñ», con cada encabezado en su columna.
+- **SC-003**: El diccionario abierto en una hoja de cálculo muestra bien las tildes y la «ñ», con cada dato en su columna. Una plantilla llenada en una hoja de cálculo con un valor con tilde y guardada como CSV lo conserva.
 - **SC-004**: El 100 % de los intentos de descargar sin el permiso se rechazan, también llamando directamente al servidor.
 
 ## Assumptions

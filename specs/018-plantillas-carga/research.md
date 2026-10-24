@@ -57,7 +57,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 
 ## 6. El formato de los archivos
 
-- **Plantilla:** CSV en UTF-8 **con BOM**, separador coma, fin de línea CRLF (RFC 4180, como dicen las convenciones), una sola fila: los encabezados. El BOM es para SC-003: sin él, Excel abre el CSV como Windows-1252 y rompe las tildes y la «ñ». F01-H02 debe aceptar el BOM al leer.
+- **Plantilla:** CSV en UTF-8 **con BOM**, separador coma, fin de línea CRLF (RFC 4180, como dicen las convenciones), una sola fila: los encabezados. El BOM es para SC-003. En el diccionario, sin él, Excel abre el CSV como Windows-1252 y rompe las tildes y la «ñ». En la plantilla, cuyos encabezados son ASCII, sirve para que la hoja de cálculo la abra y la guarde en UTF-8, y así no se pierdan las tildes de lo que escribe el usuario. F01-H02 debe aceptar el BOM al leer.
 - **Diccionario:** el mismo formato. Una fila de encabezados (`numero, campo, descripcion, tipo, longitud_maxima, obligatorio, formato_o_valores, clave, validacion, ejemplo`) y una fila por columna, en el orden de la plantilla. Después, una fila vacía y el bloque de convenciones (`tema, regla`), que son las mismas en todas las cargas. El diccionario es para leerlo en una hoja de cálculo; nada lo vuelve a leer, porque F01-H02 usa la definición.
 - **Nombres:** `01_estructura_organica.csv` y `01_estructura_organica_diccionario.csv`, en `Content-Disposition: attachment`.
 - **Comillas:** un valor con coma, comillas o salto de línea va entre comillas dobles, con las internas duplicadas. El escritor CSV, además, antepone un apóstrofo a un valor que empiece como fórmula (principio IX), aunque la definición ya los prohíbe (§3).
@@ -74,6 +74,7 @@ Decisiones técnicas del plan. Cada sección tiene la decisión, por qué y las 
 - **Decisión:** tres operaciones nuevas en `contratos/cargas/openapi.yaml` (detalle en [contracts/cargas.md](contracts/cargas.md)):
   - `listarCargas`: el diccionario completo en JSON, para la pantalla;
   - `descargarPlantilla` y `descargarDiccionario`: `text/csv` con `type: string`, para que el generador devuelva `ResponseEntity<String>` y el controlador ponga el BOM y el `Content-Disposition`.
+- Los modelos generados (`Carga`, `ColumnaDeCarga`, `Convencion`) se llaman igual que los records del dominio, con los términos del glosario. El controlador usa el nombre completo de los del dominio, como `EstructuraControlador`.
 - Una carga que no existe responde 404 con `COMUN_RECURSO_NO_ENCONTRADO`, como una unidad inexistente en Académico (F03-H01). No hace falta un código nuevo.
 - Las respuestas de error declaran `application/json` junto al `text/csv`. Hay que comprobar que un 403 o un 404 con `Accept: text/csv` llegan como el `Error` común y no como 406. Lo cubre la prueba de contrato y, si falla, el plan se ajusta en las tareas.
 - **Alternativa:** que la SPA arme los CSV desde el JSON. Repite el formato en dos lados, y «llamando directamente al servidor» (SC-004) no tendría qué descargar.

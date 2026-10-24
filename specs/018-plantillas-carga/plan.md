@@ -119,4 +119,4 @@ deploy/probar_plantillas.sh, .github/workflows/perfil-consolidado.yml
 | Pieza | Por qué hace falta | Alternativa más simple descartada porque |
 |---|---|---|
 | Oráculo con los encabezados de la ERS en las pruebas | El YAML se transcribe a mano: una columna mal copiada rompería F01-H02 | Confiar en la transcripción: un error no se vería hasta cargar un archivo. |
-| BOM en los CSV | SC-003: sin él, Excel rompe las tildes y la «ñ» | CSV sin BOM: es más limpio para máquinas, pero quien prepara los archivos usa una hoja de cálculo. |
+| BOM en los CSV | SC-003: sin él, Excel rompe las tildes del diccionario y puede guardar la plantilla llenada en otra codificación | CSV sin BOM: es más limpio para máquinas, pero quien prepara los archivos usa una hoja de cálculo. |
