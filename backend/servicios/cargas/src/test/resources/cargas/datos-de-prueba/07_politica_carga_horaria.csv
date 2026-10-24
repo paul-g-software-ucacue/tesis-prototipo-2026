@@ -1,0 +1,23 @@
+codigo_version_politica,fecha_vigencia_desde,tipo_ist,perfil,dedicacion_total,horas_clase,horas_clase_min,horas_clase_max,horas_otras_docencia,horas_gestion,horas_investigacion_vinculacion_max,tipo_regla,referencia_normativa,observacion
+SENESCYT-2024-03,2024-03-11,TODOS,DOCENTE_TC,40,22,18,24,18,0,,DURA,POL 6; RCE arts. 146 y 149,Por defecto 22 h clase + 18 otras de docencia (C-01)
+SENESCYT-2024-03,2024-03-11,TODOS,DOCENTE_MT,20,12,8,12,8,0,,DURA,POL 6; RCE art. 147,El texto de POL 6 dice que MT no tiene otras actividades: verificar (C-03)
+SENESCYT-2024-03,2024-03-11,T1,COORDINADOR_CARRERA_SEDE,40,12,12,12,16,12,,DURA,"POL 6 (coordinadores de campus, extensión o sede y carrera)",
+SENESCYT-2024-03,2024-03-11,T2,COORDINADOR_CARRERA_SEDE,40,10,10,10,16,14,,DURA,"POL 6 (coordinadores de campus, extensión o sede y carrera)",
+SENESCYT-2024-03,2024-03-11,T3,COORDINADOR_CARRERA_SEDE,40,8,8,8,16,16,,DURA,"POL 6 (coordinadores de campus, extensión o sede y carrera)",
+SENESCYT-2024-03,2024-03-11,T4,COORDINADOR_CARRERA_SEDE,40,6,6,6,16,18,,DURA,"POL 6 (coordinadores de campus, extensión o sede y carrera)",
+SENESCYT-2024-03,2024-03-11,T5,COORDINADOR_CARRERA_SEDE,40,4,4,4,16,20,,DURA,"POL 6 (coordinadores de campus, extensión o sede y carrera)",
+SENESCYT-2024-03,2024-03-11,T1,GESTOR,40,16,16,16,16,8,,DURA,POL 6 (docentes gestores),
+SENESCYT-2024-03,2024-03-11,T2,GESTOR,40,14,14,14,16,10,,DURA,POL 6 (docentes gestores),
+SENESCYT-2024-03,2024-03-11,T3,GESTOR,40,12,12,12,16,12,,DURA,POL 6 (docentes gestores),
+SENESCYT-2024-03,2024-03-11,T4,GESTOR,40,10,10,10,16,14,,DURA,POL 6 (docentes gestores),
+SENESCYT-2024-03,2024-03-11,T5,GESTOR,40,8,8,8,16,16,,DURA,POL 6 (docentes gestores),
+SENESCYT-2024-03,2024-03-11,TODOS,COORDINADOR_ACADEMICO_INSTITUCIONAL,40,6,6,6,4,30,,DURA,POL 5.4.1 y 6,"Solo T4–T5, o T1–T3 con más de 500 estudiantes o 3 o más campus"
+SENESCYT-2024-03,2024-03-11,T1,RECTOR_VICERRECTOR,40,8,3,12,0,32,,DURA,POL 6; RCE art. 152,Interpretación: el resto de la dedicación es gestión
+SENESCYT-2024-03,2024-03-11,T2,RECTOR_VICERRECTOR,40,6,3,12,0,34,,DURA,POL 6; RCE art. 152,Interpretación: el resto de la dedicación es gestión
+SENESCYT-2024-03,2024-03-11,T3,RECTOR_VICERRECTOR,40,5,3,12,0,35,,DURA,POL 6; RCE art. 152,Interpretación: el resto de la dedicación es gestión
+SENESCYT-2024-03,2024-03-11,T4,RECTOR_VICERRECTOR,40,4,3,12,0,36,,DURA,POL 6; RCE art. 152,Interpretación: el resto de la dedicación es gestión
+SENESCYT-2024-03,2024-03-11,T5,RECTOR_VICERRECTOR,40,3,3,12,0,37,,DURA,POL 6; RCE art. 152,Interpretación: el resto de la dedicación es gestión
+SENESCYT-2024-03,2024-03-11,TODOS,SECRETARIA_GENERAL_ACADEMICA,40,4,3,5,0,36,,BLANDA,POL 6,Interpretación del reparto entre otras de docencia y gestión
+SENESCYT-2024-03,2024-03-11,TODOS,DOCENTE_PROYECTO_NACIONAL_SIES,40,4,3,5,0,36,,BLANDA,POL 5.5 y 6,La carga de gestión la definen la máxima autoridad y la SIES
+SENESCYT-2024-03,2024-03-11,TODOS,DOCENTE_INVESTIGACION_VINCULACION,40,16,0,16,,,24,DURA,POL 6,Máximo 16 h de docencia con proyecto aprobado por el OCS; 10 % de la nómina
+SENESCYT-2024-03,2024-03-11,TODOS,CUIDADOR_SUSTITUTO,40,18,18,18,12,0,,DURA,POL 5.7,18 h clase + 12 h otras de docencia
