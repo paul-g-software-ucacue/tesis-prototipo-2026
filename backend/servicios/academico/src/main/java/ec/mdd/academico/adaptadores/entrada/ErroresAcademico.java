@@ -5,8 +5,12 @@ import ec.mdd.academico.dominio.PeriodoSinVersion;
 import ec.mdd.academico.dominio.SedeMatrizExistente;
 import ec.mdd.academico.dominio.TransicionNoPermitida;
 import ec.mdd.academico.dominio.UnidadConDependientes;
+import ec.mdd.academico.puertos.entrada.AsignaturaRepetida;
+import ec.mdd.academico.puertos.entrada.CarreraRepetida;
 import ec.mdd.academico.puertos.entrada.CodigoRepetido;
+import ec.mdd.academico.puertos.entrada.MallaRepetida;
 import ec.mdd.academico.puertos.entrada.PeriodoConOtraVersion;
+import ec.mdd.academico.puertos.entrada.SiglasRepetidas;
 import ec.mdd.academico.puertos.entrada.UnidadRepetida;
 import ec.mdd.plataforma.errores.nucleo.CatalogoDeErrores;
 import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
@@ -15,8 +19,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * Los errores de Académico en el catálogo (ADR-016): las reglas de los periodos académicos
- * (F02-H01) y de la estructura orgánica (F03-H01). Sus textos son los de {@code
- * contratos/comun/errores.md}; una prueba lo comprueba.
+ * (F02-H01), de la estructura orgánica (F03-H01) y de las carreras, mallas y asignaturas (F03-H02).
+ * Sus textos son los de {@code contratos/comun/errores.md}; una prueba lo comprueba.
  */
 @Component
 class ErroresAcademico implements CatalogoDeErrores {
@@ -74,6 +78,30 @@ class ErroresAcademico implements CatalogoDeErrores {
                         409,
                         "Unidad con dependientes",
                         "La unidad tiene unidades activas que dependen de ella. Inactívalas"
-                                + " antes."));
+                                + " antes."),
+                EntradaCatalogo.de(
+                        CarreraRepetida.class,
+                        "ACADEMICO_CARRERA_REPETIDA",
+                        409,
+                        "Carrera repetida",
+                        "Ya existe una carrera con ese código. Revisa el código SENESCYT."),
+                EntradaCatalogo.de(
+                        SiglasRepetidas.class,
+                        "ACADEMICO_SIGLAS_REPETIDAS",
+                        409,
+                        "Siglas repetidas",
+                        "Otra carrera ya usa esas siglas. Elige otras."),
+                EntradaCatalogo.de(
+                        MallaRepetida.class,
+                        "ACADEMICO_MALLA_REPETIDA",
+                        409,
+                        "Malla repetida",
+                        "Ya existe una malla con ese código de versión. Elige otro."),
+                EntradaCatalogo.de(
+                        AsignaturaRepetida.class,
+                        "ACADEMICO_ASIGNATURA_REPETIDA",
+                        409,
+                        "Asignatura repetida",
+                        "Ya existe una asignatura con ese código. Elige otro."));
     }
 }

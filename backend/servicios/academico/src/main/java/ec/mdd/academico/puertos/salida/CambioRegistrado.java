@@ -41,6 +41,24 @@ public record CambioRegistrado(
         /** Unidad inactivada. */
         UNIDAD_INACTIVADA,
         /** Unidad reactivada. */
-        UNIDAD_REACTIVADA
+        UNIDAD_REACTIVADA,
+        /** Carrera registrada, con sus datos principales (F03-H02). */
+        CARRERA_REGISTRADA,
+        /** Datos de una carrera corregidos, con cada valor anterior y nuevo. */
+        CARRERA_CORREGIDA,
+        /** Estado de una carrera cambiado, con el anterior y el nuevo. */
+        CARRERA_ESTADO_CAMBIADO,
+        /** Malla registrada, con su carrera. */
+        MALLA_REGISTRADA,
+        /** Malla derogada o vuelta a poner vigente, con el estado anterior y el nuevo. */
+        MALLA_ESTADO_CAMBIADO,
+        /** Asignatura registrada, con su carrera, su malla y sus datos principales. */
+        ASIGNATURA_REGISTRADA,
+        /** Datos de una asignatura corregidos, con cada valor anterior y nuevo. */
+        ASIGNATURA_CORREGIDA,
+        /** Asignatura inactivada. */
+        ASIGNATURA_INACTIVADA,
+        /** Asignatura reactivada. */
+        ASIGNATURA_REACTIVADA
     }
 }

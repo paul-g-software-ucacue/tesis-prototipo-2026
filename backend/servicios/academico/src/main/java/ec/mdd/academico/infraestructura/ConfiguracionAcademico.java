@@ -3,26 +3,32 @@ package ec.mdd.academico.infraestructura;
 import ec.mdd.academico.adaptadores.salida.NormativaDesdePuertos;
 import ec.mdd.academico.adaptadores.salida.PublicadorDeAvisosSpring;
 import ec.mdd.academico.adaptadores.salida.RegistroDeCambiosJdbc;
+import ec.mdd.academico.adaptadores.salida.RepositorioCarrerasJdbc;
 import ec.mdd.academico.adaptadores.salida.RepositorioEstructuraJdbc;
 import ec.mdd.academico.adaptadores.salida.RepositorioPeriodosJdbc;
 import ec.mdd.academico.adaptadores.salida.TransaccionSpring;
 import ec.mdd.academico.aplicacion.AbrirPeriodoServicio;
 import ec.mdd.academico.aplicacion.CambiarEstadoPeriodoServicio;
+import ec.mdd.academico.aplicacion.ConsultarCarrerasServicio;
 import ec.mdd.academico.aplicacion.ConsultarEstructuraServicio;
 import ec.mdd.academico.aplicacion.ConsultarPeriodosServicio;
 import ec.mdd.academico.aplicacion.CorregirPeriodoServicio;
+import ec.mdd.academico.aplicacion.MantenerCarrerasServicio;
 import ec.mdd.academico.aplicacion.MantenerEstructuraServicio;
 import ec.mdd.academico.aplicacion.RegistrarPeriodoServicio;
 import ec.mdd.academico.puertos.entrada.AbrirPeriodo;
 import ec.mdd.academico.puertos.entrada.CambiarEstadoPeriodo;
+import ec.mdd.academico.puertos.entrada.ConsultarCarreras;
 import ec.mdd.academico.puertos.entrada.ConsultarEstructura;
 import ec.mdd.academico.puertos.entrada.ConsultarPeriodos;
 import ec.mdd.academico.puertos.entrada.CorregirPeriodo;
+import ec.mdd.academico.puertos.entrada.MantenerCarreras;
 import ec.mdd.academico.puertos.entrada.MantenerEstructura;
 import ec.mdd.academico.puertos.entrada.RegistrarPeriodo;
 import ec.mdd.academico.puertos.salida.AvisosDelPeriodo;
 import ec.mdd.academico.puertos.salida.NormativaDelPeriodo;
 import ec.mdd.academico.puertos.salida.RegistroDeCambios;
+import ec.mdd.academico.puertos.salida.RepositorioCarreras;
 import ec.mdd.academico.puertos.salida.RepositorioEstructura;
 import ec.mdd.academico.puertos.salida.RepositorioPeriodos;
 import ec.mdd.academico.puertos.salida.Transaccion;
@@ -39,8 +45,9 @@ import org.springframework.transaction.support.TransactionOperations;
 /**
  * Ensambla Académico: el repositorio del esquema {@code academico}, su registro de cambios, la
  * transacción, la versión de normativa de cada periodo, pedida a Normativa por su interfaz
- * publicada (research §4), el repositorio de la estructura orgánica (F03-H01) y los casos de uso.
- * Los nombres de los beans no se repiten con los de Normativa, que vive en el mismo proceso.
+ * publicada (research §4), los repositorios de la estructura orgánica (F03-H01) y de las carreras
+ * (F03-H02) y los casos de uso. Los nombres de los beans no se repiten con los de Normativa, que
+ * vive en el mismo proceso.
  */
 @Configuration(proxyBeanMethods = false)
 public class ConfiguracionAcademico {
@@ -165,5 +172,32 @@ public class ConfiguracionAcademico {
             Transaccion transaccionAcademico) {
         return new MantenerEstructuraServicio(
                 repositorio, registroDeCambiosAcademico, transaccionAcademico, Clock.systemUTC());
+    }
+
+    @Bean
+    @DependsOn("flywayAcademico")
+    public RepositorioCarreras repositorioCarreras(JdbcClient jdbc) {
+        return new RepositorioCarrerasJdbc(jdbc);
+    }
+
+    /** La consulta de las carreras, sus mallas y sus asignaturas (F03-H02). */
+    @Bean
+    public ConsultarCarreras consultarCarreras(RepositorioCarreras repositorio) {
+        return new ConsultarCarrerasServicio(repositorio);
+    }
+
+    /** Mantener las carreras, sus mallas y sus asignaturas, con su registro (F03-H02). */
+    @Bean
+    public MantenerCarreras mantenerCarreras(
+            RepositorioCarreras repositorio,
+            RepositorioEstructura repositorioEstructura,
+            RegistroDeCambios registroDeCambiosAcademico,
+            Transaccion transaccionAcademico) {
+        return new MantenerCarrerasServicio(
+                repositorio,
+                repositorioEstructura,
+                registroDeCambiosAcademico,
+                transaccionAcademico,
+                Clock.systemUTC());
     }
 }
