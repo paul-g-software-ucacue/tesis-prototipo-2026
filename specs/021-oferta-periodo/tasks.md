@@ -167,7 +167,7 @@ description: "Tareas de F03-H03: mantener la oferta del periodo"
   - **Menú y ruta:** con `[OFERTA:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]`.
 
   Crear la pantalla en `frontend/src/pantallas/oferta/`, su ruta en `rutas.tsx`, su entrada en `Marco.tsx` debajo de «Carreras y mallas» y la lista de lectura en `funcionalidades.ts`. T013 pasa.
-- [ ] T014 [US4] Prueba con Playwright, en `frontend/e2e/oferta.spec.ts`: `vicerrectorado.demo` oferta una asignatura de 4 horas en 3 paralelos y ve 12 horas a cubrir; retira uno y ve 8; axe-core sin fallas WCAG 2.1 AA en la oferta y en los diálogos de ofertar, corregir y retirar.
+- [X] T014 [US4] Prueba con Playwright, en `frontend/e2e/oferta.spec.ts`: `vicerrectorado.demo` oferta una asignatura de 4 horas en 3 paralelos y ve 12 horas a cubrir; retira uno y ve 8; axe-core sin fallas WCAG 2.1 AA en la oferta y en los diálogos de ofertar, corregir y retirar.
 
 **Checkpoint**: las cuatro historias pasan.
 
