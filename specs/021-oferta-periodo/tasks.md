@@ -156,7 +156,7 @@ description: "Tareas de F03-H03: mantener la oferta del periodo"
 
 **Goal**: «Oferta del periodo» agrupada por carrera, con las horas a cubrir (FR-011; SC-001).
 
-- [ ] T013 [US4] Prueba primero, en `frontend/src/pantallas/oferta/Oferta.test.tsx` (Vitest con la API simulada):
+- [X] T013 [US4] Prueba primero, en `frontend/src/pantallas/oferta/Oferta.test.tsx` (Vitest con la API simulada):
   - **Periodo:** el selector elige por omisión el más reciente en Planificación; si la lista de periodos responde 403, la pantalla muestra «Acceso no autorizado» y no se rompe.
   - **Totales:** el total del periodo; por carrera, su total y una fila por asignatura con su ciclo, su código, su nombre, sus paralelos (jornada, modalidad, estudiantes, horas y estado en español) y sus horas a cubrir; «12 h» con 3 paralelos de 4 h.
   - **Con escritura** (`CATALOGOS:ESCRITURA` o `DISTRIBUTIVO:ESCRITURA`) y el periodo en Planificación:
