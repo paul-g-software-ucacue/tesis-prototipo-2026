@@ -163,25 +163,8 @@ class DatosMaestrosTest {
 
     @Test
     void dadosLosDatosDePrueba_cuandoSeRegistranEnOrden_entoncesEntranTodosYCadaMallaSuma100() {
-        DatosMaestros datos = vacios();
-        for (Carrera carrera : DatosMaestrosDePrueba.carreras()) {
-            datos = datos.con(datos.registrarCarrera(carrera));
-        }
-        List<Asignatura> asignaturas = DatosMaestrosDePrueba.asignaturas();
-        for (String malla : asignaturas.stream().map(Asignatura::malla).distinct().toList()) {
-            String carrera =
-                    asignaturas.stream()
-                            .filter(a -> a.malla().equals(malla))
-                            .findFirst()
-                            .orElseThrow()
-                            .carrera();
-            datos = datos.con(datos.registrarMalla(Malla.nueva(malla, carrera)));
-        }
-        for (Asignatura asignatura : asignaturas) {
-            datos = datos.con(datos.registrarAsignatura(asignatura));
-        }
+        DatosMaestros registrados = DatosMaestrosDePrueba.cargados();
 
-        DatosMaestros registrados = datos;
         assertThat(registrados.carreras()).hasSize(7);
         assertThat(registrados.mallas()).hasSize(12);
         assertThat(registrados.asignaturas()).hasSize(300);

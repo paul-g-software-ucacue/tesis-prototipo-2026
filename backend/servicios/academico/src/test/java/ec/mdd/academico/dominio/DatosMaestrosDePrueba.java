@@ -121,6 +121,46 @@ final class DatosMaestrosDePrueba {
         return asignaturas;
     }
 
+    /** Las 7 carreras, 12 mallas y 300 asignaturas de prueba, registradas en orden. */
+    static DatosMaestros cargados() {
+        DatosMaestros datos = vacios();
+        for (Carrera carrera : carreras()) {
+            datos = datos.con(datos.registrarCarrera(carrera));
+        }
+        List<Asignatura> asignaturas = asignaturas();
+        for (String malla : asignaturas.stream().map(Asignatura::malla).distinct().toList()) {
+            String carrera =
+                    asignaturas.stream()
+                            .filter(una -> una.malla().equals(malla))
+                            .findFirst()
+                            .orElseThrow()
+                            .carrera();
+            datos = datos.con(datos.registrarMalla(Malla.nueva(malla, carrera)));
+        }
+        for (Asignatura asignatura : asignaturas) {
+            datos = datos.con(datos.registrarAsignatura(asignatura));
+        }
+        return datos;
+    }
+
+    /** Las 165 asignaturas-paralelo de la carga 05 de prueba, en orden, en ese periodo. */
+    static List<AsignaturaParalelo> oferta(String periodo) {
+        List<AsignaturaParalelo> oferta = new ArrayList<>();
+        for (Map<String, String> fila : filas("05_oferta_periodo.csv")) {
+            oferta.add(
+                    AsignaturaParalelo.nueva(
+                            periodo,
+                            fila.get("codigo_asignatura"),
+                            fila.get("paralelo"),
+                            Jornada.valueOf(fila.get("jornada")),
+                            Modalidad.valueOf(fila.get("modalidad")),
+                            vacioANulo(fila.get("codigo_unidad_sede")),
+                            Integer.parseInt(fila.get("numero_estudiantes")),
+                            numero(fila.get("horas_semanales"))));
+        }
+        return oferta;
+    }
+
     private static BigDecimal numero(String texto) {
         return texto == null || texto.isBlank() ? null : new BigDecimal(texto);
     }

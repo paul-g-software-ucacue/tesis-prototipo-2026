@@ -268,7 +268,8 @@ public final class DatosMaestros {
         }
     }
 
-    private void validarSede(String codigo) {
+    // También la usa la oferta, para la sede de una asignatura-paralelo (F03-H03).
+    void validarSede(String codigo) {
         UnidadOrganica sede = unidades.get(codigo);
         if (sede == null || !SEDES.contains(sede.tipo())) {
             throw new DatoInvalido(

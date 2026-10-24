@@ -33,10 +33,11 @@ El `check` de `accion` gana `ASIGNATURA_PARALELO_REGISTRADA`, `ASIGNATURA_PARALE
 | `AsignaturaParalelo` | *record*: `periodo`, `asignatura`, `paralelo`, `jornada` (`Jornada`), `modalidad` (`Modalidad`), `sede` (opcional), `estudiantes`, `horasIndicadas` (opcional, `BigDecimal`), `estado`; `nueva(...)`, `corregida(...)` → `Correccion(asignaturaParalelo, cambios)`, `conEstado(...)` |
 | `OfertaDelPeriodo` | el periodo, sus asignaturas-paralelo y los `DatosMaestros`; `ofertar(...)`, `corregir(...)`, `retirar(...)`, `volverAOfertar(...)`; `horasDe(asignaturaParalelo)` (las efectivas), `horasACubrir()` por asignatura, por carrera y del periodo |
 | `HorasACubrir` | *record* con los totales: del periodo, por carrera y por asignatura, con el número de paralelos ofertados |
+| `OfertaCerrada`, `AsignaturaParaleloRepetida` | las excepciones que lanza `OfertaDelPeriodo`, en el dominio como `PeriodoCerrado` |
 
-Reutiliza `Jornada`, `Modalidad`, `Cambios`, `DatoInvalido` y `DatosMaestros` de F03-H02 y `PeriodoAcademico` y `EstadoPeriodo` de F02-H01.
+Reutiliza `Jornada`, `Modalidad`, `Cambios`, `DatoInvalido` y `DatosMaestros` de F03-H02 (su regla de la sede pasa a ser visible en el paquete) y `PeriodoAcademico` y `EstadoPeriodo` de F02-H01.
 
 ## Puertos
 
-- **Entrada:** `ConsultarOferta` (la oferta de un periodo con sus totales; una asignatura-paralelo), `MantenerOferta` (ofertar, corregir, cambiar el estado); excepciones `OfertaCerrada`, `AsignaturaParaleloRepetida`, `AsignaturaParaleloNoEncontrada`; `DatosDeAsignaturaParalelo`.
+- **Entrada:** `ConsultarOferta` (la oferta de un periodo con sus totales; una asignatura-paralelo), `MantenerOferta` (ofertar, corregir, cambiar el estado); la excepción `AsignaturaParaleloNoEncontrada`; `DatosDeAsignaturaParalelo`.
 - **Salida:** `RepositorioOferta` (`delPeriodo`, `bloquear`, `registrar`, `guardar`). Usa también `RepositorioPeriodos`, `RepositorioCarreras` y `RepositorioEstructura`, que ya existen, y `RegistroDeCambios`.

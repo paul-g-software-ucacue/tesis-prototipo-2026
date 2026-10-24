@@ -59,8 +59,8 @@ description: "Tareas de F03-H03: mantener la oferta del periodo"
 
 ### Dominio (research §1 a §3, data-model.md)
 
-- [ ] T003 Prueba primero, en `PACA/dominio/AsignaturaParaleloTest.java`, sin dobles: cada regla de research §3 con su campo y su motivo en español en `DatoInvalido` (paralelo vacío o con caracteres fuera de `^[0-9A-Z_-]{1,20}$`, estudiantes negativos o mayores que 9999, horas indicadas fuera de 0,5 a 20 o con más de dos decimales); el paralelo se guarda sin espacios en los extremos; `corregida` no cambia el periodo, la asignatura ni el paralelo y devuelve los cambios con su valor anterior y el nuevo; `conEstado` cambia solo el estado. Crear `EstadoDeAsignaturaParalelo` y `AsignaturaParalelo` en `JACA/dominio/`.
-- [ ] T004 Prueba primero, en `PACA/dominio/OfertaDelPeriodoTest.java`, sin dobles:
+- [X] T003 Prueba primero, en `PACA/dominio/AsignaturaParaleloTest.java`, sin dobles: cada regla de research §3 con su campo y su motivo en español en `DatoInvalido` (paralelo vacío o con caracteres fuera de `^[0-9A-Z_-]{1,20}$`, estudiantes negativos o mayores que 9999, horas indicadas fuera de 0,5 a 20 o con más de dos decimales); el paralelo se guarda sin espacios en los extremos; `corregida` no cambia el periodo, la asignatura ni el paralelo y devuelve los cambios con su valor anterior y el nuevo; `conEstado` cambia solo el estado. Crear `EstadoDeAsignaturaParalelo` y `AsignaturaParalelo` en `JACA/dominio/`.
+- [X] T004 Prueba primero, en `PACA/dominio/OfertaDelPeriodoTest.java`, sin dobles:
   - un periodo en En aprobación, Vigente o Cerrado lanza `OfertaCerrada` al ofertar, corregir, retirar o volver a ofertar;
   - una asignatura inexistente o inactiva, o de una carrera no vigente, da `DatoInvalido` en `asignatura`; una de una malla derogada sí se oferta;
   - una jornada que no es de la carrera, en `jornada`; una sede inexistente, inactiva o de otro tipo, en `sede`;
