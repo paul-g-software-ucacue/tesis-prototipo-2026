@@ -318,7 +318,7 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
   - los resultados, documentados.
 
   Hacer commit y push, abrir el PR en borrador con `Refs #39` y marcarlo listo después de sus runs.
-- [ ] T024 Completar la evidencia y el PR. Fusionar con *squash* con la aprobación del autor. Después:
+- [X] T024 Completar la evidencia y el PR. Fusionar con *squash* con la aprobación del autor. Después:
   1. esperar el despliegue («Sano en N s»), con `docentes` en V3;
   2. el autor entra con `datos.demo`, registra un coordinador y un gestor (uno sin cuarto nivel, para ver la advertencia) y un proyecto, y consulta los asignables de un periodo en menos de 1 minuto (SC-001);
   3. los ve con `consolidacion.demo` en solo lectura;

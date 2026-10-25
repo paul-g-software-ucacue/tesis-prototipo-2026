@@ -91,6 +91,8 @@ Registro de las comprobaciones de la historia (issue #39): registrar los cargos 
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Despliegue de `f644163` (#150) | Pipeline `cd` exitoso. El despliegue `demostracion` 7318952933 dice «Sano en 56 s». Los 8 contenedores del proyecto `mdd` están *healthy*, con las imágenes `…-f64416324594`, y `docentes` migró a V3 al arrancar. El `index-Dy4Bx03q.js` que sirve `frontend` contiene la pantalla «Cargos» | GitHub Deployments, `docker ps` y `grep` dentro del contenedor, solo de lectura | 2026-10-25 |
+| Comprobación del autor con `datos.demo` y `consolidacion.demo` | Confirmó que todo funciona como se describe. Cargos: un coordinador con maestría, sin advertencia y en menos de 1 minuto (SC-001); un coordinador o gestor sin cuarto nivel, con la advertencia de RN-20 (SC-004); el segundo coordinador vigente y el docente en licencia o de medio tiempo, rechazados con su motivo; un cargo finalizado con su fecha de fin. Proyectos: la suma de horas que pasa las aprobadas, marcada antes de enviar; «Asignable» en el periodo de su vigencia y «No asignable por su vigencia» en otro (SC-003); suspendido, «No asignable por su estado». `consolidacion.demo` ve las dos pantallas en solo lectura. Los datos que registró no se anotan aquí, porque el repositorio es público | Confirmación del autor | 2026-10-25 |
 
 ## Notas
 
