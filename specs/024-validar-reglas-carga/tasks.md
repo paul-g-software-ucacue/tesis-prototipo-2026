@@ -81,6 +81,7 @@ description: "Tareas de F01-H03: validar las reglas de los datos e informe por f
     - el catálogo `CARGOS` (22 valores, D-73) y `AGREGADO_1..3` expandido;
     - `Igual catálogo que 02.modalidad`;
     - `3 dígitos` con `061`, `61` y `0611`;
+    - `Mayúsculas` con `PÉREZ`, `Pérez` y `PÉREZ ñ`; `Mayúsculas, dígitos, «-» o «_»` con `UA-01_X` y `ua-01`; `AAAA-I o AAAA-II` con `2026-I`, `2026-II`, `2026-III` y `26-I`; `usuario@dominio` con `a@b.ec`, `a@b` y `a b@c.ec`;
     - los rangos `1–10` (0, 1, 10, 11), `0,5–20` (0.4, 0.5), `≥ 0` (-1, 0), `> 0` (0, 0.1) y `≤ 40` (40, 41);
     - una lista de `«título|tipo|campo_especifico|año»` con 4 partes, con 3 y con un tipo fuera de su enumeración; un participante con 3 partes;
     - una jornada que no existe en `jornadas`;

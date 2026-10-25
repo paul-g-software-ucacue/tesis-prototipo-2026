@@ -153,7 +153,7 @@ Las reglas de cada tipo de columna salen del diccionario de datos (principio XIV
 
 | Tipo en el diccionario | Regla |
 |---|---|
-| Texto | Hasta su `longitud`. Sin espacios en los extremos: si los tiene, se quitan con una advertencia. El diccionario no define sus caracteres, así que aquí solo se valida el largo; los patrones propios de cada dueño, como el de los códigos de Académico, se aplican al confirmar (F01-H04). |
+| Texto | Hasta su `longitud`. Sin espacios en los extremos: si los tiene, se quitan con una advertencia. Si su `formato` define los caracteres, también: «Mayúsculas» (sin minúsculas; un nombre en minúsculas es un error), «Mayúsculas, dígitos, «-» o «_»», «AAAA-I o AAAA-II» y «usuario@dominio». Si no los define, aquí solo se valida el largo; los patrones propios de cada dueño, como el de los códigos de Académico, se aplican al confirmar (F01-H04). |
 | Entero | Solo dígitos, hasta su `longitud`. |
 | Decimal | Dígitos con punto decimal (convención «Decimales»), sin separador de miles, hasta su `longitud`. |
 | Rango | Si el `formato` de un entero o un decimal es un rango (`1–10`, `0,5–20`, `≥ 0`, `> 0`, `≤ 40`), el valor está dentro de él. Un `formato` que no es un rango, como `TC = 40, MT = 20, TP ≤ 19`, es una regla de coherencia del dueño y no se interpreta aquí. |

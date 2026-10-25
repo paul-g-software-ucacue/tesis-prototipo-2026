@@ -39,6 +39,10 @@ El diccionario tiene campos estructurados (`tipo`, `longitud`, `obligatorio`, `c
 | `formato: A, B, C` (códigos en mayúsculas) | una enumeración; `AGREGADO_1..3` se expande a `AGREGADO_1`, `AGREGADO_2` y `AGREGADO_3` |
 | `formato: Igual catálogo que 02.modalidad` | los valores de esa otra columna |
 | `formato: N dígitos` | exactamente N dígitos |
+| `formato: Mayúsculas` (también `Mayúsculas; vacío si no tiene`) | sin letras minúsculas; si las tiene, es un error (aclaración del autor en la implementación) |
+| `formato: Mayúsculas, dígitos, «-» o «_»` | `[A-Z0-9_-]+` |
+| `formato: AAAA-I o AAAA-II (ej.: 2026-I)` | `\d{4}-(I\|II)` |
+| `formato: usuario@dominio` | `[^@\s]+@[^@\s]+\.[^@\s]+`, la misma regla del correo de Docentes |
 | `formato` de rango (`1–10`, `0,5–20`, `≥ 0`, `> 0`, `≤ 40`) | dentro del rango |
 | `tipo: Lista (;)` y `formato` de códigos separados por `;` | cada elemento está en esa enumeración (`jornadas`) |
 | `tipo: Lista (;) de «a\|b\|…»` | cada elemento tiene tantas partes como el `«…»`: 4 en `titulos_cuarto_nivel`, 3 en `participantes` |
