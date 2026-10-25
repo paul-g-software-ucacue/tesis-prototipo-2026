@@ -7,6 +7,7 @@ import { FalloDeApi } from '../errores/traducir';
 import { cerrarSesion, marcarActividad, obtenerToken } from '../sesion/almacen';
 import type { paths as rutasDeAcademico } from './generado/academico';
 import type { paths as rutasDeCargas } from './generado/cargas';
+import type { paths as rutasDeDocentes } from './generado/docentes';
 import type { paths as rutasDeNormativa } from './generado/normativa';
 import type { paths as rutasDeRoles } from './generado/roles';
 import type { paths } from './generado/usuarios';
@@ -86,3 +87,10 @@ export const apiCargas = createClient<rutasDeCargas>({
   fetch: (peticion) => globalThis.fetch(peticion),
 });
 apiCargas.use(conToken);
+
+/** El cliente de Docentes (F03-H04), con el mismo token y la misma actividad. */
+export const apiDocentes = createClient<rutasDeDocentes>({
+  baseUrl: globalThis.location?.origin ?? '',
+  fetch: (peticion) => globalThis.fetch(peticion),
+});
+apiDocentes.use(conToken);

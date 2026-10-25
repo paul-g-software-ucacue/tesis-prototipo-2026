@@ -1,6 +1,21 @@
 // Servicio docentes del MDD, creado desde backend/plantillas/servicio (ADR-012).
 // mdd.servicio aplica las reglas de las cinco capas, la cobertura del 60 % (D-32), Spotless y
 // SpotBugs. Vale para todos los servicios, centrales o no.
+// Desde F03-H04: su contrato, contratos/docentes/openapi.yaml (ADR-015).
 plugins {
     id 'mdd.servicio'
+    id 'mdd.contrato'
+}
+
+dependencies {
+    // La carrera base, las asignaturas afines y los campos amplios, por la interfaz publicada de
+    // Académico: solo ec.mdd.academico.puertos.entrada (F03-H04, research §4; como Académico con
+    // Normativa).
+    implementation project(':servicios:academico')
+    // Los docentes en el esquema docentes, con JdbcClient, como Académico.
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    // La ficha académica y el detalle de cada cambio en jsonb (FR-002, FR-010).
+    implementation 'tools.jackson.core:jackson-databind'
+    // @PreAuthorize y el usuario de la sesión que hace el cambio (ADR-021, FR-010).
+    implementation 'org.springframework.security:spring-security-core'
 }

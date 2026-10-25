@@ -69,7 +69,44 @@ class AplicacionDePrueba {
             @Size(min = 3, max = 10) String codigo,
             @Pattern(regexp = "[a-z]+") String clave,
             @Size(min = 2) List<String> etiquetas,
-            @Size(min = 1, max = 4) List<String> jornadas) {}
+            @Size(min = 1, max = 4) List<String> jornadas,
+            Dedicacion dedicacion,
+            List<Titulo> titulos) {}
+
+    record Titulo(String nombre, Dedicacion tipo) {}
+
+    /** Como las enumeraciones que genera el contrato: su valor en JSON y un creador que falla. */
+    enum Dedicacion {
+        TC("TC"),
+        MT("MT"),
+        TP("TP");
+
+        private final String valor;
+
+        Dedicacion(String valor) {
+            this.valor = valor;
+        }
+
+        @com.fasterxml.jackson.annotation.JsonValue
+        public String getValue() {
+            return valor;
+        }
+
+        @Override
+        public String toString() {
+            return valor;
+        }
+
+        @com.fasterxml.jackson.annotation.JsonCreator
+        public static Dedicacion fromValue(String valor) {
+            for (Dedicacion una : values()) {
+                if (una.valor.equals(valor)) {
+                    return una;
+                }
+            }
+            throw new IllegalArgumentException("Unexpected value '" + valor + "'");
+        }
+    }
 
     @RestController
     static class Prueba {

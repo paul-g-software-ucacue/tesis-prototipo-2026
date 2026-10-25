@@ -1,6 +1,7 @@
 package ec.mdd.academico.adaptadores.entrada;
 
 import ec.mdd.academico.aplicacion.ConsultarCarrerasServicio;
+import ec.mdd.academico.aplicacion.ConsultarReferenciasServicio;
 import ec.mdd.academico.aplicacion.MantenerCarrerasServicio;
 import ec.mdd.academico.dominio.Asignatura;
 import ec.mdd.academico.dominio.CampoAmplio;
@@ -10,6 +11,7 @@ import ec.mdd.academico.dominio.Malla;
 import ec.mdd.academico.dominio.TipoDeUnidad;
 import ec.mdd.academico.dominio.UnidadOrganica;
 import ec.mdd.academico.puertos.entrada.ConsultarCarreras;
+import ec.mdd.academico.puertos.entrada.ConsultarReferencias;
 import ec.mdd.academico.puertos.entrada.MantenerCarreras;
 import ec.mdd.academico.puertos.salida.RepositorioCarreras;
 import ec.mdd.academico.puertos.salida.RepositorioEstructura;
@@ -57,6 +59,10 @@ final class CarrerasEnMemoria implements RepositorioCarreras {
     /** La consulta real sobre este doble. */
     ConsultarCarreras consultar() {
         return new ConsultarCarrerasServicio(this);
+    }
+
+    ConsultarReferencias referencias() {
+        return new ConsultarReferenciasServicio(this);
     }
 
     /** El mantenimiento real sobre este doble, sin registro y sin transacción. */

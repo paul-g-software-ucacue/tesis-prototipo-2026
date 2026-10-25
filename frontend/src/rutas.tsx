@@ -8,6 +8,7 @@ import { NoEncontrada } from './pantallas/NoEncontrada';
 import { Normativa } from './pantallas/normativa/Normativa';
 import { Carreras } from './pantallas/carreras/Carreras';
 import { Estructura } from './pantallas/estructura/Estructura';
+import { Docentes } from './pantallas/docentes/Docentes';
 import { Oferta } from './pantallas/oferta/Oferta';
 import { Plantillas } from './pantallas/plantillas/Plantillas';
 import { Periodos } from './pantallas/periodos/Periodos';
@@ -18,6 +19,7 @@ import {
   DESCARGA_DE_PLANTILLAS,
   LECTURA_DE_LA_ESTRUCTURA,
   LECTURA_DE_LA_OFERTA,
+  LECTURA_DE_LOS_DOCENTES,
 } from './sesion/funcionalidades';
 
 export const rutasDeLaSpa: RouteObject[] = [
@@ -75,6 +77,14 @@ export const rutasDeLaSpa: RouteObject[] = [
         element: (
           <RutaConPermiso cualquieraDe={LECTURA_DE_LA_OFERTA}>
             <Oferta />
+          </RutaConPermiso>
+        ),
+      },
+      {
+        path: 'docentes',
+        element: (
+          <RutaConPermiso cualquieraDe={LECTURA_DE_LOS_DOCENTES}>
+            <Docentes />
           </RutaConPermiso>
         ),
       },

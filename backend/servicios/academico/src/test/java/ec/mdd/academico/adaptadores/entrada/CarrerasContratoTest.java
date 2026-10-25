@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import com.jayway.jsonpath.JsonPath;
 import ec.mdd.academico.puertos.entrada.ConsultarCarreras;
+import ec.mdd.academico.puertos.entrada.ConsultarReferencias;
 import ec.mdd.academico.puertos.entrada.MantenerCarreras;
 import ec.mdd.plataforma.errores.ErroresAutoConfiguracion;
 import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
@@ -379,6 +380,32 @@ class CarrerasContratoTest {
                 .authorities(new SimpleGrantedAuthority("PERMISO_CATALOGOS:LECTURA"));
     }
 
+    @Test
+    void dadaUnaCarreraConAsignatura_cuandoDocentesPideLasReferencias_entonces200ConSusNombres()
+            throws Exception {
+        pedir(json(post("/api/academico/carreras"), DS), escritura());
+        pedir(
+                json(
+                        post("/api/academico/carreras/550613A01-P-0301/mallas"),
+                        "{\"codigo\":\"DS-2019\"}"),
+                escritura());
+        pedir(json(post("/api/academico/asignaturas"), MD), escritura());
+
+        MvcResult referencias =
+                pedir(
+                        get("/api/academico/referencias"),
+                        jwt().authorities(new SimpleGrantedAuthority("PERMISO_DOCENTES:LECTURA")));
+
+        assertThat(referencias.getResponse().getStatus()).isEqualTo(200);
+        assertThat(JsonPath.<List<String>>read(cuerpo(referencias), "$.carreras[*].nombre"))
+                .containsExactly("DESARROLLO DE SOFTWARE");
+        assertThat(JsonPath.<List<String>>read(cuerpo(referencias), "$.asignaturas[*].carrera"))
+                .containsExactly("550613A01-P-0301");
+        assertThat(JsonPath.<List<Object>>read(cuerpo(referencias), "$.camposAmplios"))
+                .isNotEmpty();
+        contrato.validar(referencias);
+    }
+
     /** El Vicerrector: escribe con «Distributivo del periodo: escritura» (aclaración 1). */
     static JwtRequestPostProcessor escritura() {
         return jwt().jwt(token -> token.subject("vicerrectorado.demo"))
@@ -403,6 +430,11 @@ class CarrerasContratoTest {
         @Bean
         MantenerCarreras mantenerCarreras(CarrerasEnMemoria datos) {
             return datos.mantener();
+        }
+
+        @Bean
+        ConsultarReferencias consultarReferencias(CarrerasEnMemoria datos) {
+            return datos.referencias();
         }
     }
 }

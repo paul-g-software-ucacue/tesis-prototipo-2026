@@ -40,6 +40,7 @@ export function Marco({
   enviando,
   alCerrar,
   alEnviar,
+  ancho = 'sm',
   children,
 }: {
   id: string;
@@ -48,10 +49,12 @@ export function Marco({
   enviando: boolean;
   alCerrar: () => void;
   alEnviar: () => void;
+  /** El ancho máximo del diálogo; el formulario del docente usa «md» (F03-H04). */
+  ancho?: 'sm' | 'md';
   children: ReactNode;
 }) {
   return (
-    <Dialog open onClose={alCerrar} aria-labelledby={id} fullWidth>
+    <Dialog open onClose={alCerrar} aria-labelledby={id} fullWidth maxWidth={ancho}>
       <DialogTitle id={id}>{titulo}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
