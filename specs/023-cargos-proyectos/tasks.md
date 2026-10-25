@@ -86,7 +86,7 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
 
 ### Dominio (research §3 a §7; data-model.md)
 
-- [ ] T005 [P] Prueba primero, en `PDOC/dominio/CargoTest.java`, sin dobles, con las referencias de las cargas 01 y 02 de prueba y con docentes de `DocentesDePrueba`. Casos **válidos, inválidos y en el límite** de la tabla «Cargo» de la especificación, cada uno con su campo y su motivo en `DatoInvalido`:
+- [X] T005 [P] Prueba primero, en `PDOC/dominio/CargoTest.java`, sin dobles, con las referencias de las cargas 01 y 02 de prueba y con docentes de `DocentesDePrueba`. Casos **válidos, inválidos y en el límite** de la tabla «Cargo» de la especificación, cada uno con su campo y su motivo en `DatoInvalido`:
   - un docente en licencia, inactivo, de medio tiempo o de tiempo parcial lanza `DocenteNoHabilitado` (409); uno activo a tiempo completo pasa;
   - un coordinador de carrera sin carrera o con una que no existe; con carrera y sin unidad pasa;
   - cualquier otro cargo sin unidad o con una que no existe o está inactiva;
@@ -98,7 +98,7 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
   - el mensaje de ningún error contiene la identificación.
 
   Crear en `JDOC/dominio/` `Cargo`, `TipoDeCargo` (los 22, con su gestión, `exigeCuartoNivel()` y la unidad que pide), `EstadoDeCargo` y `DocenteNoHabilitado`, con JavaDoc en español que cite la carga 8, POL 5.4 y D-73.
-- [ ] T006 [P] Prueba primero, en `PDOC/dominio/ProyectoTest.java`, sin dobles, con los mismos casos **válidos, inválidos y en el límite** de la tabla «Proyecto aprobado»:
+- [X] T006 [P] Prueba primero, en `PDOC/dominio/ProyectoTest.java`, sin dobles, con los mismos casos **válidos, inválidos y en el límite** de la tabla «Proyecto aprobado»:
   - el código con minúsculas (se rechaza: en pantalla se pasan a mayúsculas antes), con espacio, con `_`, de 30 caracteres (pasa) y de 31;
   - el nombre vacío, de 250 caracteres y de 251;
   - sin carreras, con una repetida (`carreras[1]`), con una que no existe;
@@ -110,7 +110,7 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
   - `corregido` devuelve cada cambio.
 
   Crear `Proyecto`, `Participante`, `TipoDeProyecto`, `EstadoDeProyecto` y `RolDeParticipante` en `JDOC/dominio/`, con JavaDoc que cite RF-18 y la carga 9.
-- [ ] T007 Prueba primero, en `PDOC/dominio/ReferenciasTest.java` y `PDOC/dominio/ValoresPermitidosTest.java` (ampliar):
+- [X] T007 Prueba primero, en `PDOC/dominio/ReferenciasTest.java` y `PDOC/dominio/ValoresPermitidosTest.java` (ampliar):
   - `Referencias` resuelve las unidades y los periodos de las cargas 01 y 03 de prueba, y rechaza un código que no existe en su campo;
   - **los 21 cargos de la carga 08 y los 11 proyectos de la carga 09 de prueba**, leídos con `CargosDePrueba` y `ProyectosDePrueba` sobre los 47 docentes, son todos válidos (SC-002);
   - `TipoDeCargo`, `EstadoDeCargo`, `TipoDeProyecto`, `EstadoDeProyecto` y `RolDeParticipante` tienen los mismos valores que su columna en `diccionario-de-datos.yaml`.

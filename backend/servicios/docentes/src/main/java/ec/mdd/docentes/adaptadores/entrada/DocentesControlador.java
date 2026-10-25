@@ -16,13 +16,16 @@ import ec.mdd.docentes.adaptadores.entrada.api.EstadoLaboral;
 import ec.mdd.docentes.adaptadores.entrada.api.EstadoLaboralNuevo;
 import ec.mdd.docentes.adaptadores.entrada.api.ExperienciaLaboral;
 import ec.mdd.docentes.adaptadores.entrada.api.FichaAcademica;
+import ec.mdd.docentes.adaptadores.entrada.api.PeriodoDeReferencia;
 import ec.mdd.docentes.adaptadores.entrada.api.ReferenciasDeDocentes;
 import ec.mdd.docentes.adaptadores.entrada.api.ResumenDeDocente;
 import ec.mdd.docentes.adaptadores.entrada.api.TipoDeIdentificacion;
 import ec.mdd.docentes.adaptadores.entrada.api.TipoDeTituloDeCuartoNivel;
+import ec.mdd.docentes.adaptadores.entrada.api.TipoDeUnidad;
 import ec.mdd.docentes.adaptadores.entrada.api.TipoPersonal;
 import ec.mdd.docentes.adaptadores.entrada.api.TituloDeCuartoNivel;
 import ec.mdd.docentes.adaptadores.entrada.api.TituloDeTercerNivel;
+import ec.mdd.docentes.adaptadores.entrada.api.UnidadDeReferencia;
 import ec.mdd.docentes.dominio.BusquedaDeDocentes;
 import ec.mdd.docentes.dominio.CampoConocimiento;
 import ec.mdd.docentes.dominio.DatoInvalido;
@@ -174,7 +177,30 @@ class DocentesControlador implements DocentesApi {
                                                         asignatura.getValue().nombre(),
                                                         asignatura.getValue().carrera()))
                                 .toList(),
-                        camposAmplios(referencias, referencias.camposAmplios().keySet())));
+                        camposAmplios(referencias, referencias.camposAmplios().keySet()),
+                        referencias.unidades().entrySet().stream()
+                                .sorted(Map.Entry.comparingByKey())
+                                .map(
+                                        unidad ->
+                                                new UnidadDeReferencia(
+                                                                unidad.getKey(),
+                                                                unidad.getValue().nombre(),
+                                                                TipoDeUnidad.fromValue(
+                                                                        unidad.getValue().tipo()),
+                                                                unidad.getValue().activa())
+                                                        .gestionAutorizada(
+                                                                unidad.getValue().gestion()))
+                                .toList(),
+                        referencias.periodos().entrySet().stream()
+                                .sorted(Map.Entry.comparingByKey())
+                                .map(
+                                        periodo ->
+                                                new PeriodoDeReferencia(
+                                                        periodo.getKey(),
+                                                        periodo.getValue().nombre(),
+                                                        periodo.getValue().inicio(),
+                                                        periodo.getValue().fin()))
+                                .toList()));
     }
 
     // DocenteNuevo trae los mismos campos que DatosDeDocente, al mismo nivel.

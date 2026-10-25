@@ -73,6 +73,52 @@ class ValoresPermitidosTest {
                 .containsExactlyElementsOf(nombres(TipoDeTituloDeCuartoNivel.values()));
     }
 
+    @Test
+    void dadasLasEnumeracionesDelCargo_cuandoSeComparanConLaCarga8_entoncesSonIguales() {
+        // Los 22 del catálogo CARGOS: los 16 de gestor son los de D-73.
+        List<String> cargos =
+                lista(raiz, "catalogos").stream()
+                        .filter(catalogo -> "CARGOS".equals(catalogo.get("codigo")))
+                        .flatMap(catalogo -> lista(catalogo, "valores").stream())
+                        .map(valor -> String.valueOf(valor.get("codigo")))
+                        .toList();
+
+        assertThat(nombres(TipoDeCargo.values())).containsExactlyElementsOf(cargos);
+        assertThat(nombres(EstadoDeCargo.values()))
+                .containsExactlyElementsOf(formato("cargos_autoridades", "estado"));
+    }
+
+    @Test
+    void dadasLasEnumeracionesDelProyecto_cuandoSeComparanConLaCarga9_entoncesSonIguales() {
+        assertThat(nombres(TipoDeProyecto.values()))
+                .containsExactlyElementsOf(formato("proyectos_practicas", "tipo_proyecto"));
+        assertThat(nombres(EstadoDeProyecto.values()))
+                .containsExactlyElementsOf(formato("proyectos_practicas", "estado"));
+        String roles =
+                String.valueOf(columna("proyectos_practicas", "participantes").get("formato"));
+        assertThat(roles.substring(roles.indexOf(':') + 1).split(","))
+                .extracting(String::strip)
+                .containsExactlyElementsOf(nombres(RolDeParticipante.values()));
+    }
+
+    private static List<String> formato(String carga, String campo) {
+        return Arrays.stream(String.valueOf(columna(carga, campo).get("formato")).split("[,;]"))
+                .map(String::strip)
+                .toList();
+    }
+
+    private static Map<?, ?> columna(String carga, String campo) {
+        Map<?, ?> una =
+                lista(raiz, "cargas").stream()
+                        .filter(otra -> carga.equals(otra.get("codigo")))
+                        .findFirst()
+                        .orElseThrow();
+        return lista(una, "columnas").stream()
+                .filter(otra -> campo.equals(otra.get("campo")))
+                .findFirst()
+                .orElseThrow();
+    }
+
     private static List<String> formato(String campo) {
         return Arrays.stream(String.valueOf(columna(campo).get("formato")).split("[,;]"))
                 .map(String::strip)
