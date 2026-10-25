@@ -19,7 +19,7 @@
 | `TituloDeCuartoNivel` | `titulo` (1–150), `tipo`, `campoEspecifico`, `anio` (1950–2100; el año actual lo revisa el dominio) |
 | `Curso` | `nombre` (1–150), `campoEspecifico`, `horas` (1–2000), `anio` |
 | `ExperienciaLaboral` | `cargo`, `institucion` (1–150), `campoEspecifico`, `anios` (> 0, ≤ 60) |
-| `FichaAcademica` | `tercerNivel`, `cuartoNivel`, `cursos`, `experiencia` (listas de hasta 20), `asignaturasAfines` (hasta 20 códigos, únicos) |
+| `FichaAcademica` | `tercerNivel`, `cuartoNivel`, `cursos`, `experiencia` (listas de hasta 20), `asignaturasAfines` (hasta 20 códigos; una repetida da 400 con su posición: el contrato no usa `uniqueItems`, que la quitaría sin avisar) |
 | `DatosDeDocente` | `primerApellido`, `segundoApellido`, `primerNombre`, `segundoNombre`, `correoInstitucional`, `telefono`, `tipoPersonal`, `categoriaEscalafon`, `dedicacion`, `horasContratadas` (obligatorio, 1–40), `fechaIngreso`, `inicioContrato`, `finContrato`, `condicionEspecial` (por omisión `NINGUNA`), `carreraBase`, `ficha` |
 | `DocenteNuevo` | `tipoIdentificacion`, `identificacion` y los mismos campos de `DatosDeDocente`, al mismo nivel (así un error dice el mismo campo al registrar y al corregir) |
 | `Docente` | lo de `DocenteNuevo` con `nombreCompleto`, `nombreDeCarreraBase`, `estado`, `camposAmplios` (los de la ficha, con su nombre) y `asignaturasAfines` (código y nombre) |
