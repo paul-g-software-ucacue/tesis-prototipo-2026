@@ -8,7 +8,9 @@ import { NoEncontrada } from './pantallas/NoEncontrada';
 import { Normativa } from './pantallas/normativa/Normativa';
 import { Carreras } from './pantallas/carreras/Carreras';
 import { Estructura } from './pantallas/estructura/Estructura';
+import { Cargos } from './pantallas/cargos/Cargos';
 import { Docentes } from './pantallas/docentes/Docentes';
+import { Proyectos } from './pantallas/proyectos/Proyectos';
 import { Oferta } from './pantallas/oferta/Oferta';
 import { Plantillas } from './pantallas/plantillas/Plantillas';
 import { Periodos } from './pantallas/periodos/Periodos';
@@ -85,6 +87,22 @@ export const rutasDeLaSpa: RouteObject[] = [
         element: (
           <RutaConPermiso cualquieraDe={LECTURA_DE_LOS_DOCENTES}>
             <Docentes />
+          </RutaConPermiso>
+        ),
+      },
+      {
+        path: 'cargos',
+        element: (
+          <RutaConPermiso cualquieraDe={LECTURA_DE_LOS_DOCENTES}>
+            <Cargos />
+          </RutaConPermiso>
+        ),
+      },
+      {
+        path: 'proyectos',
+        element: (
+          <RutaConPermiso cualquieraDe={LECTURA_DE_LOS_DOCENTES}>
+            <Proyectos />
           </RutaConPermiso>
         ),
       },

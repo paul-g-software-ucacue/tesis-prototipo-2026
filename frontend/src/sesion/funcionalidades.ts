@@ -69,7 +69,9 @@ export const ESCRITURA_DE_LAS_CARRERAS: readonly { funcionalidad: string; tipo: 
 
 /**
  * Quién lee los docentes con su ficha académica: quien lee los docentes, el distributivo o los
- * catálogos (D-70, F03-H04). Lo comparten la ruta y la entrada del menú.
+ * catálogos (D-70, F03-H04). Lo comparten la ruta y la entrada del menú. También leen así los
+ * cargos y los proyectos (F03-H05): «Proyectos y horas de participantes: lectura» no basta, porque
+ * su «solo lo propio» todavía no se puede aplicar (D-64).
  */
 export const LECTURA_DE_LOS_DOCENTES: readonly { funcionalidad: string; tipo: TipoDePermiso }[] = [
   { funcionalidad: 'DOCENTES', tipo: 'LECTURA' },
@@ -78,7 +80,8 @@ export const LECTURA_DE_LOS_DOCENTES: readonly { funcionalidad: string; tipo: Ti
 ];
 
 /**
- * Quién mantiene los docentes: Talento Humano, el Administrador o el Vicerrector (D-70, F03-H04).
+ * Quién mantiene los docentes, sus cargos y los proyectos: Talento Humano, el Administrador o el
+ * Vicerrector (D-70, F03-H04, F03-H05).
  */
 export const ESCRITURA_DE_LOS_DOCENTES: readonly { funcionalidad: string; tipo: TipoDePermiso }[] =
   [

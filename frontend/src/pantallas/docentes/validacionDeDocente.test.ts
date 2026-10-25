@@ -4,7 +4,8 @@
 import { describe, expect, it } from 'vitest';
 import { PERALTA } from './datosDePrueba';
 import { valoresDe, valoresVacios, type ValoresDelDocente } from './formularioDeDocente';
-import { erroresEn, filtrar } from './validacionDeDocente';
+import { filtrar } from '../comun/validacion';
+import { erroresEn } from './validacionDeDocente';
 
 const AMPLIOS = new Set(['01', '06']);
 const HOY = new Date(2026, 9, 24);

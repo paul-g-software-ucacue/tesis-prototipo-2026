@@ -252,14 +252,14 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
 
 **Goal**: «Cargos» y «Proyectos», con la validación en pantalla del principio XIV (FR-013; SC-001).
 
-- [ ] T019 [US6] Mover `filtrar` y `Filtro` de `frontend/src/pantallas/docentes/validacionDeDocente.ts` a `frontend/src/pantallas/comun/validacion.ts`, sin cambiar lo que hacen. Las pruebas de `validacionDeDocente.test.ts` y `Docentes.test.tsx` siguen en verde. Después, prueba primero en `frontend/src/pantallas/cargos/validacionDeCargo.test.ts` y `frontend/src/pantallas/proyectos/validacionDeProyecto.test.ts`, con los mismos casos válidos, inválidos y en el límite de T005 y T006:
+- [X] T019 [US6] Mover `filtrar` y `Filtro` de `frontend/src/pantallas/docentes/validacionDeDocente.ts` a `frontend/src/pantallas/comun/validacion.ts`, sin cambiar lo que hacen. Las pruebas de `validacionDeDocente.test.ts` y `Docentes.test.tsx` siguen en verde. Después, prueba primero en `frontend/src/pantallas/cargos/validacionDeCargo.test.ts` y `frontend/src/pantallas/proyectos/validacionDeProyecto.test.ts`, con los mismos casos válidos, inválidos y en el límite de T005 y T006:
   - el código del proyecto se pasa a mayúsculas y pierde lo que no es letra, dígito o guion;
   - las horas admiten hasta dos decimales y 5 caracteres;
   - el documento y la resolución cortan en 60 caracteres;
   - cada motivo dice qué hacer.
 
   Crear `validacionDeCargo.ts` y `validacionDeProyecto.ts`. T019 pasa.
-- [ ] T020 [US6] Prueba primero, en `frontend/src/pantallas/cargos/Cargos.test.tsx` y `frontend/src/pantallas/proyectos/Proyectos.test.tsx` (Vitest con la API simulada):
+- [X] T020 [US6] Prueba primero, en `frontend/src/pantallas/cargos/Cargos.test.tsx` y `frontend/src/pantallas/proyectos/Proyectos.test.tsx` (Vitest con la API simulada):
   - **Cargos:**
     - la lista con el docente, el cargo en español, la unidad o la carrera, las fechas, el estado y la advertencia;
     - los filtros por estado y por docente;
@@ -278,7 +278,7 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
     - el menú muestra «Cargos» y «Proyectos» después de «Docentes» con las tres lecturas, y no con solo «Proyectos: lectura».
 
   Crear las pantallas, sus rutas `/cargos` y `/proyectos`, sus entradas en `Marco.tsx` y sus listas en `funcionalidades.ts`. Las etiquetas y los ayudantes van en módulos `.ts`. T020 pasa.
-- [ ] T021 [US6] Prueba con Playwright, en `frontend/e2e/cargos-proyectos.spec.ts`:
+- [X] T021 [US6] Prueba con Playwright, en `frontend/e2e/cargos-proyectos.spec.ts`:
   - `datos.demo` registra un coordinador sin cuarto nivel y ve la advertencia;
   - registra un proyecto y lo ve asignable en 2026-I y no asignable en 2026-II;
   - axe-core sin fallas WCAG 2.1 AA en las dos listas, en los diálogos y en un diálogo con los campos marcados en rojo.
