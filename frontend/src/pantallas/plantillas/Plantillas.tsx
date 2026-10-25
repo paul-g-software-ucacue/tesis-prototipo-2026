@@ -3,7 +3,9 @@
 // su plantilla y de su diccionario de datos, y el diccionario desplegable, con las convenciones
 // comunes. La ven quienes leen las cargas o el distributivo (D-70); el servidor valida cada descarga.
 // Con «Cargas: escritura» (F01-H02, D-71), cada carga tiene «Subir archivo»: el servidor valida la
-// estructura del CSV o XLSX y responde cuántos registros leyó, o por qué lo rechaza; no lo guarda.
+// estructura del CSV o XLSX y revisa cada fila (F01-H03); responde si es válido o está rechazado,
+// con los primeros 100 problemas, o por qué rechaza la estructura. No lo guarda: «Descargar el
+// informe» vuelve a enviar el mismo archivo y guarda todos los problemas en CSV.
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
@@ -24,6 +26,7 @@ import {
   ARCHIVO_DEMASIADO_GRANDE,
   MAXIMO_DE_UN_ARCHIVO,
   descargar,
+  descargarInforme,
   subirArchivo,
   useDiccionario,
   type Carga,
@@ -31,7 +34,95 @@ import {
   type Descarga,
   type LecturaDeArchivo,
   type Obligatoriedad,
+  type ProblemaDeFila,
 } from './consultas';
+
+const TIPO_DE_PROBLEMA: Record<ProblemaDeFila['tipo'], string> = {
+  ERROR: 'Error',
+  ADVERTENCIA: 'Advertencia',
+};
+
+/** «1 error», «3 errores». */
+function cuantos(numero: number, uno: string, varios: string): string {
+  return `${numero} ${numero === 1 ? uno : varios}`;
+}
+
+/** Lo último que se subió: la carga, el archivo, que se guarda para descargar el informe, y su lectura. */
+interface Subida {
+  carga: Carga;
+  archivo: File;
+  lectura: LecturaDeArchivo;
+}
+
+/** El resultado de una subida: si es válido o está rechazado, los totales y los problemas. */
+function ResultadoDeLaSubida({ subida, alDescargar }: { subida: Subida; alDescargar: () => void }) {
+  const { lectura } = subida;
+  const advertencias = cuantos(lectura.advertencias, 'advertencia', 'advertencias');
+  const resumen = !lectura.valido
+    ? `${lectura.archivo} está rechazado: ${cuantos(lectura.errores, 'error', 'errores')} y ${advertencias}. Corríjalo y vuelva a subirlo.`
+    : lectura.advertencias > 0
+      ? `${lectura.archivo} es válido, con ${advertencias}: ${lectura.registros} registros leídos.`
+      : `${lectura.archivo} es válido: ${lectura.registros} registros leídos.`;
+  const total = lectura.errores + lectura.advertencias;
+  return (
+    <>
+      <Alert
+        severity={lectura.valido ? (lectura.advertencias > 0 ? 'warning' : 'success') : 'error'}
+        role="status"
+        sx={{ mb: 1 }}
+      >
+        {resumen}
+      </Alert>
+      {lectura.problemas.length > 0 && (
+        <>
+          <Stack direction="row" spacing={2} sx={{ mb: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+            <Button
+              size="small"
+              variant="outlined"
+              aria-label={`Descargar el informe de ${lectura.archivo}`}
+              onClick={alDescargar}
+            >
+              Descargar el informe
+            </Button>
+            {total > lectura.problemas.length && (
+              <Typography variant="body2">
+                {`Se muestran ${lectura.problemas.length} de ${total}; el informe los trae todos.`}
+              </Typography>
+            )}
+          </Stack>
+          <TableContainer sx={{ mb: 2 }}>
+            <Table aria-label={`Problemas de ${lectura.archivo}`} size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Fila</TableCell>
+                  <TableCell>Campo</TableCell>
+                  <TableCell>Valor</TableCell>
+                  <TableCell>Motivo</TableCell>
+                  <TableCell>Tipo</TableCell>
+                  <TableCell>Sugerencia</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {lectura.problemas.map((problema, indice) => (
+                  <TableRow key={`${problema.fila}-${problema.campo}-${indice}`}>
+                    <TableCell>{problema.fila}</TableCell>
+                    <TableCell>
+                      <code>{problema.campo}</code>
+                    </TableCell>
+                    <TableCell>{problema.valor}</TableCell>
+                    <TableCell>{problema.motivo}</TableCell>
+                    <TableCell>{TIPO_DE_PROBLEMA[problema.tipo]}</TableCell>
+                    <TableCell>{problema.sugerencia}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </>
+      )}
+    </>
+  );
+}
 
 const OBLIGATORIA: Record<Obligatoriedad, string> = {
   OBLIGATORIA: 'Sí',
@@ -124,7 +215,7 @@ export function Plantillas() {
   const diccionario = useDiccionario();
   const sesion = useSesionActual();
   const escritura = tienePermiso(sesion.data?.permisos, 'CARGAS', 'ESCRITURA');
-  const [lectura, setLectura] = useState<LecturaDeArchivo | null>(null);
+  const [subida, setSubida] = useState<Subida | null>(null);
   const [desplegada, setDesplegada] = useState<number | null>(null);
   const [convenciones, setConvenciones] = useState(false);
   const [aviso, setAviso] = useState<MensajeDeError | null>(null);
@@ -134,13 +225,22 @@ export function Plantillas() {
 
   const subir = async (carga: Carga, archivo: File) => {
     setAviso(null);
-    setLectura(null);
+    setSubida(null);
     if (archivo.size > MAXIMO_DE_UN_ARCHIVO) {
       setAviso(ARCHIVO_DEMASIADO_GRANDE);
       return;
     }
     try {
-      setLectura(await subirArchivo(carga, archivo));
+      setSubida({ carga, archivo, lectura: await subirArchivo(carga, archivo) });
+    } catch (fallo) {
+      setAviso(traducirError(fallo));
+    }
+  };
+
+  const bajarInforme = async ({ carga, archivo }: Subida) => {
+    setAviso(null);
+    try {
+      await descargarInforme(carga, archivo);
     } catch (fallo) {
       setAviso(traducirError(fallo));
     }
@@ -148,7 +248,7 @@ export function Plantillas() {
 
   const bajar = async (carga: Carga, que: Descarga) => {
     setAviso(null);
-    setLectura(null);
+    setSubida(null);
     try {
       await descargar(carga, que);
     } catch (fallo) {
@@ -179,10 +279,8 @@ export function Plantillas() {
           )}
         </AvisoDeError>
       )}
-      {lectura && (
-        <Alert severity="success" role="status" sx={{ mb: 1 }}>
-          {`${lectura.archivo}: ${lectura.registros} registros leídos.`}
-        </Alert>
+      {subida && (
+        <ResultadoDeLaSubida subida={subida} alDescargar={() => void bajarInforme(subida)} />
       )}
       {diccionario.data && (
         <>

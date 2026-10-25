@@ -178,7 +178,7 @@ description: "Tareas de F01-H03: validar las reglas de los datos e informe por f
 
 **Goal**: «Plantillas de carga» con el resultado, los totales, la tabla y la descarga (FR-011).
 
-- [ ] T012 [US5] Prueba primero, en `frontend/src/pantallas/plantillas/Plantillas.test.tsx` (ampliar, con la API simulada):
+- [X] T012 [US5] Prueba primero, en `frontend/src/pantallas/plantillas/Plantillas.test.tsx` (ampliar, con la API simulada):
   - un archivo válido sin problemas: «Válido» y su número de registros, como hoy;
   - un archivo rechazado: «Rechazado», los totales en un `role="status"` y la tabla con la fila, el campo, el valor, el motivo, el tipo en español y la sugerencia;
   - solo advertencias: «Válido, con N advertencias»;
@@ -186,7 +186,7 @@ description: "Tareas de F01-H03: validar las reglas de los datos e informe por f
   - «Descargar el informe» vuelve a enviar el mismo archivo a `descargarInforme` y guarda `informe-<carga>.csv`.
 
   Ampliar la pantalla y sus consultas en `frontend/src/pantallas/plantillas/`. T012 pasa.
-- [ ] T013 [US5] Prueba con Playwright, en `frontend/e2e/plantillas.spec.ts` (ampliar):
+- [X] T013 [US5] Prueba con Playwright, en `frontend/e2e/plantillas.spec.ts` (ampliar):
   - `datos.demo` sube un archivo de docentes con la cédula sin el cero y ve el problema con su sugerencia;
   - descarga el informe y el archivo trae las columnas;
   - axe-core sin fallas WCAG 2.1 AA con el informe a la vista.

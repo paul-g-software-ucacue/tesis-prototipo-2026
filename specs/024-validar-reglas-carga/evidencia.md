@@ -54,6 +54,8 @@ Registro de las comprobaciones de la historia (issue #29): validar las reglas de
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| La pantalla con el informe (Vitest) | `Plantillas.test.tsx`, 18 pruebas: válido sin problemas («es válido: 47 registros leídos.», sin tabla); rechazado («está rechazado: 1 error y 1 advertencia. Corríjalo y vuelva a subirlo.» en un `role="status"` y la tabla con la fila, el campo, el valor, el motivo, el tipo en español y la sugerencia); solo advertencias («es válido, con 1 advertencia»); 150 problemas («Se muestran 100 de 150; el informe los trae todos.» y 100 filas); «Descargar el informe» envía el mismo archivo, y su falla muestra el error. La SPA: 234 pruebas sin fallas, 93,8 % de líneas | `npx vitest run --coverage` | 2026-10-25 |
+| En el navegador, con axe (Playwright) | `e2e/plantillas.spec.ts`, 6 de 6: la cédula sin el cero se ve con su sugerencia; el informe se descarga como `informe-docentes.csv` con sus columnas, con el token y la parte `archivo`; axe-core sin fallas WCAG 2.1 AA con la tabla de problemas a la vista | `npx playwright test e2e/plantillas.spec.ts` | 2026-10-25 |
 
 ## Cierre
 
