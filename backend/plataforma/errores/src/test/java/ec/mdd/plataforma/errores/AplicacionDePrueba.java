@@ -11,9 +11,14 @@ import ec.mdd.plataforma.errores.nucleo.DetalleRespuesta;
 import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
 import ec.mdd.plataforma.errores.nucleo.SolicitudInvalida;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -68,6 +73,10 @@ class AplicacionDePrueba {
             @NotNull String nombre,
             @Size(min = 3, max = 10) String codigo,
             @Pattern(regexp = "[a-z]+") String clave,
+            @Pattern(regexp = "^[0-9]{3}$") String campoEspecifico,
+            @Pattern(regexp = "^[0-9]{7,10}$") String telefono,
+            @Min(1950) @Max(2100) Integer anio,
+            @DecimalMin(value = "0", inclusive = false) @DecimalMax("60") BigDecimal anios,
             @Size(min = 2) List<String> etiquetas,
             @Size(min = 1, max = 4) List<String> jornadas,
             Dedicacion dedicacion,

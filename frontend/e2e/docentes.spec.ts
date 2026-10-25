@@ -192,3 +192,15 @@ for (const [boton, titulo] of [
     await sinFallas(page);
   });
 }
+
+test('el diálogo «Registrar docente» con los campos marcados en rojo', async ({ page }) => {
+  await abrirDocentes(page);
+  await page.getByRole('button', { name: 'Registrar docente' }).click();
+  const dialogo = page.getByRole('dialog', { name: 'Registrar docente' });
+  await dialogo.getByLabel('Identificación', { exact: true }).fill('0109990011');
+  await dialogo.getByRole('button', { name: 'Registrar' }).click();
+  await expect(dialogo.getByRole('alert')).toContainText('marcados en rojo');
+  await expect(dialogo).toContainText('el último dígito no corresponde a los demás');
+
+  await sinFallas(page);
+});
