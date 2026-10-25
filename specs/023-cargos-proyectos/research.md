@@ -22,10 +22,10 @@ Fase 0 del plan de F03-H05 (issue #39). Cada punto dice la decisión, por qué y
   - Dos puertos nuevos en Académico: hay más interfaces para la misma lectura.
   - Copiar las unidades y los periodos en Docentes: el mismo dato en dos lugares.
 
-## 3. El catálogo de cargos: los 16 de gestor (propuesta D-73)
+## 3. El catálogo de cargos: los 16 de gestor (D-73)
 
 - **Problema:** el diccionario da los cargos RECTOR, VICERRECTOR, COORDINADOR_ACADEMICO_INSTITUCIONAL, COORDINADOR_SEDE, COORDINADOR_CARRERA y MIEMBRO_COMISION, pero los de gestor solo como «G06_GESTOR_VINCULACION … G21_GESTOR_ESTADISTICAS, prefijo con el código de gestión autorizada». Los datos de prueba usan 9 de esos 16 códigos. El principio XIV no deja inventar los otros 7.
-- **Propuesta para el autor (D-73):** los 16 códigos, formados como los 9 de los datos de prueba: el código de la gestión de POL 6 y el núcleo de su nombre.
+- **Decisión (D-73, aprobada por el autor el 2026-10-25):** los 16 códigos, formados como los 9 de los datos de prueba: el código de la gestión de POL 6 y el núcleo de su nombre.
 
   | Gestión | Código | En los datos de prueba |
   |---|---|---|
@@ -144,7 +144,7 @@ Los mensajes no repiten identificaciones (principio IX). Un cargo o un proyecto 
   - el diálogo con las carreras y los participantes como listas editables, igual que la ficha del docente.
 - **Validación:** `validacionDeCargo.ts` y `validacionDeProyecto.ts` reúsan `filtrar` de `validacionDeDocente.ts`, que se mueve a `pantallas/comun/validacion.ts`. El código del proyecto acepta mayúsculas, dígitos y guion, y lo demás pasa a mayúsculas o se quita. Las horas admiten un decimal. El documento y la resolución, hasta 60. Antes de enviar se marca cada campo con su motivo.
 
-## 12. Glosario (propuesta para el autor)
+## 12. Glosario (aprobado por el autor y aplicado el 2026-10-25)
 
 En `modelo_dominio.md` §7.2:
 - **Cargo (cambia):** «Puesto institucional que un docente activo a tiempo completo ocupa desde su designación y que da horas de gestión: rector, vicerrector, coordinadores, gestores de las gestiones autorizadas o miembro de comisión, este sin horas. Está vigente o finalizado; nunca se borra. Es un dato de la carga 8.» Cambia porque decía «en el periodo»: un cargo vale por sus fechas, no por un periodo.
