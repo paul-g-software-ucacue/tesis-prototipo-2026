@@ -13,11 +13,11 @@
   - la unidad según el cargo;
   - el fin de funciones hasta dos años después;
   - las horas de los participantes que no pasan las aprobadas.
-- **RN-20:** una advertencia que se calcula al leer: un coordinador o un gestor sin cuarto nivel.
+- **Advertencias de los cargos:** se calculan al leer. Avisan de un coordinador o un gestor sin cuarto nivel (RN-20), de un cargo vigente con la fecha de fin vencida y de un docente que dejó de estar activo a tiempo completo.
 - **Asignable:** un método puro, `Proyecto.asignableEn(inicio, fin)`, contra las fechas del periodo que llegan de Académico.
 - **Académico:** `consultarReferencias` suma las unidades y los periodos; es un cambio compatible del contrato.
 - **Catálogo de cargos:** el diccionario da los cargos de gestor solo como rango. Se fijan los 16 códigos G06 a G21 (**D-73**, aprobada; research §3), que pasan a `diccionario-de-datos.yaml`.
-- **Permisos:** escriben `[DOCENTES|CATALOGOS|DISTRIBUTIVO]:ESCRITURA` y leen `[DOCENTES|CATALOGOS|DISTRIBUTIVO|PROYECTOS]:LECTURA` (D-70). La matriz no cambia.
+- **Permisos:** escriben `[DOCENTES|CATALOGOS|DISTRIBUTIVO]:ESCRITURA` y leen `[DOCENTES|CATALOGOS|DISTRIBUTIVO]:LECTURA` (D-70). «Proyectos: lectura», que el Gestor de unidad tiene solo de lo propio, no basta hasta F08 (D-64). La matriz no cambia.
 - **Contrato:** 7 operaciones en Docentes, la ampliación de `consultarReferencias` y de `consultarReferenciasDeDocentes`, y 4 códigos `DOCENTES_*` con sus 8 columnas (D-72).
 - **SPA:** las pantallas «Cargos» y «Proyectos», con la validación del principio XIV en pantalla.
 - **Punta a punta:** `deploy/probar_cargos_proyectos.sh`, con los 21 cargos y los 11 proyectos de prueba.
@@ -74,7 +74,7 @@ Los detalles y las alternativas están en [research.md](research.md).
 | VI. Las reglas son datos | Las enumeraciones, comparadas con las cargas 8 y 9 del diccionario; los 16 cargos de gestor, en el diccionario (D-73). | ✅ |
 | VII. Inmutabilidad y trazabilidad | Nada se borra; 4 acciones en `registro_cambio` con el valor anterior y el nuevo (research §9). | ✅ |
 | VIII. Pruebas | Primero las del dominio, sin dobles, con los 21 cargos y los 11 proyectos de prueba. | ✅ |
-| IX. Seguridad y datos personales | Permisos alternativos validados en el servidor (D-70). Datos ficticios. Los mensajes no repiten identificaciones. | ✅ |
+| IX. Seguridad y datos personales | Permisos alternativos validados en el servidor (D-70). «Proyectos: lectura» solo de lo propio no da acceso mientras su filtro no se pueda aplicar (D-64, aclaración 8). Datos ficticios. Los mensajes no repiten identificaciones. | ✅ |
 | X. Simplicidad | Las listas del proyecto en `jsonb`, la advertencia calculada y las listas filtradas en memoria (research §5 y §6). | ✅ |
 | XI y XII | Ninguna interfaz nueva fuera de los puertos de los casos de uso; JavaDoc en español. | ✅ |
 | XIII. Errores | 4 códigos con sus 8 columnas; los datos inválidos, 400 con su campo y su elemento (research §10). | ✅ |

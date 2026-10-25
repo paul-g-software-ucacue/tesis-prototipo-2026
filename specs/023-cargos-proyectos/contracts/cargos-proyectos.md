@@ -11,12 +11,12 @@
 | `CodigoDeUnidad` | `^[A-Z0-9_-]{1,20}$` |
 | `DatosDeCargo` | `unidad` (opcional), `carrera` (opcional), `fechaFin` (opcional), `documento` (1–60), `estado` |
 | `CargoNuevo` | `docente`, `tipo` y `fechaDesignacion`, más los campos de `DatosDeCargo` al mismo nivel; `estado` es opcional y por omisión vale `VIGENTE` |
-| `AdvertenciaDeCargo` | `codigo` (`CUARTO_NIVEL`) y `descripcion` («Le falta un título de cuarto nivel registrado (RN-20).») |
+| `AdvertenciaDeCargo` | `codigo` (`CUARTO_NIVEL`, `FECHA_FIN_VENCIDA` o `DOCENTE_NO_HABILITADO`) y `descripcion` («Le falta un título de cuarto nivel registrado (RN-20).», «Su fecha de fin ya pasó: finalízalo.» o «El docente ya no está activo a tiempo completo (POL 5.4).») |
 | `Cargo` | lo de `CargoNuevo` con `nombreDelDocente`, `nombreDeUnidad`, `nombreDeCarrera` y `advertencias` |
 | `TipoDeProyecto` | `INVESTIGACION`, `VINCULACION`, `PRACTICAS_PREPROFESIONALES`, `SERVICIO_COMUNITARIO` |
 | `EstadoDeProyecto` | `APROBADO`, `EN_EJECUCION`, `FINALIZADO`, `SUSPENDIDO` |
 | `RolDeParticipante` | `DIRECTOR`, `INVESTIGADOR`, `DOCENTE_APOYO`, `TUTOR_PRACTICAS` |
-| `HorasSemanales` | `number`, `> 0`, `≤ 999.9`, `multipleOf: 0.1` |
+| `HorasSemanales` | `number`, `> 0`, `≤ 999.9`, `multipleOf: 0.01`; los 5 caracteres los comprueba el dominio (aclaración 7) |
 | `Participante` | `docente`, `rol` y `horas` |
 | `DatosDeProyecto` | `nombre` (1–250), `tipo`, `carreras` (1–20), `resolucionOcs` (1–60), `fechaResolucion`, `estado`, `vigenciaInicio`, `vigenciaFin`, `director`, `participantes` (1–40) y `horasAprobadas` |
 | `ProyectoNuevo` | `codigo` (`^[0-9A-Z-]{1,30}$`) y los campos de `DatosDeProyecto` al mismo nivel |
@@ -38,8 +38,7 @@ Ninguna lista usa `uniqueItems`: una carrera o un participante repetido da 400 c
 | `corregirProyecto` | `PUT /api/docentes/proyectos/{codigo}` | escritura | 200 · 400 · 404 |
 
 - **Escritura:** `[DOCENTES:ESCRITURA, CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]`.
-- **Lectura:** `[DOCENTES:LECTURA, CATALOGOS:LECTURA, DISTRIBUTIVO:LECTURA, PROYECTOS:LECTURA]`.
-- `consultarReferenciasDeDocentes` suma `PROYECTOS:LECTURA` (research §8).
+- **Lectura:** `[DOCENTES:LECTURA, CATALOGOS:LECTURA, DISTRIBUTIVO:LECTURA]`. `PROYECTOS:LECTURA` no basta hasta F08 (D-64, research §8).
 
 ## Académico
 

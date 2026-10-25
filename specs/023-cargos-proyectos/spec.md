@@ -24,7 +24,7 @@
 **Punto de partida.** Docentes ya guarda a cada docente con su ficha académica, su dedicación y su estado laboral (F03-H04). Académico tiene la estructura orgánica con sus unidades y las 21 gestiones autorizadas (F03-H01), las carreras (F03-H02) y los periodos académicos con sus fechas (F02-H01). Falta saber qué docente ocupa qué cargo, que es lo que da horas de gestión, y qué proyectos aprobados por el OCS existen, que son los únicos que pueden recibir horas de investigación, vinculación y prácticas. Esta historia permite registrar, consultar y corregir los cargos y los proyectos en pantalla, con las reglas de las cargas 8 y 9 del diccionario de datos. Las cargas por archivo (F01-H04) aplicarán después las mismas reglas.
 
 **Cómo queda tras las aclaraciones**:
-- Mantienen los cargos y los proyectos los mismos que mantienen los docentes. Los consultan, además, quienes leen los proyectos.
+- Mantienen y consultan los cargos y los proyectos los mismos que mantienen y consultan los docentes. El Gestor de unidad, con «Proyectos: lectura» solo de lo propio, no los ve hasta F08 (D-64).
 - Un coordinador o gestor sin título de cuarto nivel se registra con una advertencia que dice el requisito que falta. Un docente que no está activo, o que no es de tiempo completo, no puede recibir un cargo.
 - Si un proyecto es asignable se decide contra un periodo.
 - La confirmación «sin proyectos» del periodo queda para la confirmación de las cargas.
@@ -35,7 +35,7 @@
 
 - Q: ¿Quién registra y corrige los cargos y los proyectos aprobados, y quién los consulta? → A: Como los docentes (D-70):
   - **Mantienen** quienes tienen «Docentes: escritura» (Talento Humano), «Catálogos y datos maestros: escritura» (Administrador del sistema) o «Distributivo del periodo: escritura» (Vicerrector académico).
-  - **Consultan** quienes tienen «Docentes: lectura», «Catálogos y datos maestros: lectura», «Distributivo del periodo: lectura» o «Proyectos y horas de participantes: lectura». Entre ellos están el Responsable de consolidación y el Gestor de unidad; por ahora, este último ve todos los proyectos.
+  - **Consultan** quienes tienen «Docentes: lectura», «Catálogos y datos maestros: lectura» o «Distributivo del periodo: lectura». Entre ellos está el Responsable de consolidación.
   - El filtro «solo lo propio» del Gestor de unidad y la confirmación de las horas de sus proyectos quedan para F08. La matriz no cambia.
 - Q: ¿Cómo se verifican los requisitos del cargo (RN-20)? → A: Avisa y bloquea:
   - Un coordinador o un gestor cuyo docente no tiene ningún título de cuarto nivel en su ficha se registra, con una advertencia que dice el requisito que falta.
@@ -48,6 +48,11 @@
 
 - Q: El diccionario solo dice que el código de un proyecto es «Texto, hasta 30». ¿Qué caracteres admite? → A: Mayúsculas, dígitos y guion, sin espacios, como los códigos de las carreras y las asignaturas. En pantalla se pasa a mayúsculas mientras se escribe. Cubre todos los códigos de los datos de prueba.
 - Q: ¿De qué tipo son las horas semanales de cada participante? → A: Un decimal mayor que 0, como las horas aprobadas del proyecto. La suma de las horas de los participantes no puede pasar las aprobadas.
+
+### Session 2026-10-25 (analyze)
+
+- Q: ¿Cuántos decimales admiten las horas semanales, las aprobadas y las de cada participante? → A: Hasta dos, con hasta 5 caracteres en total: 2,5, 2,55, 99,75 y 999,9 pasan; 2,555 y 100,25 no.
+- Q: ¿Qué hace el Gestor de unidad con los proyectos mientras no se pueda aplicar su «solo lo propio»? → A: No los ve hasta F08. «Proyectos y horas de participantes: lectura» deja de estar entre las lecturas de esta historia. Su alcance «solo lo propio» todavía no se puede aplicar, porque un proyecto no tiene unidad y un usuario no está vinculado a su docente, y D-64 pide no mostrar más que lo propio. El Responsable de consolidación sigue viéndolos con «Distributivo del periodo: lectura».
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -185,7 +190,11 @@ Las reglas de cada campo salen del diccionario de datos de las cargas 8 y 9 (pri
 | Estado | Vigente o finalizado | — | Un cargo nuevo queda vigente. |
 
 - La clave de un cargo es el docente, el cargo y la fecha de designación. Un docente puede tener más de un cargo; que sus horas sumen bien lo revisa el distributivo.
-- **Advertencia de requisitos (RN-20):** un coordinador (académico institucional, de sede o de carrera) o un gestor (G06 a G21) cuyo docente no tiene ningún título de cuarto nivel en su ficha. Es una advertencia, no un error: el cargo se guarda.
+- **Vigente** es el estado del cargo: lo decide quien lo mantiene, al finalizarlo. Las fechas las usa el distributivo para saber en qué periodos da horas.
+- **Advertencias:** se calculan cada vez que se consulta el cargo; no se guardan ni bloquean nada.
+  - **Requisitos (RN-20):** un coordinador (académico institucional, de sede o de carrera) o un gestor (G06 a G21) cuyo docente no tiene ningún título de cuarto nivel en su ficha. El cargo se guarda.
+  - **Fecha de fin vencida:** un cargo vigente cuya fecha de fin ya pasó. Hay que finalizarlo.
+  - **Docente que dejó de estar habilitado:** el docente de un cargo vigente ya no está activo o ya no es de tiempo completo. Al registrar o corregir el cargo, eso sigue siendo un rechazo.
 - **Coordinador académico institucional:** se registra. El aviso de RN-09, que dice que el tipo de IST no lo prevé, lo da el motor (F06), igual que el número de gestores por tipo de IST (RN-10).
 
 **Proyecto aprobado (carga 9)**
@@ -195,19 +204,19 @@ Las reglas de cada campo salen del diccionario de datos de las cargas 8 y 9 (pri
 | Código | Mayúsculas, dígitos y guion, sin espacios (aclaración 5) | Hasta 30 | Obligatorio y único. No cambia. |
 | Nombre | Texto libre | Hasta 250 | Obligatorio. |
 | Tipo | Investigación, vinculación, prácticas preprofesionales o servicio comunitario | — | Obligatorio (POL 5.3). |
-| Carreras | Lista de códigos de carreras de Académico | Al menos una; hasta 200 caracteres en el archivo | Sin repetir. |
+| Carreras | Lista de códigos de carreras de Académico | De 1 a 20, que cubren los 200 caracteres del archivo | Sin repetir. |
 | Resolución del OCS | Texto | Hasta 60 | Obligatoria (RN-13, RN-25). |
 | Fecha de la resolución | Fecha aaaa-mm-dd | 10 | Obligatoria. |
 | Estado | Aprobado, en ejecución, finalizado o suspendido | — | Obligatorio. |
 | Vigencia | Fechas de inicio y fin, aaaa-mm-dd | 10 cada una | Obligatorias; el fin es posterior al inicio. |
 | Director | Identificación de un docente registrado | Hasta 13 | Obligatorio. |
-| Participantes | Lista de docente, rol y horas semanales | Al menos uno; hasta 1000 caracteres en el archivo | Docentes registrados, sin repetir. El rol es director, investigador, docente de apoyo o tutor de prácticas. Las horas son un decimal mayor que 0 (aclaración 6). |
-| Horas semanales aprobadas | Decimal | Hasta 5 caracteres | Mayor que 0. La suma de las horas de los participantes no la pasa. |
+| Participantes | Lista de docente, rol y horas semanales | De 1 a 40, que cubren los 1000 caracteres del archivo | Docentes registrados, sin repetir. El rol es director, investigador, docente de apoyo o tutor de prácticas. Las horas siguen la regla de las horas aprobadas (aclaraciones 6 y 7). |
+| Horas semanales aprobadas | Decimal con hasta dos decimales | Hasta 5 caracteres | Mayor que 0 (aclaración 7). La suma de las horas de los participantes no la pasa. |
 
 - **Asignable en un periodo:** un proyecto está aprobado o en ejecución y su vigencia (inicio y fin, inclusive) se cruza con las fechas del periodo. Si no es asignable, se dice por qué: su estado, su vigencia o los dos.
 - La duración «típica de 1 a 2 años» del diccionario es una descripción, no una regla, y no se valida.
 - **Datos personales:** los cargos y los proyectos nombran docentes por su identificación. Los datos de prueba del repositorio y del equipo de demostración son ficticios.
-- **Usuario sin permiso:** quien no tiene ningún permiso de escritura de los tres ve los cargos y los proyectos en solo lectura. Si intenta cambiar algo, el servidor responde «Acceso no autorizado» (403). Quien no tiene ninguno de los cuatro de lectura no los ve.
+- **Usuario sin permiso:** quien no tiene ningún permiso de escritura de los tres ve los cargos y los proyectos en solo lectura. Si intenta cambiar algo, el servidor responde «Acceso no autorizado» (403). Quien no tiene ninguno de los tres de lectura no los ve; tampoco quien solo tiene «Proyectos y horas de participantes: lectura» (aclaración 8).
 
 ## Requirements *(mandatory)*
 
@@ -218,12 +227,12 @@ Las reglas de cada campo salen del diccionario de datos de las cargas 8 y 9 (pri
 - **FR-003**: Se DEBE poder registrar, consultar y corregir los cargos y los proyectos. Un cargo se finaliza y un proyecto cambia de estado; nada se borra (principio VII). La clave de un cargo y el código de un proyecto no cambian.
 - **FR-004**: Cada campo DEBE cumplir las reglas de tipo, caracteres y largo de los casos límite, en el servidor y en la pantalla (principio XIV). Cada regla se prueba con casos válidos e inválidos, también en sus límites.
 - **FR-005**: Un cargo DEBE rechazarse si su docente no está activo o no es de tiempo completo, si repite la clave de otro, si da a una carrera un segundo coordinador vigente (RN-12) o si su unidad no corresponde a su cargo.
-- **FR-006**: Registrar o corregir un coordinador o un gestor cuyo docente no tiene un título de cuarto nivel DEBE guardar el cargo y devolver una advertencia con el requisito que falta (RN-20, aclaración 2). La consulta de los cargos DEBE mostrar esa advertencia mientras el requisito siga faltando.
+- **FR-006**: Registrar o corregir un coordinador o un gestor cuyo docente no tiene un título de cuarto nivel DEBE guardar el cargo y devolver una advertencia con el requisito que falta (RN-20, aclaración 2). La consulta de los cargos DEBE mostrar esa advertencia mientras el requisito siga faltando. También DEBE advertir de un cargo vigente con la fecha de fin vencida y de uno cuyo docente dejó de estar activo a tiempo completo.
 - **FR-007**: Un proyecto DEBE rechazarse si repite el código de otro, si sus participantes suman más horas que las aprobadas o si su director, sus participantes o sus carreras no existen.
 - **FR-008**: Las unidades, las carreras y las fechas de los periodos DEBEN venir de Académico, y los docentes con su estado, su dedicación y sus títulos de cuarto nivel, de Docentes.
 - **FR-009**: La consulta de los proyectos de un periodo DEBE decir de cada uno si es asignable y, si no, por qué: su estado, su vigencia o los dos (aclaración 3).
 - **FR-010**: Cada dato inválido DEBE rechazarse entero, con su campo (y, en las listas, su elemento) y un motivo que dice qué hacer. Cada rechazo DEBE responder con un código del catálogo de errores, con sus 8 columnas llenas (principio XIII, D-72). No se guarda nada a medias.
-- **FR-011**: Mantener cargos y proyectos DEBE exigir «Docentes: escritura», «Catálogos y datos maestros: escritura» o «Distributivo del periodo: escritura». Consultarlos DEBE exigir «Docentes: lectura», «Catálogos y datos maestros: lectura», «Distributivo del periodo: lectura» o «Proyectos y horas de participantes: lectura». El servidor lo valida (ADR-021, D-70, aclaración 1).
+- **FR-011**: Mantener cargos y proyectos DEBE exigir «Docentes: escritura», «Catálogos y datos maestros: escritura» o «Distributivo del periodo: escritura». Consultarlos DEBE exigir «Docentes: lectura», «Catálogos y datos maestros: lectura» o «Distributivo del periodo: lectura»; «Proyectos y horas de participantes: lectura» no basta hasta F08 (D-64). El servidor lo valida (ADR-021, D-70, aclaraciones 1 y 8).
 - **FR-012**: Cada registro, corrección, finalización y cambio de estado DEBE quedar registrado con quién, cuándo, qué cambió, el valor anterior y el nuevo (principio VII).
 - **FR-013**: Las pantallas DEBEN listar los cargos, con filtros por estado y por docente, y los proyectos de un periodo, con su condición de asignable. También DEBEN permitir a quien tiene el permiso registrar, corregir y finalizar, con la validación en pantalla del principio XIV.
 - **FR-014**: Los catálogos de las cargas 8 y 9 (cargos, estados del cargo, tipos de proyecto, estados del proyecto y roles de participante) DEBEN ser los del diccionario de datos y vivir en un solo lugar (principio VI).
@@ -257,6 +266,7 @@ Las reglas de cada campo salen del diccionario de datos de las cargas 8 y 9 (pri
 - RN-20 alcanza a los coordinadores y a los gestores. El rector y el vicerrector tienen sus propios requisitos en la ley, y el miembro de comisión no tiene horas (C-12): ninguno lleva advertencia.
 - Que el docente esté activo y sea de tiempo completo se exige a todo cargo, como pide el diccionario para la carga 8 (POL 5.4).
 - Un cargo vale por sus fechas. En qué periodos da horas lo decide el distributivo, no esta historia.
+- RN-12 pide un coordinador por cada carrera ofertada. Aquí solo se impide el segundo coordinador vigente; que no falte ninguno lo revisa la validación del distributivo (F06).
 - Que el director figure entre los participantes como director no está definido en el diccionario, y no se valida.
 - Los periodos y sus fechas vienen de Académico; un proyecto no pertenece a un periodo, sino que es asignable o no en cada uno.
 - Registrar por pantalla es la vía de esta historia. Las cargas 8 y 9 por archivo se aplican con F01-H04 sobre las mismas reglas, y la confirmación «sin proyectos» con F01-H04 y F01-H05.

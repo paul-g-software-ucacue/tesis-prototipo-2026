@@ -71,14 +71,14 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
 
 - [ ] T002 Ampliar `contratos/docentes/openapi.yaml` según contracts/cargos-proyectos.md:
   - los tags `Cargos` y `Proyectos`, los esquemas y las 7 operaciones;
-  - **lecturas** con `x-mdd-permiso: [DOCENTES:LECTURA, CATALOGOS:LECTURA, DISTRIBUTIVO:LECTURA, PROYECTOS:LECTURA]`, y **escrituras** con `[DOCENTES:ESCRITURA, CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]`;
-  - `consultarReferenciasDeDocentes` suma `PROYECTOS:LECTURA`, y `ReferenciasDeDocentes`, `unidades` y `periodos`;
-  - las reglas del principio XIV en cada campo: `pattern` `^[0-9A-Z-]{1,30}$` en el código del proyecto y `^[A-Z0-9_-]{1,20}$` en la unidad; `maxLength` 60 en el documento y la resolución, y 250 en el nombre; `HorasSemanales` con `exclusiveMinimum` 0, `maximum` 999.9 y `multipleOf` 0.1; las listas de 1 a 20 carreras y de 1 a 40 participantes, sin `uniqueItems`;
+  - **lecturas** con `x-mdd-permiso: [DOCENTES:LECTURA, CATALOGOS:LECTURA, DISTRIBUTIVO:LECTURA]` (sin `PROYECTOS:LECTURA`, D-64, aclaración 8), y **escrituras** con `[DOCENTES:ESCRITURA, CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]`;
+  - `ReferenciasDeDocentes` suma `unidades` y `periodos`;
+  - las reglas del principio XIV en cada campo: `pattern` `^[0-9A-Z-]{1,30}$` en el código del proyecto y `^[A-Z0-9_-]{1,20}$` en la unidad; `maxLength` 60 en el documento y la resolución, y 250 en el nombre; `HorasSemanales` con `exclusiveMinimum` 0, `maximum` 999.9 y `multipleOf` 0.01; las listas de 1 a 20 carreras y de 1 a 40 participantes, sin `uniqueItems`;
   - un `example` ficticio en cada parámetro;
   - el comentario de cabecera cita F03-H05, RF-18, RN-12, RN-20, D-70 y D-73.
 
   En `contratos/academico/openapi.yaml`, agregar a `ReferenciasDeAcademico` las listas `unidades` (`UnidadDeReferencia`) y `periodos` (`PeriodoDeReferencia`). Agregar los 4 códigos de research §10 a `contratos/comun/errores.md`, con sus 8 columnas. Regenerar (`openApiGenerate`, `generar:api`) y dejar `verificar:ruptura` en verde: el cambio de Académico es compatible.
-- [ ] T003 [P] En `backend/servicios/cargas/src/main/resources/cargas/diccionario-de-datos.yaml`, reemplazar la fila del rango del catálogo `CARGOS` por los 16 cargos de D-73, con su gestión en la descripción. Ajustar las pruebas de Cargas que lean ese catálogo y anotar en la evidencia que la plantilla y el diccionario de la carga 8 ahora los listan. `./gradlew :servicios:cargas:test` pasa.
+- [ ] T003 [P] En `backend/servicios/cargas/src/main/resources/cargas/diccionario-de-datos.yaml`, reemplazar la fila del rango del catálogo `CARGOS` por los 16 cargos de D-73, con su gestión en la descripción. Ajustar `DiccionarioYamlTest` y `DiccionarioDeDatosTest`, y comprobar que la plantilla y el diccionario descargables de la carga 8 listan los 22 cargos; anotarlo en la evidencia. `./gradlew :servicios:cargas:test` pasa.
 
 ### Referencias de Académico (research §2)
 
@@ -104,7 +104,7 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
   - sin carreras, con una repetida (`carreras[1]`), con una que no existe;
   - la resolución vacía y de 61; el fin de vigencia igual al inicio;
   - el director o un participante que no son docentes registrados (`participantes[2].docente`); un participante repetido;
-  - horas de `0`, `0.1` (pasa), `999.9` (pasa), `1000` y `2.55`;
+  - horas de `0`, `0.01`, `2.55`, `99.99` y `999.9` (pasan), `2.50` (pasa: cuenta como `2.5`), y `2.555`, `100.25` (6 caracteres) y `1000` (se rechazan);
   - participantes que suman exactamente las horas aprobadas (pasa) y `0.1` más;
   - cada rol fuera de su enumeración;
   - `corregido` devuelve cada cambio.
@@ -179,9 +179,11 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
   - **un coordinador de carrera cuyo docente no tiene títulos de cuarto nivel se registra con 201, y su respuesta trae la advertencia `CUARTO_NIVEL` con «Le falta un título de cuarto nivel registrado (RN-20).»** (escenario del issue);
   - lo mismo para un coordinador de sede, un coordinador académico institucional y cada gestor G06 a G21;
   - ninguna advertencia para un rector, un vicerrector, un miembro de comisión ni un docente con una maestría;
-  - `listarCargos` la sigue mostrando, y deja de mostrarla cuando la ficha del docente gana un título de cuarto nivel.
+  - `listarCargos` la sigue mostrando, y deja de mostrarla cuando la ficha del docente gana un título de cuarto nivel;
+  - con `hoy` fijo: un cargo vigente con la fecha de fin de ayer trae `FECHA_FIN_VENCIDA`; con la de hoy, no; uno finalizado, no;
+  - un cargo vigente cuyo docente pasa después a licencia o a medio tiempo trae `DOCENTE_NO_HABILITADO`, y registrar uno nuevo para ese docente sigue dando 409.
 
-  Agregar `AdvertenciaDeCargo` y `Cargo.advertencias(Docente)` en el dominio, y llevarla a la respuesta del controlador. T014 pasa.
+  Agregar `AdvertenciaDeCargo` y `Cargo.advertencias(Docente, LocalDate hoy)` en el dominio, y llevarlas a la respuesta del controlador, que usa la fecha de hoy. T014 pasa.
 
 **Checkpoint**: los cargos se registran por la API con su advertencia.
 
@@ -221,7 +223,7 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
   - un proyecto que no existe da 404.
 
   Crear `Asignabilidad`, `MotivoNoAsignable`, `Proyecto.asignableEn` y `ConsultarProyectosServicio`. T016 pasa.
-- [ ] T017 [US4] Prueba primero, en `PDOC/adaptadores/entrada/PermisosDocentesTest.java` (ampliar, con `VerificadorDePermisos`): las 7 operaciones nuevas exigen sus permisos alternativos, y `consultarReferenciasDeDocentes` también acepta `PROYECTOS:LECTURA`. Comprobar una vez que falla si las lecturas dejan fuera `PROYECTOS:LECTURA`, restaurarlo y anotarlo en la evidencia. T017 pasa.
+- [ ] T017 [US4] Prueba primero, en `PDOC/adaptadores/entrada/PermisosDocentesTest.java` (ampliar, con `VerificadorDePermisos`): las 7 operaciones nuevas exigen sus permisos alternativos, y **un token con solo `PROYECTOS:LECTURA` recibe 403 en todas** (D-64, aclaración 8). Comprobar una vez que la prueba falla si las lecturas dejan fuera `DISTRIBUTIVO:LECTURA`, restaurarlo y anotarlo en la evidencia. T017 pasa.
 
 **Checkpoint**: los cargos y los proyectos se registran y se consultan por la API.
 
@@ -252,7 +254,7 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
 
 - [ ] T019 [US6] Mover `filtrar` y `Filtro` de `frontend/src/pantallas/docentes/validacionDeDocente.ts` a `frontend/src/pantallas/comun/validacion.ts`, sin cambiar lo que hacen. Las pruebas de `validacionDeDocente.test.ts` y `Docentes.test.tsx` siguen en verde. Después, prueba primero en `frontend/src/pantallas/cargos/validacionDeCargo.test.ts` y `frontend/src/pantallas/proyectos/validacionDeProyecto.test.ts`, con los mismos casos válidos, inválidos y en el límite de T005 y T006:
   - el código del proyecto se pasa a mayúsculas y pierde lo que no es letra, dígito o guion;
-  - las horas admiten un decimal;
+  - las horas admiten hasta dos decimales y 5 caracteres;
   - el documento y la resolución cortan en 60 caracteres;
   - cada motivo dice qué hacer.
 
@@ -273,7 +275,7 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
     - un 400 marca su campo y, en una lista, su fila;
     - un 409 muestra su título;
     - sin escritura, la pantalla es de solo lectura y dice por qué;
-    - el menú muestra «Cargos» y «Proyectos» después de «Docentes» con las cuatro lecturas.
+    - el menú muestra «Cargos» y «Proyectos» después de «Docentes» con las tres lecturas, y no con solo «Proyectos: lectura».
 
   Crear las pantallas, sus rutas `/cargos` y `/proyectos`, sus entradas en `Marco.tsx` y sus listas en `funcionalidades.ts`. Las etiquetas y los ayudantes van en módulos `.ts`. T020 pasa.
 - [ ] T021 [US6] Prueba con Playwright, en `frontend/e2e/cargos-proyectos.spec.ts`:
@@ -297,9 +299,10 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
     - un proyecto suspendido;
     - un cargo finalizado y otro coordinador para su carrera;
     - `consolidacion.demo` lee y recibe 403 al escribir;
+    - un usuario con solo «Proyectos: lectura», como el Gestor de unidad, recibe 403;
     - un usuario sin lectura recibe 403.
   - **Tiempo:** mide `listarProyectos` con un periodo, lo muestra y falla si pasa de 500 ms (la meta es 300 ms; el resto es holgura). Anotarlo en la evidencia.
-  - **Limpieza:** borra en la base solo lo que creó, con sus registros.
+  - **Limpieza:** borra en la base solo lo que creó, con sus registros, también la copia de los periodos de prueba en Roles, como `probar_periodos.sh`.
 
   Agregar su paso a `.github/workflows/perfil-consolidado.yml`. Correrlo dos veces seguidas y anotarlo; `shellcheck` sin observaciones.
 - [ ] T023 Correr todo, como en las historias anteriores:

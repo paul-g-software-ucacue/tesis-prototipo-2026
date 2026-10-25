@@ -72,7 +72,10 @@ El diccionario pide la unidad «salvo coordinador de carrera» y la marca como c
   - la misma clave (docente, cargo y fecha de designación): `DOCENTES_CARGO_REPETIDO`;
   - un segundo coordinador vigente para una carrera (RN-12): `DOCENTES_COORDINADOR_VIGENTE`.
 - **Datos inválidos (400, `COMUN_SOLICITUD_INVALIDA`, con su campo):** la unidad o la carrera que falta, que no existe o que no corresponde al cargo; un fin de funciones que no es posterior a la designación o que pasa de dos años después (POL 5.4); un documento vacío o de más de 60 caracteres.
-- **Advertencia (RN-20):** se calcula, no se guarda. Un coordinador o un gestor cuyo docente no tiene ningún título de cuarto nivel tiene la advertencia `CUARTO_NIVEL` con su texto. La respuesta de registrar y de corregir la trae, y también cada cargo de la lista. Si el docente agrega una maestría a su ficha, la advertencia desaparece sola.
+- **Advertencias:** se calculan con el docente y la fecha de hoy; no se guardan ni bloquean nada. La respuesta de registrar y de corregir las trae, y también cada cargo de la lista:
+  - `CUARTO_NIVEL` (RN-20): un coordinador o un gestor cuyo docente no tiene ningún título de cuarto nivel. Si el docente agrega una maestría a su ficha, desaparece sola.
+  - `FECHA_FIN_VENCIDA`: un cargo vigente cuya fecha de fin es anterior a hoy. «Vigente» es el estado (spec), así que hay que finalizarlo.
+  - `DOCENTE_NO_HABILITADO`: el docente de un cargo vigente pasó a licencia, a inactivo o a otra dedicación después de recibirlo. Al registrar o corregir el cargo, eso sigue siendo un rechazo (409).
 - **RN-12 sin carreras de más:** «vigente» es el estado. El índice único parcial `cargo (carrera) where cargo = 'COORDINADOR_CARRERA' and estado = 'VIGENTE'` lo garantiza en la base; el servicio lo comprueba antes, bajo `LOCK TABLE cargo IN SHARE ROW EXCLUSIVE MODE` (como los docentes repetidos), para responder con el código y no con un error de la base.
 - **Descartado:**
   - Guardar la advertencia: quedaría vieja cuando la ficha cambie.
@@ -91,7 +94,7 @@ El diccionario pide la unidad «salvo coordinador de carrera» y la marca como c
   - un participante repetido;
   - unas horas que no son mayores que 0 o que no caben en 5 caracteres;
   - participantes que suman más que las horas aprobadas.
-- **Las horas:** decimales mayores que 0, con hasta 5 caracteres: tres dígitos enteros y uno decimal (`999.9`). En la base son `numeric(4,1)`. La suma se compara en `BigDecimal`.
+- **Las horas (aclaración 7):** decimales mayores que 0, con hasta dos decimales y hasta 5 caracteres. Los caracteres se cuentan sobre el valor sin ceros de más: `2.50` cuenta como `2.5`. Pasan `2.5`, `2.55`, `99.75` y `999.9`; no pasan `2.555` ni `100.25`. En la base son `numeric(5,2)` con `check` mayor que 0 y menor que 1000; los 5 caracteres los comprueba el dominio. La suma se compara en `BigDecimal`.
 - **Las listas:** `carreras` y `participantes` van en `jsonb` dentro de la fila, como la ficha del docente (F03-H04): se leen y se guardan enteras. En pantalla y en la API, las carreras admiten hasta 20 y los participantes hasta 40. Con eso caben los 200 y los 1000 caracteres que el diccionario da a esas columnas en el archivo: un código de carrera ocupa unos 17 caracteres y un participante, unos 24.
 - **Descartado:** una tabla de participantes. Por ahora ninguna consulta busca proyectos por participante; si F06 la necesita, se agrega entonces.
 
@@ -104,8 +107,8 @@ El diccionario pide la unidad «salvo coordinador de carrera» y la marca como c
 ## 8. Permisos (D-70, aclaración 1)
 
 - **Escriben** `[DOCENTES:ESCRITURA, CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]`: registrar y corregir cargos y proyectos.
-- **Leen** `[DOCENTES:LECTURA, CATALOGOS:LECTURA, DISTRIBUTIVO:LECTURA, PROYECTOS:LECTURA]`: listar y consultar.
-- `consultarReferenciasDeDocentes` suma `PROYECTOS:LECTURA` a sus lecturas, porque la pantalla de proyectos la necesita para los nombres.
+- **Leen** `[DOCENTES:LECTURA, CATALOGOS:LECTURA, DISTRIBUTIVO:LECTURA]`: listar y consultar. `consultarReferenciasDeDocentes` no cambia.
+- **`PROYECTOS:LECTURA` no basta** (aclaración 8). El Gestor de unidad lo tiene solo de lo propio. El token quita el «solo lo propio» de la autoridad (`AutoridadesDelToken`, ADR-021), así que con él vería todos los proyectos, y D-64 pide que cada historia aplique ese filtro. Aquí no se puede aplicar: un proyecto no tiene unidad y un usuario no está vinculado a su docente. Entra con F08, junto con su filtro.
 - `PermisosDocentesTest` (`VerificadorDePermisos`) cubre cada permiso de cada operación. La matriz no cambia.
 
 ## 9. Registro de cambios
@@ -133,7 +136,7 @@ Los mensajes no repiten identificaciones (principio IX). Un cargo o un proyecto 
 
 ## 11. La SPA (principio XIV)
 
-- Dos pantallas, «Cargos» y «Proyectos», en el menú después de «Docentes», con las cuatro lecturas.
+- Dos pantallas, «Cargos» y «Proyectos», en el menú después de «Docentes», con las tres lecturas.
 - **«Cargos»:**
   - una lista con filtro por estado y por docente, con la advertencia junto al cargo;
   - el diálogo de registrar y corregir, con el docente elegido de la lista de Docentes;
@@ -142,7 +145,7 @@ Los mensajes no repiten identificaciones (principio IX). Un cargo o un proyecto 
 - **«Proyectos»:**
   - el periodo elegido arriba, con el último como valor inicial, y la lista con «Asignable» o su motivo;
   - el diálogo con las carreras y los participantes como listas editables, igual que la ficha del docente.
-- **Validación:** `validacionDeCargo.ts` y `validacionDeProyecto.ts` reúsan `filtrar` de `validacionDeDocente.ts`, que se mueve a `pantallas/comun/validacion.ts`. El código del proyecto acepta mayúsculas, dígitos y guion, y lo demás pasa a mayúsculas o se quita. Las horas admiten un decimal. El documento y la resolución, hasta 60. Antes de enviar se marca cada campo con su motivo.
+- **Validación:** `validacionDeCargo.ts` y `validacionDeProyecto.ts` reúsan `filtrar` de `validacionDeDocente.ts`, que se mueve a `pantallas/comun/validacion.ts`. El código del proyecto acepta mayúsculas, dígitos y guion, y lo demás pasa a mayúsculas o se quita. Las horas admiten hasta dos decimales y 5 caracteres. El documento y la resolución, hasta 60. Antes de enviar se marca cada campo con su motivo.
 
 ## 12. Glosario (aprobado por el autor y aplicado el 2026-10-25)
 

@@ -19,7 +19,10 @@ Esquema `docentes`, migración `V3__cargos_y_proyectos.sql`. No hay claves forá
 
 - Clave: `(docente, tipo, fechaDesignacion)`; no cambia al corregir.
 - `TipoDeCargo` sabe qué gestión autorizada tiene cada cargo de gestor (`G06` a `G21`), si es coordinador o gestor (`exigeCuartoNivel()`, para RN-20) y qué unidad pide.
-- `advertencias(Docente)` devuelve `List<AdvertenciaDeCargo>`. Hoy tiene un solo valor posible, `CUARTO_NIVEL`: el cargo exige cuarto nivel y la ficha del docente no tiene ningún título de cuarto nivel.
+- `advertencias(Docente, LocalDate hoy)` devuelve `List<AdvertenciaDeCargo>`, con tres valores posibles (research §5):
+  - `CUARTO_NIVEL`: el cargo exige cuarto nivel y la ficha del docente no tiene ningún título de cuarto nivel;
+  - `FECHA_FIN_VENCIDA`: el cargo está vigente y su fecha de fin es anterior a `hoy`;
+  - `DOCENTE_NO_HABILITADO`: el cargo está vigente y su docente ya no está activo o ya no es de tiempo completo.
 
 ### `Proyecto` (record)
 
@@ -35,7 +38,7 @@ Esquema `docentes`, migración `V3__cargos_y_proyectos.sql`. No hay claves forá
 | `vigenciaInicio`, `vigenciaFin` | `LocalDate` | Obligatorias; el fin es posterior al inicio. |
 | `director` | `String` | Identificación de un docente registrado. |
 | `participantes` | `List<Participante>` | Al menos uno, sin repetir docente; la suma de sus horas no pasa `horasAprobadas`. |
-| `horasAprobadas` | `BigDecimal` | Mayor que 0, hasta `999.9` y con un decimal como máximo. |
+| `horasAprobadas` | `BigDecimal` | Mayor que 0, con hasta dos decimales y hasta 5 caracteres sin ceros de más (aclaración 7). |
 
 - `Participante(docente, RolDeParticipante rol, BigDecimal horas)`: el docente está registrado; el rol es `DIRECTOR`, `INVESTIGADOR`, `DOCENTE_APOYO` o `TUTOR_PRACTICAS`; las horas siguen la misma regla que `horasAprobadas`.
 - `asignableEn(LocalDate inicio, LocalDate fin)` devuelve un `Asignabilidad(boolean asignable, Set<MotivoNoAsignable> motivos)`, con los motivos `ESTADO` y `VIGENCIA` (research §7).
@@ -76,7 +79,7 @@ proyecto
   vigencia_fin       date         not null  check (vigencia_fin > vigencia_inicio)
   director           varchar(13)  not null
   participantes      jsonb        not null  -- [{"docente", "rol", "horas"}, …]
-  horas_aprobadas    numeric(4,1) not null  check (horas_aprobadas > 0)
+  horas_aprobadas    numeric(5,2) not null  check (horas_aprobadas > 0 and horas_aprobadas < 1000)
   registrado_en      timestamptz  not null
   registrado_por     varchar(64)  not null
 
