@@ -58,6 +58,8 @@ Registro de las comprobaciones de la historia (issue #38): mantener los docentes
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| «Docentes»: la lista en español, la búsqueda y los filtros (con sus parámetros), la ficha con los campos y las horas, solo lectura sin escritura, registrar con la categoría que sigue al tipo de personal y «Falta: …», corregir agregando un curso y quitando la experiencia, el 400 junto a su campo y a su fila, el 409 y el estado; el menú con las tres lecturas | 10 de 10 pasan. La prueba del registro llenaba ~15 campos letra por letra y pasaba de los 15 s con la cobertura activa: ahora pega cada texto de una vez y tarda 2,9 s | `frontend/src/pantallas/docentes/Docentes.test.tsx` | 2026-10-24 |
+| La SPA completa | 179 pruebas en 22 archivos; 93,4 % de líneas; `lint`, `tipos` y `formato:verificar` en verde | `npx vitest run --coverage`, `npm run lint`, `npm run tipos` | 2026-10-24 |
 
 ## Cierre
 

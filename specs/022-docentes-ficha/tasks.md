@@ -189,7 +189,7 @@ description: "Tareas de F03-H04: mantener los docentes con su ficha académica"
 
 **Goal**: «Docentes» con la lista, la ficha y el formulario (FR-011; SC-001).
 
-- [ ] T017 [US5] Prueba primero, en `frontend/src/pantallas/docentes/Docentes.test.tsx` (Vitest con la API simulada):
+- [X] T017 [US5] Prueba primero, en `frontend/src/pantallas/docentes/Docentes.test.tsx` (Vitest con la API simulada):
   - **Lista:** el buscador filtra por nombre o identificación; los filtros por carrera base y estado; «N docentes»; cada fila con el nombre completo, la identificación, la carrera, el tipo de personal, la dedicación con sus horas y el estado, en español.
   - **Ficha:** al abrir un docente, sus datos y su ficha; cada título con su campo amplio (código y nombre) y su específico; cada curso con sus horas; las asignaturas afines con su nombre.
   - **Con escritura** (`DOCENTES:ESCRITURA`, `CATALOGOS:ESCRITURA` o `DISTRIBUTIVO:ESCRITURA`):

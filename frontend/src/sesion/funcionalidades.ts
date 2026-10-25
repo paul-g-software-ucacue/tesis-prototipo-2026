@@ -68,6 +68,26 @@ export const ESCRITURA_DE_LAS_CARRERAS: readonly { funcionalidad: string; tipo: 
   ];
 
 /**
+ * Quién lee los docentes con su ficha académica: quien lee los docentes, el distributivo o los
+ * catálogos (D-70, F03-H04). Lo comparten la ruta y la entrada del menú.
+ */
+export const LECTURA_DE_LOS_DOCENTES: readonly { funcionalidad: string; tipo: TipoDePermiso }[] = [
+  { funcionalidad: 'DOCENTES', tipo: 'LECTURA' },
+  { funcionalidad: 'DISTRIBUTIVO', tipo: 'LECTURA' },
+  { funcionalidad: 'CATALOGOS', tipo: 'LECTURA' },
+];
+
+/**
+ * Quién mantiene los docentes: Talento Humano, el Administrador o el Vicerrector (D-70, F03-H04).
+ */
+export const ESCRITURA_DE_LOS_DOCENTES: readonly { funcionalidad: string; tipo: TipoDePermiso }[] =
+  [
+    { funcionalidad: 'DOCENTES', tipo: 'ESCRITURA' },
+    { funcionalidad: 'CATALOGOS', tipo: 'ESCRITURA' },
+    { funcionalidad: 'DISTRIBUTIVO', tipo: 'ESCRITURA' },
+  ];
+
+/**
  * Quién descarga las plantillas de carga: quien lee las cargas o el distributivo (D-70, F01-H01).
  * Lo comparten la ruta y la entrada del menú.
  */
