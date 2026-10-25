@@ -78,11 +78,11 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
   - el comentario de cabecera cita F03-H05, RF-18, RN-12, RN-20, D-70 y D-73.
 
   En `contratos/academico/openapi.yaml`, agregar a `ReferenciasDeAcademico` las listas `unidades` (`UnidadDeReferencia`) y `periodos` (`PeriodoDeReferencia`). Agregar los 4 códigos de research §10 a `contratos/comun/errores.md`, con sus 8 columnas. Regenerar (`openApiGenerate`, `generar:api`) y dejar `verificar:ruptura` en verde: el cambio de Académico es compatible.
-- [ ] T003 [P] En `backend/servicios/cargas/src/main/resources/cargas/diccionario-de-datos.yaml`, reemplazar la fila del rango del catálogo `CARGOS` por los 16 cargos de D-73, con su gestión en la descripción. Ajustar `DiccionarioYamlTest` y `DiccionarioDeDatosTest`, y comprobar que la plantilla y el diccionario descargables de la carga 8 listan los 22 cargos; anotarlo en la evidencia. `./gradlew :servicios:cargas:test` pasa.
+- [X] T003 [P] En `backend/servicios/cargas/src/main/resources/cargas/diccionario-de-datos.yaml`, reemplazar la fila del rango del catálogo `CARGOS` por los 16 cargos de D-73, con su gestión en la descripción. Ajustar `DiccionarioYamlTest` y `DiccionarioDeDatosTest`, y comprobar que la plantilla y el diccionario descargables de la carga 8 listan los 22 cargos; anotarlo en la evidencia. `./gradlew :servicios:cargas:test` pasa.
 
 ### Referencias de Académico (research §2)
 
-- [ ] T004 Prueba primero, en `PACA/aplicacion/ConsultarReferenciasServicioTest.java` (ampliar): `referencias()` trae todas las unidades, activas e inactivas, con su código, nombre, tipo, gestión autorizada y si está activa, y todos los periodos con su código, nombre, inicio y fin, ordenados por código. Crear `UnidadDeReferencia` y `PeriodoDeReferencia` en `JACA/puertos/entrada/`, y ampliar `ReferenciasDeAcademico` y `ConsultarReferenciasServicio` con los repositorios que ya existen. Ampliar `CarrerasContratoTest` (la respuesta de `consultarReferencias` valida contra el contrato) y su doble en memoria. T004 pasa.
+- [X] T004 Prueba primero, en `PACA/aplicacion/ConsultarReferenciasServicioTest.java` (ampliar): `referencias()` trae todas las unidades, activas e inactivas, con su código, nombre, tipo, gestión autorizada y si está activa, y todos los periodos con su código, nombre, inicio y fin, ordenados por código. Crear `UnidadDeReferencia` y `PeriodoDeReferencia` en `JACA/puertos/entrada/`, y ampliar `ReferenciasDeAcademico` y `ConsultarReferenciasServicio` con los repositorios que ya existen. Ampliar `CarrerasContratoTest` (la respuesta de `consultarReferencias` valida contra el contrato) y su doble en memoria. T004 pasa.
 
 ### Dominio (research §3 a §7; data-model.md)
 

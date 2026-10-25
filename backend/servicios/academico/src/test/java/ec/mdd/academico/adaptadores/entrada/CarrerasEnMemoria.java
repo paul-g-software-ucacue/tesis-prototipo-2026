@@ -8,6 +8,7 @@ import ec.mdd.academico.dominio.CampoAmplio;
 import ec.mdd.academico.dominio.Carrera;
 import ec.mdd.academico.dominio.GestionAutorizada;
 import ec.mdd.academico.dominio.Malla;
+import ec.mdd.academico.dominio.PeriodoAcademico;
 import ec.mdd.academico.dominio.TipoDeUnidad;
 import ec.mdd.academico.dominio.UnidadOrganica;
 import ec.mdd.academico.puertos.entrada.ConsultarCarreras;
@@ -15,12 +16,15 @@ import ec.mdd.academico.puertos.entrada.ConsultarReferencias;
 import ec.mdd.academico.puertos.entrada.MantenerCarreras;
 import ec.mdd.academico.puertos.salida.RepositorioCarreras;
 import ec.mdd.academico.puertos.salida.RepositorioEstructura;
+import ec.mdd.academico.puertos.salida.RepositorioPeriodos;
 import ec.mdd.academico.puertos.salida.Transaccion;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -61,8 +65,45 @@ final class CarrerasEnMemoria implements RepositorioCarreras {
         return new ConsultarCarrerasServicio(this);
     }
 
+    /** Las referencias reales sobre este doble, la estructura de prueba y el periodo 2026-I. */
     ConsultarReferencias referencias() {
-        return new ConsultarReferenciasServicio(this);
+        return new ConsultarReferenciasServicio(this, estructura(), periodos());
+    }
+
+    /** Un solo periodo de prueba, 2026-I, para las referencias de Docentes (F03-H05). */
+    static RepositorioPeriodos periodos() {
+        PeriodoAcademico periodo =
+                PeriodoAcademico.nuevo(
+                        "2026-I",
+                        "Periodo académico 2026-I",
+                        LocalDate.of(2026, 4, 6),
+                        LocalDate.of(2026, 8, 7));
+        return new RepositorioPeriodos() {
+            @Override
+            public List<PeriodoAcademico> todos() {
+                return List.of(periodo);
+            }
+
+            @Override
+            public Optional<PeriodoAcademico> porCodigo(String codigo) {
+                return Optional.of(periodo).filter(uno -> uno.codigo().equals(codigo));
+            }
+
+            @Override
+            public Optional<PeriodoAcademico> bloquear(String codigo) {
+                return porCodigo(codigo);
+            }
+
+            @Override
+            public boolean registrar(PeriodoAcademico nuevo, String quien, Instant momento) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void guardar(PeriodoAcademico otro) {
+                throw new UnsupportedOperationException();
+            }
+        };
     }
 
     /** El mantenimiento real sobre este doble, sin registro y sin transacción. */

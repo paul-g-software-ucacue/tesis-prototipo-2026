@@ -19,9 +19,12 @@ import ec.mdd.academico.adaptadores.entrada.api.Jornada;
 import ec.mdd.academico.adaptadores.entrada.api.MallaNueva;
 import ec.mdd.academico.adaptadores.entrada.api.Modalidad;
 import ec.mdd.academico.adaptadores.entrada.api.NivelDeFormacion;
+import ec.mdd.academico.adaptadores.entrada.api.PeriodoDeReferencia;
 import ec.mdd.academico.adaptadores.entrada.api.ReferenciasDeAcademico;
 import ec.mdd.academico.adaptadores.entrada.api.ResumenDeMalla;
+import ec.mdd.academico.adaptadores.entrada.api.TipoDeUnidad;
 import ec.mdd.academico.adaptadores.entrada.api.UnidadDeOrganizacionCurricular;
+import ec.mdd.academico.adaptadores.entrada.api.UnidadDeReferencia;
 import ec.mdd.academico.dominio.CampoConocimiento;
 import ec.mdd.academico.dominio.DatoInvalido;
 import ec.mdd.academico.puertos.entrada.AsignaturaNoEncontrada;
@@ -103,7 +106,27 @@ class CarrerasControlador implements CarrerasApi {
                                 .toList(),
                         todas.camposAmplios().stream()
                                 .map(c -> new CampoAmplio(c.codigo(), c.nombre()))
+                                .toList(),
+                        todas.unidades().stream().map(CarrerasControlador::unidad).toList(),
+                        todas.periodos().stream()
+                                .map(
+                                        p ->
+                                                new PeriodoDeReferencia(
+                                                        p.codigo(),
+                                                        p.nombre(),
+                                                        p.inicio(),
+                                                        p.fin()))
                                 .toList()));
+    }
+
+    private static UnidadDeReferencia unidad(
+            ec.mdd.academico.puertos.entrada.UnidadDeReferencia unidad) {
+        return new UnidadDeReferencia(
+                        unidad.codigo(),
+                        unidad.nombre(),
+                        TipoDeUnidad.fromValue(unidad.tipo()),
+                        unidad.activa())
+                .gestionAutorizada(unidad.gestionAutorizada());
     }
 
     @Override

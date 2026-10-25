@@ -403,6 +403,10 @@ class CarrerasContratoTest {
                 .containsExactly("550613A01-P-0301");
         assertThat(JsonPath.<List<Object>>read(cuerpo(referencias), "$.camposAmplios"))
                 .isNotEmpty();
+        assertThat(JsonPath.<List<String>>read(cuerpo(referencias), "$.unidades[*].codigo"))
+                .isNotEmpty();
+        assertThat(JsonPath.<List<String>>read(cuerpo(referencias), "$.periodos[*].inicio"))
+                .containsExactly("2026-04-06");
         contrato.validar(referencias);
     }
 
