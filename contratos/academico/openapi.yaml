@@ -23,6 +23,8 @@
 # Desde F03-H04: las referencias que Docentes valida y muestra (la carrera base, las asignaturas
 # afines y los campos amplios): consultarReferencias. Docentes las pide por el puerto que refleja
 # esta operación, dentro del proceso (principio V); las leen también quienes leen los docentes.
+# Desde F03-H05, también las unidades y los periodos: con ellas Docentes valida la unidad de cada
+# cargo y decide si un proyecto es asignable en un periodo.
 openapi: 3.0.3
 info:
   title: MDD · Académico
@@ -450,11 +452,12 @@ paths:
     get:
       tags: [Carreras]
       operationId: consultarReferencias
-      summary: 'Devuelve las carreras, las asignaturas y los campos amplios, con su código y su nombre: las referencias de los docentes.'
+      summary: 'Devuelve las carreras, las asignaturas, los campos amplios, las unidades y los periodos, con su código y su nombre: las referencias de Docentes.'
       description: >-
-        Todas las carreras y asignaturas, en cualquier estado, ordenadas por código. Docentes valida
-        con ellas la carrera base y las asignaturas afines de cada docente, y muestra sus nombres
-        (F03-H04).
+        Todas las carreras, asignaturas, unidades y periodos, en cualquier estado, ordenados por
+        código. Docentes valida con ellas la carrera base y las asignaturas afines de cada docente
+        (F03-H04), la unidad y la carrera de cada cargo y las carreras de cada proyecto, decide si un
+        proyecto es asignable con las fechas del periodo (F03-H05) y muestra sus nombres.
       x-mdd-permiso: [CATALOGOS:LECTURA, DISTRIBUTIVO:LECTURA, DOCENTES:LECTURA]
       responses:
         '200':
@@ -1849,7 +1852,7 @@ components:
           $ref: '#/components/schemas/CodigoDeCarrera'
     ReferenciasDeAcademico:
       type: object
-      required: [carreras, asignaturas, camposAmplios]
+      required: [carreras, asignaturas, camposAmplios, unidades, periodos]
       properties:
         carreras:
           type: array
@@ -1863,3 +1866,44 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CampoAmplio'
+        unidades:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnidadDeReferencia'
+        periodos:
+          type: array
+          items:
+            $ref: '#/components/schemas/PeriodoDeReferencia'
+    UnidadDeReferencia:
+      type: object
+      required: [codigo, nombre, tipo, activa]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDeUnidad'
+        nombre:
+          type: string
+          example: Gestión de Investigación
+        tipo:
+          $ref: '#/components/schemas/TipoDeUnidad'
+        gestionAutorizada:
+          $ref: '#/components/schemas/CodigoDeGestion'
+        activa:
+          type: boolean
+          example: true
+    PeriodoDeReferencia:
+      type: object
+      required: [codigo, nombre, inicio, fin]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        nombre:
+          type: string
+          example: Periodo académico 2026-I
+        inicio:
+          type: string
+          format: date
+          example: '2026-04-06'
+        fin:
+          type: string
+          format: date
+          example: '2026-08-07'

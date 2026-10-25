@@ -9,6 +9,12 @@
 # escritura» (Administrador) o «Distributivo del periodo: escritura» (Vicerrector); los leen quienes
 # tienen la lectura de cualquiera de las tres: una lista en x-mdd-permiso son permisos alternativos
 # (D-70). Nada se borra: un docente pasa a licencia o inactivo.
+# Desde F03-H05: los cargos (carga 8) y los proyectos aprobados (carga 9, RF-18). Un cargo pide un
+# docente activo a tiempo completo (POL 5.4), un solo coordinador vigente por carrera (RN-12) y avisa
+# del cuarto nivel que falta (RN-20); los 16 cargos de gestor son los de D-73. Un proyecto es
+# asignable en un periodo si está aprobado o en ejecución y su vigencia se cruza con el periodo
+# (RN-25). Los mismos permisos de escritura; para leer, los mismos tres: «Proyectos y horas de
+# participantes: lectura» no basta, porque su «solo lo propio» todavía no se puede aplicar (D-64).
 openapi: 3.0.3
 info:
   title: MDD · Docentes
@@ -22,6 +28,14 @@ tags:
     description: >-
       Los docentes con su ficha académica (RF-16, RF-17, carga 6). Ninguno se borra: cambia su
       estado laboral.
+  - name: Cargos
+    description: >-
+      Los cargos de gestión de los docentes (carga 8, RN-12, RN-20, D-73). Ninguno se borra: se
+      finaliza.
+  - name: Proyectos
+    description: >-
+      Los proyectos aprobados por el OCS y sus participantes (RF-18, RN-25, carga 9). Ninguno se
+      borra: cambia su estado.
 paths:
   /api/docentes/docentes:
     get:
@@ -201,7 +215,7 @@ paths:
     get:
       tags: [Docentes]
       operationId: consultarReferenciasDeDocentes
-      summary: 'Devuelve lo que se elige al registrar un docente: las carreras, las asignaturas y los campos amplios de Académico.'
+      summary: 'Devuelve lo que se elige al registrar un docente, un cargo o un proyecto: las carreras, las asignaturas, los campos amplios, las unidades y los periodos de Académico.'
       x-mdd-permiso: [DOCENTES:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]
       responses:
         '200':
@@ -214,6 +228,275 @@ paths:
           $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
         '403':
           $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/docentes/cargos:
+    get:
+      tags: [Cargos]
+      operationId: listarCargos
+      summary: Lista los cargos, con sus advertencias, por estado y por docente.
+      description: >-
+        Las advertencias se calculan al consultar: un coordinador o un gestor sin título de cuarto
+        nivel (RN-20), un cargo vigente con la fecha de fin vencida y uno cuyo docente ya no está
+        activo a tiempo completo. Ordenados por docente, cargo y fecha de designación.
+      x-mdd-permiso: [DOCENTES:LECTURA, CATALOGOS:LECTURA, DISTRIBUTIVO:LECTURA]
+      parameters:
+        - name: estado
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/EstadoDeCargo'
+          example: VIGENTE
+        - name: docente
+          in: query
+          required: false
+          description: Identificación del docente.
+          schema:
+            $ref: '#/components/schemas/NumeroDeIdentificacion'
+          example: '0109990010'
+      responses:
+        '200':
+          description: La lista.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cargo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+    post:
+      tags: [Cargos]
+      operationId: registrarCargo
+      summary: Registra el cargo de un docente activo a tiempo completo, con sus advertencias.
+      description: >-
+        La unidad tiene que corresponder al cargo y la carrera de un coordinador no puede tener otro
+        coordinador vigente (RN-12). Sin título de cuarto nivel, un coordinador o un gestor se
+        registra con una advertencia (RN-20).
+      x-mdd-permiso: [DOCENTES:ESCRITURA, CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CargoNuevo'
+      responses:
+        '201':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cargo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '409':
+          $ref: '#/components/responses/ConflictoDeCargo'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/docentes/cargos/{docente}/{tipo}/{fechaDesignacion}:
+    parameters:
+      - name: docente
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/NumeroDeIdentificacion'
+        example: '0109990044'
+      - name: tipo
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/TipoDeCargo'
+        example: COORDINADOR_CARRERA
+      - name: fechaDesignacion
+        in: path
+        required: true
+        schema:
+          type: string
+          format: date
+        example: '2025-04-01'
+    put:
+      tags: [Cargos]
+      operationId: corregirCargo
+      summary: Corrige o finaliza un cargo; su docente, su cargo y su fecha de designación no cambian.
+      x-mdd-permiso: [DOCENTES:ESCRITURA, CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatosDeCargo'
+      responses:
+        '200':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cargo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/CargoNoEncontrado'
+        '409':
+          $ref: '#/components/responses/ConflictoDeCargo'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/docentes/proyectos:
+    get:
+      tags: [Proyectos]
+      operationId: listarProyectos
+      summary: Lista los proyectos aprobados y, con un periodo, si cada uno es asignable en él.
+      description: >-
+        Un proyecto es asignable en un periodo si está aprobado o en ejecución y su vigencia se cruza
+        con las fechas del periodo (RF-18, RN-25); si no, dice por qué. Ordenados por código.
+      x-mdd-permiso: [DOCENTES:LECTURA, CATALOGOS:LECTURA, DISTRIBUTIVO:LECTURA]
+      parameters:
+        - $ref: '#/components/parameters/PeriodoOpcional'
+        - name: tipo
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/TipoDeProyecto'
+          example: INVESTIGACION
+        - name: estado
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/EstadoDeProyecto'
+          example: EN_EJECUCION
+      responses:
+        '200':
+          description: La lista.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Proyecto'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+    post:
+      tags: [Proyectos]
+      operationId: registrarProyecto
+      summary: Registra un proyecto aprobado por el OCS, con sus participantes y sus horas.
+      description: >-
+        Las carreras tienen que existir en Académico, y el director y los participantes en Docentes.
+        La suma de las horas de los participantes no puede pasar las horas aprobadas.
+      x-mdd-permiso: [DOCENTES:ESCRITURA, CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProyectoNuevo'
+      responses:
+        '201':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Proyecto'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '409':
+          $ref: '#/components/responses/ConflictoDeProyecto'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/docentes/proyectos/{codigo}:
+    parameters:
+      - name: codigo
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/CodigoDeProyecto'
+        example: INV-2025-01
+    get:
+      tags: [Proyectos]
+      operationId: consultarProyecto
+      summary: Devuelve un proyecto con los nombres de su director, sus participantes y sus carreras.
+      x-mdd-permiso: [DOCENTES:LECTURA, CATALOGOS:LECTURA, DISTRIBUTIVO:LECTURA]
+      parameters:
+        - $ref: '#/components/parameters/PeriodoOpcional'
+      responses:
+        '200':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Proyecto'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/ProyectoNoEncontrado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+    put:
+      tags: [Proyectos]
+      operationId: corregirProyecto
+      summary: Corrige un proyecto o cambia su estado; su código no cambia.
+      x-mdd-permiso: [DOCENTES:ESCRITURA, CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatosDeProyecto'
+      responses:
+        '200':
+          description: El resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Proyecto'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/ProyectoNoEncontrado'
         '500':
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
@@ -231,7 +514,42 @@ components:
       schema:
         $ref: '#/components/schemas/NumeroDeIdentificacion'
       example: '0109990010'
+    PeriodoOpcional:
+      name: periodo
+      in: query
+      required: false
+      description: Código de un periodo de Académico; con él, cada proyecto dice si es asignable.
+      schema:
+        $ref: '#/components/schemas/CodigoDePeriodo'
+      example: 2026-I
   responses:
+    CargoNoEncontrado:
+      description: El cargo no existe (COMUN_RECURSO_NO_ENCONTRADO).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
+    ProyectoNoEncontrado:
+      description: El proyecto no existe (COMUN_RECURSO_NO_ENCONTRADO).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
+    ConflictoDeCargo:
+      description: >-
+        Un cargo repetido, un segundo coordinador vigente o un docente que no está activo a tiempo
+        completo: DOCENTES_CARGO_REPETIDO, DOCENTES_COORDINADOR_VIGENTE o
+        DOCENTES_DOCENTE_NO_HABILITADO (errores.md).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
+    ConflictoDeProyecto:
+      description: Un código repetido, DOCENTES_PROYECTO_REPETIDO (errores.md).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
     NoEncontrado:
       description: El docente no existe (COMUN_RECURSO_NO_ENCONTRADO).
       content:
@@ -655,7 +973,7 @@ components:
           $ref: '#/components/schemas/CodigoDeCarrera'
     ReferenciasDeDocentes:
       type: object
-      required: [carreras, asignaturas, camposAmplios]
+      required: [carreras, asignaturas, camposAmplios, unidades, periodos]
       properties:
         carreras:
           type: array
@@ -669,3 +987,375 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CampoAmplio'
+        unidades:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnidadDeReferencia'
+        periodos:
+          type: array
+          items:
+            $ref: '#/components/schemas/PeriodoDeReferencia'
+    CodigoDeUnidad:
+      type: string
+      pattern: '^[A-Z0-9_-]{1,20}$'
+      example: G-INV
+    CodigoDePeriodo:
+      type: string
+      pattern: '^[A-Za-z0-9._-]{1,20}$'
+      example: 2026-I
+    CodigoDeProyecto:
+      description: Mayúsculas, dígitos y guion, sin espacios (aclaración 5 de F03-H05).
+      type: string
+      pattern: '^[0-9A-Z-]{1,30}$'
+      example: INV-2025-01
+    Texto60:
+      type: string
+      minLength: 1
+      maxLength: 60
+    TipoDeCargo:
+      description: >-
+        Cargo de la carga 8: las autoridades, los coordinadores, un gestor por cada gestión
+        autorizada G06 a G21 de POL 6 (D-73) y el miembro de comisión, sin horas (C-12).
+      type: string
+      enum: [RECTOR, VICERRECTOR, COORDINADOR_ACADEMICO_INSTITUCIONAL, COORDINADOR_SEDE, COORDINADOR_CARRERA, G06_GESTOR_VINCULACION, G07_GESTOR_INVESTIGACION, G08_GESTOR_IDIOMAS, G09_GESTOR_FORMACION_INTEGRAL, G10_COORDINADOR_CALIDAD, G11_SECRETARIO_GENERAL, G12_PROCURADOR, G13_GESTOR_BIENESTAR, G14_GESTOR_ADMINISTRATIVO_FINANCIERO, G15_GESTOR_PLANIFICACION, G16_GESTOR_TALENTO_HUMANO, G17_GESTOR_BIBLIOTECA, G18_GESTOR_COMUNICACION, G19_GESTOR_RELACIONES_INTERNACIONALES, G20_GESTOR_TIC, G21_GESTOR_ESTADISTICAS, MIEMBRO_COMISION]
+    EstadoDeCargo:
+      description: Vigente o finalizado; un cargo nunca se borra.
+      type: string
+      enum: [VIGENTE, FINALIZADO]
+    CodigoDeAdvertencia:
+      type: string
+      enum: [CUARTO_NIVEL, FECHA_FIN_VENCIDA, DOCENTE_NO_HABILITADO]
+    AdvertenciaDeCargo:
+      description: Se calcula al consultar; no bloquea nada.
+      type: object
+      required: [codigo, descripcion]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDeAdvertencia'
+        descripcion:
+          type: string
+          example: Le falta un título de cuarto nivel registrado (RN-20).
+    DatosDeCargo:
+      description: >-
+        La unidad es obligatoria salvo para el coordinador de carrera: la de un gestor es la unidad de
+        su gestión autorizada y la de un miembro de comisión, una comisión. La carrera, solo para el
+        coordinador de carrera. El fin de funciones es posterior a la designación y hasta dos años
+        después (POL 5.4). El documento es la resolución o la acción de personal.
+      type: object
+      required: [documento, estado]
+      properties:
+        unidad:
+          $ref: '#/components/schemas/CodigoDeUnidad'
+        carrera:
+          $ref: '#/components/schemas/CodigoDeCarrera'
+        fechaFin:
+          type: string
+          format: date
+          example: '2027-03-31'
+        documento:
+          $ref: '#/components/schemas/Texto60'
+        estado:
+          $ref: '#/components/schemas/EstadoDeCargo'
+    CargoNuevo:
+      description: >-
+        La clave (docente, cargo y fecha de designación) y los campos de DatosDeCargo, al mismo
+        nivel. Sin estado, queda VIGENTE.
+      type: object
+      required: [docente, tipo, fechaDesignacion, documento]
+      properties:
+        docente:
+          $ref: '#/components/schemas/NumeroDeIdentificacion'
+        tipo:
+          $ref: '#/components/schemas/TipoDeCargo'
+        fechaDesignacion:
+          type: string
+          format: date
+          example: '2025-04-01'
+        unidad:
+          $ref: '#/components/schemas/CodigoDeUnidad'
+        carrera:
+          $ref: '#/components/schemas/CodigoDeCarrera'
+        fechaFin:
+          type: string
+          format: date
+          example: '2027-03-31'
+        documento:
+          $ref: '#/components/schemas/Texto60'
+        estado:
+          $ref: '#/components/schemas/EstadoDeCargo'
+    Cargo:
+      description: Lo de CargoNuevo, con los nombres de sus referencias y sus advertencias.
+      type: object
+      required: [docente, tipo, fechaDesignacion, documento, estado, advertencias]
+      properties:
+        docente:
+          $ref: '#/components/schemas/NumeroDeIdentificacion'
+        nombreDelDocente:
+          type: string
+          example: PERALTA MALDONADO JUAN ANDRES
+        tipo:
+          $ref: '#/components/schemas/TipoDeCargo'
+        fechaDesignacion:
+          type: string
+          format: date
+          example: '2025-04-01'
+        unidad:
+          $ref: '#/components/schemas/CodigoDeUnidad'
+        nombreDeUnidad:
+          type: string
+          example: Gestión de Investigación
+        carrera:
+          $ref: '#/components/schemas/CodigoDeCarrera'
+        nombreDeCarrera:
+          type: string
+          example: DESARROLLO DE SOFTWARE
+        fechaFin:
+          type: string
+          format: date
+          example: '2027-03-31'
+        documento:
+          $ref: '#/components/schemas/Texto60'
+        estado:
+          $ref: '#/components/schemas/EstadoDeCargo'
+        advertencias:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdvertenciaDeCargo'
+    TipoDeProyecto:
+      description: POL 5.3 y la carga 9.
+      type: string
+      enum: [INVESTIGACION, VINCULACION, PRACTICAS_PREPROFESIONALES, SERVICIO_COMUNITARIO]
+    EstadoDeProyecto:
+      description: Solo un proyecto aprobado o en ejecución recibe horas.
+      type: string
+      enum: [APROBADO, EN_EJECUCION, FINALIZADO, SUSPENDIDO]
+    RolDeParticipante:
+      type: string
+      enum: [DIRECTOR, INVESTIGADOR, DOCENTE_APOYO, TUTOR_PRACTICAS]
+    MotivoNoAsignable:
+      type: string
+      enum: [ESTADO, VIGENCIA]
+    HorasSemanales:
+      description: >-
+        Mayor que 0, con hasta dos decimales y hasta 5 caracteres (aclaración 7 de F03-H05); los 5
+        caracteres los revisa el dominio.
+      type: number
+      minimum: 0
+      exclusiveMinimum: true
+      maximum: 999.9
+      multipleOf: 0.01
+      example: 14
+    Participante:
+      type: object
+      required: [docente, rol, horas]
+      properties:
+        docente:
+          $ref: '#/components/schemas/NumeroDeIdentificacion'
+        rol:
+          $ref: '#/components/schemas/RolDeParticipante'
+        horas:
+          $ref: '#/components/schemas/HorasSemanales'
+    ParticipanteDeProyecto:
+      description: Un participante con su nombre; falta si el docente ya no está.
+      type: object
+      required: [docente, rol, horas]
+      properties:
+        docente:
+          $ref: '#/components/schemas/NumeroDeIdentificacion'
+        nombre:
+          type: string
+          example: PERALTA MALDONADO JUAN ANDRES
+        rol:
+          $ref: '#/components/schemas/RolDeParticipante'
+        horas:
+          $ref: '#/components/schemas/HorasSemanales'
+    DatosDeProyecto:
+      type: object
+      required: [nombre, tipo, carreras, resolucionOcs, fechaResolucion, estado, vigenciaInicio, vigenciaFin, director, participantes, horasAprobadas]
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 250
+          example: Prototipo de monitoreo IoT para hatos lecheros
+        tipo:
+          $ref: '#/components/schemas/TipoDeProyecto'
+        carreras:
+          description: Sin repetir; una repetida da 400 con su posición.
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/CodigoDeCarrera'
+        resolucionOcs:
+          $ref: '#/components/schemas/Texto60'
+        fechaResolucion:
+          type: string
+          format: date
+          example: '2025-03-20'
+        estado:
+          $ref: '#/components/schemas/EstadoDeProyecto'
+        vigenciaInicio:
+          type: string
+          format: date
+          example: '2025-04-01'
+        vigenciaFin:
+          description: Posterior al inicio.
+          type: string
+          format: date
+          example: '2026-12-31'
+        director:
+          $ref: '#/components/schemas/NumeroDeIdentificacion'
+        participantes:
+          description: Sin repetir docente; sus horas no suman más que las aprobadas.
+          type: array
+          minItems: 1
+          maxItems: 40
+          items:
+            $ref: '#/components/schemas/Participante'
+        horasAprobadas:
+          $ref: '#/components/schemas/HorasSemanales'
+    ProyectoNuevo:
+      description: El código y los campos de DatosDeProyecto, al mismo nivel.
+      type: object
+      required: [codigo, nombre, tipo, carreras, resolucionOcs, fechaResolucion, estado, vigenciaInicio, vigenciaFin, director, participantes, horasAprobadas]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDeProyecto'
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 250
+          example: Prototipo de monitoreo IoT para hatos lecheros
+        tipo:
+          $ref: '#/components/schemas/TipoDeProyecto'
+        carreras:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/CodigoDeCarrera'
+        resolucionOcs:
+          $ref: '#/components/schemas/Texto60'
+        fechaResolucion:
+          type: string
+          format: date
+          example: '2025-03-20'
+        estado:
+          $ref: '#/components/schemas/EstadoDeProyecto'
+        vigenciaInicio:
+          type: string
+          format: date
+          example: '2025-04-01'
+        vigenciaFin:
+          type: string
+          format: date
+          example: '2026-12-31'
+        director:
+          $ref: '#/components/schemas/NumeroDeIdentificacion'
+        participantes:
+          type: array
+          minItems: 1
+          maxItems: 40
+          items:
+            $ref: '#/components/schemas/Participante'
+        horasAprobadas:
+          $ref: '#/components/schemas/HorasSemanales'
+    Proyecto:
+      description: >-
+        Lo de ProyectoNuevo, con los nombres de sus referencias y, si se pidió un periodo, si es
+        asignable en él y por qué no.
+      type: object
+      required: [codigo, nombre, tipo, carreras, resolucionOcs, fechaResolucion, estado, vigenciaInicio, vigenciaFin, director, participantes, horasAprobadas, nombresDeCarreras]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDeProyecto'
+        nombre:
+          type: string
+          example: Prototipo de monitoreo IoT para hatos lecheros
+        tipo:
+          $ref: '#/components/schemas/TipoDeProyecto'
+        carreras:
+          type: array
+          items:
+            $ref: '#/components/schemas/CodigoDeCarrera'
+        nombresDeCarreras:
+          description: Las carreras con su nombre; falta la que ya no está en Académico.
+          type: array
+          items:
+            $ref: '#/components/schemas/CarreraDeReferencia'
+        resolucionOcs:
+          $ref: '#/components/schemas/Texto60'
+        fechaResolucion:
+          type: string
+          format: date
+          example: '2025-03-20'
+        estado:
+          $ref: '#/components/schemas/EstadoDeProyecto'
+        vigenciaInicio:
+          type: string
+          format: date
+          example: '2025-04-01'
+        vigenciaFin:
+          type: string
+          format: date
+          example: '2026-12-31'
+        director:
+          $ref: '#/components/schemas/NumeroDeIdentificacion'
+        nombreDelDirector:
+          type: string
+          example: PERALTA MALDONADO JUAN ANDRES
+        participantes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParticipanteDeProyecto'
+        horasAprobadas:
+          $ref: '#/components/schemas/HorasSemanales'
+        asignable:
+          description: Solo si se pidió un periodo.
+          type: boolean
+          example: true
+        motivos:
+          description: Solo si se pidió un periodo y no es asignable.
+          type: array
+          items:
+            $ref: '#/components/schemas/MotivoNoAsignable'
+    TipoDeUnidad:
+      type: string
+      enum: [SEDE_MATRIZ, SEDE, EXTENSION, CAMPUS, GOBIERNO, UNIDAD_ACADEMICA, GESTION, COMISION]
+    UnidadDeReferencia:
+      type: object
+      required: [codigo, nombre, tipo, activa]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDeUnidad'
+        nombre:
+          type: string
+          example: Gestión de Investigación
+        tipo:
+          $ref: '#/components/schemas/TipoDeUnidad'
+        gestionAutorizada:
+          description: Solo en las unidades de una gestión autorizada de POL 6.
+          type: string
+          pattern: '^G(0[1-9]|1[0-9]|2[01])$'
+          example: G07
+        activa:
+          type: boolean
+          example: true
+    PeriodoDeReferencia:
+      type: object
+      required: [codigo, nombre, inicio, fin]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        nombre:
+          type: string
+          example: Periodo académico 2026-I
+        inicio:
+          type: string
+          format: date
+          example: '2026-04-06'
+        fin:
+          type: string
+          format: date
+          example: '2026-08-07'

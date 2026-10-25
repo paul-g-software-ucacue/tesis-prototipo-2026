@@ -53,7 +53,7 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear `specs/023-cargos-proyectos/evidencia.md` con estas secciones:
+- [X] T001 Crear `specs/023-cargos-proyectos/evidencia.md` con estas secciones:
   - entorno;
   - base: contrato, catálogo, referencias de Académico, dominio, migración y repositorios;
   - una por historia: cargos (US1), requisitos (US2), proyectos (US3), asignables (US4), corregir y finalizar (US5) y pantallas (US6);
@@ -69,7 +69,7 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
 
 ### Contrato, catálogo y diccionario (principio IV, D-72, D-73; contracts/cargos-proyectos.md)
 
-- [ ] T002 Ampliar `contratos/docentes/openapi.yaml` según contracts/cargos-proyectos.md:
+- [X] T002 Ampliar `contratos/docentes/openapi.yaml` según contracts/cargos-proyectos.md:
   - los tags `Cargos` y `Proyectos`, los esquemas y las 7 operaciones;
   - **lecturas** con `x-mdd-permiso: [DOCENTES:LECTURA, CATALOGOS:LECTURA, DISTRIBUTIVO:LECTURA]` (sin `PROYECTOS:LECTURA`, D-64, aclaración 8), y **escrituras** con `[DOCENTES:ESCRITURA, CATALOGOS:ESCRITURA, DISTRIBUTIVO:ESCRITURA]`;
   - `ReferenciasDeDocentes` suma `unidades` y `periodos`;

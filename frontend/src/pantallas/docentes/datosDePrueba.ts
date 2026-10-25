@@ -91,4 +91,28 @@ export const REFERENCIAS: ReferenciasDeDocentes = {
     { codigo: '01', nombre: 'Educación' },
     { codigo: '06', nombre: 'Tecnologías de la información y la comunicación' },
   ],
+  unidades: [
+    {
+      codigo: 'G-INV',
+      nombre: 'Gestión de Investigación',
+      tipo: 'GESTION',
+      gestionAutorizada: 'G07',
+      activa: true,
+    },
+    { codigo: 'COM-DIST', nombre: 'Comisión del distributivo', tipo: 'COMISION', activa: true },
+  ],
+  periodos: [
+    {
+      codigo: '2026-I',
+      nombre: 'Periodo académico 2026-I',
+      inicio: '2026-04-06',
+      fin: '2026-08-07',
+    },
+    {
+      codigo: '2026-II',
+      nombre: 'Periodo académico 2026-II',
+      inicio: '2026-10-05',
+      fin: '2027-02-05',
+    },
+  ],
 };
