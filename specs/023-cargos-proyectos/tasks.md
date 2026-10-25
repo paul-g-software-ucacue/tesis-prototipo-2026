@@ -305,7 +305,7 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
   - **Limpieza:** borra en la base solo lo que creó, con sus registros, también la copia de los periodos de prueba en Roles, como `probar_periodos.sh`.
 
   Agregar su paso a `.github/workflows/perfil-consolidado.yml`. Correrlo dos veces seguidas y anotarlo; `shellcheck` sin observaciones.
-- [ ] T023 Correr todo, como en las historias anteriores:
+- [X] T023 Correr todo, como en las historias anteriores:
   - backend y SPA;
   - los 13 scripts con el perfil reconstruido;
   - `probar_equipo.sh`;
