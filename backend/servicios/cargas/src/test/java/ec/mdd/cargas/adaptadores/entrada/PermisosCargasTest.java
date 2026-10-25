@@ -23,7 +23,7 @@ import org.springframework.test.web.servlet.MockMvc;
  */
 @WebMvcTest({SesionControlador.class, PlantillasControlador.class, SubidaControlador.class})
 @ImportAutoConfiguration({SeguridadProcesoAutoConfiguracion.class, ErroresAutoConfiguracion.class})
-@Import({ConfiguracionCargas.class, ErroresCargas.class})
+@Import({ConfiguracionCargas.class, ErroresCargas.class, ReferenciasDePrueba.class})
 @TestPropertySource(
         properties =
                 "spring.security.oauth2.resourceserver.jwt.jwk-set-uri=http://127.0.0.1:9/jwks")
@@ -46,6 +46,8 @@ class PermisosCargasTest {
                         "GET /api/cargas/plantillas/estructura_organica/diccionario"
                                 + " ([CARGAS:LECTURA, DISTRIBUTIVO:LECTURA])",
                         "POST /api/cargas/plantillas/estructura_organica/archivo"
+                                + " (CARGAS:ESCRITURA)",
+                        "POST /api/cargas/plantillas/estructura_organica/archivo/informe"
                                 + " (CARGAS:ESCRITURA)");
 
         verificador.verificar(mvc, conversor);

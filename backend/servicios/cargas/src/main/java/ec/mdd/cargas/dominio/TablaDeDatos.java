@@ -19,15 +19,11 @@ public record TablaDeDatos(List<String> encabezados, List<List<String>> filas) {
     }
 
     /**
-     * Cuántos registros tiene: las filas sin las vacías del final. Una fila vacía tiene todos sus
-     * valores en blanco; si está entre registros, sí cuenta, y su contenido lo revisa F01-H03.
+     * Cuántos registros tiene: las filas que no están vacías. Una fila vacía tiene todos sus
+     * valores en blanco; si está entre registros, el informe de la carga la avisa (F01-H03).
      */
     public int registros() {
-        int ultima = filas.size();
-        while (ultima > 0 && vacia(filas.get(ultima - 1))) {
-            ultima--;
-        }
-        return ultima;
+        return (int) filas.stream().filter(fila -> !vacia(fila)).count();
     }
 
     private static boolean vacia(List<String> fila) {

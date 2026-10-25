@@ -47,7 +47,7 @@ description: "Tareas de F01-H03: validar las reglas de los datos e informe por f
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear `specs/024-validar-reglas-carga/evidencia.md` con estas secciones (y en notas, la fila 22 de la carga 07 completada con 0 y 0: la copia de la ERS y `V2__politica_2024.sql` de Normativa siguen con las celdas vacías o en nulo):
+- [X] T001 Crear `specs/024-validar-reglas-carga/evidencia.md` con estas secciones (y en notas, la fila 22 de la carga 07 completada con 0 y 0: la copia de la ERS y `V2__politica_2024.sql` de Normativa siguen con las celdas vacías o en nulo):
   - entorno;
   - base: contrato, intérprete y puerto de Docentes;
   - una por historia: reglas (US1), referencias (US2), informe (US3), reintentar (US4) y pantalla (US5);
@@ -61,7 +61,7 @@ description: "Tareas de F01-H03: validar las reglas de los datos e informe por f
 
 ### Contrato (principio IV; contracts/cargas.md)
 
-- [ ] T002 En `contratos/cargas/openapi.yaml`:
+- [X] T002 En `contratos/cargas/openapi.yaml`:
   - ampliar `LecturaDeArchivo` con `valido`, `errores`, `advertencias` y `problemas` (los primeros 100, con `maxItems: 100`);
   - agregar los esquemas `TipoDeProblema` y `ProblemaDeFila`, con `fila` como entero ≥ 2;
   - cambiar la descripción de `validarArchivo`: el 200 trae el informe por fila; los detalles de un error de estructura siguen sin valores, y el informe por fila sí los trae;
@@ -71,7 +71,7 @@ description: "Tareas de F01-H03: validar las reglas de los datos e informe por f
 
 ### Las reglas del diccionario (research §3, §4, §6 y §7; data-model.md)
 
-- [ ] T003 [P] Prueba primero, en `PCAR/dominio/ReglasDeColumnaTest.java`, sin dobles, con el diccionario real:
+- [X] T003 [P] Prueba primero, en `PCAR/dominio/ReglasDeColumnaTest.java`, sin dobles, con el diccionario real:
   - cada patrón de research §3 con un caso que pasa, uno que no y uno en el límite:
     - un texto de largo justo y uno de más;
     - `12` y `1a` para un entero;
@@ -91,7 +91,7 @@ description: "Tareas de F01-H03: validar las reglas de los datos e informe por f
   - cada motivo dice qué hacer y un catálogo dice los valores permitidos (o los primeros 10 y cuántos más).
 
   Crear `ReglasDeColumna` en `JCAR/dominio/`, con JavaDoc que cite FR-012 y el principio XIV.
-- [ ] T004 [P] Prueba primero, en `PCAR/dominio/CondicionDeObligatoriedadTest.java`, `PCAR/dominio/ClaveDeCargaTest.java` y `PCAR/dominio/ReferenciaDeColumnaTest.java`:
+- [X] T004 [P] Prueba primero, en `PCAR/dominio/CondicionDeObligatoriedadTest.java`, `PCAR/dominio/ClaveDeCargaTest.java` y `PCAR/dominio/ReferenciaDeColumnaTest.java`:
   - las 5 condiciones de research §4, cada una con la fila que la cumple y la que no;
   - un texto de obligatoriedad desconocido hace fallar la carga del diccionario, con su columna;
   - las claves simples y las 3 compuestas de research §7, leídas del diccionario real;
@@ -102,7 +102,7 @@ description: "Tareas de F01-H03: validar las reglas de los datos e informe por f
 
 ### Docentes publica sus identificaciones (research §6)
 
-- [ ] T005 [P] Prueba primero, en `PDOC/aplicacion/ConsultarIdentificacionesServicioTest.java` (Mockito): devuelve el conjunto de identificaciones registradas, de cualquier estado laboral, y nada más. Crear `JDOC/puertos/entrada/ConsultarIdentificaciones.java`, con JavaDoc que diga que es la API publicada para Cargas (F01-H03), `ConsultarIdentificacionesServicio` y su bean en `ConfiguracionDocentes`. T005 pasa.
+- [X] T005 [P] Prueba primero, en `PDOC/aplicacion/ConsultarIdentificacionesServicioTest.java` (Mockito): devuelve el conjunto de identificaciones registradas, de cualquier estado laboral, y nada más. Crear `JDOC/puertos/entrada/ConsultarIdentificaciones.java`, con JavaDoc que diga que es la API publicada para Cargas (F01-H03), `ConsultarIdentificacionesServicio` y su bean en `ConfiguracionDocentes`. T005 pasa.
 
 **Checkpoint**: el contrato, el intérprete y el puerto de Docentes están listos.
 
@@ -112,7 +112,7 @@ description: "Tareas de F01-H03: validar las reglas de los datos e informe por f
 
 **Goal**: cada fila con sus reglas, la cédula y la clave (FR-001 a FR-003, FR-005, FR-006).
 
-- [ ] T006 [US1] Prueba primero, en `PCAR/dominio/ValidadorDeFilasTest.java`, sin dobles:
+- [X] T006 [US1] Prueba primero, en `PCAR/dominio/ValidadorDeFilasTest.java`, sin dobles:
   - **la cédula `109990010` de la carga 06 da «Cédula inválida o sin cero inicial: le falta el 0 inicial.», con la sugerencia `0109990010`** (escenario del issue);
   - la cédula con el dígito verificador mal, sin sugerencia; un pasaporte de 14 caracteres;
   - una fila de docente con una fecha `2026-02-30`, una dedicación `XX` y un nombre de 61 caracteres: tres problemas en su fila y su campo, con la fila contando el encabezado como 1;
@@ -124,7 +124,7 @@ description: "Tareas de F01-H03: validar las reglas de los datos e informe por f
   - ningún motivo contiene el valor de su celda.
 
   Crear `ProblemaDeFila`, `InformeValidacionCarga` y `ValidadorDeFilas` en `JCAR/dominio/`.
-- [ ] T007 [US1] Prueba primero, en `ValidadorDeFilasTest` (ampliar): **los 10 archivos de prueba no tienen ningún error** con las referencias que salen de las cargas 01 a 06 de prueba (SC-001). Las advertencias que tengan quedan anotadas en la evidencia. Si algún archivo de prueba choca con una regla del diccionario, anotarlo en la evidencia y preguntar al autor antes de cambiar el archivo o la regla. T006 y T007 pasan.
+- [X] T007 [US1] Prueba primero, en `ValidadorDeFilasTest` (ampliar): **los 10 archivos de prueba no tienen ningún error** con las referencias que salen de las cargas 01 a 06 de prueba (SC-001). Las advertencias que tengan quedan anotadas en la evidencia. Si algún archivo de prueba choca con una regla del diccionario, anotarlo en la evidencia y preguntar al autor antes de cambiar el archivo o la regla. T006 y T007 pasan.
 
 ---
 
@@ -132,7 +132,7 @@ description: "Tareas de F01-H03: validar las reglas de los datos e informe por f
 
 **Goal**: cada `FK` contra lo que hay en el sistema (FR-004).
 
-- [ ] T008 [US2] Prueba primero, en `ValidadorDeFilasTest` (ampliar):
+- [X] T008 [US2] Prueba primero, en `ValidadorDeFilasTest` (ampliar):
   - **una asignatura de la carga 04 que cita una carrera que no existe: el error en su fila y en `codigo_carrera`** (escenario del issue);
   - un periodo, una unidad y un docente que no existen;
   - una carrera de la lista de un proyecto (carga 09) que no existe, y un participante que no existe (la parte «identificación»): el motivo dice cuál;
@@ -148,8 +148,8 @@ description: "Tareas de F01-H03: validar las reglas de los datos e informe por f
 
 **Goal**: el informe en el 200 y en CSV, neutralizado (FR-005, FR-007; SC-003).
 
-- [ ] T009 [US3] Prueba primero, en `PCAR/aplicacion/ValidarArchivoServicioTest.java` (ampliar, con Mockito): la estructura falla igual que en F01-H02 antes de revisar las filas (FR-009); con la estructura bien, devuelve el informe; las referencias se piden una vez por archivo. Ampliar `ArchivoValidado` y `ValidarArchivoServicio`. T009 pasa.
-- [ ] T010 [US3] Prueba primero, en `PCAR/adaptadores/entrada/EscritorDeInformeTest.java`:
+- [X] T009 [US3] Prueba primero, en `PCAR/aplicacion/ValidarArchivoServicioTest.java` (ampliar, con Mockito): la estructura falla igual que en F01-H02 antes de revisar las filas (FR-009); con la estructura bien, devuelve el informe; las referencias se piden una vez por archivo. Ampliar `ArchivoValidado` y `ValidarArchivoServicio`. T009 pasa.
+- [X] T010 [US3] Prueba primero, en `PCAR/adaptadores/entrada/EscritorDeInformeTest.java`:
   - las columnas `fila,campo,valor,motivo,tipo,sugerencia`, en UTF-8 con BOM, con la sugerencia de la cédula;
   - **las celdas que empiezan con `=`, `+`, `-`, `@`, tabulación o retorno de carro llevan un apóstrofo delante**, entre ellas `=HYPERLINK("x")`, `-1` y una sugerencia que empieza con `-`;
   - los valores con comas, comillas y saltos de línea, según RFC 4180;
@@ -168,7 +168,7 @@ description: "Tareas de F01-H03: validar las reglas de los datos e informe por f
 
 **Goal**: cada envío se valida desde cero (FR-008).
 
-- [ ] T011 [US4] Prueba primero, en `SubidaContratoTest` (ampliar): subir un archivo con errores y después el corregido; **el segundo informe es solo el del archivo nuevo**, sin errores. Revisar que el servicio y el controlador no guardan nada entre peticiones (ningún campo con estado). T011 pasa.
+- [X] T011 [US4] Prueba primero, en `SubidaContratoTest` (ampliar): subir un archivo con errores y después el corregido; **el segundo informe es solo el del archivo nuevo**, sin errores. Revisar que el servicio y el controlador no guardan nada entre peticiones (ningún campo con estado). T011 pasa.
 
 **Checkpoint**: las cuatro historias de la API pasan.
 

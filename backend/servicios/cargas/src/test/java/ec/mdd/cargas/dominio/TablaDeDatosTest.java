@@ -26,13 +26,13 @@ class TablaDeDatosTest {
     }
 
     @Test
-    void dadaUnaFilaVaciaEntreRegistros_cuandoSeCuentan_entoncesEsUnRegistro() {
+    void dadaUnaFilaVaciaEntreRegistros_cuandoSeCuentan_entoncesNoEsUnRegistro() {
         TablaDeDatos tabla =
                 new TablaDeDatos(
                         ENCABEZADOS,
                         List.of(List.of("A1", "Uno"), List.of("", ""), List.of("A3", "Tres")));
 
-        assertThat(tabla.registros()).isEqualTo(3);
+        assertThat(tabla.registros()).isEqualTo(2);
     }
 
     @Test

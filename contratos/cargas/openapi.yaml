@@ -7,6 +7,10 @@
 # UTF-8, separador, una hoja, encabezados de la plantilla y número de registros. El archivo pasa
 # por una fuente de datos (RF-57) y no se guarda. Exige «Cargas: escritura», que tienen Talento
 # Humano, el Responsable de consolidación y el Vicerrector académico (D-71).
+# Desde F01-H03: la misma subida revisa cada fila con las reglas del diccionario de datos y las
+# referencias del sistema (RF-08), y responde el informe por fila; un archivo con errores en sus
+# filas responde 200 con su informe, no un error (principio XIII). descargarInforme responde el
+# mismo informe en CSV, con las celdas neutralizadas (RF-09, RNF-SEG-04). Nada se guarda.
 openapi: 3.0.3
 info:
   title: MDD · cargas
@@ -21,7 +25,9 @@ tags:
   - name: Plantillas
     description: Las plantillas de las 10 cargas y su diccionario de datos (RF-05).
   - name: Subida
-    description: Subir el archivo de una carga y validar su estructura (RF-06, RF-07).
+    description: >-
+      Subir el archivo de una carga, validar su estructura y sus filas, y descargar el informe
+      (RF-06 a RF-09).
 paths:
   /api/cargas/sesion:
     get:
@@ -121,12 +127,15 @@ paths:
     post:
       tags: [Subida]
       operationId: validarArchivo
-      summary: Lee el CSV o XLSX de una carga y responde cuántos registros tiene, sin guardarlo.
+      summary: Lee el CSV o XLSX de una carga, revisa sus filas y responde el informe, sin guardarlo.
       description: >-
         Valida la estructura del archivo, en este orden: hasta 5 MB; CSV o XLSX, por la extensión
         y el contenido; UTF-8 (con o sin BOM); una sola hoja; que se pueda leer; los encabezados de
-        la plantilla, en su orden; al menos un registro. El contenido de cada fila lo revisa
-        F01-H03. Los detalles de un error nunca traen valores del archivo.
+        la plantilla, en su orden; al menos un registro. Los detalles de un error de estructura
+        nunca traen valores del archivo. Después revisa cada fila con las reglas del diccionario de
+        datos y las referencias del sistema (F01-H03) y responde 200 con el informe por fila, que
+        sí trae el valor de cada problema, porque es el dato que hay que corregir. Un archivo con
+        errores en sus filas no es un error HTTP (principio XIII).
       x-mdd-permiso: CARGAS:ESCRITURA
       requestBody:
         required: true
@@ -141,11 +150,52 @@ paths:
                   format: binary
       responses:
         '200':
-          description: El archivo se puede leer.
+          description: El archivo se puede leer; el informe dice si sus filas son válidas.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/LecturaDeArchivo'
+        '400':
+          $ref: '#/components/responses/ArchivoNoValido'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/CargaNoEncontrada'
+        '413':
+          $ref: '#/components/responses/ArchivoDemasiadoGrande'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/cargas/plantillas/{codigo}/archivo/informe:
+    parameters:
+      - $ref: '#/components/parameters/CodigoDeCarga'
+    post:
+      tags: [Subida]
+      operationId: descargarInforme
+      summary: Valida el archivo como validarArchivo y responde todo su informe en CSV, sin guardarlo.
+      description: >-
+        La misma validación de validarArchivo, con los mismos errores de estructura. Responde todos
+        los problemas, no solo los primeros 100, en CSV UTF-8 con BOM: fila, campo, valor, motivo,
+        tipo y sugerencia. Toda celda que empieza con =, +, -, @, tabulación o retorno de carro
+        lleva un apóstrofo delante, para que la hoja de cálculo no la ejecute (RNF-SEG-04).
+      x-mdd-permiso: CARGAS:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [archivo]
+              properties:
+                archivo:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          $ref: '#/components/responses/InformeCsv'
         '400':
           $ref: '#/components/responses/ArchivoNoValido'
         '401':
@@ -180,6 +230,17 @@ components:
       headers:
         Content-Disposition:
           description: 'attachment; filename="01_estructura_organica.csv"'
+          schema:
+            type: string
+      content:
+        text/csv:
+          schema:
+            type: string
+    InformeCsv:
+      description: El informe por fila en CSV, para guardarlo con el nombre de Content-Disposition.
+      headers:
+        Content-Disposition:
+          description: 'attachment; filename="informe-docentes.csv"'
           schema:
             type: string
       content:
@@ -316,9 +377,10 @@ components:
       type: string
       enum: [CSV, XLSX]
     LecturaDeArchivo:
-      description: El resultado de leer un archivo que se puede usar.
+      description: >-
+        El resultado de leer un archivo con una estructura válida, con el informe de sus filas.
       type: object
-      required: [carga, archivo, formato, registros]
+      required: [carga, archivo, formato, registros, valido, errores, advertencias, problemas]
       properties:
         carga:
           type: string
@@ -332,7 +394,59 @@ components:
         formato:
           $ref: '#/components/schemas/FormatoDeArchivo'
         registros:
-          description: Las filas de datos, sin el encabezado ni las filas vacías del final.
+          description: Las filas de datos, sin el encabezado ni las filas vacías.
           type: integer
           minimum: 1
           example: 47
+        valido:
+          description: Si sus filas no tienen ningún error; las advertencias no lo impiden.
+          type: boolean
+        errores:
+          description: Cuántos errores tiene, en total.
+          type: integer
+          minimum: 0
+        advertencias:
+          description: Cuántas advertencias tiene, en total.
+          type: integer
+          minimum: 0
+        problemas:
+          description: >-
+            Los primeros 100 problemas, en orden de fila y de columna. descargarInforme los trae
+            todos.
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/ProblemaDeFila'
+    TipoDeProblema:
+      description: Un error impide continuar; una advertencia no.
+      type: string
+      enum: [ERROR, ADVERTENCIA]
+    ProblemaDeFila:
+      description: >-
+        Un problema de una fila del archivo (glosario «Informe de validación de la carga»). El motivo
+        dice qué hacer y no repite el valor.
+      type: object
+      required: [fila, campo, valor, motivo, tipo]
+      properties:
+        fila:
+          description: La fila del archivo, contando el encabezado como la 1.
+          type: integer
+          minimum: 2
+          example: 14
+        campo:
+          description: El encabezado de la columna.
+          type: string
+          example: numero_identificacion
+        valor:
+          description: El valor recibido, sin los espacios de los extremos; vacío si no tiene.
+          type: string
+          example: '109990010'
+        motivo:
+          type: string
+          example: 'Cédula inválida o sin cero inicial: le falta el 0 inicial.'
+        tipo:
+          $ref: '#/components/schemas/TipoDeProblema'
+        sugerencia:
+          description: El valor corregido, si la regla lo puede proponer.
+          type: string
+          example: '0109990010'

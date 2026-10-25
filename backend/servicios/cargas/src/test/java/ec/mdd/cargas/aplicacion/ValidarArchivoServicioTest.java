@@ -7,12 +7,16 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ec.mdd.cargas.adaptadores.salida.DiccionarioYaml;
 import ec.mdd.cargas.dominio.ArchivoSinRegistros;
 import ec.mdd.cargas.dominio.EncabezadosDistintos;
+import ec.mdd.cargas.dominio.InformeValidacionCarga;
+import ec.mdd.cargas.dominio.ProblemaDeFila;
+import ec.mdd.cargas.dominio.ReferenciasExistentes;
 import ec.mdd.cargas.dominio.TablaDeDatos;
 import ec.mdd.cargas.puertos.entrada.ArchivoDemasiadoGrande;
 import ec.mdd.cargas.puertos.entrada.ArchivoSubido;
@@ -23,7 +27,9 @@ import ec.mdd.cargas.puertos.salida.ArchivoLeido;
 import ec.mdd.cargas.puertos.salida.Formato;
 import ec.mdd.cargas.puertos.salida.FuenteDelDiccionario;
 import ec.mdd.cargas.puertos.salida.LectorDeArchivo;
+import ec.mdd.cargas.puertos.salida.ReferenciasDelSistema;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /** Validar el archivo de una carga (F01-H02), con Mockito sobre el lector y el diccionario real. */
@@ -42,15 +48,22 @@ class ValidarArchivoServicioTest {
 
     private final LectorDeArchivo lector = mock(LectorDeArchivo.class);
     private final FuenteDelDiccionario fuente = mock(FuenteDelDiccionario.class);
+    private final ReferenciasDelSistema referencias = mock(ReferenciasDelSistema.class);
     private final ValidarArchivoServicio servicio;
 
     ValidarArchivoServicioTest() {
         when(fuente.leer()).thenReturn(new DiccionarioYaml().leer());
-        servicio = new ValidarArchivoServicio(new ConsultarPlantillasServicio(fuente), lector);
+        when(referencias.existentes())
+                .thenReturn(
+                        new ReferenciasExistentes(
+                                Set.of(), Set.of(), Set.of(), Set.of(), Set.of()));
+        servicio =
+                new ValidarArchivoServicio(
+                        new ConsultarPlantillasServicio(fuente), lector, referencias);
     }
 
     @Test
-    void dadoUnArchivoValido_cuandoSeValida_entoncesSuCargaSuNombreSuFormatoYSusRegistros() {
+    void dadoUnArchivoValido_cuandoSeValida_entoncesSuCargaSuNombreSuFormatoYSuInforme() {
         when(lector.leer(eq("ciclos.csv"), any()))
                 .thenReturn(
                         new ArchivoLeido(
@@ -59,8 +72,14 @@ class ValidarArchivoServicioTest {
                                         CICLOS,
                                         List.of(
                                                 List.of(
-                                                        "2026-I", "a", "b", "c", "d", "e", "f",
-                                                        "g"),
+                                                        "2026-I",
+                                                        "PRIMER PERIODO",
+                                                        "2026-04-01",
+                                                        "2026-08-31",
+                                                        "20",
+                                                        "",
+                                                        "",
+                                                        "APROBADO"),
                                                 List.of("", "", "", "", "", "", "", "")))));
 
         ArchivoValidado validado =
@@ -69,7 +88,41 @@ class ValidarArchivoServicioTest {
                         new ArchivoSubido("C:\\Datos\\ciclos.csv", new byte[10]));
 
         assertThat(validado)
-                .isEqualTo(new ArchivoValidado("ciclos_academicos", "ciclos.csv", Formato.CSV, 1));
+                .isEqualTo(
+                        new ArchivoValidado(
+                                "ciclos_academicos",
+                                "ciclos.csv",
+                                Formato.CSV,
+                                new InformeValidacionCarga(1, List.of())));
+        assertThat(validado.registros()).isOne();
+        verify(referencias, times(1)).existentes();
+    }
+
+    @Test
+    void dadaUnaFilaConErrores_cuandoSeValida_entoncesDevuelveElInformeSinLanzar() {
+        when(lector.leer(eq("ciclos.csv"), any()))
+                .thenReturn(
+                        new ArchivoLeido(
+                                Formato.CSV,
+                                new TablaDeDatos(
+                                        CICLOS,
+                                        List.of(
+                                                List.of(
+                                                        "2026-III",
+                                                        "PRIMER PERIODO",
+                                                        "2026-02-30",
+                                                        "2026-08-31",
+                                                        "20",
+                                                        "",
+                                                        "",
+                                                        "APROBADO")))));
+
+        InformeValidacionCarga informe = validar("ciclos.csv").informe();
+
+        assertThat(informe.valido()).isFalse();
+        assertThat(informe.problemas())
+                .extracting(ProblemaDeFila::campo)
+                .containsExactly("codigo_periodo", "fecha_inicio");
     }
 
     @Test
@@ -114,6 +167,7 @@ class ValidarArchivoServicioTest {
         assertThatThrownBy(() -> validar("ilegible.csv")).isInstanceOf(ArchivoIlegible.class);
         assertThatThrownBy(() -> validar("otro.csv")).isInstanceOf(EncabezadosDistintos.class);
         assertThatThrownBy(() -> validar("vacio.csv")).isInstanceOf(ArchivoSinRegistros.class);
+        verify(referencias, never()).existentes();
     }
 
     private ArchivoValidado validar(String nombre) {

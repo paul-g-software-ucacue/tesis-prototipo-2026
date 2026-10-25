@@ -12,4 +12,9 @@ dependencies {
     implementation 'org.springframework.security:spring-security-oauth2-jose'
     // Los XLSX de las cargas (F01-H02, research §5): solo en adaptadores.salida.
     implementation "org.apache.poi:poi-ooxml:${versionApachePoi}"
+    // Las referencias de las filas (F01-H03, research §6): las unidades, carreras, periodos y
+    // asignaturas de Académico y las identificaciones de Docentes, por sus interfaces publicadas;
+    // solo sus puertos.entrada, que ModulosTest del proceso datos comprueba (principio V).
+    implementation project(':servicios:academico')
+    implementation project(':servicios:docentes')
 }
