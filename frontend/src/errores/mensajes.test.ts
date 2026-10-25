@@ -7,7 +7,7 @@ import {
   MENSAJE_SERVICIO_NO_DISPONIBLE,
 } from './mensajes';
 
-// Las filas de contratos/comun/errores.md: | `CODIGO` | estado | título | descripción | cuándo |
+// Las filas de contratos/comun/errores.md: | `CODIGO` | estado | título | descripción | causa | …
 function filaDelCatalogo(codigo: string) {
   const catalogo = readFileSync(resolve(__dirname, '../../../contratos/comun/errores.md'), 'utf-8');
   const fila = catalogo.split('\n').find((linea) => linea.startsWith(`| \`${codigo}\` |`));

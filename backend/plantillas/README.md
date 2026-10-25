@@ -42,7 +42,7 @@ Cuando la historia de un servicio agrega su primera API (principio IV, ADR-015):
 Cuando una historia agrega un error de dominio o de aplicación (principio XIII, ADR-016; `specs/004-modelo-errores/contracts/catalogo.md`):
 
 1. La excepción vive en el dominio o en la aplicación, como clase Java común, sin HTTP. Su mensaje no lleva datos personales, tokens ni contraseñas.
-2. Agregar su fila en `contratos/comun/errores.md`, con un código con el prefijo del servicio.
+2. Agregar su fila en `contratos/comun/errores.md`, con un código con el prefijo del servicio y sus 8 columnas: estado, título, descripción, causa, clasificación, acción y descripción técnica (D-72).
 3. Registrarla en `adaptadores/entrada/Errores<Servicio>.java` (`@Component`, implementa `CatalogoDeErrores`) con `EntradaCatalogo.de(...)` y los mismos textos de la fila.
 4. Declarar la respuesta en el contrato de la operación que puede producirla.
 5. Pruebas: `VerificadorDeCatalogo.verificar(new Errores<Servicio>())`, y la respuesta en la prueba de contrato. `@WebMvcTest` no escanea los `@Component` comunes, así que la prueba de contrato importa `Errores<Servicio>` (`@Import`).
