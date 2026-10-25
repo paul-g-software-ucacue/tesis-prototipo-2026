@@ -216,8 +216,8 @@ description: "Tareas de F03-H04: mantener los docentes con su ficha académica"
   - **Limpieza:** borra en la base solo lo que creó (los docentes y sus registros, las asignaturas, mallas y carreras con prefijo y sus registros).
 
   Agregar su paso a `.github/workflows/perfil-consolidado.yml`. Correrlo dos veces seguidas y anotarlo; `shellcheck` sin observaciones.
-- [ ] T020 Correr todo, como en las historias anteriores: backend, SPA, los 12 scripts con el perfil reconstruido, `probar_equipo.sh`, `shellcheck` y Gitleaks sobre un clon. Después de `probar_docentes.sh`, buscar una cédula de prueba en `docker compose logs gateway datos` y anotar en la evidencia que no aparece (principio IX). Hacer commit y push, abrir el PR en borrador con `Refs #38` y marcarlo listo después de sus runs.
-- [ ] T021 Completar la evidencia y el PR. Fusionar con *squash* con la aprobación del autor. Después:
+- [X] T020 Correr todo, como en las historias anteriores: backend, SPA, los 12 scripts con el perfil reconstruido, `probar_equipo.sh`, `shellcheck` y Gitleaks sobre un clon. Después de `probar_docentes.sh`, buscar una cédula de prueba en `docker compose logs gateway datos` y anotar en la evidencia que no aparece (principio IX). Hacer commit y push, abrir el PR en borrador con `Refs #38` y marcarlo listo después de sus runs.
+- [X] T021 Completar la evidencia y el PR. Fusionar con *squash* con la aprobación del autor. Después:
   1. esperar el despliegue («Sano en N s»), con `docentes` en V2;
   2. el autor entra con `datos.demo`, registra un docente con su ficha, lo busca por nombre y por cédula y abre su ficha en menos de 30 s (SC-001), y corrige su dedicación;
   3. lo ve con `consolidacion.demo` en solo lectura;
