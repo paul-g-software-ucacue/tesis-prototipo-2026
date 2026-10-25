@@ -197,8 +197,11 @@ public class ConfiguracionAcademico {
 
     /** Las referencias que Docentes valida y muestra (F03-H04): su API publicada en el proceso. */
     @Bean
-    public ConsultarReferencias consultarReferencias(RepositorioCarreras repositorio) {
-        return new ConsultarReferenciasServicio(repositorio);
+    public ConsultarReferencias consultarReferencias(
+            RepositorioCarreras repositorio,
+            RepositorioEstructura estructura,
+            RepositorioPeriodos periodos) {
+        return new ConsultarReferenciasServicio(repositorio, estructura, periodos);
     }
 
     /** Mantener las carreras, sus mallas y sus asignaturas, con su registro (F03-H02). */

@@ -12,22 +12,35 @@ import ec.mdd.academico.dominio.EstadoDeCarrera;
 import ec.mdd.academico.dominio.Jornada;
 import ec.mdd.academico.dominio.Modalidad;
 import ec.mdd.academico.dominio.NivelDeFormacion;
+import ec.mdd.academico.dominio.PeriodoAcademico;
+import ec.mdd.academico.dominio.TipoDeUnidad;
 import ec.mdd.academico.dominio.UnidadDeOrganizacionCurricular;
+import ec.mdd.academico.dominio.UnidadOrganica;
 import ec.mdd.academico.puertos.entrada.AsignaturaDeReferencia;
 import ec.mdd.academico.puertos.entrada.CampoAmplioDeReferencia;
 import ec.mdd.academico.puertos.entrada.CarreraDeReferencia;
+import ec.mdd.academico.puertos.entrada.PeriodoDeReferencia;
 import ec.mdd.academico.puertos.entrada.ReferenciasDeAcademico;
+import ec.mdd.academico.puertos.entrada.UnidadDeReferencia;
 import ec.mdd.academico.puertos.salida.RepositorioCarreras;
+import ec.mdd.academico.puertos.salida.RepositorioEstructura;
+import ec.mdd.academico.puertos.salida.RepositorioPeriodos;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/** Las referencias que Académico publica para Docentes (F03-H04, research §4), con Mockito. */
+/**
+ * Las referencias que Académico publica para Docentes (F03-H04, research §4), con las unidades y
+ * los periodos de F03-H05 (research §2), con Mockito.
+ */
 class ConsultarReferenciasServicioTest {
 
     private final RepositorioCarreras repositorio = mock(RepositorioCarreras.class);
+    private final RepositorioEstructura estructura = mock(RepositorioEstructura.class);
+    private final RepositorioPeriodos periodos = mock(RepositorioPeriodos.class);
     private final ConsultarReferenciasServicio servicio =
-            new ConsultarReferenciasServicio(repositorio);
+            new ConsultarReferenciasServicio(repositorio, estructura, periodos);
 
     @Test
     void dadasCarrerasYAsignaturas_cuandoSePidenLasReferencias_entoncesVanTodasPorCodigo() {
@@ -61,6 +74,62 @@ class ConsultarReferenciasServicioTest {
         assertThat(referencias.camposAmplios())
                 .extracting(CampoAmplioDeReferencia::codigo)
                 .containsExactly("04", "06");
+    }
+
+    @Test
+    void dadasUnidadesYPeriodos_cuandoSePidenLasReferencias_entoncesVanTodosPorCodigo() {
+        when(estructura.todas())
+                .thenReturn(
+                        List.of(
+                                UnidadOrganica.nueva(
+                                        "G-INV",
+                                        "Gestión de Investigación",
+                                        TipoDeUnidad.GESTION,
+                                        "VRA",
+                                        "G07",
+                                        null),
+                                UnidadOrganica.nueva(
+                                                "COM-DIST",
+                                                "Comisión del distributivo",
+                                                TipoDeUnidad.COMISION,
+                                                "VRA",
+                                                null,
+                                                false)
+                                        .conEstado(false)));
+        when(periodos.todos())
+                .thenReturn(
+                        List.of(
+                                PeriodoAcademico.nuevo(
+                                        "2026-II",
+                                        "Periodo 2026-II",
+                                        LocalDate.of(2026, 10, 5),
+                                        LocalDate.of(2027, 2, 5)),
+                                PeriodoAcademico.nuevo(
+                                        "2026-I",
+                                        "Periodo 2026-I",
+                                        LocalDate.of(2026, 4, 6),
+                                        LocalDate.of(2026, 8, 7))));
+
+        ReferenciasDeAcademico referencias = servicio.referencias();
+
+        assertThat(referencias.unidades())
+                .containsExactly(
+                        new UnidadDeReferencia(
+                                "COM-DIST", "Comisión del distributivo", "COMISION", null, false),
+                        new UnidadDeReferencia(
+                                "G-INV", "Gestión de Investigación", "GESTION", "G07", true));
+        assertThat(referencias.periodos())
+                .containsExactly(
+                        new PeriodoDeReferencia(
+                                "2026-I",
+                                "Periodo 2026-I",
+                                LocalDate.of(2026, 4, 6),
+                                LocalDate.of(2026, 8, 7)),
+                        new PeriodoDeReferencia(
+                                "2026-II",
+                                "Periodo 2026-II",
+                                LocalDate.of(2026, 10, 5),
+                                LocalDate.of(2027, 2, 5)));
     }
 
     private static Carrera carrera(String codigo, String nombre, String siglas) {

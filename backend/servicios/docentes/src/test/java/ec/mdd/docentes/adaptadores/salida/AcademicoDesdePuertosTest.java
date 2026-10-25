@@ -6,8 +6,11 @@ import ec.mdd.academico.puertos.entrada.AsignaturaDeReferencia;
 import ec.mdd.academico.puertos.entrada.CampoAmplioDeReferencia;
 import ec.mdd.academico.puertos.entrada.CarreraDeReferencia;
 import ec.mdd.academico.puertos.entrada.ConsultarReferencias;
+import ec.mdd.academico.puertos.entrada.PeriodoDeReferencia;
 import ec.mdd.academico.puertos.entrada.ReferenciasDeAcademico;
+import ec.mdd.academico.puertos.entrada.UnidadDeReferencia;
 import ec.mdd.docentes.dominio.Referencias;
+import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -28,7 +31,26 @@ class AcademicoDesdePuertosTest {
                             List.of(
                                     new CampoAmplioDeReferencia(
                                             "06",
-                                            "Tecnologías de la información y la comunicación")));
+                                            "Tecnologías de la información y la comunicación")),
+                            List.of(
+                                    new UnidadDeReferencia(
+                                            "G-INV",
+                                            "Gestión de Investigación",
+                                            "GESTION",
+                                            "G07",
+                                            true),
+                                    new UnidadDeReferencia(
+                                            "COM-DIST",
+                                            "Comisión del distributivo",
+                                            "COMISION",
+                                            null,
+                                            false)),
+                            List.of(
+                                    new PeriodoDeReferencia(
+                                            "2026-I",
+                                            "Periodo académico 2026-I",
+                                            LocalDate.of(2026, 4, 6),
+                                            LocalDate.of(2026, 8, 7))));
 
     @Test
     void dadasLasReferenciasDeAcademico_cuandoSePiden_entoncesTraenCadaNombrePorCodigo() {
@@ -40,5 +62,26 @@ class AcademicoDesdePuertosTest {
         assertThat(referencias.campoAmplio("06"))
                 .contains("Tecnologías de la información y la comunicación");
         assertThat(referencias.campoAmplio("05")).isEmpty();
+    }
+
+    @Test
+    void dadasLasUnidadesYLosPeriodos_cuandoSePiden_entoncesTraenSuTipoSuGestionYSusFechas() {
+        Referencias referencias = new AcademicoDesdePuertos(consultar).referencias();
+
+        assertThat(referencias.unidades())
+                .containsEntry(
+                        "G-INV",
+                        new Referencias.Unidad("Gestión de Investigación", "GESTION", "G07", true))
+                .containsEntry(
+                        "COM-DIST",
+                        new Referencias.Unidad(
+                                "Comisión del distributivo", "COMISION", null, false));
+        assertThat(referencias.unidad("G-INV")).contains("Gestión de Investigación");
+        assertThat(referencias.periodo("2026-I"))
+                .isEqualTo(
+                        new Referencias.Periodo(
+                                "Periodo académico 2026-I",
+                                LocalDate.of(2026, 4, 6),
+                                LocalDate.of(2026, 8, 7)));
     }
 }

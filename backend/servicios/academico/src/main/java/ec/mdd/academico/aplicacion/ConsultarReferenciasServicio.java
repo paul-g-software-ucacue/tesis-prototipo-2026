@@ -4,21 +4,32 @@ import ec.mdd.academico.puertos.entrada.AsignaturaDeReferencia;
 import ec.mdd.academico.puertos.entrada.CampoAmplioDeReferencia;
 import ec.mdd.academico.puertos.entrada.CarreraDeReferencia;
 import ec.mdd.academico.puertos.entrada.ConsultarReferencias;
+import ec.mdd.academico.puertos.entrada.PeriodoDeReferencia;
 import ec.mdd.academico.puertos.entrada.ReferenciasDeAcademico;
+import ec.mdd.academico.puertos.entrada.UnidadDeReferencia;
 import ec.mdd.academico.puertos.salida.RepositorioCarreras;
+import ec.mdd.academico.puertos.salida.RepositorioEstructura;
+import ec.mdd.academico.puertos.salida.RepositorioPeriodos;
 import java.util.Comparator;
 
 /**
- * Las referencias para Docentes (F03-H04), sacadas de las carreras, las asignaturas y los campos
- * amplios que ya guarda Académico.
+ * Las referencias para Docentes, sacadas de las carreras, las asignaturas y los campos amplios
+ * (F03-H04), y de las unidades y los periodos (F03-H05), que ya guarda Académico.
  */
 public final class ConsultarReferenciasServicio implements ConsultarReferencias {
 
     private final RepositorioCarreras repositorio;
+    private final RepositorioEstructura estructura;
+    private final RepositorioPeriodos periodos;
 
-    /** Recibe el repositorio de las carreras. */
-    public ConsultarReferenciasServicio(RepositorioCarreras repositorio) {
+    /** Recibe los repositorios de las carreras, de la estructura orgánica y de los periodos. */
+    public ConsultarReferenciasServicio(
+            RepositorioCarreras repositorio,
+            RepositorioEstructura estructura,
+            RepositorioPeriodos periodos) {
         this.repositorio = repositorio;
+        this.estructura = estructura;
+        this.periodos = periodos;
     }
 
     @Override
@@ -35,6 +46,24 @@ public final class ConsultarReferenciasServicio implements ConsultarReferencias 
                 repositorio.camposAmplios().stream()
                         .map(c -> new CampoAmplioDeReferencia(c.codigo(), c.nombre()))
                         .sorted(Comparator.comparing(CampoAmplioDeReferencia::codigo))
+                        .toList(),
+                estructura.todas().stream()
+                        .map(
+                                u ->
+                                        new UnidadDeReferencia(
+                                                u.codigo(),
+                                                u.nombre(),
+                                                u.tipo().name(),
+                                                u.gestionAutorizada(),
+                                                u.activa()))
+                        .sorted(Comparator.comparing(UnidadDeReferencia::codigo))
+                        .toList(),
+                periodos.todos().stream()
+                        .map(
+                                p ->
+                                        new PeriodoDeReferencia(
+                                                p.codigo(), p.nombre(), p.inicio(), p.fin()))
+                        .sorted(Comparator.comparing(PeriodoDeReferencia::codigo))
                         .toList());
     }
 }

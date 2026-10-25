@@ -4,28 +4,6 @@
 // decide (la carrera base y las asignaturas afines solo las comprueba él contra Académico).
 import type { ValoresDelDocente } from './formularioDeDocente';
 
-/** Qué caracteres admite un campo mientras se escribe. */
-export type Filtro = 'digitos' | 'decimal' | 'letras' | 'codigo' | 'correo';
-
-/** El texto sin lo que el campo no admite, y como mucho `largo` caracteres. */
-export function filtrar(filtro: Filtro | undefined, texto: string, largo?: number) {
-  let limpio = texto;
-  if (filtro === 'digitos') {
-    limpio = texto.replace(/\D/g, '');
-  } else if (filtro === 'decimal') {
-    // Dígitos y una sola coma o punto: «2,5» años.
-    const [entera = '', ...resto] = texto.replace(/[^\d.,]/g, '').split(/[.,]/);
-    limpio = resto.length ? `${entera},${resto.join('')}` : entera;
-  } else if (filtro === 'letras') {
-    limpio = texto.replace(/[^\p{L} '-]/gu, '');
-  } else if (filtro === 'codigo') {
-    limpio = texto.replace(/[^0-9A-Za-z-]/g, '').toUpperCase();
-  } else if (filtro === 'correo') {
-    limpio = texto.replace(/\s/g, '');
-  }
-  return largo === undefined ? limpio : limpio.slice(0, largo);
-}
-
 /** El primer año que admite la ficha (como el servidor). */
 export const PRIMER_ANIO = 1950;
 
@@ -246,9 +224,4 @@ export function erroresEn(
     );
   });
   return errores;
-}
-
-/** «1 campo», «3 campos». */
-export function campos(cantidad: number) {
-  return cantidad === 1 ? '1 campo' : `${String(cantidad)} campos`;
 }

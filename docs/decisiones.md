@@ -68,6 +68,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-70 | 2026-10-21 | Una operación puede declarar varios permisos alternativos; la estructura orgánica la leen quienes leen el distributivo o los catálogos | Aceptada | ADR-021 (`x-mdd-permiso` admite una lista), RF-12 (interpreta «sin permiso de administrador») |
 | D-71 | 2026-10-23 | El Responsable de consolidación y el Vicerrector académico ejecutan las cargas | Aceptada | D-65 (matriz D-16) |
 | D-72 | 2026-10-24 | Cada campo de entrada se valida por su tipo y su largo, y cada error del catálogo dice su clasificación, su causa, su descripción técnica y la acción para el usuario | Aceptada | Constitución 2.2.0 (principio XIV nuevo; amplía el XIII y la definición de terminado) |
+| D-73 | 2026-10-25 | Los 16 cargos de gestor tienen código propio, del G06 al G21 | Aceptada | Diccionario de la carga 8 (catálogo CARGOS) |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1234,3 +1235,42 @@ Estado al 2026-10-11. El texto completo está en `lean_inception/adr/`.
 - Las especificaciones nuevas fijan el tipo, los caracteres admitidos y el largo de cada campo de entrada. Los planes y las tareas los llevan al contrato (`pattern`, `minLength`, `maxLength`, `minimum`, `maximum`), al dominio y a la SPA.
 - La evidencia de cada historia anota las validaciones y los errores probados.
 - Los códigos que ya están en el catálogo se completan con la clasificación, la causa y la descripción técnica en un cambio aparte, que también pone al día la prueba que compara el catálogo con el código.
+
+## D-73. Los 16 cargos de gestor tienen código propio, del G06 al G21
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-25 · **Decidido por:** autor de la tesis (propuesta en el plan de F03-H05)
+- **Origen:** `specs/023-cargos-proyectos/research.md` §3
+- **Modifica a:** el catálogo `CARGOS` del diccionario de datos de la carga 8, que daba los cargos de gestor solo como un rango.
+
+**Decisión.** Cada gestión autorizada G06 a G21 de POL 6 tiene su cargo de gestor. Su código es el de la gestión con el núcleo de su nombre:
+
+| Gestión | Código |
+|---|---|
+| G06 | `G06_GESTOR_VINCULACION` |
+| G07 | `G07_GESTOR_INVESTIGACION` |
+| G08 | `G08_GESTOR_IDIOMAS` |
+| G09 | `G09_GESTOR_FORMACION_INTEGRAL` |
+| G10 | `G10_COORDINADOR_CALIDAD` |
+| G11 | `G11_SECRETARIO_GENERAL` |
+| G12 | `G12_PROCURADOR` |
+| G13 | `G13_GESTOR_BIENESTAR` |
+| G14 | `G14_GESTOR_ADMINISTRATIVO_FINANCIERO` |
+| G15 | `G15_GESTOR_PLANIFICACION` |
+| G16 | `G16_GESTOR_TALENTO_HUMANO` |
+| G17 | `G17_GESTOR_BIBLIOTECA` |
+| G18 | `G18_GESTOR_COMUNICACION` |
+| G19 | `G19_GESTOR_RELACIONES_INTERNACIONALES` |
+| G20 | `G20_GESTOR_TIC` |
+| G21 | `G21_GESTOR_ESTADISTICAS` |
+
+El catálogo `CARGOS` de `diccionario-de-datos.yaml` cambia la fila del rango por estos 16 valores, así que la plantilla y el diccionario de la carga 8 los listan. La unidad de un cargo de gestor es la de su gestión autorizada en la estructura orgánica.
+
+**Por qué.** El diccionario decía «G06_GESTOR_VINCULACION … G21_GESTOR_ESTADISTICAS, prefijo con el código de gestión autorizada». Los datos de prueba usan 9 de los 16 códigos, y el principio XIV no deja inventar los otros 7. Los 7 que faltaban se forman como los 9 conocidos y caben en los 40 caracteres de la columna.
+
+**Alternativas.**
+- Aceptar cualquier `Gxx_…` con el prefijo bien puesto: no sería un catálogo, y el mismo cargo podría escribirse de dos maneras.
+- Formar el código con el nombre completo de la gestión: pasa de 40 caracteres y no coincide con los datos de prueba.
+
+**Consecuencias.**
+- La enumeración `TipoDeCargo` de Docentes tiene 22 valores, que `ValoresPermitidosTest` compara con el diccionario.
+- La carga 8 por archivo (F01-H04) valida contra los mismos 22 valores.

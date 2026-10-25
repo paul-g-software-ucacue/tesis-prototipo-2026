@@ -30,6 +30,14 @@ public record CambioRegistrado(
         /** Datos o ficha corregidos, con cada valor anterior y nuevo. */
         DOCENTE_CORREGIDO,
         /** Estado laboral cambiado, con el anterior y el nuevo. */
-        DOCENTE_ESTADO_CAMBIADO
+        DOCENTE_ESTADO_CAMBIADO,
+        /** Cargo registrado, con su clave, su unidad o su carrera (F03-H05). */
+        CARGO_REGISTRADO,
+        /** Cargo corregido o finalizado, con cada valor anterior y nuevo. */
+        CARGO_CORREGIDO,
+        /** Proyecto registrado, con su código, su tipo y su estado. */
+        PROYECTO_REGISTRADO,
+        /** Proyecto corregido o con otro estado, con cada valor anterior y nuevo. */
+        PROYECTO_CORREGIDO
     }
 }

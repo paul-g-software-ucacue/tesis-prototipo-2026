@@ -117,6 +117,12 @@ class DiccionarioYamlTest {
                 .first()
                 .isEqualTo(new ValorDeCatalogo("G01", "Rector"));
         assertThat(diccionario.valoresDe(columna(7, "perfil"))).hasSize(11);
+        // Los 5 de autoridades y coordinaciones, los 16 de gestor de D-73 y el miembro de comisión.
+        assertThat(diccionario.valoresDe(columna(8, "codigo_cargo")))
+                .hasSize(22)
+                .contains(
+                        new ValorDeCatalogo(
+                                "G08_GESTOR_IDIOMAS", "G08 · Gestor de Centro de Idiomas (D-73)"));
     }
 
     @Test

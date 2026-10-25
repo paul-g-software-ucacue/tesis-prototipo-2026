@@ -4,6 +4,7 @@ import static ec.mdd.docentes.dominio.DocentesDePrueba.con;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -104,5 +105,20 @@ class ReferenciasTest {
         assertThat(docentes)
                 .filteredOn(docente -> docente.estado() == EstadoLaboral.LICENCIA)
                 .hasSize(1);
+    }
+
+    @Test
+    void dadasLasCargas01Y03_cuandoSePideUnaUnidadOUnPeriodo_entoncesTraenSusDatosOSeRechazan() {
+        Referencias referencias = CargasDePrueba.referencias();
+
+        assertThat(referencias.unidades()).hasSize(24);
+        assertThat(referencias.unidades().get("G-INV").gestion()).isEqualTo("G07");
+        assertThat(referencias.unidad("G-INV")).isPresent();
+        assertThat(referencias.unidad("NO-EXISTE")).isEmpty();
+        assertThat(referencias.periodo("2026-I").inicio()).isEqualTo(LocalDate.of(2026, 4, 6));
+        assertThatThrownBy(() -> referencias.periodo("2030-I"))
+                .isInstanceOf(DatoInvalido.class)
+                .extracting("campo")
+                .isEqualTo("periodo");
     }
 }

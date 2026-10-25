@@ -119,6 +119,13 @@ jobs:
         shell: bash
         run: deploy/probar_docentes.sh
 
+      # F03-H05: los 21 cargos y los 11 proyectos de prueba, la advertencia de RN-20, los cuatro 409,
+      # la suma de horas, los asignables en 2026-I y 2026-II, un coordinador finalizado y quién los
+      # lee (D-64, D-70). Borra lo que creó, también la copia de los periodos en Roles.
+      - name: Cargos y proyectos de punta a punta
+        shell: bash
+        run: deploy/probar_cargos_proyectos.sh
+
       # shell: bash agrega pipefail, así que tee no oculta el código de salida del script.
       # Después de iniciar sesión (D-34): la medición de referencia de R-19 desde B00-H03.
       - name: Medición de R-19 después de iniciar sesión

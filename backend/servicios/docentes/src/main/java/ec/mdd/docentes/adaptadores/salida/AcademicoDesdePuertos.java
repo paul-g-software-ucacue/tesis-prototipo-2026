@@ -4,7 +4,9 @@ import ec.mdd.academico.puertos.entrada.AsignaturaDeReferencia;
 import ec.mdd.academico.puertos.entrada.CampoAmplioDeReferencia;
 import ec.mdd.academico.puertos.entrada.CarreraDeReferencia;
 import ec.mdd.academico.puertos.entrada.ConsultarReferencias;
+import ec.mdd.academico.puertos.entrada.PeriodoDeReferencia;
 import ec.mdd.academico.puertos.entrada.ReferenciasDeAcademico;
+import ec.mdd.academico.puertos.entrada.UnidadDeReferencia;
 import ec.mdd.docentes.dominio.Referencias;
 import ec.mdd.docentes.puertos.salida.ReferenciasAcademicas;
 import java.util.stream.Collectors;
@@ -48,6 +50,25 @@ public final class AcademicoDesdePuertos implements ReferenciasAcademicas {
                         .collect(
                                 Collectors.toMap(
                                         CampoAmplioDeReferencia::codigo,
-                                        CampoAmplioDeReferencia::nombre)));
+                                        CampoAmplioDeReferencia::nombre)),
+                todas.unidades().stream()
+                        .collect(
+                                Collectors.toMap(
+                                        UnidadDeReferencia::codigo,
+                                        unidad ->
+                                                new Referencias.Unidad(
+                                                        unidad.nombre(),
+                                                        unidad.tipo(),
+                                                        unidad.gestionAutorizada(),
+                                                        unidad.activa()))),
+                todas.periodos().stream()
+                        .collect(
+                                Collectors.toMap(
+                                        PeriodoDeReferencia::codigo,
+                                        periodo ->
+                                                new Referencias.Periodo(
+                                                        periodo.nombre(),
+                                                        periodo.inicio(),
+                                                        periodo.fin()))));
     }
 }

@@ -3,17 +3,30 @@ package ec.mdd.docentes.infraestructura;
 import ec.mdd.academico.puertos.entrada.ConsultarReferencias;
 import ec.mdd.docentes.adaptadores.salida.AcademicoDesdePuertos;
 import ec.mdd.docentes.adaptadores.salida.RegistroDeCambiosJdbc;
+import ec.mdd.docentes.adaptadores.salida.RepositorioCargosJdbc;
 import ec.mdd.docentes.adaptadores.salida.RepositorioDocentesJdbc;
+import ec.mdd.docentes.adaptadores.salida.RepositorioProyectosJdbc;
 import ec.mdd.docentes.adaptadores.salida.TransaccionSpring;
+import ec.mdd.docentes.aplicacion.ConsultarCargosServicio;
 import ec.mdd.docentes.aplicacion.ConsultarDocentesServicio;
+import ec.mdd.docentes.aplicacion.ConsultarProyectosServicio;
+import ec.mdd.docentes.aplicacion.MantenerCargosServicio;
 import ec.mdd.docentes.aplicacion.MantenerDocentesServicio;
+import ec.mdd.docentes.aplicacion.MantenerProyectosServicio;
+import ec.mdd.docentes.puertos.entrada.ConsultarCargos;
 import ec.mdd.docentes.puertos.entrada.ConsultarDocentes;
+import ec.mdd.docentes.puertos.entrada.ConsultarProyectos;
+import ec.mdd.docentes.puertos.entrada.MantenerCargos;
 import ec.mdd.docentes.puertos.entrada.MantenerDocentes;
+import ec.mdd.docentes.puertos.entrada.MantenerProyectos;
 import ec.mdd.docentes.puertos.salida.ReferenciasAcademicas;
 import ec.mdd.docentes.puertos.salida.RegistroDeCambios;
+import ec.mdd.docentes.puertos.salida.RepositorioCargos;
 import ec.mdd.docentes.puertos.salida.RepositorioDocentes;
+import ec.mdd.docentes.puertos.salida.RepositorioProyectos;
 import ec.mdd.docentes.puertos.salida.Transaccion;
 import java.time.Clock;
+import java.time.ZoneId;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
@@ -68,6 +81,71 @@ public class ConfiguracionDocentes {
             RegistroDeCambios registroDeCambiosDocentes,
             Transaccion transaccionDocentes) {
         return new MantenerDocentesServicio(
+                repositorio,
+                referencias,
+                registroDeCambiosDocentes,
+                transaccionDocentes,
+                Clock.systemUTC());
+    }
+
+    // Las advertencias de los cargos dependen del día, que es el de la institución (Ecuador).
+    private static final Clock RELOJ_LOCAL = Clock.system(ZoneId.of("America/Guayaquil"));
+
+    @Bean
+    @DependsOn("flywayDocentes")
+    public RepositorioCargos repositorioCargos(JdbcClient jdbc) {
+        return new RepositorioCargosJdbc(jdbc);
+    }
+
+    @Bean
+    @DependsOn("flywayDocentes")
+    public RepositorioProyectos repositorioProyectos(JdbcClient jdbc) {
+        return new RepositorioProyectosJdbc(jdbc);
+    }
+
+    /** Consultar los cargos con sus advertencias de hoy (F03-H05, FR-006). */
+    @Bean
+    public ConsultarCargos consultarCargos(
+            RepositorioCargos repositorioCargos, RepositorioDocentes repositorio) {
+        return new ConsultarCargosServicio(repositorioCargos, repositorio, RELOJ_LOCAL);
+    }
+
+    /** Registrar, corregir y finalizar los cargos, con su registro (F03-H05, FR-003, FR-012). */
+    @Bean
+    public MantenerCargos mantenerCargos(
+            RepositorioCargos repositorioCargos,
+            RepositorioDocentes repositorio,
+            ReferenciasAcademicas referencias,
+            RegistroDeCambios registroDeCambiosDocentes,
+            Transaccion transaccionDocentes) {
+        return new MantenerCargosServicio(
+                repositorioCargos,
+                repositorio,
+                referencias,
+                registroDeCambiosDocentes,
+                transaccionDocentes,
+                RELOJ_LOCAL);
+    }
+
+    /** Consultar los proyectos y si son asignables en un periodo (F03-H05, FR-009). */
+    @Bean
+    public ConsultarProyectos consultarProyectos(
+            RepositorioProyectos repositorioProyectos,
+            RepositorioDocentes repositorio,
+            ReferenciasAcademicas referencias) {
+        return new ConsultarProyectosServicio(repositorioProyectos, repositorio, referencias);
+    }
+
+    /** Registrar y corregir los proyectos, con su registro (F03-H05, FR-003, FR-012). */
+    @Bean
+    public MantenerProyectos mantenerProyectos(
+            RepositorioProyectos repositorioProyectos,
+            RepositorioDocentes repositorio,
+            ReferenciasAcademicas referencias,
+            RegistroDeCambios registroDeCambiosDocentes,
+            Transaccion transaccionDocentes) {
+        return new MantenerProyectosServicio(
+                repositorioProyectos,
                 repositorio,
                 referencias,
                 registroDeCambiosDocentes,
