@@ -193,7 +193,7 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
 
 **Goal**: registrar un proyecto con sus participantes y sus horas (FR-002, FR-003, FR-007, FR-010 a FR-012).
 
-- [ ] T015 [US3] Prueba primero, en `PDOC/aplicacion/MantenerProyectosServicioTest.java` (Mockito) y en `PDOC/adaptadores/entrada/ProyectosContratoTest.java`:
+- [X] T015 [US3] Prueba primero, en `PDOC/aplicacion/MantenerProyectosServicioTest.java` (Mockito) y en `PDOC/adaptadores/entrada/ProyectosContratoTest.java`:
   - registrar verifica las referencias y los docentes, bloquea, comprueba el código, guarda y registra `PROYECTO_REGISTRADO`;
   - `registrarProyecto` responde 201;
   - responde 400 con el campo `codigo`, `carreras[1]`, `participantes[2].horas`, `participantes[0].docente`, `director`, `vigenciaFin` y `horasAprobadas`, también cuando los participantes suman más que las aprobadas;
@@ -208,7 +208,7 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
 
 **Goal**: la condición de asignable, con su motivo, contra las fechas del periodo (FR-009; SC-003).
 
-- [ ] T016 [US4] Prueba primero, en `ProyectoTest` (ampliar), sin dobles, con los periodos 2026-I (2026-04-06 a 2026-08-07) y 2026-II (2026-10-05 a 2027-02-05) de la carga 03 de prueba:
+- [X] T016 [US4] Prueba primero, en `ProyectoTest` (ampliar), sin dobles, con los periodos 2026-I (2026-04-06 a 2026-08-07) y 2026-II (2026-10-05 a 2027-02-05) de la carga 03 de prueba:
   - aprobado o en ejecución con la vigencia que se cruza: asignable;
   - **finalizado o suspendido: no asignable por `ESTADO`** (escenario del issue);
   - **una vigencia que termina el día antes del inicio del periodo, o que empieza el día después de su fin: no asignable por `VIGENCIA`** (escenario del issue); la que termina el mismo día del inicio sí cruza;
@@ -223,7 +223,7 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
   - un proyecto que no existe da 404.
 
   Crear `Asignabilidad`, `MotivoNoAsignable`, `Proyecto.asignableEn` y `ConsultarProyectosServicio`. T016 pasa.
-- [ ] T017 [US4] Prueba primero, en `PDOC/adaptadores/entrada/PermisosDocentesTest.java` (ampliar, con `VerificadorDePermisos`): las 7 operaciones nuevas exigen sus permisos alternativos, y **un token con solo `PROYECTOS:LECTURA` recibe 403 en todas** (D-64, aclaración 8). Comprobar una vez que la prueba falla si las lecturas dejan fuera `DISTRIBUTIVO:LECTURA`, restaurarlo y anotarlo en la evidencia. T017 pasa.
+- [X] T017 [US4] Prueba primero, en `PDOC/adaptadores/entrada/PermisosDocentesTest.java` (ampliar, con `VerificadorDePermisos`): las 7 operaciones nuevas exigen sus permisos alternativos, y **un token con solo `PROYECTOS:LECTURA` recibe 403 en todas** (D-64, aclaración 8). Comprobar una vez que la prueba falla si las lecturas dejan fuera `DISTRIBUTIVO:LECTURA`, restaurarlo y anotarlo en la evidencia. T017 pasa.
 
 **Checkpoint**: los cargos y los proyectos se registran y se consultan por la API.
 
@@ -233,7 +233,7 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
 
 **Goal**: corregir con las mismas reglas, sin cambiar la clave, con su registro (FR-003, FR-012).
 
-- [ ] T018 [US5] Prueba primero, en `MantenerCargosServicioTest`, `MantenerProyectosServicioTest` y en los dos `…ContratoTest` (ampliar):
+- [X] T018 [US5] Prueba primero, en `MantenerCargosServicioTest`, `MantenerProyectosServicioTest` y en los dos `…ContratoTest` (ampliar):
   - `corregirCargo` con `FINALIZADO` y su fecha de fin registra `CARGO_CORREGIDO` con el anterior y el nuevo; la carrera puede recibir otro coordinador vigente;
   - volver a `VIGENTE` un coordinador cuando la carrera ya tiene otro da 409 `DOCENTES_COORDINADOR_VIGENTE`;
   - sin cambios no se registra nada;

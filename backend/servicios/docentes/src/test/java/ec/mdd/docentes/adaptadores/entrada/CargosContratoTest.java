@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 
 import com.jayway.jsonpath.JsonPath;
 import ec.mdd.docentes.dominio.CargasDePrueba;
@@ -239,6 +240,63 @@ class CargosContratoTest {
                                 + "\",\"tipo\":\"RECTOR\",\"fechaDesignacion\":\"2025-04-01\","
                                 + "\"unidad\":\"RECT\",\"documento\":\"RES-1\"}");
         assertThat(codigo(otro)).isEqualTo("DOCENTES_DOCENTE_NO_HABILITADO");
+    }
+
+    @Test
+    void
+            dadoUnCoordinadorVigente_cuandoSeFinaliza_entoncesSuCarreraPuedeRecibirOtroYQuedaRegistrado()
+                    throws Exception {
+        registrar(COORDINADOR);
+        String ruta = "/api/docentes/cargos/" + CON_MAESTRIA + "/COORDINADOR_CARRERA/2025-04-01";
+
+        MvcResult finalizado =
+                pedir(
+                        json(
+                                put(ruta),
+                                "{\"carrera\":\"550613A01-P-0301\",\"fechaFin\":\"2026-03-31\","
+                                        + "\"documento\":\"RES-PRUEBA-2026-099\","
+                                        + "\"estado\":\"FINALIZADO\"}"),
+                        escritura());
+        MvcResult otro =
+                registrar(
+                        COORDINADOR
+                                .replace(CON_MAESTRIA, SIN_CUARTO_NIVEL)
+                                .replace("2025-04-01", "2026-04-01"));
+        MvcResult revivido =
+                pedir(
+                        json(
+                                put(ruta),
+                                "{\"carrera\":\"550613A01-P-0301\","
+                                        + "\"documento\":\"RES-PRUEBA-2025-004\","
+                                        + "\"estado\":\"VIGENTE\"}"),
+                        escritura());
+
+        assertThat(finalizado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(JsonPath.<String>read(cuerpo(finalizado), "$.estado")).isEqualTo("FINALIZADO");
+        assertThat(otro.getResponse().getStatus()).isEqualTo(201);
+        assertThat(codigo(revivido)).isEqualTo("DOCENTES_COORDINADOR_VIGENTE");
+        assertThat(docentes.cambios())
+                .extracting(CambioRegistrado::accion)
+                .containsExactly(
+                        CambioRegistrado.Accion.CARGO_REGISTRADO,
+                        CambioRegistrado.Accion.CARGO_CORREGIDO,
+                        CambioRegistrado.Accion.CARGO_REGISTRADO);
+        contrato.validar(finalizado);
+        contrato.validar(revivido);
+    }
+
+    @Test
+    void dadoUnCargoQueNoExiste_cuandoSeCorrige_entonces404() throws Exception {
+        MvcResult resultado =
+                pedir(
+                        json(
+                                put("/api/docentes/cargos/" + CON_MAESTRIA + "/RECTOR/2025-04-01"),
+                                "{\"unidad\":\"RECT\",\"documento\":\"RES-1\","
+                                        + "\"estado\":\"VIGENTE\"}"),
+                        escritura());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(404);
+        contrato.validar(resultado);
     }
 
     private MvcResult registrar(String cuerpo) throws Exception {

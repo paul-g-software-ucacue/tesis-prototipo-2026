@@ -46,16 +46,23 @@ Registro de las comprobaciones de la historia (issue #39): registrar los cargos 
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Registrar y corregir un proyecto, con Mockito | `ProyectosServiciosTest`: las carreras antes de la transacción; después bloquea, verifica el director y los participantes con Docentes, guarda y registra `PROYECTO_REGISTRADO`; el código repetido da `ProyectoRepetido` sin guardar; un participante que no es docente da `DatoInvalido` en `participantes[1].docente`; suspenderlo registra `PROYECTO_CORREGIDO`; sin cambios no registra; uno que no existe da `ProyectoNoEncontrado` | `./gradlew :servicios:docentes:test --tests '*ProyectosServiciosTest*'` | 2026-10-25 |
+| El contrato de los proyectos | `ProyectosContratoTest`: 201 con los nombres del director, de los participantes y de las carreras, sin `asignable` si no se pidió periodo; 400 en `codigo` (minúsculas), `carreras[1]` (repetida), `participantes[1].horas` (2.555), `participantes[1].docente` y `director` (no registrados), `vigenciaFin` y `horasAprobadas` (0); **participantes que suman 24.5 contra 24 aprobadas dan 400 en `participantes` con «suman 24.5 y pasan las 24 aprobadas»**; 409 `DOCENTES_PROYECTO_REPETIDO`. Cada respuesta valida contra el contrato | `./gradlew :servicios:docentes:test --tests '*ProyectosContratoTest*'` | 2026-10-25 |
 
 ## Asignables (US4)
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| La regla de asignable, sin dobles (escenario «Proyecto no asignable») | `ProyectoTest`: aprobado y en ejecución, asignables; **finalizado y suspendido, no asignables por `ESTADO`**; **una vigencia que termina el día antes del periodo o empieza el día después de su fin, no asignable por `VIGENCIA`**; la que termina el mismo día que empieza el periodo, o empieza el mismo día que termina, sí cruza; suspendido y fuera de vigencia, los dos motivos. `ProyectoTest`, 34 pruebas sin fallas | `./gradlew :servicios:docentes:test --tests '*ProyectoTest*'` | 2026-10-25 |
+| Los 11 proyectos de prueba en 2026-I y 2026-II | `ProyectosServiciosTest`: en 2026-I los 11 son asignables; en 2026-II los 7 de prácticas no lo son por su vigencia, y `VIN-2026-02` sí; un periodo que no existe da `DatoInvalido` en `periodo`; sin periodo no hay asignabilidad | `./gradlew :servicios:docentes:test --tests '*ProyectosServiciosTest*'` | 2026-10-25 |
+| Asignables por la API | `ProyectosContratoTest`: `listarProyectos?periodo=2026-I` marca asignables a los dos vigentes y al suspendido con `["ESTADO"]`; con 2026-II, el de prácticas trae `["VIGENCIA"]`; un periodo que no existe da 400 en `periodo`; `consultarProyecto` trae `asignable`; uno que no existe, 404 | `./gradlew :servicios:docentes:test --tests '*ProyectosContratoTest*'` | 2026-10-25 |
+| Los permisos de las 13 operaciones | `PermisosDocentesTest` (`VerificadorDePermisos`): las 6 de F03-H04 y las 7 nuevas exigen sus permisos alternativos, y con cada uno por separado pasan; **un token con solo `PROYECTOS:LECTURA` recibe 403 en las 13** (D-64, aclaración 8). Cambiar `DISTRIBUTIVO:LECTURA` por otra autoridad en las lecturas de los cargos la hace fallar (mutación revertida) | `./gradlew :servicios:docentes:test --tests '*PermisosDocentesTest*'` | 2026-10-25 |
 
 ## Corregir y finalizar (US5)
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Finalizar y corregir sin borrar | `CargosContratoTest`: finalizar un coordinador con su fecha de fin responde 200 y su carrera recibe otro coordinador vigente; volver a vigente el primero da 409 `DOCENTES_COORDINADOR_VIGENTE`; el registro tiene `CARGO_REGISTRADO`, `CARGO_CORREGIDO` y `CARGO_REGISTRADO`; un cargo que no existe da 404. `ProyectosContratoTest`: suspender un proyecto responde 200 y registra `PROYECTO_CORREGIDO`; uno que no existe, 404. Ninguna operación borra. Docentes: 182 pruebas unitarias sin fallas | `./gradlew :servicios:docentes:test` | 2026-10-25 |
 
 ## Pantallas (US6)
 

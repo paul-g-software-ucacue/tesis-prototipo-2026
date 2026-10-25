@@ -22,6 +22,11 @@ class ProyectoTest {
     private static final String DIRECTOR = "0109990200";
     private static final String INVESTIGADOR = "0109990226";
 
+    /** El periodo 2026-I de la carga 03 de prueba. */
+    private static final LocalDate INICIO_I = LocalDate.of(2026, 4, 6);
+
+    private static final LocalDate FIN_I = LocalDate.of(2026, 8, 7);
+
     @Test
     void dadoUnProyectoCompleto_cuandoSeCrea_entoncesGuardaSusDatosSinEspaciosDeMas() {
         Proyecto proyecto = proyecto(datos -> datos);
@@ -264,6 +269,59 @@ class ProyectoTest {
             CargasDePrueba.referencias().verificar(proyecto);
             proyecto.verificarDocentes(docentes::containsKey);
         }
+    }
+
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(
+            value = EstadoDeProyecto.class,
+            names = {"APROBADO", "EN_EJECUCION"})
+    void dadoUnProyectoQueRecibeHorasYSeCruzaConElPeriodo_cuandoSeConsulta_entoncesEsAsignable(
+            EstadoDeProyecto estado) {
+        Asignabilidad asignabilidad =
+                proyecto(datos -> datos.estado(estado)).asignableEn(INICIO_I, FIN_I);
+
+        assertThat(asignabilidad.asignable()).isTrue();
+        assertThat(asignabilidad.motivos()).isEmpty();
+    }
+
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(
+            value = EstadoDeProyecto.class,
+            names = {"FINALIZADO", "SUSPENDIDO"})
+    void dadoUnProyectoFinalizadoOSuspendido_cuandoSeConsulta_entoncesNoEsAsignablePorSuEstado(
+            EstadoDeProyecto estado) {
+        Asignabilidad asignabilidad =
+                proyecto(datos -> datos.estado(estado)).asignableEn(INICIO_I, FIN_I);
+
+        assertThat(asignabilidad.asignable()).isFalse();
+        assertThat(asignabilidad.motivos()).containsExactly(MotivoNoAsignable.ESTADO);
+    }
+
+    @Test
+    void
+            dadaUnaVigenciaQueTerminaOEmpiezaJustoAntesODespues_cuandoSeConsulta_entoncesSoloElCruceInclusiveEsAsignable() {
+        assertThat(conVigencia(INICIO_I.minusYears(1), INICIO_I.minusDays(1)).motivos())
+                .containsExactly(MotivoNoAsignable.VIGENCIA);
+        assertThat(conVigencia(INICIO_I.minusYears(1), INICIO_I).asignable()).isTrue();
+        assertThat(conVigencia(FIN_I, FIN_I.plusYears(1)).asignable()).isTrue();
+        assertThat(conVigencia(FIN_I.plusDays(1), FIN_I.plusYears(1)).motivos())
+                .containsExactly(MotivoNoAsignable.VIGENCIA);
+    }
+
+    @Test
+    void dadoUnProyectoSuspendidoYFueraDeVigencia_cuandoSeConsulta_entoncesTraeLosDosMotivos() {
+        Proyecto proyecto =
+                proyecto(
+                        datos ->
+                                datos.estado(EstadoDeProyecto.SUSPENDIDO)
+                                        .vigencia(INICIO_I.minusYears(2), INICIO_I.minusYears(1)));
+
+        assertThat(proyecto.asignableEn(INICIO_I, FIN_I).motivos())
+                .containsExactlyInAnyOrder(MotivoNoAsignable.ESTADO, MotivoNoAsignable.VIGENCIA);
+    }
+
+    private static Asignabilidad conVigencia(LocalDate desde, LocalDate hasta) {
+        return proyecto(datos -> datos.vigencia(desde, hasta)).asignableEn(INICIO_I, FIN_I);
     }
 
     private static Participante uno(String docente, String horas) {
