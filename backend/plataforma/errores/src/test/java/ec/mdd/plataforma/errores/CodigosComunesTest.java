@@ -14,4 +14,9 @@ class CodigosComunesTest {
         assertThatCode(() -> VerificadorDeCatalogo.verificar(CodigosComunes.TODOS))
                 .doesNotThrowAnyException();
     }
+
+    @Test
+    void dadoElCatalogo_cuandoSeVerificaSuFormato_entoncesCadaFilaTieneSusOchoColumnas() {
+        assertThatCode(VerificadorDeCatalogo::verificarFormato).doesNotThrowAnyException();
+    }
 }

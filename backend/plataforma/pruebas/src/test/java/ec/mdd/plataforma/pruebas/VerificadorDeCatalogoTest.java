@@ -43,6 +43,38 @@ class VerificadorDeCatalogoTest {
     }
 
     @Test
+    void dadaUnaFilaSinLasColumnasDeD72_cuandoSeVerifica_entoncesFallaYDiceCuantasFaltan() {
+        Path incompleto = Path.of("src/test/resources/catalogo-incompleto.md");
+
+        assertThatThrownBy(() -> VerificadorDeCatalogo.verificarFormato(incompleto))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("PRUEBA_INCOMPLETA: tiene 5 columnas y el catálogo pide 8");
+    }
+
+    @Test
+    void dadaUnaClasificacionQueNoCuadraConElEstado_cuandoSeVerifica_entoncesFalla() {
+        Path malClasificado = Path.of("src/test/resources/catalogo-mal-clasificado.md");
+
+        assertThatThrownBy(() -> VerificadorDeCatalogo.verificarFormato(malClasificado))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("«Negocio» no cuadra con el estado 500");
+    }
+
+    @Test
+    void dadaUnaClasificacionQueNoEsDeLasCinco_cuandoSeVerifica_entoncesFalla() {
+        Path sinClasificacion = Path.of("src/test/resources/catalogo-sin-clasificacion.md");
+
+        assertThatThrownBy(() -> VerificadorDeCatalogo.verificarFormato(sinClasificacion))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("«Entrada» no es una de");
+    }
+
+    @Test
+    void dadoElCatalogoReal_cuandoSeVerificaSuFormato_entoncesTodasLasFilasEstanCompletas() {
+        assertThatCode(VerificadorDeCatalogo::verificarFormato).doesNotThrowAnyException();
+    }
+
+    @Test
     void dadoLosCodigosComunes_cuandoSeVerificanContraElCatalogoReal_entoncesCoinciden() {
         assertThatCode(() -> VerificadorDeCatalogo.verificar(CodigosComunes.TODOS))
                 .doesNotThrowAnyException();
