@@ -153,7 +153,7 @@ Las reglas de cada tipo de columna salen del diccionario de datos (principio XIV
 
 | Tipo en el diccionario | Regla |
 |---|---|
-| Texto | Hasta su `longitud`. Sin espacios en los extremos: si los tiene, se quitan con una advertencia. |
+| Texto | Hasta su `longitud`. Sin espacios en los extremos: si los tiene, se quitan con una advertencia. El diccionario no define sus caracteres, así que aquí solo se valida el largo; los patrones propios de cada dueño, como el de los códigos de Académico, se aplican al confirmar (F01-H04). |
 | Entero | Solo dígitos, hasta su `longitud`. |
 | Decimal | Dígitos con punto decimal (convención «Decimales»), sin separador de miles, hasta su `longitud`. |
 | Rango | Si el `formato` de un entero o un decimal es un rango (`1–10`, `0,5–20`, `≥ 0`, `> 0`, `≤ 40`), el valor está dentro de él. Un `formato` que no es un rango, como `TC = 40, MT = 20, TP ≤ 19`, es una regla de coherencia del dueño y no se interpreta aquí. |
@@ -175,7 +175,7 @@ Las reglas de cada tipo de columna salen del diccionario de datos (principio XIV
   - La carga 7 no tiene referencias.
 - **Errores y advertencias:**
   - Un **error** impide continuar: el archivo queda rechazado.
-  - Una **advertencia** no lo impide. Por ahora hay dos: los espacios en los extremos de un valor, que se quitan, y una fila completamente vacía, que se ignora.
+  - Una **advertencia** no lo impide. Por ahora hay dos: los espacios en los extremos de un valor, que se quitan, y una fila completamente vacía, que se ignora. El número de registros no cuenta las filas vacías.
 - **Sin estado:** el servidor no guarda el archivo, el informe ni el resultado. Volver a subir es validar desde cero.
 - **Tamaño:** el mismo máximo de 5 MB de F01-H02. El informe JSON trae los primeros 100 problemas y el total; el CSV, todos.
 - **Datos personales:** el informe se devuelve solo a quien subió el archivo. Ni los logs ni los mensajes de error del servidor llevan los valores de las filas (principio IX).
@@ -191,7 +191,7 @@ Las reglas de cada tipo de columna salen del diccionario de datos (principio XIV
 - **FR-004**: Cada referencia del diccionario (`FK`) DEBE existir en el sistema; el padre de una unidad de la carga 1 también puede estar en el mismo archivo. Las referencias vienen de Académico y de Docentes por sus puertos publicados (principio V).
 - **FR-005**: El resultado DEBE traer, por cada problema, la fila del archivo (contando el encabezado como fila 1), el campo, el valor recibido, el motivo y si es un error o una advertencia. También el total de errores y de advertencias, y si el archivo es válido (sin errores) o está rechazado.
 - **FR-006**: Cada motivo DEBE decir qué hacer, en español, y salir de las reglas de su columna. Un valor fuera de catálogo DEBE decir los valores permitidos.
-- **FR-007**: El informe DEBE poder pedirse en CSV, con las columnas `fila`, `campo`, `valor`, `motivo` y `tipo`, en UTF-8. Toda celda que empiece con `=`, `+`, `-`, `@`, tabulación o retorno de carro DEBE neutralizarse con un apóstrofo delante (RNF-SEG-04).
+- **FR-007**: El informe DEBE poder pedirse en CSV, con las columnas `fila`, `campo`, `valor`, `motivo`, `tipo` y `sugerencia`, en UTF-8. Toda celda que empiece con `=`, `+`, `-`, `@`, tabulación o retorno de carro DEBE neutralizarse con un apóstrofo delante (RNF-SEG-04).
 - **FR-008**: El servidor NO DEBE guardar el archivo, el informe ni el resultado. Cada envío se valida desde cero (escenario «Corregir y reintentar»).
 - **FR-009**: Los errores de estructura de F01-H02 (formato, codificación, encabezados, tamaño, registros) DEBEN seguir respondiendo como hoy, antes de revisar las filas.
 - **FR-010**: Validar las filas DEBE exigir «Cargas: escritura», como la subida de F01-H02, validado en el servidor (ADR-021, D-71).

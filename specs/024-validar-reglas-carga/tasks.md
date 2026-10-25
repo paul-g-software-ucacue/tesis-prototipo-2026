@@ -47,7 +47,7 @@ description: "Tareas de F01-H03: validar las reglas de los datos e informe por f
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear `specs/024-validar-reglas-carga/evidencia.md` con estas secciones:
+- [ ] T001 Crear `specs/024-validar-reglas-carga/evidencia.md` con estas secciones (y en notas, la fila 22 de la carga 07 completada con 0 y 0: la copia de la ERS y `V2__politica_2024.sql` de Normativa siguen con las celdas vacías o en nulo):
   - entorno;
   - base: contrato, intérprete y puerto de Docentes;
   - una por historia: reglas (US1), referencias (US2), informe (US3), reintentar (US4) y pantalla (US5);
@@ -62,7 +62,7 @@ description: "Tareas de F01-H03: validar las reglas de los datos e informe por f
 ### Contrato (principio IV; contracts/cargas.md)
 
 - [ ] T002 En `contratos/cargas/openapi.yaml`:
-  - ampliar `LecturaDeArchivo` con `valido`, `errores`, `advertencias` y `problemas` (los primeros 100);
+  - ampliar `LecturaDeArchivo` con `valido`, `errores`, `advertencias` y `problemas` (los primeros 100, con `maxItems: 100`);
   - agregar los esquemas `TipoDeProblema` y `ProblemaDeFila`, con `fila` como entero ≥ 2;
   - cambiar la descripción de `validarArchivo`: el 200 trae el informe por fila; los detalles de un error de estructura siguen sin valores, y el informe por fila sí los trae;
   - agregar `descargarInforme` (`POST /api/cargas/plantillas/{codigo}/archivo/informe`, `x-mdd-permiso: CARGAS:ESCRITURA`, 200 `text/csv` con `Content-Disposition`, y 400, 404 y 413 como `validarArchivo`).
@@ -82,7 +82,10 @@ description: "Tareas de F01-H03: validar las reglas de los datos e informe por f
     - `Igual catálogo que 02.modalidad`;
     - `3 dígitos` con `061`, `61` y `0611`;
     - los rangos `1–10` (0, 1, 10, 11), `0,5–20` (0.4, 0.5), `≥ 0` (-1, 0), `> 0` (0, 0.1) y `≤ 40` (40, 41);
-    - una lista de `«título|tipo|campo_especifico|año»` con 3 partes y con un tipo fuera de su enumeración;
+    - una lista de `«título|tipo|campo_especifico|año»` con 4 partes, con 3 y con un tipo fuera de su enumeración; un participante con 3 partes;
+    - una jornada que no existe en `jornadas`;
+    - una franja con `25:00` en `franjas_horarias`;
+    - una experiencia con `2,5` años en `experiencia_laboral`;
   - **la lista exacta de los `formato` que no se interpretan** (research §3), sacada del diccionario real: si aparece uno nuevo, la prueba falla;
   - cada motivo dice qué hacer y un catálogo dice los valores permitidos (o los primeros 10 y cuántos más).
 
@@ -115,7 +118,7 @@ description: "Tareas de F01-H03: validar las reglas de los datos e informe por f
   - un obligatorio vacío y uno condicional: la categoría de un titular y el fin de contrato de un ocasional;
   - dos filas con la misma clave, simple (carga 06) y compuesta (carga 05): la segunda dice «Esta clave ya está en la fila N.»;
   - un valor con espacios en los extremos: una advertencia, y el valor recortado pasa sus reglas;
-  - una fila vacía entre registros: una advertencia;
+  - una fila vacía entre registros: una advertencia, y `registros()` no la cuenta (ajustar `TablaDeDatosTest` y el JavaDoc de `TablaDeDatos`);
   - el informe es válido sin errores y rechazado con uno; los totales y `primeros(100)` con un archivo de 150 problemas;
   - ningún motivo contiene el valor de su celda.
 
@@ -131,10 +134,10 @@ description: "Tareas de F01-H03: validar las reglas de los datos e informe por f
 - [ ] T008 [US2] Prueba primero, en `ValidadorDeFilasTest` (ampliar):
   - **una asignatura de la carga 04 que cita una carrera que no existe: el error en su fila y en `codigo_carrera`** (escenario del issue);
   - un periodo, una unidad y un docente que no existen;
-  - una carrera de la lista de un proyecto (carga 09) que no existe: el motivo dice cuál;
+  - una carrera de la lista de un proyecto (carga 09) que no existe, y un participante que no existe (la parte «identificación»): el motivo dice cuál;
   - el padre de una unidad de la carga 01 que está en el mismo archivo pasa, y uno que no está ni en el archivo ni en el sistema no pasa.
 
-  Ampliar `ValidadorDeFilas` con `ReferenciasDelSistema`. Después, prueba primero, en `PCAR/adaptadores/salida/ReferenciasDesdePuertosTest.java`, con dobles escritos a mano de `ConsultarReferencias` y `ConsultarIdentificaciones`: traduce los códigos. Crear el puerto de salida `ReferenciasDelSistema` y el adaptador `ReferenciasDesdePuertos`, sumar `project(':servicios:academico')` y `project(':servicios:docentes')` a `backend/servicios/cargas/build.gradle` con su comentario, y el bean en `ConfiguracionCargas`. `./gradlew :apps:datos:test` corre `ModulosTest` y pasa. T008 pasa.
+  Ampliar `ValidadorDeFilas` con `ReferenciasExistentes`. Después, prueba primero, en `PCAR/adaptadores/salida/ReferenciasDesdePuertosTest.java`, con dobles escritos a mano de `ConsultarReferencias` y `ConsultarIdentificaciones`: traduce los códigos. Crear el puerto de salida `ReferenciasDelSistema` y el adaptador `ReferenciasDesdePuertos`, sumar `project(':servicios:academico')` y `project(':servicios:docentes')` a `backend/servicios/cargas/build.gradle` con su comentario, y el bean en `ConfiguracionCargas`. `./gradlew :apps:datos:test` corre `ModulosTest` y pasa. T008 pasa.
 
 **Checkpoint**: las filas se revisan con todas sus reglas.
 
@@ -146,8 +149,8 @@ description: "Tareas de F01-H03: validar las reglas de los datos e informe por f
 
 - [ ] T009 [US3] Prueba primero, en `PCAR/aplicacion/ValidarArchivoServicioTest.java` (ampliar, con Mockito): la estructura falla igual que en F01-H02 antes de revisar las filas (FR-009); con la estructura bien, devuelve el informe; las referencias se piden una vez por archivo. Ampliar `ArchivoValidado` y `ValidarArchivoServicio`. T009 pasa.
 - [ ] T010 [US3] Prueba primero, en `PCAR/adaptadores/entrada/EscritorDeInformeTest.java`:
-  - las columnas `fila,campo,valor,motivo,tipo`, en UTF-8 con BOM;
-  - **las celdas que empiezan con `=`, `+`, `-`, `@`, tabulación o retorno de carro llevan un apóstrofo delante**, entre ellas `=HYPERLINK("x")` y `-1`;
+  - las columnas `fila,campo,valor,motivo,tipo,sugerencia`, en UTF-8 con BOM, con la sugerencia de la cédula;
+  - **las celdas que empiezan con `=`, `+`, `-`, `@`, tabulación o retorno de carro llevan un apóstrofo delante**, entre ellas `=HYPERLINK("x")`, `-1` y una sugerencia que empieza con `-`;
   - los valores con comas, comillas y saltos de línea, según RFC 4180;
   - sin problemas, solo los encabezados.
 
@@ -195,7 +198,9 @@ description: "Tareas de F01-H03: validar las reglas de los datos e informe por f
 
 - [ ] T014 Crear `deploy/probar_reglas_carga.sh`, con el estilo de `probar_subida.sh`:
   - **Pasos:**
-    - los 10 archivos de prueba, con las referencias que no existan en la base registradas con un prefijo al azar como en `probar_cargos_proyectos.sh`, se validan sin errores;
+    - los CSV los arma el script en una carpeta temporal (SC-001 con los 10 archivos fijos lo comprueba T007): registra por la API una carrera con un prefijo al azar, como en `probar_cargos_proyectos.sh`;
+    - un `04` con una asignatura que cita esa carrera no tiene errores;
+    - un `06` con docentes ficticios, con cédulas generadas con su dígito verificador, no tiene errores;
     - un archivo de docentes con la cédula sin el cero, una fecha imposible y una dedicación `XX` da 3 errores con su fila, su campo y la sugerencia;
     - una asignatura con una carrera que no existe, su error en la fila;
     - `descargarInforme` responde un CSV donde una celda `=1+1` sale como `'=1+1`;

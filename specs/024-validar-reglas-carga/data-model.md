@@ -10,7 +10,7 @@ No hay tablas nuevas: el archivo, el informe y el resultado no se guardan (FR-00
 | `CondicionDeObligatoriedad` | «Sí», «No» o una de las 5 condiciones (research §4). | `exige(fila)` dice si la celda puede quedar vacía en esa fila. Un texto desconocido hace fallar la carga del diccionario. |
 | `ClaveDeCarga` | Las columnas que forman la clave de una carga (research §7). | Una o varias; la segunda fila con la misma clave es un error. |
 | `ReferenciaDeColumna` | El destino de una `FK`: unidades, carreras, periodos, asignaturas o docentes, y si también vale el mismo archivo (research §6). | Una `FK` sin destino conocido hace fallar la carga del diccionario. |
-| `ReferenciasDelSistema` (valor) | Los códigos que existen al validar: unidades, carreras, periodos, asignaturas e identificaciones de docentes. | Se piden una vez por archivo. |
+| `ReferenciasExistentes` (valor) | Los códigos que existen al validar: unidades, carreras, periodos, asignaturas e identificaciones de docentes. | Se piden una vez por archivo. |
 | `ProblemaDeFila` | `fila` (el encabezado es la 1), `campo`, `valor`, `motivo`, `tipo` (`ERROR` o `ADVERTENCIA`) y `sugerencia` opcional. | El motivo dice qué hacer y no repite el valor. |
 | `InformeValidacionCarga` | El resultado de un archivo: `registros`, los problemas en orden de fila y de columna, y los totales. | `valido()` si no tiene errores. `primeros(100)` para la respuesta JSON. |
 | `ValidadorDeFilas` | Recorre la tabla leída y devuelve el informe. | Aplica a cada celda las reglas de su columna, la cédula, la clave y las referencias. |

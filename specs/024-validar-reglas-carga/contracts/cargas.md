@@ -13,7 +13,7 @@
   | `valido` | `boolean`: sin errores |
   | `errores` | `integer`, el total |
   | `advertencias` | `integer`, el total |
-  | `problemas` | `ProblemaDeFila[]`, los primeros 100 en orden de fila |
+  | `problemas` | `ProblemaDeFila[]` con `maxItems: 100`, los primeros 100 en orden de fila |
 
 - **400**, **404** y **413**: como en F01-H02, para los errores de estructura.
 
@@ -22,7 +22,7 @@
 `POST /api/cargas/plantillas/{codigo}/archivo/informe`, `x-mdd-permiso: CARGAS:ESCRITURA`, con el mismo `multipart/form-data`.
 
 - **200** `text/csv; charset=UTF-8`, con `Content-Disposition: attachment; filename="informe-<codigo>.csv"`:
-  - columnas `fila,campo,valor,motivo,tipo`, con todos los problemas;
+  - columnas `fila,campo,valor,motivo,tipo,sugerencia`, con todos los problemas;
   - cada celda que empieza con `=`, `+`, `-`, `@`, tabulación o retorno de carro, neutralizada con un apóstrofo delante (RNF-SEG-04).
 - **400**, **404** y **413**: como `validarArchivo`.
 

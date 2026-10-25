@@ -40,7 +40,12 @@ El diccionario tiene campos estructurados (`tipo`, `longitud`, `obligatorio`, `c
 | `formato: Igual catálogo que 02.modalidad` | los valores de esa otra columna |
 | `formato: N dígitos` | exactamente N dígitos |
 | `formato` de rango (`1–10`, `0,5–20`, `≥ 0`, `> 0`, `≤ 40`) | dentro del rango |
-| `tipo: Lista (;) de «a\|b\|c»` | cada elemento con 3 partes; si el `formato` dice `parte: A, B`, esa parte está en la enumeración |
+| `tipo: Lista (;)` y `formato` de códigos separados por `;` | cada elemento está en esa enumeración (`jornadas`) |
+| `tipo: Lista (;) de «a\|b\|…»` | cada elemento tiene tantas partes como el `«…»`: 4 en `titulos_cuarto_nivel`, 3 en `participantes` |
+| `formato` con la cláusula `parte: A, B` | esa parte está en la enumeración (`día`, `tipo`, `rol`) |
+| `formato` con la cláusula `horas HH:MM` | las partes `inicio` y `fin` son una hora válida HH:MM (`franjas_horarias`) |
+| `formato` con la cláusula `años decimal` | la parte `años` es un decimal (`experiencia_laboral`) |
+| `formato` de varias cláusulas separadas por `; ` | cada cláusula se interpreta por separado |
 | `obligatorio: Sí` / `No` / las 5 condiciones | ver research §4 |
 
 - Un `formato` que no es ninguno de estos no se interpreta: por ejemplo `Ej.: …`, `TC = 40, MT = 20, TP ≤ 19`, `años decimal` o `horas HH:MM`. Una prueba lista exactamente esos formatos. Si el diccionario cambia y aparece un formato nuevo, la prueba falla y obliga a decidir (principio XIV: no se asume una regla que no esté definida).
@@ -67,7 +72,7 @@ Están en `CondicionDeObligatoriedad`, con una prueba que compara cada texto con
 
 - **Decisión:** en la columna `numero_identificacion`, cuando `tipo_identificacion` es `CEDULA`, se exigen 10 dígitos y el dígito verificador (módulo 10), como `Identificacion` de Docentes.
   - Con 9 dígitos y válida con un `0` delante: el motivo es «Cédula inválida o sin cero inicial: le falta el 0 inicial.», con la sugerencia de la cédula con el cero.
-  - En cualquier otro caso: «Cédula inválida o sin cero inicial: tiene 10 dígitos y su último dígito cuadra con los demás.».
+  - En cualquier otro caso: «Cédula inválida o sin cero inicial: debe tener 10 dígitos y un dígito verificador válido.».
   - Un pasaporte, `[0-9A-Z]{1,13}`.
   - En las columnas que citan a un docente (cargas 8 y 9), la identificación se compara con los docentes del sistema (§6), sin repetir la regla.
 - **Por qué:** es el criterio de RF-08. La regla de la provincia y el tercer dígito la aplica Docentes al confirmar (aclaración 1), así que aquí no se duplica.
@@ -89,6 +94,8 @@ Están en `CondicionDeObligatoriedad`, con una prueba que compara cada texto con
   | `04.codigo_asignatura` | asignaturas |
   | `06.numero_identificacion` | identificaciones de Docentes |
   | `codigo_unidad (mismo archivo)` | las claves del propio archivo y, además, las unidades de Académico |
+  | `participantes` → 06 | la parte «identificación» de cada elemento |
+  | `codigos_carrera`, `asignaturas_afines_declaradas` | cada elemento de la lista |
 
   Si aparece una `FK` sin destino conocido, el arranque falla: la prueba del diccionario la detecta.
 - **Por qué:** el principio V, y es el mismo camino que ya usa Docentes.
@@ -117,12 +124,12 @@ La segunda fila con la misma clave es un error: «Esta clave ya está en la fila
 - **Un error** rechaza el archivo.
 - **Una advertencia** no lo rechaza. Son dos:
   - «Tiene espacios en los extremos: se quitan.»;
-  - «Fila vacía: se ignora.», para una fila con todas sus celdas en blanco entre registros.
+  - «Fila vacía: se ignora.», para una fila con todas sus celdas en blanco entre registros. El número de registros no la cuenta: cambia lo que hacía F01-H02, que sí la contaba.
 - Hoy los lectores no recortan los valores (solo los encabezados), así que la advertencia se puede detectar. Las reglas se aplican al valor recortado.
 
 ## 9. El CSV y la inyección de fórmulas (RNF-SEG-04)
 
-- **Columnas:** `fila,campo,valor,motivo,tipo`, en UTF-8 con BOM, para que Excel muestre bien las tildes, con separador coma y comillas según RFC 4180.
+- **Columnas:** `fila,campo,valor,motivo,tipo,sugerencia`, en UTF-8 con BOM, para que Excel muestre bien las tildes, con separador coma y comillas según RFC 4180.
 - **Neutralización:** se aplica a toda celda que empiece con `=`, `+`, `-`, `@`, tabulación o retorno de carro: se le antepone un apóstrofo, como recomienda OWASP para CSV injection. Vive en un `EscritorDeInforme` del adaptador.
 - **Pruebas:** con los cuatro caracteres, con `=HYPERLINK(...)`, con un valor que tiene comas y comillas, y con una celda vacía.
 

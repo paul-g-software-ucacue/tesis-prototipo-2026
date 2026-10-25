@@ -103,7 +103,7 @@ contratos/cargas/openapi.yaml                                   # validarArchivo
 backend/servicios/cargas/build.gradle                           # academico y docentes
 backend/servicios/cargas/src/main/java/ec/mdd/cargas/
 ├── dominio/                 # ReglasDeColumna, CondicionDeObligatoriedad, ClaveDeCarga, ReferenciaDeColumna,
-│                            # ReferenciasDelSistema, ProblemaDeFila, InformeValidacionCarga, ValidadorDeFilas
+│                            # ReferenciasExistentes, ProblemaDeFila, InformeValidacionCarga, ValidadorDeFilas
 ├── puertos/{entrada,salida}/# ArchivoValidado con el informe; ReferenciasDelSistema
 ├── aplicacion/              # ValidarArchivoServicio ampliado
 └── adaptadores/             # el controlador con descargarInforme, EscritorDeInforme, ReferenciasDesdePuertos
