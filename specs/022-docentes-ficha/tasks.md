@@ -201,7 +201,7 @@ description: "Tareas de F03-H04: mantener los docentes con su ficha académica"
   - **Menú y ruta:** «Docentes» con `[DOCENTES:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]`.
 
   Crear la pantalla en `frontend/src/pantallas/docentes/` (las etiquetas y los ayudantes en módulos `.ts`, por la regla `react-refresh/only-export-components`), reusando `frontend/src/pantallas/comun/`; su ruta `/docentes` en `rutas.tsx`, su entrada en `Marco.tsx` después de «Oferta del periodo» y la lista de lectura en `funcionalidades.ts`. T017 pasa.
-- [ ] T018 [US5] Prueba con Playwright, en `frontend/e2e/docentes.spec.ts`: `datos.demo` registra un docente con un curso, lo busca por su apellido en minúsculas y abre su ficha con las horas del curso; axe-core sin fallas WCAG 2.1 AA en la lista, la ficha y los diálogos de registrar y cambiar estado.
+- [X] T018 [US5] Prueba con Playwright, en `frontend/e2e/docentes.spec.ts`: `datos.demo` registra un docente con un curso, lo busca por su apellido en minúsculas y abre su ficha con las horas del curso; axe-core sin fallas WCAG 2.1 AA en la lista, la ficha y los diálogos de registrar y cambiar estado.
 
 **Checkpoint**: las cinco historias pasan.
 

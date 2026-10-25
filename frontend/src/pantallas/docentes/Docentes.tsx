@@ -273,7 +273,9 @@ function Ficha({ identificacion, alCerrar }: { identificacion: string; alCerrar:
       <DialogTitle id="titulo-ficha">
         {datos ? `Ficha de ${datos.nombreCompleto}` : 'Ficha del docente'}
       </DialogTitle>
-      <DialogContent>
+      {/* La ficha solo se lee y puede ser larga: el contenido recibe el foco para desplazarse con
+          el teclado (WCAG 2.1.1, regla scrollable-region-focusable de axe). */}
+      <DialogContent tabIndex={0} aria-labelledby="titulo-ficha">
         {docente.error && <AvisoDeError mensaje={traducirError(docente.error)} />}
         {datos && <ContenidoDeLaFicha docente={datos} />}
       </DialogContent>
