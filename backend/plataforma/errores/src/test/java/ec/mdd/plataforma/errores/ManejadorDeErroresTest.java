@@ -211,6 +211,30 @@ class ManejadorDeErroresTest {
     }
 
     @Test
+    void dadosDigitosYNumerosFueraDeSuRango_cuandoLlegaLaSolicitud_entoncesDiceQueSeEspera()
+            throws Exception {
+        HttpResponse<String> respuesta =
+                pedir(
+                        "POST",
+                        "/api/prueba/datos",
+                        "application/json",
+                        null,
+                        "{\"nombre\":\"N\",\"campoEspecifico\":\"SERVIDORES\",\"telefono\":\"0991\","
+                                + "\"anio\":1949,\"anios\":0}");
+
+        assertThat(respuesta.statusCode()).isEqualTo(400);
+        assertThat(respuesta.body())
+                .contains(
+                        "{\"campo\":\"campoEspecifico\",\"descripcion\":\"debe tener 3 dígitos, sin"
+                                + " letras ni espacios\"}")
+                .contains(
+                        "{\"campo\":\"telefono\",\"descripcion\":\"debe tener de 7 a 10 dígitos,"
+                                + " sin letras ni espacios\"}")
+                .contains("{\"campo\":\"anio\",\"descripcion\":\"debe ser al menos 1950\"}")
+                .contains("{\"campo\":\"anios\",\"descripcion\":\"debe ser mayor que 0\"}");
+    }
+
+    @Test
     void dadasListasCortasOVacias_cuandoLlegaLaSolicitud_entoncesHablaDeElementosNoDeCaracteres()
             throws Exception {
         HttpResponse<String> respuesta =

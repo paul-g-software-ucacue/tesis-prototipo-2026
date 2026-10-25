@@ -79,6 +79,7 @@ Registro de las comprobaciones de la historia (issue #38): mantener los docentes
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Primera comprobación del autor con `datos.demo`, después del despliegue de `ff710a1` («Sano en 55 s») | Observó que los campos aceptaban cualquier carácter y cualquier largo: letras en la cédula y el teléfono, «DESARROLLO» en el campo específico. También que el error del servidor, «No tiene el formato esperado», no decía qué corregir. Se corrige en un PR aparte (`023-docentes-validacion-en-pantalla`). Cada campo admite solo lo suyo y corta en su largo, también al pegar. Al registrar o guardar, el formulario revisa todo de una vez, sin enviar, y marca cada campo con un motivo que dice qué hacer, por ejemplo «La cédula tiene 10 dígitos; escribiste 5.» o «Escribe el código del campo específico, de 3 dígitos (por ejemplo, 061).». El servidor también dice ahora qué espera un patrón de dígitos o un número fuera de su rango, por ejemplo «debe tener 3 dígitos, sin letras ni espacios» o «debe ser al menos 1950» | `validacionDeDocente.ts` y su prueba (14), `Docentes.test.tsx` (11), `e2e/docentes.spec.ts` (6, con axe-core sobre el diálogo con errores), `ManejadorDeErroresTest` (+1). Backend 1013 pruebas sin fallas; SPA 194 pruebas, 94,0 % de líneas; Playwright 84 de 84 | 2026-10-24 |
 
 ## Notas
 
