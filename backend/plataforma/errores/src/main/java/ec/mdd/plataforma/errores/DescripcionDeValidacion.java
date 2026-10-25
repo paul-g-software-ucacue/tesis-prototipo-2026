@@ -1,10 +1,15 @@
 package ec.mdd.plataforma.errores;
 
 import jakarta.validation.ConstraintViolation;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.lang.annotation.Annotation;
 import java.util.Collection;
+import java.util.regex.Matcher;
 import org.springframework.validation.FieldError;
 
 /**
@@ -12,12 +17,18 @@ import org.springframework.validation.FieldError;
  *
  * <p>No usa los mensajes por defecto del validador, que salen en el idioma del servidor. Un valor
  * nulo o vacío, texto o lista, siempre es «es obligatorio», aunque la restricción que falló sea de
- * longitud. El tamaño de una lista se cuenta en elementos, no en caracteres (F03-H02).
+ * longitud. El tamaño de una lista se cuenta en elementos, no en caracteres (F03-H02). Un patrón de
+ * solo dígitos y los límites de un número dicen qué se espera, para quien llena el formulario
+ * (F03-H04); otro patrón queda en «no tiene el formato esperado».
  */
 final class DescripcionDeValidacion {
 
     static final String OBLIGATORIO = "es obligatorio";
     static final String NO_VALIDO = "no es válido";
+
+    /** «^[0-9]{3}$» o «^[0-9]{7,10}$», con o sin anclas. */
+    private static final java.util.regex.Pattern DIGITOS =
+            java.util.regex.Pattern.compile("\\^?\\[0-9]\\{(\\d+)(?:,(\\d+))?}\\$?");
 
     private DescripcionDeValidacion() {}
 
@@ -55,9 +66,35 @@ final class DescripcionDeValidacion {
                     ? "debe tener al menos " + tamano.min() + unidad
                     : "debe tener entre " + tamano.min() + " y " + tamano.max() + unidad;
         }
-        if (restriccion instanceof Pattern) {
-            return "no tiene el formato esperado";
+        if (restriccion instanceof Pattern patron) {
+            return digitos(patron.regexp());
+        }
+        if (restriccion instanceof Min minimo) {
+            return "debe ser al menos " + minimo.value();
+        }
+        if (restriccion instanceof Max maximo) {
+            return "no puede ser mayor que " + maximo.value();
+        }
+        if (restriccion instanceof DecimalMin minimo) {
+            return (minimo.inclusive() ? "debe ser al menos " : "debe ser mayor que ")
+                    + minimo.value();
+        }
+        if (restriccion instanceof DecimalMax maximo) {
+            return (maximo.inclusive() ? "no puede ser mayor que " : "debe ser menor que ")
+                    + maximo.value();
         }
         return NO_VALIDO;
+    }
+
+    private static String digitos(String patron) {
+        Matcher digitos = DIGITOS.matcher(patron);
+        if (!digitos.matches()) {
+            return "no tiene el formato esperado";
+        }
+        String desde = digitos.group(1);
+        String hasta = digitos.group(2);
+        return hasta == null
+                ? "debe tener " + desde + " dígitos, sin letras ni espacios"
+                : "debe tener de " + desde + " a " + hasta + " dígitos, sin letras ni espacios";
     }
 }

@@ -229,6 +229,51 @@ describe('Docentes', () => {
     });
   });
 
+  it('cada campo admite solo lo suyo y, al registrar, marca de una vez lo que está mal sin enviar', async () => {
+    sesionCon(simulada, 'datos.demo', TALENTO_HUMANO);
+    const usuario = userEvent.setup();
+    montarSpa('/docentes');
+
+    await usuario.click(await screen.findByRole('button', { name: 'Registrar docente' }));
+    const dialogo = await screen.findByRole('dialog', { name: 'Registrar docente' });
+    const identificacion = within(dialogo).getByLabelText('Identificación');
+    await escribir(usuario, identificacion, '01a0999001099');
+    expect(identificacion).toHaveValue('0109990010');
+    expect(identificacion).toHaveAttribute('inputmode', 'numeric');
+    await escribir(usuario, within(dialogo).getByLabelText('Primer apellido'), 'Peralta 2');
+    expect(within(dialogo).getByLabelText('Primer apellido')).toHaveValue('Peralta ');
+    await escribir(usuario, within(dialogo).getByLabelText('Teléfono (opcional)'), '099-12');
+    expect(within(dialogo).getByLabelText('Teléfono (opcional)')).toHaveValue('09912');
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Agregar curso' }));
+    const curso = within(dialogo).getByRole('group', { name: 'Cursos y capacitaciones' });
+    await escribir(usuario, within(curso).getByLabelText('Campo específico'), 'SERVIDORES');
+    expect(within(curso).getByLabelText('Campo específico')).toHaveValue('');
+    await escribir(usuario, within(curso).getByLabelText('Horas'), '60h');
+    expect(within(curso).getByLabelText('Horas')).toHaveValue('60');
+
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Registrar' }));
+    expect(within(dialogo).getByRole('alert')).toHaveTextContent(
+      /^Falta: Primer nombre, .* Revisa \d+ campos marcados en rojo\.$/,
+    );
+    expect(
+      within(dialogo).getByText('El teléfono tiene de 7 a 10 dígitos; escribiste 5.'),
+    ).toBeInTheDocument();
+    expect(within(curso).getByLabelText('Campo específico')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
+    expect(
+      within(curso).getByText(/^Escribe el código del campo específico, de 3 dígitos/),
+    ).toBeInTheDocument();
+    expect(simulada.peticiones.some((peticion) => peticion.method === 'POST')).toBe(false);
+
+    // Las marcas se actualizan mientras se corrige.
+    await escribir(usuario, within(dialogo).getByLabelText('Teléfono (opcional)'), '00');
+    expect(
+      within(dialogo).queryByText(/^El teléfono tiene de 7 a 10 dígitos/),
+    ).not.toBeInTheDocument();
+  });
+
   it('corrige con la identificación fija, agrega un curso y quita la experiencia', async () => {
     sesionCon(simulada, 'datos.demo', TALENTO_HUMANO);
     simulada.responder('PUT', PERALTA_RUTA, json(200, PERALTA));
