@@ -119,7 +119,7 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
 
 ### Persistencia (data-model.md)
 
-- [ ] T008 Prueba primero, en `IDOC/CargosYProyectosEsquemaIntegrationTest.java`: `cargo`, `proyecto` y sus `check` rechazan cada combinación inválida, cada una con su propia clave:
+- [X] T008 Prueba primero, en `IDOC/CargosYProyectosEsquemaIntegrationTest.java`: `cargo`, `proyecto` y sus `check` rechazan cada combinación inválida, cada una con su propia clave:
   - un tipo, un estado o un rol fuera de su catálogo;
   - un fin de funciones igual a la designación o a más de 2 años;
   - un coordinador de carrera sin carrera, u otro cargo sin unidad;
@@ -130,8 +130,8 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
   - un cargo o un director con una identificación que no está en `docente`.
 
   `registro_cambio` acepta las 4 acciones nuevas y las 3 de F03-H04. Tiene que fallar sin la migración.
-- [ ] T009 Crear `DOC/main/resources/db/migration/docentes/V3__cargos_y_proyectos.sql` según data-model.md, con un comentario que cite RF-18, RN-12, la carga 8, la carga 9 y F03-H05. T008 pasa.
-- [ ] T010 Prueba primero, en `IDOC/RepositorioCargosJdbcIntegrationTest.java` y `IDOC/RepositorioProyectosJdbcIntegrationTest.java`:
+- [X] T009 Crear `DOC/main/resources/db/migration/docentes/V3__cargos_y_proyectos.sql` según data-model.md, con un comentario que cite RF-18, RN-12, la carga 8, la carga 9 y F03-H05. T008 pasa.
+- [X] T010 Prueba primero, en `IDOC/RepositorioCargosJdbcIntegrationTest.java` y `IDOC/RepositorioProyectosJdbcIntegrationTest.java`:
   - cada repositorio guarda y lee igual, campo por campo, y `todos` los trae ordenados por docente o por código;
   - `actualizar` cambia cada dato;
   - `existe` encuentra la clave;
@@ -140,7 +140,7 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
   - los proyectos guardan las carreras y los participantes en `jsonb`, con las horas exactas.
 
   Crear los puertos `RepositorioCargos` y `RepositorioProyectos` en `JDOC/puertos/salida/`, y `RepositorioCargosJdbc` y `RepositorioProyectosJdbc` en `JDOC/adaptadores/salida/`. Agregar las 4 acciones a `CambioRegistrado`. T010 pasa.
-- [ ] T011 Prueba primero, en `PDOC/adaptadores/salida/AcademicoDesdePuertosTest.java` (ampliar, con el mismo doble escrito a mano): traduce las unidades y los periodos. Ampliar `AcademicoDesdePuertos`. `./gradlew :apps:datos:test` corre `ModulosTest` y pasa. T011 pasa.
+- [X] T011 Prueba primero, en `PDOC/adaptadores/salida/AcademicoDesdePuertosTest.java` (ampliar, con el mismo doble escrito a mano): traduce las unidades y los periodos. Ampliar `AcademicoDesdePuertos`. `./gradlew :apps:datos:test` corre `ModulosTest` y pasa. T011 pasa.
 
 **Checkpoint**: el contrato, el catálogo, las referencias, el dominio, V3 y los repositorios están listos.
 
