@@ -152,14 +152,14 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
 
 **Independent Test**: registrar al coordinador de una carrera y verlo en la lista; el registro tiene la acción.
 
-- [ ] T012 [US1] Prueba primero, en `PDOC/aplicacion/MantenerCargosServicioTest.java` (Mockito):
+- [X] T012 [US1] Prueba primero, en `PDOC/aplicacion/MantenerCargosServicioTest.java` (Mockito):
   - registrar verifica las referencias antes de la transacción;
   - después bloquea la tabla, comprueba la clave, el coordinador vigente y el docente, guarda y registra `CARGO_REGISTRADO` con la clave;
   - una clave repetida lanza `CargoRepetido`, un segundo coordinador vigente `CoordinadorVigente` y un docente no habilitado `DocenteNoHabilitado`, los tres sin registro;
   - un docente que no existe da `DatoInvalido` en `docente`.
 
   Crear los puertos `ConsultarCargos` y `MantenerCargos`, sus excepciones y `MantenerCargosServicio`. T012 pasa.
-- [ ] T013 [US1] Prueba primero, en `PDOC/adaptadores/entrada/CargosContratoTest.java`, con dobles en memoria que usan las reglas reales del dominio:
+- [X] T013 [US1] Prueba primero, en `PDOC/adaptadores/entrada/CargosContratoTest.java`, con dobles en memoria que usan las reglas reales del dominio:
   - `registrarCargo` responde 201;
   - responde 400 con el campo `unidad`, `carrera`, `fechaFin` y `documento`;
   - un cargo fuera del enum da 400 con los valores permitidos;
@@ -175,7 +175,7 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
 
 **Goal**: la advertencia de RN-20 al registrar, al corregir y al listar (FR-006; SC-004).
 
-- [ ] T014 [US2] Prueba primero, en `CargoTest` y `CargosContratoTest` (ampliar):
+- [X] T014 [US2] Prueba primero, en `CargoTest` y `CargosContratoTest` (ampliar):
   - **un coordinador de carrera cuyo docente no tiene títulos de cuarto nivel se registra con 201, y su respuesta trae la advertencia `CUARTO_NIVEL` con «Le falta un título de cuarto nivel registrado (RN-20).»** (escenario del issue);
   - lo mismo para un coordinador de sede, un coordinador académico institucional y cada gestor G06 a G21;
   - ninguna advertencia para un rector, un vicerrector, un miembro de comisión ni un docente con una maestría;

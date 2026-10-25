@@ -3,8 +3,12 @@ package ec.mdd.docentes.adaptadores.entrada;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import ec.mdd.docentes.dominio.DocenteNoHabilitado;
+import ec.mdd.docentes.puertos.entrada.CargoRepetido;
+import ec.mdd.docentes.puertos.entrada.CoordinadorVigente;
 import ec.mdd.docentes.puertos.entrada.CorreoRepetido;
 import ec.mdd.docentes.puertos.entrada.DocenteRepetido;
+import ec.mdd.docentes.puertos.entrada.ProyectoRepetido;
 import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
 import ec.mdd.plataforma.pruebas.VerificadorDeCatalogo;
 import org.junit.jupiter.api.Test;
@@ -18,12 +22,17 @@ class ErroresDocentesTest {
     }
 
     @Test
-    void dadasLaIdentificacionYElCorreoRepetidos_cuandoSeBuscanSusEntradas_entoncesSonLos409() {
+    void
+            dadosLosConflictosDeDocentesCargosYProyectos_cuandoSeBuscanSusEntradas_entoncesSonLos409() {
         assertThat(new ErroresDocentes().entradas())
                 .extracting(EntradaCatalogo::excepcion, entrada -> entrada.definicion().codigo())
                 .containsExactlyInAnyOrder(
                         tuple(DocenteRepetido.class, "DOCENTES_DOCENTE_REPETIDO"),
-                        tuple(CorreoRepetido.class, "DOCENTES_CORREO_REPETIDO"));
+                        tuple(CorreoRepetido.class, "DOCENTES_CORREO_REPETIDO"),
+                        tuple(CargoRepetido.class, "DOCENTES_CARGO_REPETIDO"),
+                        tuple(CoordinadorVigente.class, "DOCENTES_COORDINADOR_VIGENTE"),
+                        tuple(DocenteNoHabilitado.class, "DOCENTES_DOCENTE_NO_HABILITADO"),
+                        tuple(ProyectoRepetido.class, "DOCENTES_PROYECTO_REPETIDO"));
         assertThat(new ErroresDocentes().entradas())
                 .allMatch(entrada -> entrada.definicion().estado() == 409);
     }

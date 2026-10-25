@@ -54,6 +54,37 @@ public final class CargasDePrueba {
                 base.carreras(), base.asignaturas(), base.camposAmplios(), unidades, periodos);
     }
 
+    /**
+     * El docente de prueba ({@link DocentesDePrueba#CEDULA}), activo a tiempo completo, con su
+     * maestría o sin títulos de cuarto nivel.
+     */
+    public static Docente docente(boolean conCuartoNivel) {
+        return docente(conCuartoNivel, Dedicacion.TC);
+    }
+
+    /** El docente de prueba con esa dedicación, activo. */
+    public static Docente docente(boolean conCuartoNivel, Dedicacion dedicacion) {
+        return Docente.nuevo(
+                new Identificacion(TipoDeIdentificacion.CEDULA, DocentesDePrueba.CEDULA),
+                DocentesDePrueba.con(
+                        valores -> {
+                            valores.dedicacion = dedicacion;
+                            valores.horas = dedicacion == Dedicacion.TC ? 40 : 20;
+                            if (!conCuartoNivel) {
+                                FichaAcademica ficha = valores.ficha;
+                                valores.ficha =
+                                        new FichaAcademica(
+                                                ficha.tercerNivel(),
+                                                List.of(),
+                                                ficha.cursos(),
+                                                ficha.experiencia(),
+                                                ficha.asignaturasAfines());
+                            }
+                            return valores;
+                        }),
+                DocentesDePrueba.ANIO);
+    }
+
     /** Los 47 docentes de la carga 06 de prueba, por identificación. */
     public static Map<String, Docente> docentes() {
         return DocentesDePrueba.cargados().stream()

@@ -199,13 +199,7 @@ class CargoTest {
             names = {"MT", "TP"})
     void dadoUnDocenteQueNoEsDeTiempoCompleto_cuandoRecibeUnCargo_entoncesNoEstaHabilitado(
             Dedicacion dedicacion) {
-        Docente medioTiempo =
-                docenteCon(
-                        valores -> {
-                            valores.dedicacion = dedicacion;
-                            valores.horas = 20;
-                            return valores;
-                        });
+        Docente medioTiempo = CargasDePrueba.docente(true, dedicacion);
 
         assertThatThrownBy(() -> coordinador("550613A01-P-0301").verificarDocente(medioTiempo))
                 .isInstanceOf(DocenteNoHabilitado.class);
@@ -280,6 +274,67 @@ class CargoTest {
                         TipoDeCargo.MIEMBRO_COMISION);
     }
 
+    @ParameterizedTest
+    @EnumSource(
+            value = TipoDeCargo.class,
+            names = {"RECTOR", "VICERRECTOR", "MIEMBRO_COMISION"},
+            mode = EnumSource.Mode.EXCLUDE)
+    void dadoUnCoordinadorOUnGestorSinCuartoNivel_cuandoSeConsulta_entoncesAdvierteElRequisito(
+            TipoDeCargo tipo) {
+        Cargo cargo = tipo.coordinaCarrera() ? coordinador("550613A01-P-0301") : cargo(tipo, "X");
+
+        assertThat(cargo.advertencias(docente(false), CargasDePrueba.HOY))
+                .containsExactly(AdvertenciaDeCargo.CUARTO_NIVEL);
+        assertThat(cargo.advertencias(docente(true), CargasDePrueba.HOY)).isEmpty();
+        assertThat(AdvertenciaDeCargo.CUARTO_NIVEL.descripcion())
+                .isEqualTo("Le falta un título de cuarto nivel registrado (RN-20).");
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = TipoDeCargo.class,
+            names = {"RECTOR", "VICERRECTOR", "MIEMBRO_COMISION"})
+    void
+            dadoUnRectorUnVicerrectorOUnMiembroDeComisionSinCuartoNivel_cuandoSeConsulta_entoncesNoAdvierte(
+                    TipoDeCargo tipo) {
+        assertThat(cargo(tipo, "X").advertencias(docente(false), CargasDePrueba.HOY)).isEmpty();
+    }
+
+    @Test
+    void dadoUnCargoVigente_cuandoSuFechaDeFinYaPaso_entoncesAdvierteQueHayQueFinalizarlo() {
+        LocalDate hoy = LocalDate.of(2026, 10, 25);
+
+        assertThat(conFin(hoy.minusDays(1)).advertencias(docente(true), hoy))
+                .containsExactly(AdvertenciaDeCargo.FECHA_FIN_VENCIDA);
+        assertThat(conFin(hoy).advertencias(docente(true), hoy)).isEmpty();
+        Cargo finalizado =
+                new Cargo(
+                        DocentesDePrueba.CEDULA,
+                        TipoDeCargo.RECTOR,
+                        DESIGNACION,
+                        "RECT",
+                        null,
+                        hoy.minusDays(1),
+                        "RES-1",
+                        EstadoDeCargo.FINALIZADO);
+        assertThat(finalizado.advertencias(docente(true), hoy)).isEmpty();
+    }
+
+    @Test
+    void dadoUnCargoVigente_cuandoSuDocenteDejaDeEstarActivoATiempoCompleto_entoncesLoAdvierte() {
+        Cargo rector = cargo(TipoDeCargo.RECTOR, "RECT");
+
+        assertThat(
+                        rector.advertencias(
+                                docente(true).conEstado(EstadoLaboral.LICENCIA),
+                                CargasDePrueba.HOY))
+                .containsExactly(AdvertenciaDeCargo.DOCENTE_NO_HABILITADO);
+        assertThat(
+                        rector.advertencias(
+                                CargasDePrueba.docente(true, Dedicacion.MT), CargasDePrueba.HOY))
+                .containsExactly(AdvertenciaDeCargo.DOCENTE_NO_HABILITADO);
+    }
+
     private static Cargo coordinador(String carrera) {
         return new Cargo(
                 DocentesDePrueba.CEDULA,
@@ -321,30 +376,7 @@ class CargoTest {
                 null);
     }
 
-    /** Un docente activo a tiempo completo, con su maestría o sin títulos de cuarto nivel. */
-    static Docente docente(boolean conCuartoNivel) {
-        return docenteCon(
-                valores -> {
-                    if (!conCuartoNivel) {
-                        FichaAcademica ficha = valores.ficha;
-                        valores.ficha =
-                                new FichaAcademica(
-                                        ficha.tercerNivel(),
-                                        List.of(),
-                                        ficha.cursos(),
-                                        ficha.experiencia(),
-                                        ficha.asignaturasAfines());
-                    }
-                    return valores;
-                });
-    }
-
-    private static Docente docenteCon(
-            java.util.function.Function<DocentesDePrueba.Valores, DocentesDePrueba.Valores>
-                    cambio) {
-        return Docente.nuevo(
-                new Identificacion(TipoDeIdentificacion.CEDULA, DocentesDePrueba.CEDULA),
-                DocentesDePrueba.con(cambio),
-                DocentesDePrueba.ANIO);
+    private static Docente docente(boolean conCuartoNivel) {
+        return CargasDePrueba.docente(conCuartoNivel);
     }
 }

@@ -31,11 +31,16 @@ Registro de las comprobaciones de la historia (issue #39): registrar los cargos 
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Registrar y corregir un cargo, con Mockito | `MantenerCargosServicioTest` (10): las referencias antes de la transacción; después bloquea, lee el docente, la clave y el coordinador vigente, guarda y registra `CARGO_REGISTRADO` (sin `unidad` si no la tiene); el cargo repetido, el segundo coordinador vigente y el docente en licencia o de medio tiempo, sin guardar; el docente que no existe da `DatoInvalido` en `docente`; **finalizar se guarda aunque el docente ya no esté habilitado** (si no, su advertencia no se podría atender); volver a vigente con otro coordinador da `CoordinadorVigente`; sin cambios no registra; un cargo que no existe da `CargoNoEncontrado` | `./gradlew :servicios:docentes:test` | 2026-10-25 |
+| El contrato de los cargos | `CargosContratoTest`: 201 vigente con los nombres del docente y de la carrera y sin advertencias; 400 en `carrera` (falta o no existe), `unidad` (la de otra gestión), `fechaFin` (más de 2 años) y `documento` (61), sin registro; un cargo fuera del catálogo da 400 con los valores permitidos; los tres 409 (`DOCENTES_CARGO_REPETIDO`, `DOCENTES_COORDINADOR_VIGENTE`, `DOCENTES_DOCENTE_NO_HABILITADO`, sin la cédula en el cuerpo); `listarCargos` filtra por estado y por docente con el nombre de la unidad. Cada respuesta valida contra el contrato | `./gradlew :servicios:docentes:test --tests '*CargosContratoTest*'` | 2026-10-25 |
+| El catálogo de Docentes | `ErroresDocentesTest`: las 6 entradas coinciden con `contratos/comun/errores.md`, con sus 8 columnas (D-72), y son 409 | `./gradlew :servicios:docentes:test --tests '*ErroresDocentes*'` | 2026-10-25 |
 
 ## Requisitos del cargo (US2)
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| La advertencia de RN-20 y las otras dos | `CargoTest`: **cada coordinador y cada gestor G06 a G21 sin cuarto nivel trae `CUARTO_NIVEL`** con «Le falta un título de cuarto nivel registrado (RN-20).»; el rector, el vicerrector y el miembro de comisión, ninguna; con maestría, ninguna. `FECHA_FIN_VENCIDA` con el fin de ayer y no con el de hoy ni en un cargo finalizado; `DOCENTE_NO_HABILITADO` si el docente pasa a licencia o a medio tiempo. `CargoTest`, 41 pruebas sin fallas | `./gradlew :servicios:docentes:test --tests '*CargoTest*'` | 2026-10-25 |
+| La advertencia en la API (escenario «Requisitos del cargo») | `CargosContratoTest`: un coordinador sin cuarto nivel se registra con 201 y su respuesta trae la advertencia; `listarCargos` la sigue mostrando y deja de mostrarla cuando la ficha gana una maestría; un coordinador cuyo docente pasa a licencia muestra `DOCENTE_NO_HABILITADO` y ese docente no recibe otro cargo (409). 7 pruebas sin fallas | `./gradlew :servicios:docentes:test --tests '*CargosContratoTest*'` | 2026-10-25 |
 
 ## Proyectos (US3)
 
