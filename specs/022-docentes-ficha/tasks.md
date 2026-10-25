@@ -209,7 +209,7 @@ description: "Tareas de F03-H04: mantener los docentes con su ficha académica"
 
 ## Phase 8: Punta a punta y cierre
 
-- [ ] T019 Crear `deploy/probar_docentes.sh`, con el estilo de `probar_oferta.sh`:
+- [X] T019 Crear `deploy/probar_docentes.sh`, con el estilo de `probar_oferta.sh`:
   - **Datos:** registra con un prefijo `P` + 3 dígitos al azar las carreras y asignaturas de las cargas 02 y 04 que usan los docentes (en la sede matriz que ya tenga la base o en una temporal, como `probar_carreras.sh`) y luego los 47 docentes de la carga 06, con `datos.demo`, con las carreras y asignaturas con prefijo. Las identificaciones de prueba ya son ficticias; si alguna existe en la base, el script falla sin tocarla.
   - **Pasos:** cada docente se encuentra por su cédula; la búsqueda «peralta» lo encuentra; una corrección; un 400 con los valores permitidos de la dedicación; los dos 409; licencia y vuelta a activo; `consolidacion.demo` lee y recibe 403 al escribir; un usuario sin lectura recibe 403.
   - **Tiempo:** mide cuánto tarda `buscarDocentes` con los 47, lo muestra y falla si pasa de 500 ms (la meta del plan es 300 ms; el resto es holgura). Anotarlo en la evidencia.

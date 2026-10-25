@@ -66,6 +66,14 @@ Registro de las comprobaciones de la historia (issue #38): mantener los docentes
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| `deploy/probar_docentes.sh` sobre el perfil reconstruido, dos veces seguidas | Todos los pasos pasan las dos veces, en 9 s y 6 s: 9 de 9 datos maestros; 47 de 47 docentes registrados y cada uno encontrado por su cédula (SC-002); «PERALTÁ» encuentra a los dos PERALTA; la carrera 550613A01-P-0301 trae sus 6; la ficha de 0109990010 con 04/041, los nombres de los campos, las horas de los cursos y su maestría; corregir a MT con 20 h y una asignatura afín; «XX» da 400 con «usa TC, MT o TP»; la afín inexistente, 400 en `ficha.asignaturasAfines[0]`; los dos 409; licencia y vuelta; consolidación lee y recibe 403 al escribir; docente.demo, 403; el registro con 47 + 1 + 2 acciones. La segunda corrida no encontró nada de la primera: la limpieza borra lo creado | Salida del script | 2026-10-24 |
+| El tiempo de la búsqueda (meta del plan) | 12 ms y 9 ms (el mejor de tres), con la meta en 300 ms y la falla desde 500 ms | `probar_docentes.sh`, paso 8 | 2026-10-24 |
+| Ninguna cédula en los logs (principio IX, análisis U1) | Después de las corridas, `docker compose logs gateway datos` no contiene 0109990010, 0109990028 ni 0109999904 | `grep -c` sobre los logs | 2026-10-24 |
+| `shellcheck` de `probar_docentes.sh` | Sin observaciones | `koalaman/shellcheck:stable`, sobre una copia en el scratchpad | 2026-10-24 |
+| Los 12 scripts de punta a punta sobre el perfil | 12 de 12 terminan con 0 | `probar_autenticacion`, `errores`, `eventos`, `spa`, `normativa`, `periodos`, `estructura`, `plantillas`, `subida`, `carreras`, `oferta` y `docentes` | 2026-10-24 |
+| `deploy/equipo/probar_equipo.sh` con un constructor limpio (`BUILDX_BUILDER=mdd-limpio`) | Todos los pasos OK; memoria del equipo después de iniciar sesión: 1402,9 MiB | Salida del script | 2026-10-24 |
+| Todo el backend: `./gradlew build integrationTest` | 1012 pruebas, 0 fallas, en 4 min 3 s | Gradle | 2026-10-24 |
+| Gitleaks v8.30.1 sobre un clon en el scratchpad (montado `:ro,Z`) | Sin fugas, 59 commits | `gitleaks git --redact` | 2026-10-24 |
 
 ## Equipo de demostración
 
