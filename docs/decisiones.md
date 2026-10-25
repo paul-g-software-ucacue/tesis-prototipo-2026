@@ -67,6 +67,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-69 | 2026-10-21 | Los periodos académicos se escriben con «Distributivo del periodo» y se abren solo desde Académico | Aceptada | D-65 (interpreta a qué funcionalidad pertenece el periodo), F04-H02 (quita el diálogo «Asociar a un periodo» de «Normativa») |
 | D-70 | 2026-10-21 | Una operación puede declarar varios permisos alternativos; la estructura orgánica la leen quienes leen el distributivo o los catálogos | Aceptada | ADR-021 (`x-mdd-permiso` admite una lista), RF-12 (interpreta «sin permiso de administrador») |
 | D-71 | 2026-10-23 | El Responsable de consolidación y el Vicerrector académico ejecutan las cargas | Aceptada | D-65 (matriz D-16) |
+| D-72 | 2026-10-24 | Cada campo de entrada se valida por su tipo y su largo, y cada error del catálogo dice su clasificación, su causa, su descripción técnica y la acción para el usuario | Aceptada | Constitución 2.2.0 (principio XIV nuevo; amplía el XIII y la definición de terminado) |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1192,3 +1193,44 @@ Estado al 2026-10-11. El texto completo está en `lean_inception/adr/`.
 **Alternativas.** Permisos alternativos de D-70 (`[CARGAS:ESCRITURA, CONSOLIDACION:ESCRITURA, DISTRIBUTIVO:ESCRITURA]`): no cambia la matriz, pero autoriza la carga de datos con permisos de otras funcionalidades. Solo Talento Humano: la historia no se cumpliría.
 
 **Consecuencias.** Los dos roles suben archivos de carga y ven «Plantillas de carga» también por «Cargas: lectura». Al desplegar, los usuarios con esos roles reciben los permisos en su próximo inicio de sesión. La prueba de la matriz (`MatrizD16IntegrationTest`) se pone al día; la tabla «Matriz D-16» de `specs/011-roles-permisos/data-model.md` queda como la interpretación original de D-65, como con D-67.
+
+## D-72. Cada campo de entrada se valida por su tipo y su largo, y cada error del catálogo dice su clasificación, su causa, su descripción técnica y la acción para el usuario
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-24 · **Decidido por:** autor de la tesis
+- **Origen:** primera comprobación del autor de F03-H04 en el equipo de demostración. El formulario de docentes aceptaba letras en la cédula y el teléfono, y el servidor respondía «No tiene el formato esperado» sin decir qué corregir. Se corrigió en el PR #145.
+- **Modifica a:** la constitución, que pasa a la versión 2.2.0. Agrega el principio XIV, «Validación de las entradas», amplía el catálogo de códigos del principio XIII y suma criterios a la definición de terminado de la sección 6.
+
+**Decisión.**
+1. **Validación de las entradas.** Todo campo de entrada se valida según su tipo:
+   - numérico: solo los valores y el formato definidos para el campo;
+   - alfabético: solo letras, según las reglas del campo;
+   - alfanumérico o mixto: letras, dígitos y solo los caracteres especiales autorizados expresamente.
+   
+   También se validan su largo mínimo y máximo, o el exacto. La regla de cada campo sale de una definición funcional: la ERS, el diccionario de datos, la especificación o el contrato. No se inventan formatos ni largos. El backend valida siempre. El frontend aplica las mismas reglas mientras se escribe y antes de enviar, para avisar a tiempo, pero no reemplaza al backend.
+2. **Catálogo centralizado de errores.** El catálogo es `contratos/comun/errores.md` junto con su contraparte en el código, y toda implementación nueva lo usa o lo amplía. Cada código nuevo registra:
+   - el código único;
+   - la clasificación: validación, negocio, autenticación, autorización o sistema;
+   - el estado HTTP;
+   - el título y el mensaje para el usuario final;
+   - la acción recomendada, cuando la hay;
+   - la causa o condición que lo activa;
+   - una descripción técnica para el diagnóstico, que nunca llega al usuario.
+   
+   El usuario nunca ve trazas, excepciones ni detalles internos. Los mensajes salen del catálogo y no se duplican. Los motivos por campo (`detalles`) también dicen qué hacer.
+3. **Criterios de terminado.** Antes de cerrar una implementación se verifica:
+   - que las validaciones de tipo y largo estén implementadas y probadas, con casos válidos e inválidos;
+   - que cada error se mapee a su código del catálogo;
+   - que los mensajes sean claros, consistentes y accionables;
+   - que las pruebas se hayan ejecutado y sus resultados estén en la evidencia de la historia.
+
+**Por qué.** Una validación que solo está en el servidor, con un mensaje genérico, obliga al usuario final a adivinar qué corregir (RNF-USA-01). Un catálogo con la causa y la descripción técnica separadas del mensaje permite diagnosticar un error sin mostrarle detalles internos al usuario (RNF-SEG-04, principio XIII).
+
+**Alternativas.**
+- Dejarlo como guía del plan de cada historia: no obliga y depende de que alguien lo recuerde.
+- Validar solo en el frontend: un cliente de la API se lo saltaría.
+- Completar ahora el catálogo existente con los campos nuevos: se hace aparte, porque la prueba que compara el catálogo con el código tiene que crecer con él.
+
+**Consecuencias.**
+- Las especificaciones nuevas fijan el tipo, los caracteres admitidos y el largo de cada campo de entrada. Los planes y las tareas los llevan al contrato (`pattern`, `minLength`, `maxLength`, `minimum`, `maximum`), al dominio y a la SPA.
+- La evidencia de cada historia anota las validaciones y los errores probados.
+- Los códigos que ya están en el catálogo se completan con la clasificación, la causa y la descripción técnica en un cambio aparte, que también pone al día la prueba que compara el catálogo con el código.
