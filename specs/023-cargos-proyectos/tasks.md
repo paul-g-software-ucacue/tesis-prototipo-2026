@@ -289,7 +289,7 @@ description: "Tareas de F03-H05: registrar los cargos y los proyectos aprobados"
 
 ## Phase 9: Punta a punta y cierre
 
-- [ ] T022 Crear `deploy/probar_cargos_proyectos.sh`, con el estilo de `probar_docentes.sh`:
+- [X] T022 Crear `deploy/probar_cargos_proyectos.sh`, con el estilo de `probar_docentes.sh`:
   - **Datos:** registra con un prefijo `P` y 3 dígitos al azar lo que necesita de las cargas 01, 02, 03 y 06 de prueba: unidades, carreras, periodos y docentes, como `probar_docentes.sh` y `probar_estructura.sh`. Después registra los 21 cargos y los 11 proyectos con `datos.demo`. Si algo ya existe en la base, el script falla sin tocarlo.
   - **Pasos:**
     - la advertencia de un coordinador sin cuarto nivel;
