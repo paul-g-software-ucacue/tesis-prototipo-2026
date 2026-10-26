@@ -44,7 +44,7 @@ Fase 0 del plan de F01-H04 (issue #30). Cada punto dice la decisión, por qué y
 - **Hash del archivo:** SHA-256 de sus bytes, en hexadecimal. Es la clave de idempotencia de MD-13. En el historial, un hash con el resultado `APLICADA` en la misma carga hace que una nueva confirmación responda `REPETIDA` sin llamar al dueño (FR-007). El intento también queda registrado como `REPETIDA`.
 - **Huella de la vista previa:** SHA-256 de su forma canónica: cada registro con su tipo y sus campos cambiados, en orden de clave. La calcula el dueño en `previsualizar` y de nuevo en `aplicar`, después de bloquear sus tablas. Si no coincide, el dueño lanza `VistaPreviaDesactualizada` y no aplica nada.
 - **Por qué no basta con el hash:** el mismo archivo puede dar otra vista previa si alguien registró algo a mano entre los dos pasos.
-- **La aplicación se basa en las diferencias:** un registro que ya está igual no se toca. Aunque el historial fallara después de aplicar, confirmar otra vez no duplica nada: su vista previa tendría 0 nuevos.
+- **La aplicación se basa en las diferencias:** un registro que ya está igual no se toca. Aunque el historial fallara después de aplicar, confirmar otra vez no duplica nada, porque su vista previa tendría 0 nuevos.
 
 ## 4. El motor del lote y las transacciones
 
@@ -54,7 +54,7 @@ Fase 0 del plan de F01-H04 (issue #30). Cada punto dice la decisión, por qué y
 - **Orden dentro del archivo:** se aplica en el orden del archivo, salvo dos casos:
   - en la carga 01, los padres antes que los hijos, en orden topológico;
   - en la carga 04, las mallas (`codigo_version_malla`) antes que sus asignaturas.
-- **Registro de cambios:** los casos de uso escriben en el registro de su dueño como siempre (principio VII), con el usuario que confirma. El detalle agrega `carga` y `hash`.
+- **Registro de cambios:** los casos de uso escriben en el registro de su dueño como siempre (principio VII), con el usuario que confirma. El hash queda en el historial de Cargas.
 
 ## 5. Qué compara cada carga, y qué columnas no guarda todavía su dueño
 
@@ -67,7 +67,7 @@ Cada traductor declara sus campos comparables. Los que su dueño no guarda se va
 | 03 ciclos | Académico · `RegistrarPeriodo`, `CorregirPeriodo` | `codigo_periodo` | `semanas`, `fecha_limite_envio_senescyt`, `resolucion_aprobacion`, `estado` (el estado del periodo en el MDD es otro: Planificación…Cerrado) |
 | 04 asignaturas | Académico · `MantenerCarreras` (malla y asignatura) | `codigo_asignatura` | — |
 | 05 oferta | Académico · `MantenerOferta` | periodo + asignatura + paralelo | `franjas_horarias` (RF-60, una historia futura) |
-| 06 docentes | Docentes · `MantenerDocentes` | `numero_identificacion` | las que la ficha de F03-H04 no guarda; las enumera la tarea, tomadas de `DocentesDePrueba` |
+| 06 docentes | Docentes · `MantenerDocentes` | `numero_identificacion` | las que la ficha de F03-H04 no guarda; las enumera la tarea, tomadas de `DocentesDePrueba` (`estado` → `cambiarEstado`) |
 | 07 política | Normativa · `CrearVersion`, `EditarVersion` | versión + tipo de IST + perfil | `tipo_regla`, `referencia_normativa`, `observacion` (la edición no los cambia, FR-002 de F04-H03) |
 | 08 cargos | Docentes · `MantenerCargos` | identificación + cargo + fecha de designación | — |
 | 09 proyectos | Docentes · `MantenerProyectos` | `codigo_proyecto` | — |
@@ -103,7 +103,7 @@ Cada traductor declara sus campos comparables. Los que su dueño no guarda se va
   - `motivo`: el código del rechazo, si lo hubo.
 
   Nada del contenido del archivo (principio IX). `ConsultarHistorial` lo lee por carga, de lo más reciente a lo más antiguo.
-- **Cuándo se escribe:** después de la respuesta del dueño, en la transacción de Cargas. Si falla después de aplicar, el error queda en el log (sin valores) y el registro de cambios del dueño ya tiene el hash. Una nueva confirmación da 0 nuevos (§3), así que no duplica nada.
+- **Cuándo se escribe:** después de la respuesta del dueño, en la transacción de Cargas. Si falla después de aplicar, el error queda en el log (sin valores) y el registro de cambios del dueño ya tiene cada cambio, con el usuario. Una nueva confirmación da 0 nuevos (§3), así que no duplica nada.
 
 ## 9. Errores nuevos del catálogo (D-72)
 

@@ -100,9 +100,9 @@ description: "Tareas de F01-H04: vista previa y confirmación de la carga"
   - si hay una `APLICADA` con ese hash en esa carga;
   - los `check` (resultado, totales ≥ 0, hash de 64).
 
-  Después crear `CAR/main/resources/db/migration/cargas/V2__historial_de_cargas.sql`, `EntradaDeHistorial` (dominio), `HistorialDeCargas` (puerto de salida) y `HistorialDeCargasJdbc`.
+  Después crear `CAR/main/resources/db/migration/cargas/V2__historial_de_cargas.sql`, `EntradaDeHistorial` (dominio), `HistorialDeCargas` (puerto de salida) y `HistorialDeCargasJdbc`. Sumar `spring-boot-starter-jdbc` a `backend/servicios/cargas/build.gradle`, con su comentario, y crear `Transaccion` con `TransaccionSpring`, como en Docentes.
 - [ ] T006 Primero las pruebas, en `CAR/test/java/ec/mdd/cargas/aplicacion/ConfirmarCargaServicioTest.java` (Mockito, con aplicadores de prueba):
-  - con errores en las filas, `CargaConErrores` sin llamar al dueño;
+  - con errores en las filas, `CargaConErrores` sin llamar al dueño, y su entrada `RECHAZADA` con el motivo `CARGAS_CARGA_CON_ERRORES`;
   - con un hash ya `APLICADA`, `REPETIDA` sin llamar al dueño, con la fecha de la primera y el intento registrado;
   - aplicada, con sus totales y su entrada;
   - rechazada (`RechazoDelLote`), con su entrada `RECHAZADA` y su código;
@@ -137,7 +137,7 @@ description: "Tareas de F01-H04: vista previa y confirmación de la carga"
 
   Crear `ACA/main/java/ec/mdd/academico/aplicacion/cargas/{TraductorEstructura,TraductorCarreras}.java` desde `DatosMaestrosDePrueba`, que pasa a reusarlos.
 - [ ] T009 [US2] Primero las pruebas, en `ACA/integrationTest/…/AplicadorAcademicoIntegrationTest.java` (Testcontainers):
-  - confirmar la 01 y después la 02 deja 24 unidades y 7 carreras, con su registro de cambios con `carga` y `hash`;
+  - confirmar la 01 y después la 02 deja 24 unidades y 7 carreras, con su registro de cambios con el usuario que confirma;
   - una segunda sede matriz en el archivo hace fallar la fila con `SedeMatrizExistente` y no aplica nada, ni las filas anteriores (SC-003);
   - dos aplicaciones a la vez con la misma huella aplican una sola vez.
 
@@ -160,7 +160,7 @@ description: "Tareas de F01-H04: vista previa y confirmación de la carga"
   - `RepositorioMatriculasJdbcIntegrationTest` y la prueba del esquema (fallan sin V6), con sus referencias a periodo y carrera;
   - `TraductorMatriculasTest`: los 7 de la carga 10, la clave periodo + carrera y las bajas solo en sus periodos.
 
-  Crear `ACA/main/resources/db/migration/academico/V6__matriculados.sql` (con las acciones `MATRICULA_REGISTRADA` y `MATRICULA_CORREGIDA` en el `check` del registro), `Matricula`, `RepositorioMatriculas`, su JDBC, el caso de uso que registra y corrige, y `TraductorMatriculas`.
+  Crear `ACA/main/resources/db/migration/academico/V6__matriculados.sql` (que quita el `check` de `accion` de `registro_cambio` y lo vuelve a crear con `MATRICULA_REGISTRADA` y `MATRICULA_CORREGIDA`, como V3 a V5), `Matricula`, `RepositorioMatriculas`, su JDBC, el caso de uso que registra y corrige, y `TraductorMatriculas`.
 - [ ] T012 [US2] Ampliar `AplicadorAcademicoIntegrationTest`: confirmar de la 01 a la 05 y la 10 en orden deja todo aplicado. Ampliar `AplicadorAcademico` con las 4 cargas. T010 a T012 pasan.
 
 ---
@@ -168,7 +168,7 @@ description: "Tareas de F01-H04: vista previa y confirmación de la carga"
 ## Phase 5: US1 y US2 · Incremento C, Docentes 06, 08 y 09 (Priority: P1)
 
 - [ ] T013 [P] [US1] Primero las pruebas, en `DOC/test/java/ec/mdd/docentes/aplicacion/cargas/TraductoresDocentesTest.java`:
-  - **06:** los 47 docentes, con su ficha académica; las columnas que la ficha no guarda no cuentan (la tarea las enumera en el JavaDoc del traductor, desde `DocentesDePrueba`); un cambio de dedicación cuenta.
+  - **06:** los 47 docentes, con su ficha académica; las columnas que la ficha no guarda no cuentan (la tarea las enumera en el JavaDoc del traductor, desde `DocentesDePrueba`); un cambio de dedicación cuenta; `estado` (ACTIVO, LICENCIA, INACTIVO) se compara y se aplica con `cambiarEstado` de `MantenerDocentes`.
   - **08:** los 21 cargos, por su clave compuesta.
   - **09:** los 11 proyectos, con sus participantes.
 

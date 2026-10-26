@@ -68,7 +68,7 @@ Escenario: Vista previa
 
 1. **Given** un archivo válido de cualquiera de las 10 cargas, **When** lo subo, **Then** veo los totales de nuevos, de los que cambian, de los que se dan de baja y de los que no cambian. También veo las listas de los tres primeros grupos, con la clave de cada registro.
 2. **Given** un registro que cambia, **When** veo la vista previa, **Then** veo qué campos cambian, con el valor de ahora y el del archivo.
-3. **Given** un archivo con errores en sus filas, **When** lo subo, **Then** la vista previa dice cuántas filas tienen errores, el informe de F01-H03 sigue a la vista y no puedo confirmar.
+3. **Given** un archivo con errores en sus filas, **When** lo subo, **Then** la vista previa dice cuántas filas tienen errores, el informe de F01-H03 sigue a la vista y no puedo confirmar hasta corregirlo.
 
 ---
 
@@ -149,12 +149,13 @@ Como quien ejecuta las cargas, o quien lee las cargas o el distributivo, quiero 
 
 ### Edge Cases
 
-- **Las bajas:** se cuentan y se listan, pero no se aplican (aclaración 2). En las cargas por periodo (05 oferta y 10 matriculados), las bajas se buscan solo en los periodos que trae el archivo.
+- **Las bajas:** se cuentan y se listan, pero no se aplican (aclaración 2), salvo en la carga 07 (ver abajo). En las cargas por periodo (05 oferta y 10 matriculados), las bajas se buscan solo en los periodos que trae el archivo.
 - **Qué cuenta como cambio:** solo los campos que trae el archivo. Un campo que no está en la plantilla, como el estado de una carrera registrado a mano, no cambia por la carga. Un valor igual al de ahora no es cambio, aunque se escriba distinto en el archivo, por ejemplo con espacios en los extremos.
 - **Carga 07, la política:** el dueño es Normativa.
   - Las filas de un código de versión que no existe crean esa versión.
   - Las de una versión que existe la cambian, si no está asociada a un periodo.
   - Si está asociada a un periodo, el dueño rechaza la confirmación con su motivo, porque una versión en uso no cambia (principio VII).
+  - El archivo trae la tabla completa de cada versión que nombra: una fila de más o de menos la rechaza Normativa, porque en una versión no se agregan ni se quitan filas. Es la única carga donde una baja impide confirmar.
 - **Reglas de los dueños:** al confirmar, cada dueño aplica sus propias reglas, como un coordinador vigente por carrera o la suma de horas de un proyecto (aclaración 1 de F01-H03). Si una falla, no se aplica nada y el motivo dice la fila del archivo.
 - **Idempotencia:** el hash de un archivo es su huella (SHA-256 de su contenido). Confirmar de nuevo el mismo archivo en la misma carga no lo aplica otra vez, aunque los datos hayan cambiado a mano después. Para volver a aplicarlo hay que cambiar el archivo.
 - **Lo que se revisó es lo que se aplica:** la confirmación aplica exactamente la vista previa que se vio. Si los datos del sistema cambiaron entre las dos, no se aplica nada.
@@ -168,7 +169,7 @@ Como quien ejecuta las cargas, o quien lee las cargas o el distributivo, quiero 
 
 ### Functional Requirements
 
-- **FR-001**: Al subir un archivo de cualquiera de las 10 cargas, el sistema DEBE comparar sus registros, por la clave de la carga, con los del servicio dueño. DEBE informar cuántos son nuevos, cuántos cambian, cuántos se dan de baja, cuántos no cambian y cuántas filas tienen errores.
+- **FR-001**: Al subir un archivo de cualquiera de las 10 cargas, el sistema DEBE comparar sus registros, por la clave de la carga, con los del servicio dueño. DEBE informar cuántos son nuevos, cuántos cambian, cuántos se dan de baja y cuántos no cambian. Si alguna fila tiene errores, solo DEBE informar cuántas filas los tienen, porque una fila con errores no se puede comparar.
 - **FR-002**: La vista previa DEBE listar los primeros 100 registros de cada grupo con su clave y, para los que cambian, los campos que cambian, con el valor de ahora y el del archivo.
 - **FR-003**: Un archivo con algún error en sus filas NO DEBE poder confirmarse. Las advertencias no lo impiden.
 - **FR-004**: Confirmar DEBE enviar el lote completo al servicio dueño de la carga, que lo aplica entero o nada en su propia transacción (MD-13):
@@ -200,7 +201,7 @@ Como quien ejecuta las cargas, o quien lee las cargas o el distributivo, quiero 
 ### Measurable Outcomes
 
 - **SC-001**: Las 10 cargas de prueba, confirmadas en su orden sobre un sistema sin esos datos, quedan aplicadas sin ningún error, y cada una encuentra las referencias de las anteriores.
-- **SC-002**: Volver a subir cualquiera de las 10 cargas de prueba después de confirmarla da 0 nuevos, 0 que cambian y 0 que se dan de baja. Confirmarla otra vez no cambia ningún dato.
+- **SC-002**: Sobre un sistema que solo tiene los datos de prueba, volver a subir cualquiera de las 10 cargas después de confirmarla da 0 nuevos, 0 que cambian y 0 que se dan de baja. Confirmarla otra vez no cambia ningún dato.
 - **SC-003**: En el 100 % de las confirmaciones rechazadas, por una regla del dueño o porque los datos cambiaron, ningún dato del archivo queda aplicado.
 - **SC-004**: La vista previa de un archivo de 5 MB, el máximo, responde en menos de 30 segundos, y su confirmación en menos de 60.
 - **SC-005**: Quien ejecuta las cargas hace las 10 de prueba en orden, revisando cada vista previa, en menos de 30 minutos y sin ayuda.
