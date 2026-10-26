@@ -218,7 +218,7 @@ description: "Tareas de F01-H03: validar las reglas de los datos e informe por f
   - `shellcheck` y Gitleaks sobre un clon.
 
   Buscar un valor de prueba en `docker compose logs gateway datos` y anotar que no aparece (principio IX). Comprobar los criterios de terminado de la sección 6 de la constitución 2.2.0 y anotarlos. Hacer commit y push, abrir el PR en borrador con `Refs #29` y marcarlo listo después de sus runs.
-- [ ] T016 Completar la evidencia y el PR. Fusionar con *squash* con la aprobación del autor. Después:
+- [X] T016 Completar la evidencia y el PR. Fusionar con *squash* con la aprobación del autor. Después:
   1. esperar el despliegue («Sano en N s»);
   2. el autor entra con `datos.demo`, sube un archivo con errores, lee el informe en pantalla, descarga el CSV y lo abre, corrige el archivo y lo vuelve a subir;
   3. abrir el PR de evidencia con `Closes #29` y borrar las ramas.
