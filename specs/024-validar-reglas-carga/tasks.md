@@ -197,7 +197,7 @@ description: "Tareas de F01-H03: validar las reglas de los datos e informe por f
 
 ## Phase 8: Punta a punta y cierre
 
-- [ ] T014 Crear `deploy/probar_reglas_carga.sh`, con el estilo de `probar_subida.sh`:
+- [X] T014 Crear `deploy/probar_reglas_carga.sh`, con el estilo de `probar_subida.sh`:
   - **Pasos:**
     - los CSV los arma el script en una carpeta temporal (SC-001 con los 10 archivos fijos lo comprueba T007): registra por la API una carrera con un prefijo al azar, como en `probar_cargos_proyectos.sh`;
     - un `04` con una asignatura que cita esa carrera no tiene errores;
@@ -211,7 +211,7 @@ description: "Tareas de F01-H03: validar las reglas de los datos e informe por f
   - **Limpieza:** borra en la base solo lo que creó, con sus registros.
 
   Agregar su paso a `.github/workflows/perfil-consolidado.yml`. Correrlo dos veces seguidas y anotarlo; `shellcheck` sin observaciones.
-- [ ] T015 Correr todo, como en las historias anteriores:
+- [X] T015 Correr todo, como en las historias anteriores:
   - backend y SPA;
   - los 14 scripts con el perfil reconstruido;
   - `probar_equipo.sh`;
