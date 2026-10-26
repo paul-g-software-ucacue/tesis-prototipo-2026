@@ -65,6 +65,9 @@ Registro de las comprobaciones de la historia (issue #30): la vista previa de ca
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| La vista previa, confirmar, cancelar y el historial (Vitest) | `Plantillas.test.tsx`, 25 de 25 (7 nuevas): la vista previa con sus totales, el aviso de las bajas y las pestañas «Nuevos», «Cambian» (con `dedicacion: «MT» → «TC»`) y «Se dan de baja»; con errores, «Confirmar» deshabilitado y su porqué; «Cancelar» no llama al servidor; «Confirmar» envía el archivo con la huella y dice «Carga aplicada: 1 nuevo y 1 cambiado; 1 baja quedó sin aplicar.»; una repetida dice cuándo se confirmó; un rechazo muestra su título y `fila 23: …`; «Historial» abre los intentos, el más reciente primero, con el resultado y el motivo en español. La SPA: 241 pruebas, 93,7 % de líneas; `lint`, `tipos` y `formato:verificar` en verde | `npx vitest run --coverage --maxWorkers=4` | 2026-10-26 |
+| En el navegador, con axe (Playwright) | `e2e/plantillas.spec.ts`, 7 de 7: la vista previa de un archivo de docentes; «Confirmar» envía el archivo y la `huella` con el token; el resultado; el historial en su diálogo; axe-core sin fallas WCAG 2.1 AA con la vista previa y con el historial a la vista | `npx playwright test e2e/plantillas.spec.ts` | 2026-10-26 |
+| Los mensajes en «tú» (D-74) | Los motivos de Cargas («Escribe…», «Usa uno de los valores permitidos…», «complétalo», «no la repitas», «regístrala o confirma antes su carga») y la pantalla («Corrígelo y vuelve a subirlo.»). Una búsqueda de «Escriba», «complételo», «regístrela», «cárguela», «Corríjalo», «vuelva a», «Use uno» y otras formas de «usted» en Cargas, la pantalla y `probar_reglas_carga.sh` no encuentra ninguna | `grep -rnE …` | 2026-10-26 |
 
 ## Cierre
 
@@ -80,3 +83,4 @@ Registro de las comprobaciones de la historia (issue #30): la vista previa de ca
 
 - **D-74.** El plan reservaba D-74 para el índice de ADR-022. Como el autor aprobó dos decisiones en el plan, ADR-022 es el módulo `:plataforma:lenguaje-cargas` y D-74 es el trato de «tú» en los mensajes (research §10).
 - **El nombre del módulo.** El plan lo llamaba `:plataforma:cargas`, pero Gradle trata como el mismo artefacto a dos proyectos con el mismo nombre, y `:servicios:cargas` ya se llama así: la compilación daba una dependencia circular. El módulo es `:plataforma:lenguaje-cargas`; su paquete sigue siendo `ec.mdd.plataforma.cargas`.
+- **Vitest con la máquina cargada.** Con el navegador y el equipo de demostración en la misma PC (carga 15 en 12 núcleos), 9 pruebas de otras pantallas (proyectos, docentes, normativa, roles, carreras) llegaron a su límite de 15 s; pasan solas y con `--maxWorkers=4`. No las toca esta historia.

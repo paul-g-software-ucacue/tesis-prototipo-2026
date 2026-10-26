@@ -102,11 +102,11 @@ class ValidadorDeFilasTest {
                 .extracting(ProblemaDeFila::fila, ProblemaDeFila::campo, ProblemaDeFila::motivo)
                 .containsExactly(
                         tuple(5, "primer_nombre", "Tiene 61 caracteres; el máximo es 60."),
-                        tuple(5, "dedicacion", "Use uno de los valores permitidos: TC, MT, TP."),
+                        tuple(5, "dedicacion", "Usa uno de los valores permitidos: TC, MT, TP."),
                         tuple(
                                 5,
                                 "fecha_ingreso",
-                                "Escriba una fecha que exista, con el formato aaaa-mm-dd."));
+                                "Escribe una fecha que exista, con el formato aaaa-mm-dd."));
     }
 
     @Test
@@ -120,15 +120,15 @@ class ValidadorDeFilasTest {
         assertThat(validar("docentes", tabla).problemas())
                 .extracting(ProblemaDeFila::fila, ProblemaDeFila::campo, ProblemaDeFila::motivo)
                 .containsExactly(
-                        tuple(2, "primer_apellido", "Es obligatorio: complételo."),
+                        tuple(2, "primer_apellido", "Es obligatorio: complétalo."),
                         tuple(
                                 2,
                                 "categoria_escalafon",
-                                "Es obligatorio cuando tipo_personal es TITULAR: complételo."),
+                                "Es obligatorio cuando tipo_personal es TITULAR: complétalo."),
                         tuple(
                                 3,
                                 "fin_contrato",
-                                "Es obligatorio cuando tipo_personal es OCASIONAL: complételo."));
+                                "Es obligatorio cuando tipo_personal es OCASIONAL: complétalo."));
     }
 
     @Test
@@ -143,7 +143,7 @@ class ValidadorDeFilasTest {
                         tuple(
                                 49,
                                 "numero_identificacion",
-                                "Esta clave ya está en la fila 2: no la repita."));
+                                "Esta clave ya está en la fila 2: no la repitas."));
     }
 
     @Test
@@ -161,7 +161,7 @@ class ValidadorDeFilasTest {
                                 167,
                                 "paralelo",
                                 "Esta combinación de codigo_periodo, codigo_asignatura y paralelo"
-                                        + " ya está en la fila 3: no la repita."));
+                                        + " ya está en la fila 3: no la repitas."));
     }
 
     @Test
@@ -275,16 +275,17 @@ class ValidadorDeFilasTest {
                         tuple(
                                 11,
                                 "codigo_carrera",
-                                "No existe la carrera en el sistema: regístrela o cárguela antes."));
+                                "No existe la carrera en el sistema: regístrala o confirma antes su carga."));
     }
 
     @Test
     void dadasReferenciasQueNoExisten_entoncesCadaUnaConLoQueFalta() {
         assertThat(motivos("oferta_periodo", "05_oferta_periodo.csv", "codigo_periodo", "2099-I"))
                 .containsExactly(
-                        "No existe el periodo en el sistema: regístrelo o cárguelo antes.");
+                        "No existe el periodo en el sistema: regístralo o confirma antes su carga.");
         assertThat(motivos("carreras", "02_carreras.csv", "codigo_unidad_sede", "SEDE-X"))
-                .containsExactly("No existe la unidad en el sistema: regístrela o cárguela antes.");
+                .containsExactly(
+                        "No existe la unidad en el sistema: regístrala o confirma antes su carga.");
         assertThat(
                         motivos(
                                 "cargos_autoridades",
@@ -292,7 +293,7 @@ class ValidadorDeFilasTest {
                                 "numero_identificacion",
                                 "0109999995"))
                 .containsExactly(
-                        "No existe el docente en el sistema: regístrelo o cárguelo antes.");
+                        "No existe el docente en el sistema: regístralo o confirma antes su carga.");
     }
 
     @Test
@@ -304,8 +305,8 @@ class ValidadorDeFilasTest {
                                 "codigos_carrera",
                                 "550613A01-P-0301; NO-EXISTE"))
                 .containsExactly(
-                        "El elemento 2 no existe en el sistema como carrera: regístrelo o"
-                                + " cárguelo antes.");
+                        "El elemento 2 no existe en el sistema como carrera: regístralo o"
+                                + " confirma antes su carga.");
         assertThat(
                         motivos(
                                 "proyectos_practicas",
@@ -313,8 +314,8 @@ class ValidadorDeFilasTest {
                                 "participantes",
                                 "0109990200|DIRECTOR|14; 0109999995|INVESTIGADOR|10"))
                 .containsExactly(
-                        "El elemento 2 no existe en el sistema como docente: regístrelo o"
-                                + " cárguelo antes.");
+                        "El elemento 2 no existe en el sistema como docente: regístralo o"
+                                + " confirma antes su carga.");
     }
 
     @Test
@@ -340,7 +341,7 @@ class ValidadorDeFilasTest {
                 .containsExactly(
                         tuple(
                                 3,
-                                "No existe la unidad ni en este archivo ni en el sistema: agréguela."));
+                                "No existe la unidad ni en este archivo ni en el sistema: agrégala."));
     }
 
     private static List<String> motivos(String carga, String archivo, String campo, String valor) {

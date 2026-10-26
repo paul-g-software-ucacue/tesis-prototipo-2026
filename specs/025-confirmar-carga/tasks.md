@@ -214,25 +214,25 @@ description: "Tareas de F01-H04: vista previa y confirmación de la carga"
 
 ## Phase 8: Pantalla (US1 a US5)
 
-- [ ] T018 [US1] Primero las pruebas, en `frontend/src/pantallas/plantillas/Plantillas.test.tsx` (ampliar):
+- [X] T018 [US1] Primero las pruebas, en `frontend/src/pantallas/plantillas/Plantillas.test.tsx` (ampliar):
   - la vista previa, con los 4 totales en un `role="status"`, las pestañas «Nuevos», «Cambian» y «Se dan de baja» con sus listas (en «Cambian», los campos con el valor de ahora y el del archivo) y el aviso de las bajas;
   - con errores, «Confirmar» deshabilitado con su motivo;
   - «Cancelar» limpia todo sin llamar al servidor.
 
   Ampliar la pantalla y sus consultas.
-- [ ] T019 [US2] [US4] [US5] Primero las pruebas, en la misma prueba de la pantalla:
+- [X] T019 [US2] [US4] [US5] Primero las pruebas, en la misma prueba de la pantalla:
   - «Confirmar» vuelve a enviar el archivo con la huella;
   - el resultado «aplicada» con sus totales y «ya estaba confirmada el …»;
   - los tres 409 con su título y sus detalles `fila N · campo`;
   - «Historial» de una carga abre su lista, de la más reciente a la más antigua, con el resultado en español.
 
   Ampliar la pantalla y crear las consultas de `confirmarCarga` y `listarHistorial`.
-- [ ] T020 Los mensajes en «tú» (research §10):
+- [X] T020 Los mensajes en «tú» (research §10):
   - en Cargas, los motivos de `ReglasDeColumna`, `CondicionDeObligatoriedad`, `ClaveDeCarga`, `Cedula` y `ValidadorDeFilas`, con la referencia que no existe diciendo «regístrala o confirma antes su carga» (FR-014);
   - en la SPA, «Corrígelo y vuelve a subirlo»;
   - actualizar las pruebas de F01-H03 que los nombran;
   - comprobar con `grep` que no queda ningún «Escriba», «complételo», «regístrela», «Corríjalo» o «vuelva a» en Cargas ni en la pantalla, y anotarlo.
-- [ ] T021 Prueba con Playwright, en `frontend/e2e/plantillas.spec.ts` (ampliar):
+- [X] T021 Prueba con Playwright, en `frontend/e2e/plantillas.spec.ts` (ampliar):
   - la vista previa de un archivo;
   - «Confirmar» con la huella en el pedido;
   - el resultado y el historial;

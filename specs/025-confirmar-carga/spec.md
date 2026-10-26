@@ -162,7 +162,7 @@ Como quien ejecuta las cargas, o quien lee las cargas o el distributivo, quiero 
 - **Sin estado entre pasos:** el servidor no guarda el archivo entre la vista previa y la confirmación. Para confirmar, la pantalla vuelve a enviar el mismo archivo, como al descargar el informe (F01-H03).
 - **Datos personales:** la vista previa de las cargas 06, 08 y 09 muestra identificaciones y nombres de los docentes. Se devuelve solo a quien subió el archivo y no se registra en los logs. El historial guarda el nombre del archivo, su hash y los totales, no el contenido (principio IX).
 - **Permisos:** confirmar exige «Cargas: escritura», como subir (D-71). Leer el historial exige «Cargas: lectura» o «Distributivo del periodo: lectura», como las plantillas (D-70).
-- **Las referencias de F01-H03:** el motivo «regístrela o cárguela antes» pasa a «regístrela o confirme antes su carga», porque cargar es confirmar.
+- **Las referencias de F01-H03:** el motivo «regístrela o cárguela antes» pasa a «regístrala o confirma antes su carga», porque cargar es confirmar.
 - **Tamaño:** el mismo máximo de 5 MB. La vista previa trae los totales y los primeros 100 de cada grupo.
 
 ## Requirements *(mandatory)*
@@ -185,7 +185,7 @@ Como quien ejecuta las cargas, o quien lee las cargas o el distributivo, quiero 
 - **FR-011**: Confirmar DEBE exigir «Cargas: escritura» (D-71) y leer el historial, «Cargas: lectura» o «Distributivo del periodo: lectura» (D-70), validados en el servidor.
 - **FR-012**: Cada servicio dueño DEBE traducir las columnas de su carga a sus datos en un solo lugar, probado con los archivos de prueba de la ERS (principio VI).
 - **FR-013**: La pantalla «Plantillas de carga» DEBE mostrar la vista previa al subir un archivo, con «Confirmar» habilitado solo si no tiene errores y «Cancelar». Después de confirmar, DEBE mostrar el resultado y permitir ver el historial de la carga.
-- **FR-014**: El motivo de una referencia que no existe (F01-H03) DEBE decir «regístrela o confirme antes su carga».
+- **FR-014**: El motivo de una referencia que no existe (F01-H03) DEBE decir «regístrala o confirma antes su carga».
 - **FR-015**: Cada código de error nuevo DEBE estar en el catálogo con sus 8 columnas (D-72) y sus mensajes DEBEN decir qué hacer.
 
 ### Key Entities

@@ -45,13 +45,13 @@ class CondicionDeObligatoriedadTest {
     @Test
     void elMotivoDiceLaCondicion() {
         assertThat(condicion("docentes", "primer_nombre").motivo())
-                .isEqualTo("Es obligatorio: complételo.");
+                .isEqualTo("Es obligatorio: complétalo.");
         assertThat(condicion("docentes", "categoria_escalafon").motivo())
-                .isEqualTo("Es obligatorio cuando tipo_personal es TITULAR: complételo.");
+                .isEqualTo("Es obligatorio cuando tipo_personal es TITULAR: complétalo.");
         assertThat(condicion("cargos_autoridades", "codigo_unidad").motivo())
                 .isEqualTo(
                         "Es obligatorio salvo cuando codigo_cargo es COORDINADOR_CARRERA:"
-                                + " complételo.");
+                                + " complétalo.");
     }
 
     @Test

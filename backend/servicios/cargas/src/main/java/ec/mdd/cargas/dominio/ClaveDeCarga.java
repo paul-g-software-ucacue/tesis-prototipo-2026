@@ -71,7 +71,7 @@ public record ClaveDeCarga(String campo, List<String> campos) {
     /** El motivo de una clave repetida. */
     String motivo(int filaAnterior) {
         if (campos.size() == 1) {
-            return "Esta clave ya está en la fila " + filaAnterior + ": no la repita.";
+            return "Esta clave ya está en la fila " + filaAnterior + ": no la repitas.";
         }
         return "Esta combinación de "
                 + String.join(", ", campos.subList(0, campos.size() - 1))
@@ -79,6 +79,6 @@ public record ClaveDeCarga(String campo, List<String> campos) {
                 + campos.getLast()
                 + " ya está en la fila "
                 + filaAnterior
-                + ": no la repita.";
+                + ": no la repitas.";
     }
 }

@@ -92,9 +92,9 @@ public record CondicionDeObligatoriedad(Modo modo, String campo, String valor) {
     /** El motivo cuando falta: qué hacer y, si es condicional, cuándo. */
     public String motivo() {
         return switch (modo) {
-            case SI -> "Es obligatorio cuando " + campo + " es " + valor + ": complételo.";
-            case SALVO -> "Es obligatorio salvo cuando " + campo + " es " + valor + ": complételo.";
-            default -> "Es obligatorio: complételo.";
+            case SI -> "Es obligatorio cuando " + campo + " es " + valor + ": complétalo.";
+            case SALVO -> "Es obligatorio salvo cuando " + campo + " es " + valor + ": complétalo.";
+            default -> "Es obligatorio: complétalo.";
         };
     }
 
