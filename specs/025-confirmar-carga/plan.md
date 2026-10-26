@@ -6,7 +6,7 @@
 
 ## Summary
 
-- **Un lenguaje publicado de las cargas**, en el módulo nuevo `:plataforma:cargas` (ADR-022 propuesto, research §1):
+- **Un lenguaje publicado de las cargas**, en el módulo nuevo `:plataforma:lenguaje-cargas` (ADR-022 propuesto, research §1):
   - el lote;
   - el traductor que escribe cada dueño por carga;
   - el motor que compara, calcula la huella y aplica todo o nada dentro de la transacción del dueño;
@@ -28,7 +28,7 @@
 
 **Language/Version**: Java 25 (Spring Boot 4.1.1) · TypeScript 5.9 (React 19) · Bash
 
-**Primary Dependencies**: ninguna externa nueva. Hay un módulo interno nuevo, `:plataforma:cargas`, del que dependen Cargas, Académico, Docentes y Normativa.
+**Primary Dependencies**: ninguna externa nueva. Hay un módulo interno nuevo, `:plataforma:lenguaje-cargas`, del que dependen Cargas, Académico, Docentes y Normativa.
 
 **Storage**: PostgreSQL 18.
 - Cargas `V2__historial_de_cargas.sql`.
@@ -86,7 +86,7 @@
 | II. DDD según el subdominio | Ingesta y Datos maestros son de soporte: valores y casos de uso, sin agregados nuevos salvo `Matricula`. | ✅ |
 | III. Lenguaje ubicuo | Usa Vista previa, Confirmar una carga, Historial de cargas y Matriculados, del glosario, sin cambios. | ✅ |
 | IV. API primero | El contrato ampliado y las dos operaciones, antes del código. | ✅ |
-| V. Límites | Cargas no conoce los tipos de los dueños: solo el lenguaje de `:plataforma:cargas`. Cada dueño aplica en su transacción (MD-13). `ModulosTest` lo comprueba. | ✅ con ADR-022 |
+| V. Límites | Cargas no conoce los tipos de los dueños: solo el lenguaje de `:plataforma:lenguaje-cargas`. Cada dueño aplica en su transacción (MD-13). `ModulosTest` lo comprueba. | ✅ con ADR-022 |
 | VI. Las reglas son datos | Las reglas del diccionario siguen en F01-H03. Cada traductor es la única traducción de las columnas de su carga, probada con sus archivos de prueba. | ✅ |
 | VII. Inmutabilidad y trazabilidad | Las bajas no se aplican; una versión de normativa en uso no cambia; cada cambio queda en el registro del dueño, con el hash; cada intento queda en el historial. | ✅ |
 | VIII. Pruebas | Primero las del motor y de cada traductor; la de las 10 en orden demuestra SC-001 y SC-002. | ✅ |
@@ -123,7 +123,7 @@ specs/025-confirmar-carga/
 ### Source Code (repository root)
 
 ```text
-backend/plataforma/cargas/                         # nuevo: el lenguaje publicado y el motor del lote
+backend/plataforma/lenguaje-cargas/                         # nuevo: el lenguaje publicado y el motor del lote
 backend/servicios/cargas/
 ├── src/main/resources/db/migration/cargas/V2__historial_de_cargas.sql
 └── src/main/java/ec/mdd/cargas/                   # vista previa, ConfirmarCarga, ConsultarHistorial, historial JDBC
@@ -148,7 +148,7 @@ Los incrementos se prueban por separado. Cada uno deja el sistema funcionando.
 1. **Base:**
    - ADR-022 y D-74 en `docs/decisiones.md`, con tu aprobación;
    - el contrato y los 3 códigos;
-   - `:plataforma:cargas`, con el motor probado sin dobles;
+   - `:plataforma:lenguaje-cargas`, con el motor probado sin dobles;
    - el historial de Cargas (V2) y la vista previa en `validarArchivo`;
    - `confirmarCarga` y `listarHistorial`;
    - la comprobación de que cada carga tiene un solo dueño.
@@ -185,6 +185,6 @@ Los incrementos se prueban por separado. Cada uno deja el sistema funcionando.
 
 | Pieza | Por qué hace falta | Alternativa más simple descartada porque |
 |---|---|---|
-| El módulo `:plataforma:cargas` | La comparación, la huella y el «todo o nada» son iguales para los tres dueños, y Cargas no debe conocer sus tipos (principio V). | Un puerto en cada dueño repite los registros tres veces y le da a Cargas tres adaptadores. El puerto en Cargas haría a los dueños depender de Cargas. |
+| El módulo `:plataforma:lenguaje-cargas` | La comparación, la huella y el «todo o nada» son iguales para los tres dueños, y Cargas no debe conocer sus tipos (principio V). | Un puerto en cada dueño repite los registros tres veces y le da a Cargas tres adaptadores. El puerto en Cargas haría a los dueños depender de Cargas. |
 | La huella de la vista previa, además del hash | La historia pide aplicar solo lo que se revisó. El mismo archivo da otra vista previa si los datos cambiaron a mano entre los pasos. | Solo el hash: aplicaría algo distinto de lo revisado sin avisar. |
 | `Matricula` en Académico | La carga 10 necesita un lugar donde quedar al confirmarse, y el glosario la pone en Datos maestros. | Dejar la carga 10 sin aplicar: las 10 no quedarían confirmadas (aclaración 1). |

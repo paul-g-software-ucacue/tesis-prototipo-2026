@@ -69,6 +69,8 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-71 | 2026-10-23 | El Responsable de consolidación y el Vicerrector académico ejecutan las cargas | Aceptada | D-65 (matriz D-16) |
 | D-72 | 2026-10-24 | Cada campo de entrada se valida por su tipo y su largo, y cada error del catálogo dice su clasificación, su causa, su descripción técnica y la acción para el usuario | Aceptada | Constitución 2.2.0 (principio XIV nuevo; amplía el XIII y la definición de terminado) |
 | D-73 | 2026-10-25 | Los 16 cargos de gestor tienen código propio, del G06 al G21 | Aceptada | Diccionario de la carga 8 (catálogo CARGOS) |
+| ADR-022 | 2026-10-26 | El lenguaje publicado de las cargas y el motor del lote, en `:plataforma:lenguaje-cargas` | Aceptada | MD-13 y ADR-009 (cómo llega el lote al dueño) |
+| D-74 | 2026-10-26 | Los mensajes al usuario lo tratan de «tú» | Aceptada | Principio XIII (mensajes consistentes); motivos y pantalla de F01-H03 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1274,3 +1276,44 @@ El catálogo `CARGOS` de `diccionario-de-datos.yaml` cambia la fila del rango po
 **Consecuencias.**
 - La enumeración `TipoDeCargo` de Docentes tiene 22 valores, que `ValoresPermitidosTest` compara con el diccionario.
 - La carga 8 por archivo (F01-H04) valida contra los mismos 22 valores.
+
+## ADR-022. El lenguaje publicado de las cargas y el motor del lote, en `:plataforma:lenguaje-cargas`
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-26 · **Decidido por:** autor de la tesis (aprobado en el plan de F01-H04)
+- **Origen:** `specs/025-confirmar-carga/research.md` §1
+- **Modifica a:** MD-13 y ADR-009, que dicen que Cargas envía el lote completo al servicio dueño sin decir con qué tipos
+
+**Decisión.**
+1. Un módulo nuevo, `:plataforma:lenguaje-cargas` (paquete `ec.mdd.plataforma.cargas`, con `@NamedInterface("cargas")`) —no `:plataforma:cargas`, porque Gradle confunde dos proyectos con el mismo nombre que `:servicios:cargas`—, es el lenguaje común entre Cargas y los dueños de las cargas:
+   - el lote (`LoteDeCarga` y `FilaDelLote`);
+   - la vista previa (`VistaPreviaDelLote`, con su huella), el resultado y los rechazos;
+   - el traductor que cada dueño escribe por carga (`TraductorDeCarga`);
+   - el motor que compara, calcula la huella y aplica todo o nada (`MotorDelLote`);
+   - el aplicador que ve Cargas (`AplicadorDeCargas`).
+2. Cada dueño publica un `AplicadorDeCargas` con las cargas que atiende: Académico la 01 a la 05 y la 10, Docentes la 06, la 08 y la 09, y Normativa la 07. Cargas recibe la lista y, al arrancar, comprueba que cada una de las 10 tiene exactamente uno.
+3. El motor aplica el lote dentro de la transacción del dueño y con sus casos de uso de siempre, así que se aplican sus reglas y su registro de cambios.
+
+**Por qué.** La comparación, la huella y el «todo o nada» son iguales para las 10 cargas: escritos una vez, se prueban una vez. Cargas no conoce los tipos de los dueños (principio V). Es el mismo camino que `:plataforma:eventos`.
+
+**Alternativas.**
+- **Un puerto propio en cada dueño:** repite los mismos registros tres veces, y Cargas tendría tres adaptadores casi iguales.
+- **El puerto en Cargas:** los dueños dependerían de Cargas, y `ModulosTest` solo permite los `puertos.entrada` de otro servicio.
+
+**Consecuencias.**
+- Académico, Docentes, Normativa y Cargas dependen de `:plataforma:lenguaje-cargas`.
+- Una carga nueva, o un dueño nuevo, es un traductor más.
+- El motor se prueba sin dobles en su módulo.
+
+## D-74. Los mensajes al usuario lo tratan de «tú»
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-26 · **Decidido por:** autor de la tesis (aprobado en el plan de F01-H04)
+- **Origen:** `specs/025-confirmar-carga/research.md` §10
+- **Modifica a:** los motivos de las reglas de las filas y la pantalla «Plantillas de carga» de F01-H03, que trataban de «usted»
+
+**Decisión.** Los mensajes que ve el usuario (el catálogo de errores, los motivos del informe por fila y los textos de la SPA) lo tratan de «tú», como ya lo hacía el catálogo: «Guárdalo como CSV UTF-8», «Corrígelo y vuelve a subirlo».
+
+**Por qué.** El principio XIII pide mensajes consistentes, y en la misma pantalla convivían «Descarga la plantilla» y «Corríjalo y vuelva a subirlo».
+
+**Alternativas.** Pasar todo a «usted»: cambia el catálogo entero y casi toda la SPA, sin ganar claridad.
+
+**Consecuencias.** F01-H04 pasa a «tú» los motivos de Cargas y los textos de «Plantillas de carga»; una búsqueda comprueba que no queda ningún «usted» en ellos.

@@ -6,7 +6,7 @@ Cómo comprobar la historia de punta a punta. El contrato está en [contracts/ca
 
 | Qué | Comando | Resultado esperado |
 |---|---|---|
-| El motor del lote | `cd backend && ./gradlew :plataforma:cargas:check` | En verde: nuevos, cambios, bajas, iguales, huella estable, huella cambiada, todo o nada. |
+| El motor del lote | `cd backend && ./gradlew :plataforma:lenguaje-cargas:check` | En verde: nuevos, cambios, bajas, iguales, huella estable, huella cambiada, todo o nada. |
 | Cada dueño | `./gradlew :servicios:academico:check :servicios:docentes:check :servicios:normativa:check` | En verde: cada traductor con sus archivos de prueba y un rechazo de una regla propia que no aplica nada. |
 | Cargas: contrato, permisos e historial | `./gradlew :servicios:cargas:check` | En verde. |
 | **Las 10 en orden** (SC-001, SC-002) | `./gradlew :apps:datos:integrationTest --tests '*ConfirmarLasDiezCargas*'` | Las 10 aplicadas; al subirlas otra vez, 0 nuevos, 0 que cambian y 0 bajas; la repetida, `REPETIDA`. |

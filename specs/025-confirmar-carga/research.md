@@ -4,7 +4,7 @@ Fase 0 del plan de F01-H04 (issue #30). Cada punto dice la decisión, por qué y
 
 ## 1. Un lenguaje publicado de las cargas, en un módulo de plataforma (ADR-022 propuesto)
 
-- **Decisión:** un módulo nuevo, `:plataforma:cargas`, con el lenguaje común entre Cargas y los tres dueños:
+- **Decisión:** un módulo nuevo, `:plataforma:lenguaje-cargas`, con el lenguaje común entre Cargas y los tres dueños:
   - `LoteDeCarga`: la carga, el hash y las filas, cada una con su número de fila del archivo y sus valores por campo, ya sin espacios;
   - `TraductorDeCarga<T>`, que cada dueño implementa por carga:
     - la clave de una fila;

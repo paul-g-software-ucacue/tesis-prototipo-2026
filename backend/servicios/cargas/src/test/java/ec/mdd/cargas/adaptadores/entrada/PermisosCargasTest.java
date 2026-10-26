@@ -21,7 +21,12 @@ import org.springframework.test.web.servlet.MockMvc;
  * cualquiera de los dos, no (D-70). Subir un archivo exige «Cargas: escritura» (D-71). La sesión no
  * exige permiso.
  */
-@WebMvcTest({SesionControlador.class, PlantillasControlador.class, SubidaControlador.class})
+@WebMvcTest({
+    SesionControlador.class,
+    PlantillasControlador.class,
+    SubidaControlador.class,
+    HistorialControlador.class
+})
 @ImportAutoConfiguration({SeguridadProcesoAutoConfiguracion.class, ErroresAutoConfiguracion.class})
 @Import({ConfiguracionCargas.class, ErroresCargas.class, ReferenciasDePrueba.class})
 @TestPropertySource(
@@ -48,7 +53,11 @@ class PermisosCargasTest {
                         "POST /api/cargas/plantillas/estructura_organica/archivo"
                                 + " (CARGAS:ESCRITURA)",
                         "POST /api/cargas/plantillas/estructura_organica/archivo/informe"
-                                + " (CARGAS:ESCRITURA)");
+                                + " (CARGAS:ESCRITURA)",
+                        "POST /api/cargas/plantillas/estructura_organica/archivo/confirmacion"
+                                + " (CARGAS:ESCRITURA)",
+                        "GET /api/cargas/plantillas/estructura_organica/historial"
+                                + " ([CARGAS:LECTURA, DISTRIBUTIVO:LECTURA])");
 
         verificador.verificar(mvc, conversor);
     }

@@ -17,4 +17,9 @@ dependencies {
     // solo sus puertos.entrada, que ModulosTest del proceso datos comprueba (principio V).
     implementation project(':servicios:academico')
     implementation project(':servicios:docentes')
+    // El lenguaje publicado de las cargas (ADR-022): el lote, la vista previa y el aplicador de cada
+    // servicio dueño (F01-H04).
+    implementation project(':plataforma:lenguaje-cargas')
+    // El historial de cargas en el esquema cargas, con JdbcClient, como Docentes (F01-H04).
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 }

@@ -2,7 +2,7 @@
 
 El porqué de cada pieza está en [research.md](research.md).
 
-## `:plataforma:cargas`: el lenguaje publicado (§1)
+## `:plataforma:lenguaje-cargas`: el lenguaje publicado (§1)
 
 | Tipo | Qué es | Reglas |
 |---|---|---|

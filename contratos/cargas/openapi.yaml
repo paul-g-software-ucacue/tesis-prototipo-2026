@@ -11,6 +11,10 @@
 # referencias del sistema (RF-08), y responde el informe por fila; un archivo con errores en sus
 # filas responde 200 con su informe, no un error (principio XIII). descargarInforme responde el
 # mismo informe en CSV, con las celdas neutralizadas (RF-09, RNF-SEG-04). Nada se guarda.
+# Desde F01-H04: la subida trae la vista previa (nuevos, cambian, bajas e iguales frente al servicio
+# dueño, con su huella); confirmarCarga vuelve a enviar el archivo con la huella y el dueño lo aplica
+# completo o nada (RF-10, RF-55, MD-13, ADR-022); listarHistorial lee cada intento de confirmar. Las
+# bajas se informan, pero no se aplican.
 openapi: 3.0.3
 info:
   title: MDD · cargas
@@ -26,8 +30,10 @@ tags:
     description: Las plantillas de las 10 cargas y su diccionario de datos (RF-05).
   - name: Subida
     description: >-
-      Subir el archivo de una carga, validar su estructura y sus filas, y descargar el informe
-      (RF-06 a RF-09).
+      Subir el archivo de una carga, validar su estructura y sus filas, ver la vista previa,
+      descargar el informe y confirmar (RF-06 a RF-10, RF-55).
+  - name: Historial
+    description: El historial de las cargas confirmadas (RF-10).
 paths:
   /api/cargas/sesion:
     get:
@@ -210,6 +216,85 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/cargas/plantillas/{codigo}/archivo/confirmacion:
+    parameters:
+      - $ref: '#/components/parameters/CodigoDeCarga'
+    post:
+      tags: [Subida]
+      operationId: confirmarCarga
+      summary: Valida otra vez el archivo y pide a su servicio dueño que aplique la vista previa revisada.
+      description: >-
+        La misma validación de validarArchivo. Con errores en las filas, 409
+        CARGAS_CARGA_CON_ERRORES. Si el mismo archivo (el mismo hash SHA-256) ya se aplicó en esta
+        carga, responde REPETIDA sin aplicarlo otra vez. Si no, el servicio dueño recalcula la vista
+        previa con sus tablas bloqueadas y la aplica completa solo si su huella es la recibida; si no
+        lo es, 409 CARGAS_VISTA_PREVIA_DESACTUALIZADA. Una regla del dueño que falla da 409
+        CARGAS_CARGA_RECHAZADA con la fila y nada se aplica. Las bajas no se aplican. Cada intento
+        queda en el historial, sin el contenido del archivo.
+      x-mdd-permiso: CARGAS:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [archivo, huella]
+              properties:
+                archivo:
+                  type: string
+                  format: binary
+                huella:
+                  $ref: '#/components/schemas/Huella'
+      responses:
+        '200':
+          description: La carga quedó aplicada, o ya lo estaba.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoDeConfirmacion'
+        '400':
+          $ref: '#/components/responses/ArchivoNoValido'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/CargaNoEncontrada'
+        '409':
+          $ref: '#/components/responses/ConfirmacionRechazada'
+        '413':
+          $ref: '#/components/responses/ArchivoDemasiadoGrande'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/cargas/plantillas/{codigo}/historial:
+    parameters:
+      - $ref: '#/components/parameters/CodigoDeCarga'
+    get:
+      tags: [Historial]
+      operationId: listarHistorial
+      summary: Cada intento de confirmar la carga, del más reciente al más antiguo.
+      x-mdd-permiso: [CARGAS:LECTURA, DISTRIBUTIVO:LECTURA]
+      responses:
+        '200':
+          description: El historial de la carga.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EntradaDeHistorial'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/CargaNoEncontrada'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
 components:
   securitySchemes:
     bearer:
@@ -261,6 +346,14 @@ components:
       description: >-
         CARGAS_ARCHIVO_DEMASIADO_GRANDE, con más de 5 MB, o COMUN_CONTENIDO_DEMASIADO_GRANDE, con
         más de 10 MB, que corta el proceso (errores.md).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
+    ConfirmacionRechazada:
+      description: >-
+        No se aplicó nada: CARGAS_CARGA_CON_ERRORES, CARGAS_VISTA_PREVIA_DESACTUALIZADA o
+        CARGAS_CARGA_RECHAZADA (con un detalle «fila N · campo» por rechazo) (errores.md).
       content:
         application/json:
           schema:
@@ -380,7 +473,8 @@ components:
       description: >-
         El resultado de leer un archivo con una estructura válida, con el informe de sus filas.
       type: object
-      required: [carga, archivo, formato, registros, valido, errores, advertencias, problemas]
+      required:
+        [carga, archivo, formato, registros, valido, errores, advertencias, problemas, vistaPrevia]
       properties:
         carga:
           type: string
@@ -417,6 +511,8 @@ components:
           maxItems: 100
           items:
             $ref: '#/components/schemas/ProblemaDeFila'
+        vistaPrevia:
+          $ref: '#/components/schemas/VistaPrevia'
     TipoDeProblema:
       description: Un error impide continuar; una advertencia no.
       type: string
@@ -450,3 +546,135 @@ components:
           description: El valor corregido, si la regla lo puede proponer.
           type: string
           example: '0109990010'
+    Huella:
+      description: >-
+        La huella de la vista previa: SHA-256, en hexadecimal, de sus registros en forma canónica.
+      type: string
+      pattern: '^[0-9a-f]{64}$'
+      example: 3f1c0e6a9b2d4c8e7f5a1b3c9d0e2f4a6b8c0d2e4f6a8b0c2d4e6f8a0b2c4d6e
+    TipoDeRegistro:
+      description: Qué pasa con un registro si se confirma; las bajas no se aplican.
+      type: string
+      enum: [NUEVO, CAMBIA, BAJA]
+    CambioDeCampo:
+      type: object
+      required: [campo, ahora, archivo]
+      properties:
+        campo:
+          type: string
+          example: dedicacion
+        ahora:
+          description: El valor que tiene ahora el sistema; vacío si no tiene.
+          type: string
+          example: MT
+        archivo:
+          description: El valor del archivo.
+          type: string
+          example: TC
+    RegistroDeLaVista:
+      type: object
+      required: [clave, tipo, cambios]
+      properties:
+        clave:
+          description: Los valores de la clave de la carga, unidos con « · ».
+          type: string
+          example: '0109990010'
+        tipo:
+          $ref: '#/components/schemas/TipoDeRegistro'
+        fila:
+          description: La fila del archivo; no la tiene una baja.
+          type: integer
+          minimum: 2
+        cambios:
+          description: Los campos que cambian; vacía si no es CAMBIA.
+          type: array
+          items:
+            $ref: '#/components/schemas/CambioDeCampo'
+    VistaPrevia:
+      description: >-
+        Los registros del archivo frente a los del servicio dueño (glosario «Vista previa»). Con
+        errores en las filas solo trae filasConErrores.
+      type: object
+      required: [filasConErrores, registros]
+      properties:
+        filasConErrores:
+          type: integer
+          minimum: 0
+        nuevos:
+          type: integer
+          minimum: 0
+        cambian:
+          type: integer
+          minimum: 0
+        bajas:
+          type: integer
+          minimum: 0
+        iguales:
+          type: integer
+          minimum: 0
+        registros:
+          description: Hasta 100 de cada tipo, en orden de clave; sin los iguales.
+          type: array
+          maxItems: 300
+          items:
+            $ref: '#/components/schemas/RegistroDeLaVista'
+        huella:
+          $ref: '#/components/schemas/Huella'
+    ResultadoDeConfirmacion:
+      type: object
+      required: [resultado, nuevos, cambiados, bajasSinAplicar, confirmadaEl]
+      properties:
+        resultado:
+          description: APLICADA, o REPETIDA si el mismo archivo ya se había aplicado en esta carga.
+          type: string
+          enum: [APLICADA, REPETIDA]
+        nuevos:
+          type: integer
+          minimum: 0
+        cambiados:
+          type: integer
+          minimum: 0
+        bajasSinAplicar:
+          type: integer
+          minimum: 0
+        confirmadaEl:
+          description: Cuándo se aplicó; en una repetida, la primera vez.
+          type: string
+          format: date-time
+    ResultadoDeHistorial:
+      type: string
+      enum: [APLICADA, RECHAZADA, REPETIDA]
+    EntradaDeHistorial:
+      description: Un intento de confirmar una carga (glosario «Historial de cargas»), sin su contenido.
+      type: object
+      required: [usuario, momento, archivo, hash, resultado, nuevos, cambiados, bajasSinAplicar]
+      properties:
+        usuario:
+          type: string
+          example: datos.demo
+        momento:
+          type: string
+          format: date-time
+        archivo:
+          type: string
+          maxLength: 255
+          example: 06_docentes.csv
+        hash:
+          description: SHA-256 del archivo, en hexadecimal.
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+        resultado:
+          $ref: '#/components/schemas/ResultadoDeHistorial'
+        nuevos:
+          type: integer
+          minimum: 0
+        cambiados:
+          type: integer
+          minimum: 0
+        bajasSinAplicar:
+          type: integer
+          minimum: 0
+        motivo:
+          description: El código del catálogo si se rechazó.
+          type: string
+          example: CARGAS_CARGA_RECHAZADA

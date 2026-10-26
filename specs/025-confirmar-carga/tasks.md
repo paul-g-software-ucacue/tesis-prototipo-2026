@@ -26,7 +26,7 @@ description: "Tareas de F01-H04: vista previa y confirmación de la carga"
 - **[P]**: puede hacerse en cualquier orden respecto de las otras [P] de su fase.
 - **[Story]**: US1 a US5.
 - **Rutas:** relativas a la raíz. Abreviaturas:
-  - `PLC` = `backend/plataforma/cargas/src`;
+  - `PLC` = `backend/plataforma/lenguaje-cargas/src`;
   - `CAR` = `backend/servicios/cargas/src`;
   - `ACA` = `backend/servicios/academico/src`;
   - `DOC` = `backend/servicios/docentes/src`;
@@ -59,7 +59,7 @@ description: "Tareas de F01-H04: vista previa y confirmación de la carga"
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear `specs/025-confirmar-carga/evidencia.md` con estas secciones:
+- [X] T001 Crear `specs/025-confirmar-carga/evidencia.md` con estas secciones:
   - entorno;
   - base;
   - Académico A;
@@ -76,15 +76,15 @@ description: "Tareas de F01-H04: vista previa y confirmación de la carga"
 
 ## Phase 2: Foundational (bloquea a todas las historias)
 
-- [ ] T002 Registrar en `docs/decisiones.md` ADR-022, «El lenguaje publicado de las cargas en `:plataforma:cargas`», con su contexto, su decisión, sus alternativas (research §1) y sus consecuencias, y D-74 en el índice. Los dos llevan la aprobación del autor del 2026-10-26.
-- [ ] T003 En `contratos/cargas/openapi.yaml`:
+- [X] T002 Registrar en `docs/decisiones.md` ADR-022, «El lenguaje publicado de las cargas en `:plataforma:lenguaje-cargas`», con su contexto, su decisión, sus alternativas (research §1) y sus consecuencias, y D-74 en el índice. Los dos llevan la aprobación del autor del 2026-10-26.
+- [X] T003 En `contratos/cargas/openapi.yaml`:
   - `VistaPrevia` y `RegistroDeLaVista` dentro de `LecturaDeArchivo`;
   - `confirmarCarga`, con `multipart` de `archivo` y `huella` (`^[0-9a-f]{64}$`), el 200 `ResultadoDeConfirmacion` y el 409 con los 3 códigos;
   - `listarHistorial`, con `[CARGAS:LECTURA, DISTRIBUTIVO:LECTURA]`;
   - las descripciones, con los ejemplos de `contracts/cargas.md`.
 
   En `contratos/comun/errores.md`, agregar los 3 códigos de research §9 con sus 8 columnas. Regenerar y dejar `verificar:ruptura` en verde.
-- [ ] T004 [P] Crear el módulo `:plataforma:cargas` (`settings.gradle`, `build.gradle` con su comentario y `package-info.java` con `@NamedInterface("cargas")`). Primero las pruebas, en `PLC/test/java/ec/mdd/plataforma/cargas/MotorDelLoteTest.java`, sin dobles y con un traductor de prueba en memoria:
+- [X] T004 [P] Crear el módulo `:plataforma:lenguaje-cargas` (`settings.gradle`, `build.gradle` con su comentario y `package-info.java` con `@NamedInterface("cargas")`). Primero las pruebas, en `PLC/test/java/ec/mdd/plataforma/cargas/MotorDelLoteTest.java`, sin dobles y con un traductor de prueba en memoria:
   - los nuevos, los que cambian (con sus campos), las bajas (solo dentro del alcance que declara el traductor, como el periodo) y los iguales;
   - un `2.50` igual a `2.5`;
   - la huella estable al reordenar el archivo, y distinta si cambia un valor;
@@ -94,14 +94,14 @@ description: "Tareas de F01-H04: vista previa y confirmación de la carga"
   - los primeros 100 de cada tipo.
 
   Después crear `FilaDelLote`, `LoteDeCarga`, `TipoDeRegistro`, `CambioDeCampo`, `RegistroDeLaVista`, `VistaPreviaDelLote`, `ResultadoDelLote`, `RechazoDelLote`, `VistaPreviaDesactualizada`, `TraductorDeCarga`, `MotorDelLote` y `AplicadorDeCargas`, con JavaDoc que cite MD-13 y ADR-022.
-- [ ] T005 [P] El historial de Cargas. Primero las pruebas: `CAR/integrationTest/…/HistorialDeCargasJdbcIntegrationTest.java` (Testcontainers) y una prueba del esquema que lo haga fallar sin la migración. Debe comprobar:
+- [X] T005 [P] El historial de Cargas. Primero las pruebas: `CAR/integrationTest/…/HistorialDeCargasJdbcIntegrationTest.java` (Testcontainers) y una prueba del esquema que lo haga fallar sin la migración. Debe comprobar:
   - que guarda y lee cada resultado;
   - el orden de lo más reciente a lo más antiguo;
   - si hay una `APLICADA` con ese hash en esa carga;
   - los `check` (resultado, totales ≥ 0, hash de 64).
 
   Después crear `CAR/main/resources/db/migration/cargas/V2__historial_de_cargas.sql`, `EntradaDeHistorial` (dominio), `HistorialDeCargas` (puerto de salida) y `HistorialDeCargasJdbc`. Sumar `spring-boot-starter-jdbc` a `backend/servicios/cargas/build.gradle`, con su comentario, y crear `Transaccion` con `TransaccionSpring`, como en Docentes.
-- [ ] T006 Primero las pruebas, en `CAR/test/java/ec/mdd/cargas/aplicacion/ConfirmarCargaServicioTest.java` (Mockito, con aplicadores de prueba):
+- [X] T006 Primero las pruebas, en `CAR/test/java/ec/mdd/cargas/aplicacion/ConfirmarCargaServicioTest.java` (Mockito, con aplicadores de prueba):
   - con errores en las filas, `CargaConErrores` sin llamar al dueño, y su entrada `RECHAZADA` con el motivo `CARGAS_CARGA_CON_ERRORES`;
   - con un hash ya `APLICADA`, `REPETIDA` sin llamar al dueño, con la fecha de la primera y el intento registrado;
   - aplicada, con sus totales y su entrada;
@@ -110,7 +110,7 @@ description: "Tareas de F01-H04: vista previa y confirmación de la carga"
   - el lote lleva las filas sin errores, el hash SHA-256 de los bytes y el usuario.
 
   En `ValidarArchivoServicioTest` (ampliar): la vista previa sin errores; con errores, solo `filasConErrores`. En `ConfiguracionCargas`: arrancar falla si una carga no tiene aplicador o tiene dos (prueba con dos listas de aplicadores). Después crear `ConfirmarCarga`, `ConsultarHistorial`, sus servicios, `ArchivoValidado` con la vista previa y el reparto por carga.
-- [ ] T007 Primero las pruebas, en `SubidaContratoTest`, `HistorialContratoTest` (nuevo), `PermisosCargasTest` y `ErroresCargasTest` (ampliar), con aplicadores de prueba en `ReferenciasDePrueba`:
+- [X] T007 Primero las pruebas, en `SubidaContratoTest`, `HistorialContratoTest` (nuevo), `PermisosCargasTest` y `ErroresCargasTest` (ampliar), con aplicadores de prueba en `ReferenciasDePrueba`:
   - la vista previa en el 200;
   - `confirmarCarga` responde 200 aplicada, 200 repetida y los tres 409 con su código y su detalle `fila N · campo`;
   - una `huella` que no tiene 64 caracteres hexadecimales da 400;
@@ -141,7 +141,7 @@ description: "Tareas de F01-H04: vista previa y confirmación de la carga"
   - una segunda sede matriz en el archivo hace fallar la fila con `SedeMatrizExistente` y no aplica nada, ni las filas anteriores (SC-003);
   - dos aplicaciones a la vez con la misma huella aplican una sola vez.
 
-  Crear `AplicadorAcademico` (cargas 01 y 02 por ahora) y su bean en `ConfiguracionAcademico`, y sumar `project(':plataforma:cargas')` a su `build.gradle`. `ModulosTest` pasa. T008 y T009 pasan.
+  Crear `AplicadorAcademico` (cargas 01 y 02 por ahora) y su bean en `ConfiguracionAcademico`, y sumar `project(':plataforma:lenguaje-cargas')` a su `build.gradle`. `ModulosTest` pasa. T008 y T009 pasan.
 
 **Checkpoint**: en el perfil, confirmar la 01 hace válida la 02.
 
@@ -178,7 +178,7 @@ description: "Tareas de F01-H04: vista previa y confirmación de la carga"
   - un segundo coordinador vigente de la misma carrera (RN-12) rechaza la fila con `CoordinadorVigente` y no aplica nada;
   - un docente de medio tiempo con un cargo rechaza con `DocenteNoHabilitado`.
 
-  Crear `AplicadorDocentes` y su bean, y sumar `project(':plataforma:cargas')`. T013 y T014 pasan.
+  Crear `AplicadorDocentes` y su bean, y sumar `project(':plataforma:lenguaje-cargas')`. T013 y T014 pasan.
 
 ---
 
@@ -192,7 +192,7 @@ description: "Tareas de F01-H04: vista previa y confirmación de la carga"
   - un archivo con una fila de menos se rechaza con el motivo de Normativa;
   - `tipo_regla`, `referencia_normativa` y `observacion` no cuentan como cambio.
 
-  Crear `TraductorPolitica`, `AplicadorNormativa` y su bean, y sumar `project(':plataforma:cargas')`.
+  Crear `TraductorPolitica`, `AplicadorNormativa` y su bean, y sumar `project(':plataforma:lenguaje-cargas')`.
 
 **Checkpoint**: cada una de las 10 cargas tiene su dueño; Cargas arranca.
 
