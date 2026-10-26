@@ -167,13 +167,13 @@ description: "Tareas de F01-H04: vista previa y confirmación de la carga"
 
 ## Phase 5: US1 y US2 · Incremento C, Docentes 06, 08 y 09 (Priority: P1)
 
-- [ ] T013 [P] [US1] Primero las pruebas, en `DOC/test/java/ec/mdd/docentes/aplicacion/cargas/TraductoresDocentesTest.java`:
+- [X] T013 [P] [US1] Primero las pruebas, en `DOC/test/java/ec/mdd/docentes/aplicacion/cargas/TraductoresDocentesTest.java`:
   - **06:** los 47 docentes, con su ficha académica; las columnas que la ficha no guarda no cuentan (la tarea las enumera en el JavaDoc del traductor, desde `DocentesDePrueba`); un cambio de dedicación cuenta; `estado` (ACTIVO, LICENCIA, INACTIVO) se compara y se aplica con `cambiarEstado` de `MantenerDocentes`.
   - **08:** los 21 cargos, por su clave compuesta.
   - **09:** los 11 proyectos, con sus participantes.
 
   Crear `TraductorDocentes`, `TraductorCargos` y `TraductorProyectos` desde `DocentesDePrueba` y `CargasDePrueba`, que pasan a reusarlos.
-- [ ] T014 [US2] Primero las pruebas, en `DOC/integrationTest/…/AplicadorDocentesIntegrationTest.java`:
+- [X] T014 [US2] Primero las pruebas, en `DOC/integrationTest/…/AplicadorDocentesIntegrationTest.java`:
   - confirmar la 06, la 08 y la 09 sobre las referencias de Académico de prueba las deja aplicadas;
   - un segundo coordinador vigente de la misma carrera (RN-12) rechaza la fila con `CoordinadorVigente` y no aplica nada;
   - un docente de medio tiempo con un cargo rechaza con `DocenteNoHabilitado`.

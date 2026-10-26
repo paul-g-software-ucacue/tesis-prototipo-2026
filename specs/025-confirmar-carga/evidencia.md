@@ -42,6 +42,8 @@ Registro de las comprobaciones de la historia (issue #30): la vista previa de ca
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Los traductores de la 06, 08 y 09 (Mockito) | `TraductoresDocentesTest`, 5 de 5: **los 47 docentes, los 21 cargos y los 11 proyectos del archivo de prueba son iguales a los que construyen las pruebas de Docentes desde el mismo archivo** (la traducción es fiel, con la ficha académica y las listas); pasar un docente a licencia cambia solo el estado y se aplica con `cambiarEstado`; el tipo de identificación no cambia; un `DatoInvalido` se rechaza con su campo; un cargo nuevo se registra con `MantenerCargos` | `./gradlew :servicios:docentes:test` | 2026-10-26 |
+| **La 06, 08 y 09 en su orden** (PostgreSQL) | `AplicadorDocentesIntegrationTest`, 3 de 3: 47 docentes, 21 cargos y 11 proyectos aplicados, y subidos otra vez, todos iguales; **un segundo coordinador vigente de la misma carrera rechaza la fila 23 con `CoordinadorVigente` (RN-12) sin aplicar ninguno de los 21 cargos**; un cargo para un docente de medio tiempo, `DocenteNoHabilitado`, sin cambios | `./gradlew :servicios:docentes:integrationTest` | 2026-10-26 |
 
 ## Normativa: la política
 

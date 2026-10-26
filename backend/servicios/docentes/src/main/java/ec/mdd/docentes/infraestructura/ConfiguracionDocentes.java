@@ -14,6 +14,7 @@ import ec.mdd.docentes.aplicacion.ConsultarProyectosServicio;
 import ec.mdd.docentes.aplicacion.MantenerCargosServicio;
 import ec.mdd.docentes.aplicacion.MantenerDocentesServicio;
 import ec.mdd.docentes.aplicacion.MantenerProyectosServicio;
+import ec.mdd.docentes.aplicacion.cargas.CargasDeDocentes;
 import ec.mdd.docentes.puertos.entrada.ConsultarCargos;
 import ec.mdd.docentes.puertos.entrada.ConsultarDocentes;
 import ec.mdd.docentes.puertos.entrada.ConsultarIdentificaciones;
@@ -27,6 +28,7 @@ import ec.mdd.docentes.puertos.salida.RepositorioCargos;
 import ec.mdd.docentes.puertos.salida.RepositorioDocentes;
 import ec.mdd.docentes.puertos.salida.RepositorioProyectos;
 import ec.mdd.docentes.puertos.salida.Transaccion;
+import ec.mdd.plataforma.cargas.AplicadorDeCargas;
 import java.time.Clock;
 import java.time.ZoneId;
 import org.springframework.context.annotation.Bean;
@@ -76,6 +78,29 @@ public class ConfiguracionDocentes {
     /**
      * Registrar, corregir y cambiar el estado de los docentes, con su registro (FR-003, FR-010).
      */
+    /**
+     * Las cargas de Docentes (F01-H04, MD-13, ADR-022): la vista previa y la aplicación completa o
+     * nada de cada lote de las cargas 06, 08 y 09, con los casos de uso de siempre.
+     */
+    @Bean
+    public AplicadorDeCargas aplicadorDocentes(
+            Transaccion transaccionDocentes,
+            RepositorioDocentes repositorioDocentes,
+            MantenerDocentes mantenerDocentes,
+            RepositorioCargos repositorioCargos,
+            MantenerCargos mantenerCargos,
+            RepositorioProyectos repositorioProyectos,
+            MantenerProyectos mantenerProyectos) {
+        return CargasDeDocentes.aplicador(
+                transaccionDocentes,
+                repositorioDocentes,
+                mantenerDocentes,
+                repositorioCargos,
+                mantenerCargos,
+                repositorioProyectos,
+                mantenerProyectos);
+    }
+
     /** La API publicada para Cargas (F01-H03): solo las identificaciones. */
     @Bean
     public ConsultarIdentificaciones consultarIdentificaciones(RepositorioDocentes repositorio) {

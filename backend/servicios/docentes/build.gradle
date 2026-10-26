@@ -12,6 +12,9 @@ dependencies {
     // Académico: solo ec.mdd.academico.puertos.entrada (F03-H04, research §4; como Académico con
     // Normativa).
     implementation project(':servicios:academico')
+    // El lenguaje publicado de las cargas (ADR-022): Docentes es dueño de las cargas 06, 08 y 09 y
+    // las aplica completas o nada (F01-H04, MD-13).
+    implementation project(':plataforma:lenguaje-cargas')
     // Los docentes en el esquema docentes, con JdbcClient, como Académico.
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     // La ficha académica y el detalle de cada cambio en jsonb (FR-002, FR-010).
