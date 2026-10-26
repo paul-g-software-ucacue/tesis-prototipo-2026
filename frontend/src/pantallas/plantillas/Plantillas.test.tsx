@@ -8,7 +8,12 @@ import { instalarApiSimulada, json, type ApiSimulada } from '../../pruebas/apiSi
 import { montarSpa } from '../../pruebas/montarSpa';
 import { FalloDeApi } from '../../errores/traducir';
 import { cerrarSesion, iniciarSesion } from '../../sesion/almacen';
-import { subirArchivo } from './consultas';
+import {
+  descargarInforme,
+  subirArchivo,
+  type LecturaDeArchivo,
+  type ProblemaDeFila,
+} from './consultas';
 import { DICCIONARIO } from './datosDePrueba';
 
 // En jsdom, FormData y File son de jsdom y el Request de Node no los acepta: la subida se simula
@@ -16,7 +21,48 @@ import { DICCIONARIO } from './datosDePrueba';
 vi.mock('./consultas', async (original) => ({
   ...(await original<typeof import('./consultas')>()),
   subirArchivo: vi.fn(),
+  descargarInforme: vi.fn(),
 }));
+
+const DOCENTES = 'Docentes contratados (con ficha académica)';
+
+function lectura(problemas: ProblemaDeFila[], total = problemas.length): LecturaDeArchivo {
+  const errores = problemas.filter((problema) => problema.tipo === 'ERROR').length;
+  return {
+    carga: 'docentes',
+    archivo: '06_docentes.csv',
+    formato: 'CSV',
+    registros: 47,
+    valido: errores === 0,
+    errores: total === problemas.length ? errores : total,
+    advertencias: problemas.length - errores,
+    problemas,
+  };
+}
+
+const CEDULA_SIN_CERO: ProblemaDeFila = {
+  fila: 2,
+  campo: 'numero_identificacion',
+  valor: '109990010',
+  motivo: 'Cédula inválida o sin cero inicial: le falta el 0 inicial.',
+  tipo: 'ERROR',
+  sugerencia: '0109990010',
+};
+
+const ESPACIOS: ProblemaDeFila = {
+  fila: 4,
+  campo: 'dedicacion',
+  valor: 'TC',
+  motivo: 'Tiene espacios en los extremos: se quitan.',
+  tipo: 'ADVERTENCIA',
+};
+
+async function subirDocentes(): Promise<File> {
+  const usuario = userEvent.setup();
+  const archivo = new File(['tipo_identificacion\n'], '06_docentes.csv', { type: 'text/csv' });
+  await usuario.upload(await screen.findByLabelText(`Archivo de ${DOCENTES}`), archivo);
+  return archivo;
+}
 
 function sesionCon(simulada: ApiSimulada, usuario: string, permisos: string[]) {
   simulada.responder(
@@ -78,6 +124,7 @@ describe('Plantillas de carga', () => {
     cerrarSesion();
     vi.restoreAllMocks();
     vi.mocked(subirArchivo).mockReset();
+    vi.mocked(descargarInforme).mockReset();
   });
 
   it('muestra las 10 cargas en su orden, con sus dependencias, su obligatoriedad y sus columnas', async () => {
@@ -211,12 +258,7 @@ describe('Plantillas de carga', () => {
 
   it('con «Cargas: escritura» sube un archivo a su carga y muestra los registros leídos', async () => {
     sesionCon(simulada, 'consolidacion.demo', ['DISTRIBUTIVO:LECTURA', 'CARGAS:ESCRITURA']);
-    vi.mocked(subirArchivo).mockResolvedValue({
-      carga: 'docentes',
-      archivo: '06_docentes.csv',
-      formato: 'CSV',
-      registros: 47,
-    });
+    vi.mocked(subirArchivo).mockResolvedValue(lectura([]));
     const usuario = userEvent.setup();
     montarSpa('/plantillas');
 
@@ -231,12 +273,103 @@ describe('Plantillas de carga', () => {
     );
 
     expect(await screen.findByRole('status')).toHaveTextContent(
-      '06_docentes.csv: 47 registros leídos.',
+      '06_docentes.csv es válido: 47 registros leídos.',
     );
+    expect(screen.queryByRole('table', { name: /^Problemas de/ })).not.toBeInTheDocument();
     expect(subirArchivo).toHaveBeenCalledWith(
       expect.objectContaining({ codigo: 'docentes' }),
       archivo,
     );
+  });
+
+  it('si las filas tienen errores, dice que está rechazado y muestra cada problema', async () => {
+    sesionCon(simulada, 'consolidacion.demo', ['CARGAS:LECTURA', 'CARGAS:ESCRITURA']);
+    vi.mocked(subirArchivo).mockResolvedValue(lectura([CEDULA_SIN_CERO, ESPACIOS]));
+    montarSpa('/plantillas');
+
+    await subirDocentes();
+
+    const estado = await screen.findByRole('status');
+    expect(estado).toHaveTextContent(
+      '06_docentes.csv está rechazado: 1 error y 1 advertencia. Corríjalo y vuelva a subirlo.',
+    );
+    const tabla = screen.getByRole('table', { name: 'Problemas de 06_docentes.csv' });
+    const [encabezado, cedula, espacios] = within(tabla).getAllByRole('row');
+    expect(encabezado).toHaveTextContent('FilaCampoValorMotivoTipoSugerencia');
+    expect(cedula).toHaveTextContent(
+      '2numero_identificacion109990010Cédula inválida o sin cero inicial: le falta el 0 inicial.Error0109990010',
+    );
+    expect(espacios).toHaveTextContent(
+      '4dedicacionTCTiene espacios en los extremos: se quitan.Advertencia',
+    );
+  });
+
+  it('si solo tiene advertencias, es válido y las muestra', async () => {
+    sesionCon(simulada, 'consolidacion.demo', ['CARGAS:LECTURA', 'CARGAS:ESCRITURA']);
+    vi.mocked(subirArchivo).mockResolvedValue(lectura([ESPACIOS]));
+    montarSpa('/plantillas');
+
+    await subirDocentes();
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      '06_docentes.csv es válido, con 1 advertencia: 47 registros leídos.',
+    );
+    expect(screen.getByRole('table', { name: 'Problemas de 06_docentes.csv' })).toBeInTheDocument();
+  });
+
+  it('con más de 100 problemas muestra los primeros y dice cuántos hay', async () => {
+    sesionCon(simulada, 'consolidacion.demo', ['CARGAS:LECTURA', 'CARGAS:ESCRITURA']);
+    const cien = Array.from({ length: 100 }, (_, i) => ({ ...CEDULA_SIN_CERO, fila: i + 2 }));
+    vi.mocked(subirArchivo).mockResolvedValue(lectura(cien, 150));
+    montarSpa('/plantillas');
+
+    await subirDocentes();
+
+    expect(
+      await screen.findByText('Se muestran 100 de 150; el informe los trae todos.'),
+    ).toBeInTheDocument();
+    const tabla = screen.getByRole('table', { name: 'Problemas de 06_docentes.csv' });
+    expect(within(tabla).getAllByRole('row')).toHaveLength(101);
+  });
+
+  it('descarga el informe enviando de nuevo el mismo archivo', async () => {
+    sesionCon(simulada, 'consolidacion.demo', ['CARGAS:LECTURA', 'CARGAS:ESCRITURA']);
+    vi.mocked(subirArchivo).mockResolvedValue(lectura([CEDULA_SIN_CERO]));
+    vi.mocked(descargarInforme).mockResolvedValue();
+    const usuario = userEvent.setup();
+    montarSpa('/plantillas');
+
+    const archivo = await subirDocentes();
+    await usuario.click(
+      await screen.findByRole('button', { name: 'Descargar el informe de 06_docentes.csv' }),
+    );
+
+    expect(descargarInforme).toHaveBeenCalledWith(
+      expect.objectContaining({ codigo: 'docentes' }),
+      archivo,
+    );
+  });
+
+  it('si la descarga del informe falla, muestra el error', async () => {
+    sesionCon(simulada, 'consolidacion.demo', ['CARGAS:LECTURA', 'CARGAS:ESCRITURA']);
+    vi.mocked(subirArchivo).mockResolvedValue(lectura([CEDULA_SIN_CERO]));
+    vi.mocked(descargarInforme).mockRejectedValue(
+      new FalloDeApi(503, {
+        codigo: 'COMUN_SERVICIO_NO_DISPONIBLE',
+        titulo: 'Servicio no disponible',
+        descripcion: 'Intente de nuevo en unos minutos.',
+        detalles: [],
+      }),
+    );
+    const usuario = userEvent.setup();
+    montarSpa('/plantillas');
+
+    await subirDocentes();
+    await usuario.click(
+      await screen.findByRole('button', { name: 'Descargar el informe de 06_docentes.csv' }),
+    );
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Servicio no disponible');
   });
 
   it('si el archivo se rechaza, muestra el título, la descripción y cada detalle', async () => {

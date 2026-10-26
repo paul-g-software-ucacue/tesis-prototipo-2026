@@ -33,7 +33,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
  */
 @WebMvcTest(PlantillasControlador.class)
 @ImportAutoConfiguration({SeguridadProcesoAutoConfiguracion.class, ErroresAutoConfiguracion.class})
-@Import(ConfiguracionCargas.class)
+@Import({ConfiguracionCargas.class, ReferenciasDePrueba.class})
 @TestPropertySource(
         properties =
                 "spring.security.oauth2.resourceserver.jwt.jwk-set-uri=http://127.0.0.1:9/jwks")

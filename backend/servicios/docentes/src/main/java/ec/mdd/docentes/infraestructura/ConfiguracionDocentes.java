@@ -9,12 +9,14 @@ import ec.mdd.docentes.adaptadores.salida.RepositorioProyectosJdbc;
 import ec.mdd.docentes.adaptadores.salida.TransaccionSpring;
 import ec.mdd.docentes.aplicacion.ConsultarCargosServicio;
 import ec.mdd.docentes.aplicacion.ConsultarDocentesServicio;
+import ec.mdd.docentes.aplicacion.ConsultarIdentificacionesServicio;
 import ec.mdd.docentes.aplicacion.ConsultarProyectosServicio;
 import ec.mdd.docentes.aplicacion.MantenerCargosServicio;
 import ec.mdd.docentes.aplicacion.MantenerDocentesServicio;
 import ec.mdd.docentes.aplicacion.MantenerProyectosServicio;
 import ec.mdd.docentes.puertos.entrada.ConsultarCargos;
 import ec.mdd.docentes.puertos.entrada.ConsultarDocentes;
+import ec.mdd.docentes.puertos.entrada.ConsultarIdentificaciones;
 import ec.mdd.docentes.puertos.entrada.ConsultarProyectos;
 import ec.mdd.docentes.puertos.entrada.MantenerCargos;
 import ec.mdd.docentes.puertos.entrada.MantenerDocentes;
@@ -74,6 +76,12 @@ public class ConfiguracionDocentes {
     /**
      * Registrar, corregir y cambiar el estado de los docentes, con su registro (FR-003, FR-010).
      */
+    /** La API publicada para Cargas (F01-H03): solo las identificaciones. */
+    @Bean
+    public ConsultarIdentificaciones consultarIdentificaciones(RepositorioDocentes repositorio) {
+        return new ConsultarIdentificacionesServicio(repositorio);
+    }
+
     @Bean
     public MantenerDocentes mantenerDocentes(
             RepositorioDocentes repositorio,

@@ -1,5 +1,5 @@
 // Los tipos, la consulta y las descargas de la pantalla «Plantillas de carga» (contratos/cargas,
-// F01-H01).
+// F01-H01), la subida (F01-H02) y el informe de las filas (F01-H03).
 import { useQuery } from '@tanstack/react-query';
 import { apiCargas, llamar } from '../../api/cliente';
 import type { components } from '../../api/generado/cargas';
@@ -10,6 +10,7 @@ export type Carga = components['schemas']['Carga'];
 export type ColumnaDeCarga = components['schemas']['ColumnaDeCarga'];
 export type Obligatoriedad = components['schemas']['Obligatoriedad'];
 export type LecturaDeArchivo = components['schemas']['LecturaDeArchivo'];
+export type ProblemaDeFila = components['schemas']['ProblemaDeFila'];
 
 /** El diccionario de datos de las 10 cargas; no cambia mientras el servidor corre. */
 export function useDiccionario() {
@@ -36,10 +37,15 @@ export async function descargar(carga: Carga, que: Descarga): Promise<void> {
   if (!response.ok || !data) {
     throw new FalloDeApi(response.status, error);
   }
-  const nombre =
-    /filename="([^"]+)"/.exec(response.headers.get('Content-Disposition') ?? '')?.[1] ??
-    (que === 'plantilla' ? carga.archivo : carga.archivo.replace('.csv', '_diccionario.csv'));
-  guardar(data, nombre);
+  guardar(
+    data,
+    nombreDelServidor(response) ??
+      (que === 'plantilla' ? carga.archivo : carga.archivo.replace('.csv', '_diccionario.csv')),
+  );
+}
+
+function nombreDelServidor(respuesta: Response): string | undefined {
+  return /filename="([^"]+)"/.exec(respuesta.headers.get('Content-Disposition') ?? '')?.[1];
 }
 
 function guardar(contenido: Blob, nombre: string) {
@@ -62,21 +68,42 @@ export const ARCHIVO_DEMASIADO_GRANDE = {
   detalles: [],
 };
 
+/** El cuerpo multipart con el archivo, tal como lo piden las dos operaciones de la subida. */
+function conElArchivo(carga: Carga, archivo: File) {
+  return {
+    params: { path: { codigo: carga.codigo } },
+    // El contrato tipa la parte binaria como texto; va el archivo tal cual, en un FormData.
+    body: { archivo: archivo as unknown as string },
+    bodySerializer: (cuerpo: { archivo: string }) => {
+      const formulario = new FormData();
+      formulario.append('archivo', cuerpo.archivo as unknown as File);
+      return formulario;
+    },
+  };
+}
+
 /**
- * Sube el archivo a su carga para validar su estructura (F01-H02). El servidor no lo guarda; responde
- * cuántos registros leyó o rechaza con su código.
+ * Sube el archivo a su carga para validar su estructura (F01-H02) y sus filas (F01-H03). El servidor
+ * no lo guarda; responde el informe, también si las filas tienen errores, o rechaza la estructura
+ * con su código.
  */
 export function subirArchivo(carga: Carga, archivo: File): Promise<LecturaDeArchivo> {
   return llamar(
-    apiCargas.POST('/api/cargas/plantillas/{codigo}/archivo', {
-      params: { path: { codigo: carga.codigo } },
-      // El contrato tipa la parte binaria como texto; va el archivo tal cual, en un FormData.
-      body: { archivo: archivo as unknown as string },
-      bodySerializer: (cuerpo) => {
-        const formulario = new FormData();
-        formulario.append('archivo', cuerpo.archivo as unknown as File);
-        return formulario;
-      },
-    }),
+    apiCargas.POST('/api/cargas/plantillas/{codigo}/archivo', conElArchivo(carga, archivo)),
   );
+}
+
+/**
+ * Vuelve a enviar el mismo archivo para descargar todo su informe en CSV (F01-H03, research §12): el
+ * servidor no guardó nada y lo valida de nuevo.
+ */
+export async function descargarInforme(carga: Carga, archivo: File): Promise<void> {
+  const { data, error, response } = await apiCargas.POST(
+    '/api/cargas/plantillas/{codigo}/archivo/informe',
+    { ...conElArchivo(carga, archivo), parseAs: 'blob' },
+  );
+  if (!response.ok || !data) {
+    throw new FalloDeApi(response.status, error);
+  }
+  guardar(data, nombreDelServidor(response) ?? `informe-${carga.codigo}.csv`);
 }

@@ -10,8 +10,9 @@ import java.util.Set;
 /**
  * El diccionario de datos de las 10 cargas: sus columnas, las convenciones comunes y los catálogos
  * (RF-05, ERS §8.3, glosario «Diccionario de datos»). Es la definición de la que salen la plantilla
- * y el diccionario de cada carga, y con la que se validarán las cargas (F01-H02). Una definición
- * incompleta lanza {@link IllegalArgumentException} con la carga y la columna.
+ * y el diccionario de cada carga, y con la que se validan las cargas y sus filas (F01-H02,
+ * F01-H03). Una definición incompleta lanza {@link IllegalArgumentException} con la carga y la
+ * columna.
  */
 public final class DiccionarioDeDatos {
 
@@ -21,6 +22,7 @@ public final class DiccionarioDeDatos {
     private final List<Carga> cargas;
     private final List<Convencion> convenciones;
     private final Map<String, Catalogo> catalogos = new LinkedHashMap<>();
+    private final Map<String, ValidadorDeFilas> validadores = new LinkedHashMap<>();
 
     /**
      * Valida la definición completa.
@@ -90,6 +92,17 @@ public final class DiccionarioDeDatos {
         }
         this.cargas = List.copyOf(cargas);
         this.convenciones = List.copyOf(convenciones);
+        for (Carga carga : this.cargas) {
+            validadores.put(
+                    carga.codigo(),
+                    new ValidadorDeFilas(
+                            carga,
+                            columna ->
+                                    valoresDe(columna).stream()
+                                            .map(ValorDeCatalogo::codigo)
+                                            .toList(),
+                            this::valoresDeOtraCarga));
+        }
     }
 
     /** Las 10 cargas, en el orden de la ERS §8.3. */
@@ -118,6 +131,25 @@ public final class DiccionarioDeDatos {
                 .map(catalogos::get)
                 .map(Catalogo::valores)
                 .orElse(List.of());
+    }
+
+    /**
+     * El validador de las filas de una carga, con sus reglas leídas al construir el diccionario
+     * (FR-012).
+     */
+    public ValidadorDeFilas validador(Carga carga) {
+        return validadores.get(carga.codigo());
+    }
+
+    /** Los valores permitidos de una columna de una carga anterior, como «02.modalidad». */
+    private List<String> valoresDeOtraCarga(int numero, String campo) {
+        ValidadorDeFilas anterior = validadores.get(cargas.get(numero - 1).codigo());
+        if (anterior == null) {
+            throw new IllegalArgumentException(
+                    "Una columna solo puede tomar los valores de una carga anterior, no de la "
+                            + numero);
+        }
+        return anterior.reglas(campo).valoresPermitidos();
     }
 
     /** Cuántas columnas tienen las 10 cargas juntas. */

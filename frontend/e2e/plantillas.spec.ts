@@ -136,6 +136,40 @@ interface Subida {
   cuerpo: string;
 }
 
+// El problema que el servidor real da a una cédula de 9 dígitos (F01-H03, RF-08).
+const CEDULA_SIN_CERO = {
+  fila: 2,
+  campo: 'numero_identificacion',
+  valor: '109990010',
+  motivo: 'Cédula inválida o sin cero inicial: le falta el 0 inicial.',
+  tipo: 'ERROR',
+  sugerencia: '0109990010',
+};
+
+// El informe en CSV, como lo escribe el servidor: con el BOM y la celda neutralizada.
+async function simularInforme(pagina: Page): Promise<Subida[]> {
+  const informes: Subida[] = [];
+  await pagina.route('**/api/cargas/plantillas/*/archivo/informe', async (ruta) => {
+    const peticion = ruta.request();
+    informes.push({
+      autorizacion: await peticion.headerValue('Authorization'),
+      tipo: await peticion.headerValue('Content-Type'),
+      cuerpo: peticion.postDataBuffer()?.toString('utf8') ?? '',
+    });
+    await ruta.fulfill({
+      status: 200,
+      headers: {
+        'Content-Type': 'text/csv;charset=UTF-8',
+        'Content-Disposition': 'attachment; filename="informe-docentes.csv"',
+      },
+      body:
+        '\uFEFFfila,campo,valor,motivo,tipo,sugerencia\r\n' +
+        '2,numero_identificacion,109990010,Cédula inválida o sin cero inicial: le falta el 0 inicial.,ERROR,0109990010\r\n',
+    });
+  });
+  return informes;
+}
+
 async function simularSubidas(pagina: Page): Promise<Subida[]> {
   const subidas: Subida[] = [];
   await pagina.route('**/api/cargas/plantillas/*/archivo', async (ruta) => {
@@ -146,8 +180,20 @@ async function simularSubidas(pagina: Page): Promise<Subida[]> {
       cuerpo: peticion.postDataBuffer()?.toString('utf8') ?? '',
     });
     if (peticion.url().includes('/docentes/')) {
+      const conCedulaSinCero = (peticion.postDataBuffer()?.toString('utf8') ?? '').includes(
+        '109990010,',
+      );
       await ruta.fulfill({
-        json: { carga: 'docentes', archivo: '06_docentes.csv', formato: 'CSV', registros: 47 },
+        json: {
+          carga: 'docentes',
+          archivo: '06_docentes.csv',
+          formato: 'CSV',
+          registros: 47,
+          valido: !conCedulaSinCero,
+          errores: conCedulaSinCero ? 1 : 0,
+          advertencias: 0,
+          problemas: conCedulaSinCero ? [CEDULA_SIN_CERO] : [],
+        },
       });
       return;
     }
@@ -247,7 +293,9 @@ test('el Responsable de consolidación sube el CSV de docentes y ve los registro
       buffer: Buffer.from(DOCENTES.join(',') + '\r\n'),
     });
 
-  await expect(page.getByRole('status')).toHaveText('06_docentes.csv: 47 registros leídos.');
+  await expect(page.getByRole('status')).toHaveText(
+    '06_docentes.csv es válido: 47 registros leídos.',
+  );
   expect(subidas).toHaveLength(1);
   expect(subidas[0]?.autorizacion).toMatch(/^Bearer /);
   expect(subidas[0]?.tipo).toMatch(/^multipart\/form-data; boundary=/);
@@ -269,4 +317,40 @@ test('un archivo de carreras sin una columna muestra cuál falta', async ({ page
   await expect(aviso).toContainText('Encabezados distintos de la plantilla');
   await expect(aviso).toContainText('codigo_carrera: Falta en el archivo.');
   await sinFallas(page);
+});
+
+test('una cédula sin el cero inicial se ve con su sugerencia y el informe se descarga', async ({
+  page,
+}) => {
+  await simularSubidas(page);
+  const informes = await simularInforme(page);
+  await abrirPlantillas(page);
+  const fila = ['CEDULA', '109990010', ...DOCENTES.slice(2).map(() => 'X')].join(',');
+
+  await page
+    .getByLabel('Archivo de Docentes contratados (con ficha académica)', { exact: true })
+    .setInputFiles({
+      name: '06_docentes.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.from(DOCENTES.join(',') + '\r\n' + fila + '\r\n'),
+    });
+
+  await expect(page.getByRole('status')).toHaveText(
+    '06_docentes.csv está rechazado: 1 error y 0 advertencias. Corríjalo y vuelva a subirlo.',
+  );
+  const problemas = page.getByRole('table', { name: 'Problemas de 06_docentes.csv' });
+  await expect(problemas.getByRole('row').nth(1)).toContainText('0109990010');
+  await sinFallas(page);
+
+  const descarga = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Descargar el informe de 06_docentes.csv' }).click();
+  const informe = await descarga;
+  expect(informe.suggestedFilename()).toBe('informe-docentes.csv');
+  const contenido = await readFile(await informe.path(), 'utf8');
+  expect(contenido.replace('\uFEFF', '').split('\r\n')[0]).toBe(
+    'fila,campo,valor,motivo,tipo,sugerencia',
+  );
+  expect(informes).toHaveLength(1);
+  expect(informes[0]?.autorizacion).toMatch(/^Bearer /);
+  expect(informes[0]?.cuerpo).toContain('name="archivo"; filename="06_docentes.csv"');
 });

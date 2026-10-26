@@ -37,7 +37,7 @@ import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequ
  */
 @WebMvcTest(SubidaControlador.class)
 @ImportAutoConfiguration({SeguridadProcesoAutoConfiguracion.class, ErroresAutoConfiguracion.class})
-@Import({ConfiguracionCargas.class, ErroresCargas.class})
+@Import({ConfiguracionCargas.class, ErroresCargas.class, ReferenciasDePrueba.class})
 @TestPropertySource(
         properties =
                 "spring.security.oauth2.resourceserver.jwt.jwk-set-uri=http://127.0.0.1:9/jwks")
@@ -58,8 +58,73 @@ class SubidaContratoTest {
                 .containsEntry("carga", "docentes")
                 .containsEntry("archivo", "06_docentes.csv")
                 .containsEntry("formato", "CSV")
-                .containsEntry("registros", 47);
+                .containsEntry("registros", 47)
+                .containsEntry("valido", true)
+                .containsEntry("errores", 0)
+                .containsEntry("advertencias", 0)
+                .containsEntry("problemas", List.of());
         contrato.validar(resultado);
+    }
+
+    @Test
+    void dadaUnaCedulaSinElCero_cuandoSeSube_entonces200ConElInformeYLaSugerencia(
+            CapturedOutput salida) throws Exception {
+        MvcResult resultado =
+                subir("docentes", "06_docentes.csv", docentesCon("0109990010", "109990010"));
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(JsonPath.<Map<String, Object>>read(cuerpo(resultado), "$"))
+                .containsEntry("valido", false)
+                .containsEntry("errores", 1)
+                .containsEntry("advertencias", 0);
+        assertThat(JsonPath.<Map<String, Object>>read(cuerpo(resultado), "$.problemas[0]"))
+                .containsEntry("fila", 2)
+                .containsEntry("campo", "numero_identificacion")
+                .containsEntry("valor", "109990010")
+                .containsEntry(
+                        "motivo", "Cédula inválida o sin cero inicial: le falta el 0 inicial.")
+                .containsEntry("tipo", "ERROR")
+                .containsEntry("sugerencia", "0109990010");
+        contrato.validar(resultado);
+        assertThat(salida.getAll()).doesNotContain("109990010");
+    }
+
+    @Test
+    void dadoUnValorQueEmpiezaComoFormula_cuandoSeDescargaElInforme_entoncesCsvNeutralizado()
+            throws Exception {
+        MockMultipartHttpServletRequestBuilder peticion =
+                multipart("/api/cargas/plantillas/docentes/archivo/informe");
+        peticion.file(
+                new MockMultipartFile(
+                        "archivo", "06_docentes.csv", "text/csv", docentesCon(",TC,", ",=1+1,")));
+
+        MvcResult resultado = mvc.perform(peticion.with(escritura())).andReturn();
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentType()).startsWith("text/csv");
+        assertThat(resultado.getResponse().getHeader("Content-Disposition"))
+                .contains("informe-docentes.csv");
+        String csv = cuerpo(resultado);
+        assertThat(csv)
+                .startsWith("\uFEFFfila,campo,valor,motivo,tipo,sugerencia\r\n")
+                .contains("2,dedicacion,'=1+1,Tiene 4 caracteres; el máximo es 2.,ERROR,")
+                .doesNotContain(",=1+1");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnArchivoRechazado_cuandoSeSubeElCorregido_entoncesSeValidaDesdeCero()
+            throws Exception {
+        MvcResult rechazado =
+                subir("docentes", "06_docentes.csv", docentesCon("0109990010", "109990010"));
+        MvcResult corregido =
+                subir("docentes", "06_docentes.csv", DatosDePrueba.contenido("06_docentes.csv"));
+
+        assertThat(JsonPath.<Boolean>read(cuerpo(rechazado), "$.valido")).isFalse();
+        assertThat(JsonPath.<Map<String, Object>>read(cuerpo(corregido), "$"))
+                .containsEntry("valido", true)
+                .containsEntry("errores", 0)
+                .containsEntry("problemas", List.of());
     }
 
     @Test
@@ -229,6 +294,12 @@ class SubidaContratoTest {
         peticion.file(
                 new MockMultipartFile("archivo", nombre, "application/octet-stream", contenido));
         return mvc.perform(peticion.with(escritura())).andReturn();
+    }
+
+    /** El archivo de docentes de prueba con el primer texto cambiado. */
+    private static byte[] docentesCon(String antes, String despues) {
+        String csv = new String(DatosDePrueba.contenido("06_docentes.csv"), UTF_8);
+        return csv.replaceFirst(java.util.regex.Pattern.quote(antes), despues).getBytes(UTF_8);
     }
 
     static String cuerpo(MvcResult resultado) throws Exception {

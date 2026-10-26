@@ -84,7 +84,7 @@ class LectorXlsxTest {
 
         assertThat(tabla.filas())
                 .containsExactly(List.of("1", "", ""), List.of("", "", ""), List.of("4", "5", ""));
-        assertThat(tabla.registros()).isEqualTo(3);
+        assertThat(tabla.registros()).isEqualTo(2);
     }
 
     @Test

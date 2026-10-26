@@ -84,7 +84,7 @@ class LectorCsvTest {
                         List.of("4", "5", "6"),
                         List.of("", "", ""),
                         List.of("", "", ""));
-        assertThat(tabla.registros()).isEqualTo(5);
+        assertThat(tabla.registros()).isEqualTo(2);
     }
 
     @Test
@@ -126,7 +126,7 @@ class LectorCsvTest {
         assertThatThrownBy(() -> lector.leer(bytes("a,b,c\n1,2,3\n4,5\n")))
                 .isInstanceOf(ArchivoIlegible.class)
                 .hasMessage("La fila 3 tiene 2 valores y los encabezados, 3.");
-        assertThat(lector.leer(bytes("a,b,c\n1,2,3\n\n4,5,6\n")).registros()).isEqualTo(3);
+        assertThat(lector.leer(bytes("a,b,c\n1,2,3\n\n4,5,6\n")).registros()).isEqualTo(2);
     }
 
     @Test
