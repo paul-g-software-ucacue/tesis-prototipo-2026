@@ -104,7 +104,9 @@ public final class MotorDelLote {
             } catch (RechazoDelLote | VistaPreviaDesactualizada error) {
                 throw error;
             } catch (RuntimeException error) {
-                throw new RechazoDelLote(fila.fila(), error);
+                throw traductor
+                        .rechazo(fila, error)
+                        .orElseGet(() -> new RechazoDelLote(fila.fila(), error));
             }
         }
         return new ResultadoDelLote(nuevos, cambiados, vista.cuantos(TipoDeRegistro.BAJA));

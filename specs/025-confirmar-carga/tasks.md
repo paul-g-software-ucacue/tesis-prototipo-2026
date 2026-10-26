@@ -128,7 +128,7 @@ description: "Tareas de F01-H04: vista previa y confirmación de la carga"
 
 **Goal**: la vista previa y la confirmación de la estructura orgánica y de las carreras: la carga en orden empieza a funcionar.
 
-- [ ] T008 [US1] Primero las pruebas, en `ACA/test/java/ec/mdd/academico/aplicacion/cargas/TraductoresAcademicoATest.java` (Mockito para los casos de uso y los 2 archivos de prueba):
+- [X] T008 [US1] Primero las pruebas, en `ACA/test/java/ec/mdd/academico/aplicacion/cargas/TraductoresAcademicoATest.java` (Mockito para los casos de uso y los 2 archivos de prueba):
   - las 24 unidades de la 01 y las 7 carreras de la 02 son nuevas sobre datos vacíos;
   - con los datos de prueba registrados, todo es igual;
   - con una carrera distinta en `nombre` y en `jornadas`, 1 cambia con esos dos campos;
@@ -136,7 +136,7 @@ description: "Tareas de F01-H04: vista previa y confirmación de la carga"
   - los padres de la 01 se aplican antes que los hijos.
 
   Crear `ACA/main/java/ec/mdd/academico/aplicacion/cargas/{TraductorEstructura,TraductorCarreras}.java` desde `DatosMaestrosDePrueba`, que pasa a reusarlos.
-- [ ] T009 [US2] Primero las pruebas, en `ACA/integrationTest/…/AplicadorAcademicoIntegrationTest.java` (Testcontainers):
+- [X] T009 [US2] Primero las pruebas, en `ACA/integrationTest/…/AplicadorAcademicoIntegrationTest.java` (Testcontainers):
   - confirmar la 01 y después la 02 deja 24 unidades y 7 carreras, con su registro de cambios con el usuario que confirma;
   - una segunda sede matriz en el archivo hace fallar la fila con `SedeMatrizExistente` y no aplica nada, ni las filas anteriores (SC-003);
   - dos aplicaciones a la vez con la misma huella aplican una sola vez.

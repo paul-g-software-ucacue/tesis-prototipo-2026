@@ -13,6 +13,9 @@ dependencies {
     // Los avisos de cada periodo hacia Roles, con el sobre de los eventos entre procesos (F05-H03,
     // ADR-018).
     implementation project(':plataforma:eventos')
+    // El lenguaje publicado de las cargas (ADR-022): Académico es dueño de las cargas 01 a 05 y 10
+    // y las aplica completas o nada (F01-H04, MD-13).
+    implementation project(':plataforma:lenguaje-cargas')
     // Los periodos en el esquema academico, con JdbcClient, como Normativa (F02-H01).
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     // El detalle de cada cambio en jsonb (FR-008).

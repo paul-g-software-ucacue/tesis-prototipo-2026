@@ -64,5 +64,7 @@ class ErroresCargasTest {
                         errores.detalles(
                                 new RechazoDelLote(7, new IllegalStateException("traza interna"))))
                 .containsExactly(new DetalleRespuesta("fila 7", ErroresCargas.RECHAZO_SIN_CODIGO));
+        assertThat(errores.detalles(new RechazoDelLote(3, "carrera", "No existe la carrera.")))
+                .containsExactly(new DetalleRespuesta("fila 3 · carrera", "No existe la carrera."));
     }
 }

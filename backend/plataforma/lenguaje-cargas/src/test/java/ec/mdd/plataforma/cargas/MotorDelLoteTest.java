@@ -21,7 +21,7 @@ class MotorDelLoteTest {
     private static final String HASH = "a".repeat(64);
 
     /** Un dueño en memoria: unidades con código, nombre y periodo; aplica sobre una copia. */
-    static final class Unidades implements TraductorDeCarga<Map<String, String>> {
+    static class Unidades implements TraductorDeCarga<Map<String, String>> {
 
         final Map<String, Map<String, String>> datos = new LinkedHashMap<>();
         final List<String> aplicadas = new ArrayList<>();
@@ -236,6 +236,34 @@ class MotorDelLoteTest {
                                     .isInstanceOf(IllegalStateException.class);
                         });
         assertThat(unidades.aplicadas).as("la fila 2 también se deshace").isEmpty();
+    }
+
+    @Test
+    void siElTraductorConoceLaExcepcion_elRechazoLlevaSuCampo() {
+        Unidades unidades =
+                new Unidades() {
+                    @Override
+                    public java.util.Optional<RechazoDelLote> rechazo(
+                            FilaDelLote fila, RuntimeException error) {
+                        return java.util.Optional.of(
+                                new RechazoDelLote(fila.fila(), "nombre", "Escribe el nombre."));
+                    }
+                };
+        unidades.rechazaLa = "A";
+        LoteDeCarga lote = lote(fila(2, "A", "ADMISIONES", "3"));
+        String huella = MotorDelLote.previsualizar(unidades, lote).huella();
+
+        assertThatThrownBy(
+                        () ->
+                                new AplicadorPorTraductores(
+                                                List.of(unidades), transaccion(unidades))
+                                        .aplicar(lote, huella, "datos.demo"))
+                .isInstanceOfSatisfying(
+                        RechazoDelLote.class,
+                        rechazo -> {
+                            assertThat(rechazo.campo()).contains("nombre");
+                            assertThat(rechazo).hasMessage("Escribe el nombre.");
+                        });
     }
 
     @Test

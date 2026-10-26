@@ -147,6 +147,11 @@ class ErroresCargas implements CatalogoDeErrores {
      */
     List<DetalleRespuesta> detalles(RechazoDelLote rechazo) {
         String fila = "fila " + rechazo.fila();
+        if (rechazo.campo().isPresent()) {
+            return List.of(
+                    new DetalleRespuesta(
+                            fila + " · " + rechazo.campo().get(), rechazo.getMessage()));
+        }
         Throwable causa = rechazo.getCause();
         if (causa == null) {
             return List.of(new DetalleRespuesta(fila, rechazo.getMessage()));

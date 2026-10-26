@@ -20,6 +20,7 @@ import ec.mdd.academico.aplicacion.MantenerCarrerasServicio;
 import ec.mdd.academico.aplicacion.MantenerEstructuraServicio;
 import ec.mdd.academico.aplicacion.MantenerOfertaServicio;
 import ec.mdd.academico.aplicacion.RegistrarPeriodoServicio;
+import ec.mdd.academico.aplicacion.cargas.CargasDeAcademico;
 import ec.mdd.academico.puertos.entrada.AbrirPeriodo;
 import ec.mdd.academico.puertos.entrada.CambiarEstadoPeriodo;
 import ec.mdd.academico.puertos.entrada.ConsultarCarreras;
@@ -42,6 +43,7 @@ import ec.mdd.academico.puertos.salida.RepositorioPeriodos;
 import ec.mdd.academico.puertos.salida.Transaccion;
 import ec.mdd.normativa.puertos.entrada.AsociarVersionAPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarNormativa;
+import ec.mdd.plataforma.cargas.AplicadorDeCargas;
 import java.time.Clock;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -217,6 +219,25 @@ public class ConfiguracionAcademico {
                 registroDeCambiosAcademico,
                 transaccionAcademico,
                 Clock.systemUTC());
+    }
+
+    /**
+     * Las cargas de Académico (F01-H04, MD-13, ADR-022): la vista previa y la aplicación completa o
+     * nada de cada lote, con los casos de uso de siempre.
+     */
+    @Bean
+    public AplicadorDeCargas aplicadorAcademico(
+            Transaccion transaccionAcademico,
+            RepositorioEstructura repositorioEstructura,
+            MantenerEstructura mantenerEstructura,
+            RepositorioCarreras repositorioCarreras,
+            MantenerCarreras mantenerCarreras) {
+        return CargasDeAcademico.aplicador(
+                transaccionAcademico,
+                repositorioEstructura,
+                mantenerEstructura,
+                repositorioCarreras,
+                mantenerCarreras);
     }
 
     @Bean

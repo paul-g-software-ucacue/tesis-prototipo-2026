@@ -2,6 +2,7 @@ package ec.mdd.plataforma.cargas;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Lo que un servicio dueño escribe por cada carga que atiende (ADR-022, FR-012): la traducción de
@@ -49,5 +50,14 @@ public interface TraductorDeCarga<T> {
      */
     default List<FilaDelLote> enOrden(List<FilaDelLote> filas) {
         return filas;
+    }
+
+    /**
+     * El rechazo de una fila cuando el caso de uso del dueño lanza una excepción de validación que
+     * no está en el catálogo, como su {@code DatoInvalido} con su campo. Vacío si la excepción va
+     * tal cual, como causa del rechazo.
+     */
+    default Optional<RechazoDelLote> rechazo(FilaDelLote fila, RuntimeException error) {
+        return Optional.empty();
     }
 }

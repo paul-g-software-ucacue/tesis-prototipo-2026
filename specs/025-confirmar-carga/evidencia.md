@@ -26,6 +26,9 @@ Registro de las comprobaciones de la historia (issue #30): la vista previa de ca
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Los traductores de la 01 y la 02 (Mockito) | `TraductoresAcademicoATest`, 5 de 5: los padres antes que los hijos; una unidad nueva inactiva se registra y cambia de estado; una igual no cambia, y una inactivada cambia solo de estado, sin corregirla; el tipo de una unidad no cambia y un `DatoInvalido` se rechaza con su fila y su campo; una carrera con otro nombre y otras jornadas cambia en esos dos campos, y `MATUTINA;NOCTURNA` con `05` ciclos es igual a la registrada; una carrera nueva en cierre se registra y cambia de estado | `./gradlew :servicios:academico:test` | 2026-10-26 |
+| **La 01 y después la 02, aplicadas** (PostgreSQL) | `AplicadorAcademicoIntegrationTest`, 4 de 4: 24 unidades y 7 carreras, con el registro de cambios de `datos.demo`, y subidas otra vez, todo igual; **una segunda sede matriz rechaza la fila 26 con `SedeMatrizExistente` y no aplica nada, ni las 25 filas anteriores** (SC-003); una carrera que cambia se corrige y la que no viene queda como estaba (1 cambiada, 1 baja sin aplicar); la misma huella aplicada dos veces da `VistaPreviaDesactualizada` la segunda | `./gradlew :servicios:academico:integrationTest` | 2026-10-26 |
+| Los límites del proceso | `ModulosTest` pasa: Académico usa `ec.mdd.plataforma.cargas` (su interfaz nombrada) y Cargas no conoce sus tipos | `./gradlew :apps:datos:test` | 2026-10-26 |
 
 ## Académico B: ciclos, asignaturas, oferta y matriculados
 
