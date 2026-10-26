@@ -56,6 +56,10 @@ Registro de las comprobaciones de la historia (issue #30): la vista previa de ca
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| **Las 10 cargas de prueba en su orden** (SC-001) | `ConfirmarLasDiezCargasIntegrationTest`, con el proceso `datos` real y un PostgreSQL propio y vacío: la 01 a la 10, validadas sin errores y confirmadas en su orden, quedan `APLICADA`; cada una encuentra las referencias de las anteriores; quedan 24 unidades, 300 asignaturas, 165 asignaturas-paralelo, 7 matriculados, 47 docentes, 21 cargos y 11 proyectos | `./gradlew :apps:datos:integrationTest` | 2026-10-26 |
+| **Subidas otra vez, ningún cambio** (SC-002) | Las 10, validadas otra vez, dan todos sus registros iguales: 0 nuevos, 0 que cambian y 0 bajas | `ConfirmarLasDiezCargasIntegrationTest` | 2026-10-26 |
+| Cancelar y confirmar dos veces (US3, US4, US5) | Subir sin confirmar no cambia las unidades, las carreras, los docentes ni el historial; confirmar otra vez la 02 con el mismo hash da `REPETIDA` sin una fila más en el registro de cambios de Académico; el historial de la 02 es `REPETIDA` y `APLICADA`, y el de las 10, 11 entradas | `ConfirmarLasDiezCargasIntegrationTest` | 2026-10-26 |
+| **Un archivo de casi 5 MB** (SC-004) | 5 241 643 bytes y 10 568 docentes ficticios nuevos: la vista previa en 408 ms y la confirmación en **15,5 s** (límite 30 s y 60 s; meta del plan, 20 s). La primera medición dio 55,8 s: cada docente volvía a leer todas las referencias de Académico. Ahora, dentro de la transacción de una carga, se leen una vez (`AcademicoDesdePuertos`, con su prueba: dentro de una transacción una lectura, fuera, cada vez), sin cambiar ninguna regla | `ConfirmarLasDiezCargasIntegrationTest`, `AcademicoDesdePuertosTest` | 2026-10-26 |
 
 ## Pantalla
 

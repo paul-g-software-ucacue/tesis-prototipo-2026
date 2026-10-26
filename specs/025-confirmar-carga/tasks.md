@@ -200,7 +200,7 @@ description: "Tareas de F01-H04: vista previa y confirmación de la carga"
 
 ## Phase 7: Las 10 en orden, cancelar y confirmar dos veces (US2, US3, US4)
 
-- [ ] T016 [US2] [US4] Primero la prueba, en `backend/apps/datos/src/integrationTest/java/ec/mdd/ConfirmarLasDiezCargasIntegrationTest.java` (Testcontainers, con el contexto del proceso `datos`):
+- [X] T016 [US2] [US4] Primero la prueba, en `backend/apps/datos/src/integrationTest/java/ec/mdd/ConfirmarLasDiezCargasIntegrationTest.java` (Testcontainers, con el contexto del proceso `datos`):
   - **SC-001:** las 10 cargas de prueba, validadas y confirmadas en su orden sobre una base vacía, quedan aplicadas.
   - **SC-002:** subidas otra vez, cada una da 0 nuevos, 0 que cambian y 0 bajas.
   - **Repetida (US4):** confirmar de nuevo la 02 con el mismo hash da `REPETIDA`, sin registros nuevos en Académico.
@@ -208,7 +208,7 @@ description: "Tareas de F01-H04: vista previa y confirmación de la carga"
   - **Historial (US5):** tiene 10 `APLICADA` y 1 `REPETIDA`.
 
   Debe pasar.
-- [ ] T017 La medición de SC-004: en la misma prueba, o en un `@Tag("rendimiento")`, unos 11 600 docentes ficticios (5 MB) dan su vista previa en menos de 30 s y se confirman en menos de 60 s. La meta del plan es 20 s. Anotar los tiempos. Si no se cumple, agregar en `RepositorioDocentes` un camino por lotes que aplique las mismas reglas, y medir otra vez.
+- [X] T017 La medición de SC-004: en la misma prueba, o en un `@Tag("rendimiento")`, unos 11 600 docentes ficticios (5 MB) dan su vista previa en menos de 30 s y se confirman en menos de 60 s. La meta del plan es 20 s. Anotar los tiempos. Si no se cumple, agregar en `RepositorioDocentes` un camino por lotes que aplique las mismas reglas, y medir otra vez.
 
 ---
 
