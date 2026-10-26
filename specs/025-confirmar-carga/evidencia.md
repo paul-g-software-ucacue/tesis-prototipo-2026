@@ -34,6 +34,9 @@ Registro de las comprobaciones de la historia (issue #30): la vista previa de ca
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Los matriculados (V6) | `MatriculaTest` (6, sin dobles): un total de 0, 1 y 99 999 pasa, y -1 y 100 000 no; la fuente hasta 60; el periodo y la carrera, obligatorios. `RepositorioMatriculasJdbcIntegrationTest` (2): se guardan y se leen por periodo, y la base exige el periodo y la carrera. `AcademicoEsquemaIntegrationTest` ve `academico.matricula` | `./gradlew :servicios:academico:test :servicios:academico:integrationTest` | 2026-10-26 |
+| Los traductores de la 03, 04, 05 y 10 (Mockito) | `TraductoresAcademicoBTest`, 4 de 4: en los periodos, las semanas, la resolución y el estado del archivo no cuentan, y una fecha de fin sí; en las asignaturas, `3` y `3.0` son iguales, la malla que no existe se registra antes y una vez, y la carrera o la malla no cambian (`DatoInvalido` en su campo); en la oferta, las bajas solo en los periodos del archivo y las franjas no cuentan; en los matriculados, la clave es `periodo · carrera` | `./gradlew :servicios:academico:test` | 2026-10-26 |
+| **Las 6 cargas de Académico en su orden** (PostgreSQL) | `AplicadorAcademicoIntegrationTest`, 5 de 5: la 01, 02, 03, 04, 05 y 10 de prueba dan 24, 7, 2, 300, 165 y 7 nuevos, con 12 mallas, y Roles recibe el aviso de los 2 periodos; **subidas otra vez, ninguna tiene nuevos, cambios ni bajas** (SC-002) | `./gradlew :servicios:academico:integrationTest` | 2026-10-26 |
 
 ## Docentes: docentes, cargos y proyectos
 

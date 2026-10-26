@@ -57,7 +57,8 @@ class AcademicoEsquemaIntegrationTest {
                             "academico.carrera",
                             "academico.malla",
                             "academico.asignatura",
-                            "academico.asignatura_paralelo");
+                            "academico.asignatura_paralelo",
+                            "academico.matricula");
         }
     }
 

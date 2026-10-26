@@ -90,6 +90,9 @@ final class CarrerasEnMemoria implements RepositorioCarreras {
             }
 
             @Override
+            public void bloquearTodos() {}
+
+            @Override
             public Optional<PeriodoAcademico> bloquear(String codigo) {
                 return porCodigo(codigo);
             }

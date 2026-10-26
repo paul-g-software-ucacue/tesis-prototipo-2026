@@ -67,6 +67,10 @@ public record CambioRegistrado(
         /** Asignatura-paralelo retirada de la oferta. */
         ASIGNATURA_PARALELO_RETIRADA,
         /** Asignatura-paralelo vuelta a ofertar. */
-        ASIGNATURA_PARALELO_REOFERTADA
+        ASIGNATURA_PARALELO_REOFERTADA,
+        /** Matriculados de una carrera en un periodo registrados, por la carga 10 (F01-H04). */
+        MATRICULA_REGISTRADA,
+        /** Total, fecha de corte o fuente corregidos, por la carga 10. */
+        MATRICULA_CORREGIDA
     }
 }

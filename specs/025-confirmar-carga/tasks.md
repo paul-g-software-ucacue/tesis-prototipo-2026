@@ -149,19 +149,19 @@ description: "Tareas de F01-H04: vista previa y confirmación de la carga"
 
 ## Phase 4: US1 y US2 · Incremento B, Académico 03, 04, 05 y 10 (Priority: P1)
 
-- [ ] T010 [P] [US1] Primero las pruebas, en `TraductoresAcademicoBTest`:
+- [X] T010 [P] [US1] Primero las pruebas, en `TraductoresAcademicoBTest`:
   - **03:** los 2 periodos nuevos e iguales; `semanas`, `fecha_limite_envio_senescyt`, `resolucion_aprobacion` y `estado` no cuentan como cambio (research §5); un cambio de `fecha_fin` sí.
   - **04:** las 300 asignaturas, con sus mallas aplicadas antes; un cambio de `horas_semanales_clase` de `3` a `3.0` no es cambio.
   - **05:** las 165 ofertas; las bajas solo en los periodos del archivo; `franjas_horarias` no cuenta.
 
   Crear `TraductorPeriodos`, `TraductorAsignaturas` y `TraductorOferta`.
-- [ ] T011 [P] [US2] Los matriculados. Primero las pruebas:
+- [X] T011 [P] [US2] Los matriculados. Primero las pruebas:
   - `MatriculaTest` (sin dobles): un total de -1 y uno de 100 000 no pasan; 0 y 99 999 sí; una fuente de 61 caracteres no pasa;
   - `RepositorioMatriculasJdbcIntegrationTest` y la prueba del esquema (fallan sin V6), con sus referencias a periodo y carrera;
   - `TraductorMatriculasTest`: los 7 de la carga 10, la clave periodo + carrera y las bajas solo en sus periodos.
 
   Crear `ACA/main/resources/db/migration/academico/V6__matriculados.sql` (que quita el `check` de `accion` de `registro_cambio` y lo vuelve a crear con `MATRICULA_REGISTRADA` y `MATRICULA_CORREGIDA`, como V3 a V5), `Matricula`, `RepositorioMatriculas`, su JDBC, el caso de uso que registra y corrige, y `TraductorMatriculas`.
-- [ ] T012 [US2] Ampliar `AplicadorAcademicoIntegrationTest`: confirmar de la 01 a la 05 y la 10 en orden deja todo aplicado. Ampliar `AplicadorAcademico` con las 4 cargas. T010 a T012 pasan.
+- [X] T012 [US2] Ampliar `AplicadorAcademicoIntegrationTest`: confirmar de la 01 a la 05 y la 10 en orden deja todo aplicado. Ampliar `AplicadorAcademico` con las 4 cargas. T010 a T012 pasan.
 
 ---
 

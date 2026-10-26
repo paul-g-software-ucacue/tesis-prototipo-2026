@@ -6,12 +6,20 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ec.mdd.academico.adaptadores.salida.RegistroDeCambiosJdbc;
 import ec.mdd.academico.adaptadores.salida.RepositorioCarrerasJdbc;
 import ec.mdd.academico.adaptadores.salida.RepositorioEstructuraJdbc;
+import ec.mdd.academico.adaptadores.salida.RepositorioMatriculasJdbc;
+import ec.mdd.academico.adaptadores.salida.RepositorioOfertaJdbc;
+import ec.mdd.academico.adaptadores.salida.RepositorioPeriodosJdbc;
 import ec.mdd.academico.adaptadores.salida.TransaccionSpring;
+import ec.mdd.academico.aplicacion.CorregirPeriodoServicio;
 import ec.mdd.academico.aplicacion.MantenerCarrerasServicio;
 import ec.mdd.academico.aplicacion.MantenerEstructuraServicio;
+import ec.mdd.academico.aplicacion.MantenerMatriculasServicio;
+import ec.mdd.academico.aplicacion.MantenerOfertaServicio;
+import ec.mdd.academico.aplicacion.RegistrarPeriodoServicio;
 import ec.mdd.academico.aplicacion.cargas.CargasDeAcademico;
 import ec.mdd.academico.dominio.SedeMatrizExistente;
 import ec.mdd.academico.infraestructura.AcademicoFlywayConfig;
+import ec.mdd.academico.puertos.salida.NormativaDelPeriodo;
 import ec.mdd.plataforma.cargas.AplicadorDeCargas;
 import ec.mdd.plataforma.cargas.FilaDelLote;
 import ec.mdd.plataforma.cargas.LoteDeCarga;
@@ -23,6 +31,7 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -43,6 +52,8 @@ class AplicadorAcademicoIntegrationTest {
     private static final PostgreSQLContainer POSTGRES =
             new PostgreSQLContainer("postgres:18.6-alpine");
 
+    private static final List<String> avisos = new ArrayList<>();
+
     private static JdbcClient jdbc;
     private static AplicadorDeCargas aplicador;
 
@@ -60,15 +71,52 @@ class AplicadorAcademicoIntegrationTest {
         RepositorioEstructuraJdbc estructura = new RepositorioEstructuraJdbc(jdbc);
         RepositorioCarrerasJdbc carreras = new RepositorioCarrerasJdbc(jdbc);
         RegistroDeCambiosJdbc registro = new RegistroDeCambiosJdbc(jdbc);
+        RepositorioPeriodosJdbc periodos = new RepositorioPeriodosJdbc(jdbc);
+        RepositorioOfertaJdbc oferta = new RepositorioOfertaJdbc(jdbc);
+        RepositorioMatriculasJdbc matriculas = new RepositorioMatriculasJdbc(jdbc);
+        NormativaDelPeriodo sinNormativa =
+                new NormativaDelPeriodo() {
+                    @Override
+                    public OptionalInt versionDe(String codigo) {
+                        return OptionalInt.empty();
+                    }
+
+                    @Override
+                    public void asociar(String codigo, int version, String quien) {}
+                };
+        Clock reloj = Clock.systemUTC();
         aplicador =
                 CargasDeAcademico.aplicador(
-                        transaccion,
-                        estructura,
-                        new MantenerEstructuraServicio(
-                                estructura, registro, transaccion, Clock.systemUTC()),
-                        carreras,
-                        new MantenerCarrerasServicio(
-                                carreras, estructura, registro, transaccion, Clock.systemUTC()));
+                        new CargasDeAcademico.Dependencias(
+                                transaccion,
+                                estructura,
+                                new MantenerEstructuraServicio(
+                                        estructura, registro, transaccion, reloj),
+                                carreras,
+                                new MantenerCarrerasServicio(
+                                        carreras, estructura, registro, transaccion, reloj),
+                                periodos,
+                                new RegistrarPeriodoServicio(
+                                        periodos,
+                                        sinNormativa,
+                                        registro,
+                                        periodo -> avisos.add(periodo.codigo()),
+                                        transaccion,
+                                        reloj),
+                                new CorregirPeriodoServicio(
+                                        periodos, sinNormativa, registro, transaccion, reloj),
+                                oferta,
+                                new MantenerOfertaServicio(
+                                        periodos,
+                                        oferta,
+                                        carreras,
+                                        estructura,
+                                        registro,
+                                        transaccion,
+                                        reloj),
+                                matriculas,
+                                new MantenerMatriculasServicio(
+                                        matriculas, registro, transaccion, reloj)));
     }
 
     @AfterAll
@@ -79,10 +127,12 @@ class AplicadorAcademicoIntegrationTest {
     @BeforeEach
     void vaciar() {
         jdbc.sql(
-                        "TRUNCATE academico.asignatura_paralelo, academico.asignatura,"
-                                + " academico.malla, academico.carrera, academico.unidad_organica,"
+                        "TRUNCATE academico.matricula, academico.asignatura_paralelo,"
+                                + " academico.asignatura, academico.malla, academico.carrera,"
+                                + " academico.unidad_organica, academico.periodo_academico,"
                                 + " academico.registro_cambio")
                 .update();
+        avisos.clear();
     }
 
     private static ResultadoDelLote confirmar(LoteDeCarga lote) {
@@ -115,6 +165,35 @@ class AplicadorAcademicoIntegrationTest {
                 .as("subirla otra vez: todo igual")
                 .isEqualTo(24);
         assertThat(aplicador.previsualizar(carreras).cuantos(TipoDeRegistro.IGUAL)).isEqualTo(7);
+    }
+
+    @Test
+    void lasSeisCargasDeAcademicoEnSuOrden_quedanAplicadasYSubidasOtraVezSonIguales() {
+        List<LoteDeCarga> lotes =
+                List.of(
+                        LotesDePrueba.lote("estructura_organica", "01_estructura_organica.csv"),
+                        LotesDePrueba.lote("carreras", "02_carreras.csv"),
+                        LotesDePrueba.lote("ciclos_academicos", "03_ciclos_academicos.csv"),
+                        LotesDePrueba.lote("asignaturas_malla", "04_asignaturas_malla.csv"),
+                        LotesDePrueba.lote("oferta_periodo", "05_oferta_periodo.csv"),
+                        LotesDePrueba.lote("matriculados_carrera", "10_matriculados_carrera.csv"));
+
+        List<Integer> nuevos = lotes.stream().map(lote -> confirmar(lote).nuevos()).toList();
+
+        assertThat(nuevos).containsExactly(24, 7, 2, 300, 165, 7);
+        assertThat(filas("malla")).isEqualTo(12);
+        assertThat(avisos)
+                .as("Roles recibe cada periodo nuevo")
+                .containsExactly("2026-I", "2026-II");
+        for (LoteDeCarga lote : lotes) {
+            VistaPreviaDelLote otraVez = aplicador.previsualizar(lote);
+            assertThat(
+                            otraVez.cuantos(TipoDeRegistro.NUEVO)
+                                    + otraVez.cuantos(TipoDeRegistro.CAMBIA)
+                                    + otraVez.cuantos(TipoDeRegistro.BAJA))
+                    .as(lote.carga())
+                    .isZero();
+        }
     }
 
     @Test
