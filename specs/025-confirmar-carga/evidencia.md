@@ -49,6 +49,8 @@ Registro de las comprobaciones de la historia (issue #30): la vista previa de ca
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| **La carga 07 como versión de normativa** (PostgreSQL) | `AplicadorNormativaIntegrationTest`, 6 de 6, cada una con su base: la carga 07 de prueba frente a la versión 1 da 21 iguales y 1 que cambia (la fila 22, `horas_otras_docencia` y `horas_gestion` de vacío a 0, research §7); con la versión 1 sin periodos, confirmar la edita y subida otra vez es igual; **con la versión 1 asociada a un periodo, se rechaza con `VersionEnUso` y no cambia nada** (principio VII); un código nuevo crea la versión 2 copiando la 1, con sus mismas reglas, y le pone las 22 filas; una fila de menos es una baja que Normativa rechaza al confirmar; la referencia y la observación no cuentan como cambio | `./gradlew :servicios:normativa:integrationTest` | 2026-10-26 |
+| La política se aplica entera | El motor del lote suma un `aplicar(lote, vista, quien)` en el traductor: por defecto fila por fila (las 9 cargas restantes) y, en la política, versión por versión con `CrearVersion` y `EditarVersion`, la única forma de cambiar una versión (F04-H03). `MotorDelLoteTest` sigue en verde | `./gradlew :plataforma:lenguaje-cargas:test` | 2026-10-26 |
 
 ## Las 10 en orden
 

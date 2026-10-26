@@ -82,6 +82,20 @@ public final class MotorDelLote {
         if (!vista.huella().equals(huella)) {
             throw new VistaPreviaDesactualizada();
         }
+        return traductor.aplicar(lote, vista, quien);
+    }
+
+    /**
+     * Aplica la vista previa fila por fila, en el orden del traductor: registra los nuevos y
+     * corrige los que cambian. Una excepción del dueño en una fila se rechaza con esa fila.
+     *
+     * @throws RechazoDelLote si una regla del dueño falla en una fila
+     */
+    public static <T> ResultadoDelLote filaPorFila(
+            TraductorDeCarga<T> traductor,
+            LoteDeCarga lote,
+            VistaPreviaDelLote vista,
+            String quien) {
         Map<String, T> existentes = traductor.existentes(lote);
         Map<Integer, TipoDeRegistro> tipoDeFila = new HashMap<>();
         for (RegistroDeLaVista registro : vista.registros()) {

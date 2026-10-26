@@ -184,7 +184,7 @@ description: "Tareas de F01-H04: vista previa y confirmación de la carga"
 
 ## Phase 6: US1 y US2 · Incremento D, Normativa 07 (Priority: P1)
 
-- [ ] T015 [US2] Primero las pruebas, en `NOR/test/…/TraductorPoliticaTest.java` y `NOR/integrationTest/…/AplicadorNormativaIntegrationTest.java`:
+- [X] T015 [US2] Primero las pruebas, en `NOR/test/…/TraductorPoliticaTest.java` y `NOR/integrationTest/…/AplicadorNormativaIntegrationTest.java`:
   - la carga 07 de prueba contra la versión 1 da 1 que cambia (la fila 22, con `horas_otras_docencia` y `horas_gestion` de vacío a 0; research §7);
   - con la versión 1 sin periodos, confirmar la edita;
   - con un periodo asociado, se rechaza con `VersionEnUso` y no cambia nada;

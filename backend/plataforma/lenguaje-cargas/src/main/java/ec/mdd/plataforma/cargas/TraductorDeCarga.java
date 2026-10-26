@@ -53,6 +53,17 @@ public interface TraductorDeCarga<T> {
     }
 
     /**
+     * Aplica la vista previa, ya comprobada con las tablas bloqueadas: por defecto, fila por fila,
+     * registrando los nuevos y corrigiendo los que cambian ({@link MotorDelLote#filaPorFila}). Una
+     * carga que su dueño cambia entera, como la política en Normativa, lo reemplaza.
+     *
+     * @throws RechazoDelLote si una regla del dueño falla en una fila
+     */
+    default ResultadoDelLote aplicar(LoteDeCarga lote, VistaPreviaDelLote vista, String quien) {
+        return MotorDelLote.filaPorFila(this, lote, vista, quien);
+    }
+
+    /**
      * El rechazo de una fila cuando el caso de uso del dueño lanza una excepción de validación que
      * no está en el catálogo, como su {@code DatoInvalido} con su campo. Vacío si la excepción va
      * tal cual, como causa del rechazo.

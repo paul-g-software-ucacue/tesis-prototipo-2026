@@ -13,4 +13,7 @@ dependencies {
     implementation 'tools.jackson.core:jackson-databind'
     // @PreAuthorize y el usuario de la sesión que hace el cambio (ADR-021, FR-009).
     implementation 'org.springframework.security:spring-security-core'
+    // El lenguaje publicado de las cargas (ADR-022): Normativa es dueña de la carga 07 y la aplica
+    // como una versión, completa o nada (F01-H04, MD-13).
+    implementation project(':plataforma:lenguaje-cargas')
 }
