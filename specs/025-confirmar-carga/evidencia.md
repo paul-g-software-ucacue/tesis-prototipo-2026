@@ -94,3 +94,10 @@ Registro de las comprobaciones de la historia (issue #30): la vista previa de ca
 - **El equipo de demostración, detenido a mano.** La PC se reinició el 2026-10-26 a las 20:29 y Docker levantó los 8 contenedores del equipo; a las 20:45 alguien los detuvo uno por uno (`docker stop`), y por `restart: unless-stopped` no volvieron. El autor los levantó con `docker compose up -d --wait` sobre la versión actual. No es un defecto del despliegue.
 - **curl en las imágenes (CVE-2026-92392).** En la CI del PR #154, Grype encontró curl y libcurl 8.22.0-r0, corregidos en 8.23.0-r0. La imagen del frontend ya los actualiza (`apk upgrade … curl libcurl`, sigue con el usuario 101). Las imágenes oficiales de PostgreSQL 18.6 y Caddy 2.11.7 tienen una excepción temporal en `.grype.yaml` hasta el 2026-11-16, aprobada por el autor, con el túnel apagado mientras dure.
 - **La prueba del historial en la CI.** axe midió el contraste con el diálogo a mitad de su transición; ahora la prueba espera a que el diálogo sea visible (`opacity: 1`), como las demás pantallas.
+
+## Equipo de demostración
+
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| El despliegue de `7bc44f9` (#154) | GitHub `demostracion`: «success · Sano en 48 s»; los 8 contenedores sanos con las imágenes `…-7bc44f9e877a`; el proceso `datos` aplicó `cargas` v2 (historial de cargas) y `academico` v6 (matriculados); la imagen del frontend con curl 8.23.0-r0 | GitHub Deployments, `docker ps`, `docker logs mdd-datos-1` (solo lectura) | 2026-10-27 |
+| La comprobación del autor con `consolidacion.demo` | La carga 02 (carreras) validada, con su vista previa, y confirmada: «Aplicada», 7 nuevas, 0 cambiadas y 2 bajas sin aplicar (las carreras que ya había en su base siguen). El historial de Carreras muestra el intento con la fecha, el usuario, el archivo, la huella abreviada y los totales | Captura del autor (no se copia al repositorio) | 2026-10-27 |

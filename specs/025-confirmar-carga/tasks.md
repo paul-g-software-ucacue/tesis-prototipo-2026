@@ -265,7 +265,7 @@ description: "Tareas de F01-H04: vista previa y confirmación de la carga"
   - shellcheck y Gitleaks sobre un clon.
 
   Buscar un valor de prueba en `docker compose logs gateway datos` y anotar que no aparece (principio IX). Comprobar los criterios de terminado de la sección 6 de la constitución 2.2.0. Hacer commit y push, abrir el PR en borrador con `Refs #30` y marcarlo listo después de sus runs.
-- [ ] T024 Completar la evidencia y el PR. Fusionar con *squash* con la aprobación del autor. Después:
+- [X] T024 Completar la evidencia y el PR. Fusionar con *squash* con la aprobación del autor. Después:
   1. esperar el despliegue («Sano en N s»);
   2. el autor confirma en orden, con `datos.demo`, las cargas de su equipo: la 01 con su sede matriz, la 02 y la 04;
   3. revisa una vista previa con un cambio, una repetida y el historial;
