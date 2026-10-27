@@ -443,5 +443,7 @@ test('la vista previa se confirma con su huella y el historial muestra la carga'
   });
   await expect(dialogo).toContainText('consolidacion.demo');
   await expect(dialogo).toContainText('Aplicada');
+  // axe mide el contraste con el diálogo ya visible, no a mitad de su transición.
+  await expect(page.locator('.MuiDialog-container')).toHaveCSS('opacity', '1');
   await sinFallas(page);
 });
