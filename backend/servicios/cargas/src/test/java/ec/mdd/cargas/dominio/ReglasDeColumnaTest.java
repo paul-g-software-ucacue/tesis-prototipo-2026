@@ -114,10 +114,10 @@ class ReglasDeColumnaTest {
     @Test
     void dadoUnValorFueraDelCatalogo_entoncesElMotivoDiceLosValoresPermitidos() {
         assertThat(reglas("docentes", "dedicacion").revisar("XX"))
-                .contains("Use uno de los valores permitidos: TC, MT, TP.");
+                .contains("Usa uno de los valores permitidos: TC, MT, TP.");
         assertThat(reglas("cargos_autoridades", "codigo_cargo").revisar("GESTOR").orElseThrow())
-                .startsWith("Use uno de los valores permitidos: RECTOR, VICERRECTOR,")
-                .endsWith("y 12 más (vea el diccionario de la carga).");
+                .startsWith("Usa uno de los valores permitidos: RECTOR, VICERRECTOR,")
+                .endsWith("y 12 más (mira el diccionario de la carga).");
     }
 
     @Test
@@ -125,11 +125,11 @@ class ReglasDeColumnaTest {
         assertThat(reglas("carreras", "siglas").revisar("ABCDEFGHIJK"))
                 .contains("Tiene 11 caracteres; el máximo es 10.");
         assertThat(reglas("ciclos_academicos", "fecha_inicio").revisar("2026-02-30"))
-                .contains("Escriba una fecha que exista, con el formato aaaa-mm-dd.");
+                .contains("Escribe una fecha que exista, con el formato aaaa-mm-dd.");
         assertThat(reglas("carreras", "numero_ciclos").revisar("11"))
                 .contains("Debe estar entre 1 y 10.");
         assertThat(reglas("docentes", "primer_apellido").revisar("Pérez"))
-                .contains("Escríbalo en mayúsculas, como pide el diccionario.");
+                .contains("Escríbelo en mayúsculas, como pide el diccionario.");
         assertThat(reglas("proyectos_practicas", "participantes").revisar("0102030405|JEFE|4"))
                 .contains(
                         "El elemento 1: «rol» debe ser uno de DIRECTOR, INVESTIGADOR,"

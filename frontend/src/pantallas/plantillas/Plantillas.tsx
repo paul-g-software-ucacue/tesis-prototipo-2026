@@ -5,7 +5,9 @@
 // Con «Cargas: escritura» (F01-H02, D-71), cada carga tiene «Subir archivo»: el servidor valida la
 // estructura del CSV o XLSX y revisa cada fila (F01-H03); responde si es válido o está rechazado,
 // con los primeros 100 problemas, o por qué rechaza la estructura. No lo guarda: «Descargar el
-// informe» vuelve a enviar el mismo archivo y guarda todos los problemas en CSV.
+// informe» vuelve a enviar el mismo archivo y guarda todos los problemas en CSV. Con la vista previa
+// (F01-H04), «Confirmar» vuelve a enviarlo con su huella y el servicio dueño lo aplica completo o
+// nada; «Historial» muestra cada intento de confirmar una carga.
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
@@ -18,6 +20,8 @@ import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 import { Fragment, useRef, useState, type ChangeEvent } from 'react';
 import { AvisoDeError } from '../../errores/AvisoDeError';
+import { HistorialDeLaCarga } from './HistorialDeLaCarga';
+import { VistaPreviaDeLaCarga } from './VistaPreviaDeLaCarga';
 import { traducirError, type MensajeDeError } from '../../errores/traducir';
 import { useTitulo } from '../../navegacion/useTitulo';
 import { tienePermiso } from '../../sesion/permisos';
@@ -25,6 +29,7 @@ import { useSesionActual } from '../../sesion/useSesionActual';
 import {
   ARCHIVO_DEMASIADO_GRANDE,
   MAXIMO_DE_UN_ARCHIVO,
+  confirmarCarga,
   descargar,
   descargarInforme,
   subirArchivo,
@@ -35,7 +40,22 @@ import {
   type LecturaDeArchivo,
   type Obligatoriedad,
   type ProblemaDeFila,
+  type ResultadoDeConfirmacion,
 } from './consultas';
+
+const FECHA = new Intl.DateTimeFormat('es-EC', { dateStyle: 'long', timeStyle: 'short' });
+
+/** El resultado de una confirmación, en una frase. */
+function resultado(confirmacion: ResultadoDeConfirmacion): string {
+  if (confirmacion.resultado === 'REPETIDA') {
+    return `Este archivo ya estaba confirmado el ${FECHA.format(new Date(confirmacion.confirmadaEl))}: no se aplicó otra vez.`;
+  }
+  const bajas =
+    confirmacion.bajasSinAplicar > 0
+      ? `; ${cuantos(confirmacion.bajasSinAplicar, 'baja quedó', 'bajas quedaron')} sin aplicar`
+      : '';
+  return `Carga aplicada: ${cuantos(confirmacion.nuevos, 'nuevo', 'nuevos')} y ${cuantos(confirmacion.cambiados, 'cambiado', 'cambiados')}${bajas}.`;
+}
 
 const TIPO_DE_PROBLEMA: Record<ProblemaDeFila['tipo'], string> = {
   ERROR: 'Error',
@@ -59,7 +79,7 @@ function ResultadoDeLaSubida({ subida, alDescargar }: { subida: Subida; alDescar
   const { lectura } = subida;
   const advertencias = cuantos(lectura.advertencias, 'advertencia', 'advertencias');
   const resumen = !lectura.valido
-    ? `${lectura.archivo} está rechazado: ${cuantos(lectura.errores, 'error', 'errores')} y ${advertencias}. Corríjalo y vuelva a subirlo.`
+    ? `${lectura.archivo} está rechazado: ${cuantos(lectura.errores, 'error', 'errores')} y ${advertencias}. Corrígelo y vuelve a subirlo.`
     : lectura.advertencias > 0
       ? `${lectura.archivo} es válido, con ${advertencias}: ${lectura.registros} registros leídos.`
       : `${lectura.archivo} es válido: ${lectura.registros} registros leídos.`;
@@ -219,6 +239,9 @@ export function Plantillas() {
   const [desplegada, setDesplegada] = useState<number | null>(null);
   const [convenciones, setConvenciones] = useState(false);
   const [aviso, setAviso] = useState<MensajeDeError | null>(null);
+  const [confirmacion, setConfirmacion] = useState<ResultadoDeConfirmacion | null>(null);
+  const [confirmando, setConfirmando] = useState(false);
+  const [historialDe, setHistorialDe] = useState<Carga | null>(null);
 
   const nombreDe = (numero: number) =>
     diccionario.data?.cargas.find((carga) => carga.numero === numero)?.nombre ?? String(numero);
@@ -226,6 +249,7 @@ export function Plantillas() {
   const subir = async (carga: Carga, archivo: File) => {
     setAviso(null);
     setSubida(null);
+    setConfirmacion(null);
     if (archivo.size > MAXIMO_DE_UN_ARCHIVO) {
       setAviso(ARCHIVO_DEMASIADO_GRANDE);
       return;
@@ -235,6 +259,24 @@ export function Plantillas() {
     } catch (fallo) {
       setAviso(traducirError(fallo));
     }
+  };
+
+  const confirmar = async ({ carga, archivo, lectura }: Subida) => {
+    setAviso(null);
+    setConfirmando(true);
+    try {
+      setConfirmacion(await confirmarCarga(carga, archivo, lectura.vistaPrevia.huella ?? ''));
+      setSubida(null);
+    } catch (fallo) {
+      setAviso(traducirError(fallo));
+    } finally {
+      setConfirmando(false);
+    }
+  };
+
+  const cancelar = () => {
+    setAviso(null);
+    setSubida(null);
   };
 
   const bajarInforme = async ({ carga, archivo }: Subida) => {
@@ -249,6 +291,7 @@ export function Plantillas() {
   const bajar = async (carga: Carga, que: Descarga) => {
     setAviso(null);
     setSubida(null);
+    setConfirmacion(null);
     try {
       await descargar(carga, que);
     } catch (fallo) {
@@ -279,8 +322,25 @@ export function Plantillas() {
           )}
         </AvisoDeError>
       )}
+      {confirmacion && (
+        <Alert severity="success" role="status" sx={{ mb: 1 }}>
+          {resultado(confirmacion)}
+        </Alert>
+      )}
       {subida && (
         <ResultadoDeLaSubida subida={subida} alDescargar={() => void bajarInforme(subida)} />
+      )}
+      {subida && (
+        <VistaPreviaDeLaCarga
+          archivo={subida.lectura.archivo}
+          vista={subida.lectura.vistaPrevia}
+          confirmando={confirmando}
+          alConfirmar={() => void confirmar(subida)}
+          alCancelar={cancelar}
+        />
+      )}
+      {historialDe && (
+        <HistorialDeLaCarga carga={historialDe} alCerrar={() => setHistorialDe(null)} />
       )}
       {diccionario.data && (
         <>
@@ -364,6 +424,14 @@ export function Plantillas() {
                               onClick={() => void bajar(carga, 'diccionario')}
                             >
                               Diccionario
+                            </Button>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              aria-label={`Ver el historial de ${carga.nombre}`}
+                              onClick={() => setHistorialDe(carga)}
+                            >
+                              Historial
                             </Button>
                             {escritura && (
                               <SubirArchivo

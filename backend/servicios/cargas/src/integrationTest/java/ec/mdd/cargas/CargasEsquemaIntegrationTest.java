@@ -42,6 +42,7 @@ class CargasEsquemaIntegrationTest {
             List<String> tablas = tablasDeUsuario(dataSource);
             assertThat(tablas).contains("cargas.flyway_schema_history");
             assertThat(tablas).allMatch(tabla -> tabla.startsWith("cargas."));
+            assertThat(tablas).contains("cargas.historial_carga");
         }
     }
 

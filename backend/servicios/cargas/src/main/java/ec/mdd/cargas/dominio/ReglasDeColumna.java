@@ -63,13 +63,13 @@ public final class ReglasDeColumna {
                     "Mayúsculas; vacío si no tiene", Patron.MAYUSCULAS,
                     "Mayúsculas, dígitos, «-» o «_»",
                             new Patron(
-                                    CODIGO_DE_UNIDAD, "Use solo mayúsculas, dígitos, «-» o «_»."),
+                                    CODIGO_DE_UNIDAD, "Usa solo mayúsculas, dígitos, «-» o «_»."),
                     "AAAA-I o AAAA-II (ej.: 2026-I)",
                             new Patron(
                                     PERIODO,
-                                    "Escriba el periodo como AAAA-I o AAAA-II, por ejemplo 2026-I."),
+                                    "Escribe el periodo como AAAA-I o AAAA-II, por ejemplo 2026-I."),
                     "usuario@dominio",
-                            new Patron(CORREO, "Escriba un correo como usuario@dominio."));
+                            new Patron(CORREO, "Escribe un correo como usuario@dominio."));
 
     /** Los tipos de columna del diccionario. */
     private enum Tipo {
@@ -139,7 +139,7 @@ public final class ReglasDeColumna {
             delFormato =
                     new Patron(
                             Pattern.compile("\\d{" + digitos.group(1) + "}"),
-                            "Escriba exactamente " + digitos.group(1) + " dígitos.");
+                            "Escribe exactamente " + digitos.group(1) + " dígitos.");
             interpretado = true;
         }
         if (tipo == Tipo.ENTERO || tipo == Tipo.DECIMAL) {
@@ -216,7 +216,7 @@ public final class ReglasDeColumna {
             return delTipo;
         }
         if (!valores.isEmpty() && !valores.contains(valor)) {
-            return Optional.of("Use uno de los valores permitidos: " + listar(valores) + ".");
+            return Optional.of("Usa uno de los valores permitidos: " + listar(valores) + ".");
         }
         if (patron != null && !patron.cumple(valor)) {
             return Optional.of(patron.motivo());
@@ -246,22 +246,22 @@ public final class ReglasDeColumna {
             case ENTERO ->
                     ENTERO.matcher(valor).matches()
                             ? Optional.empty()
-                            : Optional.of("Escriba un número entero, solo con dígitos.");
+                            : Optional.of("Escribe un número entero, solo con dígitos.");
             case DECIMAL ->
                     DECIMAL.matcher(valor).matches()
                             ? Optional.empty()
                             : Optional.of(
-                                    "Escriba un número con punto decimal, como 2.5, sin separador"
+                                    "Escribe un número con punto decimal, como 2.5, sin separador"
                                             + " de miles.");
             case FECHA ->
                     fecha(valor)
                             ? Optional.empty()
                             : Optional.of(
-                                    "Escriba una fecha que exista, con el formato aaaa-mm-dd.");
+                                    "Escribe una fecha que exista, con el formato aaaa-mm-dd.");
             case SN ->
                     valor.equals("S") || valor.equals("N")
                             ? Optional.empty()
-                            : Optional.of("Escriba S o N.");
+                            : Optional.of("Escribe S o N.");
             default -> Optional.empty();
         };
     }
@@ -411,7 +411,7 @@ public final class ReglasDeColumna {
         return String.join(", ", valores.subList(0, VALORES_EN_EL_MOTIVO))
                 + " y "
                 + (valores.size() - VALORES_EN_EL_MOTIVO)
-                + " más (vea el diccionario de la carga)";
+                + " más (mira el diccionario de la carga)";
     }
 
     /** Un patrón de caracteres del formato, con su motivo. */
@@ -419,7 +419,7 @@ public final class ReglasDeColumna {
 
         /** «Mayúsculas»: sin letras minúsculas. */
         static final Patron MAYUSCULAS =
-                new Patron(null, "Escríbalo en mayúsculas, como pide el diccionario.");
+                new Patron(null, "Escríbelo en mayúsculas, como pide el diccionario.");
 
         boolean cumple(String valor) {
             if (patron == null) {

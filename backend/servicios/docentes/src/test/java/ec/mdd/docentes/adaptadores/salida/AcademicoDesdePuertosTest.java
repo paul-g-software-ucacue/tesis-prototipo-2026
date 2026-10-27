@@ -84,4 +84,36 @@ class AcademicoDesdePuertosTest {
                                 LocalDate.of(2026, 4, 6),
                                 LocalDate.of(2026, 8, 7)));
     }
+
+    @Test
+    void dentroDeUnaTransaccion_lasReferenciasSeLeenUnaVez_yFueraCadaVez() {
+        java.util.concurrent.atomic.AtomicInteger lecturas =
+                new java.util.concurrent.atomic.AtomicInteger();
+        AcademicoDesdePuertos contando =
+                new AcademicoDesdePuertos(
+                        () -> {
+                            lecturas.incrementAndGet();
+                            return consultar.referencias();
+                        });
+
+        contando.referencias();
+        contando.referencias();
+        assertThat(lecturas).as("fuera de una transacción").hasValue(2);
+
+        org.springframework.transaction.support.TransactionSynchronizationManager
+                .initSynchronization();
+        try {
+            contando.referencias();
+            contando.referencias();
+            assertThat(lecturas).as("dentro, una sola vez").hasValue(3);
+        } finally {
+            org.springframework.transaction.support.TransactionSynchronizationManager
+                    .getSynchronizations()
+                    .forEach(sincronizacion -> sincronizacion.afterCompletion(0));
+            org.springframework.transaction.support.TransactionSynchronizationManager
+                    .clearSynchronization();
+        }
+        contando.referencias();
+        assertThat(lecturas).as("al terminar, se vuelven a leer").hasValue(4);
+    }
 }

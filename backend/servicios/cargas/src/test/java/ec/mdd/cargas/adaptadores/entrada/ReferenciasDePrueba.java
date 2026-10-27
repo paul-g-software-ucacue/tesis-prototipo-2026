@@ -9,6 +9,7 @@ import ec.mdd.academico.puertos.entrada.UnidadDeReferencia;
 import ec.mdd.cargas.adaptadores.salida.DatosDePrueba;
 import ec.mdd.cargas.adaptadores.salida.LectorPorFormato;
 import ec.mdd.cargas.dominio.TablaDeDatos;
+import ec.mdd.cargas.puertos.salida.Transaccion;
 import ec.mdd.docentes.puertos.entrada.ConsultarIdentificaciones;
 import java.time.LocalDate;
 import java.util.List;
@@ -19,7 +20,8 @@ import org.springframework.context.annotation.Bean;
 
 /**
  * Los puertos publicados de Académico y de Docentes para las pruebas de contrato de Cargas,
- * escritos a mano (principio VIII): lo que existiría con las cargas 01 a 06 de prueba confirmadas.
+ * escritos a mano (principio VIII): lo que existiría con las cargas 01 a 06 de prueba confirmadas,
+ * y un dueño en memoria de las 10 cargas (F01-H04).
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class ReferenciasDePrueba {
@@ -45,6 +47,29 @@ public class ReferenciasDePrueba {
                         columna("03_ciclos_academicos.csv", "codigo_periodo").stream()
                                 .map(codigo -> new PeriodoDeReferencia(codigo, "P", dia, dia))
                                 .toList());
+    }
+
+    /** El historial de cargas en memoria (F01-H04), sin base. */
+    @Bean
+    HistorialEnMemoria historialDeCargas() {
+        return new HistorialEnMemoria();
+    }
+
+    /** La transacción de Cargas, sin base: ejecuta el trabajo tal cual. */
+    @Bean
+    Transaccion transaccionCargas() {
+        return new Transaccion() {
+            @Override
+            public <T> T ejecutar(java.util.function.Supplier<T> trabajo) {
+                return trabajo.get();
+            }
+        };
+    }
+
+    /** El dueño en memoria de las 10 cargas (F01-H04). */
+    @Bean
+    AplicadorDePrueba aplicadorDePrueba() {
+        return new AplicadorDePrueba();
     }
 
     @Bean

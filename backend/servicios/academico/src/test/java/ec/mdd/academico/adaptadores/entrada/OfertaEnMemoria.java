@@ -117,6 +117,9 @@ final class OfertaEnMemoria implements RepositorioOferta, RepositorioPeriodos {
     }
 
     @Override
+    public void bloquearTodos() {}
+
+    @Override
     public Optional<PeriodoAcademico> bloquear(String codigo) {
         return porCodigo(codigo);
     }

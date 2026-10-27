@@ -146,6 +146,56 @@ const CEDULA_SIN_CERO = {
   sugerencia: '0109990010',
 };
 
+// La vista previa de un archivo de docentes sin errores (F01-H04): 1 nuevo y 46 iguales.
+const VISTA_PREVIA = {
+  filasConErrores: 0,
+  nuevos: 1,
+  cambian: 0,
+  bajas: 0,
+  iguales: 46,
+  huella: 'c'.repeat(64),
+  registros: [{ clave: '0109990999', tipo: 'NUEVO', fila: 48, cambios: [] }],
+};
+
+// La confirmación y el historial, como los responde el servidor; guarda lo que recibió.
+async function simularConfirmacion(pagina: Page): Promise<Subida[]> {
+  const confirmaciones: Subida[] = [];
+  await pagina.route('**/api/cargas/plantillas/*/archivo/confirmacion', async (ruta) => {
+    const peticion = ruta.request();
+    confirmaciones.push({
+      autorizacion: await peticion.headerValue('Authorization'),
+      tipo: await peticion.headerValue('Content-Type'),
+      cuerpo: peticion.postDataBuffer()?.toString('utf8') ?? '',
+    });
+    await ruta.fulfill({
+      json: {
+        resultado: 'APLICADA',
+        nuevos: 1,
+        cambiados: 0,
+        bajasSinAplicar: 0,
+        confirmadaEl: '2026-10-26T15:00:00Z',
+      },
+    });
+  });
+  await pagina.route('**/api/cargas/plantillas/docentes/historial', async (ruta) => {
+    await ruta.fulfill({
+      json: [
+        {
+          usuario: 'consolidacion.demo',
+          momento: '2026-10-26T15:00:00Z',
+          archivo: '06_docentes.csv',
+          hash: 'a'.repeat(64),
+          resultado: 'APLICADA',
+          nuevos: 1,
+          cambiados: 0,
+          bajasSinAplicar: 0,
+        },
+      ],
+    });
+  });
+  return confirmaciones;
+}
+
 // El informe en CSV, como lo escribe el servidor: con el BOM y la celda neutralizada.
 async function simularInforme(pagina: Page): Promise<Subida[]> {
   const informes: Subida[] = [];
@@ -193,6 +243,7 @@ async function simularSubidas(pagina: Page): Promise<Subida[]> {
           errores: conCedulaSinCero ? 1 : 0,
           advertencias: 0,
           problemas: conCedulaSinCero ? [CEDULA_SIN_CERO] : [],
+          vistaPrevia: conCedulaSinCero ? { filasConErrores: 1, registros: [] } : VISTA_PREVIA,
         },
       });
       return;
@@ -336,7 +387,7 @@ test('una cédula sin el cero inicial se ve con su sugerencia y el informe se de
     });
 
   await expect(page.getByRole('status')).toHaveText(
-    '06_docentes.csv está rechazado: 1 error y 0 advertencias. Corríjalo y vuelva a subirlo.',
+    '06_docentes.csv está rechazado: 1 error y 0 advertencias. Corrígelo y vuelve a subirlo.',
   );
   const problemas = page.getByRole('table', { name: 'Problemas de 06_docentes.csv' });
   await expect(problemas.getByRole('row').nth(1)).toContainText('0109990010');
@@ -353,4 +404,46 @@ test('una cédula sin el cero inicial se ve con su sugerencia y el informe se de
   expect(informes).toHaveLength(1);
   expect(informes[0]?.autorizacion).toMatch(/^Bearer /);
   expect(informes[0]?.cuerpo).toContain('name="archivo"; filename="06_docentes.csv"');
+});
+
+test('la vista previa se confirma con su huella y el historial muestra la carga', async ({
+  page,
+}) => {
+  await simularSubidas(page);
+  const confirmaciones = await simularConfirmacion(page);
+  await abrirPlantillas(page);
+
+  await page
+    .getByLabel('Archivo de Docentes contratados (con ficha académica)', { exact: true })
+    .setInputFiles({
+      name: '06_docentes.csv',
+      mimeType: 'text/csv',
+      buffer: Buffer.from(DOCENTES.join(',') + '\r\n'),
+    });
+
+  const vista = page.getByRole('region', { name: 'Vista previa de 06_docentes.csv' });
+  await expect(vista).toContainText(
+    'Si confirmas: 1 nuevo, 0 cambian, 0 se dan de baja y 46 quedan iguales.',
+  );
+  await sinFallas(page);
+  await vista.getByRole('button', { name: 'Confirmar' }).click();
+
+  await expect(page.getByRole('status')).toHaveText('Carga aplicada: 1 nuevo y 0 cambiados.');
+  expect(confirmaciones).toHaveLength(1);
+  expect(confirmaciones[0]?.autorizacion).toMatch(/^Bearer /);
+  expect(confirmaciones[0]?.cuerpo).toContain('name="archivo"; filename="06_docentes.csv"');
+  expect(confirmaciones[0]?.cuerpo).toContain('name="huella"');
+  expect(confirmaciones[0]?.cuerpo).toContain('c'.repeat(64));
+
+  await page
+    .getByRole('button', { name: 'Ver el historial de Docentes contratados (con ficha académica)' })
+    .click();
+  const dialogo = page.getByRole('dialog', {
+    name: 'Historial de Docentes contratados (con ficha académica)',
+  });
+  await expect(dialogo).toContainText('consolidacion.demo');
+  await expect(dialogo).toContainText('Aplicada');
+  // axe mide el contraste con el diálogo ya visible, no a mitad de su transición.
+  await expect(page.locator('.MuiDialog-container')).toHaveCSS('opacity', '1');
+  await sinFallas(page);
 });

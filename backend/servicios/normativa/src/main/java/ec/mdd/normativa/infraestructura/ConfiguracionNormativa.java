@@ -7,6 +7,7 @@ import ec.mdd.normativa.aplicacion.AsociarVersionAPeriodoServicio;
 import ec.mdd.normativa.aplicacion.ConsultarNormativaServicio;
 import ec.mdd.normativa.aplicacion.CrearVersionServicio;
 import ec.mdd.normativa.aplicacion.EditarVersionServicio;
+import ec.mdd.normativa.aplicacion.cargas.CargasDeNormativa;
 import ec.mdd.normativa.puertos.entrada.AsociarVersionAPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarNormativa;
 import ec.mdd.normativa.puertos.entrada.CrearVersion;
@@ -14,6 +15,7 @@ import ec.mdd.normativa.puertos.entrada.EditarVersion;
 import ec.mdd.normativa.puertos.salida.RegistroDeCambios;
 import ec.mdd.normativa.puertos.salida.RepositorioVersiones;
 import ec.mdd.normativa.puertos.salida.Transaccion;
+import ec.mdd.plataforma.cargas.AplicadorDeCargas;
 import java.time.Clock;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -66,6 +68,20 @@ public class ConfiguracionNormativa {
     }
 
     /** Asociar una versión a un periodo; Académico lo usará en F02-H01 (F04-H02). */
+    /**
+     * La carga de Normativa (F01-H04, MD-13, ADR-022): la 07, la política de carga horaria, como
+     * una versión nueva o editada, completa o nada.
+     */
+    @Bean
+    public AplicadorDeCargas aplicadorNormativa(
+            Transaccion transaccionNormativa,
+            RepositorioVersiones repositorioVersiones,
+            CrearVersion crearVersion,
+            EditarVersion editarVersion) {
+        return CargasDeNormativa.aplicador(
+                transaccionNormativa, repositorioVersiones, crearVersion, editarVersion);
+    }
+
     @Bean
     public AsociarVersionAPeriodo asociarVersionAPeriodo(
             RepositorioVersiones repositorio, RegistroDeCambios registro, Transaccion transaccion) {

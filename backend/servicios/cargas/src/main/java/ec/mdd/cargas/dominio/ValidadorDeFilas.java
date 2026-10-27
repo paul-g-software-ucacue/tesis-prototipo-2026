@@ -191,19 +191,17 @@ public final class ValidadorDeFilas {
                                         + (i + 1)
                                         + " no existe en el sistema como "
                                         + sinArticulo(nombre)
-                                        + ": regístrelo o cárguelo antes."
+                                        + ": regístralo o confirma antes su carga."
                                 : "No existe "
                                         + nombre
-                                        + " en el sistema: regístrel"
+                                        + " en el sistema: regístral"
                                         + terminacion(nombre)
-                                        + " o cárguel"
-                                        + terminacion(nombre)
-                                        + " antes.";
+                                        + " o confirma antes su carga.";
                 if (referencia.mismoArchivo()) {
                     motivo =
                             "No existe "
                                     + nombre
-                                    + " ni en este archivo ni en el sistema: agréguela.";
+                                    + " ni en este archivo ni en el sistema: agrégala.";
                 }
                 return Optional.of(ProblemaDeFila.error(fila, campo, valor, motivo));
             }
@@ -252,7 +250,7 @@ public final class ValidadorDeFilas {
     }
 
     /**
-     * La terminación del pronombre: «regístrela» para «la carrera», «regístrelo» para «el periodo».
+     * La terminación del pronombre: «regístrala» para «la carrera», «regístralo» para «el periodo».
      */
     private static String terminacion(String nombre) {
         return nombre.startsWith("la ") ? "a" : "o";

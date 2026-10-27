@@ -54,6 +54,11 @@ public final class RepositorioPeriodosJdbc implements RepositorioPeriodos {
     }
 
     @Override
+    public void bloquearTodos() {
+        jdbc.sql("LOCK TABLE academico.periodo_academico IN SHARE ROW EXCLUSIVE MODE").update();
+    }
+
+    @Override
     public Optional<PeriodoAcademico> bloquear(String codigo) {
         return jdbc.sql(COLUMNAS + " WHERE codigo = :codigo FOR UPDATE")
                 .param("codigo", codigo)

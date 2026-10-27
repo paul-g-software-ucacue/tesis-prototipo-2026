@@ -9,10 +9,12 @@ import { montarSpa } from '../../pruebas/montarSpa';
 import { FalloDeApi } from '../../errores/traducir';
 import { cerrarSesion, iniciarSesion } from '../../sesion/almacen';
 import {
+  confirmarCarga,
   descargarInforme,
   subirArchivo,
   type LecturaDeArchivo,
   type ProblemaDeFila,
+  type VistaPrevia,
 } from './consultas';
 import { DICCIONARIO } from './datosDePrueba';
 
@@ -22,13 +24,40 @@ vi.mock('./consultas', async (original) => ({
   ...(await original<typeof import('./consultas')>()),
   subirArchivo: vi.fn(),
   descargarInforme: vi.fn(),
+  confirmarCarga: vi.fn(),
 }));
+
+const HUELLA = 'c'.repeat(64);
+
+/** Una vista previa sin errores: 1 nuevo, 1 que cambia, 1 baja y 44 iguales. */
+const VISTA: VistaPrevia = {
+  filasConErrores: 0,
+  nuevos: 1,
+  cambian: 1,
+  bajas: 1,
+  iguales: 44,
+  huella: HUELLA,
+  registros: [
+    { clave: '0109990999', tipo: 'NUEVO', fila: 48, cambios: [] },
+    {
+      clave: '0109990010',
+      tipo: 'CAMBIA',
+      fila: 2,
+      cambios: [{ campo: 'dedicacion', ahora: 'MT', archivo: 'TC' }],
+    },
+    { clave: '0109990028', tipo: 'BAJA', cambios: [] },
+  ],
+};
 
 const DOCENTES = 'Docentes contratados (con ficha académica)';
 
 function lectura(problemas: ProblemaDeFila[], total = problemas.length): LecturaDeArchivo {
   const errores = problemas.filter((problema) => problema.tipo === 'ERROR').length;
+  const filasConErrores = new Set(
+    problemas.filter((problema) => problema.tipo === 'ERROR').map((problema) => problema.fila),
+  ).size;
   return {
+    vistaPrevia: errores === 0 ? VISTA : { filasConErrores, registros: [] },
     carga: 'docentes',
     archivo: '06_docentes.csv',
     formato: 'CSV',
@@ -125,6 +154,7 @@ describe('Plantillas de carga', () => {
     vi.restoreAllMocks();
     vi.mocked(subirArchivo).mockReset();
     vi.mocked(descargarInforme).mockReset();
+    vi.mocked(confirmarCarga).mockReset();
   });
 
   it('muestra las 10 cargas en su orden, con sus dependencias, su obligatoriedad y sus columnas', async () => {
@@ -291,7 +321,7 @@ describe('Plantillas de carga', () => {
 
     const estado = await screen.findByRole('status');
     expect(estado).toHaveTextContent(
-      '06_docentes.csv está rechazado: 1 error y 1 advertencia. Corríjalo y vuelva a subirlo.',
+      '06_docentes.csv está rechazado: 1 error y 1 advertencia. Corrígelo y vuelve a subirlo.',
     );
     const tabla = screen.getByRole('table', { name: 'Problemas de 06_docentes.csv' });
     const [encabezado, cedula, espacios] = within(tabla).getAllByRole('row');
@@ -439,5 +469,189 @@ describe('Plantillas de carga', () => {
     expect(
       simulada.peticiones.some((peticion) => peticion.url.includes('/api/cargas/plantillas')),
     ).toBe(false);
+  });
+
+  it('muestra la vista previa con sus totales, sus pestañas y el aviso de las bajas', async () => {
+    sesionCon(simulada, 'consolidacion.demo', ['CARGAS:LECTURA', 'CARGAS:ESCRITURA']);
+    vi.mocked(subirArchivo).mockResolvedValue(lectura([]));
+    const usuario = userEvent.setup();
+    montarSpa('/plantillas');
+
+    await subirDocentes();
+
+    const vista = await screen.findByRole('region', { name: 'Vista previa de 06_docentes.csv' });
+    expect(
+      within(vista).getByText(
+        'Si confirmas: 1 nuevo, 1 cambia, 1 se da de baja y 44 quedan iguales.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(vista).getByText('Las bajas no se aplican: hazlas a mano en su pantalla.'),
+    ).toBeInTheDocument();
+    expect(within(vista).getByRole('table', { name: 'Nuevos' })).toHaveTextContent('0109990999');
+    await usuario.click(within(vista).getByRole('tab', { name: 'Cambian (1)' }));
+    expect(within(vista).getByRole('table', { name: 'Cambian' })).toHaveTextContent(
+      'dedicacion: «MT» → «TC»',
+    );
+    await usuario.click(within(vista).getByRole('tab', { name: 'Se dan de baja (1)' }));
+    expect(within(vista).getByRole('table', { name: 'Se dan de baja' })).toHaveTextContent(
+      '0109990028',
+    );
+    expect(within(vista).getByRole('button', { name: 'Confirmar' })).toBeEnabled();
+  });
+
+  it('con errores no deja confirmar y dice por qué', async () => {
+    sesionCon(simulada, 'consolidacion.demo', ['CARGAS:LECTURA', 'CARGAS:ESCRITURA']);
+    vi.mocked(subirArchivo).mockResolvedValue(lectura([CEDULA_SIN_CERO]));
+    montarSpa('/plantillas');
+
+    await subirDocentes();
+
+    const vista = await screen.findByRole('region', { name: 'Vista previa de 06_docentes.csv' });
+    expect(
+      within(vista).getByText('1 fila tiene errores: corrígelas para poder confirmar.'),
+    ).toBeInTheDocument();
+    expect(within(vista).getByRole('button', { name: 'Confirmar' })).toBeDisabled();
+    expect(
+      within(vista).getByText(
+        'Un archivo con errores no se confirma: la carga se aplica completa o nada.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('«Cancelar» quita la vista previa sin llamar al servidor', async () => {
+    sesionCon(simulada, 'consolidacion.demo', ['CARGAS:LECTURA', 'CARGAS:ESCRITURA']);
+    vi.mocked(subirArchivo).mockResolvedValue(lectura([]));
+    const usuario = userEvent.setup();
+    montarSpa('/plantillas');
+
+    await subirDocentes();
+    await usuario.click(await screen.findByRole('button', { name: 'Cancelar' }));
+
+    expect(screen.queryByRole('region', { name: /^Vista previa/ })).not.toBeInTheDocument();
+    expect(confirmarCarga).not.toHaveBeenCalled();
+  });
+
+  it('«Confirmar» vuelve a enviar el archivo con su huella y muestra lo aplicado', async () => {
+    sesionCon(simulada, 'consolidacion.demo', ['CARGAS:LECTURA', 'CARGAS:ESCRITURA']);
+    vi.mocked(subirArchivo).mockResolvedValue(lectura([]));
+    vi.mocked(confirmarCarga).mockResolvedValue({
+      resultado: 'APLICADA',
+      nuevos: 1,
+      cambiados: 1,
+      bajasSinAplicar: 1,
+      confirmadaEl: '2026-10-26T15:00:00Z',
+    });
+    const usuario = userEvent.setup();
+    montarSpa('/plantillas');
+
+    const archivo = await subirDocentes();
+    await usuario.click(await screen.findByRole('button', { name: 'Confirmar' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Carga aplicada: 1 nuevo y 1 cambiado; 1 baja quedó sin aplicar.',
+    );
+    expect(confirmarCarga).toHaveBeenCalledWith(
+      expect.objectContaining({ codigo: 'docentes' }),
+      archivo,
+      HUELLA,
+    );
+    expect(screen.queryByRole('region', { name: /^Vista previa/ })).not.toBeInTheDocument();
+  });
+
+  it('un archivo ya confirmado dice cuándo y no se aplica otra vez', async () => {
+    sesionCon(simulada, 'consolidacion.demo', ['CARGAS:LECTURA', 'CARGAS:ESCRITURA']);
+    vi.mocked(subirArchivo).mockResolvedValue(lectura([]));
+    vi.mocked(confirmarCarga).mockResolvedValue({
+      resultado: 'REPETIDA',
+      nuevos: 0,
+      cambiados: 0,
+      bajasSinAplicar: 0,
+      confirmadaEl: '2026-10-20T14:00:00Z',
+    });
+    const usuario = userEvent.setup();
+    montarSpa('/plantillas');
+
+    await subirDocentes();
+    await usuario.click(await screen.findByRole('button', { name: 'Confirmar' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      /^Este archivo ya estaba confirmado el .*: no se aplicó otra vez\.$/,
+    );
+  });
+
+  it('si el dueño rechaza la carga, muestra el título y la fila', async () => {
+    sesionCon(simulada, 'consolidacion.demo', ['CARGAS:LECTURA', 'CARGAS:ESCRITURA']);
+    vi.mocked(subirArchivo).mockResolvedValue(lectura([]));
+    vi.mocked(confirmarCarga).mockRejectedValue(
+      new FalloDeApi(409, {
+        codigo: 'CARGAS_CARGA_RECHAZADA',
+        titulo: 'Carga rechazada',
+        descripcion:
+          'El servicio dueño rechazó la carga y no se aplicó ninguna fila. Revisa el detalle, corrige el archivo y vuelve a subirlo.',
+        detalles: [
+          {
+            campo: 'fila 23',
+            descripcion: 'Coordinador vigente: La carrera ya tiene un coordinador vigente.',
+          },
+        ],
+      }),
+    );
+    const usuario = userEvent.setup();
+    montarSpa('/plantillas');
+
+    await subirDocentes();
+    await usuario.click(await screen.findByRole('button', { name: 'Confirmar' }));
+
+    const aviso = await screen.findByRole('alert');
+    expect(aviso).toHaveTextContent('Carga rechazada');
+    expect(aviso).toHaveTextContent(
+      'fila 23: Coordinador vigente: La carrera ya tiene un coordinador vigente.',
+    );
+  });
+
+  it('«Historial» abre los intentos de la carga, del más reciente al más antiguo', async () => {
+    sesionCon(simulada, 'coordinacion.demo', ['CARGAS:LECTURA']);
+    simulada.responder(
+      'GET',
+      '/api/cargas/plantillas/carreras/historial',
+      json(200, [
+        {
+          usuario: 'datos.demo',
+          momento: '2026-10-26T15:00:00Z',
+          archivo: '02_carreras.csv',
+          hash: 'a'.repeat(64),
+          resultado: 'REPETIDA',
+          nuevos: 0,
+          cambiados: 0,
+          bajasSinAplicar: 0,
+        },
+        {
+          usuario: 'datos.demo',
+          momento: '2026-10-26T14:00:00Z',
+          archivo: '02_carreras.csv',
+          hash: 'a'.repeat(64),
+          resultado: 'RECHAZADA',
+          nuevos: 0,
+          cambiados: 0,
+          bajasSinAplicar: 0,
+          motivo: 'CARGAS_VISTA_PREVIA_DESACTUALIZADA',
+        },
+      ]),
+    );
+    const usuario = userEvent.setup();
+    montarSpa('/plantillas');
+
+    await usuario.click(
+      await screen.findByRole('button', { name: 'Ver el historial de Carreras' }),
+    );
+
+    const dialogo = await screen.findByRole('dialog', { name: 'Historial de Carreras' });
+    const [, primera, segunda] = within(dialogo).getAllByRole('row');
+    expect(primera).toHaveTextContent('Repetida');
+    expect(segunda).toHaveTextContent('Rechazada (Vista previa desactualizada)');
+    expect(segunda).toHaveTextContent('aaaaaaaaaaaa');
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Cerrar' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

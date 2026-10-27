@@ -4,15 +4,22 @@ import ec.mdd.cargas.dominio.ArchivoSinRegistros;
 import ec.mdd.cargas.dominio.DiferenciaDeEncabezado;
 import ec.mdd.cargas.dominio.EncabezadosDistintos;
 import ec.mdd.cargas.puertos.entrada.ArchivoDemasiadoGrande;
+import ec.mdd.cargas.puertos.entrada.CargaConErrores;
 import ec.mdd.cargas.puertos.salida.ArchivoIlegible;
 import ec.mdd.cargas.puertos.salida.CodificacionNoAdmitida;
 import ec.mdd.cargas.puertos.salida.FormatoNoAdmitido;
 import ec.mdd.cargas.puertos.salida.VariasHojas;
+import ec.mdd.plataforma.cargas.RechazoDelLote;
+import ec.mdd.plataforma.cargas.VistaPreviaDesactualizada;
 import ec.mdd.plataforma.errores.nucleo.CatalogoDeErrores;
 import ec.mdd.plataforma.errores.nucleo.DefinicionDeCodigo;
 import ec.mdd.plataforma.errores.nucleo.DetalleRespuesta;
 import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
+import ec.mdd.plataforma.errores.nucleo.RegistroDeErrores;
 import java.util.List;
+import java.util.Optional;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -22,6 +29,27 @@ import org.springframework.stereotype.Component;
  */
 @Component
 class ErroresCargas implements CatalogoDeErrores {
+
+    /** El rechazo de una fila cuya excepción no está en el catálogo del proceso. */
+    static final String RECHAZO_SIN_CODIGO =
+            "Esta fila no cumple una regla de su servicio dueño. Revísala y vuelve a subir el"
+                    + " archivo.";
+
+    private final ObjectProvider<RegistroDeErrores> registro;
+
+    /**
+     * Recibe el registro de errores del proceso, para traducir el rechazo de un dueño con su propio
+     * código (F01-H04). Se pide al traducir, porque el registro se arma con este catálogo.
+     */
+    @Autowired
+    ErroresCargas(ObjectProvider<RegistroDeErrores> registro) {
+        this.registro = registro;
+    }
+
+    /** Sin el registro del proceso, como en las pruebas del catálogo. */
+    ErroresCargas() {
+        this(null);
+    }
 
     @Override
     public List<EntradaCatalogo> entradas() {
@@ -76,7 +104,78 @@ class ErroresCargas implements CatalogoDeErrores {
                         "CARGAS_ARCHIVO_DEMASIADO_GRANDE",
                         413,
                         "Archivo demasiado grande",
-                        "El archivo pasa de 5 MB, el tamaño máximo de una carga."));
+                        "El archivo pasa de 5 MB, el tamaño máximo de una carga."),
+                EntradaCatalogo.conDetalles(
+                        CargaConErrores.class,
+                        new DefinicionDeCodigo(
+                                "CARGAS_CARGA_CON_ERRORES",
+                                409,
+                                "Carga con errores",
+                                "El archivo tiene filas con errores y no se puede confirmar."
+                                        + " Descarga el informe, corrige esas filas y vuelve a"
+                                        + " subirlo."),
+                        error ->
+                                List.of(
+                                        new DetalleRespuesta(
+                                                "archivo",
+                                                error.filas() == 1
+                                                        ? "1 fila tiene errores."
+                                                        : error.filas()
+                                                                + " filas tienen errores."))),
+                EntradaCatalogo.de(
+                        VistaPreviaDesactualizada.class,
+                        "CARGAS_VISTA_PREVIA_DESACTUALIZADA",
+                        409,
+                        "Vista previa desactualizada",
+                        "Los datos cambiaron desde que revisaste la vista previa. Vuelve a subir el"
+                                + " archivo y revisa la vista previa antes de confirmar."),
+                EntradaCatalogo.conDetalles(
+                        RechazoDelLote.class,
+                        new DefinicionDeCodigo(
+                                "CARGAS_CARGA_RECHAZADA",
+                                409,
+                                "Carga rechazada",
+                                "El servicio dueño rechazó la carga y no se aplicó ninguna fila."
+                                        + " Revisa el detalle, corrige el archivo y vuelve a"
+                                        + " subirlo."),
+                        this::detalles));
+    }
+
+    /**
+     * Los detalles de un rechazo: la fila y, con el catálogo del dueño, el campo y su descripción,
+     * o su título y su descripción. Nunca la traza ni el mensaje técnico de la excepción.
+     */
+    List<DetalleRespuesta> detalles(RechazoDelLote rechazo) {
+        String fila = "fila " + rechazo.fila();
+        if (rechazo.campo().isPresent()) {
+            return List.of(
+                    new DetalleRespuesta(
+                            fila + " · " + rechazo.campo().get(), rechazo.getMessage()));
+        }
+        Throwable causa = rechazo.getCause();
+        if (causa == null) {
+            return List.of(new DetalleRespuesta(fila, rechazo.getMessage()));
+        }
+        Optional<EntradaCatalogo> entrada =
+                Optional.ofNullable(registro)
+                        .map(ObjectProvider::getIfAvailable)
+                        .flatMap(delProceso -> delProceso.buscarEntrada(causa.getClass()));
+        if (entrada.isEmpty()) {
+            return List.of(new DetalleRespuesta(fila, RECHAZO_SIN_CODIGO));
+        }
+        List<DetalleRespuesta> delDueno = entrada.get().detalles(causa);
+        if (delDueno.isEmpty()) {
+            DefinicionDeCodigo definicion = entrada.get().definicion();
+            return List.of(
+                    new DetalleRespuesta(
+                            fila, definicion.titulo() + ": " + definicion.descripcion()));
+        }
+        return delDueno.stream()
+                .map(
+                        detalle ->
+                                new DetalleRespuesta(
+                                        fila + " · " + detalle.campo(), detalle.descripcion()))
+                .toList();
     }
 
     private static DetalleRespuesta detalle(DiferenciaDeEncabezado diferencia) {

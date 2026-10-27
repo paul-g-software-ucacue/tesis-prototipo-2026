@@ -132,6 +132,13 @@ jobs:
         shell: bash
         run: deploy/probar_reglas_carga.sh
 
+      # F01-H04: las 10 cargas de prueba confirmadas en su orden, subidas otra vez sin cambios, la
+      # repetida, una baja que no se aplica, una vista previa desactualizada, una regla del dueño,
+      # el historial y quién confirma (D-71). Borra lo que creó.
+      - name: Confirmación de las cargas de punta a punta
+        shell: bash
+        run: deploy/probar_confirmar_carga.sh
+
       # shell: bash agrega pipefail, así que tee no oculta el código de salida del script.
       # Después de iniciar sesión (D-34): la medición de referencia de R-19 desde B00-H03.
       - name: Medición de R-19 después de iniciar sesión

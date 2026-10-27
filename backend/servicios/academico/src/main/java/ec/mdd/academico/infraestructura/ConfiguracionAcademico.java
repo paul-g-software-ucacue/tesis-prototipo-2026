@@ -5,6 +5,7 @@ import ec.mdd.academico.adaptadores.salida.PublicadorDeAvisosSpring;
 import ec.mdd.academico.adaptadores.salida.RegistroDeCambiosJdbc;
 import ec.mdd.academico.adaptadores.salida.RepositorioCarrerasJdbc;
 import ec.mdd.academico.adaptadores.salida.RepositorioEstructuraJdbc;
+import ec.mdd.academico.adaptadores.salida.RepositorioMatriculasJdbc;
 import ec.mdd.academico.adaptadores.salida.RepositorioOfertaJdbc;
 import ec.mdd.academico.adaptadores.salida.RepositorioPeriodosJdbc;
 import ec.mdd.academico.adaptadores.salida.TransaccionSpring;
@@ -18,8 +19,10 @@ import ec.mdd.academico.aplicacion.ConsultarReferenciasServicio;
 import ec.mdd.academico.aplicacion.CorregirPeriodoServicio;
 import ec.mdd.academico.aplicacion.MantenerCarrerasServicio;
 import ec.mdd.academico.aplicacion.MantenerEstructuraServicio;
+import ec.mdd.academico.aplicacion.MantenerMatriculasServicio;
 import ec.mdd.academico.aplicacion.MantenerOfertaServicio;
 import ec.mdd.academico.aplicacion.RegistrarPeriodoServicio;
+import ec.mdd.academico.aplicacion.cargas.CargasDeAcademico;
 import ec.mdd.academico.puertos.entrada.AbrirPeriodo;
 import ec.mdd.academico.puertos.entrada.CambiarEstadoPeriodo;
 import ec.mdd.academico.puertos.entrada.ConsultarCarreras;
@@ -30,6 +33,7 @@ import ec.mdd.academico.puertos.entrada.ConsultarReferencias;
 import ec.mdd.academico.puertos.entrada.CorregirPeriodo;
 import ec.mdd.academico.puertos.entrada.MantenerCarreras;
 import ec.mdd.academico.puertos.entrada.MantenerEstructura;
+import ec.mdd.academico.puertos.entrada.MantenerMatriculas;
 import ec.mdd.academico.puertos.entrada.MantenerOferta;
 import ec.mdd.academico.puertos.entrada.RegistrarPeriodo;
 import ec.mdd.academico.puertos.salida.AvisosDelPeriodo;
@@ -37,11 +41,13 @@ import ec.mdd.academico.puertos.salida.NormativaDelPeriodo;
 import ec.mdd.academico.puertos.salida.RegistroDeCambios;
 import ec.mdd.academico.puertos.salida.RepositorioCarreras;
 import ec.mdd.academico.puertos.salida.RepositorioEstructura;
+import ec.mdd.academico.puertos.salida.RepositorioMatriculas;
 import ec.mdd.academico.puertos.salida.RepositorioOferta;
 import ec.mdd.academico.puertos.salida.RepositorioPeriodos;
 import ec.mdd.academico.puertos.salida.Transaccion;
 import ec.mdd.normativa.puertos.entrada.AsociarVersionAPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarNormativa;
+import ec.mdd.plataforma.cargas.AplicadorDeCargas;
 import java.time.Clock;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -217,6 +223,58 @@ public class ConfiguracionAcademico {
                 registroDeCambiosAcademico,
                 transaccionAcademico,
                 Clock.systemUTC());
+    }
+
+    @Bean
+    @DependsOn("flywayAcademico")
+    public RepositorioMatriculas repositorioMatriculas(JdbcClient jdbc) {
+        return new RepositorioMatriculasJdbc(jdbc);
+    }
+
+    @Bean
+    public MantenerMatriculas mantenerMatriculas(
+            RepositorioMatriculas repositorioMatriculas,
+            RegistroDeCambios registroDeCambiosAcademico,
+            Transaccion transaccionAcademico) {
+        return new MantenerMatriculasServicio(
+                repositorioMatriculas,
+                registroDeCambiosAcademico,
+                transaccionAcademico,
+                Clock.systemUTC());
+    }
+
+    /**
+     * Las cargas de Académico (F01-H04, MD-13, ADR-022): la vista previa y la aplicación completa o
+     * nada de cada lote de las cargas 01 a 05 y 10, con los casos de uso de siempre.
+     */
+    @Bean
+    public AplicadorDeCargas aplicadorAcademico(
+            Transaccion transaccionAcademico,
+            RepositorioEstructura repositorioEstructura,
+            MantenerEstructura mantenerEstructura,
+            RepositorioCarreras repositorioCarreras,
+            MantenerCarreras mantenerCarreras,
+            RepositorioPeriodos repositorioPeriodos,
+            RegistrarPeriodo registrarPeriodo,
+            CorregirPeriodo corregirPeriodo,
+            RepositorioOferta repositorioOferta,
+            MantenerOferta mantenerOferta,
+            RepositorioMatriculas repositorioMatriculas,
+            MantenerMatriculas mantenerMatriculas) {
+        return CargasDeAcademico.aplicador(
+                new CargasDeAcademico.Dependencias(
+                        transaccionAcademico,
+                        repositorioEstructura,
+                        mantenerEstructura,
+                        repositorioCarreras,
+                        mantenerCarreras,
+                        repositorioPeriodos,
+                        registrarPeriodo,
+                        corregirPeriodo,
+                        repositorioOferta,
+                        mantenerOferta,
+                        repositorioMatriculas,
+                        mantenerMatriculas));
     }
 
     @Bean

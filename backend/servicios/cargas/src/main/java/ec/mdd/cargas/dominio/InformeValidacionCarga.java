@@ -31,6 +31,16 @@ public record InformeValidacionCarga(int registros, List<ProblemaDeFila> problem
         return errores() == 0;
     }
 
+    /** Cuántas filas distintas tienen algún error. */
+    public int filasConErrores() {
+        return (int)
+                problemas.stream()
+                        .filter(p -> p.tipo() == TipoDeProblema.ERROR)
+                        .map(ProblemaDeFila::fila)
+                        .distinct()
+                        .count();
+    }
+
     /** Los primeros problemas, para la respuesta de la pantalla; el CSV los trae todos. */
     public List<ProblemaDeFila> primeros(int cuantos) {
         return problemas.subList(0, Math.min(cuantos, problemas.size()));

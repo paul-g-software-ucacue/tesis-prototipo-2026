@@ -6,10 +6,14 @@ import static org.assertj.core.groups.Tuple.tuple;
 import ec.mdd.cargas.dominio.ArchivoSinRegistros;
 import ec.mdd.cargas.dominio.EncabezadosDistintos;
 import ec.mdd.cargas.puertos.entrada.ArchivoDemasiadoGrande;
+import ec.mdd.cargas.puertos.entrada.CargaConErrores;
 import ec.mdd.cargas.puertos.salida.ArchivoIlegible;
 import ec.mdd.cargas.puertos.salida.CodificacionNoAdmitida;
 import ec.mdd.cargas.puertos.salida.FormatoNoAdmitido;
 import ec.mdd.cargas.puertos.salida.VariasHojas;
+import ec.mdd.plataforma.cargas.RechazoDelLote;
+import ec.mdd.plataforma.cargas.VistaPreviaDesactualizada;
+import ec.mdd.plataforma.errores.nucleo.DetalleRespuesta;
 import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
 import ec.mdd.plataforma.pruebas.VerificadorDeCatalogo;
 import org.junit.jupiter.api.Test;
@@ -23,7 +27,7 @@ class ErroresCargasTest {
     }
 
     @Test
-    void dadosLosRechazosDeUnArchivo_cuandoSeBuscanSusEntradas_entoncesSonLos7Codigos() {
+    void dadosLosRechazosDeUnArchivo_cuandoSeBuscanSusEntradas_entoncesSonLos10Codigos() {
         assertThat(new ErroresCargas().entradas())
                 .extracting(
                         EntradaCatalogo::excepcion,
@@ -36,9 +40,31 @@ class ErroresCargasTest {
                         tuple(ArchivoIlegible.class, "CARGAS_ARCHIVO_ILEGIBLE", 400),
                         tuple(EncabezadosDistintos.class, "CARGAS_ENCABEZADOS_DISTINTOS", 400),
                         tuple(ArchivoSinRegistros.class, "CARGAS_ARCHIVO_SIN_REGISTROS", 400),
+                        tuple(ArchivoDemasiadoGrande.class, "CARGAS_ARCHIVO_DEMASIADO_GRANDE", 413),
+                        tuple(CargaConErrores.class, "CARGAS_CARGA_CON_ERRORES", 409),
                         tuple(
-                                ArchivoDemasiadoGrande.class,
-                                "CARGAS_ARCHIVO_DEMASIADO_GRANDE",
-                                413));
+                                VistaPreviaDesactualizada.class,
+                                "CARGAS_VISTA_PREVIA_DESACTUALIZADA",
+                                409),
+                        tuple(RechazoDelLote.class, "CARGAS_CARGA_RECHAZADA", 409));
+    }
+
+    @Test
+    void dadoUnRechazo_cuandoSeTraduce_entoncesLaFilaYElMotivoSinLaTraza() {
+        ErroresCargas errores = new ErroresCargas();
+
+        assertThat(
+                        errores.detalles(
+                                new RechazoDelLote(
+                                        5, "Esta clave ya está en la fila 2: no la repitas.")))
+                .containsExactly(
+                        new DetalleRespuesta(
+                                "fila 5", "Esta clave ya está en la fila 2: no la repitas."));
+        assertThat(
+                        errores.detalles(
+                                new RechazoDelLote(7, new IllegalStateException("traza interna"))))
+                .containsExactly(new DetalleRespuesta("fila 7", ErroresCargas.RECHAZO_SIN_CODIGO));
+        assertThat(errores.detalles(new RechazoDelLote(3, "carrera", "No existe la carrera.")))
+                .containsExactly(new DetalleRespuesta("fila 3 · carrera", "No existe la carrera."));
     }
 }

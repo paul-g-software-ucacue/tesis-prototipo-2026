@@ -229,7 +229,7 @@ carrera_que_no_existe() {
     validar asignaturas_malla "$carpeta/asignaturas_con_error.csv"
     [[ $estado == 200 && $(jq -r '.valido' <<<"$cuerpo") == false \
         && $(jq -c '[.problemas[] | [.fila, .campo, .motivo]]' <<<"$cuerpo") \
-            == '[[3,"codigo_carrera","No existe la carrera en el sistema: regístrela o cárguela antes."]]' ]]
+            == '[[3,"codigo_carrera","No existe la carrera en el sistema: regístrala o confirma antes su carga."]]' ]]
 }
 
 docentes_validos() {

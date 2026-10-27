@@ -15,6 +15,9 @@ dependencies {
     // Registro de publicaciones, entrega y reenvío de eventos hacia otros procesos: Académico avisa a
     // Roles de cada periodo (F05-H03, ADR-018).
     implementation project(':plataforma:eventos')
+    // El lenguaje publicado de las cargas (ADR-022): Cargas y sus tres dueños de este proceso se
+    // entienden con él (F01-H04).
+    implementation project(':plataforma:lenguaje-cargas')
 
     // Servicios que ensambla este proceso (ADR-006).
     implementation project(':servicios:cargas')

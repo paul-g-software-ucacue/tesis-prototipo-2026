@@ -26,6 +26,11 @@ public interface RepositorioPeriodos {
     Optional<PeriodoAcademico> bloquear(String codigo);
 
     /**
+     * Bloquea la tabla de los periodos hasta el fin de la transacción, para una carga (F01-H04).
+     */
+    void bloquearTodos();
+
+    /**
      * Guarda un periodo nuevo.
      *
      * @param quien el usuario que lo registra

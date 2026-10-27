@@ -1,0 +1,13 @@
+// El lenguaje publicado de las cargas (ADR-022, F01-H04): el lote, la vista previa con su huella,
+// el traductor que cada servicio dueño escribe por carga y el motor que compara y aplica todo o
+// nada en la transacción del dueño (MD-13). No depende de Spring: lo usan Cargas, Académico,
+// Docentes y Normativa.
+plugins {
+    id 'java-library'
+    id 'mdd.java-conventions'
+}
+
+dependencies {
+    // @NamedInterface: los servicios usan este paquete sin violar los límites de Spring Modulith.
+    implementation 'org.springframework.modulith:spring-modulith-api'
+}

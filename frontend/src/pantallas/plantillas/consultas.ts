@@ -1,5 +1,6 @@
 // Los tipos, la consulta y las descargas de la pantalla «Plantillas de carga» (contratos/cargas,
-// F01-H01), la subida (F01-H02) y el informe de las filas (F01-H03).
+// F01-H01), la subida (F01-H02), el informe de las filas (F01-H03), y la vista previa, la
+// confirmación y el historial (F01-H04).
 import { useQuery } from '@tanstack/react-query';
 import { apiCargas, llamar } from '../../api/cliente';
 import type { components } from '../../api/generado/cargas';
@@ -11,6 +12,10 @@ export type ColumnaDeCarga = components['schemas']['ColumnaDeCarga'];
 export type Obligatoriedad = components['schemas']['Obligatoriedad'];
 export type LecturaDeArchivo = components['schemas']['LecturaDeArchivo'];
 export type ProblemaDeFila = components['schemas']['ProblemaDeFila'];
+export type VistaPrevia = components['schemas']['VistaPrevia'];
+export type RegistroDeLaVista = components['schemas']['RegistroDeLaVista'];
+export type ResultadoDeConfirmacion = components['schemas']['ResultadoDeConfirmacion'];
+export type EntradaDeHistorial = components['schemas']['EntradaDeHistorial'];
 
 /** El diccionario de datos de las 10 cargas; no cambia mientras el servidor corre. */
 export function useDiccionario() {
@@ -106,4 +111,42 @@ export async function descargarInforme(carga: Carga, archivo: File): Promise<voi
     throw new FalloDeApi(response.status, error);
   }
   guardar(data, nombreDelServidor(response) ?? `informe-${carga.codigo}.csv`);
+}
+
+/**
+ * Vuelve a enviar el mismo archivo con la huella de la vista previa revisada, para que su servicio
+ * dueño la aplique completa o nada (F01-H04, MD-13). Si los datos cambiaron desde la vista previa,
+ * el servidor no aplica nada y lo dice.
+ */
+export function confirmarCarga(
+  carga: Carga,
+  archivo: File,
+  huella: string,
+): Promise<ResultadoDeConfirmacion> {
+  return llamar(
+    apiCargas.POST('/api/cargas/plantillas/{codigo}/archivo/confirmacion', {
+      params: { path: { codigo: carga.codigo } },
+      // El contrato tipa la parte binaria como texto; va el archivo tal cual, en un FormData.
+      body: { archivo: archivo as unknown as string, huella },
+      bodySerializer: (cuerpo: { archivo: string; huella: string }) => {
+        const formulario = new FormData();
+        formulario.append('archivo', cuerpo.archivo as unknown as File);
+        formulario.append('huella', cuerpo.huella);
+        return formulario;
+      },
+    }),
+  );
+}
+
+/** El historial de una carga, del intento más reciente al más antiguo (F01-H04, RF-10). */
+export function useHistorial(carga: Carga) {
+  return useQuery({
+    queryKey: ['cargas', 'historial', carga.codigo],
+    queryFn: () =>
+      llamar(
+        apiCargas.GET('/api/cargas/plantillas/{codigo}/historial', {
+          params: { path: { codigo: carga.codigo } },
+        }),
+      ),
+  });
 }
