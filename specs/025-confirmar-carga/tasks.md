@@ -244,7 +244,7 @@ description: "Tareas de F01-H04: vista previa y confirmación de la carga"
 
 ## Phase 9: Punta a punta y cierre
 
-- [ ] T022 Crear `deploy/probar_confirmar_carga.sh`, con el estilo de `probar_cargos_proyectos.sh`:
+- [X] T022 Crear `deploy/probar_confirmar_carga.sh`, con el estilo de `probar_cargos_proyectos.sh`:
   - **Antes de empezar:** comprueba que ningún código ni cédula de las 10 cargas de prueba existe en la base; si alguno existe, falla sin tocar nada.
   - **Los pasos:**
     - confirma las 10 en orden, con `datos.demo`;
@@ -258,7 +258,7 @@ description: "Tareas de F01-H04: vista previa y confirmación de la carga"
   - **La limpieza:** borra en la base todo lo creado, con sus registros, la copia de los periodos en Roles y los eventos.
 
   Agregar su paso a `.github/workflows/perfil-consolidado.yml`. Correrlo dos veces seguidas y anotarlo; shellcheck v0.11.0 sin observaciones.
-- [ ] T023 Correr todo, como en las historias anteriores:
+- [X] T023 Correr todo, como en las historias anteriores:
   - backend con `integrationTest`, y la SPA;
   - los 15 scripts con el perfil reconstruido;
   - `probar_equipo.sh`;
