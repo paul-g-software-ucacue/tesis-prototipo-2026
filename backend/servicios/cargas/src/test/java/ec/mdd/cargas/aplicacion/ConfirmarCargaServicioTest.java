@@ -24,9 +24,9 @@ import ec.mdd.cargas.puertos.entrada.CargasAnterioresPendientes;
 import ec.mdd.cargas.puertos.entrada.Confirmacion;
 import ec.mdd.cargas.puertos.salida.ArchivoLeido;
 import ec.mdd.cargas.puertos.salida.Formato;
+import ec.mdd.cargas.puertos.salida.FuenteDeDatos;
 import ec.mdd.cargas.puertos.salida.FuenteDelDiccionario;
 import ec.mdd.cargas.puertos.salida.HistorialDeCargas;
-import ec.mdd.cargas.puertos.salida.LectorDeArchivo;
 import ec.mdd.cargas.puertos.salida.ReferenciasDelSistema;
 import ec.mdd.cargas.puertos.salida.Transaccion;
 import ec.mdd.plataforma.cargas.AplicadorDeCargas;
@@ -54,7 +54,7 @@ class ConfirmarCargaServicioTest {
     private static final byte[] CONTENIDO = "ciclos".getBytes(StandardCharsets.UTF_8);
     private static final String HASH = MotorDelLote.sha256(CONTENIDO);
 
-    private final LectorDeArchivo lector = mock(LectorDeArchivo.class);
+    private final FuenteDeDatos lector = mock(FuenteDeDatos.class);
     private final FuenteDelDiccionario fuente = mock(FuenteDelDiccionario.class);
     private final ReferenciasDelSistema referencias = mock(ReferenciasDelSistema.class);
     private final AplicadorDeCargas dueno = mock(AplicadorDeCargas.class);

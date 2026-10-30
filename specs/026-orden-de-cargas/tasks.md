@@ -123,7 +123,7 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
 
   Anotar las mediciones en la evidencia.
 
-- [ ] T012 [US1] Ajustar `deploy/probar_subida.sh` al orden: si no hay una unidad orgánica activa, crear una temporal antes de subir las carreras y borrarla al terminar, como `probar_reglas_carga.sh`. Correrlo en una base vacía y en una con datos; pasar shellcheck v0.11.0.
+- [X] T012 [US1] Ajustar `deploy/probar_subida.sh` al orden: si no hay una unidad orgánica activa, crear una temporal antes de subir las carreras y borrarla al terminar, como `probar_reglas_carga.sh`. Correrlo en una base vacía y en una con datos; pasar shellcheck v0.11.0.
 
 **Checkpoint**: el primer escenario del issue funciona por la API.
 
@@ -169,8 +169,8 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
 
 **Independent Test**: `ArquitecturaTest` falla si `dominio` o `aplicacion` importan Apache POI o un lector; la misma carga desde una fuente de prueba da el mismo informe y la misma vista previa que el CSV.
 
-- [ ] T017 [P] [US5] Renombrar `CAR/main/java/ec/mdd/cargas/puertos/salida/LectorDeArchivo.java` a `FuenteDeDatos.java`, con su JavaDoc: el puerto de fuente de datos del glosario; el archivo es su adaptador inicial; Moodle o SIGA serían otro (RF-57). Actualizar sus usos, `LectorPorFormato` (el adaptador de archivos), las pruebas y los comentarios.
-- [ ] T018 [US5] Agregar a `CAR/test/java/ec/mdd/cargas/ArquitecturaTest.java` la regla «ni `..cargas.dominio..` ni `..cargas.aplicacion..` dependen de `org.apache.poi..` ni de `..cargas.adaptadores..`». Comprobar que falla si se agrega a propósito una importación de POI en `aplicacion` y se quita. Crear `CAR/test/java/ec/mdd/cargas/aplicacion/FuenteDeDatosIntercambiableTest.java`: una `FuenteDeDatos` escrita a mano que entrega una `TablaDeDatos` sin leer bytes, con los mismos registros que un CSV de prueba. El informe de validación y la vista previa de `ValidarArchivoServicio` tienen que ser iguales a los del CSV leído por `LectorPorFormato`.
+- [X] T017 [P] [US5] Renombrar `CAR/main/java/ec/mdd/cargas/puertos/salida/LectorDeArchivo.java` a `FuenteDeDatos.java`, con su JavaDoc: el puerto de fuente de datos del glosario; el archivo es su adaptador inicial; Moodle o SIGA serían otro (RF-57). Actualizar sus usos, `LectorPorFormato` (el adaptador de archivos), las pruebas y los comentarios.
+- [X] T018 [US5] Agregar a `CAR/test/java/ec/mdd/cargas/ArquitecturaTest.java` la regla «ni `..cargas.dominio..` ni `..cargas.aplicacion..` dependen de `org.apache.poi..` ni de `..cargas.adaptadores..`». Comprobar que falla si se agrega a propósito una importación de POI en `aplicacion` y se quita. Crear `CAR/test/java/ec/mdd/cargas/aplicacion/FuenteDeDatosIntercambiableTest.java`: una `FuenteDeDatos` escrita a mano que entrega una `TablaDeDatos` sin leer bytes, con los mismos registros que un CSV de prueba. El informe de validación y la vista previa de `ValidarArchivoServicio` tienen que ser iguales a los del CSV leído por `LectorPorFormato`.
 
 **Checkpoint**: el cuarto escenario del issue queda probado en cada build.
 

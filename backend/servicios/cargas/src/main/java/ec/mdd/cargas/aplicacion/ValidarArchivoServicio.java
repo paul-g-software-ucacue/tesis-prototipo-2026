@@ -13,7 +13,7 @@ import ec.mdd.cargas.puertos.entrada.CargasAnterioresPendientes;
 import ec.mdd.cargas.puertos.entrada.ConsultarPlantillas;
 import ec.mdd.cargas.puertos.entrada.ValidarArchivo;
 import ec.mdd.cargas.puertos.salida.ArchivoLeido;
-import ec.mdd.cargas.puertos.salida.LectorDeArchivo;
+import ec.mdd.cargas.puertos.salida.FuenteDeDatos;
 import ec.mdd.cargas.puertos.salida.ReferenciasDelSistema;
 import ec.mdd.plataforma.cargas.FilaDelLote;
 import ec.mdd.plataforma.cargas.LoteDeCarga;
@@ -37,7 +37,7 @@ public final class ValidarArchivoServicio implements ValidarArchivo {
     public static final int MAXIMO = 5 * 1024 * 1024;
 
     private final ConsultarPlantillas plantillas;
-    private final LectorDeArchivo lector;
+    private final FuenteDeDatos fuente;
     private final ReferenciasDelSistema referencias;
     private final DuenosDeLasCargas duenos;
 
@@ -47,11 +47,11 @@ public final class ValidarArchivoServicio implements ValidarArchivo {
      */
     public ValidarArchivoServicio(
             ConsultarPlantillas plantillas,
-            LectorDeArchivo lector,
+            FuenteDeDatos fuente,
             ReferenciasDelSistema referencias,
             DuenosDeLasCargas duenos) {
         this.plantillas = plantillas;
-        this.lector = lector;
+        this.fuente = fuente;
         this.referencias = referencias;
         this.duenos = duenos;
     }
@@ -95,7 +95,7 @@ public final class ValidarArchivoServicio implements ValidarArchivo {
         if (archivo.contenido().length > MAXIMO) {
             throw new ArchivoDemasiadoGrande(archivo.contenido().length);
         }
-        ArchivoLeido leido = lector.leer(archivo.nombre(), archivo.contenido());
+        ArchivoLeido leido = fuente.leer(archivo.nombre(), archivo.contenido());
         carga.leer(leido.tabla());
         InformeValidacionCarga informe =
                 plantillas

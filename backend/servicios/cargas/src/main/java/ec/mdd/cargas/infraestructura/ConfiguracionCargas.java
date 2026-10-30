@@ -18,9 +18,9 @@ import ec.mdd.cargas.puertos.entrada.ConfirmarSinProyectos;
 import ec.mdd.cargas.puertos.entrada.ConsultarEstadoDeLasCargas;
 import ec.mdd.cargas.puertos.entrada.ConsultarHistorial;
 import ec.mdd.cargas.puertos.entrada.ConsultarPlantillas;
+import ec.mdd.cargas.puertos.salida.FuenteDeDatos;
 import ec.mdd.cargas.puertos.salida.FuenteDelDiccionario;
 import ec.mdd.cargas.puertos.salida.HistorialDeCargas;
-import ec.mdd.cargas.puertos.salida.LectorDeArchivo;
 import ec.mdd.cargas.puertos.salida.ProyectosDelPeriodo;
 import ec.mdd.cargas.puertos.salida.ReferenciasDelSistema;
 import ec.mdd.cargas.puertos.salida.Transaccion;
@@ -51,7 +51,7 @@ public class ConfiguracionCargas {
     }
 
     @Bean
-    public LectorDeArchivo lectorDeArchivo() {
+    public FuenteDeDatos fuenteDeDatos() {
         return new LectorPorFormato();
     }
 
@@ -78,11 +78,11 @@ public class ConfiguracionCargas {
     @Bean
     public ValidarArchivoServicio validarArchivo(
             ConsultarPlantillas consultarPlantillas,
-            LectorDeArchivo lectorDeArchivo,
+            FuenteDeDatos fuenteDeDatos,
             ReferenciasDelSistema referenciasDelSistema,
             DuenosDeLasCargas duenosDeLasCargas) {
         return new ValidarArchivoServicio(
-                consultarPlantillas, lectorDeArchivo, referenciasDelSistema, duenosDeLasCargas);
+                consultarPlantillas, fuenteDeDatos, referenciasDelSistema, duenosDeLasCargas);
     }
 
     @Bean
