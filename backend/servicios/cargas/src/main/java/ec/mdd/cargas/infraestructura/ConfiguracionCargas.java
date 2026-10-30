@@ -10,6 +10,7 @@ import ec.mdd.cargas.aplicacion.ConfirmarSinProyectosServicio;
 import ec.mdd.cargas.aplicacion.ConsultarEstadoDeLasCargasServicio;
 import ec.mdd.cargas.aplicacion.ConsultarHistorialServicio;
 import ec.mdd.cargas.aplicacion.ConsultarPlantillasServicio;
+import ec.mdd.cargas.aplicacion.ConsultarPreparacionServicio;
 import ec.mdd.cargas.aplicacion.DuenosDeLasCargas;
 import ec.mdd.cargas.aplicacion.ValidarArchivoServicio;
 import ec.mdd.cargas.dominio.Carga;
@@ -18,6 +19,7 @@ import ec.mdd.cargas.puertos.entrada.ConfirmarSinProyectos;
 import ec.mdd.cargas.puertos.entrada.ConsultarEstadoDeLasCargas;
 import ec.mdd.cargas.puertos.entrada.ConsultarHistorial;
 import ec.mdd.cargas.puertos.entrada.ConsultarPlantillas;
+import ec.mdd.cargas.puertos.entrada.ConsultarPreparacion;
 import ec.mdd.cargas.puertos.salida.FuenteDeDatos;
 import ec.mdd.cargas.puertos.salida.FuenteDelDiccionario;
 import ec.mdd.cargas.puertos.salida.HistorialDeCargas;
@@ -114,6 +116,22 @@ public class ConfiguracionCargas {
             ProyectosDelPeriodo proyectosDelPeriodo) {
         return new ConsultarEstadoDeLasCargasServicio(
                 consultarPlantillas, duenosDeLasCargas, historialDeCargas, proyectosDelPeriodo);
+    }
+
+    /** El tablero de preparación de un periodo (F02-H02). */
+    @Bean
+    public ConsultarPreparacion consultarPreparacion(
+            ConsultarPlantillas consultarPlantillas,
+            DuenosDeLasCargas duenosDeLasCargas,
+            HistorialDeCargas historialDeCargas,
+            ProyectosDelPeriodo proyectosDelPeriodo,
+            ReferenciasDelSistema referenciasDelSistema) {
+        return new ConsultarPreparacionServicio(
+                consultarPlantillas,
+                duenosDeLasCargas,
+                historialDeCargas,
+                proyectosDelPeriodo,
+                referenciasDelSistema);
     }
 
     /** La confirmación «sin proyectos» de un periodo (F01-H05). */

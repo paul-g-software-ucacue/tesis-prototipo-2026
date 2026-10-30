@@ -46,6 +46,11 @@ public final class DuenosDeLasCargas {
         return porCarga.get(carga);
     }
 
+    /** Si el dueño de la carga tiene datos vigentes de ella en ese periodo (F02-H02). */
+    public boolean tieneDatosEn(String carga, String periodo) {
+        return de(carga).tieneDatosEn(carga, periodo);
+    }
+
     /** Si el dueño de la carga tiene datos vigentes de ella (F01-H05). */
     public boolean tieneDatos(String carga) {
         return de(carga).tieneDatos(carga);

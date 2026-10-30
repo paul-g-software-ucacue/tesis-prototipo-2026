@@ -46,10 +46,19 @@ public class ReferenciasDePrueba {
                                                         codigo, "U", "GESTION", null, true))
                                 .toList(),
                         columna("03_ciclos_academicos.csv", "codigo_periodo").stream()
+                                // 2026-I abierto; 2026-II, que empieza después, sin abrir
+                                // (F02-H02).
                                 .map(
                                         codigo ->
                                                 new PeriodoDeReferencia(
-                                                        codigo, "P", dia, dia, false, false))
+                                                        codigo,
+                                                        "Periodo " + codigo,
+                                                        codigo.equals("2026-I")
+                                                                ? dia
+                                                                : dia.plusMonths(6),
+                                                        dia.plusMonths(7),
+                                                        codigo.equals("2026-I"),
+                                                        false))
                                 .toList());
     }
 

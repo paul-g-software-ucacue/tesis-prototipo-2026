@@ -106,8 +106,8 @@ Plan aprobado por el autor el 2026-10-30.
 - en el proceso `datos` real, con docentes pendiente, el tablero de 2026-I no está listo y nombra docentes;
 - con todo y 2026-I abierto, está listo.
 
-- [ ] T007 [US1] Ampliar `ReferenciasDelSistema` (`CAR/main/java/ec/mdd/cargas/puertos/salida/`) con `periodos()`: código, nombre, inicio, abierto y cerrado de cada periodo, del que empieza más tarde al más antiguo, con un record propio de Cargas. Implementarlo en `ReferenciasDesdePuertos` desde `PeriodoDeReferencia`. Primero la prueba, en `ReferenciasDesdePuertosTest`.
-- [ ] T008 [US1] [US2] Crear `ConsultarPreparacion` (puerto de entrada), `ConsultarPreparacionServicio` (aplicación) y `PreparacionControlador` (`adaptadores/entrada`, operación `consultarPreparacionDelPeriodo`) en `CAR/main/java/ec/mdd/cargas/`. El servicio arma `PreparacionDelPeriodo` con:
+- [X] T007 [US1] Ampliar `ReferenciasDelSistema` (`CAR/main/java/ec/mdd/cargas/puertos/salida/`) con `periodos()`: código, nombre, inicio, abierto y cerrado de cada periodo, del que empieza más tarde al más antiguo, con un record propio de Cargas. Implementarlo en `ReferenciasDesdePuertos` desde `PeriodoDeReferencia`. Primero la prueba, en `ReferenciasDesdePuertosTest`.
+- [X] T008 [US1] [US2] Crear `ConsultarPreparacion` (puerto de entrada), `ConsultarPreparacionServicio` (aplicación) y `PreparacionControlador` (`adaptadores/entrada`, operación `consultarPreparacionDelPeriodo`) en `CAR/main/java/ec/mdd/cargas/`. El servicio arma `PreparacionDelPeriodo` con:
   - `DuenosDeLasCargas` (`tieneDatosEn`);
   - `ProyectosDelPeriodo.hayAsignables`;
   - el historial (el último intento de cada carga y «sin proyectos» del periodo);

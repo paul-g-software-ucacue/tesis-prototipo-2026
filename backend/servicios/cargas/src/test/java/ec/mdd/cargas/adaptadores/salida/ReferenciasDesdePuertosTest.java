@@ -11,6 +11,7 @@ import ec.mdd.academico.puertos.entrada.ReferenciasDeAcademico;
 import ec.mdd.academico.puertos.entrada.UnidadDeReferencia;
 import ec.mdd.cargas.dominio.ReferenciasExistentes;
 import ec.mdd.cargas.dominio.TipoDeReferencia;
+import ec.mdd.cargas.puertos.salida.PeriodoAcademico;
 import ec.mdd.docentes.puertos.entrada.ConsultarIdentificaciones;
 import java.time.LocalDate;
 import java.util.List;
@@ -42,7 +43,21 @@ class ReferenciasDesdePuertosTest {
                                             LocalDate.of(2026, 4, 1),
                                             LocalDate.of(2026, 8, 31),
                                             true,
-                                            false)));
+                                            false),
+                                    new PeriodoDeReferencia(
+                                            "2026-II",
+                                            "Segundo periodo",
+                                            LocalDate.of(2026, 10, 5),
+                                            LocalDate.of(2027, 2, 5),
+                                            false,
+                                            false),
+                                    new PeriodoDeReferencia(
+                                            "2025-II",
+                                            "Periodo cerrado",
+                                            LocalDate.of(2025, 10, 6),
+                                            LocalDate.of(2026, 2, 6),
+                                            true,
+                                            true)));
     private final ConsultarIdentificaciones docentes = () -> Set.of("0109990010");
 
     @Test
@@ -52,9 +67,29 @@ class ReferenciasDesdePuertosTest {
 
         assertThat(existentes.unidades()).containsExactlyInAnyOrder("MATRIZ", "VIEJA");
         assertThat(existentes.carreras()).containsExactly("C1");
-        assertThat(existentes.periodos()).containsExactly("2026-I");
+        assertThat(existentes.periodos()).containsExactlyInAnyOrder("2026-I", "2026-II", "2025-II");
         assertThat(existentes.asignaturas()).containsExactly("A1");
         assertThat(existentes.existe(TipoDeReferencia.DOCENTE, "0109990010")).isTrue();
         assertThat(existentes.existe(TipoDeReferencia.CARRERA, "C2")).isFalse();
+    }
+
+    @Test
+    void losPeriodos_delQueEmpiezaMasTardeAlMasAntiguo_conSiEstanAbiertosOCerrados() {
+        assertThat(new ReferenciasDesdePuertos(academico, docentes).periodos())
+                .containsExactly(
+                        new PeriodoAcademico(
+                                "2026-II",
+                                "Segundo periodo",
+                                LocalDate.of(2026, 10, 5),
+                                false,
+                                false),
+                        new PeriodoAcademico(
+                                "2026-I", "Primer periodo", LocalDate.of(2026, 4, 1), true, false),
+                        new PeriodoAcademico(
+                                "2025-II",
+                                "Periodo cerrado",
+                                LocalDate.of(2025, 10, 6),
+                                true,
+                                true));
     }
 }
