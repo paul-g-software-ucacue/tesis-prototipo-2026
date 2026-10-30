@@ -88,3 +88,10 @@ Registro de las comprobaciones de la historia (issue #31): el orden de las 10 ca
 - **El equipo de demostración, detenido.** Al verificar, sus 8 contenedores estaban «Exited» desde hacía 2 días, igual que el 2026-10-26; no lo detuvo esta verificación (`probar_equipo.sh` usa el proyecto `mdd-prueba`) y no se tocó.
 - **go-jose en las imágenes (GHSA-mgcc-cww5-fp2q).** En la CI del PR #156, Grype encontró go-jose 4.1.5 en el binario de Caddy 2.11.7 y 4.1.4 en el de cloudflared 2026.9.3, corregido en 4.1.6. Son imágenes oficiales: tienen una excepción temporal en `.grype.yaml` hasta el 2026-11-16, aprobada por el autor, con el túnel apagado mientras dure.
 - **guava en las pruebas (GHSA-xxph-c9ww-hj94).** En la CI del PR #156, `4 · sca` encontró guava 32.1.3-android, que el validador de contratos trae a `plataforma:pruebas`. Se fijó la 33.7.2-android (del 2026-09-29, más de dos semanas) en las convenciones, como Tomcat y Jackson: solo cambia la versión donde guava ya se usa. `./gradlew build` sigue en verde: 1272 pruebas unitarias y de contrato sin fallas.
+
+## Equipo de demostración
+
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| El despliegue de `8dedbcc` (#156) | GitHub `demostracion`: «success · Sano en 57 s»; los 8 contenedores sanos con las imágenes `…-8dedbccda6af`; el proceso `datos` aplicó `cargas` v3 («sin proyectos») | GitHub Deployments, `docker ps`, `docker logs mdd-datos-1` (solo lectura) | 2026-10-30 |
+| La comprobación del autor con `consolidacion.demo` | «Plantillas de carga» con la columna «Estado»: las cargas 1 a 9 «Cargada», con los datos que el autor ya tenía, entrados por archivo o por pantalla (la política, precargada); Matriculados por carrera «Pendiente», con «Subir archivo» habilitado porque sus cargas anteriores tienen datos; «Sin proyectos…» solo en la fila de proyectos. Ninguna carga tenía una anterior pendiente, así que no hubo un botón deshabilitado que ver: ese caso lo cubren las pruebas y `probar_orden_cargas.sh` | Captura del autor (no se copia al repositorio) | 2026-10-30 |
