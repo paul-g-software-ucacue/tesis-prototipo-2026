@@ -53,6 +53,13 @@ public final class RepositorioEstructuraJdbc implements RepositorioEstructura {
     }
 
     @Override
+    public boolean hayActivas() {
+        return jdbc.sql("SELECT EXISTS (SELECT 1 FROM academico.unidad_organica WHERE activa)")
+                .query(Boolean.class)
+                .single();
+    }
+
+    @Override
     public List<GestionAutorizada> catalogo() {
         return jdbc.sql(CATALOGO)
                 .query(

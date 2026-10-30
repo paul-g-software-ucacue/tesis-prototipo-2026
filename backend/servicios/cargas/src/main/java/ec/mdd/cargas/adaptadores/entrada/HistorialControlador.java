@@ -45,12 +45,12 @@ class HistorialControlador implements HistorialApi {
                 new EntradaDeHistorial(
                         entrada.usuario(),
                         entrada.momento().atOffset(ZoneOffset.UTC),
-                        entrada.archivo(),
-                        entrada.hash(),
                         ResultadoDeHistorial.fromValue(entrada.resultado().name()),
                         entrada.nuevos(),
                         entrada.cambiados(),
                         entrada.bajasSinAplicar());
+        respuesta.setArchivo(entrada.archivo());
+        respuesta.setHash(entrada.hash());
         entrada.motivo().map(HistorialControlador::codigo).ifPresent(respuesta::setMotivo);
         return respuesta;
     }

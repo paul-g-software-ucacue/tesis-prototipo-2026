@@ -6,6 +6,7 @@ import ec.mdd.academico.aplicacion.MantenerCarrerasServicio;
 import ec.mdd.academico.dominio.Asignatura;
 import ec.mdd.academico.dominio.CampoAmplio;
 import ec.mdd.academico.dominio.Carrera;
+import ec.mdd.academico.dominio.EstadoDeCarrera;
 import ec.mdd.academico.dominio.GestionAutorizada;
 import ec.mdd.academico.dominio.Malla;
 import ec.mdd.academico.dominio.PeriodoAcademico;
@@ -85,6 +86,11 @@ final class CarrerasEnMemoria implements RepositorioCarreras {
             }
 
             @Override
+            public boolean hayPeriodos() {
+                return true;
+            }
+
+            @Override
             public Optional<PeriodoAcademico> porCodigo(String codigo) {
                 return Optional.of(periodo).filter(uno -> uno.codigo().equals(codigo));
             }
@@ -142,6 +148,11 @@ final class CarrerasEnMemoria implements RepositorioCarreras {
             }
 
             @Override
+            public boolean hayActivas() {
+                return unidades.stream().anyMatch(UnidadOrganica::activa);
+            }
+
+            @Override
             public List<GestionAutorizada> catalogo() {
                 return List.of();
             }
@@ -167,6 +178,16 @@ final class CarrerasEnMemoria implements RepositorioCarreras {
     @Override
     public List<Carrera> carreras() {
         return ordenadas(carreras, Carrera::codigo);
+    }
+
+    @Override
+    public boolean hayCarrerasVigentes() {
+        return carreras.stream().anyMatch(carrera -> carrera.estado() == EstadoDeCarrera.VIGENTE);
+    }
+
+    @Override
+    public boolean hayAsignaturasActivas() {
+        return asignaturas.stream().anyMatch(Asignatura::activa);
     }
 
     @Override

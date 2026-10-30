@@ -11,6 +11,9 @@ public interface RepositorioProyectos {
     /** Todos los proyectos, por código. */
     List<Proyecto> todos();
 
+    /** Si hay al menos un proyecto, en cualquier estado (F01-H05). */
+    boolean hayProyectos();
+
     /** El proyecto con ese código, si existe. */
     Optional<Proyecto> buscar(String codigo);
 

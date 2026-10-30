@@ -110,6 +110,14 @@ public final class RepositorioDocentesJdbc implements RepositorioDocentes {
     }
 
     @Override
+    public boolean hayContratados() {
+        return jdbc.sql(
+                        "SELECT EXISTS (SELECT 1 FROM docentes.docente WHERE estado IN ('ACTIVO', 'LICENCIA'))")
+                .query(Boolean.class)
+                .single();
+    }
+
+    @Override
     public Optional<Docente> buscar(String identificacion) {
         return jdbc.sql(BUSCAR)
                 .param("identificacion", identificacion)

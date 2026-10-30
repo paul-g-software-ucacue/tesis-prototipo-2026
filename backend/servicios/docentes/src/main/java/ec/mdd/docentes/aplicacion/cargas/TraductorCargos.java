@@ -33,6 +33,11 @@ final class TraductorCargos extends TraductorDeDocentes<Cargo> {
     }
 
     @Override
+    public boolean tieneDatos() {
+        return repositorio.hayVigentes();
+    }
+
+    @Override
     public void bloquear() {
         repositorio.bloquear();
     }

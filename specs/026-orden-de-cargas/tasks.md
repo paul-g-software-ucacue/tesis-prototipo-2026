@@ -52,13 +52,13 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear `specs/026-orden-de-cargas/evidencia.md` con las secciones de la historia anterior (base, dueños, orden y estado, «sin proyectos», fuente de datos, pantalla, cierre, notas) y la línea de base: `./gradlew build integrationTest` en verde en `main` (`78362d3`) y los 15 scripts de `deploy/probar_*.sh`.
+- [X] T001 Crear `specs/026-orden-de-cargas/evidencia.md` con las secciones de la historia anterior (base, dueños, orden y estado, «sin proyectos», fuente de datos, pantalla, cierre, notas) y la línea de base: `./gradlew build integrationTest` en verde en `main` (`78362d3`) y los 15 scripts de `deploy/probar_*.sh`.
 
 ---
 
 ## Phase 2: Foundational (bloquea a todas las historias)
 
-- [ ] T002 Ampliar el contrato `contratos/cargas/openapi.yaml` según [contracts/cargas.md](contracts/cargas.md):
+- [X] T002 Ampliar el contrato `contratos/cargas/openapi.yaml` según [contracts/cargas.md](contracts/cargas.md):
   - `consultarEstadoDeLasCargas` (`GET /api/cargas/estado`, `[CARGAS:LECTURA, DISTRIBUTIVO:LECTURA]`), con `EstadoDeLasCargas`, `EstadoDeCarga`, `EstadoDeLaCarga` y `CargaQueFalta`;
   - `confirmarSinProyectos` (`POST /api/cargas/sin-proyectos`, `CARGAS:ESCRITURA`), con `ConfirmacionSinProyectos`: `periodo` obligatorio, `maxLength: 10`, `pattern: '^[0-9]{4}-(I|II)$'`, `additionalProperties: false`; 201 y 200 con `EntradaDeHistorial`, 400 y 409;
   - el 409 `CARGAS_CARGAS_ANTERIORES_PENDIENTES` en `validarArchivo` y `confirmarCarga`;
@@ -66,12 +66,12 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
 
   Regenerar los modelos y comprobar que el contrato pasa su validación.
 - [ ] T003 [P] Agregar a `contratos/comun/errores.md` `CARGAS_CARGAS_ANTERIORES_PENDIENTES` (409, Negocio), `CARGAS_PERIODO_NO_ENCONTRADO` (400, Validación) y `CARGAS_PERIODO_CON_PROYECTOS` (409, Negocio), con las 8 columnas de [contracts/cargas.md](contracts/cargas.md), y sus entradas en el catálogo de Cargas (`EntradaCatalogo`). `VerificadorDeCatalogo` los comprueba.
-- [ ] T004 [P] Ampliar el lenguaje publicado (`PLC/main/java/ec/mdd/plataforma/cargas/`). Primero las pruebas, en `PLC/test/java/ec/mdd/plataforma/cargas/AplicadorPorTraductoresTest.java`, sin dobles:
+- [X] T004 [P] Ampliar el lenguaje publicado (`PLC/main/java/ec/mdd/plataforma/cargas/`). Primero las pruebas, en `PLC/test/java/ec/mdd/plataforma/cargas/AplicadorPorTraductoresTest.java`, sin dobles:
   - `tieneDatos(carga)` devuelve lo del traductor de esa carga;
   - una carga que no atiende lanza `IllegalArgumentException`.
 
   Después, `boolean tieneDatos()` abstracto en `TraductorDeCarga`, con su JavaDoc («al menos un registro vigente, entrado por archivo o por pantalla»), `tieneDatos(String carga)` en `AplicadorDeCargas` y su implementación en `AplicadorPorTraductores`. El traductor de prueba de `MotorDelLoteTest` lo implementa.
-- [ ] T005 [P] Antes de crear los tipos, comprobar que las 4 entradas de research §12 están en el glosario (§7 de `sdd/modelo_dominio.md`). Crear el dominio del orden en `CAR/main/java/ec/mdd/cargas/dominio/`: `OrdenDeLasCargas`, `EstadoDeCarga`, `EstadoDeLaCarga` (`PENDIENTE`, `CARGADA`, `SIN_PROYECTOS`) y `CargaQueFalta`. Primero las pruebas, en `CAR/test/java/ec/mdd/cargas/dominio/OrdenDeLasCargasTest.java`, sin dobles y con el diccionario real:
+- [X] T005 [P] Antes de crear los tipos, comprobar que las 4 entradas de research §12 están en el glosario (§7 de `sdd/modelo_dominio.md`). Crear el dominio del orden en `CAR/main/java/ec/mdd/cargas/dominio/`: `OrdenDeLasCargas`, `EstadoDeCarga`, `EstadoDeLaCarga` (`PENDIENTE`, `CARGADA`, `SIN_PROYECTOS`) y `CargaQueFalta`. Primero las pruebas, en `CAR/test/java/ec/mdd/cargas/dominio/OrdenDeLasCargasTest.java`, sin dobles y con el diccionario real:
   - sin datos, la 04 tiene que faltar la 02, y la 01, la 03 y la 07 no les falta nada;
   - la 08 con la 01 y la 02 pero sin la 06: falta solo la 06;
   - el estado `SIN_PROYECTOS` de la 9 con periodos válidos y sin datos;
@@ -89,9 +89,9 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
 
 **Independent Test**: en cada dueño, con Testcontainers, `tieneDatos()` es falso sin registros, falso solo con inactivos y verdadero con uno vigente.
 
-- [ ] T006 [P] [US1] Académico: `tieneDatos()` en `TraductorEstructura` (una unidad activa), `TraductorCarreras` (una carrera `VIGENTE`), `TraductorPeriodos` (un periodo), `TraductorAsignaturas` (una asignatura activa), `TraductorOferta` (una asignatura-paralelo `OFERTADA`) y `TraductorMatriculas` (un registro), en `ACA/main/java/ec/mdd/academico/aplicacion/cargas/`. Cada uno usa un método nuevo de existencia en su repositorio de `ACA/main/java/ec/mdd/academico/puertos/salida/`, con su `select exists (…)` en el adaptador JDBC. Primero las pruebas, en `ACA/integrationTest/java/ec/mdd/academico/AplicadorAcademicoIntegrationTest.java`: sin registros, solo inactivos y con uno vigente, para las 6 cargas.
-- [ ] T007 [P] [US1] Docentes: `tieneDatos()` en `TraductorDocentesContratados` (un docente `ACTIVO` o con `LICENCIA`), `TraductorCargos` (un cargo `VIGENTE`) y `TraductorProyectos` (un proyecto), en `DOC/main/java/ec/mdd/docentes/aplicacion/cargas/`, con métodos de existencia en `RepositorioDocentes`, `RepositorioCargos` y `RepositorioProyectos` y sus adaptadores JDBC. Primero las pruebas, en `DOC/integrationTest/java/ec/mdd/docentes/AplicadorDocentesIntegrationTest.java`: sin registros, solo inactivos o finalizados y con uno vigente.
-- [ ] T008 [P] [US1] Normativa: `tieneDatos()` en `TraductorPolitica` (una versión), en `NOR/main/java/ec/mdd/normativa/aplicacion/cargas/`, con un método de existencia en `RepositorioVersiones`. Primero las pruebas: en `NOR/integrationTest/java/ec/mdd/normativa/AplicadorNormativaIntegrationTest.java`, verdadero con la política 2024 precargada (F04-H01); en `TraductorPoliticaTest`, con Mockito.
+- [X] T006 [P] [US1] Académico: `tieneDatos()` en `TraductorEstructura` (una unidad activa), `TraductorCarreras` (una carrera `VIGENTE`), `TraductorPeriodos` (un periodo), `TraductorAsignaturas` (una asignatura activa), `TraductorOferta` (una asignatura-paralelo `OFERTADA`) y `TraductorMatriculas` (un registro), en `ACA/main/java/ec/mdd/academico/aplicacion/cargas/`. Cada uno usa un método nuevo de existencia en su repositorio de `ACA/main/java/ec/mdd/academico/puertos/salida/`, con su `select exists (…)` en el adaptador JDBC. Primero las pruebas, en `ACA/integrationTest/java/ec/mdd/academico/AplicadorAcademicoIntegrationTest.java`: sin registros, solo inactivos y con uno vigente, para las 6 cargas.
+- [X] T007 [P] [US1] Docentes: `tieneDatos()` en `TraductorDocentesContratados` (un docente `ACTIVO` o con `LICENCIA`), `TraductorCargos` (un cargo `VIGENTE`) y `TraductorProyectos` (un proyecto), en `DOC/main/java/ec/mdd/docentes/aplicacion/cargas/`, con métodos de existencia en `RepositorioDocentes`, `RepositorioCargos` y `RepositorioProyectos` y sus adaptadores JDBC. Primero las pruebas, en `DOC/integrationTest/java/ec/mdd/docentes/AplicadorDocentesIntegrationTest.java`: sin registros, solo inactivos o finalizados y con uno vigente.
+- [X] T008 [P] [US1] Normativa: `tieneDatos()` en `TraductorPolitica` (una versión), en `NOR/main/java/ec/mdd/normativa/aplicacion/cargas/`, con un método de existencia en `RepositorioVersiones`. Primero las pruebas: en `NOR/integrationTest/java/ec/mdd/normativa/AplicadorNormativaIntegrationTest.java`, verdadero con la política 2024 precargada (F04-H01); en `TraductorPoliticaTest`, con Mockito.
 
 **Checkpoint**: Cargas ya puede preguntarle a cada dueño si tiene datos.
 

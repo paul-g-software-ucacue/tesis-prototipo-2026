@@ -17,6 +17,9 @@ public interface RepositorioDocentes {
     /** Todos los docentes, por apellidos y nombres. */
     List<Docente> todos();
 
+    /** Si hay al menos un docente activo o en licencia (F01-H05). */
+    boolean hayContratados();
+
     /** El docente con esa identificación, si existe. */
     Optional<Docente> buscar(String identificacion);
 

@@ -36,6 +36,11 @@ final class TraductorPeriodos extends TraductorAcademico<PeriodoAcademico> {
     }
 
     @Override
+    public boolean tieneDatos() {
+        return repositorio.hayPeriodos();
+    }
+
+    @Override
     public void bloquear() {
         repositorio.bloquearTodos();
     }

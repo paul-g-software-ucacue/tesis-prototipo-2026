@@ -7,6 +7,7 @@ import ec.mdd.docentes.aplicacion.MantenerCargosServicio;
 import ec.mdd.docentes.aplicacion.MantenerProyectosServicio;
 import ec.mdd.docentes.dominio.CargasDePrueba;
 import ec.mdd.docentes.dominio.Cargo;
+import ec.mdd.docentes.dominio.EstadoDeCargo;
 import ec.mdd.docentes.dominio.Proyecto;
 import ec.mdd.docentes.dominio.TipoDeCargo;
 import ec.mdd.docentes.puertos.entrada.ConsultarCargos;
@@ -82,6 +83,12 @@ final class CargosYProyectosEnMemoria {
         private final Map<String, Cargo> porClave = new LinkedHashMap<>();
 
         @Override
+        public boolean hayVigentes() {
+            return porClave.values().stream()
+                    .anyMatch(cargo -> cargo.estado() == EstadoDeCargo.VIGENTE);
+        }
+
+        @Override
         public List<Cargo> todos() {
             return porClave.values().stream()
                     .sorted(
@@ -127,6 +134,11 @@ final class CargosYProyectosEnMemoria {
     private static final class Proyectos implements RepositorioProyectos {
 
         private final Map<String, Proyecto> porCodigo = new LinkedHashMap<>();
+
+        @Override
+        public boolean hayProyectos() {
+            return !porCodigo.isEmpty();
+        }
 
         @Override
         public List<Proyecto> todos() {

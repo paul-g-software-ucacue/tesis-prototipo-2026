@@ -15,6 +15,11 @@
 # dueño, con su huella); confirmarCarga vuelve a enviar el archivo con la huella y el dueño lo aplica
 # completo o nada (RF-10, RF-55, MD-13, ADR-022); listarHistorial lee cada intento de confirmar. Las
 # bajas se informan, pero no se aplican.
+# Desde F01-H05: las cargas respetan su orden (RF-56, ERS §8.3): validar y confirmar una carga con
+# cargas anteriores sin datos responde 409 CARGAS_CARGAS_ANTERIORES_PENDIENTES antes de leer el
+# archivo. consultarEstadoDeLasCargas dice si cada carga está pendiente o cargada, según lo que tiene
+# su servicio dueño; confirmarSinProyectos declara que un periodo no tiene proyectos aprobados (RF-18)
+# y queda en el historial de la carga de proyectos.
 openapi: 3.0.3
 info:
   title: MDD · cargas
@@ -34,6 +39,8 @@ tags:
       descargar el informe y confirmar (RF-06 a RF-10, RF-55).
   - name: Historial
     description: El historial de las cargas confirmadas (RF-10).
+  - name: Estado
+    description: El estado de cada carga y la confirmación «sin proyectos» (RF-56, RF-18).
 paths:
   /api/cargas/sesion:
     get:
@@ -141,7 +148,9 @@ paths:
         nunca traen valores del archivo. Después revisa cada fila con las reglas del diccionario de
         datos y las referencias del sistema (F01-H03) y responde 200 con el informe por fila, que
         sí trae el valor de cada problema, porque es el dato que hay que corregir. Un archivo con
-        errores en sus filas no es un error HTTP (principio XIII).
+        errores en sus filas no es un error HTTP (principio XIII). Antes de leer el archivo, si
+        alguna carga de la que depende no tiene datos, responde 409
+        CARGAS_CARGAS_ANTERIORES_PENDIENTES (F01-H05).
       x-mdd-permiso: CARGAS:ESCRITURA
       requestBody:
         required: true
@@ -169,6 +178,8 @@ paths:
           $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
         '404':
           $ref: '#/components/responses/CargaNoEncontrada'
+        '409':
+          $ref: '#/components/responses/CargasAnterioresPendientes'
         '413':
           $ref: '#/components/responses/ArchivoDemasiadoGrande'
         '500':
@@ -230,7 +241,9 @@ paths:
         previa con sus tablas bloqueadas y la aplica completa solo si su huella es la recibida; si no
         lo es, 409 CARGAS_VISTA_PREVIA_DESACTUALIZADA. Una regla del dueño que falla da 409
         CARGAS_CARGA_RECHAZADA con la fila y nada se aplica. Las bajas no se aplican. Cada intento
-        queda en el historial, sin el contenido del archivo.
+        queda en el historial, sin el contenido del archivo. Como validarArchivo, si alguna carga de
+        la que depende no tiene datos, responde 409 CARGAS_CARGAS_ANTERIORES_PENDIENTES antes de
+        leer el archivo, sin entrada en el historial.
       x-mdd-permiso: CARGAS:ESCRITURA
       requestBody:
         required: true
@@ -295,6 +308,84 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/cargas/estado:
+    get:
+      tags: [Estado]
+      operationId: consultarEstadoDeLasCargas
+      summary: El estado de las 10 cargas, en su orden, y las cargas anteriores que le faltan a cada una.
+      description: >-
+        Una carga está CARGADA si su servicio dueño tiene al menos un registro vigente de ella,
+        entrado por archivo o por pantalla. La de proyectos está SIN_PROYECTOS si no tiene datos y
+        algún periodo está confirmado «sin proyectos» y sigue sin proyectos asignables. Si no,
+        PENDIENTE. Se calcula en cada consulta; no muestra datos, solo si los hay.
+      x-mdd-permiso: [CARGAS:LECTURA, DISTRIBUTIVO:LECTURA]
+      responses:
+        '200':
+          description: Las 10 cargas con su estado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoDeLasCargas'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/cargas/sin-proyectos:
+    post:
+      tags: [Estado]
+      operationId: confirmarSinProyectos
+      summary: Confirma que un periodo no tiene proyectos aprobados, para que la carga de proyectos cuente como cargada en él.
+      description: >-
+        El periodo tiene que estar en los ciclos académicos y no tener proyectos asignables (aprobados
+        o en ejecución con una vigencia que se cruza con sus fechas, F03-H05). Queda en el historial
+        de la carga de proyectos con el usuario y el momento. Si el periodo ya estaba confirmado,
+        responde 200 con la confirmación que había, sin duplicarla.
+      x-mdd-permiso: CARGAS:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmacionSinProyectos'
+      responses:
+        '200':
+          description: El periodo ya estaba confirmado «sin proyectos».
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntradaDeHistorial'
+        '201':
+          description: La confirmación nueva.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EntradaDeHistorial'
+        '400':
+          description: >-
+            COMUN_SOLICITUD_INVALIDA si el periodo falta o no cumple su formato, o
+            CARGAS_PERIODO_NO_ENCONTRADO si no está en los ciclos académicos (errores.md).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '409':
+          description: CARGAS_PERIODO_CON_PROYECTOS, si el periodo tiene proyectos asignables (errores.md).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
 components:
   securitySchemes:
     bearer:
@@ -352,8 +443,18 @@ components:
             $ref: '../comun/errores.yaml#/components/schemas/Error'
     ConfirmacionRechazada:
       description: >-
-        No se aplicó nada: CARGAS_CARGA_CON_ERRORES, CARGAS_VISTA_PREVIA_DESACTUALIZADA o
-        CARGAS_CARGA_RECHAZADA (con un detalle «fila N · campo» por rechazo) (errores.md).
+        No se aplicó nada: CARGAS_CARGAS_ANTERIORES_PENDIENTES (un detalle por carga que falta),
+        CARGAS_CARGA_CON_ERRORES, CARGAS_VISTA_PREVIA_DESACTUALIZADA o CARGAS_CARGA_RECHAZADA (con un
+        detalle «fila N · campo» por rechazo) (errores.md).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
+    CargasAnterioresPendientes:
+      description: >-
+        CARGAS_CARGAS_ANTERIORES_PENDIENTES: alguna carga de la que depende no tiene datos; un
+        detalle por carga que falta, con su código en campo y su número y nombre en motivo
+        (errores.md). El archivo no se lee.
       content:
         application/json:
           schema:
@@ -643,11 +744,13 @@ components:
           format: date-time
     ResultadoDeHistorial:
       type: string
-      enum: [APLICADA, RECHAZADA, REPETIDA]
+      enum: [APLICADA, RECHAZADA, REPETIDA, SIN_PROYECTOS]
     EntradaDeHistorial:
-      description: Un intento de confirmar una carga (glosario «Historial de cargas»), sin su contenido.
+      description: >-
+        Un intento de confirmar una carga (glosario «Historial de cargas»), sin su contenido, o una
+        confirmación «sin proyectos» de un periodo, que no tiene archivo ni hash.
       type: object
-      required: [usuario, momento, archivo, hash, resultado, nuevos, cambiados, bajasSinAplicar]
+      required: [usuario, momento, resultado, nuevos, cambiados, bajasSinAplicar]
       properties:
         usuario:
           type: string
@@ -678,3 +781,73 @@ components:
           description: El código del catálogo si se rechazó.
           type: string
           example: CARGAS_CARGA_RECHAZADA
+        periodo:
+          description: Solo en SIN_PROYECTOS, el periodo confirmado.
+          allOf:
+            - $ref: '#/components/schemas/CodigoDePeriodo'
+    CodigoDePeriodo:
+      description: El código de un periodo académico, como en la carga 3 (AAAA-I o AAAA-II).
+      type: string
+      maxLength: 10
+      pattern: '^[0-9]{4}-(I|II)$'
+      example: 2026-II
+    ConfirmacionSinProyectos:
+      type: object
+      additionalProperties: false
+      required: [periodo]
+      properties:
+        periodo:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+    EstadoDeLaCarga:
+      type: string
+      enum: [PENDIENTE, CARGADA, SIN_PROYECTOS]
+    CargaQueFalta:
+      description: Una carga anterior que todavía no tiene datos.
+      type: object
+      required: [numero, codigo, nombre]
+      properties:
+        numero:
+          type: integer
+          minimum: 1
+          maximum: 10
+        codigo:
+          type: string
+          pattern: '^[a-z_]{1,40}$'
+          example: carreras
+        nombre:
+          type: string
+          example: Carreras
+    EstadoDeCarga:
+      type: object
+      required: [numero, codigo, estado, faltan, periodosSinProyectos]
+      properties:
+        numero:
+          type: integer
+          minimum: 1
+          maximum: 10
+        codigo:
+          type: string
+          pattern: '^[a-z_]{1,40}$'
+          example: asignaturas_malla
+        estado:
+          $ref: '#/components/schemas/EstadoDeLaCarga'
+        faltan:
+          description: Las cargas de las que depende que no están CARGADA, en su orden; vacía si se puede subir.
+          type: array
+          items:
+            $ref: '#/components/schemas/CargaQueFalta'
+        periodosSinProyectos:
+          description: Solo en la carga de proyectos, los periodos confirmados «sin proyectos» que siguen valiendo.
+          type: array
+          items:
+            $ref: '#/components/schemas/CodigoDePeriodo'
+    EstadoDeLasCargas:
+      type: object
+      required: [cargas]
+      properties:
+        cargas:
+          type: array
+          minItems: 10
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/EstadoDeCarga'

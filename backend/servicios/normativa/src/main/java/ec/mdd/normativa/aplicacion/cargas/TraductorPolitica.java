@@ -68,6 +68,11 @@ final class TraductorPolitica implements TraductorDeCarga<TraductorPolitica.Fila
     }
 
     @Override
+    public boolean tieneDatos() {
+        return repositorio.hayVersiones();
+    }
+
+    @Override
     public void bloquear() {
         repositorio.todas().forEach(version -> repositorio.bloquear(version.numero()));
     }

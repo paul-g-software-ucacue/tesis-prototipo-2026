@@ -110,6 +110,13 @@ public final class RepositorioVersionesJdbc implements RepositorioVersiones {
     }
 
     @Override
+    public boolean hayVersiones() {
+        return jdbc.sql("SELECT EXISTS (SELECT 1 FROM normativa.version_normativa)")
+                .query(Boolean.class)
+                .single();
+    }
+
+    @Override
     public Optional<VersionNormativa> buscar(int numero) {
         return leer(" WHERE numero = :numero", Map.of("numero", numero)).stream().findFirst();
     }

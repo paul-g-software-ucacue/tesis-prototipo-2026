@@ -39,6 +39,11 @@ public final class AplicadorPorTraductores implements AplicadorDeCargas {
     }
 
     @Override
+    public boolean tieneDatos(String carga) {
+        return traductor(carga).tieneDatos();
+    }
+
+    @Override
     public VistaPreviaDelLote previsualizar(LoteDeCarga lote) {
         return MotorDelLote.previsualizar(traductor(lote), lote);
     }
@@ -50,9 +55,13 @@ public final class AplicadorPorTraductores implements AplicadorDeCargas {
     }
 
     private TraductorDeCarga<?> traductor(LoteDeCarga lote) {
-        TraductorDeCarga<?> traductor = traductores.get(lote.carga());
+        return traductor(lote.carga());
+    }
+
+    private TraductorDeCarga<?> traductor(String carga) {
+        TraductorDeCarga<?> traductor = traductores.get(carga);
         if (traductor == null) {
-            throw new IllegalArgumentException("Este dueño no atiende la carga " + lote.carga());
+            throw new IllegalArgumentException("Este dueño no atiende la carga " + carga);
         }
         return traductor;
     }

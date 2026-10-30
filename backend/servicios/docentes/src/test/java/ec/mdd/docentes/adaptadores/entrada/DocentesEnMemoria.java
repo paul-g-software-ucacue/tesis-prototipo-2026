@@ -4,6 +4,7 @@ import ec.mdd.docentes.aplicacion.ConsultarDocentesServicio;
 import ec.mdd.docentes.aplicacion.MantenerDocentesServicio;
 import ec.mdd.docentes.dominio.Docente;
 import ec.mdd.docentes.dominio.DocentesDePrueba;
+import ec.mdd.docentes.dominio.EstadoLaboral;
 import ec.mdd.docentes.puertos.entrada.ConsultarDocentes;
 import ec.mdd.docentes.puertos.entrada.MantenerDocentes;
 import ec.mdd.docentes.puertos.salida.CambioRegistrado;
@@ -54,6 +55,12 @@ final class DocentesEnMemoria implements RepositorioDocentes, RegistroDeCambios,
                 this,
                 this,
                 Clock.fixed(AHORA, ZoneOffset.UTC));
+    }
+
+    @Override
+    public boolean hayContratados() {
+        return docentes.values().stream()
+                .anyMatch(docente -> docente.estado() != EstadoLaboral.INACTIVO);
     }
 
     @Override

@@ -31,6 +31,11 @@ final class TraductorMatriculas extends TraductorAcademico<Matricula> {
     }
 
     @Override
+    public boolean tieneDatos() {
+        return repositorio.hayMatriculas();
+    }
+
+    @Override
     public void bloquear() {
         repositorio.bloquear();
     }

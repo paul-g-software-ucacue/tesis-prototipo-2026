@@ -81,6 +81,11 @@ final class TraductorDocentesContratados extends TraductorDeDocentes<Docente> {
     }
 
     @Override
+    public boolean tieneDatos() {
+        return repositorio.hayContratados();
+    }
+
+    @Override
     public void bloquear() {
         repositorio.bloquear();
     }

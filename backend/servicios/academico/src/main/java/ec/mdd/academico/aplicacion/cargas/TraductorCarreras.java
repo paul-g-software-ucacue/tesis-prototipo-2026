@@ -38,6 +38,11 @@ final class TraductorCarreras extends TraductorAcademico<Carrera> {
     }
 
     @Override
+    public boolean tieneDatos() {
+        return repositorio.hayCarrerasVigentes();
+    }
+
+    @Override
     public void bloquear() {
         repositorio.bloquear();
     }

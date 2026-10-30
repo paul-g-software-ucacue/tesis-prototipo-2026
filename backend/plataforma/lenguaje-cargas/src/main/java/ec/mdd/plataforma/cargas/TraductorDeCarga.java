@@ -16,6 +16,13 @@ public interface TraductorDeCarga<T> {
     /** El código de la carga, como {@code carreras}. */
     String carga();
 
+    /**
+     * Si el dueño tiene al menos un registro vigente de la carga, entrado por archivo o por
+     * pantalla (F01-H05, glosario «Estado de la carga»). Si la entidad tiene estado, solo cuentan
+     * los activos. Las cargas que dependen de esta no se pueden subir mientras sea falso.
+     */
+    boolean tieneDatos();
+
     /** Bloquea las tablas de la carga, dentro de la transacción del lote, antes de recalcular. */
     void bloquear();
 
