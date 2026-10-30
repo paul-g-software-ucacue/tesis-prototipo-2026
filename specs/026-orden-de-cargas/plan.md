@@ -79,7 +79,7 @@
 |---|---|---|
 | I. Capas | `OrdenDeLasCargas` es dominio puro: recibe el diccionario y un predicado. Los casos de uso van en aplicación; la consulta a Docentes va en un adaptador de salida. | ✅ |
 | II. DDD según el subdominio | Ingesta es de soporte: valores y casos de uso, sin agregados nuevos. | ✅ |
-| III. Lenguaje ubicuo | Usa «Carga obligatoria», «sin proyectos», «Historial de cargas» y «Puerto de fuente de datos» del glosario; el puerto se renombra para que coincida. | ✅ |
+| III. Lenguaje ubicuo | Usa «Carga obligatoria» e «Historial de cargas» del glosario. «Orden de las cargas», «Estado de la carga», «Confirmación sin proyectos» y «Fuente de datos» se agregan al glosario antes del código (research §12, aprobados el 2026-10-29); el puerto se renombra para que coincida. | ✅ con el glosario aplicado antes de T005 |
 | IV. API primero | El contrato y los 3 códigos, antes del código. | ✅ |
 | V. Límites | Cargas pregunta a los dueños por el aplicador (ADR-022) y a Docentes por su puerto de entrada `ConsultarProyectos`; no lee tablas ajenas. `ModulosTest` lo comprueba. | ✅ |
 | VI. Las reglas son datos | Las dependencias salen solo del `dependeDe` del diccionario. «Asignable» sigue siendo la regla de Docentes (F03-H05), sin copia. | ✅ |

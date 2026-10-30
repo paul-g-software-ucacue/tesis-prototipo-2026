@@ -123,3 +123,16 @@ Además:
 | `CARGAS_PERIODO_CON_PROYECTOS` | 409 | «Sin proyectos» para un periodo con al menos un proyecto asignable. |
 
 Cada uno con sus 8 columnas (D-72) y en «tú» (D-74). El formato inválido del periodo usa `COMUN_SOLICITUD_INVALIDA`, como cualquier campo que no cumple el contrato.
+
+## §12 · Glosario
+
+**Decisión**: cuatro términos nuevos para §7 de `sdd/modelo_dominio.md`, aprobados por el autor el 2026-10-29 antes del código (principio III):
+
+| Término | Definición | Identificador | Contexto | Origen |
+|---|---|---|---|---|
+| Orden de las cargas | Las dependencias entre las 10 cargas (ERS 8.3): una carga no se puede subir mientras alguna de las que depende esté pendiente. | `OrdenDeLasCargas` | Ingesta | RF-56, ERS 8.3 |
+| Estado de la carga | Si una carga tiene datos vigentes en su servicio dueño, entrados por archivo o por pantalla: Pendiente o Cargada; la de proyectos puede estar además «Sin proyectos» en un periodo. El tablero de preparación suma «con errores». | `EstadoDeCarga` | Ingesta | RF-56 |
+| Confirmación «sin proyectos» | Declaración explícita de que un periodo no tiene proyectos aprobados asignables. Hace que la carga de proyectos cuente como cargada en ese periodo; queda en el historial de cargas y vale mientras el periodo no tenga proyectos asignables. | `ConfirmarSinProyectos`, `SIN_PROYECTOS` | Ingesta | RF-18, RF-56 |
+| Fuente de datos | Puerto por el que llegan los registros de una carga, sin que las reglas sepan su formato ni su origen. Su primer adaptador lee archivos CSV o XLSX; Moodle, SIGA o Talento Humano serían otros. | `FuenteDeDatos` | Ingesta | RF-57 |
+
+**Pendiente**: el 2026-10-29 la carpeta de los artefactos (`~/Downloads/MDD_artefactos_desarrollo/`) ya no estaba en el equipo. Las entradas se pasan al glosario en cuanto el autor indique dónde está, antes de T005, que crea el primer tipo con estos nombres.

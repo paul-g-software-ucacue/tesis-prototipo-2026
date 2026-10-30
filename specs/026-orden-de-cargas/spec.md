@@ -171,7 +171,7 @@ Escenario: Fuente de datos intercambiable
 - **Una carga anterior cuyos datos se borran o se inactivan a mano después:** el estado se calcula con lo que hay en el sistema en ese momento; si ya no hay datos activos, la carga vuelve a «Pendiente» y las que dependen de ella se deshabilitan.
 - **Datos que existen pero están todos inactivos** (por ejemplo, todas las carreras dadas de baja): no cuentan; la carga queda «Pendiente».
 - **La política de carga horaria:** el sistema trae la política 2024 precargada (F04-H01), así que la carga 7 está «Cargada» desde el inicio.
-- **Un servicio dueño que no responde al calcular el estado:** la pantalla muestra el error del catálogo con qué hacer, no un estado falso; el servidor no deja subir una carga cuyas dependencias no pudo comprobar.
+- **Si la consulta de los datos de una carga falla:** la pantalla muestra el error del catálogo con qué hacer, no un estado falso. El servidor no deja subir una carga cuyas dependencias no pudo comprobar.
 - **Una confirmación con la vista previa ya calculada y, entre medio, alguien borra los datos de una carga anterior:** la confirmación vuelve a comprobar el orden y la rechaza con el mismo error.
 - **«Sin proyectos» para un periodo y proyectos asignables para otro:** cada periodo se evalúa por separado; la carga 9 está «Cargada» en general si hay proyectos, y la pantalla lista además los periodos confirmados «sin proyectos».
 - **Confirmar «sin proyectos» y después subir proyectos que no son asignables en ese periodo** (vencidos o suspendidos): la confirmación sigue valiendo.
@@ -239,6 +239,7 @@ Escenario: Fuente de datos intercambiable
 - El estado «con errores» de RF-56 lo trae F02-H02 con el tablero del periodo; validar un archivo no deja huella en el historial (F01-H04), así que aquí no hay un estado «con errores».
 - El orden aplica a validar y a confirmar; descargar la plantilla y el diccionario siempre se puede.
 - Los periodos para «sin proyectos» son los de los ciclos académicos cargados, en cualquier estado.
+- Confirmar «sin proyectos» no exige las cargas de las que depende la 9, porque no aplica datos; solo exige que el periodo exista en los ciclos académicos.
 - La pantalla de «sin proyectos» está en la fila de la carga 9 de «Plantillas de carga».
 - Los datos de prueba son ficticios (repositorio público).
 
@@ -250,3 +251,4 @@ Escenario: Fuente de datos intercambiable
 - Borrar o aplicar las bajas (F01-H04 solo las informa).
 - Editar en pantalla las cargas de parametrización.
 - Anular a mano una confirmación «sin proyectos».
+- El estado «con errores» del tablero: F02-H02 tendrá que decidir de dónde sale, porque validar un archivo no deja rastro en el historial.

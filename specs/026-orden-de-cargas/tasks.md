@@ -71,7 +71,7 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
   - una carga que no atiende lanza `IllegalArgumentException`.
 
   Después, `boolean tieneDatos()` abstracto en `TraductorDeCarga`, con su JavaDoc («al menos un registro vigente, entrado por archivo o por pantalla»), `tieneDatos(String carga)` en `AplicadorDeCargas` y su implementación en `AplicadorPorTraductores`. El traductor de prueba de `MotorDelLoteTest` lo implementa.
-- [ ] T005 [P] Crear el dominio del orden en `CAR/main/java/ec/mdd/cargas/dominio/`: `OrdenDeLasCargas`, `EstadoDeCarga`, `EstadoDeLaCarga` (`PENDIENTE`, `CARGADA`, `SIN_PROYECTOS`) y `CargaQueFalta`. Primero las pruebas, en `CAR/test/java/ec/mdd/cargas/dominio/OrdenDeLasCargasTest.java`, sin dobles y con el diccionario real:
+- [ ] T005 [P] Antes de crear los tipos, comprobar que las 4 entradas de research §12 están en el glosario (§7 de `sdd/modelo_dominio.md`). Crear el dominio del orden en `CAR/main/java/ec/mdd/cargas/dominio/`: `OrdenDeLasCargas`, `EstadoDeCarga`, `EstadoDeLaCarga` (`PENDIENTE`, `CARGADA`, `SIN_PROYECTOS`) y `CargaQueFalta`. Primero las pruebas, en `CAR/test/java/ec/mdd/cargas/dominio/OrdenDeLasCargasTest.java`, sin dobles y con el diccionario real:
   - sin datos, la 04 tiene que faltar la 02, y la 01, la 03 y la 07 no les falta nada;
   - la 08 con la 01 y la 02 pero sin la 06: falta solo la 06;
   - el estado `SIN_PROYECTOS` de la 9 con periodos válidos y sin datos;
@@ -109,7 +109,9 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
   - con todo cargado, siguen igual que antes.
 
   También en `ErroresCargasTest` y en las pruebas de contrato.
-- [ ] T010 [US2] Crear `ConsultarEstadoDeLasCargas` (puerto de entrada), `ConsultarEstadoDeLasCargasServicio` (aplicación) y `EstadoControlador` (`adaptadores/entrada`, operación `consultarEstadoDeLasCargas`) en `CAR/main/java/ec/mdd/cargas/`. El servicio arma `OrdenDeLasCargas` con `DuenosDeLasCargas` y, para la 9, con las confirmaciones «sin proyectos» que valen (en esta fase, ninguna; T013 las suma). Primero las pruebas:
+
+  Los dobles de los dueños en las pruebas de Cargas (`AplicadorDePrueba` y los contextos WebMvc) responden «tiene datos» por defecto; solo las pruebas del orden lo cambian. Si la consulta del orden falla, validar y confirmar responden `COMUN_ERROR_INTERNO` sin leer el archivo (prueba con Mockito).
+- [ ] T010 [US2] Crear `ConsultarEstadoDeLasCargas` (puerto de entrada), `ConsultarEstadoDeLasCargasServicio` (aplicación) y `EstadoControlador` (`adaptadores/entrada`, operación `consultarEstadoDeLasCargas`) en `CAR/main/java/ec/mdd/cargas/`. El servicio arma `OrdenDeLasCargas` con `DuenosDeLasCargas` y, para la 9, con las confirmaciones «sin proyectos» que valen (en esta fase, ninguna; T014 las suma). Primero las pruebas:
   - `ConsultarEstadoDeLasCargasServicioTest` con Mockito;
   - la prueba de contrato del 200;
   - `PermisosCargasTest`: lectura sí, sin permiso 403.
@@ -121,6 +123,8 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
 
   Anotar las mediciones en la evidencia.
 
+- [ ] T012 [US1] Ajustar `deploy/probar_subida.sh` al orden: si no hay una unidad orgánica activa, crear una temporal antes de subir las carreras y borrarla al terminar, como `probar_reglas_carga.sh`. Correrlo en una base vacía y en una con datos; pasar shellcheck v0.11.0.
+
 **Checkpoint**: el primer escenario del issue funciona por la API.
 
 ---
@@ -131,7 +135,7 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
 
 **Independent Test**: con los periodos 2026-I y 2026-II cargados y sin proyectos, confirmar 2026-II da 201 y la 9 `SIN_PROYECTOS (2026-II)`; tras cargar la 09 de prueba, la 9 es `CARGADA` y otro «sin proyectos» para 2026-II da 409.
 
-- [ ] T012 [US3] Crear la migración `CAR/main/resources/db/migration/cargas/V3__sin_proyectos.sql` según [data-model.md](data-model.md):
+- [ ] T013 [US3] Crear la migración `CAR/main/resources/db/migration/cargas/V3__sin_proyectos.sql` según [data-model.md](data-model.md):
   - la columna `periodo varchar(10)` con su patrón;
   - `SIN_PROYECTOS` en el `check` de `resultado`;
   - `archivo` y `hash` nulos solo en `SIN_PROYECTOS`, y `periodo` solo en `SIN_PROYECTOS`;
@@ -141,18 +145,19 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
   - una confirmación nueva y la repetida, que no duplica;
   - las entradas viejas siguen válidas;
   - la base rechaza un `SIN_PROYECTOS` sin periodo o un `APLICADA` con periodo.
-- [ ] T013 [US3] Crear el puerto de salida `CAR/main/java/ec/mdd/cargas/puertos/salida/ProyectosDelPeriodo.java` (`hayAsignables(periodo)`, lanza `PeriodoNoEncontrado`) y su adaptador `CAR/main/java/ec/mdd/cargas/adaptadores/salida/ProyectosDesdePuertos.java`, que llama a `ConsultarProyectos.listar(periodo, null, null)` de Docentes y traduce su `DatoInvalido` en `periodo`. Sumar al estado de T010 las confirmaciones que valen (`HistorialDeCargas.sinProyectos()` filtradas por `hayAsignables`). Primero las pruebas:
+- [ ] T014 [US3] Crear el puerto de salida `CAR/main/java/ec/mdd/cargas/puertos/salida/ProyectosDelPeriodo.java` (`hayAsignables(periodo)`, lanza `PeriodoNoEncontrado`) y su adaptador `CAR/main/java/ec/mdd/cargas/adaptadores/salida/ProyectosDesdePuertos.java`, que llama a `ConsultarProyectos.listar(periodo, null, null)` de Docentes y traduce su `DatoInvalido` en `periodo`. Sumar al estado de T010 las confirmaciones que valen (`HistorialDeCargas.sinProyectos()` filtradas por `hayAsignables`). Primero las pruebas:
   - `ProyectosDesdePuertosTest`, con un doble escrito a mano de `ConsultarProyectos`;
   - en `ConsultarEstadoDeLasCargasServicioTest`, una confirmación que vale y otra que ya no.
-- [ ] T014 [US3] Crear `ConfirmarSinProyectos` (puerto de entrada), las excepciones `PeriodoNoEncontrado` y `PeriodoConProyectos` (`CAR/main/java/ec/mdd/cargas/puertos/entrada/`), `ConfirmarSinProyectosServicio` (aplicación) y la operación `confirmarSinProyectos` en `EstadoControlador` (201 con la nueva, 200 con la que ya estaba). Las excepciones se traducen en `ErroresCargas`. Primero las pruebas:
+- [ ] T015 [US3] Crear `ConfirmarSinProyectos` (puerto de entrada), las excepciones `PeriodoNoEncontrado` y `PeriodoConProyectos` (`CAR/main/java/ec/mdd/cargas/puertos/entrada/`), `ConfirmarSinProyectosServicio` (aplicación) y la operación `confirmarSinProyectos` en `EstadoControlador` (201 con la nueva, 200 con la que ya estaba). Las excepciones se traducen en `ErroresCargas`. Primero las pruebas:
   - **`ConfirmarSinProyectosServicioTest`, con Mockito:** periodo sin proyectos, con proyectos (409), inexistente (400) y repetido (200);
   - **pruebas de contrato, válidos e inválidos (principio XIV):** `2026-I` y `2026-II` válidos; vacío, `2026-III`, `26-I`, de 11 caracteres y `2026-i` dan 400 `COMUN_SOLICITUD_INVALIDA`;
   - **`PermisosCargasTest`:** escritura sí; solo lectura o sin permiso, 403.
-- [ ] T015 [US3] Ampliar `ConfirmarLasDiezCargasIntegrationTest`, con el proceso `datos` real:
+- [ ] T016 [US3] Ampliar `ConfirmarLasDiezCargasIntegrationTest`, con el proceso `datos` real:
   - con la 01 a la 08 confirmadas y sin proyectos, «sin proyectos» para 2026-II da 201 y el estado de la 9 es `SIN_PROYECTOS` con `2026-II`;
   - después de confirmar la 09 de prueba, la 9 es `CARGADA` y «sin proyectos» para 2026-II da 409;
   - `2027-I` da 400 `CARGAS_PERIODO_NO_ENCONTRADO`;
   - el historial de la 9 conserva la confirmación.
+  - un proyecto `SUSPENDIDO` en un periodo confirmado «sin proyectos» no anula la confirmación.
 
 **Checkpoint**: el tercer escenario del issue funciona por la API.
 
@@ -164,8 +169,8 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
 
 **Independent Test**: `ArquitecturaTest` falla si `dominio` o `aplicacion` importan Apache POI o un lector; la misma carga desde una fuente de prueba da el mismo informe y la misma vista previa que el CSV.
 
-- [ ] T016 [P] [US5] Renombrar `CAR/main/java/ec/mdd/cargas/puertos/salida/LectorDeArchivo.java` a `FuenteDeDatos.java`, con su JavaDoc: el puerto de fuente de datos del glosario; el archivo es su adaptador inicial; Moodle o SIGA serían otro (RF-57). Actualizar sus usos, `LectorPorFormato` (el adaptador de archivos), las pruebas y los comentarios.
-- [ ] T017 [US5] Agregar a `CAR/test/java/ec/mdd/cargas/ArquitecturaTest.java` la regla «ni `..cargas.dominio..` ni `..cargas.aplicacion..` dependen de `org.apache.poi..` ni de `..cargas.adaptadores..`». Comprobar que falla si se agrega a propósito una importación de POI en `aplicacion` y se quita. Crear `CAR/test/java/ec/mdd/cargas/aplicacion/FuenteDeDatosIntercambiableTest.java`: una `FuenteDeDatos` escrita a mano que entrega una `TablaDeDatos` sin leer bytes, con los mismos registros que un CSV de prueba. El informe de validación y la vista previa de `ValidarArchivoServicio` tienen que ser iguales a los del CSV leído por `LectorPorFormato`.
+- [ ] T017 [P] [US5] Renombrar `CAR/main/java/ec/mdd/cargas/puertos/salida/LectorDeArchivo.java` a `FuenteDeDatos.java`, con su JavaDoc: el puerto de fuente de datos del glosario; el archivo es su adaptador inicial; Moodle o SIGA serían otro (RF-57). Actualizar sus usos, `LectorPorFormato` (el adaptador de archivos), las pruebas y los comentarios.
+- [ ] T018 [US5] Agregar a `CAR/test/java/ec/mdd/cargas/ArquitecturaTest.java` la regla «ni `..cargas.dominio..` ni `..cargas.aplicacion..` dependen de `org.apache.poi..` ni de `..cargas.adaptadores..`». Comprobar que falla si se agrega a propósito una importación de POI en `aplicacion` y se quita. Crear `CAR/test/java/ec/mdd/cargas/aplicacion/FuenteDeDatosIntercambiableTest.java`: una `FuenteDeDatos` escrita a mano que entrega una `TablaDeDatos` sin leer bytes, con los mismos registros que un CSV de prueba. El informe de validación y la vista previa de `ValidarArchivoServicio` tienen que ser iguales a los del CSV leído por `LectorPorFormato`.
 
 **Checkpoint**: el cuarto escenario del issue queda probado en cada build.
 
@@ -179,8 +184,8 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
 - con estado «Pendiente» y `faltan: [carreras]`, la 04 muestra el chip «Pendiente», el botón deshabilitado y «Falta la carga de Carreras» asociado con `aria-describedby`;
 - el diálogo «Sin proyectos…» confirma un periodo y actualiza el estado.
 
-- [ ] T018 [US2] Agregar a `SPA/consultas.ts` `useEstadoDeLasCargas` (React Query) y `confirmarSinProyectos`, con sus tipos del contrato; al confirmar una carga o «sin proyectos», invalidar el estado (FR-008). Agregar el estado a `SPA/datosDePrueba.ts`.
-- [ ] T019 [US1] [US2] En `SPA/Plantillas.tsx`:
+- [ ] T019 [US2] Agregar a `SPA/consultas.ts` `useEstadoDeLasCargas` (React Query) y `confirmarSinProyectos`, con sus tipos del contrato; al confirmar una carga o «sin proyectos», invalidar el estado (FR-008). Agregar el estado a `SPA/datosDePrueba.ts`.
+- [ ] T020 [US1] [US2] En `SPA/Plantillas.tsx`:
   - la columna «Estado», con un chip «Cargada», «Pendiente» o «Sin proyectos» y sus periodos;
   - «Subir archivo» deshabilitado si `faltan` no está vacío, con «Falta la carga de …» (varias, en una frase) asociado con `aria-describedby`.
 
@@ -190,12 +195,12 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
   - el botón se habilita tras confirmar la carga anterior, sin recargar;
   - el error del estado;
   - un usuario de solo lectura ve el estado pero no los botones.
-- [ ] T020 [US3] Crear `SPA/SinProyectos.tsx`: el diálogo que abre «Sin proyectos…» en la fila de la 9, solo con `CARGAS:ESCRITURA`. Tiene una lista con los periodos de los ciclos cargados y la validación del periodo con el patrón del contrato antes de enviar (principio XIV). Muestra el 409 y el 400 con `traducirError`. Mostrar las confirmaciones `SIN_PROYECTOS` en `SPA/HistorialDeLaCarga.tsx`, con el periodo y sin archivo ni huella. Primero las pruebas, en `SPA/Plantillas.test.tsx`:
+- [ ] T021 [US3] Crear `SPA/SinProyectos.tsx`: el diálogo que abre «Sin proyectos…» en la fila de la 9, solo con `CARGAS:ESCRITURA`. Tiene una lista con los periodos de los ciclos cargados y la validación del periodo con el patrón del contrato antes de enviar (principio XIV). Muestra el 409 y el 400 con `traducirError`. Mostrar las confirmaciones `SIN_PROYECTOS` en `SPA/HistorialDeLaCarga.tsx`, con el periodo y sin archivo ni huella. Primero las pruebas, en `SPA/Plantillas.test.tsx`:
   - confirmar, y que el estado cambie;
   - un periodo con proyectos (409);
   - un periodo inválido no se envía;
   - la entrada en el historial.
-- [ ] T021 [US1] [US3] Ampliar `frontend/e2e/plantillas.spec.ts` con rutas simuladas: el botón deshabilitado con su texto y el diálogo «Sin proyectos…», con axe sobre la tabla y sobre el diálogo ya visible (`opacity: 1`). Correr `lint`, `tipos`, `formato`, Vitest y Playwright.
+- [ ] T022 [US1] [US3] Ampliar `frontend/e2e/plantillas.spec.ts` con rutas simuladas: el botón deshabilitado con su texto y el diálogo «Sin proyectos…», con axe sobre la tabla y sobre el diálogo ya visible (`opacity: 1`). Correr `lint`, `tipos`, `formato`, Vitest y Playwright.
 
 **Checkpoint**: la pantalla cubre los escenarios 1 y 3 del issue.
 
@@ -203,7 +208,7 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
 
 ## Phase 8: US4 · Punta a punta y cierre
 
-- [ ] T022 [US4] Crear `deploy/probar_orden_cargas.sh`, siguiendo `deploy/probar_confirmar_carga.sh`:
+- [ ] T023 [US4] Crear `deploy/probar_orden_cargas.sh`, siguiendo `deploy/probar_confirmar_carga.sh`:
   0. comprobar que la base no tiene los datos de prueba;
   1. la 04 antes de la 02: 409 con `carreras` y sin entrada en el historial;
   2. el estado inicial;
@@ -217,7 +222,7 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
   10. limpiar por códigos y por `momento >= inicio`.
 
   Agregarlo a `.github/workflows/perfil-consolidado.yml`. Pasar shellcheck v0.11.0.
-- [ ] T023 Verificación completa:
+- [ ] T024 Verificación completa:
   - `./gradlew build integrationTest`;
   - los 16 scripts, con `probar_orden_cargas.sh` dos veces seguidas en un perfil reconstruido;
   - `probar_equipo.sh`;
@@ -228,7 +233,7 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
   - los criterios de terminado de la constitución (§6).
 
   Completar la evidencia. Commit, push, PR en borrador con `Refs #31` y marcarlo listo cuando sus comprobaciones pasen.
-- [ ] T024 Fusionar solo con la aprobación del autor. Verificar el despliegue en el equipo de demostración con evidencia (GitHub `demostracion`, los 8 contenedores sanos con la versión nueva, la migración V3 en el registro de `datos`). Después: la comprobación del autor, el PR de evidencia con `Closes #31` y borrar las ramas.
+- [ ] T025 Fusionar solo con la aprobación del autor. Verificar el despliegue en el equipo de demostración con evidencia (GitHub `demostracion`, los 8 contenedores sanos con la versión nueva, la migración V3 en el registro de `datos`). Después: la comprobación del autor, el PR de evidencia con `Closes #31` y borrar las ramas.
 
 ---
 
@@ -236,21 +241,21 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
 
 - **Fundacional (T002 a T005)** antes de todo. T003, T004 y T005 son [P] entre sí, después de T002.
 - **Fase 3 (T006 a T008)** depende de T004. Sus tres tareas son [P].
-- **Fase 4:** T009 y T010 dependen de T005 y de la fase 3; T011, de T009 y T010.
+- **Fase 4:** T009 y T010 dependen de T005 y de la fase 3; T011, de T009 y T010; T012, de T009, y va en el mismo PR para que la CI no falle.
 - **Fase 5:**
-  - T012 depende de T002;
-  - T013 depende de T010 y T012;
-  - T014 depende de T013;
-  - T015 depende de T011 y T014.
-- **Fase 6 (T016, T017)** solo depende de la fundacional y puede ir en paralelo con las fases 3 a 5. T017 va después de T016.
-- **Fase 7** depende de T010 y T014 (el contrato real); T018 primero.
+  - T013 depende de T002;
+  - T014 depende de T010 y T013;
+  - T015 depende de T014;
+  - T016 depende de T011 y T015.
+- **Fase 6 (T017, T018)** solo depende de la fundacional y puede ir en paralelo con las fases 3 a 5. T018 va después de T017.
+- **Fase 7** depende de T010 y T015 (el contrato real); T019 primero.
 - **Fase 8** al final.
 
 ## Parallel Example
 
 ```text
 Después de T002: T003, T004 y T005 a la vez.
-Después de T004: T006 (Académico), T007 (Docentes) y T008 (Normativa) a la vez, y T016 en Cargas.
+Después de T004: T006 (Académico), T007 (Docentes) y T008 (Normativa) a la vez, y T017 en Cargas.
 ```
 
 ## Implementation Strategy
