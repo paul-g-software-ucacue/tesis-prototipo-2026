@@ -31,6 +31,7 @@ def versionSpringModulith = providers.gradleProperty('versionSpringModulith').ge
 def versionTomcat = providers.gradleProperty('versionTomcat').get()
 def versionJackson = providers.gradleProperty('versionJackson').get()
 def versionJackson2 = providers.gradleProperty('versionJackson2').get()
+def versionGuava = providers.gradleProperty('versionGuava').get()
 
 dependencies {
     implementation platform("org.springframework.boot:spring-boot-dependencies:${versionSpringBoot}")
@@ -44,6 +45,7 @@ dependencies {
         ['tomcat-embed-core', 'tomcat-embed-el', 'tomcat-embed-websocket'].each { modulo ->
             implementation "org.apache.tomcat.embed:${modulo}:${versionTomcat}"
         }
+        implementation "com.google.guava:guava:${versionGuava}"
     }
     // Reglas de seguridad para SpotBugs: inyección SQL, XSS, XXE, criptografía débil, deserialización.
     spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0'
