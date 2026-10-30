@@ -135,4 +135,17 @@ Cada uno con sus 8 columnas (D-72) y en «tú» (D-74). El formato inválido del
 | Confirmación «sin proyectos» | Declaración explícita de que un periodo no tiene proyectos aprobados asignables. Hace que la carga de proyectos cuente como cargada en ese periodo; queda en el historial de cargas y vale mientras el periodo no tenga proyectos asignables. | `ConfirmarSinProyectos`, `SIN_PROYECTOS` | Ingesta | RF-18, RF-56 |
 | Fuente de datos | Puerto por el que llegan los registros de una carga, sin que las reglas sepan su formato ni su origen. Su primer adaptador lee archivos CSV o XLSX; Moodle, SIGA o Talento Humano serían otros. | `FuenteDeDatos` | Ingesta | RF-57 |
 
-**Pendiente**: el 2026-10-29 la carpeta de los artefactos (`~/Downloads/MDD_artefactos_desarrollo/`) ya no estaba en el equipo. Las entradas se pasan al glosario en cuanto el autor indique dónde está, antes de T005, que crea el primer tipo con estos nombres.
+**Aplicado el 2026-10-29.** La carpeta de los artefactos se había borrado del equipo y volvió restaurada con el glosario del 2026-10-11, sin los cambios aprobados después. Se reconstruyó volviendo a aplicar, en su orden, las 11 ediciones aprobadas entre el 2026-10-18 y el 2026-10-25, con su texto exacto tomado del registro de las sesiones:
+- F05-H02: Funcionalidad, Tipo de permiso, Alcance, Permiso, Permisos efectivos y Asignación de rol;
+- F04-H01: Tabla de carga horaria y Perfil;
+- F04-H02: Asignación normativa;
+- F04-H03: Regla y Pesos de afinidad;
+- F02-H01: Periodo académico;
+- F03-H01: Unidad;
+- F01-H01: Diccionario de datos;
+- F03-H02: Jornada, Modalidad y Nivel de formación;
+- F03-H03: Asignatura-paralelo y Horas a cubrir;
+- F03-H04: Tipo de personal, Categoría de escalafón, Carrera base, Estado laboral y Asignatura afín declarada;
+- F03-H05: Cargo, Requisito del cargo, Proyecto aprobado, Participante y Proyecto asignable.
+
+Después se agregaron las 4 entradas de esta historia. «Carga obligatoria» quedó en la misma línea que el 2026-10-27 (267), señal de que el archivo coincide con el que había. La copia restaurada se guardó como `modelo_dominio.md.restaurado-2026-10-11`.
