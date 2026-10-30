@@ -40,7 +40,8 @@ class HistorialControlador implements HistorialApi {
         }
     }
 
-    private static EntradaDeHistorial entrada(ec.mdd.cargas.dominio.EntradaDeHistorial entrada) {
+    /** La entrada del historial en el contrato; también la usa la confirmación «sin proyectos». */
+    static EntradaDeHistorial entrada(ec.mdd.cargas.dominio.EntradaDeHistorial entrada) {
         EntradaDeHistorial respuesta =
                 new EntradaDeHistorial(
                         entrada.usuario(),
@@ -51,6 +52,7 @@ class HistorialControlador implements HistorialApi {
                         entrada.bajasSinAplicar());
         respuesta.setArchivo(entrada.archivo());
         respuesta.setHash(entrada.hash());
+        entrada.periodo().ifPresent(respuesta::setPeriodo);
         entrada.motivo().map(HistorialControlador::codigo).ifPresent(respuesta::setMotivo);
         return respuesta;
     }

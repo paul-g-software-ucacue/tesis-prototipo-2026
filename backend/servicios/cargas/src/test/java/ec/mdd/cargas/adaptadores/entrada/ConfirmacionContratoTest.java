@@ -181,6 +181,24 @@ class ConfirmacionContratoTest {
     }
 
     @Test
+    void sinEstructuraOrganica_subirYConfirmarCarreras_responden409ConLaCargaQueFalta()
+            throws Exception {
+        dueno.sinDatosDe("estructura_organica");
+        byte[] carreras = DatosDePrueba.contenido(CARRERAS);
+
+        for (MvcResult resultado : List.of(subir(carreras), confirmar(carreras, "f".repeat(64)))) {
+            assertThat(resultado.getResponse().getStatus()).isEqualTo(409);
+            assertThat(JsonPath.<String>read(cuerpo(resultado), "$.codigo"))
+                    .isEqualTo("CARGAS_CARGAS_ANTERIORES_PENDIENTES");
+            assertThat(JsonPath.<Map<String, Object>>read(cuerpo(resultado), "$.detalles[0]"))
+                    .containsEntry("campo", "estructura_organica")
+                    .containsEntry("descripcion", "1 · Estructura orgánica");
+            contrato.validar(resultado);
+        }
+        assertThat(historial.deLaCarga("carreras")).as("sin entrada en el historial").isEmpty();
+    }
+
+    @Test
     void dadaUnaHuellaQueNoEsHexadecimal_cuandoSeConfirma_entonces400() throws Exception {
         MvcResult resultado = confirmar(DatosDePrueba.contenido(CARRERAS), "no-es-una-huella");
 

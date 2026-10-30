@@ -1,15 +1,27 @@
 package ec.mdd;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
+import ec.mdd.academico.dominio.TipoDeUnidad;
+import ec.mdd.academico.puertos.entrada.MantenerEstructura;
+import ec.mdd.cargas.dominio.CargaQueFalta;
 import ec.mdd.cargas.dominio.EntradaDeHistorial;
+import ec.mdd.cargas.dominio.EstadoDeCarga;
+import ec.mdd.cargas.dominio.EstadoDeLaCarga;
 import ec.mdd.cargas.dominio.ResultadoDeHistorial;
 import ec.mdd.cargas.puertos.entrada.ArchivoSubido;
 import ec.mdd.cargas.puertos.entrada.ArchivoValidado;
+import ec.mdd.cargas.puertos.entrada.CargasAnterioresPendientes;
 import ec.mdd.cargas.puertos.entrada.Confirmacion;
 import ec.mdd.cargas.puertos.entrada.ConfirmarCarga;
+import ec.mdd.cargas.puertos.entrada.ConfirmarSinProyectos;
+import ec.mdd.cargas.puertos.entrada.ConsultarEstadoDeLasCargas;
 import ec.mdd.cargas.puertos.entrada.ConsultarHistorial;
+import ec.mdd.cargas.puertos.entrada.PeriodoConProyectos;
 import ec.mdd.cargas.puertos.entrada.ValidarArchivo;
+import ec.mdd.cargas.puertos.salida.PeriodoNoEncontrado;
 import ec.mdd.plataforma.cargas.TipoDeRegistro;
 import ec.mdd.plataforma.cargas.VistaPreviaDelLote;
 import java.io.IOException;
@@ -63,6 +75,9 @@ class ConfirmarLasDiezCargasIntegrationTest {
     @Autowired private ConfirmarCarga confirmar;
     @Autowired private ConsultarHistorial historial;
     @Autowired private JdbcTemplate jdbc;
+    @Autowired private ConsultarEstadoDeLasCargas estado;
+    @Autowired private ConfirmarSinProyectos sinProyectos;
+    @Autowired private MantenerEstructura estructura;
 
     private static ArchivoSubido archivo(String carga) {
         int numero = List.copyOf(CARGAS.keySet()).indexOf(carga) + 1;
@@ -90,6 +105,58 @@ class ConfirmarLasDiezCargasIntegrationTest {
                 + filas("cargas.historial_carga");
     }
 
+    private EstadoDeCarga estadoDe(String carga) {
+        return estado.estados().stream()
+                .filter(una -> una.codigo().equals(carga))
+                .findFirst()
+                .orElseThrow();
+    }
+
+    @Test
+    @Order(0)
+    void conLaBaseVacia_asignaturasAntesQueCarreras_seRechazaSinLeerNiDejarHistorial() {
+        assertThatThrownBy(() -> validar.validar("asignaturas_malla", archivo("asignaturas_malla")))
+                .isInstanceOfSatisfying(
+                        CargasAnterioresPendientes.class,
+                        error ->
+                                assertThat(error.faltan())
+                                        .extracting(CargaQueFalta::codigo)
+                                        .containsExactly("carreras"));
+        assertThat(historial.historial("asignaturas_malla")).isEmpty();
+        assertThat(estado.estados())
+                .extracting(EstadoDeCarga::codigo, EstadoDeCarga::estado)
+                .as("solo la política, precargada (F04-H01), tiene datos")
+                .containsExactly(
+                        tuple("estructura_organica", EstadoDeLaCarga.PENDIENTE),
+                        tuple("carreras", EstadoDeLaCarga.PENDIENTE),
+                        tuple("ciclos_academicos", EstadoDeLaCarga.PENDIENTE),
+                        tuple("asignaturas_malla", EstadoDeLaCarga.PENDIENTE),
+                        tuple("oferta_periodo", EstadoDeLaCarga.PENDIENTE),
+                        tuple("docentes", EstadoDeLaCarga.PENDIENTE),
+                        tuple("politica_carga_horaria", EstadoDeLaCarga.CARGADA),
+                        tuple("cargos_autoridades", EstadoDeLaCarga.PENDIENTE),
+                        tuple("proyectos_practicas", EstadoDeLaCarga.PENDIENTE),
+                        tuple("matriculados_carrera", EstadoDeLaCarga.PENDIENTE));
+    }
+
+    @Test
+    @Order(0)
+    void unaUnidadRegistradaPorPantalla_sinCargaConfirmada_habilitaLasCarreras() {
+        assertThat(estadoDe("carreras").faltan()).isNotEmpty();
+
+        estructura.registrar(
+                "PANTALLA", "Sede de prueba", TipoDeUnidad.SEDE_MATRIZ, null, null, null, QUIEN);
+        try {
+            assertThat(estadoDe("estructura_organica").estado()).isEqualTo(EstadoDeLaCarga.CARGADA);
+            assertThat(estadoDe("carreras").faltan()).isEmpty();
+            assertThat(historial.historial("estructura_organica")).isEmpty();
+        } finally {
+            jdbc.update("DELETE FROM academico.unidad_organica WHERE codigo = 'PANTALLA'");
+            jdbc.update("DELETE FROM academico.registro_cambio");
+        }
+        assertThat(estadoDe("carreras").faltan()).isNotEmpty();
+    }
+
     @Test
     @Order(1)
     void subirSinConfirmar_noCambiaNingunDato() {
@@ -107,6 +174,9 @@ class ConfirmarLasDiezCargasIntegrationTest {
     @Order(2)
     void lasDiezCargasEnSuOrden_quedanAplicadasSinErrores() {
         for (Map.Entry<String, Integer> carga : CARGAS.entrySet()) {
+            if (carga.getKey().equals("proyectos_practicas")) {
+                sinProyectosAntesDeLosProyectos();
+            }
             ArchivoSubido archivo = archivo(carga.getKey());
             ArchivoValidado validado = validar.validar(carga.getKey(), archivo);
             assertThat(validado.informe().errores())
@@ -129,6 +199,45 @@ class ConfirmarLasDiezCargasIntegrationTest {
         assertThat(filas("docentes.docente")).isEqualTo(47);
         assertThat(filas("docentes.cargo")).isEqualTo(21);
         assertThat(filas("docentes.proyecto")).isEqualTo(11);
+
+        long inicio = System.nanoTime();
+        List<EstadoDeCarga> estados = estado.estados();
+        long milisegundos = (System.nanoTime() - inicio) / 1_000_000;
+        System.out.println("Estado de las 10 cargas: " + milisegundos + " ms");
+        assertThat(milisegundos).as("SC-003: menos de 2 s").isLessThan(2_000);
+        assertThat(estados)
+                .allSatisfy(
+                        una -> {
+                            assertThat(una.estado())
+                                    .as(una.codigo())
+                                    .isEqualTo(EstadoDeLaCarga.CARGADA);
+                            assertThat(una.faltan()).isEmpty();
+                        });
+        assertThat(estadoDe("proyectos_practicas").periodosSinProyectos())
+                .as("2026-II ya tiene proyectos asignables: la confirmación deja de valer")
+                .isEmpty();
+        assertThatThrownBy(() -> sinProyectos.confirmar("2026-II", QUIEN))
+                .isInstanceOf(PeriodoConProyectos.class);
+        assertThat(historial.historial("proyectos_practicas"))
+                .extracting(EntradaDeHistorial::resultado)
+                .as("la confirmación se queda en el historial")
+                .containsExactly(ResultadoDeHistorial.APLICADA, ResultadoDeHistorial.SIN_PROYECTOS);
+    }
+
+    /** Con las cargas 01 a 08 y sin proyectos, el periodo 2026-II se confirma «sin proyectos». */
+    private void sinProyectosAntesDeLosProyectos() {
+        assertThat(estadoDe("proyectos_practicas").estado()).isEqualTo(EstadoDeLaCarga.PENDIENTE);
+
+        assertThat(sinProyectos.confirmar("2026-II", QUIEN).nueva()).isTrue();
+        assertThat(sinProyectos.confirmar("2026-II", QUIEN).nueva())
+                .as("otra vez: no se duplica")
+                .isFalse();
+
+        EstadoDeCarga deProyectos = estadoDe("proyectos_practicas");
+        assertThat(deProyectos.estado()).isEqualTo(EstadoDeLaCarga.SIN_PROYECTOS);
+        assertThat(deProyectos.periodosSinProyectos()).containsExactly("2026-II");
+        assertThatThrownBy(() -> sinProyectos.confirmar("2027-I", QUIEN))
+                .isInstanceOf(PeriodoNoEncontrado.class);
     }
 
     @Test
@@ -232,6 +341,19 @@ class ConfirmarLasDiezCargasIntegrationTest {
         assertThat(deCarreras)
                 .extracting(EntradaDeHistorial::resultado)
                 .containsExactly(ResultadoDeHistorial.REPETIDA, ResultadoDeHistorial.APLICADA);
-        assertThat(filas("cargas.historial_carga")).isEqualTo(11);
+        assertThat(filas("cargas.historial_carga"))
+                .as("las 10 aplicadas, «sin proyectos» de 2026-II y esta repetida")
+                .isEqualTo(12);
+    }
+
+    @Test
+    @Order(99)
+    void siLosProyectosDelPeriodoSeSuspenden_laConfirmacionSinProyectosVuelveAValer() {
+        jdbc.update("UPDATE docentes.proyecto SET estado = 'SUSPENDIDO'");
+
+        EstadoDeCarga deProyectos = estadoDe("proyectos_practicas");
+
+        assertThat(deProyectos.estado()).isEqualTo(EstadoDeLaCarga.CARGADA);
+        assertThat(deProyectos.periodosSinProyectos()).containsExactly("2026-II");
     }
 }

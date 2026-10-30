@@ -198,6 +198,8 @@ paths:
         los problemas, no solo los primeros 100, en CSV UTF-8 con BOM: fila, campo, valor, motivo,
         tipo y sugerencia. Toda celda que empieza con =, +, -, @, tabulación o retorno de carro
         lleva un apóstrofo delante, para que la hoja de cálculo no la ejecute (RNF-SEG-04).
+        Como validarArchivo, responde 409 CARGAS_CARGAS_ANTERIORES_PENDIENTES si alguna carga de
+        la que depende no tiene datos.
       x-mdd-permiso: CARGAS:ESCRITURA
       requestBody:
         required: true
@@ -221,6 +223,8 @@ paths:
           $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
         '404':
           $ref: '#/components/responses/CargaNoEncontrada'
+        '409':
+          $ref: '#/components/responses/CargasAnterioresPendientes'
         '413':
           $ref: '#/components/responses/ArchivoDemasiadoGrande'
         '500':
@@ -793,7 +797,6 @@ components:
       example: 2026-II
     ConfirmacionSinProyectos:
       type: object
-      additionalProperties: false
       required: [periodo]
       properties:
         periodo:

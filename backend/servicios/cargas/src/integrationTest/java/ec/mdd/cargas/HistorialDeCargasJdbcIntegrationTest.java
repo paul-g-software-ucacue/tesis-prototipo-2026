@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ec.mdd.cargas.adaptadores.salida.HistorialDeCargasJdbc;
+import ec.mdd.cargas.dominio.ConfirmacionSinProyectos;
 import ec.mdd.cargas.dominio.EntradaDeHistorial;
 import ec.mdd.cargas.dominio.MotivoDeRechazo;
 import ec.mdd.cargas.dominio.ResultadoDeHistorial;
@@ -97,7 +98,10 @@ class HistorialDeCargasJdbcIntegrationTest {
                 "resultado = 'BORRADA'",
                 "nuevos = -1",
                 "motivo = NULL",
-                "carga = 'Carreras'"
+                "carga = 'Carreras'",
+                "periodo = '2026-I'",
+                "archivo = NULL",
+                "hash = NULL"
             })
     void laBaseRechazaLoQueNoCumpleSusReglas(String cambio) {
         historial.registrar(
@@ -129,6 +133,56 @@ class HistorialDeCargasJdbcIntegrationTest {
                                                         + " 'a.csv', :hash, 'APLICADA', 0, 0, 0,"
                                                         + " 'CON_ERRORES')")
                                         .param("hash", HASH)
+                                        .update())
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void sinProyectos_seGuardaUnaVezPorPeriodo_yLaSegundaDevuelveLaPrimera() {
+        EntradaDeHistorial primera =
+                EntradaDeHistorial.sinProyectos(
+                        "proyectos_practicas", "2026-II", "consolidacion.demo", PRIMERA);
+        EntradaDeHistorial otraVez =
+                EntradaDeHistorial.sinProyectos(
+                        "proyectos_practicas", "2026-II", "datos.demo", PRIMERA.plusSeconds(60));
+        EntradaDeHistorial otroPeriodo =
+                EntradaDeHistorial.sinProyectos(
+                        "proyectos_practicas", "2026-I", "datos.demo", PRIMERA.plusSeconds(120));
+
+        assertThat(historial.confirmarSinProyectos(primera))
+                .isEqualTo(new ConfirmacionSinProyectos(primera, true));
+        assertThat(historial.confirmarSinProyectos(otraVez))
+                .as("no se duplica: devuelve la primera")
+                .isEqualTo(new ConfirmacionSinProyectos(primera, false));
+        historial.confirmarSinProyectos(otroPeriodo);
+
+        assertThat(historial.sinProyectos("proyectos_practicas"))
+                .containsExactly(otroPeriodo, primera);
+        assertThat(historial.deLaCarga("proyectos_practicas"))
+                .containsExactly(otroPeriodo, primera);
+        assertThat(historial.sinProyectos("carreras")).isEmpty();
+        assertThat(primera.archivo()).isNull();
+        assertThat(primera.periodo()).contains("2026-II");
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(
+            strings = {
+                "periodo = NULL",
+                "periodo = '2026-III'",
+                "archivo = 'a.csv'",
+                "resultado = 'APLICADA'"
+            })
+    void laBaseRechazaUnSinProyectosQueNoCumpleSusReglas(String cambio) {
+        historial.confirmarSinProyectos(
+                EntradaDeHistorial.sinProyectos("matriculados_carrera", "2026-I", "x", PRIMERA));
+
+        assertThatThrownBy(
+                        () ->
+                                jdbc.sql(
+                                                "UPDATE cargas.historial_carga SET "
+                                                        + cambio
+                                                        + " WHERE carga = 'matriculados_carrera'")
                                         .update())
                 .isInstanceOf(DataIntegrityViolationException.class);
     }

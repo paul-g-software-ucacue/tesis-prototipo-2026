@@ -13,7 +13,7 @@
 - **Permiso**: `x-mdd-permiso: CARGAS:ESCRITURA`, el mismo que `confirmarCarga` (D-71).
 - **Cuerpo** (`application/json`), `ConfirmacionSinProyectos`:
   - `periodo`: obligatorio; `string`, `maxLength: 10`, `pattern: '^[0-9]{4}-(I|II)$'`.
-  - `additionalProperties: false`.
+  - Sin `additionalProperties: false`, como los demás contratos del proyecto: el servidor ignora los campos que no conoce.
 - **201**: `EntradaDeHistorial`, la confirmación nueva.
 - **200**: `EntradaDeHistorial`, la que ya estaba (FR-012).
 - **400**:

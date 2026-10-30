@@ -8,9 +8,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import ec.mdd.cargas.adaptadores.salida.DiccionarioYaml;
+import ec.mdd.cargas.dominio.CargaQueFalta;
 import ec.mdd.cargas.dominio.EntradaDeHistorial;
 import ec.mdd.cargas.dominio.MotivoDeRechazo;
 import ec.mdd.cargas.dominio.ReferenciasExistentes;
@@ -18,6 +20,7 @@ import ec.mdd.cargas.dominio.ResultadoDeHistorial;
 import ec.mdd.cargas.dominio.TablaDeDatos;
 import ec.mdd.cargas.puertos.entrada.ArchivoSubido;
 import ec.mdd.cargas.puertos.entrada.CargaConErrores;
+import ec.mdd.cargas.puertos.entrada.CargasAnterioresPendientes;
 import ec.mdd.cargas.puertos.entrada.Confirmacion;
 import ec.mdd.cargas.puertos.salida.ArchivoLeido;
 import ec.mdd.cargas.puertos.salida.Formato;
@@ -72,6 +75,7 @@ class ConfirmarCargaServicioTest {
                         new ReferenciasExistentes(
                                 Set.of(), Set.of(), Set.of(), Set.of(), Set.of()));
         when(dueno.cargas()).thenReturn(ValidarArchivoServicioTest.CARGAS);
+        when(dueno.tieneDatos(any())).thenReturn(true);
         DuenosDeLasCargas duenos =
                 new DuenosDeLasCargas(List.of(dueno), ValidarArchivoServicioTest.CARGAS);
         ValidarArchivoServicio validar =
@@ -108,6 +112,27 @@ class ConfirmarCargaServicioTest {
                 ArgumentCaptor.forClass(EntradaDeHistorial.class);
         verify(historial).registrar(entrada.capture());
         return entrada.getValue();
+    }
+
+    @Test
+    void conUnaCargaAnteriorSinDatos_noLeeElArchivoNiLlamaAlDuenoNiEscribeElHistorial() {
+        when(dueno.tieneDatos("docentes")).thenReturn(false);
+
+        assertThatThrownBy(
+                        () ->
+                                servicio.confirmar(
+                                        "cargos_autoridades",
+                                        new ArchivoSubido("08.csv", CONTENIDO),
+                                        HUELLA,
+                                        "datos.demo"))
+                .isInstanceOfSatisfying(
+                        CargasAnterioresPendientes.class,
+                        error ->
+                                assertThat(error.faltan())
+                                        .extracting(CargaQueFalta::codigo)
+                                        .containsExactly("docentes"));
+        verifyNoInteractions(lector, historial);
+        verify(dueno, never()).aplicar(any(), any(), any());
     }
 
     @Test

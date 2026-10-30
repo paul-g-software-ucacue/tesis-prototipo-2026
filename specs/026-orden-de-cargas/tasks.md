@@ -60,12 +60,12 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
 
 - [X] T002 Ampliar el contrato `contratos/cargas/openapi.yaml` según [contracts/cargas.md](contracts/cargas.md):
   - `consultarEstadoDeLasCargas` (`GET /api/cargas/estado`, `[CARGAS:LECTURA, DISTRIBUTIVO:LECTURA]`), con `EstadoDeLasCargas`, `EstadoDeCarga`, `EstadoDeLaCarga` y `CargaQueFalta`;
-  - `confirmarSinProyectos` (`POST /api/cargas/sin-proyectos`, `CARGAS:ESCRITURA`), con `ConfirmacionSinProyectos`: `periodo` obligatorio, `maxLength: 10`, `pattern: '^[0-9]{4}-(I|II)$'`, `additionalProperties: false`; 201 y 200 con `EntradaDeHistorial`, 400 y 409;
+  - `confirmarSinProyectos` (`POST /api/cargas/sin-proyectos`, `CARGAS:ESCRITURA`), con `ConfirmacionSinProyectos`: `periodo` obligatorio, `maxLength: 10`, `pattern: '^[0-9]{4}-(I|II)$'`; 201 y 200 con `EntradaDeHistorial`, 400 y 409;
   - el 409 `CARGAS_CARGAS_ANTERIORES_PENDIENTES` en `validarArchivo` y `confirmarCarga`;
   - `EntradaDeHistorial`: `archivo` y `hash` dejan de ser obligatorios, suma `periodo` opcional; `ResultadoDeHistorial` suma `SIN_PROYECTOS`.
 
   Regenerar los modelos y comprobar que el contrato pasa su validación.
-- [ ] T003 [P] Agregar a `contratos/comun/errores.md` `CARGAS_CARGAS_ANTERIORES_PENDIENTES` (409, Negocio), `CARGAS_PERIODO_NO_ENCONTRADO` (400, Validación) y `CARGAS_PERIODO_CON_PROYECTOS` (409, Negocio), con las 8 columnas de [contracts/cargas.md](contracts/cargas.md), y sus entradas en el catálogo de Cargas (`EntradaCatalogo`). `VerificadorDeCatalogo` los comprueba.
+- [X] T003 [P] Agregar a `contratos/comun/errores.md` `CARGAS_CARGAS_ANTERIORES_PENDIENTES` (409, Negocio), `CARGAS_PERIODO_NO_ENCONTRADO` (400, Validación) y `CARGAS_PERIODO_CON_PROYECTOS` (409, Negocio), con las 8 columnas de [contracts/cargas.md](contracts/cargas.md), y sus entradas en el catálogo de Cargas (`EntradaCatalogo`). `VerificadorDeCatalogo` los comprueba.
 - [X] T004 [P] Ampliar el lenguaje publicado (`PLC/main/java/ec/mdd/plataforma/cargas/`). Primero las pruebas, en `PLC/test/java/ec/mdd/plataforma/cargas/AplicadorPorTraductoresTest.java`, sin dobles:
   - `tieneDatos(carga)` devuelve lo del traductor de esa carga;
   - una carga que no atiende lanza `IllegalArgumentException`.
@@ -103,7 +103,7 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
 
 **Independent Test**: con una base sin carreras, `validarArchivo` de la 04 responde 409 con `carreras` en sus detalles, sin leer el archivo y sin entrada en el historial; `GET /api/cargas/estado` da las 10 con su estado.
 
-- [ ] T009 [US1] Imponer el orden en `CAR/main/java/ec/mdd/cargas/aplicacion/ValidarArchivoServicio.java` y `ConfirmarCargaServicio.java`, con la excepción nueva `CAR/main/java/ec/mdd/cargas/puertos/entrada/CargasAnterioresPendientes.java` (lleva las cargas que faltan) y su traducción en `ErroresCargas`, que pone un detalle por carga (`campo`: el código; `motivo`: el número y el nombre). Primero las pruebas, con Mockito, en `ValidarArchivoServicioTest` y `ConfirmarCargaServicioTest`:
+- [X] T009 [US1] Imponer el orden en `CAR/main/java/ec/mdd/cargas/aplicacion/ValidarArchivoServicio.java` y `ConfirmarCargaServicio.java`, con la excepción nueva `CAR/main/java/ec/mdd/cargas/puertos/entrada/CargasAnterioresPendientes.java` (lleva las cargas que faltan) y su traducción en `ErroresCargas`, que pone un detalle por carga (`campo`: el código; `motivo`: el número y el nombre). Primero las pruebas, con Mockito, en `ValidarArchivoServicioTest` y `ConfirmarCargaServicioTest`:
   - con una carga anterior sin datos, lanzan la excepción antes de llamar a la fuente de datos;
   - no escriben en el historial;
   - con todo cargado, siguen igual que antes.
@@ -111,11 +111,11 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
   También en `ErroresCargasTest` y en las pruebas de contrato.
 
   Los dobles de los dueños en las pruebas de Cargas (`AplicadorDePrueba` y los contextos WebMvc) responden «tiene datos» por defecto; solo las pruebas del orden lo cambian. Si la consulta del orden falla, validar y confirmar responden `COMUN_ERROR_INTERNO` sin leer el archivo (prueba con Mockito).
-- [ ] T010 [US2] Crear `ConsultarEstadoDeLasCargas` (puerto de entrada), `ConsultarEstadoDeLasCargasServicio` (aplicación) y `EstadoControlador` (`adaptadores/entrada`, operación `consultarEstadoDeLasCargas`) en `CAR/main/java/ec/mdd/cargas/`. El servicio arma `OrdenDeLasCargas` con `DuenosDeLasCargas` y, para la 9, con las confirmaciones «sin proyectos» que valen (en esta fase, ninguna; T014 las suma). Primero las pruebas:
+- [X] T010 [US2] Crear `ConsultarEstadoDeLasCargas` (puerto de entrada), `ConsultarEstadoDeLasCargasServicio` (aplicación) y `EstadoControlador` (`adaptadores/entrada`, operación `consultarEstadoDeLasCargas`) en `CAR/main/java/ec/mdd/cargas/`. El servicio arma `OrdenDeLasCargas` con `DuenosDeLasCargas` y, para la 9, con las confirmaciones «sin proyectos» que valen (en esta fase, ninguna; T014 las suma). Primero las pruebas:
   - `ConsultarEstadoDeLasCargasServicioTest` con Mockito;
   - la prueba de contrato del 200;
   - `PermisosCargasTest`: lectura sí, sin permiso 403.
-- [ ] T011 [US1] [US2] Ampliar `backend/apps/datos/src/integrationTest/java/…/ConfirmarLasDiezCargasIntegrationTest.java`:
+- [X] T011 [US1] [US2] Ampliar `backend/apps/datos/src/integrationTest/java/…/ConfirmarLasDiezCargasIntegrationTest.java`:
   - desde la base vacía, la 04 antes que la 02 responde 409 con `carreras`, sin entrada en el historial;
   - tras las 10 en orden, el estado da las 10 `CARGADA`;
   - una carrera registrada por pantalla sin carga habilita la 04;
@@ -135,7 +135,7 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
 
 **Independent Test**: con los periodos 2026-I y 2026-II cargados y sin proyectos, confirmar 2026-II da 201 y la 9 `SIN_PROYECTOS (2026-II)`; tras cargar la 09 de prueba, la 9 es `CARGADA` y otro «sin proyectos» para 2026-II da 409.
 
-- [ ] T013 [US3] Crear la migración `CAR/main/resources/db/migration/cargas/V3__sin_proyectos.sql` según [data-model.md](data-model.md):
+- [X] T013 [US3] Crear la migración `CAR/main/resources/db/migration/cargas/V3__sin_proyectos.sql` según [data-model.md](data-model.md):
   - la columna `periodo varchar(10)` con su patrón;
   - `SIN_PROYECTOS` en el `check` de `resultado`;
   - `archivo` y `hash` nulos solo en `SIN_PROYECTOS`, y `periodo` solo en `SIN_PROYECTOS`;
@@ -145,14 +145,14 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
   - una confirmación nueva y la repetida, que no duplica;
   - las entradas viejas siguen válidas;
   - la base rechaza un `SIN_PROYECTOS` sin periodo o un `APLICADA` con periodo.
-- [ ] T014 [US3] Crear el puerto de salida `CAR/main/java/ec/mdd/cargas/puertos/salida/ProyectosDelPeriodo.java` (`hayAsignables(periodo)`, lanza `PeriodoNoEncontrado`) y su adaptador `CAR/main/java/ec/mdd/cargas/adaptadores/salida/ProyectosDesdePuertos.java`, que llama a `ConsultarProyectos.listar(periodo, null, null)` de Docentes y traduce su `DatoInvalido` en `periodo`. Sumar al estado de T010 las confirmaciones que valen (`HistorialDeCargas.sinProyectos()` filtradas por `hayAsignables`). Primero las pruebas:
+- [X] T014 [US3] Crear el puerto de salida `CAR/main/java/ec/mdd/cargas/puertos/salida/ProyectosDelPeriodo.java` (`hayAsignables(periodo)`, lanza `PeriodoNoEncontrado`) y su adaptador `CAR/main/java/ec/mdd/cargas/adaptadores/salida/ProyectosDesdePuertos.java`, que llama a `ConsultarProyectos.listar(periodo, null, null)` de Docentes y traduce su `DatoInvalido` en `periodo`. Sumar al estado de T010 las confirmaciones que valen (`HistorialDeCargas.sinProyectos()` filtradas por `hayAsignables`). Primero las pruebas:
   - `ProyectosDesdePuertosTest`, con un doble escrito a mano de `ConsultarProyectos`;
   - en `ConsultarEstadoDeLasCargasServicioTest`, una confirmación que vale y otra que ya no.
-- [ ] T015 [US3] Crear `ConfirmarSinProyectos` (puerto de entrada), las excepciones `PeriodoNoEncontrado` y `PeriodoConProyectos` (`CAR/main/java/ec/mdd/cargas/puertos/entrada/`), `ConfirmarSinProyectosServicio` (aplicación) y la operación `confirmarSinProyectos` en `EstadoControlador` (201 con la nueva, 200 con la que ya estaba). Las excepciones se traducen en `ErroresCargas`. Primero las pruebas:
+- [X] T015 [US3] Crear `ConfirmarSinProyectos` (puerto de entrada), las excepciones `PeriodoNoEncontrado` y `PeriodoConProyectos` (`CAR/main/java/ec/mdd/cargas/puertos/entrada/`), `ConfirmarSinProyectosServicio` (aplicación) y la operación `confirmarSinProyectos` en `EstadoControlador` (201 con la nueva, 200 con la que ya estaba). Las excepciones se traducen en `ErroresCargas`. Primero las pruebas:
   - **`ConfirmarSinProyectosServicioTest`, con Mockito:** periodo sin proyectos, con proyectos (409), inexistente (400) y repetido (200);
   - **pruebas de contrato, válidos e inválidos (principio XIV):** `2026-I` y `2026-II` válidos; vacío, `2026-III`, `26-I`, de 11 caracteres y `2026-i` dan 400 `COMUN_SOLICITUD_INVALIDA`;
   - **`PermisosCargasTest`:** escritura sí; solo lectura o sin permiso, 403.
-- [ ] T016 [US3] Ampliar `ConfirmarLasDiezCargasIntegrationTest`, con el proceso `datos` real:
+- [X] T016 [US3] Ampliar `ConfirmarLasDiezCargasIntegrationTest`, con el proceso `datos` real:
   - con la 01 a la 08 confirmadas y sin proyectos, «sin proyectos» para 2026-II da 201 y el estado de la 9 es `SIN_PROYECTOS` con `2026-II`;
   - después de confirmar la 09 de prueba, la 9 es `CARGADA` y «sin proyectos» para 2026-II da 409;
   - `2027-I` da 400 `CARGAS_PERIODO_NO_ENCONTRADO`;

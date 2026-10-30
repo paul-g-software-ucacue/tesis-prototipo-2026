@@ -3,21 +3,28 @@ package ec.mdd.cargas.infraestructura;
 import ec.mdd.academico.puertos.entrada.ConsultarReferencias;
 import ec.mdd.cargas.adaptadores.salida.DiccionarioYaml;
 import ec.mdd.cargas.adaptadores.salida.LectorPorFormato;
+import ec.mdd.cargas.adaptadores.salida.ProyectosDesdePuertos;
 import ec.mdd.cargas.adaptadores.salida.ReferenciasDesdePuertos;
 import ec.mdd.cargas.aplicacion.ConfirmarCargaServicio;
+import ec.mdd.cargas.aplicacion.ConfirmarSinProyectosServicio;
+import ec.mdd.cargas.aplicacion.ConsultarEstadoDeLasCargasServicio;
 import ec.mdd.cargas.aplicacion.ConsultarHistorialServicio;
 import ec.mdd.cargas.aplicacion.ConsultarPlantillasServicio;
 import ec.mdd.cargas.aplicacion.DuenosDeLasCargas;
 import ec.mdd.cargas.aplicacion.ValidarArchivoServicio;
 import ec.mdd.cargas.dominio.Carga;
 import ec.mdd.cargas.puertos.entrada.ConfirmarCarga;
+import ec.mdd.cargas.puertos.entrada.ConfirmarSinProyectos;
+import ec.mdd.cargas.puertos.entrada.ConsultarEstadoDeLasCargas;
 import ec.mdd.cargas.puertos.entrada.ConsultarHistorial;
 import ec.mdd.cargas.puertos.entrada.ConsultarPlantillas;
 import ec.mdd.cargas.puertos.salida.FuenteDelDiccionario;
 import ec.mdd.cargas.puertos.salida.HistorialDeCargas;
 import ec.mdd.cargas.puertos.salida.LectorDeArchivo;
+import ec.mdd.cargas.puertos.salida.ProyectosDelPeriodo;
 import ec.mdd.cargas.puertos.salida.ReferenciasDelSistema;
 import ec.mdd.cargas.puertos.salida.Transaccion;
+import ec.mdd.docentes.puertos.entrada.ConsultarAsignablesDelPeriodo;
 import ec.mdd.docentes.puertos.entrada.ConsultarIdentificaciones;
 import ec.mdd.plataforma.cargas.AplicadorDeCargas;
 import java.time.Clock;
@@ -90,6 +97,33 @@ public class ConfiguracionCargas {
                 historialDeCargas,
                 transaccionCargas,
                 Clock.systemUTC());
+    }
+
+    /** Si un periodo tiene proyectos asignables, por el puerto publicado de Docentes (F01-H05). */
+    @Bean
+    public ProyectosDelPeriodo proyectosDelPeriodo(ConsultarAsignablesDelPeriodo consultar) {
+        return new ProyectosDesdePuertos(consultar);
+    }
+
+    /** El estado de las 10 cargas (F01-H05). */
+    @Bean
+    public ConsultarEstadoDeLasCargas consultarEstadoDeLasCargas(
+            ConsultarPlantillas consultarPlantillas,
+            DuenosDeLasCargas duenosDeLasCargas,
+            HistorialDeCargas historialDeCargas,
+            ProyectosDelPeriodo proyectosDelPeriodo) {
+        return new ConsultarEstadoDeLasCargasServicio(
+                consultarPlantillas, duenosDeLasCargas, historialDeCargas, proyectosDelPeriodo);
+    }
+
+    /** La confirmación «sin proyectos» de un periodo (F01-H05). */
+    @Bean
+    public ConfirmarSinProyectos confirmarSinProyectos(
+            ConsultarPlantillas consultarPlantillas,
+            ProyectosDelPeriodo proyectosDelPeriodo,
+            HistorialDeCargas historialDeCargas) {
+        return new ConfirmarSinProyectosServicio(
+                consultarPlantillas, proyectosDelPeriodo, historialDeCargas, Clock.systemUTC());
     }
 
     @Bean

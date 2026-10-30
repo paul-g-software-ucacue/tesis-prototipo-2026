@@ -45,4 +45,9 @@ public final class DuenosDeLasCargas {
     public AplicadorDeCargas de(String carga) {
         return porCarga.get(carga);
     }
+
+    /** Si el dueño de la carga tiene datos vigentes de ella (F01-H05). */
+    public boolean tieneDatos(String carga) {
+        return de(carga).tieneDatos(carga);
+    }
 }
