@@ -162,7 +162,7 @@ Plan aprobado por el autor el 2026-10-30.
 
 ## Phase 6: Punta a punta y cierre
 
-- [ ] T013 Crear `deploy/probar_preparacion.sh`, siguiendo `deploy/probar_orden_cargas.sh`:
+- [X] T013 Crear `deploy/probar_preparacion.sh`, siguiendo `deploy/probar_orden_cargas.sh`:
   0. comprobar que la base no tiene los datos de prueba;
   1. las cargas 01 a 05 y 07, y 2026-I «sin proyectos»; un archivo de docentes con errores en sus filas, confirmado: el tablero de 2026-I no está listo, docentes dice «Con errores» con `CARGAS_CARGA_CON_ERRORES`, y faltan docentes y cargos;
   2. la 06, la 08, la 09 y la 10: 2026-I todavía no está listo porque le falta abrirse;
