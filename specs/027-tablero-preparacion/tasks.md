@@ -135,8 +135,8 @@ Plan aprobado por el autor el 2026-10-30.
 
 **Independent Test**: con Vitest y la API simulada, el escenario 1 (docentes pendiente: el botón deshabilitado con lo que falta como descripción) y el 2 (todo listo: habilitado, y al pulsarlo el aviso de F06).
 
-- [ ] T010 [US1] Crear `SPA/pantallas/preparacion/consultas.ts` (`usePreparacion(periodo)`, con sus tipos del contrato y el patrón del periodo) y `SPA/pantallas/preparacion/datosDePrueba.ts`. Sumar la ruta `/preparacion` en `SPA/rutas.tsx` y la entrada «Preparación del periodo» en `SPA/navegacion/Marco.tsx`, con una constante propia, `PREPARACION_DEL_PERIODO` (`[DISTRIBUTIVO:LECTURA, CARGAS:LECTURA]`, D-70), en `SPA/sesion/funcionalidades.ts`.
-- [ ] T011 [US1] [US2] Crear `SPA/pantallas/preparacion/Preparacion.tsx`:
+- [X] T010 [US1] Crear `SPA/pantallas/preparacion/consultas.ts` (`usePreparacion(periodo)`, con sus tipos del contrato y el patrón del periodo) y `SPA/pantallas/preparacion/datosDePrueba.ts`. Sumar la ruta `/preparacion` en `SPA/rutas.tsx` y la entrada «Preparación del periodo» en `SPA/navegacion/Marco.tsx`, con una constante propia, `PREPARACION_DEL_PERIODO` (`[DISTRIBUTIVO:LECTURA, CARGAS:LECTURA]`, D-70), en `SPA/sesion/funcionalidades.ts`.
+- [X] T011 [US1] [US2] Crear `SPA/pantallas/preparacion/Preparacion.tsx`:
   - el `Select` de los periodos (el sugerido, al abrir);
   - la tabla de las 10 cargas (número, carga, obligatoria, estado como `Chip` y el motivo si está «con errores»);
   - la lista de lo que falta, o un aviso de que el periodo está listo; si falta la carga de proyectos, dice «o confirma el periodo sin proyectos en Plantillas de carga»;
@@ -154,7 +154,7 @@ Plan aprobado por el autor el 2026-10-30.
   - sin «Distributivo: escritura», sin botón;
   - sin permiso, fuera del menú;
   - el error del servidor.
-- [ ] T012 [US1] [US2] Crear `frontend/e2e/preparacion.spec.ts`, con rutas simuladas: el escenario 1 (el botón deshabilitado con su descripción) y el 2 (el aviso), con axe sin fallas WCAG 2.1 AA. Correr `lint`, `tipos`, `formato`, Vitest y Playwright.
+- [X] T012 [US1] [US2] Crear `frontend/e2e/preparacion.spec.ts`, con rutas simuladas: el escenario 1 (el botón deshabilitado con su descripción) y el 2 (el aviso), con axe sin fallas WCAG 2.1 AA. Correr `lint`, `tipos`, `formato`, Vitest y Playwright.
 
 **Checkpoint**: la pantalla cubre los dos escenarios del issue.
 

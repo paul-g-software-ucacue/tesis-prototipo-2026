@@ -98,3 +98,12 @@ export const DESCARGA_DE_PLANTILLAS: readonly { funcionalidad: string; tipo: Tip
   { funcionalidad: 'CARGAS', tipo: 'LECTURA' },
   { funcionalidad: 'DISTRIBUTIVO', tipo: 'LECTURA' },
 ];
+
+/**
+ * Quién ve el tablero de preparación del periodo: quien lee el distributivo o las cargas (D-70,
+ * F02-H02). Lo comparten la ruta y la entrada del menú.
+ */
+export const PREPARACION_DEL_PERIODO: readonly { funcionalidad: string; tipo: TipoDePermiso }[] = [
+  { funcionalidad: 'DISTRIBUTIVO', tipo: 'LECTURA' },
+  { funcionalidad: 'CARGAS', tipo: 'LECTURA' },
+];

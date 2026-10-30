@@ -45,6 +45,9 @@ Registro de las comprobaciones de la historia (issue #33): el tablero de prepara
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Vitest | `Preparacion.test.tsx`, 12 de 12: con docentes pendiente, «Crear distributivo» deshabilitado con lo que falta como descripción accesible; con las obligatorias, habilitado aunque falten los matriculados, y al pulsarlo el aviso de F06; cada estado, con el motivo de «con errores»; si faltan los proyectos, la opción de «sin proyectos»; el periodo sin abrir y el cerrado; al elegir otro periodo, pide su tablero; sin periodos, pide los ciclos académicos; sin «Distributivo: escritura», sin botón; el menú con cada permiso y sin ellos; el error del servidor sin un tablero falso. SPA: 274 pruebas, 93,9 % de líneas | `npx vitest run --coverage` | 2026-10-30 |
+| Playwright con axe | `e2e/preparacion.spec.ts`, 2 de 2, sin fallas WCAG 2.1 AA: el botón deshabilitado con su descripción, y el aviso al pulsarlo. Suite completa: 94 de 94 | `npx playwright test` | 2026-10-30 |
+| lint, tipos y formato | Sin observaciones | `npm run lint`, `npm run tipos`, `npm run formato:verificar` | 2026-10-30 |
 
 ## Cierre
 
