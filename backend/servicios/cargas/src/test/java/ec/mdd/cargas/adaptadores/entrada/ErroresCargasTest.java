@@ -4,18 +4,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
 import ec.mdd.cargas.dominio.ArchivoSinRegistros;
+import ec.mdd.cargas.dominio.CargaQueFalta;
 import ec.mdd.cargas.dominio.EncabezadosDistintos;
 import ec.mdd.cargas.puertos.entrada.ArchivoDemasiadoGrande;
 import ec.mdd.cargas.puertos.entrada.CargaConErrores;
+import ec.mdd.cargas.puertos.entrada.CargasAnterioresPendientes;
+import ec.mdd.cargas.puertos.entrada.PeriodoConProyectos;
 import ec.mdd.cargas.puertos.salida.ArchivoIlegible;
 import ec.mdd.cargas.puertos.salida.CodificacionNoAdmitida;
 import ec.mdd.cargas.puertos.salida.FormatoNoAdmitido;
+import ec.mdd.cargas.puertos.salida.PeriodoNoEncontrado;
 import ec.mdd.cargas.puertos.salida.VariasHojas;
 import ec.mdd.plataforma.cargas.RechazoDelLote;
 import ec.mdd.plataforma.cargas.VistaPreviaDesactualizada;
 import ec.mdd.plataforma.errores.nucleo.DetalleRespuesta;
 import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
 import ec.mdd.plataforma.pruebas.VerificadorDeCatalogo;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /** Los errores de Cargas coinciden con contratos/comun/errores.md (ADR-016). */
@@ -27,7 +32,7 @@ class ErroresCargasTest {
     }
 
     @Test
-    void dadosLosRechazosDeUnArchivo_cuandoSeBuscanSusEntradas_entoncesSonLos10Codigos() {
+    void dadosLosRechazosDeCargas_cuandoSeBuscanSusEntradas_entoncesSonSusCodigos() {
         assertThat(new ErroresCargas().entradas())
                 .extracting(
                         EntradaCatalogo::excepcion,
@@ -46,7 +51,39 @@ class ErroresCargasTest {
                                 VistaPreviaDesactualizada.class,
                                 "CARGAS_VISTA_PREVIA_DESACTUALIZADA",
                                 409),
-                        tuple(RechazoDelLote.class, "CARGAS_CARGA_RECHAZADA", 409));
+                        tuple(RechazoDelLote.class, "CARGAS_CARGA_RECHAZADA", 409),
+                        tuple(
+                                CargasAnterioresPendientes.class,
+                                "CARGAS_CARGAS_ANTERIORES_PENDIENTES",
+                                409),
+                        tuple(PeriodoNoEncontrado.class, "CARGAS_PERIODO_NO_ENCONTRADO", 400),
+                        tuple(PeriodoConProyectos.class, "CARGAS_PERIODO_CON_PROYECTOS", 409));
+    }
+
+    @Test
+    void dadasLasCargasQueFaltan_cuandoSeTraducen_entoncesUnDetallePorCadaUnaConSuNumeroYNombre() {
+        EntradaCatalogo entrada =
+                new ErroresCargas()
+                        .entradas().stream()
+                                .filter(una -> una.excepcion() == CargasAnterioresPendientes.class)
+                                .findFirst()
+                                .orElseThrow();
+
+        assertThat(
+                        entrada.detalles(
+                                new CargasAnterioresPendientes(
+                                        "cargos_autoridades",
+                                        List.of(
+                                                new CargaQueFalta(2, "carreras", "Carreras"),
+                                                new CargaQueFalta(
+                                                        6,
+                                                        "docentes",
+                                                        "Docentes contratados (con ficha"
+                                                                + " académica)")))))
+                .containsExactly(
+                        new DetalleRespuesta("carreras", "2 · Carreras"),
+                        new DetalleRespuesta(
+                                "docentes", "6 · Docentes contratados (con ficha académica)"));
     }
 
     @Test

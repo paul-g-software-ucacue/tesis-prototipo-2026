@@ -10,6 +10,9 @@ public interface RepositorioMatriculas {
     /** Los matriculados de esos periodos. */
     List<Matricula> deLosPeriodos(List<String> periodos);
 
+    /** Si hay al menos un registro de matriculados (F01-H05). */
+    boolean hayMatriculas();
+
     /** Bloquea la tabla hasta el fin de la transacción. */
     void bloquear();
 

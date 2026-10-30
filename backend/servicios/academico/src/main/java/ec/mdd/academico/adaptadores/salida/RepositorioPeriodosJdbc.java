@@ -46,6 +46,13 @@ public final class RepositorioPeriodosJdbc implements RepositorioPeriodos {
     }
 
     @Override
+    public boolean hayPeriodos() {
+        return jdbc.sql("SELECT EXISTS (SELECT 1 FROM academico.periodo_academico)")
+                .query(Boolean.class)
+                .single();
+    }
+
+    @Override
     public Optional<PeriodoAcademico> porCodigo(String codigo) {
         return jdbc.sql(COLUMNAS + " WHERE codigo = :codigo")
                 .param("codigo", codigo)

@@ -205,6 +205,11 @@ class VersionEnUsoIntegrationTest {
         }
 
         @Override
+        public boolean hayVersiones() {
+            return real.hayVersiones();
+        }
+
+        @Override
         public Optional<VersionNormativa> bloquear(int numero) {
             Optional<VersionNormativa> version = real.bloquear(numero);
             bloqueada.countDown();

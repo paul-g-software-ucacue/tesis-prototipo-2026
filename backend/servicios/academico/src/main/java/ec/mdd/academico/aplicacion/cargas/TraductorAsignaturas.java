@@ -37,6 +37,11 @@ final class TraductorAsignaturas extends TraductorAcademico<Asignatura> {
     }
 
     @Override
+    public boolean tieneDatos() {
+        return repositorio.hayAsignaturasActivas();
+    }
+
+    @Override
     public void bloquear() {
         repositorio.bloquear();
     }

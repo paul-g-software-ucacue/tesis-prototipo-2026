@@ -9,7 +9,9 @@
 # uno sin registros, un PDF y dos grandes (6 y 11 MB). Talento Humano sube los válidos y ve sus
 # registros, también el de 2 MB a través del frontend (nginx); cada inválido da su código. El
 # Responsable de consolidación y el Vicerrector suben (D-71); un coordinador y un docente reciben 403.
-# No crea nada en la base: el archivo no se guarda. Borra la carpeta temporal al salir.
+# El archivo no se guarda. Como las carreras dependen de la estructura orgánica (el orden de las
+# cargas, F01-H05), si no hay una unidad orgánica activa crea una sede matriz temporal, con un
+# prefijo P y tres dígitos, y la borra al salir junto con la carpeta temporal.
 # Termina con 0 si todos los pasos pasan y con 1 si alguno falla. Nunca imprime el token ni la
 # contraseña.
 set -euo pipefail
@@ -21,7 +23,9 @@ readonly CUERPO_403='{"titulo":"Acceso no autorizado","descripcion":"No tienes p
 readonly ENCABEZADOS='codigo_carrera,nombre,siglas,codigo_unidad_sede,nivel_formacion,modalidad,jornadas,campo_amplio,campo_especifico,campo_detallado,numero_ciclos,estado'
 
 carpeta=$(mktemp -d)
-trap 'rm -rf "$carpeta"' EXIT
+# La sede matriz temporal, si hace falta: P y tres dígitos.
+prefijo="P$(printf '%03d' $((RANDOM % 1000)))"
+sede_creada=""
 
 # El valor de una variable: el de .env si existe, si no el de .env.ejemplo.
 valor_de_entorno() {
@@ -33,6 +37,23 @@ valor_de_entorno() {
     done
     printf '%s' "$valor"
 }
+
+# psql en la base del perfil; imprime el resultado sin alineación ni encabezados.
+consultar_base() {
+    docker compose exec -T postgres psql -q -At -U postgres -d "$(valor_de_entorno POSTGRES_DB)" \
+        -v ON_ERROR_STOP=1 -c "$1"
+}
+
+limpiar() {
+    if [[ -n $sede_creada ]]; then
+        consultar_base "delete from eventos_datos.event_publication where serialized_event::jsonb -> 'contenido' ->> 'codigo' like '$prefijo%';
+delete from academico.registro_cambio where detalle ->> 'codigo' like '$prefijo%';
+delete from academico.unidad_organica where codigo like '$prefijo%';" >/dev/null 2>&1 \
+            || echo "AVISO  No se pudo borrar la sede temporal $sede_creada"
+    fi
+    rm -rf "$carpeta"
+}
+trap limpiar EXIT
 
 fallas=0
 verificar() {
@@ -175,6 +196,17 @@ no_sube() {  # no_sube <usuario>
 }
 
 armar_archivos
+# Las carreras se suben solo con alguna unidad orgánica activa (F01-H05).
+iniciar admin.demo
+if [[ -n $token ]]; then
+    pedir GET "$GATEWAY/api/academico/unidades" "Bearer $token"
+    if [[ -z $(jq -r '[.[] | select(.activa)][0].codigo // empty' <<<"$cuerpo" 2>/dev/null || true) ]]; then
+        sede_creada="${prefijo}MATRIZ"
+        pedir POST "$GATEWAY/api/academico/unidades" "Bearer $token" \
+            "$(jq -cn --arg c "$sede_creada" '{codigo: $c, nombre: "Sede matriz temporal", tipo: "SEDE_MATRIZ"}')"
+        [[ $estado == 201 ]] || echo "AVISO  No se pudo crear la sede temporal ($estado)"
+    fi
+fi
 iniciar datos.demo
 if [[ -z $token ]]; then
     echo "FALLA  0. datos.demo no inicia sesión: ¿está levantado el perfil?"

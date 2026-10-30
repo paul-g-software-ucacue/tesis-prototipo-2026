@@ -13,6 +13,9 @@ public interface RepositorioCargos {
     /** Todos los cargos, por docente, cargo y fecha de designación. */
     List<Cargo> todos();
 
+    /** Si hay al menos un cargo vigente (F01-H05). */
+    boolean hayVigentes();
+
     /** El cargo con esa clave, si existe. */
     Optional<Cargo> buscar(String docente, TipoDeCargo tipo, LocalDate fechaDesignacion);
 

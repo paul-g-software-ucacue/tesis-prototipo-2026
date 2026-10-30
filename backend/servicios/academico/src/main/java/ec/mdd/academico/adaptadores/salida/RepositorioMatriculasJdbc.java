@@ -34,6 +34,13 @@ public final class RepositorioMatriculasJdbc implements RepositorioMatriculas {
     }
 
     @Override
+    public boolean hayMatriculas() {
+        return jdbc.sql("SELECT EXISTS (SELECT 1 FROM academico.matricula)")
+                .query(Boolean.class)
+                .single();
+    }
+
+    @Override
     public void bloquear() {
         jdbc.sql("LOCK TABLE academico.matricula IN SHARE ROW EXCLUSIVE MODE").update();
     }

@@ -117,6 +117,14 @@ class AplicadorNormativaIntegrationTest {
     }
 
     @Test
+    void laPoliticaPrecargada_cuentaComoDatosDeLaCarga07() {
+        conNormativa(
+                normativa ->
+                        assertThat(normativa.aplicador().tieneDatos("politica_carga_horaria"))
+                                .isTrue());
+    }
+
+    @Test
     void conLaVersion1SinPeriodos_confirmarLaEditaYSubidaOtraVezEsIgual() {
         conNormativa(
                 normativa -> {

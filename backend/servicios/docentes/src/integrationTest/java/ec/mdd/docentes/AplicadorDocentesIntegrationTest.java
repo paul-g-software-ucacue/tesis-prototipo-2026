@@ -188,6 +188,26 @@ class AplicadorDocentesIntegrationTest {
     }
 
     @Test
+    void tieneDatos_conDocentesActivosOEnLicencia_cargosVigentesYCualquierProyecto() {
+        List<String> tres = List.of("docentes", "cargos_autoridades", "proyectos_practicas");
+        assertThat(tres).noneMatch(aplicador::tieneDatos);
+
+        confirmar(LotesDePrueba.lote("docentes", "06_docentes.csv"));
+        confirmar(LotesDePrueba.lote("cargos_autoridades", "08_cargos_autoridades.csv"));
+        confirmar(LotesDePrueba.lote("proyectos_practicas", "09_proyectos_practicas.csv"));
+        assertThat(tres).allMatch(aplicador::tieneDatos);
+
+        jdbc.sql("UPDATE docentes.docente SET estado = 'LICENCIA'").update();
+        assertThat(aplicador.tieneDatos("docentes")).as("en licencia").isTrue();
+        jdbc.sql("UPDATE docentes.docente SET estado = 'INACTIVO'").update();
+        jdbc.sql("UPDATE docentes.cargo SET estado = 'FINALIZADO'").update();
+        jdbc.sql("UPDATE docentes.proyecto SET estado = 'SUSPENDIDO'").update();
+        assertThat(aplicador.tieneDatos("docentes")).as("solo inactivos").isFalse();
+        assertThat(aplicador.tieneDatos("cargos_autoridades")).as("solo finalizados").isFalse();
+        assertThat(aplicador.tieneDatos("proyectos_practicas")).as("en cualquier estado").isTrue();
+    }
+
+    @Test
     void unSegundoCoordinadorVigenteDeLaMismaCarrera_rechazaSuFilaSinAplicarNada() {
         confirmar(LotesDePrueba.lote("docentes", "06_docentes.csv"));
         LoteDeCarga cargos = LotesDePrueba.lote("cargos_autoridades", "08_cargos_autoridades.csv");

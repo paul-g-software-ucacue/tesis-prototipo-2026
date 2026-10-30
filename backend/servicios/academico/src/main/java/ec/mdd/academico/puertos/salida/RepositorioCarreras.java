@@ -23,6 +23,12 @@ public interface RepositorioCarreras {
     /** Todas las carreras, por código. */
     List<Carrera> carreras();
 
+    /** Si hay al menos una carrera vigente (F01-H05). */
+    boolean hayCarrerasVigentes();
+
+    /** Si hay al menos una asignatura activa (F01-H05). */
+    boolean hayAsignaturasActivas();
+
     /** Todas las mallas, por código. */
     List<Malla> mallas();
 

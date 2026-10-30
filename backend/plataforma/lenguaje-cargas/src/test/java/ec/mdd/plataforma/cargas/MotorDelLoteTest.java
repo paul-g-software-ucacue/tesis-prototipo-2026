@@ -53,6 +53,11 @@ class MotorDelLoteTest {
         }
 
         @Override
+        public boolean tieneDatos() {
+            return !datos.isEmpty();
+        }
+
+        @Override
         public String clave(FilaDelLote fila) {
             return fila.valor("codigo");
         }

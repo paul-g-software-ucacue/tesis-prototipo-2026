@@ -1,6 +1,6 @@
 // Los tipos, la consulta y las descargas de la pantalla «Plantillas de carga» (contratos/cargas,
-// F01-H01), la subida (F01-H02), el informe de las filas (F01-H03), y la vista previa, la
-// confirmación y el historial (F01-H04).
+// F01-H01), la subida (F01-H02), el informe de las filas (F01-H03), la vista previa, la
+// confirmación y el historial (F01-H04), y el estado de cada carga y «sin proyectos» (F01-H05).
 import { useQuery } from '@tanstack/react-query';
 import { apiCargas, llamar } from '../../api/cliente';
 import type { components } from '../../api/generado/cargas';
@@ -16,6 +16,14 @@ export type VistaPrevia = components['schemas']['VistaPrevia'];
 export type RegistroDeLaVista = components['schemas']['RegistroDeLaVista'];
 export type ResultadoDeConfirmacion = components['schemas']['ResultadoDeConfirmacion'];
 export type EntradaDeHistorial = components['schemas']['EntradaDeHistorial'];
+export type EstadoDeCarga = components['schemas']['EstadoDeCarga'];
+export type CargaQueFalta = components['schemas']['CargaQueFalta'];
+
+/** La clave del estado de las cargas, para invalidarlo después de confirmar (F01-H05). */
+export const CLAVE_ESTADO = ['cargas', 'estado'] as const;
+
+/** El código de un periodo, como en la carga 3: «2026-I» o «2026-II» (contrato, principio XIV). */
+export const PERIODO = /^[0-9]{4}-(I|II)$/;
 
 /** El diccionario de datos de las 10 cargas; no cambia mientras el servidor corre. */
 export function useDiccionario() {
@@ -136,6 +144,22 @@ export function confirmarCarga(
       },
     }),
   );
+}
+
+/**
+ * El estado de las 10 cargas: si su servicio dueño tiene datos, qué cargas anteriores le faltan y,
+ * en la de proyectos, los periodos «sin proyectos» (F01-H05, RF-56). Cambia con cada confirmación.
+ */
+export function useEstadoDeLasCargas() {
+  return useQuery({
+    queryKey: CLAVE_ESTADO,
+    queryFn: () => llamar(apiCargas.GET('/api/cargas/estado')),
+  });
+}
+
+/** Confirma que un periodo no tiene proyectos aprobados (F01-H05, RF-18). */
+export function confirmarSinProyectos(periodo: string): Promise<EntradaDeHistorial> {
+  return llamar(apiCargas.POST('/api/cargas/sin-proyectos', { body: { periodo } }));
 }
 
 /** El historial de una carga, del intento más reciente al más antiguo (F01-H04, RF-10). */

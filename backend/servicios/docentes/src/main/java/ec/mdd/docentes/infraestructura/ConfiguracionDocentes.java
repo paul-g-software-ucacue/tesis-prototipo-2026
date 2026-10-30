@@ -7,6 +7,7 @@ import ec.mdd.docentes.adaptadores.salida.RepositorioCargosJdbc;
 import ec.mdd.docentes.adaptadores.salida.RepositorioDocentesJdbc;
 import ec.mdd.docentes.adaptadores.salida.RepositorioProyectosJdbc;
 import ec.mdd.docentes.adaptadores.salida.TransaccionSpring;
+import ec.mdd.docentes.aplicacion.ConsultarAsignablesServicio;
 import ec.mdd.docentes.aplicacion.ConsultarCargosServicio;
 import ec.mdd.docentes.aplicacion.ConsultarDocentesServicio;
 import ec.mdd.docentes.aplicacion.ConsultarIdentificacionesServicio;
@@ -15,6 +16,7 @@ import ec.mdd.docentes.aplicacion.MantenerCargosServicio;
 import ec.mdd.docentes.aplicacion.MantenerDocentesServicio;
 import ec.mdd.docentes.aplicacion.MantenerProyectosServicio;
 import ec.mdd.docentes.aplicacion.cargas.CargasDeDocentes;
+import ec.mdd.docentes.puertos.entrada.ConsultarAsignablesDelPeriodo;
 import ec.mdd.docentes.puertos.entrada.ConsultarCargos;
 import ec.mdd.docentes.puertos.entrada.ConsultarDocentes;
 import ec.mdd.docentes.puertos.entrada.ConsultarIdentificaciones;
@@ -167,6 +169,13 @@ public class ConfiguracionDocentes {
             RepositorioDocentes repositorio,
             ReferenciasAcademicas referencias) {
         return new ConsultarProyectosServicio(repositorioProyectos, repositorio, referencias);
+    }
+
+    /** Si un periodo tiene proyectos asignables, para «sin proyectos» de Cargas (F01-H05). */
+    @Bean
+    public ConsultarAsignablesDelPeriodo consultarAsignablesDelPeriodo(
+            RepositorioProyectos repositorioProyectos, ReferenciasAcademicas referencias) {
+        return new ConsultarAsignablesServicio(repositorioProyectos, referencias);
     }
 
     /** Registrar y corregir los proyectos, con su registro (F03-H05, FR-003, FR-012). */

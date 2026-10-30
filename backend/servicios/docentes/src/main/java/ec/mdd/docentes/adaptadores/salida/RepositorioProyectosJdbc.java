@@ -70,6 +70,13 @@ public final class RepositorioProyectosJdbc implements RepositorioProyectos {
     }
 
     @Override
+    public boolean hayProyectos() {
+        return jdbc.sql("SELECT EXISTS (SELECT 1 FROM docentes.proyecto)")
+                .query(Boolean.class)
+                .single();
+    }
+
+    @Override
     public Optional<Proyecto> buscar(String codigo) {
         return jdbc.sql(BUSCAR)
                 .param("codigo", codigo)

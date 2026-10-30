@@ -16,6 +16,9 @@ public interface RepositorioVersiones {
     /** Todas las versiones, por número. */
     List<VersionNormativa> todas();
 
+    /** Si hay al menos una versión de normativa (F01-H05). */
+    boolean hayVersiones();
+
     /** La versión con ese número, si existe. */
     Optional<VersionNormativa> buscar(int numero);
 

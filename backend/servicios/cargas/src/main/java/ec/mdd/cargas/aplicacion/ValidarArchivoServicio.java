@@ -1,16 +1,19 @@
 package ec.mdd.cargas.aplicacion;
 
 import ec.mdd.cargas.dominio.Carga;
+import ec.mdd.cargas.dominio.CargaQueFalta;
 import ec.mdd.cargas.dominio.InformeValidacionCarga;
+import ec.mdd.cargas.dominio.OrdenDeLasCargas;
 import ec.mdd.cargas.dominio.TablaDeDatos;
 import ec.mdd.cargas.dominio.VistaPrevia;
 import ec.mdd.cargas.puertos.entrada.ArchivoDemasiadoGrande;
 import ec.mdd.cargas.puertos.entrada.ArchivoSubido;
 import ec.mdd.cargas.puertos.entrada.ArchivoValidado;
+import ec.mdd.cargas.puertos.entrada.CargasAnterioresPendientes;
 import ec.mdd.cargas.puertos.entrada.ConsultarPlantillas;
 import ec.mdd.cargas.puertos.entrada.ValidarArchivo;
 import ec.mdd.cargas.puertos.salida.ArchivoLeido;
-import ec.mdd.cargas.puertos.salida.LectorDeArchivo;
+import ec.mdd.cargas.puertos.salida.FuenteDeDatos;
 import ec.mdd.cargas.puertos.salida.ReferenciasDelSistema;
 import ec.mdd.plataforma.cargas.FilaDelLote;
 import ec.mdd.plataforma.cargas.LoteDeCarga;
@@ -34,7 +37,7 @@ public final class ValidarArchivoServicio implements ValidarArchivo {
     public static final int MAXIMO = 5 * 1024 * 1024;
 
     private final ConsultarPlantillas plantillas;
-    private final LectorDeArchivo lector;
+    private final FuenteDeDatos fuente;
     private final ReferenciasDelSistema referencias;
     private final DuenosDeLasCargas duenos;
 
@@ -44,11 +47,11 @@ public final class ValidarArchivoServicio implements ValidarArchivo {
      */
     public ValidarArchivoServicio(
             ConsultarPlantillas plantillas,
-            LectorDeArchivo lector,
+            FuenteDeDatos fuente,
             ReferenciasDelSistema referencias,
             DuenosDeLasCargas duenos) {
         this.plantillas = plantillas;
-        this.lector = lector;
+        this.fuente = fuente;
         this.referencias = referencias;
         this.duenos = duenos;
     }
@@ -74,16 +77,25 @@ public final class ValidarArchivoServicio implements ValidarArchivo {
     }
 
     /**
-     * Lee el archivo, valida su estructura y revisa sus filas, sin pedir la vista previa.
+     * Comprueba el orden de las cargas, lee el archivo, valida su estructura y revisa sus filas,
+     * sin pedir la vista previa.
      *
      * @throws ec.mdd.cargas.puertos.entrada.CargaNoEncontrada si no es una de las 10
+     * @throws CargasAnterioresPendientes si alguna carga de la que depende no tiene datos, antes de
+     *     leer el archivo (F01-H05)
      */
     Revision revisar(String codigo, ArchivoSubido archivo) {
         Carga carga = plantillas.carga(codigo);
+        List<CargaQueFalta> faltan =
+                new OrdenDeLasCargas(plantillas.diccionario(), duenos::tieneDatos)
+                        .faltantes(carga.codigo());
+        if (!faltan.isEmpty()) {
+            throw new CargasAnterioresPendientes(carga.codigo(), faltan);
+        }
         if (archivo.contenido().length > MAXIMO) {
             throw new ArchivoDemasiadoGrande(archivo.contenido().length);
         }
-        ArchivoLeido leido = lector.leer(archivo.nombre(), archivo.contenido());
+        ArchivoLeido leido = fuente.leer(archivo.nombre(), archivo.contenido());
         carga.leer(leido.tabla());
         InformeValidacionCarga informe =
                 plantillas

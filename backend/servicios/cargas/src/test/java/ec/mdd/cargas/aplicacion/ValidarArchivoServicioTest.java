@@ -9,10 +9,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import ec.mdd.cargas.adaptadores.salida.DiccionarioYaml;
 import ec.mdd.cargas.dominio.ArchivoSinRegistros;
+import ec.mdd.cargas.dominio.CargaQueFalta;
 import ec.mdd.cargas.dominio.EncabezadosDistintos;
 import ec.mdd.cargas.dominio.InformeValidacionCarga;
 import ec.mdd.cargas.dominio.ProblemaDeFila;
@@ -23,11 +25,12 @@ import ec.mdd.cargas.puertos.entrada.ArchivoDemasiadoGrande;
 import ec.mdd.cargas.puertos.entrada.ArchivoSubido;
 import ec.mdd.cargas.puertos.entrada.ArchivoValidado;
 import ec.mdd.cargas.puertos.entrada.CargaNoEncontrada;
+import ec.mdd.cargas.puertos.entrada.CargasAnterioresPendientes;
 import ec.mdd.cargas.puertos.salida.ArchivoIlegible;
 import ec.mdd.cargas.puertos.salida.ArchivoLeido;
 import ec.mdd.cargas.puertos.salida.Formato;
+import ec.mdd.cargas.puertos.salida.FuenteDeDatos;
 import ec.mdd.cargas.puertos.salida.FuenteDelDiccionario;
-import ec.mdd.cargas.puertos.salida.LectorDeArchivo;
 import ec.mdd.cargas.puertos.salida.ReferenciasDelSistema;
 import ec.mdd.plataforma.cargas.AplicadorDeCargas;
 import ec.mdd.plataforma.cargas.LoteDeCarga;
@@ -64,7 +67,7 @@ class ValidarArchivoServicioTest {
                     "",
                     "APROBADO");
 
-    private final LectorDeArchivo lector = mock(LectorDeArchivo.class);
+    private final FuenteDeDatos lector = mock(FuenteDeDatos.class);
     private final FuenteDelDiccionario fuente = mock(FuenteDelDiccionario.class);
     private final ReferenciasDelSistema referencias = mock(ReferenciasDelSistema.class);
     private final ValidarArchivoServicio servicio;
@@ -76,6 +79,7 @@ class ValidarArchivoServicioTest {
                         new ReferenciasExistentes(
                                 Set.of(), Set.of(), Set.of(), Set.of(), Set.of()));
         when(dueno.cargas()).thenReturn(CARGAS);
+        when(dueno.tieneDatos(any())).thenReturn(true);
         when(dueno.previsualizar(any()))
                 .thenReturn(new VistaPreviaDelLote(List.of(), "0".repeat(64)));
         ConsultarPlantillasServicio plantillas = new ConsultarPlantillasServicio(fuente);
@@ -119,6 +123,37 @@ class ValidarArchivoServicioTest {
         assertThat(validado.formato()).isEqualTo(Formato.CSV);
         assertThat(validado.registros()).isOne();
         verify(referencias, times(1)).existentes();
+    }
+
+    @Test
+    void sinCarreras_validarAsignaturas_diceQueFaltaCarrerasSinLeerElArchivo() {
+        when(dueno.tieneDatos("carreras")).thenReturn(false);
+
+        assertThatThrownBy(
+                        () ->
+                                servicio.validar(
+                                        "asignaturas_malla",
+                                        new ArchivoSubido("04.csv", new byte[10])))
+                .isInstanceOfSatisfying(
+                        CargasAnterioresPendientes.class,
+                        error ->
+                                assertThat(error.faltan())
+                                        .extracting(CargaQueFalta::codigo)
+                                        .containsExactly("carreras"));
+        verifyNoInteractions(lector, referencias);
+    }
+
+    @Test
+    void siNoSePuedeSaberSiUnaCargaAnteriorTieneDatos_noLeeElArchivo() {
+        when(dueno.tieneDatos("carreras")).thenThrow(new IllegalStateException("sin conexión"));
+
+        assertThatThrownBy(
+                        () ->
+                                servicio.validar(
+                                        "asignaturas_malla",
+                                        new ArchivoSubido("04.csv", new byte[10])))
+                .isInstanceOf(IllegalStateException.class);
+        verifyNoInteractions(lector);
     }
 
     @Test

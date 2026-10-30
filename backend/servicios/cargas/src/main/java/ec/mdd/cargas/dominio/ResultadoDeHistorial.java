@@ -7,5 +7,10 @@ public enum ResultadoDeHistorial {
     /** No se aplicó nada; el motivo dice por qué. */
     RECHAZADA,
     /** El mismo archivo ya estaba aplicado en esa carga: no se aplicó otra vez (MD-13). */
-    REPETIDA
+    REPETIDA,
+    /**
+     * Un periodo confirmado «sin proyectos» (F01-H05, RF-18): no hay archivo ni hash, sino el
+     * periodo.
+     */
+    SIN_PROYECTOS
 }

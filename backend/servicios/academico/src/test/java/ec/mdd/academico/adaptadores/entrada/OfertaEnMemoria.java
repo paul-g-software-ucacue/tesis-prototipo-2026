@@ -3,6 +3,7 @@ package ec.mdd.academico.adaptadores.entrada;
 import ec.mdd.academico.aplicacion.ConsultarOfertaServicio;
 import ec.mdd.academico.aplicacion.MantenerOfertaServicio;
 import ec.mdd.academico.dominio.AsignaturaParalelo;
+import ec.mdd.academico.dominio.EstadoDeAsignaturaParalelo;
 import ec.mdd.academico.dominio.EstadoPeriodo;
 import ec.mdd.academico.dominio.PeriodoAcademico;
 import ec.mdd.academico.puertos.entrada.ConsultarOferta;
@@ -109,6 +110,16 @@ final class OfertaEnMemoria implements RepositorioOferta, RepositorioPeriodos {
     @Override
     public List<PeriodoAcademico> todos() {
         return List.copyOf(periodos);
+    }
+
+    @Override
+    public boolean hayPeriodos() {
+        return !periodos.isEmpty();
+    }
+
+    @Override
+    public boolean hayOfertadas() {
+        return oferta.stream().anyMatch(una -> una.estado() == EstadoDeAsignaturaParalelo.OFERTADA);
     }
 
     @Override

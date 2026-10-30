@@ -54,6 +54,14 @@ public final class RepositorioOfertaJdbc implements RepositorioOferta {
     }
 
     @Override
+    public boolean hayOfertadas() {
+        return jdbc.sql(
+                        "SELECT EXISTS (SELECT 1 FROM academico.asignatura_paralelo WHERE estado = 'OFERTADA')")
+                .query(Boolean.class)
+                .single();
+    }
+
+    @Override
     public void bloquear() {
         jdbc.sql(BLOQUEAR).update();
     }

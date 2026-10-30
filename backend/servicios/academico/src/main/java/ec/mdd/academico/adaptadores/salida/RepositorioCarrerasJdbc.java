@@ -109,6 +109,20 @@ public final class RepositorioCarrerasJdbc implements RepositorioCarreras {
     }
 
     @Override
+    public boolean hayCarrerasVigentes() {
+        return jdbc.sql("SELECT EXISTS (SELECT 1 FROM academico.carrera WHERE estado = 'VIGENTE')")
+                .query(Boolean.class)
+                .single();
+    }
+
+    @Override
+    public boolean hayAsignaturasActivas() {
+        return jdbc.sql("SELECT EXISTS (SELECT 1 FROM academico.asignatura WHERE activa)")
+                .query(Boolean.class)
+                .single();
+    }
+
+    @Override
     public List<Malla> mallas() {
         return jdbc.sql(MALLAS)
                 .query(

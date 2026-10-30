@@ -5,9 +5,12 @@ import ec.mdd.cargas.dominio.DiferenciaDeEncabezado;
 import ec.mdd.cargas.dominio.EncabezadosDistintos;
 import ec.mdd.cargas.puertos.entrada.ArchivoDemasiadoGrande;
 import ec.mdd.cargas.puertos.entrada.CargaConErrores;
+import ec.mdd.cargas.puertos.entrada.CargasAnterioresPendientes;
+import ec.mdd.cargas.puertos.entrada.PeriodoConProyectos;
 import ec.mdd.cargas.puertos.salida.ArchivoIlegible;
 import ec.mdd.cargas.puertos.salida.CodificacionNoAdmitida;
 import ec.mdd.cargas.puertos.salida.FormatoNoAdmitido;
+import ec.mdd.cargas.puertos.salida.PeriodoNoEncontrado;
 import ec.mdd.cargas.puertos.salida.VariasHojas;
 import ec.mdd.plataforma.cargas.RechazoDelLote;
 import ec.mdd.plataforma.cargas.VistaPreviaDesactualizada;
@@ -23,9 +26,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * Los errores de Cargas en el catálogo (ADR-016): los rechazos de un archivo de carga (F01-H02).
- * Sus textos son los de {@code contratos/comun/errores.md}; una prueba lo comprueba. Los detalles
- * dicen la columna o la fila, nunca un valor del archivo (principio IX).
+ * Los errores de Cargas en el catálogo (ADR-016): los rechazos de un archivo de carga (F01-H02), de
+ * su confirmación (F01-H04) y del orden de las cargas (F01-H05). Sus textos son los de {@code
+ * contratos/comun/errores.md}; una prueba lo comprueba. Los detalles dicen la columna o la fila,
+ * nunca un valor del archivo (principio IX).
  */
 @Component
 class ErroresCargas implements CatalogoDeErrores {
@@ -138,7 +142,47 @@ class ErroresCargas implements CatalogoDeErrores {
                                 "El servicio dueño rechazó la carga y no se aplicó ninguna fila."
                                         + " Revisa el detalle, corrige el archivo y vuelve a"
                                         + " subirlo."),
-                        this::detalles));
+                        this::detalles),
+                EntradaCatalogo.conDetalles(
+                        CargasAnterioresPendientes.class,
+                        new DefinicionDeCodigo(
+                                "CARGAS_CARGAS_ANTERIORES_PENDIENTES",
+                                409,
+                                "Faltan cargas anteriores",
+                                "Esta carga depende de otras que todavía no tienen datos. Sube y"
+                                        + " confirma antes las cargas que faltan, o registra sus"
+                                        + " datos en su pantalla."),
+                        error ->
+                                error.faltan().stream()
+                                        .map(
+                                                falta ->
+                                                        new DetalleRespuesta(
+                                                                falta.codigo(),
+                                                                falta.numero()
+                                                                        + " · "
+                                                                        + falta.nombre()))
+                                        .toList()),
+                EntradaCatalogo.conDetalles(
+                        PeriodoNoEncontrado.class,
+                        new DefinicionDeCodigo(
+                                "CARGAS_PERIODO_NO_ENCONTRADO",
+                                400,
+                                "Periodo no encontrado",
+                                "El periodo no está en los ciclos académicos. Elige uno de la lista"
+                                        + " o carga antes sus ciclos académicos."),
+                        error ->
+                                List.of(
+                                        new DetalleRespuesta(
+                                                "periodo",
+                                                error.periodo()
+                                                        + " no está en los ciclos académicos."))),
+                EntradaCatalogo.de(
+                        PeriodoConProyectos.class,
+                        "CARGAS_PERIODO_CON_PROYECTOS",
+                        409,
+                        "El periodo tiene proyectos",
+                        "No puedes confirmar «sin proyectos»: el periodo tiene proyectos aprobados"
+                                + " que pueden recibir horas."));
     }
 
     /**

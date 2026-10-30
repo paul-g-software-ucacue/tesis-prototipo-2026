@@ -11,6 +11,13 @@ public interface AplicadorDeCargas {
     /** Los códigos de las cargas que atiende. */
     Set<String> cargas();
 
+    /**
+     * Si el dueño tiene al menos un registro vigente de la carga (F01-H05).
+     *
+     * @throws IllegalArgumentException si no atiende esa carga
+     */
+    boolean tieneDatos(String carga);
+
     /** La vista previa del lote frente a lo que tiene el dueño. */
     VistaPreviaDelLote previsualizar(LoteDeCarga lote);
 

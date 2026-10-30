@@ -16,6 +16,9 @@ public interface RepositorioPeriodos {
     /** Todos los periodos, del de inicio más reciente al más antiguo. */
     List<PeriodoAcademico> todos();
 
+    /** Si hay al menos un periodo académico, en cualquier estado (F01-H05). */
+    boolean hayPeriodos();
+
     /** El periodo con ese código, si existe. */
     Optional<PeriodoAcademico> porCodigo(String codigo);
 

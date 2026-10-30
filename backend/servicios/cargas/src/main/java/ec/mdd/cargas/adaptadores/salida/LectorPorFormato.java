@@ -3,15 +3,15 @@ package ec.mdd.cargas.adaptadores.salida;
 import ec.mdd.cargas.puertos.salida.ArchivoLeido;
 import ec.mdd.cargas.puertos.salida.Formato;
 import ec.mdd.cargas.puertos.salida.FormatoNoAdmitido;
-import ec.mdd.cargas.puertos.salida.LectorDeArchivo;
+import ec.mdd.cargas.puertos.salida.FuenteDeDatos;
 import java.util.Locale;
 
 /**
- * La fuente de datos de las cargas cuando llegan como archivo (RF-57): la extensión, sin distinguir
- * mayúsculas, elige el lector de CSV o el de XLSX, y cada lector comprueba que el contenido
- * corresponde a su formato (research §3).
+ * El adaptador de archivos de la fuente de datos de las cargas (RF-57): la extensión, sin
+ * distinguir mayúsculas, elige el lector de CSV o el de XLSX, y cada lector comprueba que el
+ * contenido corresponde a su formato (research §3). Es el único que conoce los formatos.
  */
-public final class LectorPorFormato implements LectorDeArchivo {
+public final class LectorPorFormato implements FuenteDeDatos {
 
     private final LectorCsv csv = new LectorCsv();
     private final LectorXlsx xlsx = new LectorXlsx();

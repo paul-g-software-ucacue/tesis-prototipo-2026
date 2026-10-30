@@ -16,6 +16,9 @@ public interface RepositorioEstructura {
     /** Todas las unidades, activas e inactivas, por código. */
     List<UnidadOrganica> todas();
 
+    /** Si hay al menos una unidad orgánica activa (F01-H05). */
+    boolean hayActivas();
+
     /** Las 21 gestiones autorizadas, por código. */
     List<GestionAutorizada> catalogo();
 

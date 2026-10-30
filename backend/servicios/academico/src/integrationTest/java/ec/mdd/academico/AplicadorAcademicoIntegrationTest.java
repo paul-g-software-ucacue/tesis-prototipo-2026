@@ -197,6 +197,38 @@ class AplicadorAcademicoIntegrationTest {
     }
 
     @Test
+    void tieneDatos_soloConRegistrosVigentes_entradosPorArchivoOPorPantalla() {
+        List<String> seis =
+                List.of(
+                        "estructura_organica",
+                        "carreras",
+                        "ciclos_academicos",
+                        "asignaturas_malla",
+                        "oferta_periodo",
+                        "matriculados_carrera");
+        assertThat(seis).noneMatch(aplicador::tieneDatos);
+
+        confirmar(LotesDePrueba.lote("estructura_organica", "01_estructura_organica.csv"));
+        confirmar(LotesDePrueba.lote("carreras", "02_carreras.csv"));
+        confirmar(LotesDePrueba.lote("ciclos_academicos", "03_ciclos_academicos.csv"));
+        confirmar(LotesDePrueba.lote("asignaturas_malla", "04_asignaturas_malla.csv"));
+        confirmar(LotesDePrueba.lote("oferta_periodo", "05_oferta_periodo.csv"));
+        confirmar(LotesDePrueba.lote("matriculados_carrera", "10_matriculados_carrera.csv"));
+        assertThat(seis).allMatch(aplicador::tieneDatos);
+
+        jdbc.sql("UPDATE academico.unidad_organica SET activa = false").update();
+        jdbc.sql("UPDATE academico.carrera SET estado = 'NO_VIGENTE'").update();
+        jdbc.sql("UPDATE academico.asignatura SET activa = false").update();
+        jdbc.sql("UPDATE academico.asignatura_paralelo SET estado = 'RETIRADA'").update();
+        assertThat(aplicador.tieneDatos("estructura_organica")).as("solo inactivas").isFalse();
+        assertThat(aplicador.tieneDatos("carreras")).as("solo no vigentes").isFalse();
+        assertThat(aplicador.tieneDatos("asignaturas_malla")).as("solo inactivas").isFalse();
+        assertThat(aplicador.tieneDatos("oferta_periodo")).as("solo retiradas").isFalse();
+        assertThat(aplicador.tieneDatos("ciclos_academicos")).as("en cualquier estado").isTrue();
+        assertThat(aplicador.tieneDatos("matriculados_carrera")).isTrue();
+    }
+
+    @Test
     void unaSegundaSedeMatriz_rechazaSuFilaYNoAplicaNada() {
         LoteDeCarga estructura =
                 LotesDePrueba.lote("estructura_organica", "01_estructura_organica.csv");

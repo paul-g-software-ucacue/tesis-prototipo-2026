@@ -1,5 +1,6 @@
 package ec.mdd.cargas.adaptadores.salida;
 
+import ec.mdd.cargas.dominio.ConfirmacionSinProyectos;
 import ec.mdd.cargas.dominio.EntradaDeHistorial;
 import ec.mdd.cargas.dominio.MotivoDeRechazo;
 import ec.mdd.cargas.dominio.ResultadoDeHistorial;
@@ -16,7 +17,7 @@ public final class HistorialDeCargasJdbc implements HistorialDeCargas {
 
     private static final String COLUMNAS =
             "carga, usuario, momento, archivo, hash, resultado, nuevos, cambiados,"
-                    + " bajas_sin_aplicar, motivo";
+                    + " bajas_sin_aplicar, motivo, periodo";
 
     private final JdbcClient jdbc;
 
@@ -31,7 +32,7 @@ public final class HistorialDeCargasJdbc implements HistorialDeCargas {
                         "INSERT INTO cargas.historial_carga ("
                                 + COLUMNAS
                                 + ") VALUES (:carga, :usuario, :momento, :archivo, :hash,"
-                                + " :resultado, :nuevos, :cambiados, :bajas, :motivo)")
+                                + " :resultado, :nuevos, :cambiados, :bajas, :motivo, :periodo)")
                 .param("carga", entrada.carga())
                 .param("usuario", entrada.usuario())
                 .param("momento", Timestamp.from(entrada.momento()))
@@ -42,6 +43,7 @@ public final class HistorialDeCargasJdbc implements HistorialDeCargas {
                 .param("cambiados", entrada.cambiados())
                 .param("bajas", entrada.bajasSinAplicar())
                 .param("motivo", entrada.motivo().map(Enum::name).orElse(null))
+                .param("periodo", entrada.periodo().orElse(null))
                 .update();
     }
 
@@ -70,6 +72,51 @@ public final class HistorialDeCargasJdbc implements HistorialDeCargas {
                 .optional();
     }
 
+    @Override
+    public List<EntradaDeHistorial> sinProyectos(String carga) {
+        return jdbc.sql(
+                        "SELECT "
+                                + COLUMNAS
+                                + " FROM cargas.historial_carga WHERE carga = :carga AND resultado"
+                                + " = 'SIN_PROYECTOS' ORDER BY periodo")
+                .param("carga", carga)
+                .query((fila, numero) -> entrada(fila))
+                .list();
+    }
+
+    /**
+     * Inserta la confirmación salvo que su periodo ya esté confirmado: el índice único de V3
+     * decide, también entre dos confirmaciones a la vez.
+     */
+    @Override
+    public ConfirmacionSinProyectos confirmarSinProyectos(EntradaDeHistorial confirmacion) {
+        String periodo = confirmacion.periodo().orElseThrow();
+        int guardadas =
+                jdbc.sql(
+                                "INSERT INTO cargas.historial_carga (carga, usuario, momento,"
+                                        + " resultado, nuevos, cambiados, bajas_sin_aplicar,"
+                                        + " periodo) VALUES (:carga, :usuario, :momento,"
+                                        + " 'SIN_PROYECTOS', 0, 0, 0, :periodo) ON CONFLICT"
+                                        + " (carga, periodo) WHERE resultado = 'SIN_PROYECTOS' DO"
+                                        + " NOTHING")
+                        .param("carga", confirmacion.carga())
+                        .param("usuario", confirmacion.usuario())
+                        .param("momento", Timestamp.from(confirmacion.momento()))
+                        .param("periodo", periodo)
+                        .update();
+        EntradaDeHistorial guardada =
+                jdbc.sql(
+                                "SELECT "
+                                        + COLUMNAS
+                                        + " FROM cargas.historial_carga WHERE carga = :carga AND"
+                                        + " resultado = 'SIN_PROYECTOS' AND periodo = :periodo")
+                        .param("carga", confirmacion.carga())
+                        .param("periodo", periodo)
+                        .query((fila, numero) -> entrada(fila))
+                        .single();
+        return new ConfirmacionSinProyectos(guardada, guardadas == 1);
+    }
+
     private static EntradaDeHistorial entrada(ResultSet fila) throws SQLException {
         String motivo = fila.getString("motivo");
         return new EntradaDeHistorial(
@@ -82,6 +129,7 @@ public final class HistorialDeCargasJdbc implements HistorialDeCargas {
                 fila.getInt("nuevos"),
                 fila.getInt("cambiados"),
                 fila.getInt("bajas_sin_aplicar"),
-                Optional.ofNullable(motivo).map(MotivoDeRechazo::valueOf));
+                Optional.ofNullable(motivo).map(MotivoDeRechazo::valueOf),
+                Optional.ofNullable(fila.getString("periodo")));
     }
 }

@@ -1,11 +1,13 @@
 package ec.mdd.cargas.puertos.salida;
 
 /**
- * La fuente de datos de una carga cuando llega como archivo (RF-57): entrega la tabla de
- * encabezados y filas, sin validar su contenido. Otra fuente, como Moodle o SIGA, sería otro
- * adaptador que entregue la misma tabla.
+ * El puerto de fuente de datos de las cargas (RF-57, glosario «Fuente de datos»): entrega la tabla
+ * de encabezados y filas de una carga, sin validar su contenido. Las reglas de las filas, la vista
+ * previa y el orden de las cargas solo ven esa tabla, nunca el formato ni el origen. Su adaptador
+ * inicial lee archivos CSV o XLSX ({@code LectorPorFormato}); Moodle, SIGA o Talento Humano serían
+ * otros adaptadores que entreguen la misma tabla (F01-H05).
  */
-public interface LectorDeArchivo {
+public interface FuenteDeDatos {
 
     /**
      * Lee el archivo.

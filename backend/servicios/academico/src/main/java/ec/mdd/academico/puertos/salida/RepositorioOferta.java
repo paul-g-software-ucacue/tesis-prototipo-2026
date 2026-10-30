@@ -16,6 +16,9 @@ public interface RepositorioOferta {
     /** Las asignaturas-paralelo del periodo, ofertadas y retiradas, por asignatura y paralelo. */
     List<AsignaturaParalelo> delPeriodo(String periodo);
 
+    /** Si hay al menos una asignatura-paralelo ofertada, en cualquier periodo (F01-H05). */
+    boolean hayOfertadas();
+
     /** Bloquea la oferta hasta que termine la transacción. */
     void bloquear();
 

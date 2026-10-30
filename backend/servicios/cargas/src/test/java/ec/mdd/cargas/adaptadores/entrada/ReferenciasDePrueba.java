@@ -21,7 +21,8 @@ import org.springframework.context.annotation.Bean;
 /**
  * Los puertos publicados de Académico y de Docentes para las pruebas de contrato de Cargas,
  * escritos a mano (principio VIII): lo que existiría con las cargas 01 a 06 de prueba confirmadas,
- * y un dueño en memoria de las 10 cargas (F01-H04).
+ * un dueño en memoria de las 10 cargas (F01-H04) y los proyectos asignables de los periodos de
+ * prueba (F01-H05).
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class ReferenciasDePrueba {
@@ -64,6 +65,12 @@ public class ReferenciasDePrueba {
                 return trabajo.get();
             }
         };
+    }
+
+    /** Los proyectos asignables de los periodos de prueba (F01-H05). */
+    @Bean
+    AsignablesDePrueba asignablesDePrueba() {
+        return new AsignablesDePrueba();
     }
 
     /** El dueño en memoria de las 10 cargas (F01-H04). */

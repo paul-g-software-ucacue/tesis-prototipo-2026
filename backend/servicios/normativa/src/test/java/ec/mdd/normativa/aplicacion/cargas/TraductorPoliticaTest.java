@@ -207,4 +207,12 @@ class TraductorPoliticaTest {
         assertThatThrownBy(() -> politica.registrar(igual.filas().getFirst(), "x"))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
+
+    @Test
+    void tieneDatos_esSiHayAlgunaVersion() {
+        when(repositorio.hayVersiones()).thenReturn(true, false);
+
+        assertThat(politica.tieneDatos()).isTrue();
+        assertThat(politica.tieneDatos()).isFalse();
+    }
 }

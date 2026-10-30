@@ -139,6 +139,12 @@ jobs:
         shell: bash
         run: deploy/probar_confirmar_carga.sh
 
+      # F01-H05: la 04 antes que la 02 se rechaza, el estado de cada carga, las 10 en orden y
+      # «sin proyectos» de un periodo, con quién lo ve y quién lo confirma. Borra lo que creó.
+      - name: El orden de las cargas de punta a punta
+        shell: bash
+        run: deploy/probar_orden_cargas.sh
+
       # shell: bash agrega pipefail, así que tee no oculta el código de salida del script.
       # Después de iniciar sesión (D-34): la medición de referencia de R-19 desde B00-H03.
       - name: Medición de R-19 después de iniciar sesión

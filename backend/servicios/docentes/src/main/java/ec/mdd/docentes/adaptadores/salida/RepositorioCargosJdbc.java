@@ -63,6 +63,13 @@ public final class RepositorioCargosJdbc implements RepositorioCargos {
     }
 
     @Override
+    public boolean hayVigentes() {
+        return jdbc.sql("SELECT EXISTS (SELECT 1 FROM docentes.cargo WHERE estado = 'VIGENTE')")
+                .query(Boolean.class)
+                .single();
+    }
+
+    @Override
     public Optional<Cargo> buscar(String docente, TipoDeCargo tipo, LocalDate fechaDesignacion) {
         return jdbc.sql(BUSCAR)
                 .param("docente", docente)

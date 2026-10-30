@@ -38,6 +38,11 @@ final class TraductorProyectos extends TraductorDeDocentes<Proyecto> {
     }
 
     @Override
+    public boolean tieneDatos() {
+        return repositorio.hayProyectos();
+    }
+
+    @Override
     public void bloquear() {
         repositorio.bloquear();
     }

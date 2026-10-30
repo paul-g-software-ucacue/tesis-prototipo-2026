@@ -38,6 +38,11 @@ final class TraductorEstructura extends TraductorAcademico<UnidadOrganica> {
     }
 
     @Override
+    public boolean tieneDatos() {
+        return repositorio.hayActivas();
+    }
+
+    @Override
     public void bloquear() {
         repositorio.bloquear();
     }
