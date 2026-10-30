@@ -40,7 +40,9 @@ class ReferenciasDesdePuertosTest {
                                             "2026-I",
                                             "Primer periodo",
                                             LocalDate.of(2026, 4, 1),
-                                            LocalDate.of(2026, 8, 31))));
+                                            LocalDate.of(2026, 8, 31),
+                                            true,
+                                            false)));
     private final ConsultarIdentificaciones docentes = () -> Set.of("0109990010");
 
     @Test

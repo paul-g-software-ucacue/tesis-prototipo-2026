@@ -76,6 +76,11 @@ public final class AplicadorDePrueba implements AplicadorDeCargas {
     }
 
     @Override
+    public boolean tieneDatosEn(String carga, String periodo) {
+        return aplicador.tieneDatosEn(carga, periodo);
+    }
+
+    @Override
     public VistaPreviaDelLote previsualizar(LoteDeCarga lote) {
         return aplicador.previsualizar(lote);
     }

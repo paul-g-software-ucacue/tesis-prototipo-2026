@@ -18,6 +18,13 @@ class AplicadorPorTraductoresTest {
                 public String carga() {
                     return "sedes";
                 }
+
+                /** Las sedes sí dependen del periodo: solo cuentan las de ese periodo. */
+                @Override
+                public boolean tieneDatosEn(String periodo) {
+                    return datos.values().stream()
+                            .anyMatch(sede -> sede.get("periodo").equals(periodo));
+                }
             };
     private final AplicadorPorTraductores aplicador =
             new AplicadorPorTraductores(List.of(unidades, sedes), Supplier::get);
@@ -35,5 +42,26 @@ class AplicadorPorTraductoresTest {
         assertThatThrownBy(() -> aplicador.tieneDatos("docentes"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("docentes");
+    }
+
+    @Test
+    void tieneDatosEn_porDefectoEsLoMismoQueTieneDatos() {
+        unidades.datos.put("U1", Map.of("codigo", "U1", "nombre", "Unidad", "periodo", "2026-I"));
+
+        assertThat(aplicador.tieneDatosEn("unidades", "2026-II")).isTrue();
+    }
+
+    @Test
+    void tieneDatosEn_deUnaCargaDelPeriodo_esLoQueDiceSuTraductor() {
+        sedes.datos.put("S1", Map.of("codigo", "S1", "nombre", "Sede", "periodo", "2026-I"));
+
+        assertThat(aplicador.tieneDatosEn("sedes", "2026-I")).isTrue();
+        assertThat(aplicador.tieneDatosEn("sedes", "2026-II")).isFalse();
+    }
+
+    @Test
+    void tieneDatosEn_deUnaCargaQueNoAtiende_esUnErrorDeProgramacion() {
+        assertThatThrownBy(() -> aplicador.tieneDatosEn("docentes", "2026-I"))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }

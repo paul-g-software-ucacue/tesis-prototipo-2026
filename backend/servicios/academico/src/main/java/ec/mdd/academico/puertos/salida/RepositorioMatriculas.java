@@ -13,6 +13,9 @@ public interface RepositorioMatriculas {
     /** Si hay al menos un registro de matriculados (F01-H05). */
     boolean hayMatriculas();
 
+    /** Si hay al menos un registro de matriculados de ese periodo (F02-H02). */
+    boolean hayMatriculasEn(String periodo);
+
     /** Bloquea la tabla hasta el fin de la transacción. */
     void bloquear();
 

@@ -7,5 +7,10 @@ public enum EstadoDeLaCarga {
     /** Su servicio dueño tiene al menos un registro vigente, entrado por archivo o por pantalla. */
     CARGADA,
     /** Solo la carga de proyectos: sin datos, pero con algún periodo confirmado «sin proyectos». */
-    SIN_PROYECTOS
+    SIN_PROYECTOS,
+    /**
+     * Solo en el tablero de preparación (F02-H02): sin datos, y su último intento de confirmar fue
+     * rechazado.
+     */
+    CON_ERRORES
 }

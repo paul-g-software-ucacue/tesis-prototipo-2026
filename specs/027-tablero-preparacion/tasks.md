@@ -53,23 +53,23 @@ Plan aprobado por el autor el 2026-10-30.
 
 ## Phase 1: Setup
 
-- [ ] T001 Crear `specs/027-tablero-preparacion/evidencia.md` con las secciones de la historia anterior (base, dueños y Académico, tablero, pantalla, cierre, notas) y la línea de base: `main` en `336077f` (#157), con las 12 comprobaciones de #156 en verde.
+- [X] T001 Crear `specs/027-tablero-preparacion/evidencia.md` con las secciones de la historia anterior (base, dueños y Académico, tablero, pantalla, cierre, notas) y la línea de base: `main` en `336077f` (#157), con las 12 comprobaciones de #156 en verde.
 
 ---
 
 ## Phase 2: Foundational (bloquea a todas las historias)
 
-- [ ] T002 Ampliar `contratos/cargas/openapi.yaml` según [contracts/cargas.md](contracts/cargas.md):
+- [X] T002 Ampliar `contratos/cargas/openapi.yaml` según [contracts/cargas.md](contracts/cargas.md):
   - `consultarPreparacionDelPeriodo` (`GET /api/cargas/preparacion`, `[CARGAS:LECTURA, DISTRIBUTIVO:LECTURA]`), con el parámetro opcional `periodo` (`CodigoDePeriodo`);
   - los esquemas `PreparacionDelPeriodo`, `PeriodoParaElegir`, `CargaDelPeriodo` y `LoQueFalta`, y `CON_ERRORES` en `EstadoDeLaCarga`;
   - los 400 `COMUN_SOLICITUD_INVALIDA` y `CARGAS_PERIODO_NO_ENCONTRADO`.
 
   Sumar el tablero a la causa de `CARGAS_PERIODO_NO_ENCONTRADO` en `contratos/comun/errores.md`. Regenerar los modelos.
-- [ ] T003 [P] Ampliar el lenguaje publicado (`PLC/main/java/ec/mdd/plataforma/cargas/`): `default boolean tieneDatosEn(String periodo)` en `TraductorDeCarga`, que devuelve `tieneDatos()`, y `tieneDatosEn(String carga, String periodo)` en `AplicadorDeCargas` y `AplicadorPorTraductores`. Primero las pruebas, en `AplicadorPorTraductoresTest`:
+- [X] T003 [P] Ampliar el lenguaje publicado (`PLC/main/java/ec/mdd/plataforma/cargas/`): `default boolean tieneDatosEn(String periodo)` en `TraductorDeCarga`, que devuelve `tieneDatos()`, y `tieneDatosEn(String carga, String periodo)` en `AplicadorDeCargas` y `AplicadorPorTraductores`. Primero las pruebas, en `AplicadorPorTraductoresTest`:
   - por defecto, lo mismo que `tieneDatos()`;
   - un traductor que lo reemplaza responde por periodo;
   - una carga que no atiende es `IllegalArgumentException`.
-- [ ] T004 [P] Crear el dominio del tablero en `CAR/main/java/ec/mdd/cargas/dominio/`: `PreparacionDelPeriodo`, `CargaDelPeriodo`, `CON_ERRORES` en `EstadoDeLaCarga` (glosario «Estado de la carga»), `LoQueFalta` y su tipo (`CARGA`, `PERIODO_SIN_ABRIR`, `PERIODO_CERRADO`, `SIN_PERIODOS`), según [data-model.md](data-model.md). Primero las pruebas, en `CAR/test/java/ec/mdd/cargas/dominio/PreparacionDelPeriodoTest.java`, sin dobles y con el diccionario real:
+- [X] T004 [P] Crear el dominio del tablero en `CAR/main/java/ec/mdd/cargas/dominio/`: `PreparacionDelPeriodo`, `CargaDelPeriodo`, `CON_ERRORES` en `EstadoDeLaCarga` (glosario «Estado de la carga»), `LoQueFalta` y su tipo (`CARGA`, `PERIODO_SIN_ABRIR`, `PERIODO_CERRADO`, `SIN_PERIODOS`), según [data-model.md](data-model.md). Primero las pruebas, en `CAR/test/java/ec/mdd/cargas/dominio/PreparacionDelPeriodoTest.java`, sin dobles y con el diccionario real:
   - con todo y el periodo abierto, listo y sin nada que falte;
   - con docentes pendiente, falta docentes y no está listo;
   - sin matriculados, sigue listo;
@@ -91,8 +91,8 @@ Plan aprobado por el autor el 2026-10-30.
 
 **Independent Test**: con Testcontainers, la oferta y los matriculados de 2026-I cuentan para 2026-I y no para 2026-II; `ConsultarReferencias` da 2026-I abierto, si tiene versión, y uno cerrado, como cerrado.
 
-- [ ] T005 [P] [US1] Académico: `tieneDatosEn(periodo)` en `TraductorOferta` y `TraductorMatriculas` (`ACA/main/java/ec/mdd/academico/aplicacion/cargas/`), con `hayOfertadasEn(periodo)` en `RepositorioOferta` y `hayMatriculasEn(periodo)` en `RepositorioMatriculas`, y su `select exists … where periodo = :periodo` en los adaptadores JDBC y en los dobles en memoria. Primero las pruebas, en `ACA/integrationTest/java/ec/mdd/academico/AplicadorAcademicoIntegrationTest.java`: con las cargas 03, 05 y 10 de prueba, la oferta y los matriculados de 2026-I (los únicos del archivo) cuentan para 2026-I y no para 2026-II; una oferta retirada no cuenta; las otras cargas responden igual que `tieneDatos()`.
-- [ ] T006 [P] [US2] Académico: `boolean abierto, boolean cerrado` en `ACA/main/java/ec/mdd/academico/puertos/entrada/PeriodoDeReferencia.java`, y `NormativaDelPeriodo` en `ConsultarReferenciasServicio` (y en su configuración) para `abierto`. Ajustar los lugares que construyen `PeriodoDeReferencia`: Académico, Docentes (`AcademicoDesdePuertos`) y las pruebas de los tres servicios. Primero las pruebas, en `ConsultarReferenciasServicioTest`, con Mockito: un periodo con versión está abierto, sin versión no, y uno cerrado está cerrado.
+- [X] T005 [P] [US1] Académico: `tieneDatosEn(periodo)` en `TraductorOferta` y `TraductorMatriculas` (`ACA/main/java/ec/mdd/academico/aplicacion/cargas/`), con `hayOfertadasEn(periodo)` en `RepositorioOferta` y `hayMatriculasEn(periodo)` en `RepositorioMatriculas`, y su `select exists … where periodo = :periodo` en los adaptadores JDBC y en los dobles en memoria. Primero las pruebas, en `ACA/integrationTest/java/ec/mdd/academico/AplicadorAcademicoIntegrationTest.java`: con las cargas 03, 05 y 10 de prueba, la oferta y los matriculados de 2026-I (los únicos del archivo) cuentan para 2026-I y no para 2026-II; una oferta retirada no cuenta; las otras cargas responden igual que `tieneDatos()`.
+- [X] T006 [P] [US2] Académico: `boolean abierto, boolean cerrado` en `ACA/main/java/ec/mdd/academico/puertos/entrada/PeriodoDeReferencia.java`, y `NormativaDelPeriodo` en `ConsultarReferenciasServicio` (y en su configuración) para `abierto`. Ajustar los lugares que construyen `PeriodoDeReferencia`: Académico, Docentes (`AcademicoDesdePuertos`) y las pruebas de los tres servicios. Primero las pruebas, en `ConsultarReferenciasServicioTest`, con Mockito: un periodo con versión está abierto, sin versión no, y uno cerrado está cerrado.
 
 **Checkpoint**: Cargas ya puede preguntar todo lo que el tablero necesita.
 

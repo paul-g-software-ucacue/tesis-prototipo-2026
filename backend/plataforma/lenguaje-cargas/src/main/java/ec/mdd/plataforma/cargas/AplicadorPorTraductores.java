@@ -44,6 +44,11 @@ public final class AplicadorPorTraductores implements AplicadorDeCargas {
     }
 
     @Override
+    public boolean tieneDatosEn(String carga, String periodo) {
+        return traductor(carga).tieneDatosEn(periodo);
+    }
+
+    @Override
     public VistaPreviaDelLote previsualizar(LoteDeCarga lote) {
         return MotorDelLote.previsualizar(traductor(lote), lote);
     }

@@ -39,6 +39,11 @@ final class TraductorOferta extends TraductorAcademico<AsignaturaParalelo> {
     }
 
     @Override
+    public boolean tieneDatosEn(String periodo) {
+        return repositorio.hayOfertadasEn(periodo);
+    }
+
+    @Override
     public void bloquear() {
         repositorio.bloquear();
     }

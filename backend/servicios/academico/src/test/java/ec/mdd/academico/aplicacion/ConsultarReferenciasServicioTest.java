@@ -1,6 +1,7 @@
 package ec.mdd.academico.aplicacion;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -9,6 +10,7 @@ import ec.mdd.academico.dominio.CampoAmplio;
 import ec.mdd.academico.dominio.CampoConocimiento;
 import ec.mdd.academico.dominio.Carrera;
 import ec.mdd.academico.dominio.EstadoDeCarrera;
+import ec.mdd.academico.dominio.EstadoPeriodo;
 import ec.mdd.academico.dominio.Jornada;
 import ec.mdd.academico.dominio.Modalidad;
 import ec.mdd.academico.dominio.NivelDeFormacion;
@@ -22,12 +24,14 @@ import ec.mdd.academico.puertos.entrada.CarreraDeReferencia;
 import ec.mdd.academico.puertos.entrada.PeriodoDeReferencia;
 import ec.mdd.academico.puertos.entrada.ReferenciasDeAcademico;
 import ec.mdd.academico.puertos.entrada.UnidadDeReferencia;
+import ec.mdd.academico.puertos.salida.NormativaDelPeriodo;
 import ec.mdd.academico.puertos.salida.RepositorioCarreras;
 import ec.mdd.academico.puertos.salida.RepositorioEstructura;
 import ec.mdd.academico.puertos.salida.RepositorioPeriodos;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.OptionalInt;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -39,8 +43,9 @@ class ConsultarReferenciasServicioTest {
     private final RepositorioCarreras repositorio = mock(RepositorioCarreras.class);
     private final RepositorioEstructura estructura = mock(RepositorioEstructura.class);
     private final RepositorioPeriodos periodos = mock(RepositorioPeriodos.class);
+    private final NormativaDelPeriodo normativa = mock(NormativaDelPeriodo.class);
     private final ConsultarReferenciasServicio servicio =
-            new ConsultarReferenciasServicio(repositorio, estructura, periodos);
+            new ConsultarReferenciasServicio(repositorio, estructura, periodos, normativa);
 
     @Test
     void dadasCarrerasYAsignaturas_cuandoSePidenLasReferencias_entoncesVanTodasPorCodigo() {
@@ -124,12 +129,43 @@ class ConsultarReferenciasServicioTest {
                                 "2026-I",
                                 "Periodo 2026-I",
                                 LocalDate.of(2026, 4, 6),
-                                LocalDate.of(2026, 8, 7)),
+                                LocalDate.of(2026, 8, 7),
+                                false,
+                                false),
                         new PeriodoDeReferencia(
                                 "2026-II",
                                 "Periodo 2026-II",
                                 LocalDate.of(2026, 10, 5),
-                                LocalDate.of(2027, 2, 5)));
+                                LocalDate.of(2027, 2, 5),
+                                false,
+                                false));
+    }
+
+    @Test
+    void unPeriodoConSuVersion_estaAbierto_yUnoCerrado_estaCerrado() {
+        when(periodos.todos())
+                .thenReturn(
+                        List.of(
+                                PeriodoAcademico.nuevo(
+                                        "2026-I",
+                                        "Periodo 2026-I",
+                                        LocalDate.of(2026, 4, 6),
+                                        LocalDate.of(2026, 8, 7)),
+                                new PeriodoAcademico(
+                                        "2025-II",
+                                        "Periodo 2025-II",
+                                        LocalDate.of(2025, 10, 6),
+                                        LocalDate.of(2026, 2, 6),
+                                        EstadoPeriodo.CERRADO)));
+        when(normativa.versionDe("2026-I")).thenReturn(OptionalInt.of(1));
+        when(normativa.versionDe("2025-II")).thenReturn(OptionalInt.of(1));
+
+        assertThat(servicio.referencias().periodos())
+                .extracting(
+                        PeriodoDeReferencia::codigo,
+                        PeriodoDeReferencia::abierto,
+                        PeriodoDeReferencia::cerrado)
+                .containsExactly(tuple("2025-II", true, true), tuple("2026-I", true, false));
     }
 
     private static Carrera carrera(String codigo, String nombre, String siglas) {

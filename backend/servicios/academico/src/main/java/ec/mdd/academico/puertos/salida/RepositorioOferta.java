@@ -19,6 +19,9 @@ public interface RepositorioOferta {
     /** Si hay al menos una asignatura-paralelo ofertada, en cualquier periodo (F01-H05). */
     boolean hayOfertadas();
 
+    /** Si hay al menos una asignatura-paralelo ofertada en ese periodo (F02-H02). */
+    boolean hayOfertadasEn(String periodo);
+
     /** Bloquea la oferta hasta que termine la transacción. */
     void bloquear();
 

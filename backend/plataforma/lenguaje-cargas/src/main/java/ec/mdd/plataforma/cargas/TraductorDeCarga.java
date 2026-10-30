@@ -23,6 +23,17 @@ public interface TraductorDeCarga<T> {
      */
     boolean tieneDatos();
 
+    /**
+     * Si el dueño tiene al menos un registro vigente de la carga en ese periodo (F02-H02, glosario
+     * «Tablero de preparación»). Por defecto, la carga no depende del periodo y es {@link
+     * #tieneDatos()}; lo reemplazan las cargas con datos del periodo, como la oferta.
+     *
+     * @param periodo el código de un periodo académico
+     */
+    default boolean tieneDatosEn(String periodo) {
+        return tieneDatos();
+    }
+
     /** Bloquea las tablas de la carga, dentro de la transacción del lote, antes de recalcular. */
     void bloquear();
 

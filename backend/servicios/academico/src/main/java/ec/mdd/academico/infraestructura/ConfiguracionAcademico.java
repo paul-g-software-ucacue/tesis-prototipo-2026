@@ -206,8 +206,9 @@ public class ConfiguracionAcademico {
     public ConsultarReferencias consultarReferencias(
             RepositorioCarreras repositorio,
             RepositorioEstructura estructura,
-            RepositorioPeriodos periodos) {
-        return new ConsultarReferenciasServicio(repositorio, estructura, periodos);
+            RepositorioPeriodos periodos,
+            NormativaDelPeriodo normativa) {
+        return new ConsultarReferenciasServicio(repositorio, estructura, periodos, normativa);
     }
 
     /** Mantener las carreras, sus mallas y sus asignaturas, con su registro (F03-H02). */

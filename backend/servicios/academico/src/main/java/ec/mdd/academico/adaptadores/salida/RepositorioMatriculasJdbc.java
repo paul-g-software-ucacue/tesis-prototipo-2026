@@ -34,6 +34,15 @@ public final class RepositorioMatriculasJdbc implements RepositorioMatriculas {
     }
 
     @Override
+    public boolean hayMatriculasEn(String periodo) {
+        return jdbc.sql(
+                        "SELECT EXISTS (SELECT 1 FROM academico.matricula WHERE periodo = :periodo)")
+                .param("periodo", periodo)
+                .query(Boolean.class)
+                .single();
+    }
+
+    @Override
     public boolean hayMatriculas() {
         return jdbc.sql("SELECT EXISTS (SELECT 1 FROM academico.matricula)")
                 .query(Boolean.class)

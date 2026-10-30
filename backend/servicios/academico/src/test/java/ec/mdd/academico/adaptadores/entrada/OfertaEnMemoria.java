@@ -118,6 +118,15 @@ final class OfertaEnMemoria implements RepositorioOferta, RepositorioPeriodos {
     }
 
     @Override
+    public boolean hayOfertadasEn(String periodo) {
+        return oferta.stream()
+                .anyMatch(
+                        una ->
+                                una.periodo().equals(periodo)
+                                        && una.estado() == EstadoDeAsignaturaParalelo.OFERTADA);
+    }
+
+    @Override
     public boolean hayOfertadas() {
         return oferta.stream().anyMatch(una -> una.estado() == EstadoDeAsignaturaParalelo.OFERTADA);
     }

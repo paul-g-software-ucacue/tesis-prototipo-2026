@@ -46,7 +46,10 @@ public class ReferenciasDePrueba {
                                                         codigo, "U", "GESTION", null, true))
                                 .toList(),
                         columna("03_ciclos_academicos.csv", "codigo_periodo").stream()
-                                .map(codigo -> new PeriodoDeReferencia(codigo, "P", dia, dia))
+                                .map(
+                                        codigo ->
+                                                new PeriodoDeReferencia(
+                                                        codigo, "P", dia, dia, false, false))
                                 .toList());
     }
 
