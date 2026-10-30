@@ -21,16 +21,25 @@ Registro de las comprobaciones de la historia (issue #33): el tablero de prepara
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| El contrato | `consultarPreparacionDelPeriodo` (`GET /api/cargas/preparacion`, `periodo` opcional con el patrón de la carga 3), con `PreparacionDelPeriodo`, `PeriodoParaElegir`, `CargaDelPeriodo`, `LoQueFalta` y `TipoDeLoQueFalta`; `CON_ERRORES` en `EstadoDeLaCarga`. Sin códigos nuevos: la causa de `CARGAS_PERIODO_NO_ENCONTRADO` suma el tablero | `contratos/cargas/openapi.yaml`, `contratos/comun/errores.md` | 2026-10-30 |
+| `tieneDatosEn` en el lenguaje publicado | `AplicadorPorTraductoresTest`, 5 de 5: por defecto es `tieneDatos()`; un traductor que lo reemplaza responde por periodo; una carga que no atiende es `IllegalArgumentException` | `./gradlew :plataforma:lenguaje-cargas:check` | 2026-10-30 |
+| `PreparacionDelPeriodo`, sin dobles y con el diccionario real | 10 de 10: con todo y el periodo abierto, listo; con docentes pendiente, falta docentes; sin matriculados, sigue listo; sin datos y con un rechazo, «con errores» con su motivo; con datos y un rechazo, cargada; proyectos «sin proyectos» no falta; sin proyectos ni la confirmación, falta; el periodo sin abrir y el cerrado van después de las cargas; sin periodos, `SIN_PERIODOS`; `OrdenDeLasCargas` nunca da `CON_ERRORES` | `PreparacionDelPeriodoTest` | 2026-10-30 |
 
 ## Los dueños y Académico
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| La oferta y los matriculados, por periodo | `AplicadorAcademicoIntegrationTest`: los de 2026-I cuentan para 2026-I y no para 2026-II; una oferta retirada no cuenta; una carga que no depende del periodo responde como `tieneDatos()` | `./gradlew :servicios:academico:integrationTest` | 2026-10-30 |
+| Los periodos abiertos o cerrados | `ConsultarReferenciasServicioTest`: un periodo con su versión de normativa está abierto, sin ella no, y uno cerrado está cerrado. `PeriodoDeReferencia` suma `abierto` y `cerrado`; Docentes los ignora | `./gradlew :servicios:academico:test :servicios:docentes:test` | 2026-10-30 |
 
 ## El tablero en Cargas
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| Los periodos para elegir | `ReferenciasDesdePuertosTest`: del que empieza más tarde al más antiguo, con si están abiertos o cerrados | `./gradlew :servicios:cargas:test` | 2026-10-30 |
+| El caso de uso | `ConsultarPreparacionServicioTest` (Mockito), 6 de 6: sin periodo, el que empieza más tarde, con la lista; listo con todo y abierto, preguntando los datos de ese periodo; uno que no existe es `PeriodoNoEncontrado`; sin periodos, `SIN_PERIODOS`; «con errores» del último intento, sin contar «sin proyectos»; los proyectos por sus asignables o por «sin proyectos», sin preguntarle al dueño | `./gradlew :servicios:cargas:test` | 2026-10-30 |
+| El contrato y los permisos | `PreparacionContratoTest`: el 200 validado contra el contrato, sin periodo (2026-II, sin abrir), listo con 2026-I, y con docentes pendiente; 2027-I, 400 `CARGAS_PERIODO_NO_ENCONTRADO`; `2026-III`, `26-I`, `2026-i`, `20260-IIII` y `2026-I'`, 400 `COMUN_SOLICITUD_INVALIDA`; 2026-I y 2026-II válidos. `PermisosCargasTest` con la operación nueva. Cargas: 333 pruebas sin fallas | `./gradlew :servicios:cargas:test` | 2026-10-30 |
+| El proceso `datos` real | `ConfirmarLasDiezCargasIntegrationTest`, 9 de 9: con las cargas 01 a 05, sin docentes, el tablero de 2026-I no está listo y le faltan docentes, cargos, proyectos y abrirse (la política viene precargada); con las 10, solo le falta abrirse; abierto, listo y todas cargadas; 2026-II, sin oferta ni matriculados propios, tiene la oferta pendiente y le falta abrirse; el tablero en **27 ms** (SC-003: menos de 3 s). `ModulosTest` en verde | `./gradlew :apps:datos:integrationTest test` | 2026-10-30 |
 
 ## Pantalla
 

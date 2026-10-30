@@ -117,7 +117,7 @@ Plan aprobado por el autor el 2026-10-30.
   - `ConsultarPreparacionServicioTest`, con Mockito: el periodo por defecto, uno que no existe, sin periodos, «con errores» desde el historial, y los proyectos asignables o «sin proyectos»;
   - `PreparacionContratoTest`: el 200 con la lista de periodos; los 400 con periodos válidos (2026-I, 2026-II) e inválidos (`2026-III`, `26-I`, `2026-i`, de 11 caracteres), y uno que no existe;
   - `PermisosCargasTest` con la operación nueva.
-- [ ] T009 [US1] [US2] Ampliar `backend/apps/datos/src/integrationTest/java/…/ConfirmarLasDiezCargasIntegrationTest.java`:
+- [X] T009 [US1] [US2] Ampliar `backend/apps/datos/src/integrationTest/java/…/ConfirmarLasDiezCargasIntegrationTest.java`:
   - con las cargas 01 a 05 y 07, sin la 06, y 2026-I «sin proyectos», el tablero de 2026-I no está listo, nombra docentes y cargos, y la 9 dice «Sin proyectos»;
   - con las 10 y 2026-I abierto, está listo;
   - 2026-II, sin oferta ni matriculados propios, tiene la oferta pendiente y le falta abrirse;
