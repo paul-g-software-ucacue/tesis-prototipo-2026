@@ -208,7 +208,7 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
 
 ## Phase 8: US4 · Punta a punta y cierre
 
-- [ ] T023 [US4] Crear `deploy/probar_orden_cargas.sh`, siguiendo `deploy/probar_confirmar_carga.sh`:
+- [X] T023 [US4] Crear `deploy/probar_orden_cargas.sh`, siguiendo `deploy/probar_confirmar_carga.sh`:
   0. comprobar que la base no tiene los datos de prueba;
   1. la 04 antes de la 02: 409 con `carreras` y sin entrada en el historial;
   2. el estado inicial;
@@ -222,7 +222,7 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
   10. limpiar por códigos y por `momento >= inicio`.
 
   Agregarlo a `.github/workflows/perfil-consolidado.yml`. Pasar shellcheck v0.11.0.
-- [ ] T024 Verificación completa:
+- [X] T024 Verificación completa:
   - `./gradlew build integrationTest`;
   - los 16 scripts, con `probar_orden_cargas.sh` dos veces seguidas en un perfil reconstruido;
   - `probar_equipo.sh`;
