@@ -1,6 +1,7 @@
 // El historial de una carga (F01-H04, RF-10): cada intento de confirmarla, del más reciente al más
-// antiguo, con el usuario, la fecha, el archivo, su huella, el resultado y lo que aplicó. Lo ven
-// quienes ven las plantillas (D-70); no guarda el contenido de los archivos.
+// antiguo, con el usuario, la fecha, el archivo, su huella, el resultado y lo que aplicó; en la de
+// proyectos, también las confirmaciones «sin proyectos», con su periodo (F01-H05). Lo ven quienes
+// ven las plantillas (D-70); no guarda el contenido de los archivos.
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -21,6 +22,7 @@ const RESULTADO: Record<EntradaDeHistorial['resultado'], string> = {
   APLICADA: 'Aplicada',
   RECHAZADA: 'Rechazada',
   REPETIDA: 'Repetida',
+  SIN_PROYECTOS: 'Sin proyectos',
 };
 
 const MOTIVO: Record<string, string> = {
@@ -59,16 +61,23 @@ export function HistorialDeLaCarga({ carga, alCerrar }: { carga: Carga; alCerrar
               </TableHead>
               <TableBody>
                 {historial.data.map((entrada) => (
-                  <TableRow key={`${entrada.momento}-${entrada.hash}-${entrada.resultado}`}>
+                  <TableRow
+                    key={`${entrada.momento}-${entrada.hash ?? entrada.periodo}-${entrada.resultado}`}
+                  >
                     <TableCell>{FECHA.format(new Date(entrada.momento))}</TableCell>
                     <TableCell>{entrada.usuario}</TableCell>
-                    <TableCell>{entrada.archivo}</TableCell>
+                    <TableCell>{entrada.archivo ?? '—'}</TableCell>
                     <TableCell>
-                      <code title={entrada.hash}>{entrada.hash.slice(0, 12)}</code>
+                      {entrada.hash ? (
+                        <code title={entrada.hash}>{entrada.hash.slice(0, 12)}</code>
+                      ) : (
+                        '—'
+                      )}
                     </TableCell>
                     <TableCell>
                       {RESULTADO[entrada.resultado]}
                       {entrada.motivo && ` (${MOTIVO[entrada.motivo] ?? entrada.motivo})`}
+                      {entrada.periodo && ` (${entrada.periodo})`}
                     </TableCell>
                     <TableCell>{entrada.nuevos}</TableCell>
                     <TableCell>{entrada.cambiados}</TableCell>

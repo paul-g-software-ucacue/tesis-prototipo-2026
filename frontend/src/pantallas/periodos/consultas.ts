@@ -16,11 +16,15 @@ export const CLAVE_PERIODOS = ['academico', 'periodos'] as const;
 /** La clave de los Responsables de consolidación, de Roles (F05-H03). */
 export const CLAVE_RESPONSABLES = ['roles', 'responsables'] as const;
 
-/** Los periodos, del de inicio más reciente al más antiguo. */
-export function usePeriodos() {
+/**
+ * Los periodos, del de inicio más reciente al más antiguo. Sin el permiso de leerlos, quien llama
+ * pasa {@code false} y no se piden.
+ */
+export function usePeriodos(habilitada = true) {
   return useQuery({
     queryKey: CLAVE_PERIODOS,
     queryFn: () => llamar(apiAcademico.GET('/api/academico/periodos')),
+    enabled: habilitada,
   });
 }
 

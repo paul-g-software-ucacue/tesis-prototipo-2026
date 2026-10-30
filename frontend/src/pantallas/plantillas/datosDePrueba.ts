@@ -1,6 +1,6 @@
 // Un diccionario de datos pequeño para las pruebas de «Plantillas de carga»: las 10 cargas de la
 // ERS §8.3 con pocas columnas; la estructura orgánica, con su columna de gestiones autorizadas.
-import type { DiccionarioDeDatos } from './consultas';
+import type { DiccionarioDeDatos, EstadoDeCarga } from './consultas';
 
 const NOMBRES = [
   'Estructura orgánica',
@@ -91,3 +91,16 @@ export const DICCIONARIO: DiccionarioDeDatos = {
     };
   }),
 };
+
+/** El estado de las 10 cargas, todas con datos (F01-H05): ningún botón deshabilitado. */
+export function estadoCargado(): { cargas: EstadoDeCarga[] } {
+  return {
+    cargas: CODIGOS.map((codigo, indice) => ({
+      numero: indice + 1,
+      codigo,
+      estado: 'CARGADA',
+      faltan: [],
+      periodosSinProyectos: [],
+    })),
+  };
+}

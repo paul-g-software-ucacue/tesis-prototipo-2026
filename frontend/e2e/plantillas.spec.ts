@@ -2,6 +2,7 @@
 // plantilla de docentes y el diccionario de la estructura orgánica; un gestor no ve la pantalla.
 // F01-H02: sube el CSV de docentes y ve los registros leídos; uno de carreras sin una columna
 // muestra cuál falta. También la accesibilidad de «Plantillas de carga» con axe-core (WCAG 2.1 AA).
+// F01-H05: «Subir archivo» deshabilitado con la carga que falta, y «Sin proyectos…» con su diálogo.
 import { readFile } from 'node:fs/promises';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
@@ -83,7 +84,12 @@ const DICCIONARIO = {
     nombre,
     archivo: `${String(indice + 1).padStart(2, '0')}_${CODIGOS[indice]}.csv`,
     dependeDe: indice === 0 ? [] : [indice],
-    obligatoriedad: indice === 9 ? 'RECOMENDADA' : 'OBLIGATORIA',
+    obligatoriedad:
+      indice === 9
+        ? 'RECOMENDADA'
+        : indice === 8
+          ? 'OBLIGATORIA_SALVO_SIN_PROYECTOS'
+          : 'OBLIGATORIA',
     columnas:
       indice === 5
         ? DOCENTES.map(columna)
@@ -114,8 +120,23 @@ function csv(nombre: string, cuerpo: string) {
   };
 }
 
+/** El estado de las 10 cargas: todas cargadas, salvo los cambios que se digan (F01-H05). */
+function estado(cambios: Record<string, object> = {}) {
+  return {
+    cargas: CODIGOS.map((codigo, indice) => ({
+      numero: indice + 1,
+      codigo,
+      estado: 'CARGADA',
+      faltan: [],
+      periodosSinProyectos: [],
+      ...cambios[codigo ?? ''],
+    })),
+  };
+}
+
 async function simularCargas(pagina: Page) {
   await pagina.route('**/api/cargas/plantillas', (ruta) => ruta.fulfill({ json: DICCIONARIO }));
+  await pagina.route('**/api/cargas/estado', (ruta) => ruta.fulfill({ json: estado() }));
   await pagina.route('**/api/cargas/plantillas/docentes/plantilla', (ruta) =>
     ruta.fulfill(csv('06_docentes.csv', DOCENTES.join(','))),
   );
@@ -262,9 +283,11 @@ async function simularSubidas(pagina: Page): Promise<Subida[]> {
   return subidas;
 }
 
-async function abrirPlantillas(pagina: Page) {
+/** Entra como el Responsable de consolidación; las rutas de la prueba van después de las comunes. */
+async function abrirPlantillas(pagina: Page, simularMas?: () => Promise<unknown>) {
   await simularApi(pagina, { sesion: CONSOLIDACION });
   await simularCargas(pagina);
+  await simularMas?.();
   await pagina.goto('/iniciar-sesion');
   await ingresar(pagina, 'consolidacion.demo');
   await pagina.getByRole('link', { name: 'Plantillas de carga' }).click();
@@ -445,5 +468,86 @@ test('la vista previa se confirma con su huella y el historial muestra la carga'
   await expect(dialogo).toContainText('Aplicada');
   // axe mide el contraste con el diálogo ya visible, no a mitad de su transición.
   await expect(page.locator('.MuiDialog-container')).toHaveCSS('opacity', '1');
+  await sinFallas(page);
+});
+
+test('con Carreras pendiente, «Subir archivo» de Asignaturas está deshabilitado y dice cuál falta', async ({
+  page,
+}) => {
+  await abrirPlantillas(page, () =>
+    page.route('**/api/cargas/estado', (ruta) =>
+      ruta.fulfill({
+        json: estado({
+          carreras: { estado: 'PENDIENTE' },
+          asignaturas_malla: {
+            estado: 'PENDIENTE',
+            faltan: [{ numero: 2, codigo: 'carreras', nombre: 'Carreras' }],
+          },
+        }),
+      }),
+    ),
+  );
+
+  const subir = page.getByRole('button', { name: 'Subir un archivo de Asignaturas y malla' });
+  await expect(subir).toBeDisabled();
+  await expect(subir).toHaveAccessibleDescription('Falta la carga de Carreras.');
+  await expect(page.locator('tr[data-carga="carreras"]')).toContainText('Pendiente');
+  await sinFallas(page);
+});
+
+test('«Sin proyectos…» confirma un periodo y la carga de proyectos queda sin proyectos', async ({
+  page,
+}) => {
+  let confirmado = false;
+  const pedidos: string[] = [];
+  await abrirPlantillas(page, async () => {
+    await page.route('**/api/academico/periodos', (ruta) =>
+      ruta.fulfill({ json: [{ codigo: '2026-II' }, { codigo: '2026-I' }] }),
+    );
+    await page.route('**/api/cargas/estado', (ruta) =>
+      ruta.fulfill({
+        json: estado({
+          proyectos_practicas: confirmado
+            ? { estado: 'SIN_PROYECTOS', periodosSinProyectos: ['2026-II'] }
+            : { estado: 'PENDIENTE' },
+        }),
+      }),
+    );
+    await page.route('**/api/cargas/sin-proyectos', (ruta) => {
+      pedidos.push(ruta.request().postData() ?? '');
+      confirmado = true;
+      return ruta.fulfill({
+        status: 201,
+        json: {
+          usuario: 'consolidacion.demo',
+          momento: '2026-10-30T15:00:00Z',
+          resultado: 'SIN_PROYECTOS',
+          nuevos: 0,
+          cambiados: 0,
+          bajasSinAplicar: 0,
+          periodo: '2026-II',
+        },
+      });
+    });
+  });
+
+  await page
+    .getByRole('button', {
+      name: 'Confirmar un periodo sin proyectos en Proyectos y prácticas aprobados',
+    })
+    .click();
+  const dialogo = page.getByRole('dialog', { name: 'Confirmar un periodo sin proyectos' });
+  await expect(page.locator('.MuiDialog-container')).toHaveCSS('opacity', '1');
+  await sinFallas(page);
+  await dialogo.getByRole('combobox', { name: /Periodo/ }).fill('2026-II');
+  await dialogo.getByRole('button', { name: 'Confirmar sin proyectos' }).click();
+
+  await expect(page.getByRole('status')).toContainText(
+    'El periodo 2026-II quedó confirmado sin proyectos',
+  );
+  expect(pedidos).toEqual(['{"periodo":"2026-II"}']);
+  await expect(page.locator('tr[data-carga="proyectos_practicas"]')).toContainText(
+    'Sin proyectos (2026-II)',
+  );
   await sinFallas(page);
 });

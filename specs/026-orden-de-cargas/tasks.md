@@ -184,8 +184,8 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
 - con estado «Pendiente» y `faltan: [carreras]`, la 04 muestra el chip «Pendiente», el botón deshabilitado y «Falta la carga de Carreras» asociado con `aria-describedby`;
 - el diálogo «Sin proyectos…» confirma un periodo y actualiza el estado.
 
-- [ ] T019 [US2] Agregar a `SPA/consultas.ts` `useEstadoDeLasCargas` (React Query) y `confirmarSinProyectos`, con sus tipos del contrato; al confirmar una carga o «sin proyectos», invalidar el estado (FR-008). Agregar el estado a `SPA/datosDePrueba.ts`.
-- [ ] T020 [US1] [US2] En `SPA/Plantillas.tsx`:
+- [X] T019 [US2] Agregar a `SPA/consultas.ts` `useEstadoDeLasCargas` (React Query) y `confirmarSinProyectos`, con sus tipos del contrato; al confirmar una carga o «sin proyectos», invalidar el estado (FR-008). Agregar el estado a `SPA/datosDePrueba.ts`.
+- [X] T020 [US1] [US2] En `SPA/Plantillas.tsx`:
   - la columna «Estado», con un chip «Cargada», «Pendiente» o «Sin proyectos» y sus periodos;
   - «Subir archivo» deshabilitado si `faltan` no está vacío, con «Falta la carga de …» (varias, en una frase) asociado con `aria-describedby`.
 
@@ -195,12 +195,12 @@ description: "Tareas de F01-H05: configurar las 10 cargas en su orden"
   - el botón se habilita tras confirmar la carga anterior, sin recargar;
   - el error del estado;
   - un usuario de solo lectura ve el estado pero no los botones.
-- [ ] T021 [US3] Crear `SPA/SinProyectos.tsx`: el diálogo que abre «Sin proyectos…» en la fila de la 9, solo con `CARGAS:ESCRITURA`. Tiene una lista con los periodos de los ciclos cargados y la validación del periodo con el patrón del contrato antes de enviar (principio XIV). Muestra el 409 y el 400 con `traducirError`. Mostrar las confirmaciones `SIN_PROYECTOS` en `SPA/HistorialDeLaCarga.tsx`, con el periodo y sin archivo ni huella. Primero las pruebas, en `SPA/Plantillas.test.tsx`:
+- [X] T021 [US3] Crear `SPA/SinProyectos.tsx`: el diálogo que abre «Sin proyectos…» en la fila de la 9, solo con `CARGAS:ESCRITURA`. Tiene una lista con los periodos de los ciclos cargados y la validación del periodo con el patrón del contrato antes de enviar (principio XIV). Muestra el 409 y el 400 con `traducirError`. Mostrar las confirmaciones `SIN_PROYECTOS` en `SPA/HistorialDeLaCarga.tsx`, con el periodo y sin archivo ni huella. Primero las pruebas, en `SPA/Plantillas.test.tsx`:
   - confirmar, y que el estado cambie;
   - un periodo con proyectos (409);
   - un periodo inválido no se envía;
   - la entrada en el historial.
-- [ ] T022 [US1] [US3] Ampliar `frontend/e2e/plantillas.spec.ts` con rutas simuladas: el botón deshabilitado con su texto y el diálogo «Sin proyectos…», con axe sobre la tabla y sobre el diálogo ya visible (`opacity: 1`). Correr `lint`, `tipos`, `formato`, Vitest y Playwright.
+- [X] T022 [US1] [US3] Ampliar `frontend/e2e/plantillas.spec.ts` con rutas simuladas: el botón deshabilitado con su texto y el diálogo «Sin proyectos…», con axe sobre la tabla y sobre el diálogo ya visible (`opacity: 1`). Correr `lint`, `tipos`, `formato`, Vitest y Playwright.
 
 **Checkpoint**: la pantalla cubre los escenarios 1 y 3 del issue.
 

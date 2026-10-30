@@ -1,7 +1,7 @@
 // La pantalla «Plantillas de carga» (F01-H01, FR-008): las 10 cargas en su orden, la descarga de la
 // plantilla y del diccionario de cada una, y el diccionario desplegable. La ven quienes tienen
 // «Cargas: lectura» o «Distributivo del periodo: lectura» (D-70).
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { instalarApiSimulada, json, type ApiSimulada } from '../../pruebas/apiSimulada';
@@ -13,10 +13,11 @@ import {
   descargarInforme,
   subirArchivo,
   type LecturaDeArchivo,
+  type EstadoDeCarga,
   type ProblemaDeFila,
   type VistaPrevia,
 } from './consultas';
-import { DICCIONARIO } from './datosDePrueba';
+import { DICCIONARIO, estadoCargado } from './datosDePrueba';
 
 // En jsdom, FormData y File son de jsdom y el Request de Node no los acepta: la subida se simula
 // aquí, y que el pedido real lleve la parte «archivo» y el token lo comprueba Playwright.
@@ -86,6 +87,15 @@ const ESPACIOS: ProblemaDeFila = {
   tipo: 'ADVERTENCIA',
 };
 
+/** El estado de las 10 cargas, todas cargadas salvo los cambios que se digan, por código. */
+function estadoCon(cambios: Record<string, Partial<EstadoDeCarga>>): { cargas: EstadoDeCarga[] } {
+  return {
+    cargas: estadoCargado().cargas.map((carga) => ({ ...carga, ...cambios[carga.codigo] })),
+  };
+}
+
+const FALTA_DOCENTES = { numero: 6, codigo: 'docentes', nombre: DOCENTES };
+
 async function subirDocentes(): Promise<File> {
   const usuario = userEvent.setup();
   const archivo = new File(['tipo_identificacion\n'], '06_docentes.csv', { type: 'text/csv' });
@@ -133,6 +143,7 @@ describe('Plantillas de carga', () => {
   beforeEach(() => {
     simulada = instalarApiSimulada();
     simulada.responder('GET', '/api/cargas/plantillas', json(200, DICCIONARIO));
+    simulada.responder('GET', '/api/cargas/estado', json(200, estadoCargado()));
     iniciarSesion('cabecera.cuerpo.firma', new Date(Date.now() + 60_000));
     descargas = [];
     vi.stubGlobal(
@@ -653,5 +664,287 @@ describe('Plantillas de carga', () => {
     expect(segunda).toHaveTextContent('aaaaaaaaaaaa');
     await usuario.click(within(dialogo).getByRole('button', { name: 'Cerrar' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+  it('cada carga dice si está cargada, pendiente o sin proyectos', async () => {
+    sesionCon(simulada, 'coordinacion.demo', ['CARGAS:LECTURA']);
+    simulada.responder(
+      'GET',
+      '/api/cargas/estado',
+      json(
+        200,
+        estadoCon({
+          carreras: { estado: 'PENDIENTE' },
+          proyectos_practicas: { estado: 'SIN_PROYECTOS', periodosSinProyectos: ['2026-II'] },
+        }),
+      ),
+    );
+    montarSpa('/plantillas');
+
+    expect(await filaDe('Estructura orgánica')).toHaveTextContent('Cargada');
+    expect(await filaDe('Carreras')).toHaveTextContent('Pendiente');
+    expect(await filaDe('Proyectos y prácticas aprobados')).toHaveTextContent(
+      'Sin proyectos (2026-II)',
+    );
+  });
+
+  it('con una carga anterior pendiente, «Subir archivo» está deshabilitado y dice cuál falta', async () => {
+    sesionCon(simulada, 'consolidacion.demo', ['CARGAS:LECTURA', 'CARGAS:ESCRITURA']);
+    simulada.responder(
+      'GET',
+      '/api/cargas/estado',
+      json(
+        200,
+        estadoCon({
+          carreras: { estado: 'PENDIENTE' },
+          asignaturas_malla: {
+            estado: 'PENDIENTE',
+            faltan: [{ numero: 2, codigo: 'carreras', nombre: 'Carreras' }],
+          },
+          cargos_autoridades: {
+            estado: 'PENDIENTE',
+            faltan: [{ numero: 2, codigo: 'carreras', nombre: 'Carreras' }, FALTA_DOCENTES],
+          },
+        }),
+      ),
+    );
+    montarSpa('/plantillas');
+
+    const asignaturas = await screen.findByRole('button', {
+      name: 'Subir un archivo de Asignaturas y malla',
+    });
+    await waitFor(() => expect(asignaturas).toBeDisabled());
+    expect(asignaturas).toHaveAccessibleDescription('Falta la carga de Carreras.');
+    expect(
+      screen.getByRole('button', { name: 'Subir un archivo de Cargos y autoridades' }),
+    ).toHaveAccessibleDescription(`Faltan las cargas de Carreras y ${DOCENTES}.`);
+    expect(screen.getByRole('button', { name: 'Subir un archivo de Carreras' })).toBeEnabled();
+  });
+
+  it('al confirmar la carga que faltaba, la siguiente se habilita sin recargar la página', async () => {
+    sesionCon(simulada, 'consolidacion.demo', ['CARGAS:LECTURA', 'CARGAS:ESCRITURA']);
+    let docentesConfirmados = false;
+    simulada.responder('GET', '/api/cargas/estado', () =>
+      json(
+        200,
+        docentesConfirmados
+          ? estadoCargado()
+          : estadoCon({
+              docentes: { estado: 'PENDIENTE' },
+              cargos_autoridades: { estado: 'PENDIENTE', faltan: [FALTA_DOCENTES] },
+            }),
+      ),
+    );
+    vi.mocked(subirArchivo).mockResolvedValue(lectura([]));
+    vi.mocked(confirmarCarga).mockImplementation(() => {
+      docentesConfirmados = true;
+      return Promise.resolve({
+        resultado: 'APLICADA',
+        nuevos: 47,
+        cambiados: 0,
+        bajasSinAplicar: 0,
+        confirmadaEl: '2026-10-30T15:00:00Z',
+      });
+    });
+    const usuario = userEvent.setup();
+    montarSpa('/plantillas');
+    const cargos = await screen.findByRole('button', {
+      name: 'Subir un archivo de Cargos y autoridades',
+    });
+    await waitFor(() => expect(cargos).toBeDisabled());
+
+    await subirDocentes();
+    await usuario.click(await screen.findByRole('button', { name: 'Confirmar' }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Subir un archivo de Cargos y autoridades' }),
+      ).toBeEnabled(),
+    );
+    expect(await filaDe(DOCENTES)).toHaveTextContent('Cargada');
+  });
+
+  it('si no se puede saber el estado, lo dice y no muestra un estado falso', async () => {
+    sesionCon(simulada, 'consolidacion.demo', ['CARGAS:LECTURA', 'CARGAS:ESCRITURA']);
+    simulada.responder(
+      'GET',
+      '/api/cargas/estado',
+      json(500, {
+        titulo: 'Error inesperado',
+        descripcion: 'Ocurrió un error inesperado. Intenta de nuevo en unos minutos.',
+        codigo: 'COMUN_ERROR_INTERNO',
+        idIncidente: 'abc',
+      }),
+    );
+    montarSpa('/plantillas');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Error inesperado');
+    const carreras = await filaDe('Carreras');
+    expect(carreras).not.toHaveTextContent('Cargada');
+    expect(carreras).not.toHaveTextContent('Pendiente');
+  });
+
+  it('sin «Cargas: escritura» ve el estado, pero no puede subir ni confirmar «sin proyectos»', async () => {
+    sesionCon(simulada, 'vicerrector.lector', ['DISTRIBUTIVO:LECTURA']);
+    montarSpa('/plantillas');
+
+    expect(await filaDe('Carreras')).toHaveTextContent('Cargada');
+    expect(screen.queryByRole('button', { name: /^Subir un archivo/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /sin proyectos/ })).not.toBeInTheDocument();
+  });
+
+  describe('«Sin proyectos…»', () => {
+    beforeEach(() => {
+      sesionCon(simulada, 'consolidacion.demo', [
+        'CARGAS:LECTURA',
+        'CARGAS:ESCRITURA',
+        'DISTRIBUTIVO:LECTURA',
+      ]);
+      simulada.responder(
+        'GET',
+        '/api/academico/periodos',
+        json(200, [{ codigo: '2026-II' }, { codigo: '2026-I' }]),
+      );
+    });
+
+    async function abrir() {
+      const usuario = userEvent.setup();
+      await usuario.click(
+        await screen.findByRole('button', {
+          name: 'Confirmar un periodo sin proyectos en Proyectos y prácticas aprobados',
+        }),
+      );
+      const dialogo = await screen.findByRole('dialog', {
+        name: 'Confirmar un periodo sin proyectos',
+      });
+      return { usuario, dialogo };
+    }
+
+    it('confirma un periodo y la carga de proyectos queda «sin proyectos»', async () => {
+      let confirmado = false;
+      simulada.responder('GET', '/api/cargas/estado', () =>
+        json(
+          200,
+          estadoCon({
+            proyectos_practicas: confirmado
+              ? { estado: 'SIN_PROYECTOS', periodosSinProyectos: ['2026-II'] }
+              : { estado: 'PENDIENTE' },
+          }),
+        ),
+      );
+      simulada.responder('POST', '/api/cargas/sin-proyectos', () => {
+        confirmado = true;
+        return json(201, {
+          usuario: 'consolidacion.demo',
+          momento: '2026-10-30T15:00:00Z',
+          resultado: 'SIN_PROYECTOS',
+          nuevos: 0,
+          cambiados: 0,
+          bajasSinAplicar: 0,
+          periodo: '2026-II',
+        });
+      });
+      montarSpa('/plantillas');
+      const { usuario, dialogo } = await abrir();
+
+      await usuario.type(within(dialogo).getByRole('combobox', { name: /Periodo/ }), '2026-II');
+      await usuario.click(within(dialogo).getByRole('button', { name: 'Confirmar sin proyectos' }));
+
+      expect(await screen.findByRole('status')).toHaveTextContent(
+        'El periodo 2026-II quedó confirmado sin proyectos',
+      );
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      const peticion = simulada.peticiones.find(
+        (una) => una.method === 'POST' && una.url.endsWith('/api/cargas/sin-proyectos'),
+      );
+      expect(await peticion?.json()).toEqual({ periodo: '2026-II' });
+      await waitFor(async () =>
+        expect(await filaDe('Proyectos y prácticas aprobados')).toHaveTextContent(
+          'Sin proyectos (2026-II)',
+        ),
+      );
+    });
+
+    it('un periodo mal escrito no se envía y dice cómo escribirlo', async () => {
+      montarSpa('/plantillas');
+      const { usuario, dialogo } = await abrir();
+
+      await usuario.type(within(dialogo).getByRole('combobox', { name: /Periodo/ }), '2026-III');
+      await usuario.click(within(dialogo).getByRole('button', { name: 'Confirmar sin proyectos' }));
+
+      expect(
+        within(dialogo).getByRole('combobox', { name: /Periodo/ }),
+      ).toHaveAccessibleDescription('Escribe el periodo como 2026-I o 2026-II.');
+      expect(simulada.peticiones.some((una) => una.method === 'POST')).toBe(false);
+    });
+
+    it('un periodo con proyectos aprobados muestra el error y no cierra el diálogo', async () => {
+      simulada.responder(
+        'POST',
+        '/api/cargas/sin-proyectos',
+        json(409, {
+          titulo: 'El periodo tiene proyectos',
+          descripcion:
+            'No puedes confirmar «sin proyectos»: el periodo tiene proyectos aprobados que pueden recibir horas.',
+          codigo: 'CARGAS_PERIODO_CON_PROYECTOS',
+        }),
+      );
+      montarSpa('/plantillas');
+      const { usuario, dialogo } = await abrir();
+
+      await usuario.type(within(dialogo).getByRole('combobox', { name: /Periodo/ }), '2026-I');
+      await usuario.click(within(dialogo).getByRole('button', { name: 'Confirmar sin proyectos' }));
+
+      expect(await within(dialogo).findByRole('alert')).toHaveTextContent(
+        'El periodo tiene proyectos',
+      );
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    it('sugiere los periodos de los ciclos académicos', async () => {
+      montarSpa('/plantillas');
+      const { dialogo } = await abrir();
+
+      await waitFor(() =>
+        expect(
+          [...dialogo.ownerDocument.querySelectorAll('#periodos-de-los-ciclos option')].map(
+            (opcion) => opcion.getAttribute('value'),
+          ),
+        ).toEqual(['2026-II', '2026-I']),
+      );
+    });
+  });
+
+  it('el historial de proyectos muestra la confirmación «sin proyectos» con su periodo', async () => {
+    sesionCon(simulada, 'coordinacion.demo', ['CARGAS:LECTURA']);
+    simulada.responder(
+      'GET',
+      '/api/cargas/plantillas/proyectos_practicas/historial',
+      json(200, [
+        {
+          usuario: 'consolidacion.demo',
+          momento: '2026-10-30T15:00:00Z',
+          resultado: 'SIN_PROYECTOS',
+          nuevos: 0,
+          cambiados: 0,
+          bajasSinAplicar: 0,
+          periodo: '2026-II',
+        },
+      ]),
+    );
+    const usuario = userEvent.setup();
+    montarSpa('/plantillas');
+
+    await usuario.click(
+      await screen.findByRole('button', {
+        name: 'Ver el historial de Proyectos y prácticas aprobados',
+      }),
+    );
+
+    const dialogo = await screen.findByRole('dialog', {
+      name: 'Historial de Proyectos y prácticas aprobados',
+    });
+    const [, fila] = within(dialogo).getAllByRole('row');
+    expect(fila).toHaveTextContent('Sin proyectos (2026-II)');
+    expect(fila).toHaveTextContent('consolidacion.demo');
   });
 });

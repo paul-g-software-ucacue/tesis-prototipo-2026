@@ -7,9 +7,12 @@
 // con los primeros 100 problemas, o por qué rechaza la estructura. No lo guarda: «Descargar el
 // informe» vuelve a enviar el mismo archivo y guarda todos los problemas en CSV. Con la vista previa
 // (F01-H04), «Confirmar» vuelve a enviarlo con su huella y el servicio dueño lo aplica completo o
-// nada; «Historial» muestra cada intento de confirmar una carga.
+// nada; «Historial» muestra cada intento de confirmar una carga. Cada carga dice si tiene datos, y
+// «Subir archivo» se deshabilita mientras falte una carga anterior, con cuál falta (F01-H05, RF-56);
+// en la de proyectos, «Sin proyectos…» confirma un periodo sin proyectos aprobados (RF-18).
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -18,9 +21,11 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
+import { useQueryClient } from '@tanstack/react-query';
 import { Fragment, useRef, useState, type ChangeEvent } from 'react';
 import { AvisoDeError } from '../../errores/AvisoDeError';
 import { HistorialDeLaCarga } from './HistorialDeLaCarga';
+import { SinProyectos } from './SinProyectos';
 import { VistaPreviaDeLaCarga } from './VistaPreviaDeLaCarga';
 import { traducirError, type MensajeDeError } from '../../errores/traducir';
 import { useTitulo } from '../../navegacion/useTitulo';
@@ -28,18 +33,22 @@ import { tienePermiso } from '../../sesion/permisos';
 import { useSesionActual } from '../../sesion/useSesionActual';
 import {
   ARCHIVO_DEMASIADO_GRANDE,
+  CLAVE_ESTADO,
   MAXIMO_DE_UN_ARCHIVO,
   confirmarCarga,
   descargar,
   descargarInforme,
   subirArchivo,
   useDiccionario,
+  useEstadoDeLasCargas,
   type Carga,
+  type CargaQueFalta,
   type ColumnaDeCarga,
   type Descarga,
   type LecturaDeArchivo,
   type Obligatoriedad,
   type ProblemaDeFila,
+  type EstadoDeCarga,
   type ResultadoDeConfirmacion,
 } from './consultas';
 
@@ -144,6 +153,36 @@ function ResultadoDeLaSubida({ subida, alDescargar }: { subida: Subida; alDescar
   );
 }
 
+/** El estado de una carga, como chip: si tiene datos, o en qué periodos está «sin proyectos». */
+function ChipDelEstado({ estado }: { estado: EstadoDeCarga | undefined }) {
+  if (!estado) {
+    return <>—</>;
+  }
+  if (estado.estado === 'CARGADA') {
+    return <Chip size="small" variant="outlined" color="success" label="Cargada" />;
+  }
+  if (estado.estado === 'SIN_PROYECTOS') {
+    return (
+      <Chip
+        size="small"
+        variant="outlined"
+        color="primary"
+        label={`Sin proyectos (${estado.periodosSinProyectos.join(', ')})`}
+      />
+    );
+  }
+  return <Chip size="small" variant="outlined" label="Pendiente" />;
+}
+
+/** «Falta la carga de Carreras.», «Faltan las cargas de Carreras y Docentes…». */
+function queFalta(faltan: CargaQueFalta[]): string {
+  const nombres = faltan.map((carga) => carga.nombre);
+  if (nombres.length === 1) {
+    return `Falta la carga de ${nombres[0]}.`;
+  }
+  return `Faltan las cargas de ${nombres.slice(0, -1).join(', ')} y ${nombres.at(-1)}.`;
+}
+
 const OBLIGATORIA: Record<Obligatoriedad, string> = {
   OBLIGATORIA: 'Sí',
   OBLIGATORIA_SALVO_SIN_PROYECTOS: 'Sí, o sin proyectos',
@@ -197,8 +236,19 @@ function DiccionarioDeLaCarga({ carga }: { carga: Carga }) {
   );
 }
 
-/** El botón «Subir archivo» de una carga y su selector de archivos, oculto. */
-function SubirArchivo({ carga, alElegir }: { carga: Carga; alElegir: (archivo: File) => void }) {
+/**
+ * El botón «Subir archivo» de una carga y su selector de archivos, oculto. Mientras falte una carga
+ * anterior está deshabilitado, y su descripción dice cuál falta.
+ */
+function SubirArchivo({
+  carga,
+  faltan,
+  alElegir,
+}: {
+  carga: Carga;
+  faltan: CargaQueFalta[];
+  alElegir: (archivo: File) => void;
+}) {
   const selector = useRef<HTMLInputElement>(null);
   const elegido = (evento: ChangeEvent<HTMLInputElement>) => {
     const archivo = evento.target.files?.[0];
@@ -214,6 +264,8 @@ function SubirArchivo({ carga, alElegir }: { carga: Carga; alElegir: (archivo: F
         size="small"
         variant="contained"
         aria-label={`Subir un archivo de ${carga.nombre}`}
+        aria-describedby={faltan.length > 0 ? `faltan-${carga.codigo}` : undefined}
+        disabled={faltan.length > 0}
         onClick={() => selector.current?.click()}
       >
         Subir archivo
@@ -233,8 +285,11 @@ function SubirArchivo({ carga, alElegir }: { carga: Carga; alElegir: (archivo: F
 export function Plantillas() {
   useTitulo('Plantillas de carga');
   const diccionario = useDiccionario();
+  const estado = useEstadoDeLasCargas();
+  const consultas = useQueryClient();
   const sesion = useSesionActual();
   const escritura = tienePermiso(sesion.data?.permisos, 'CARGAS', 'ESCRITURA');
+  const verPeriodos = tienePermiso(sesion.data?.permisos, 'DISTRIBUTIVO', 'LECTURA');
   const [subida, setSubida] = useState<Subida | null>(null);
   const [desplegada, setDesplegada] = useState<number | null>(null);
   const [convenciones, setConvenciones] = useState(false);
@@ -242,6 +297,11 @@ export function Plantillas() {
   const [confirmacion, setConfirmacion] = useState<ResultadoDeConfirmacion | null>(null);
   const [confirmando, setConfirmando] = useState(false);
   const [historialDe, setHistorialDe] = useState<Carga | null>(null);
+  const [sinProyectos, setSinProyectos] = useState(false);
+  const [sinProyectosHecho, setSinProyectosHecho] = useState<string | null>(null);
+
+  const estadoDe = (carga: Carga) => estado.data?.cargas.find((una) => una.codigo === carga.codigo);
+  const actualizarElEstado = () => void consultas.invalidateQueries({ queryKey: CLAVE_ESTADO });
 
   const nombreDe = (numero: number) =>
     diccionario.data?.cargas.find((carga) => carga.numero === numero)?.nombre ?? String(numero);
@@ -250,6 +310,7 @@ export function Plantillas() {
     setAviso(null);
     setSubida(null);
     setConfirmacion(null);
+    setSinProyectosHecho(null);
     if (archivo.size > MAXIMO_DE_UN_ARCHIVO) {
       setAviso(ARCHIVO_DEMASIADO_GRANDE);
       return;
@@ -267,6 +328,7 @@ export function Plantillas() {
     try {
       setConfirmacion(await confirmarCarga(carga, archivo, lectura.vistaPrevia.huella ?? ''));
       setSubida(null);
+      actualizarElEstado();
     } catch (fallo) {
       setAviso(traducirError(fallo));
     } finally {
@@ -309,6 +371,7 @@ export function Plantillas() {
         Las cargas van en este orden, porque cada una depende de las anteriores.
       </Typography>
       {diccionario.error && <AvisoDeError mensaje={traducirError(diccionario.error)} />}
+      {estado.error && <AvisoDeError mensaje={traducirError(estado.error)} />}
       {aviso && (
         <AvisoDeError mensaje={aviso}>
           {aviso.detalles.length > 0 && (
@@ -327,6 +390,11 @@ export function Plantillas() {
           {resultado(confirmacion)}
         </Alert>
       )}
+      {sinProyectosHecho && (
+        <Alert severity="success" role="status" sx={{ mb: 1 }}>
+          {sinProyectosHecho}
+        </Alert>
+      )}
       {subida && (
         <ResultadoDeLaSubida subida={subida} alDescargar={() => void bajarInforme(subida)} />
       )}
@@ -341,6 +409,21 @@ export function Plantillas() {
       )}
       {historialDe && (
         <HistorialDeLaCarga carga={historialDe} alCerrar={() => setHistorialDe(null)} />
+      )}
+      {sinProyectos && (
+        <SinProyectos
+          verPeriodos={verPeriodos}
+          alCerrar={() => setSinProyectos(false)}
+          alConfirmar={(periodo) => {
+            setSinProyectos(false);
+            setAviso(null);
+            setConfirmacion(null);
+            setSinProyectosHecho(
+              `El periodo ${periodo} quedó confirmado sin proyectos: la carga de proyectos cuenta como cargada en él.`,
+            );
+            actualizarElEstado();
+          }}
+        />
       )}
       {diccionario.data && (
         <>
@@ -375,6 +458,7 @@ export function Plantillas() {
                   <TableCell>Depende de</TableCell>
                   <TableCell>Obligatoria</TableCell>
                   <TableCell>Columnas</TableCell>
+                  <TableCell>Estado</TableCell>
                   <TableCell>Descargas</TableCell>
                 </TableRow>
               </TableHead>
@@ -382,6 +466,8 @@ export function Plantillas() {
                 {diccionario.data.cargas.map((carga) => {
                   const abierta = desplegada === carga.numero;
                   const idDelDiccionario = `diccionario-${carga.codigo}`;
+                  const suEstado = estadoDe(carga);
+                  const faltan = suEstado?.faltan ?? [];
                   return (
                     <Fragment key={carga.codigo}>
                       <TableRow data-carga={carga.codigo}>
@@ -407,6 +493,9 @@ export function Plantillas() {
                         </TableCell>
                         <TableCell>{OBLIGATORIA[carga.obligatoriedad]}</TableCell>
                         <TableCell>{carga.columnas.length}</TableCell>
+                        <TableCell>
+                          <ChipDelEstado estado={suEstado} />
+                        </TableCell>
                         <TableCell>
                           <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
                             <Button
@@ -436,15 +525,39 @@ export function Plantillas() {
                             {escritura && (
                               <SubirArchivo
                                 carga={carga}
+                                faltan={faltan}
                                 alElegir={(archivo) => void subir(carga, archivo)}
                               />
                             )}
+                            {escritura &&
+                              carga.obligatoriedad === 'OBLIGATORIA_SALVO_SIN_PROYECTOS' && (
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  aria-label={`Confirmar un periodo sin proyectos en ${carga.nombre}`}
+                                  onClick={() => {
+                                    setSinProyectosHecho(null);
+                                    setSinProyectos(true);
+                                  }}
+                                >
+                                  Sin proyectos…
+                                </Button>
+                              )}
                           </Stack>
+                          {escritura && faltan.length > 0 && (
+                            <Typography
+                              id={`faltan-${carga.codigo}`}
+                              variant="body2"
+                              sx={{ mt: 0.5 }}
+                            >
+                              {queFalta(faltan)}
+                            </Typography>
+                          )}
                         </TableCell>
                       </TableRow>
                       {abierta && (
                         <TableRow id={idDelDiccionario}>
-                          <TableCell colSpan={6}>
+                          <TableCell colSpan={7}>
                             <TableContainer>
                               <DiccionarioDeLaCarga carga={carga} />
                             </TableContainer>
