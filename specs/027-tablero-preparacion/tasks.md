@@ -61,7 +61,7 @@ Plan aprobado por el autor el 2026-10-30.
 
 - [ ] T002 Ampliar `contratos/cargas/openapi.yaml` según [contracts/cargas.md](contracts/cargas.md):
   - `consultarPreparacionDelPeriodo` (`GET /api/cargas/preparacion`, `[CARGAS:LECTURA, DISTRIBUTIVO:LECTURA]`), con el parámetro opcional `periodo` (`CodigoDePeriodo`);
-  - los esquemas `PreparacionDelPeriodo`, `PeriodoParaElegir`, `CargaDelPeriodo`, `EstadoEnElPeriodo` y `LoQueFalta`;
+  - los esquemas `PreparacionDelPeriodo`, `PeriodoParaElegir`, `CargaDelPeriodo` y `LoQueFalta`, y `CON_ERRORES` en `EstadoDeLaCarga`;
   - los 400 `COMUN_SOLICITUD_INVALIDA` y `CARGAS_PERIODO_NO_ENCONTRADO`.
 
   Sumar el tablero a la causa de `CARGAS_PERIODO_NO_ENCONTRADO` en `contratos/comun/errores.md`. Regenerar los modelos.
@@ -69,7 +69,7 @@ Plan aprobado por el autor el 2026-10-30.
   - por defecto, lo mismo que `tieneDatos()`;
   - un traductor que lo reemplaza responde por periodo;
   - una carga que no atiende es `IllegalArgumentException`.
-- [ ] T004 [P] Crear el dominio del tablero en `CAR/main/java/ec/mdd/cargas/dominio/`: `PreparacionDelPeriodo`, `CargaDelPeriodo`, `EstadoEnElPeriodo` (`PENDIENTE`, `CARGADA`, `CON_ERRORES`, `SIN_PROYECTOS`), `LoQueFalta` y su tipo (`CARGA`, `PERIODO_SIN_ABRIR`, `PERIODO_CERRADO`, `SIN_PERIODOS`), según [data-model.md](data-model.md). Primero las pruebas, en `CAR/test/java/ec/mdd/cargas/dominio/PreparacionDelPeriodoTest.java`, sin dobles y con el diccionario real:
+- [ ] T004 [P] Crear el dominio del tablero en `CAR/main/java/ec/mdd/cargas/dominio/`: `PreparacionDelPeriodo`, `CargaDelPeriodo`, `CON_ERRORES` en `EstadoDeLaCarga` (glosario «Estado de la carga»), `LoQueFalta` y su tipo (`CARGA`, `PERIODO_SIN_ABRIR`, `PERIODO_CERRADO`, `SIN_PERIODOS`), según [data-model.md](data-model.md). Primero las pruebas, en `CAR/test/java/ec/mdd/cargas/dominio/PreparacionDelPeriodoTest.java`, sin dobles y con el diccionario real:
   - con todo y el periodo abierto, listo y sin nada que falte;
   - con docentes pendiente, falta docentes y no está listo;
   - sin matriculados, sigue listo;
@@ -78,7 +78,8 @@ Plan aprobado por el autor el 2026-10-30.
   - proyectos «sin proyectos» no falta;
   - el periodo sin abrir y el cerrado faltan;
   - lo que falta va en el orden de la ERS, y después el periodo;
-  - sin periodos, `SIN_PERIODOS`.
+  - sin periodos, `SIN_PERIODOS`;
+  - `OrdenDeLasCargas` (F01-H05) nunca da `CON_ERRORES`.
 
 **Checkpoint**: el contrato, el lenguaje publicado y el dominio están listos.
 
@@ -134,11 +135,11 @@ Plan aprobado por el autor el 2026-10-30.
 
 **Independent Test**: con Vitest y la API simulada, el escenario 1 (docentes pendiente: el botón deshabilitado con lo que falta como descripción) y el 2 (todo listo: habilitado, y al pulsarlo el aviso de F06).
 
-- [ ] T010 [US1] Crear `SPA/pantallas/preparacion/consultas.ts` (`usePreparacion(periodo)`, con sus tipos del contrato y el patrón del periodo) y `SPA/pantallas/preparacion/datosDePrueba.ts`. Sumar la ruta `/preparacion` en `SPA/rutas.tsx` y la entrada «Preparación del periodo» en `SPA/navegacion/Marco.tsx`, con los permisos de `DESCARGA_DE_PLANTILLAS` (`[DISTRIBUTIVO:LECTURA, CARGAS:LECTURA]`) en `SPA/sesion/funcionalidades.ts`.
+- [ ] T010 [US1] Crear `SPA/pantallas/preparacion/consultas.ts` (`usePreparacion(periodo)`, con sus tipos del contrato y el patrón del periodo) y `SPA/pantallas/preparacion/datosDePrueba.ts`. Sumar la ruta `/preparacion` en `SPA/rutas.tsx` y la entrada «Preparación del periodo» en `SPA/navegacion/Marco.tsx`, con una constante propia, `PREPARACION_DEL_PERIODO` (`[DISTRIBUTIVO:LECTURA, CARGAS:LECTURA]`, D-70), en `SPA/sesion/funcionalidades.ts`.
 - [ ] T011 [US1] [US2] Crear `SPA/pantallas/preparacion/Preparacion.tsx`:
   - el `Select` de los periodos (el sugerido, al abrir);
   - la tabla de las 10 cargas (número, carga, obligatoria, estado como `Chip` y el motivo si está «con errores»);
-  - la lista de lo que falta, o un aviso de que el periodo está listo;
+  - la lista de lo que falta, o un aviso de que el periodo está listo; si falta la carga de proyectos, dice «o confirma el periodo sin proyectos en Plantillas de carga»;
   - el botón «Crear distributivo», solo con `DISTRIBUTIVO:ESCRITURA`, habilitado si está listo, con `aria-describedby` a lo que falta, y que al pulsarlo muestra el aviso de F06 con `role="status"`;
   - los errores con `AvisoDeError`;
   - sin periodos, el aviso de cargar los ciclos académicos.
@@ -146,6 +147,7 @@ Plan aprobado por el autor el 2026-10-30.
   Primero las pruebas, en `SPA/pantallas/preparacion/Preparacion.test.tsx`:
   - los dos escenarios del issue;
   - cada estado, con el motivo de «con errores»;
+  - la carga de proyectos que falta, con la opción de «sin proyectos»;
   - cambiar de periodo;
   - el periodo sin abrir y el cerrado;
   - sin periodos;
@@ -162,14 +164,13 @@ Plan aprobado por el autor el 2026-10-30.
 
 - [ ] T013 Crear `deploy/probar_preparacion.sh`, siguiendo `deploy/probar_orden_cargas.sh`:
   0. comprobar que la base no tiene los datos de prueba;
-  1. las cargas 01 a 05 y 07, y 2026-I «sin proyectos»: el tablero de 2026-I no está listo y nombra docentes y cargos;
+  1. las cargas 01 a 05 y 07, y 2026-I «sin proyectos»; un archivo de docentes con errores en sus filas, confirmado: el tablero de 2026-I no está listo, docentes dice «Con errores» con `CARGAS_CARGA_CON_ERRORES`, y faltan docentes y cargos;
   2. la 06, la 08, la 09 y la 10: 2026-I todavía no está listo porque le falta abrirse;
   3. abrir 2026-I con la versión de la política de prueba: listo;
   4. 2026-II: la oferta pendiente;
-  5. una carga rechazada sin datos: «con errores» (en una base que no tenga esa carga);
-  6. `2027-I` 400 `CARGAS_PERIODO_NO_ENCONTRADO` y `2026-III` 400 `COMUN_SOLICITUD_INVALIDA`;
-  7. `vicerrectorado.demo` y `coordinacion.demo` ven el tablero, y `docente.demo` recibe 403;
-  8. limpiar por códigos y por `momento >= inicio`, también la asociación de 2026-I con la versión.
+  5. `2027-I` 400 `CARGAS_PERIODO_NO_ENCONTRADO` y `2026-III` 400 `COMUN_SOLICITUD_INVALIDA`;
+  6. `vicerrectorado.demo` y `coordinacion.demo` ven el tablero, y `docente.demo` recibe 403;
+  7. limpiar por códigos y por `momento >= inicio`, también la asociación de 2026-I con la versión.
 
   Agregarlo a `.github/workflows/perfil-consolidado.yml`. Pasar shellcheck v0.11.0.
 - [ ] T014 Verificación completa:
@@ -183,7 +184,7 @@ Plan aprobado por el autor el 2026-10-30.
   - los criterios de terminado de la constitución (§6).
 
   Completar la evidencia. Commit, push, PR en borrador con `Refs #33` y marcarlo listo cuando sus comprobaciones pasen.
-- [ ] T015 Fusionar solo con la aprobación del autor. Verificar el despliegue en el equipo de demostración con evidencia (GitHub `demostracion` y los 8 contenedores sanos con la versión nueva). Después: la comprobación del autor, el PR de evidencia con `Closes #33`, borrar las ramas y cerrar F02 (#4) solo si sus historias de la Ola 1 están cerradas (F02-H03 es de la Ola 4).
+- [ ] T015 Fusionar solo con la aprobación del autor. Verificar el despliegue en el equipo de demostración con evidencia (GitHub `demostracion` y los 8 contenedores sanos con la versión nueva). Después: la comprobación del autor, el PR de evidencia con `Closes #33` y borrar las ramas. F02 (#4) queda abierta hasta F02-H03 (#34, Ola 4). Si todas las historias del milestone «Ola 1 · Datos listos» están cerradas, cerrar el milestone.
 
 ---
 

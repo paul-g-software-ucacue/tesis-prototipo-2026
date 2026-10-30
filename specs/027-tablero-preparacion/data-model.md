@@ -19,7 +19,7 @@ Nada se guarda: el tablero se calcula en cada consulta.
 |---|---|
 | `numero`, `codigo`, `nombre` | Del diccionario. |
 | `obligatoriedad` | Del diccionario: `OBLIGATORIA`, `OBLIGATORIA_SALVO_SIN_PROYECTOS` o `RECOMENDADA`. |
-| `estado` | Uno de cuatro, en este orden de prioridad: (1) `CARGADA` si tiene datos en el periodo (§ abajo); (2) `SIN_PROYECTOS` si es la de proyectos y el periodo está confirmado «sin proyectos»; (3) `CON_ERRORES` si su último intento de confirmar fue rechazado; (4) si no, `PENDIENTE`. |
+| `estado` | `EstadoDeLaCarga` (F01-H05, glosario «Estado de la carga»), que suma `CON_ERRORES`. Uno de cuatro, en este orden de prioridad: (1) `CARGADA` si tiene datos en el periodo (§ abajo); (2) `SIN_PROYECTOS` si es la de proyectos y el periodo está confirmado «sin proyectos»; (3) `CON_ERRORES` si su último intento de confirmar fue rechazado; (4) si no, `PENDIENTE`. |
 | `motivo` | Solo en `CON_ERRORES`: el código del catálogo del rechazo. |
 
 **«Tiene datos en el periodo»:**
@@ -46,6 +46,7 @@ Las cargas van en el orden de la ERS, después el periodo.
 
 | Dónde | Cambio |
 |---|---|
+| `EstadoDeLaCarga` (dominio de Cargas) | Suma `CON_ERRORES`: solo lo usa el tablero. |
 | `TraductorDeCarga<T>` (`:plataforma:lenguaje-cargas`) | `default boolean tieneDatosEn(String periodo) { return tieneDatos(); }` |
 | `AplicadorDeCargas`, `AplicadorPorTraductores` | `boolean tieneDatosEn(String carga, String periodo)` |
 | `RepositorioOferta`, `RepositorioMatriculas` (Académico) | `hayOfertadasEn(periodo)`, `hayMatriculasEn(periodo)`, con su `select exists` |

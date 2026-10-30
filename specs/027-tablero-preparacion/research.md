@@ -41,7 +41,7 @@ Fase 0 del plan de F02-H02 (issue #33). Cada sección responde una pregunta del 
 - si el periodo está confirmado «sin proyectos»;
 - si está abierto o cerrado.
 
-Calcula el estado de cada carga, lo que falta (`LoQueFalta`: una carga obligatoria, el periodo sin abrir o el periodo cerrado) y si está listo. La obligatoriedad sale del diccionario (principio VI): `OBLIGATORIA` y `OBLIGATORIA_SALVO_SIN_PROYECTOS` bloquean, y `RECOMENDADA` no.
+Calcula el estado de cada carga con `EstadoDeLaCarga`, del glosario («Estado de la carga»), que suma `CON_ERRORES`, como dice su definición. También calcula lo que falta (`LoQueFalta`: una carga obligatoria, el periodo sin abrir o el periodo cerrado) y si está listo. La obligatoriedad sale del diccionario (principio VI): `OBLIGATORIA` y `OBLIGATORIA_SALVO_SIN_PROYECTOS` bloquean, y `RECOMENDADA` no.
 
 **Por qué**: es la misma forma de `OrdenDeLasCargas`: dominio sin dependencias, probado con el diccionario real y sin dobles.
 
@@ -100,4 +100,5 @@ El tablero son 9 consultas de existencia, una de proyectos asignables, 10 lectur
 - **Sin códigos nuevos:** el periodo que no existe usa `CARGAS_PERIODO_NO_ENCONTRADO`; su columna «causa» suma el tablero.
 - **Sin términos nuevos:**
   - «Tablero de preparación» (`PreparacionDelPeriodo`), «Estado de la carga» (con «con errores») y «Periodo académico» (abierto, cerrado) ya están en el glosario §7;
+  - el estado reusa `EstadoDeLaCarga`: no hay un sinónimo para el tablero;
   - `LoQueFalta` no es un término del negocio, sino la lista de «qué falta» de la definición del tablero.

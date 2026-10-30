@@ -23,13 +23,13 @@
   - `listo`: booleano, obligatorio.
 - **`PeriodoParaElegir`:** `{ codigo: CodigoDePeriodo, nombre: string }`.
 - **`CargaDelPeriodo`:**
-  - `numero`, `codigo`, `nombre`, `obligatoriedad` (`Obligatoriedad`) y `estado` (`EstadoEnElPeriodo`), obligatorios;
+  - `numero`, `codigo`, `nombre`, `obligatoriedad` (`Obligatoriedad`) y `estado` (`EstadoDeLaCarga`), obligatorios;
   - `motivo`: string opcional, el código del catálogo del último rechazo.
-- **`EstadoEnElPeriodo`:** enum `PENDIENTE`, `CARGADA`, `CON_ERRORES`, `SIN_PROYECTOS`.
+- **`EstadoDeLaCarga`** (F01-H05) suma `CON_ERRORES`; `consultarEstadoDeLasCargas` no lo responde.
 - **`LoQueFalta`:**
   - `tipo`: enum `CARGA`, `PERIODO_SIN_ABRIR`, `PERIODO_CERRADO` o `SIN_PERIODOS`; obligatorio;
   - `carga`: `CargaQueFalta`, solo en `CARGA`;
-  - `estado`: `EstadoEnElPeriodo`, solo en `CARGA`.
+  - `estado`: `EstadoDeLaCarga`, solo en `CARGA`.
 
 ## Catálogo (`contratos/comun/errores.md`)
 
