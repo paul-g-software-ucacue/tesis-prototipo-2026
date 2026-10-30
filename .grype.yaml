@@ -38,6 +38,17 @@ ignore:
     reason: "La imagen oficial de Caddy 2.11.7 trae curl 8.22.0-r0 de Alpine; el arreglo (8.23.0-r0) exige que la reconstruyan. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1. La imagen del frontend ya actualiza curl (F01-H04)."
     desde: 2026-10-27
     vence: 2026-11-16
+  # Caddy y cloudflared: go-jose de sus binarios
+  - vulnerability: GHSA-mgcc-cww5-fp2q
+    package: { name: github.com/go-jose/go-jose/v4, version: "v4.1.5", type: go-module, location: "/usr/bin/caddy" }
+    reason: "Caddy 2.11.7, la última con al menos dos semanas, está compilado con go-jose 4.1.5; el arreglo (4.1.6) exige una versión nueva de Caddy. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1 (B00-H08)."
+    desde: 2026-10-30
+    vence: 2026-11-16
+  - vulnerability: GHSA-mgcc-cww5-fp2q
+    package: { name: github.com/go-jose/go-jose/v4, version: "v4.1.4", type: go-module }
+    reason: "cloudflared 2026.9.3 está compilado con go-jose 4.1.4; el arreglo (4.1.6) exige una versión nueva de cloudflared. Solo corre con el perfil del túnel, que no se activa mientras dure (B00-H08)."
+    desde: 2026-10-30
+    vence: 2026-11-16
   # Caddy: Go y x/net del binario
   - vulnerability: GO-2026-6603
     package: { name: golang.org/x/net, version: "v0.59.0", type: go-module, location: "/usr/bin/caddy" }
