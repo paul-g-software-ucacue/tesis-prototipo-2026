@@ -229,7 +229,7 @@ Plan aprobado por el autor el 2026-10-31.
   - con `datos` detenido, el mensaje en menos de 10 s (SC-004), y `datos` de vuelta y sano al terminar;
   - una ficha y un correo que no aparecen en los logs de ningún contenedor (SC-005);
   - la base limpia al terminar.
-- [ ] T028 Crear `specs/029-docentes-sugeridos/evidencia.md`, y verificar:
+- [X] T028 Crear `specs/029-docentes-sugeridos/evidencia.md`, y verificar:
   - todas las pruebas del backend y la SPA, con su cobertura por módulo;
   - Spotless, SpotBugs, ESLint y TypeScript;
   - los scripts de `deploy/`, shellcheck y Gitleaks;
