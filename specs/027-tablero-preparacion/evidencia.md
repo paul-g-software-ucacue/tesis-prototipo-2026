@@ -69,6 +69,13 @@ Registro de las comprobaciones de la historia (issue #33): el tablero de prepara
 | De punta a punta | `probar_preparacion.sh`, 7 de 7, con un periodo registrado en la pantalla con otro código: su tablero y «sin proyectos». Los 17 scripts terminan en 0; la base sin nada de prueba; 0 valores de prueba en los logs | `deploy/probar_*.sh`, perfil reconstruido | 2026-10-31 |
 | Todo lo demás | Backend: 1475 pruebas sin fallas. SPA: 274 de Vitest y 94 de 94 de Playwright. `probar_equipo.sh`, código 0; el equipo de demostración siguió con sus 8 contenedores sanos. shellcheck y Gitleaks sin observaciones | `./gradlew build integrationTest`, `npx playwright test`, `deploy/equipo/probar_equipo.sh` | 2026-10-31 |
 
+## Equipo de demostración
+
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| Los despliegues | `9890728` (#158): «success · Sano en 63 s». `0c3d49c` (#159): «success · Sano en 50 s», con la migración `cargas` v4 aplicada. Los 8 contenedores sanos con las imágenes `…-0c3d49c7147e` | GitHub Deployments, `docker ps`, `docker logs mdd-datos-1` (solo lectura) | 2026-10-31 |
+| La comprobación del autor con `vicerrectorado.demo` | «Preparación del periodo» con su periodo `003 · 2027-01`: las cargas 1 a 8 «Cargada», los matriculados «Pendiente» sin bloquear, lo que falta y «Crear distributivo» deshabilitado. Esa misma comprobación destapó el defecto del código del periodo. Después del arreglo, confirmó `003` «sin proyectos»: la carga 9 pasó a «Sin proyectos» y lo único que falta es abrir el periodo. No abrió el periodo, así que el botón habilitado y su aviso quedaron comprobados con las pruebas y el script, no en su demo | Capturas del autor (no se copian al repositorio) | 2026-10-31 |
+
 ## Notas
 
 - **Un corte en la verificación.** La PC se reinició en medio de los scripts, y la limpieza del que corría no llegó a ejecutarse: quedaron datos de prueba en la base del perfil local. Se vació solo ese volumen (`tesis-prototipo-2026_datos-postgres`) y se repitió la corrida completa; el del equipo de demostración (`mdd_datos-postgres`) no se tocó. El equipo volvió solo después del reinicio.
