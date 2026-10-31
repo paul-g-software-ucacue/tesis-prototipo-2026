@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { instalarApiSimulada, json, type ApiSimulada } from '../../pruebas/apiSimulada';
 import { montarSpa } from '../../pruebas/montarSpa';
 import { cerrarSesion, iniciarSesion } from '../../sesion/almacen';
+import type { Carrera } from '../carreras/consultas';
 import { CARRERAS } from '../carreras/datosDePrueba';
 import {
   ADMINISTRADOR,
@@ -26,8 +27,16 @@ async function cuerpoDe(simulada: ApiSimulada, metodo: string, ruta: string): Pr
   return (await peticion.json()) as unknown;
 }
 
-const VIGENTE = CARRERAS.find((carrera) => carrera.estado === 'VIGENTE') ?? CARRERAS[0];
-const NO_VIGENTE = CARRERAS.find((carrera) => carrera.estado !== 'VIGENTE') ?? CARRERAS[0];
+function carreraQueCumple(condicion: (carrera: Carrera) => boolean): Carrera {
+  const carrera = CARRERAS.find(condicion);
+  if (!carrera) {
+    throw new Error('Los datos de prueba no tienen esa carrera');
+  }
+  return carrera;
+}
+
+const VIGENTE = carreraQueCumple((carrera) => carrera.estado === 'VIGENTE');
+const NO_VIGENTE = carreraQueCumple((carrera) => carrera.estado !== 'VIGENTE');
 
 describe('Roles', () => {
   let simulada: ApiSimulada;
