@@ -241,7 +241,7 @@ Plan aprobado por el autor el 2026-10-31.
   - demostrar el escenario «Horas en otras carreras» con datos reales;
   - aplicar el filtro de «lo propio» con el usuario ligado a su carrera;
   - el glosario dice que `Horas` son enteras, pero la oferta admite decimales: precisarlo cuando nazcan las asignaciones.
-- [ ] T030 Fusionar solo con la aprobación del autor. Verificar el despliegue en el equipo de demostración con evidencia (GitHub `demostracion` y los 8 contenedores sanos con la versión nueva). Después: la comprobación del autor, con SC-006, y el PR de evidencia con `Closes #47`.
+- [X] T030 Fusionar solo con la aprobación del autor. Verificar el despliegue en el equipo de demostración con evidencia (GitHub `demostracion` y los 8 contenedores sanos con la versión nueva). Después: la comprobación del autor, con SC-006, y el PR de evidencia con `Closes #47`.
 
 ---
 

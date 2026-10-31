@@ -51,6 +51,16 @@ Registro de las comprobaciones de la historia (issue #47): los docentes sugerido
 | Scripts | Los 19 de `deploy/probar_*.sh` terminan en 0; el de la sugerencia deja la base limpia | Local | 2026-10-31 |
 | `probar_equipo.sh` | Código 0 | Local | 2026-10-31 |
 | shellcheck y Gitleaks | Sin observaciones | Local | 2026-10-31 |
+| CI del PR #164 | 12 de 12 en verde. `probar_sugerencia.sh` en `perfil-consolidado`: 165 sugerencias, 3233 candidatos, la sugerencia en 0,02 s y el 504 en 5,01 s | GitHub Actions | 2026-10-31 |
+
+## Equipo de demostración
+
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| El despliegue | `0d4b784` (#164): «success · Sano en 77 s». Los 8 contenedores sanos, con las 6 imágenes propias en `…-0d4b7848d135`, y `main` de vuelta en verde | GitHub Deployments, `docker ps` (solo lectura) | 2026-10-31 |
+| La comprobación del autor con `coordinacion.demo` | Confirmó lo descrito para `SOCIALES Y HUMANIDADES` en `003`, de tronco común: «Sugerencia» en los paralelos ofertados y no en el retirado; el aviso de tronco común; su docente con 0 puntos, sus horas y 0 h en otras carreras y unidades; sin marca de horas; el desglose vacío; y sin datos de contacto ni botón para proponer | Confirmación del autor | 2026-10-31 |
+| SC-006, el tiempo con el coordinador | El autor no informó un tiempo medido, y con un solo candidato la prueba es pobre. Queda sin demostrar: conviene repetirla con F06-H03, cuando el coordinador proponga con varios candidatos | — | 2026-10-31 |
+| Lo que no se vio en la demo | Varios candidatos ordenados, un docente fuera por el mínimo y la marca «Sin horas suficientes»: la demo tiene un solo docente y una asignatura de tronco común. Eso quedó comprobado con el script, con los dos procesos reales, y con Playwright | `probar_sugerencia.sh`, `e2e/oferta.spec.ts` | 2026-10-31 |
 
 ## Notas
 
