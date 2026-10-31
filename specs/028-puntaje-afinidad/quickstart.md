@@ -23,7 +23,7 @@ Requisitos: el perfil consolidado levantado (`docker compose up -d --wait`), con
 - `?periodo=2026 I`: 400 `COMUN_SOLICITUD_INVALIDA`.
 - Un docente que no existe: 404 `GENERACION_DOCENTE_NO_ENCONTRADO`.
 - Un usuario sin permiso: 403.
-- Una ruta `/interno/…` con un token de usuario: 403; por el API Gateway: 404.
+- Una ruta `/interno/…` con un token de usuario: 403, también por el API Gateway, que no la enruta.
 - Con el proceso `datos` detenido: 502 o 504, con el mensaje del catálogo, en menos de 10 s.
 
 ## 5. Punta a punta

@@ -139,18 +139,19 @@ def lista(nombre, archivo, campo):
     with open(f'{carpeta}/{nombre}.lista', 'w') as salida:
         salida.write(','.join("'" + v + "'" for v in valores))
     with open(f'{carpeta}/{nombre}.valores', 'w') as salida:
-        salida.write('\n'.join(valores))
+        salida.write('\n'.join(valores) + '\n')
 
 lista('unidades', '01_estructura_organica.csv', 'codigo_unidad')
 lista('carreras', '02_carreras.csv', 'codigo_carrera')
 lista('periodos', '03_ciclos_academicos.csv', 'codigo_periodo')
 lista('docentes', '06_docentes.csv', 'numero_identificacion')
+lista('asignaturas_2026-I', '05_oferta_periodo.csv', 'codigo_asignatura')
 
 encabezados, filas = leer('05_oferta_periodo.csv')
 primera = dict(zip(encabezados, filas[0]))
 with open(f'{carpeta}/primera_oferta.tsv', 'w') as salida:
     salida.write('\t'.join([primera['codigo_asignatura'], primera['paralelo'], primera['jornada'],
-                            primera['modalidad']]))
+                            primera['modalidad']]) + '\n')
 PY
 unidades=$(cat "$carpeta/unidades.lista")
 carreras=$(cat "$carpeta/carreras.lista")
@@ -236,16 +237,17 @@ abrir() {  # abrir <periodo> <número de versión>: con el token de $token
 guardar_pesos() {  # guardar_pesos <número> <archivo>: con el token de $token
     pedir GET "$GATEWAY/api/normativa/versiones/$1" "Bearer $token"
     [[ $estado == 200 ]] || return 1
-    jq -c '.reglas[] | select(.identificador == "RN-24") | .parametros' <<<"$cuerpo" >"$2"
+    jq -c '.reglas[] | select(.identificador == "RN-24")
+        | .parametros | map({(.nombre): .valor}) | add' <<<"$cuerpo" >"$2"
 }
 
 # La suma hecha aparte del código de Generación, con Python y los CSV de prueba: compara cada
 # puntaje, que el desglose sume el total, y el orden.
-comparar_con_la_suma_aparte() {  # comparar_con_la_suma_aparte <pesos> <periodo> <respuestas>
+comparar_con_la_suma_aparte() {  # comparar_con_la_suma_aparte <pesos> <respuestas> <asignaturas>
     python3 -I - "$carpeta" "$1" "$2" "$3" <<'PY'
 import csv, glob, json, os, sys
 from decimal import Decimal
-carpeta, archivo_pesos, periodo, respuestas = sys.argv[1:]
+carpeta, archivo_pesos, respuestas, archivo_ofertadas = sys.argv[1:]
 pesos = {clave: Decimal(str(valor)) for clave, valor in json.load(open(archivo_pesos)).items()}
 
 def filas(nombre):
@@ -253,8 +255,7 @@ def filas(nombre):
         return list(csv.DictReader(archivo))
 
 asignaturas = {fila['codigo_asignatura']: fila for fila in filas('04_asignaturas_malla.csv')}
-ofertadas = {fila['codigo_asignatura'] for fila in filas('05_oferta_periodo.csv')
-             if fila['codigo_periodo'] == periodo}
+ofertadas = set(open(archivo_ofertadas).read().split())
 docentes = {fila['numero_identificacion']: fila for fila in filas('06_docentes.csv')}
 
 def elementos(texto):
@@ -305,9 +306,9 @@ PY
 abierto_y_cargado() {
     cargar || return 1
     iniciar vicerrectorado.demo
-    numero=$(consultar_base "select numero from normativa.version_normativa where codigo = '$version'")
-    abrir 2026-I "$numero" || return 1
-    guardar_pesos "$numero" "$carpeta/pesos.json"
+    numero_a=$(consultar_base "select numero from normativa.version_normativa where codigo = '$version'")
+    abrir 2026-I "$numero_a" || return 1
+    guardar_pesos "$numero_a" "$carpeta/pesos.json"
 }
 
 # 47 docentes por toda la oferta, comparados con la suma aparte (SC-001).
@@ -320,7 +321,9 @@ todos_los_docentes() {
         [[ $estado == 200 ]] || return 1
         printf '%s' "$cuerpo" >"$carpeta/respuestas/$uno.json"
     done <"$carpeta/docentes.valores"
-    comparados=$(comparar_con_la_suma_aparte "$carpeta/pesos.json" 2026-I "$carpeta/respuestas")
+    [[ $(find "$carpeta/respuestas" -name '*.json' | wc -l) == 47 ]] || return 1
+    comparados=$(comparar_con_la_suma_aparte "$carpeta/pesos.json" "$carpeta/respuestas" \
+        "$carpeta/asignaturas_2026-I.valores")
 }
 
 # El desglose nombra qué título aportó, con el peso de la versión.
@@ -345,17 +348,18 @@ otros_pesos() {
             '{asignatura: $a, paralelo: $p, jornada: $j, modalidad: $m, estudiantes: 12}')"
     [[ $estado == 201 ]] || { echo "       ofertar en 2026-II: $estado" >&2; return 1; }
     pedir POST "$GATEWAY/api/normativa/versiones" "Bearer $token" \
-        "$(jq -cn --argjson n "${numero:-0}" --arg c "$version_b" \
+        "$(jq -cn --argjson n "${numero_a:-0}" --arg c "$version_b" \
             '{copiarDe: $n, codigo: $c, origen: "Pesos de prueba de F06-H01", vigenteDesde: "2026-01-15"}')"
     [[ $estado == 201 ]] || { echo "       crear $version_b: $estado" >&2; return 1; }
     version_nueva=$cuerpo
     numero_b=$(jq -r '.numero' <<<"$version_nueva")
     edicion=$(jq -c '{codigo, origen, vigenteDesde,
         reglas: [.reglas[] | {identificador, parametros}
-            | if .identificador == "RN-24" then .parametros = {
+            | if .identificador == "RN-24" then .parametros = ({
                 cuarto_nivel_campo_especifico: 7.5, cuarto_nivel_campo_amplio: 4,
                 tercer_nivel_campo_especifico: 5.25, tercer_nivel_campo_amplio: 3,
                 experiencia_relacionada: 2.5, curso_relacionado: 1.5, tope_cursos: 4}
+                | to_entries | map({nombre: .key, valor: .value}))
               else . end],
         tablaCargaHoraria: [.tablaCargaHoraria[] | del(.severidad, .referencia, .observacion)]}' \
         <<<"$version_nueva")
@@ -368,7 +372,9 @@ otros_pesos() {
     afinidad "$DOCENTE" 2026-II
     [[ $estado == 200 && $(jq -r '.version' <<<"$cuerpo") == "$numero_b" ]] || return 1
     printf '%s' "$cuerpo" >"$carpeta/respuestas_b/$DOCENTE.json"
-    comparar_con_la_suma_aparte "$carpeta/pesos_b.json" 2026-II "$carpeta/respuestas_b" >/dev/null
+    printf '%s\n' "$asignatura_b" >"$carpeta/asignaturas_2026-II.valores"
+    comparar_con_la_suma_aparte "$carpeta/pesos_b.json" "$carpeta/respuestas_b" \
+        "$carpeta/asignaturas_2026-II.valores" >/dev/null
 }
 
 sin_oferta() {
@@ -376,7 +382,7 @@ sin_oferta() {
     pedir POST "$GATEWAY/api/academico/periodos" "Bearer $token" \
         '{"codigo":"'"$prefijo"'","nombre":"Periodo sin oferta","inicio":"2028-04-03","fin":"2028-08-04"}'
     [[ $estado == 201 ]] || { echo "       registrar $prefijo: $estado" >&2; return 1; }
-    abrir "$prefijo" "$numero" || return 1
+    abrir "$prefijo" "$numero_a" || return 1
     iniciar coordinacion.demo
     afinidad "$DOCENTE" "$prefijo"
     [[ $estado == 200 && $(jq -r '.puntajes | length' <<<"$cuerpo") == 0 ]]
@@ -403,15 +409,20 @@ permisos() {
     iniciar coordinacion.demo
 }
 
-# Por el API Gateway no existen; dentro de la red, un token de usuario recibe 403.
+# El API Gateway no las enruta y las rechaza; dentro de la red, un token de usuario recibe 403.
 rutas_internas() {
     local respuesta
     pedir GET "$GATEWAY/interno/docentes/$DOCENTE/formacion" "Bearer $token"
-    [[ $estado == 404 ]] || return 1
-    respuesta=$(docker compose exec -T distributivo wget -q -O /dev/null \
-        --header "Authorization: Bearer $token" \
-        "http://datos:8080/interno/docentes/$DOCENTE/formacion" 2>&1 || true)
-    [[ $respuesta == *403* ]]
+    [[ $estado == 403 ]] || return 1
+    # Las imágenes no traen curl ni wget (compose.yaml), y el token va por la entrada estándar.
+    # shellcheck disable=SC2016
+    respuesta=$(printf '%s\n' "$token" | docker compose exec -T distributivo bash -c '
+        read -r t
+        exec 3<>/dev/tcp/datos/8080
+        printf "GET /interno/docentes/%s/formacion HTTP/1.1\r\nHost: datos\r\nAuthorization: Bearer %s\r\nConnection: close\r\n\r\n" \
+            "$1" "$t" >&3
+        head -1 <&3' _ "$DOCENTE" || true)
+    [[ $respuesta == *' 403'* ]]
 }
 
 # La oferta de 2026-I en menos de $SEGUNDOS_DE_LA_LISTA segundos, con la sesión ya iniciada (SC-003).
@@ -448,7 +459,7 @@ sin_la_ficha_en_los_registros() {
 }
 
 inicio_en_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-numero=''
+numero_a=''
 comparados=0
 
 verificar 1 "Las cargas de prueba y 2026-I abierto con la versión $version" abierto_y_cargado
@@ -460,7 +471,7 @@ verificar 5 "2026-II abierto con otros pesos: otro puntaje, igual a la suma apar
 verificar 6 "Un periodo abierto sin oferta: lista vacía" sin_oferta
 verificar 7 "2027-I, «2026 I», un docente que no existe y «abc»: sus errores del catálogo" errores_del_catalogo
 verificar 8 "docente.demo recibe 403 y sin token, 401" permisos
-verificar 9 "/interno/… no existe por el API Gateway, y con un token de usuario responde 403" rutas_internas
+verificar 9 "/interno/… responde 403 por el API Gateway y con un token de usuario dentro de la red" rutas_internas
 verificar 10 "La lista de la oferta tarda menos de $SEGUNDOS_DE_LA_LISTA s" la_lista_tarda_poco
 verificar 11 "Con datos detenido: 502 o 504 del catálogo en menos de $SEGUNDOS_SIN_DATOS s, y vuelve" sin_el_proceso_datos
 verificar 12 "La ficha no aparece en los registros de los procesos" sin_la_ficha_en_los_registros
