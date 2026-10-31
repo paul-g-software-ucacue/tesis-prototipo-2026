@@ -46,6 +46,7 @@ Registro de las comprobaciones de la historia (issue #47): los docentes sugerido
 | Backend `./gradlew check` | 1634 pruebas, 0 fallas, 4 omitidas | Local | 2026-10-31 |
 | Líneas por módulo | Generación 97,9 %, Académico 82,2 %, Docentes 80,1 %, Normativa 76,1 % | JaCoCo | 2026-10-31 |
 | SPA | Vitest 298 de 298 sin cobertura; ESLint, Prettier y TypeScript sin observaciones | Local; ver Notas | 2026-10-31 |
+| Cobertura de la SPA | Vitest 298 de 298: 93,89 % de sentencias y 94,01 % de líneas | CI del PR #164 | 2026-10-31 |
 | Playwright | 96 de 96 | Local | 2026-10-31 |
 | Scripts | Los 19 de `deploy/probar_*.sh` terminan en 0; el de la sugerencia deja la base limpia | Local | 2026-10-31 |
 | `probar_equipo.sh` | Código 0 | Local | 2026-10-31 |
@@ -57,4 +58,5 @@ Registro de las comprobaciones de la historia (issue #47): los docentes sugerido
 - **Orden de las pruebas:** en `Sugerencia`, `Candidato` y la pantalla, se vio fallar la prueba antes de escribir el código. En las consultas de los dueños y la consulta de Generación, prueba y código se escribieron en el mismo paso, así que no se vio ese fallo.
 - **Ajustes respecto del plan:** `numero` y `puntos` quedaron en `comun/numeros.ts`, porque ESLint no deja mezclar funciones y componentes en un archivo. `Candidato` guarda `HorasDelDocente` en vez de dos campos. Las horas pasaron a decimales después del análisis.
 - **Corridas del script:** el paso 5 falló tres veces por errores del propio script: comparaba `5.50` con `5.5` como texto; un mínimo de 5,5 no cambiaba la lista de esa asignatura, con puntajes 8, 6 y 0; y no miraba el resultado de la comparación independiente. Los tres quedaron corregidos.
+- **curl otra vez en las imágenes.** En la CI del PR #164, y antes en `main`, Grype encontró 16 vulnerabilidades más de curl y libcurl 8.22.0-r0, corregidas en 8.23.0-r0: 5 críticas (CVE-2026-86413, CVE-2026-86414, CVE-2026-87861, CVE-2026-92388, CVE-2026-94265) y 11 altas. No vienen de esta historia. Las imágenes oficiales de PostgreSQL 18.6 y Caddy 2.11.7, comprobadas con `docker pull` el 2026-10-31, siguen en 8.22.0: tienen una excepción temporal en `.grype.yaml` hasta el 2026-11-16, aprobada por el autor, con el túnel apagado mientras dure.
 - **Un defecto ajeno a esta historia:** la pantalla «Oferta» muestra las horas con un decimal, aunque un paralelo admite dos: 2,25 h se ve 2,3 h. El diálogo de la sugerencia no tiene ese problema.
