@@ -173,7 +173,7 @@ Plan aprobado por el autor el 2026-10-30.
   7. limpiar por códigos y por `momento >= inicio`, también la asociación de 2026-I con la versión.
 
   Agregarlo a `.github/workflows/perfil-consolidado.yml`. Pasar shellcheck v0.11.0.
-- [ ] T014 Verificación completa:
+- [X] T014 Verificación completa:
   - `./gradlew build integrationTest`;
   - los 17 scripts, con `probar_preparacion.sh` dos veces seguidas en un perfil reconstruido (con el builder creado sin `-q`);
   - `probar_equipo.sh`;

@@ -53,5 +53,15 @@ Registro de las comprobaciones de la historia (issue #33): el tablero de prepara
 
 | Comprobación | Resultado | Evidencia | Fecha |
 |---|---|---|---|
+| `probar_preparacion.sh` de punta a punta | 6 de 6 pasos, tres veces, dos de ellas seguidas en la misma base: sin docentes, con un archivo de docentes con errores y 2026-I «sin proyectos», no está listo, docentes «con errores» con `CARGAS_CARGA_CON_ERRORES` y faltan docentes, cargos y abrirlo; con las 10, solo le falta abrirse; abierto con la política de prueba, listo; 2026-II le faltan la oferta y abrirse; 2027-I y 2026-III, 400; sin periodo, el que empieza más tarde; `coordinacion.demo` lo ve y `docente.demo` recibe 403. Al terminar, la base sin nada de prueba (0/0/0/0/0/0/0) | `deploy/probar_preparacion.sh`, perfil reconstruido con el builder `mdd-limpio` | 2026-10-30 |
+| Los 17 scripts de punta a punta | Todos terminan en 0 | `deploy/probar_*.sh` | 2026-10-30 |
+| Backend y SPA completos | Backend: 1473 pruebas sin fallas (1440 antes de la historia). Líneas: Cargas 93,3 %, Académico 81,8 %, Docentes 79,7 %, `lenguaje-cargas` 95,3 %. SPA: 274 de Vitest (93,9 % de líneas) y 94 de 94 de Playwright | `./gradlew build integrationTest`, `npx vitest run --coverage`, `npx playwright test` | 2026-10-30 |
+| Sin datos en los logs (principio IX) | Ningún valor de prueba en los logs del gateway ni de `datos`: 0 coincidencias | `docker compose logs gateway datos \| grep -cE …` | 2026-10-30 |
+| shellcheck y Gitleaks | shellcheck v0.11.0 sin observaciones en `probar_preparacion.sh`; Gitleaks v8.30.1 sobre un clon de la rama: sin filtraciones | `koalaman/shellcheck-alpine:v0.11.0`, `ghcr.io/gitleaks/gitleaks:v8.30.1` | 2026-10-30 |
+| El equipo de demostración con esta rama | `probar_equipo.sh` pasa todos sus pasos (código 0): despliegue, sin cambios, el token tras reiniciar identidad, el túnel, las claves, la vuelta atrás (131 s con `ESPERA_SALUD=60`) y el primer despliegue roto; 1396,5 MiB después de iniciar sesión (alerta: 7168). El equipo de demostración siguió con sus 8 contenedores sanos | `BUILDX_BUILDER=mdd-limpio deploy/equipo/probar_equipo.sh` | 2026-10-30 |
+| Criterios de terminado de la constitución 2.2.0 (§6) | Los 2 escenarios del issue pasan; contrato publicado y verificado; `ArquitecturaTest` y `ModulosTest` pasan; sin códigos de error nuevos; el periodo validado en contrato, servidor y pantalla con casos válidos e inválidos; mensajes en «tú»; JavaDoc al día; SpotBugs en verde; el glosario no cambia | Esta evidencia | 2026-10-30 |
 
 ## Notas
+
+- **Un corte en la verificación.** La PC se reinició en medio de los scripts, y la limpieza del que corría no llegó a ejecutarse: quedaron datos de prueba en la base del perfil local. Se vació solo ese volumen (`tesis-prototipo-2026_datos-postgres`) y se repitió la corrida completa; el del equipo de demostración (`mdd_datos-postgres`) no se tocó. El equipo volvió solo después del reinicio.
+- **El periodo abierto y el cerrado.** Los dos supuestos de la spec (un periodo tiene que estar abierto para estar listo, y uno cerrado nunca lo está) los aprobó el autor el 2026-10-30.
