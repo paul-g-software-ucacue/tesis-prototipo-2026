@@ -168,8 +168,8 @@ Plan aprobado por el autor el 2026-10-30.
 
 **Independent Test**: abrir un docente, elegir un periodo y desplegar una asignatura.
 
-- [ ] T022 [US2] Agregar `contratos/generacion/openapi.yaml` a `generar:api` en `frontend/package.json`, generar `SPA/api/generado/generacion.d.ts`, crear `apiGeneracion` en `SPA/api/cliente.ts`, con `conToken` como los demás, y agregar `useAfinidadDelDocente` en `SPA/pantallas/docentes/consultas.ts`.
-- [ ] T023 [US2] Pruebas en `SPA/pantallas/docentes/Docentes.test.tsx`, con datos en `datosDePrueba.ts`:
+- [X] T022 [US2] Agregar `contratos/generacion/openapi.yaml` a `generar:api` en `frontend/package.json`, generar `SPA/api/generado/generacion.d.ts`, crear `apiGeneracion` en `SPA/api/cliente.ts`, con `conToken` como los demás, y agregar `useAfinidadDelDocente` en `SPA/pantallas/docentes/consultas.ts`.
+- [X] T023 [US2] Pruebas en `SPA/pantallas/docentes/Docentes.test.tsx`, con datos en `datosDePrueba.ts`:
   - la lista del mayor al menor;
   - el desglose desplegado, con el tipo, el nombre y el aporte;
   - el aviso del tope aplicado;
@@ -177,8 +177,8 @@ Plan aprobado por el autor el 2026-10-30.
   - un periodo sin oferta: «Este periodo todavía no tiene oferta»;
   - un puntaje 0 se muestra;
   - el 502 y el 504: `AvisoDeError`, sin detalles técnicos.
-- [ ] T024 [US2] Implementar la sección «Afinidad por asignatura» en `SPA/pantallas/docentes/AfinidadDelDocente.tsx` y mostrarla en el diálogo `Ficha` de `SPA/pantallas/docentes/Docentes.tsx`, con el selector de periodo de `ReferenciasDeDocentes`. Hace pasar T023.
-- [ ] T025 [US2] `frontend/e2e/docentes.spec.ts`: el recorrido con `simularApi` y axe sobre la sección, con el diálogo ya en opacidad 1.
+- [X] T024 [US2] Implementar la sección «Afinidad por asignatura» en `SPA/pantallas/docentes/AfinidadDelDocente.tsx` y mostrarla en el diálogo `Ficha` de `SPA/pantallas/docentes/Docentes.tsx`, con el selector de periodo de `ReferenciasDeDocentes`. Hace pasar T023.
+- [X] T025 [US2] `frontend/e2e/docentes.spec.ts`: el recorrido con `simularApi` y axe sobre la sección, con el diálogo ya en opacidad 1.
 
 **Checkpoint**: los cuatro escenarios del issue pasan.
 

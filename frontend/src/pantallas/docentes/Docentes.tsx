@@ -38,6 +38,7 @@ import {
   type ReferenciasDeDocentes,
   type ResumenDeDocente,
 } from './consultas';
+import { AfinidadDelDocente } from './AfinidadDelDocente';
 import { DialogoDocente, DialogoEstado } from './DialogosDeDocente';
 import {
   NOMBRE_DE_LA_CATEGORIA,
@@ -277,7 +278,12 @@ function Ficha({ identificacion, alCerrar }: { identificacion: string; alCerrar:
           el teclado (WCAG 2.1.1, regla scrollable-region-focusable de axe). */}
       <DialogContent tabIndex={0} aria-labelledby="titulo-ficha">
         {docente.error && <AvisoDeError mensaje={traducirError(docente.error)} />}
-        {datos && <ContenidoDeLaFicha docente={datos} />}
+        {datos && (
+          <Stack spacing={2}>
+            <ContenidoDeLaFicha docente={datos} />
+            <AfinidadDelDocente identificacion={identificacion} />
+          </Stack>
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={alCerrar}>Cerrar</Button>

@@ -28,6 +28,63 @@ const REFERENCIAS = {
     { codigo: '01', nombre: 'Educación' },
     { codigo: '06', nombre: 'Tecnologías de la información y la comunicación' },
   ],
+  unidades: [],
+  periodos: [
+    {
+      codigo: '2026-I',
+      nombre: 'Periodo académico 2026-I',
+      inicio: '2026-04-06',
+      fin: '2026-08-07',
+    },
+    {
+      codigo: '2026-II',
+      nombre: 'Periodo académico 2026-II',
+      inicio: '2026-10-05',
+      fin: '2027-02-05',
+    },
+  ],
+};
+
+// Lo que respondería Generación: 2026-I abierto, 2026-II sin abrir (F06-H01).
+const AFINIDAD = {
+  periodo: '2026-I',
+  version: 1,
+  puntajes: [
+    {
+      asignatura: 'DS-P-II-POO-204',
+      nombre: 'PROGRAMACIÓN ORIENTADA A OBJETOS',
+      total: 3,
+      topeAplicado: true,
+      desglose: [
+        {
+          tipo: 'TERCER_NIVEL',
+          nombre: 'INGENIERO DE SISTEMAS',
+          coincidencia: 'CAMPO_ESPECIFICO',
+          aporte: 2,
+        },
+        {
+          tipo: 'CURSO',
+          nombre: 'PROGRAMACIÓN EN JAVA',
+          coincidencia: 'CAMPO_ESPECIFICO',
+          aporte: 1,
+        },
+      ],
+    },
+    {
+      asignatura: 'DS-P-I-ANA-101',
+      nombre: 'ANATOMÍA',
+      total: 0,
+      topeAplicado: false,
+      desglose: [],
+    },
+  ],
+};
+
+const PERIODO_SIN_ABRIR = {
+  titulo: 'Periodo sin abrir',
+  descripcion:
+    'El periodo todavía no tiene su versión de normativa. Ábrelo en «Periodos» para calcular la afinidad.',
+  codigo: 'GENERACION_PERIODO_SIN_ABRIR',
 };
 
 type Cuerpo = Record<string, unknown> & {
@@ -99,6 +156,12 @@ async function simularDocentes(pagina: Page) {
 async function abrirDocentes(pagina: Page) {
   await simularApi(pagina, { sesion: TALENTO_HUMANO });
   await simularDocentes(pagina);
+  await pagina.route('**/api/generacion/docentes/*/afinidad*', async (ruta) => {
+    const periodo = new URL(ruta.request().url()).searchParams.get('periodo');
+    await ruta.fulfill(
+      periodo === '2026-I' ? { json: AFINIDAD } : { status: 409, json: PERIODO_SIN_ABRIR },
+    );
+  });
   await pagina.goto('/iniciar-sesion');
   await ingresar(pagina, 'datos.demo');
   await pagina.getByRole('link', { name: 'Docentes' }).click();
@@ -192,6 +255,31 @@ for (const [boton, titulo] of [
     await sinFallas(page);
   });
 }
+
+test('la afinidad por asignatura en la ficha, con su desglose', async ({ page }) => {
+  await abrirDocentes(page);
+  await registrar(page);
+  await page.getByRole('button', { name: 'Ver la ficha de PERALTA JUAN' }).click();
+  const ficha = page.getByRole('dialog', { name: 'Ficha de PERALTA JUAN' });
+
+  await ficha.getByRole('combobox', { name: 'Periodo' }).click();
+  await page.getByRole('option', { name: /^2026-I ·/ }).click();
+  const asignatura = ficha.getByRole('button', { name: /PROGRAMACIÓN ORIENTADA A OBJETOS/ });
+  await expect(asignatura).toContainText('3 puntos');
+  await asignatura.click();
+
+  await expect(
+    ficha.getByText('Curso: PROGRAMACIÓN EN JAVA · campo específico · 1 punto'),
+  ).toBeVisible();
+  await expect(ficha.getByText(/Se aplicó el tope de cursos/)).toBeVisible();
+  await sinFallas(page);
+
+  await ficha.getByRole('combobox', { name: 'Periodo' }).click();
+  await page.getByRole('option', { name: /^2026-II ·/ }).click();
+  await expect(ficha.getByText(/Ábrelo en «Periodos»/)).toBeVisible();
+  await expect(asignatura).toBeHidden();
+  await sinFallas(page);
+});
 
 test('el diálogo «Registrar docente» con los campos marcados en rojo', async ({ page }) => {
   await abrirDocentes(page);

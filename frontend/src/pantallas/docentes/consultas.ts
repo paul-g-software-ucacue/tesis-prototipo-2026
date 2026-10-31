@@ -1,8 +1,9 @@
 // Los tipos, las consultas y las operaciones de la pantalla «Docentes» (contratos/docentes,
 // F03-H04).
 import { useQuery } from '@tanstack/react-query';
-import { apiDocentes, llamar } from '../../api/cliente';
+import { apiDocentes, apiGeneracion, llamar } from '../../api/cliente';
 import type { components } from '../../api/generado/docentes';
+import type { components as componentesDeGeneracion } from '../../api/generado/generacion';
 
 export type Docente = components['schemas']['Docente'];
 export type DocenteNuevo = components['schemas']['DocenteNuevo'];
@@ -17,6 +18,10 @@ export type CondicionEspecial = components['schemas']['CondicionEspecial'];
 export type TipoDeIdentificacion = components['schemas']['TipoDeIdentificacion'];
 export type TipoDeTituloDeCuartoNivel = components['schemas']['TipoDeTituloDeCuartoNivel'];
 export type FichaAcademica = components['schemas']['FichaAcademica'];
+export type AfinidadDelDocente = componentesDeGeneracion['schemas']['AfinidadDelDocente'];
+export type PuntajeAfinidad = componentesDeGeneracion['schemas']['PuntajeAfinidad'];
+export type AporteDeAfinidad = componentesDeGeneracion['schemas']['AporteDeAfinidad'];
+export type TipoDeAporte = componentesDeGeneracion['schemas']['TipoDeAporte'];
 
 /** La clave de los docentes, para recargarlos después de un cambio. */
 export const CLAVE_DOCENTES = ['docentes'] as const;
@@ -58,6 +63,24 @@ export function useDocente(identificacion: string | undefined) {
         }),
       ),
     enabled: Boolean(identificacion),
+  });
+}
+
+/**
+ * El puntaje del docente en la oferta de un periodo, que calcula Generación (RF-17, ADR-010). Sin
+ * periodo, no consulta. No se guarda en caché al cerrar: siempre refleja la ficha de ese momento.
+ */
+export function useAfinidadDelDocente(identificacion: string, periodo: string) {
+  return useQuery({
+    queryKey: ['afinidad', identificacion, periodo],
+    queryFn: () =>
+      llamar(
+        apiGeneracion.GET('/api/generacion/docentes/{identificacion}/afinidad', {
+          params: { path: { identificacion }, query: { periodo } },
+        }),
+      ),
+    enabled: Boolean(periodo),
+    gcTime: 0,
   });
 }
 
