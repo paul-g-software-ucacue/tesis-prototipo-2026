@@ -151,6 +151,12 @@ jobs:
         shell: bash
         run: deploy/probar_preparacion.sh
 
+      # F06-H01: el puntaje de los 47 docentes contra una suma aparte, con los dos procesos reales;
+      # otra versión de pesos, los errores, las rutas internas y datos detenido. Borra lo que crea.
+      - name: El puntaje de afinidad de punta a punta
+        shell: bash
+        run: deploy/probar_afinidad.sh
+
       # shell: bash agrega pipefail, así que tee no oculta el código de salida del script.
       # Después de iniciar sesión (D-34): la medición de referencia de R-19 desde B00-H03.
       - name: Medición de R-19 después de iniciar sesión

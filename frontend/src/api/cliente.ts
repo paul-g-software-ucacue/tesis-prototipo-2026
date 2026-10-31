@@ -8,6 +8,7 @@ import { cerrarSesion, marcarActividad, obtenerToken } from '../sesion/almacen';
 import type { paths as rutasDeAcademico } from './generado/academico';
 import type { paths as rutasDeCargas } from './generado/cargas';
 import type { paths as rutasDeDocentes } from './generado/docentes';
+import type { paths as rutasDeGeneracion } from './generado/generacion';
 import type { paths as rutasDeNormativa } from './generado/normativa';
 import type { paths as rutasDeRoles } from './generado/roles';
 import type { paths } from './generado/usuarios';
@@ -94,3 +95,10 @@ export const apiDocentes = createClient<rutasDeDocentes>({
   fetch: (peticion) => globalThis.fetch(peticion),
 });
 apiDocentes.use(conToken);
+
+/** El cliente de Generación (F06-H01), con el mismo token y la misma actividad. */
+export const apiGeneracion = createClient<rutasDeGeneracion>({
+  baseUrl: globalThis.location?.origin ?? '',
+  fetch: (peticion) => globalThis.fetch(peticion),
+});
+apiGeneracion.use(conToken);

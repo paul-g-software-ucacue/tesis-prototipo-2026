@@ -1,6 +1,11 @@
 // Datos de prueba de «Docentes» (ficticios, RNF-SEG-06): dos docentes, uno con su ficha completa, y
 // las referencias de Académico con la carrera, dos asignaturas y los campos amplios que usan.
-import type { Docente, ReferenciasDeDocentes, ResumenDeDocente } from './consultas';
+import type {
+  AfinidadDelDocente,
+  Docente,
+  ReferenciasDeDocentes,
+  ResumenDeDocente,
+} from './consultas';
 
 export const PERALTA: Docente = {
   tipoIdentificacion: 'CEDULA',
@@ -113,6 +118,53 @@ export const REFERENCIAS: ReferenciasDeDocentes = {
       nombre: 'Periodo académico 2026-II',
       inicio: '2026-10-05',
       fin: '2027-02-05',
+    },
+  ],
+};
+
+/** El puntaje de PERALTA: una asignatura con el tope de cursos aplicado y otra sin coincidencias. */
+export const AFINIDAD: AfinidadDelDocente = {
+  periodo: '2026-I',
+  version: 2,
+  puntajes: [
+    {
+      asignatura: 'DS-P-II-POO-204',
+      nombre: 'PROGRAMACIÓN ORIENTADA A OBJETOS',
+      total: 7.5,
+      topeAplicado: true,
+      desglose: [
+        {
+          tipo: 'TERCER_NIVEL',
+          nombre: 'INGENIERO DE SISTEMAS',
+          coincidencia: 'CAMPO_ESPECIFICO',
+          aporte: 2,
+        },
+        {
+          tipo: 'CUARTO_NIVEL',
+          nombre: 'MÁSTER EN TELEMÁTICA',
+          coincidencia: 'CAMPO_AMPLIO',
+          aporte: 2,
+        },
+        {
+          tipo: 'EXPERIENCIA',
+          nombre: 'DESARROLLADOR',
+          coincidencia: 'CAMPO_ESPECIFICO',
+          aporte: 2,
+        },
+        {
+          tipo: 'CURSO',
+          nombre: 'PROGRAMACIÓN EN JAVA',
+          coincidencia: 'CAMPO_ESPECIFICO',
+          aporte: 1.5,
+        },
+      ],
+    },
+    {
+      asignatura: 'DS-P-I-ANA-101',
+      nombre: 'ANATOMÍA',
+      total: 0,
+      topeAplicado: false,
+      desglose: [],
     },
   ],
 };

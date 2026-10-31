@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { instalarApiSimulada, json, type ApiSimulada } from '../../pruebas/apiSimulada';
 import { montarSpa } from '../../pruebas/montarSpa';
 import { cerrarSesion, iniciarSesion } from '../../sesion/almacen';
-import { PERALTA, REFERENCIAS, RESUMENES } from './datosDePrueba';
+import { AFINIDAD, PERALTA, REFERENCIAS, RESUMENES } from './datosDePrueba';
 
 const TALENTO_HUMANO = ['DOCENTES:LECTURA', 'DOCENTES:ESCRITURA'];
 const CONSOLIDACION = ['OFERTA:LECTURA', 'DISTRIBUTIVO:LECTURA'];
@@ -423,5 +423,154 @@ describe('Docentes', () => {
 
     await screen.findByRole('link', { name: 'Inicio' });
     expect(screen.queryByRole('link', { name: 'Docentes' })).not.toBeInTheDocument();
+  });
+});
+
+// La afinidad en la ficha (F06-H01, RF-17): la calcula Generación con la versión del periodo.
+describe('Afinidad por asignatura', () => {
+  const COORDINACION = ['DOCENTES:LECTURA'];
+  const RUTA_AFINIDAD = '/api/generacion/docentes/0109990010/afinidad';
+  let simulada: ApiSimulada;
+
+  beforeEach(() => {
+    simulada = instalarApiSimulada();
+    sesionCon(simulada, 'coordinacion.demo', COORDINACION);
+    simulada.responder('GET', LISTA, json(200, RESUMENES));
+    simulada.responder('GET', '/api/docentes/referencias', json(200, REFERENCIAS));
+    simulada.responder('GET', PERALTA_RUTA, json(200, PERALTA));
+    iniciarSesion('cabecera.cuerpo.firma', new Date(Date.now() + 60_000));
+  });
+
+  afterEach(() => {
+    cerrarSesion();
+  });
+
+  async function abrirFicha(usuario: ReturnType<typeof userEvent.setup>) {
+    montarSpa('/docentes');
+    await usuario.click(
+      await screen.findByRole('button', {
+        name: 'Ver la ficha de PERALTA MALDONADO JUAN ANDRES',
+      }),
+    );
+    return screen.findByRole('dialog', { name: 'Ficha de PERALTA MALDONADO JUAN ANDRES' });
+  }
+
+  async function elegirPeriodo(
+    usuario: ReturnType<typeof userEvent.setup>,
+    ficha: HTMLElement,
+    periodo: RegExp,
+  ) {
+    await usuario.click(await within(ficha).findByRole('combobox', { name: 'Periodo' }));
+    await usuario.click(await screen.findByRole('option', { name: periodo }));
+  }
+
+  it('no consulta hasta que eliges un periodo', async () => {
+    const usuario = userEvent.setup();
+    const ficha = await abrirFicha(usuario);
+
+    expect(await within(ficha).findByText(/Elige un periodo/)).toBeInTheDocument();
+    expect(simulada.peticiones.some((una) => new URL(una.url).pathname === RUTA_AFINIDAD)).toBe(
+      false,
+    );
+  });
+
+  it('muestra las asignaturas de la oferta en el orden de Generación, con su puntaje', async () => {
+    simulada.responder('GET', RUTA_AFINIDAD, json(200, AFINIDAD));
+    const usuario = userEvent.setup();
+    const ficha = await abrirFicha(usuario);
+
+    await elegirPeriodo(usuario, ficha, /^2026-I ·/);
+
+    const asignaturas = await within(ficha).findAllByRole('button', { name: /punto/ });
+    expect(asignaturas.map((una) => una.textContent)).toEqual([
+      'PROGRAMACIÓN ORIENTADA A OBJETOS7,5 puntos',
+      'ANATOMÍA0 puntos',
+    ]);
+    expect(within(ficha).getByText(/versión 2 de la normativa/)).toBeInTheDocument();
+    const pedida = simulada.peticiones.find((una) => new URL(una.url).pathname === RUTA_AFINIDAD);
+    expect(new URL(pedida?.url ?? 'http://x').searchParams.get('periodo')).toBe('2026-I');
+  });
+
+  it('despliega de dónde sale cada punto, con el tope aplicado', async () => {
+    simulada.responder('GET', RUTA_AFINIDAD, json(200, AFINIDAD));
+    const usuario = userEvent.setup();
+    const ficha = await abrirFicha(usuario);
+    await elegirPeriodo(usuario, ficha, /^2026-I ·/);
+
+    await usuario.click(
+      await within(ficha).findByRole('button', { name: /PROGRAMACIÓN ORIENTADA A OBJETOS/ }),
+    );
+
+    expect(
+      await within(ficha).findByText(
+        'Título de cuarto nivel: MÁSTER EN TELEMÁTICA · solo campo amplio · 2 puntos',
+      ),
+    ).toBeVisible();
+    expect(
+      within(ficha).getByText('Curso: PROGRAMACIÓN EN JAVA · campo específico · 1,5 puntos'),
+    ).toBeVisible();
+    expect(within(ficha).getByText(/Se aplicó el tope de cursos/)).toBeVisible();
+  });
+
+  it('dice que nada coincide en una asignatura con puntaje 0', async () => {
+    simulada.responder('GET', RUTA_AFINIDAD, json(200, AFINIDAD));
+    const usuario = userEvent.setup();
+    const ficha = await abrirFicha(usuario);
+    await elegirPeriodo(usuario, ficha, /^2026-I ·/);
+
+    await usuario.click(await within(ficha).findByRole('button', { name: /ANATOMÍA/ }));
+
+    expect(await within(ficha).findByText(/Nada de la ficha coincide/)).toBeVisible();
+  });
+
+  it('un periodo sin abrir muestra el mensaje del catálogo, sin puntajes', async () => {
+    simulada.responder(
+      'GET',
+      RUTA_AFINIDAD,
+      json(409, {
+        titulo: 'Periodo sin abrir',
+        descripcion:
+          'El periodo todavía no tiene su versión de normativa. Ábrelo en «Periodos» para calcular la afinidad.',
+        codigo: 'GENERACION_PERIODO_SIN_ABRIR',
+      }),
+    );
+    const usuario = userEvent.setup();
+    const ficha = await abrirFicha(usuario);
+
+    await elegirPeriodo(usuario, ficha, /^2026-II ·/);
+
+    expect(await within(ficha).findByText(/Ábrelo en «Periodos»/)).toBeInTheDocument();
+    expect(within(ficha).queryByRole('button', { name: /punto/ })).not.toBeInTheDocument();
+  });
+
+  it('un periodo sin oferta lo dice', async () => {
+    simulada.responder('GET', RUTA_AFINIDAD, json(200, { ...AFINIDAD, puntajes: [] }));
+    const usuario = userEvent.setup();
+    const ficha = await abrirFicha(usuario);
+
+    await elegirPeriodo(usuario, ficha, /^2026-I ·/);
+
+    expect(
+      await within(ficha).findByText('Este periodo todavía no tiene oferta.'),
+    ).toBeInTheDocument();
+  });
+
+  it.each([
+    [502, 'COMUN_PROCESO_CON_ERROR', 'Servicio con problemas'],
+    [504, 'COMUN_PROCESO_SIN_RESPUESTA', 'Servicio sin respuesta'],
+  ])('un %i muestra el aviso sin detalles técnicos', async (estado, codigo, titulo) => {
+    simulada.responder(
+      'GET',
+      RUTA_AFINIDAD,
+      json(estado, { titulo, descripcion: 'Intenta de nuevo en unos minutos.', codigo }),
+    );
+    const usuario = userEvent.setup();
+    const ficha = await abrirFicha(usuario);
+
+    await elegirPeriodo(usuario, ficha, /^2026-I ·/);
+
+    expect(await within(ficha).findByText(titulo)).toBeInTheDocument();
+    expect(within(ficha).queryByText(new RegExp(codigo))).not.toBeInTheDocument();
+    expect(within(ficha).queryByRole('button', { name: /punto/ })).not.toBeInTheDocument();
   });
 });

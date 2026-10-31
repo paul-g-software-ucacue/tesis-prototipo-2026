@@ -10,6 +10,7 @@ import ec.mdd.docentes.adaptadores.salida.TransaccionSpring;
 import ec.mdd.docentes.aplicacion.ConsultarAsignablesServicio;
 import ec.mdd.docentes.aplicacion.ConsultarCargosServicio;
 import ec.mdd.docentes.aplicacion.ConsultarDocentesServicio;
+import ec.mdd.docentes.aplicacion.ConsultarFormacionServicio;
 import ec.mdd.docentes.aplicacion.ConsultarIdentificacionesServicio;
 import ec.mdd.docentes.aplicacion.ConsultarProyectosServicio;
 import ec.mdd.docentes.aplicacion.MantenerCargosServicio;
@@ -19,6 +20,7 @@ import ec.mdd.docentes.aplicacion.cargas.CargasDeDocentes;
 import ec.mdd.docentes.puertos.entrada.ConsultarAsignablesDelPeriodo;
 import ec.mdd.docentes.puertos.entrada.ConsultarCargos;
 import ec.mdd.docentes.puertos.entrada.ConsultarDocentes;
+import ec.mdd.docentes.puertos.entrada.ConsultarFormacion;
 import ec.mdd.docentes.puertos.entrada.ConsultarIdentificaciones;
 import ec.mdd.docentes.puertos.entrada.ConsultarProyectos;
 import ec.mdd.docentes.puertos.entrada.MantenerCargos;
@@ -75,6 +77,12 @@ public class ConfiguracionDocentes {
     public ConsultarDocentes consultarDocentes(
             RepositorioDocentes repositorio, ReferenciasAcademicas referencias) {
         return new ConsultarDocentesServicio(repositorio, referencias);
+    }
+
+    /** La formación de un docente, para otros procesos (F06-H01, ADR-023). */
+    @Bean
+    public ConsultarFormacion consultarFormacion(RepositorioDocentes repositorio) {
+        return new ConsultarFormacionServicio(repositorio);
     }
 
     /**

@@ -5,11 +5,13 @@ import ec.mdd.normativa.adaptadores.salida.RepositorioVersionesJdbc;
 import ec.mdd.normativa.adaptadores.salida.TransaccionSpring;
 import ec.mdd.normativa.aplicacion.AsociarVersionAPeriodoServicio;
 import ec.mdd.normativa.aplicacion.ConsultarNormativaServicio;
+import ec.mdd.normativa.aplicacion.ConsultarPesosDelPeriodoServicio;
 import ec.mdd.normativa.aplicacion.CrearVersionServicio;
 import ec.mdd.normativa.aplicacion.EditarVersionServicio;
 import ec.mdd.normativa.aplicacion.cargas.CargasDeNormativa;
 import ec.mdd.normativa.puertos.entrada.AsociarVersionAPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarNormativa;
+import ec.mdd.normativa.puertos.entrada.ConsultarPesosDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.CrearVersion;
 import ec.mdd.normativa.puertos.entrada.EditarVersion;
 import ec.mdd.normativa.puertos.salida.RegistroDeCambios;
@@ -51,6 +53,12 @@ public class ConfiguracionNormativa {
     @Bean
     public ConsultarNormativa consultarNormativa(RepositorioVersiones repositorio) {
         return new ConsultarNormativaServicio(repositorio);
+    }
+
+    /** Los pesos de afinidad de un periodo, para otros procesos (F06-H01, ADR-023). */
+    @Bean
+    public ConsultarPesosDelPeriodo consultarPesosDelPeriodo(RepositorioVersiones repositorio) {
+        return new ConsultarPesosDelPeriodoServicio(repositorio);
     }
 
     /** Crear una versión nueva copiando otra (F04-H02). */

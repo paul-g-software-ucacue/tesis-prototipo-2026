@@ -8,7 +8,7 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "generar:api": "openapi-typescript ../contratos/usuarios/openapi.yaml --output src/api/generado/usuarios.d.ts && openapi-typescript ../contratos/roles/openapi.yaml --output src/api/generado/roles.d.ts && openapi-typescript ../contratos/normativa/openapi.yaml --output src/api/generado/normativa.d.ts && openapi-typescript ../contratos/academico/openapi.yaml --output src/api/generado/academico.d.ts && openapi-typescript ../contratos/cargas/openapi.yaml --output src/api/generado/cargas.d.ts && openapi-typescript ../contratos/docentes/openapi.yaml --output src/api/generado/docentes.d.ts",
+    "generar:api": "openapi-typescript ../contratos/usuarios/openapi.yaml --output src/api/generado/usuarios.d.ts && openapi-typescript ../contratos/roles/openapi.yaml --output src/api/generado/roles.d.ts && openapi-typescript ../contratos/normativa/openapi.yaml --output src/api/generado/normativa.d.ts && openapi-typescript ../contratos/academico/openapi.yaml --output src/api/generado/academico.d.ts && openapi-typescript ../contratos/cargas/openapi.yaml --output src/api/generado/cargas.d.ts && openapi-typescript ../contratos/docentes/openapi.yaml --output src/api/generado/docentes.d.ts && openapi-typescript ../contratos/generacion/openapi.yaml --output src/api/generado/generacion.d.ts",
     "predev": "npm run generar:api",
     "dev": "vite",
     "prebuild": "npm run generar:api",

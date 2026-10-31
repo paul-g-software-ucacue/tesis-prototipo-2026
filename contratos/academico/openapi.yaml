@@ -25,6 +25,7 @@
 # esta operación, dentro del proceso (principio V); las leen también quienes leen los docentes.
 # Desde F03-H05, también las unidades y los periodos: con ellas Docentes valida la unidad de cada
 # cargo y decide si un proyecto es asignable en un periodo.
+# Desde F06-H01: las asignaturas ofertadas del periodo para Generación, por una ruta interna (ADR-023).
 openapi: 3.0.3
 info:
   title: MDD · Académico
@@ -34,6 +35,8 @@ servers:
 security:
   - bearer: []
 tags:
+  - name: Interno
+    description: Consultas entre procesos (ADR-023). El API Gateway no enruta /interno/.
   - name: Periodos
     description: >-
       Periodos académicos con su estado y su versión de normativa (RF-13, RF-19). Un periodo cerrado
@@ -845,6 +848,35 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /interno/academico/periodos/{codigo}/asignaturas-ofertadas:
+    parameters:
+      - $ref: '#/components/parameters/Codigo'
+    get:
+      tags: [Interno]
+      operationId: consultarAsignaturasOfertadas
+      summary: Devuelve las asignaturas con al menos un paralelo ofertado, sin repetir.
+      description: >-
+        Solo entre procesos, con el token de proceso: lo usa Generación para calcular la afinidad
+        (ADR-010, ADR-023). Un periodo sin oferta responde la lista vacía; uno que no existe, 404.
+      responses:
+        '200':
+          description: Las asignaturas, una vez cada una.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AsignaturaOfertada'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
   /api/academico/periodos/{codigo}/oferta:
     parameters:
       - $ref: '#/components/parameters/Codigo'
@@ -1114,6 +1146,19 @@ components:
           schema:
             $ref: '../comun/errores.yaml#/components/schemas/Error'
   schemas:
+    AsignaturaOfertada:
+      description: Lo que Generación necesita de una asignatura ofertada (principio IX).
+      type: object
+      required: [codigo, nombre, campoAmplio, campoEspecifico]
+      properties:
+        codigo:
+          type: string
+        nombre:
+          type: string
+        campoAmplio:
+          $ref: '#/components/schemas/CodigoDeCampoAmplio'
+        campoEspecifico:
+          $ref: '#/components/schemas/CodigoDeCampoEspecifico'
     CodigoDePeriodo:
       type: string
       pattern: '^[A-Za-z0-9._-]{1,20}$'

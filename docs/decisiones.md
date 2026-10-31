@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-72 · ADR-022.
+- **Siguiente número libre:** D-75 · ADR-024.
 
 ## Índice
 
@@ -71,6 +71,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-73 | 2026-10-25 | Los 16 cargos de gestor tienen código propio, del G06 al G21 | Aceptada | Diccionario de la carga 8 (catálogo CARGOS) |
 | ADR-022 | 2026-10-26 | El lenguaje publicado de las cargas y el motor del lote, en `:plataforma:lenguaje-cargas` | Aceptada | MD-13 y ADR-009 (cómo llega el lote al dueño) |
 | D-74 | 2026-10-26 | Los mensajes al usuario lo tratan de «tú» | Aceptada | Principio XIII (mensajes consistentes); motivos y pantalla de F01-H03 |
+| ADR-023 | 2026-10-30 | Consultas entre procesos por rutas internas con token de proceso | Aceptada | ADR-018 (extiende las rutas internas a las consultas), ADR-010 (precisa cómo se pide la ficha), ADR-009 (fija los errores 502 y 504) |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1317,3 +1318,42 @@ El catálogo `CARGOS` de `diccionario-de-datos.yaml` cambia la fila del rango po
 **Alternativas.** Pasar todo a «usted»: cambia el catálogo entero y casi toda la SPA, sin ganar claridad.
 
 **Consecuencias.** F01-H04 pasa a «tú» los motivos de Cargas y los textos de «Plantillas de carga»; una búsqueda comprueba que no queda ningún «usted» en ellos.
+
+## ADR-023. Consultas entre procesos por rutas internas con token de proceso
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-30 · **Decidido por:** autor de la tesis
+- **Origen:** plan de F06-H01 (`specs/028-puntaje-afinidad/research.md` §1 a §4)
+- **Modifica a:**
+  - ADR-018, que fija las rutas internas y el token de proceso solo para los eventos: los extiende a las consultas;
+  - ADR-010, que dice que la ficha se pide «por la API de Docentes»: se pide por una ruta interna de esa API, no por la pública;
+  - ADR-009, que dejó los errores 502 y 504 para la primera llamada entre procesos: los fija.
+- **Relacionadas:** D-49, D-65, ADR-006, ADR-016; principios V, IX, X y XIII
+
+**Contexto.**
+- F06-H01 es la primera historia que necesita leer datos de otro proceso: Generación corre en `distributivo`, y Académico, Normativa y Docentes, en `datos`.
+- Reenviar el token del usuario no sirve: leer Normativa exige `PARAMETROS:LECTURA`, y el Coordinador de carrera no lo tiene. Con su token, el cálculo fallaría justo para el actor de la historia.
+- El resto de la Ola 2 va a necesitar el mismo camino.
+
+**Decisión.**
+1. **Rutas internas.** El dueño del dato publica cada consulta en `/interno/<servicio>/…`. El API Gateway no las enruta, y `plataforma:seguridad` solo admite ahí el rol `PROCESO`.
+2. **Contrato.** Cada ruta se declara en el `openapi.yaml` de su dueño, sin `x-mdd-permiso`: la seguridad es por ruta y rol, no por permiso de usuario.
+3. **Lo mínimo.** Cada ruta devuelve solo lo que su consumidor necesita, con un modelo propio y no el del dominio del dueño (principio IX). El consumidor recibe esos datos en sus propios tipos (principio V).
+4. **El permiso es de la operación pública.** Quien decide si el usuario puede ver el resultado es la operación pública que inicia la consulta, no el dueño del dato.
+5. **Cliente.** `ConsultasEntreProcesos`, en `:plataforma:eventos`, hace un GET con el token de proceso y el plazo de `mdd.eventos.plazo`. Ante un 401, pide otro token y reintenta una vez. Un 404 es un resultado vacío, y cada adaptador dice qué significa.
+6. **Errores.**
+   - Si el otro proceso falla, responde 5xx, no se puede conectar con él o Usuarios no emite el token: 502 `COMUN_PROCESO_CON_ERROR`.
+   - Si no responde dentro del plazo: 504 `COMUN_PROCESO_SIN_RESPUESTA`.
+   - Nunca se responde un resultado parcial. `ErroresEntreProcesos`, en el mismo módulo, los registra en cada proceso que lo incluye.
+
+**Alternativas descartadas.**
+- **Reenviar el token del usuario:** ata cada consulta a los permisos de cada dueño, y obligaría a cambiar la matriz D-65 por un detalle técnico.
+- **Copiar los datos por eventos:** suma tablas de réplica y datos viejos.
+- **Mover el cálculo a `datos`:** contradice ADR-010.
+- **Un módulo de plataforma nuevo:** el token y el cliente HTTP ya están en `:plataforma:eventos` (principio X).
+
+**Consecuencias.**
+- Una ruta interna expone datos a cualquier proceso con token de proceso, así que debe devolver lo mínimo.
+- Un proceso `datos` caído impide estas consultas en `distributivo`. El usuario ve el error del catálogo dentro del plazo.
+- `plataforma:eventos` ya no es solo de eventos: su `package-info` lo dice.
+
+**Documentos que hay que poner al día.** `contratos/comun/errores.md`, con los dos códigos comunes.
