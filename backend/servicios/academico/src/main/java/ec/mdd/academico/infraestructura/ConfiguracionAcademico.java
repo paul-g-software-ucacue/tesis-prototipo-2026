@@ -11,6 +11,7 @@ import ec.mdd.academico.adaptadores.salida.RepositorioPeriodosJdbc;
 import ec.mdd.academico.adaptadores.salida.TransaccionSpring;
 import ec.mdd.academico.aplicacion.AbrirPeriodoServicio;
 import ec.mdd.academico.aplicacion.CambiarEstadoPeriodoServicio;
+import ec.mdd.academico.aplicacion.ConsultarAsignaturasOfertadasServicio;
 import ec.mdd.academico.aplicacion.ConsultarCarrerasServicio;
 import ec.mdd.academico.aplicacion.ConsultarEstructuraServicio;
 import ec.mdd.academico.aplicacion.ConsultarOfertaServicio;
@@ -25,6 +26,7 @@ import ec.mdd.academico.aplicacion.RegistrarPeriodoServicio;
 import ec.mdd.academico.aplicacion.cargas.CargasDeAcademico;
 import ec.mdd.academico.puertos.entrada.AbrirPeriodo;
 import ec.mdd.academico.puertos.entrada.CambiarEstadoPeriodo;
+import ec.mdd.academico.puertos.entrada.ConsultarAsignaturasOfertadas;
 import ec.mdd.academico.puertos.entrada.ConsultarCarreras;
 import ec.mdd.academico.puertos.entrada.ConsultarEstructura;
 import ec.mdd.academico.puertos.entrada.ConsultarOferta;
@@ -199,6 +201,13 @@ public class ConfiguracionAcademico {
     @Bean
     public ConsultarCarreras consultarCarreras(RepositorioCarreras repositorio) {
         return new ConsultarCarrerasServicio(repositorio);
+    }
+
+    /** Las asignaturas ofertadas de un periodo, para otros procesos (F06-H01, ADR-023). */
+    @Bean
+    public ConsultarAsignaturasOfertadas consultarAsignaturasOfertadas(
+            RepositorioPeriodos periodos, RepositorioOferta oferta, RepositorioCarreras carreras) {
+        return new ConsultarAsignaturasOfertadasServicio(periodos, oferta, carreras);
     }
 
     /** Las referencias que Docentes valida y muestra (F03-H04): su API publicada en el proceso. */

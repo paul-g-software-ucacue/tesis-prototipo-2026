@@ -31,6 +31,20 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+    ProcesoConError:
+      description: >-
+        Otro proceso falló o no se pudo conectar con él (COMUN_PROCESO_CON_ERROR, ADR-023).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ProcesoSinRespuesta:
+      description: >-
+        Otro proceso no respondió dentro del plazo (COMUN_PROCESO_SIN_RESPUESTA, ADR-023).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
   schemas:
     Error:
       description: >-

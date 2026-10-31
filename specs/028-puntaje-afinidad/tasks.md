@@ -58,7 +58,7 @@ Plan aprobado por el autor el 2026-10-30.
 
 ## Phase 1: Setup
 
-- [ ] T001 Escribir ADR-023 («Consultas entre procesos por rutas internas con token de proceso») en `docs/decisiones.md`, con su fila en el índice:
+- [X] T001 Escribir ADR-023 («Consultas entre procesos por rutas internas con token de proceso») en `docs/decisiones.md`, con su fila en el índice:
   - extiende ADR-018 de eventos a consultas;
   - precisa ADR-010: la ficha se pide por una ruta interna de la API de Docentes;
   - fija `COMUN_PROCESO_CON_ERROR` (502) y `COMUN_PROCESO_SIN_RESPUESTA` (504);
@@ -70,14 +70,14 @@ Plan aprobado por el autor el 2026-10-30.
 
 **Purpose**: los contratos y el mecanismo entre procesos que usa toda la historia.
 
-- [ ] T002 Contratos (principio IV), según [contracts/generacion.md](contracts/generacion.md):
+- [X] T002 Contratos (principio IV), según [contracts/generacion.md](contracts/generacion.md):
   - `contratos/generacion/openapi.yaml`: `consultarAfinidadDelDocente` y sus esquemas;
   - `contratos/academico/openapi.yaml`, `contratos/normativa/openapi.yaml` y `contratos/docentes/openapi.yaml`: las tres rutas internas, con la etiqueta `Interno`, sin `x-mdd-permiso`;
   - `contratos/comun/errores.yaml`: las respuestas 502 y 504;
   - `contratos/comun/errores.md`: los 5 códigos, con sus 8 columnas.
-- [ ] T003 [P] Definir `PROCESO_CON_ERROR` (502) y `PROCESO_SIN_RESPUESTA` (504) en `NUC/main/java/ec/mdd/plataforma/errores/nucleo/CodigosComunes.java`, con su prueba.
-- [ ] T004 [P] Extender `backend/plataforma/pruebas/src/main/java/ec/mdd/plataforma/pruebas/ReceptorSimulado.java` para que atienda GET: una respuesta programable por ruta (estado y cuerpo), que usa el `retraso` que ya existe y guarda el encabezado `Authorization`. Las pruebas de eventos siguen pasando sin cambios.
-- [ ] T005 `EVE/test/java/ec/mdd/plataforma/eventos/ConsultasEntreProcesosTest.java`, contra `ReceptorSimulado`:
+- [X] T003 [P] Definir `PROCESO_CON_ERROR` (502) y `PROCESO_SIN_RESPUESTA` (504) en `NUC/main/java/ec/mdd/plataforma/errores/nucleo/CodigosComunes.java`, con su prueba.
+- [X] T004 [P] Extender `backend/plataforma/pruebas/src/main/java/ec/mdd/plataforma/pruebas/ReceptorSimulado.java` para que atienda GET: una respuesta programable por ruta (estado y cuerpo), que usa el `retraso` que ya existe y guarda el encabezado `Authorization`. Las pruebas de eventos siguen pasando sin cambios.
+- [X] T005 `EVE/test/java/ec/mdd/plataforma/eventos/ConsultasEntreProcesosTest.java`, contra `ReceptorSimulado`:
   - 200 con el cuerpo;
   - 404 como resultado vacío;
   - 401: otro token y un reintento;
@@ -85,7 +85,7 @@ Plan aprobado por el autor el 2026-10-30.
   - plazo agotado: `ProcesoSinRespuesta`;
   - Usuarios no emite el token: `ProcesoConError`;
   - cada excepción responde su código, por `ErroresEntreProcesosTest`.
-- [ ] T006 Implementar `ConsultasEntreProcesos`, `ProcesoConError` y `ProcesoSinRespuesta` en `EVE/main/java/ec/mdd/plataforma/eventos/`, con `Clientes.http(plazo)` y `ProveedorDeTokenDeProceso`, además de `ErroresEntreProcesos` (`CatalogoDeErrores`). Registrar sus beans en `EventosAutoConfiguracion.java`, agregar `implementation project(':plataforma:errores-nucleo')` en `backend/plataforma/eventos/build.gradle` y actualizar el `package-info.java` del paquete para que mencione las consultas. Hace pasar T005.
+- [X] T006 Implementar `ConsultasEntreProcesos`, `ProcesoConError` y `ProcesoSinRespuesta` en `EVE/main/java/ec/mdd/plataforma/eventos/`, con `Clientes.http(plazo)` y `ProveedorDeTokenDeProceso`, además de `ErroresEntreProcesos` (`CatalogoDeErrores`). Registrar sus beans en `EventosAutoConfiguracion.java`, agregar `implementation project(':plataforma:errores-nucleo')` en `backend/plataforma/eventos/build.gradle` y actualizar el `package-info.java` del paquete para que mencione las consultas. Hace pasar T005.
 
 **Checkpoint**: Generación puede consultar otro proceso con plazo y traducir sus fallos.
 
@@ -99,7 +99,7 @@ Plan aprobado por el autor el 2026-10-30.
 
 ### El dominio
 
-- [ ] T007 [US1] `GEN/test/java/ec/mdd/generacion/dominio/CalculadoraAfinidadTest.java`, sin dobles y con pesos que no son los de por defecto (spec US1, escenarios 1 a 7):
+- [X] T007 [US1] `GEN/test/java/ec/mdd/generacion/dominio/CalculadoraAfinidadTest.java`, sin dobles y con pesos que no son los de por defecto (spec US1, escenarios 1 a 7):
   - cuarto nivel con el campo específico igual, y el desglose que lo nombra;
   - tercer y cuarto nivel con solo el campo amplio igual: suman menos;
   - dos títulos que coinciden: suman los dos;
@@ -108,56 +108,55 @@ Plan aprobado por el autor el 2026-10-30.
   - más cursos que el tope: la suma no pasa de `topeCursos`, `topeAplicado` es verdadero y el último curso que entra lleva lo que cabe;
   - un curso que no cabe en el tope no aparece en el desglose, y ningún aporte es 0;
   - nada coincide: total 0 y desglose vacío;
-  - ficha sin tercer nivel;
   - pesos con dos decimales, y un tope que corta un curso a una fracción de su peso.
-- [ ] T008 [US1] Implementar en `GEN/main/java/ec/mdd/generacion/dominio/`: `CalculadoraAfinidad`, `PuntajeAfinidad`, `AporteDeAfinidad`, `TipoDeAporte`, `CoincidenciaDeCampo`, `PesosAfinidad`, `FormacionDelDocente` y `AsignaturaOfertada`, según [data-model.md](data-model.md), con `BigDecimal`. El campo amplio de cuarto nivel son los dos primeros dígitos de su campo específico. Hace pasar T007.
+- [X] T008 [US1] Implementar en `GEN/main/java/ec/mdd/generacion/dominio/`: `CalculadoraAfinidad`, `PuntajeAfinidad`, `AporteDeAfinidad`, `TipoDeAporte`, `CoincidenciaDeCampo`, `PesosAfinidad`, `FormacionDelDocente` y `AsignaturaOfertada`, según [data-model.md](data-model.md), con `BigDecimal`. El campo amplio de cuarto nivel son los dos primeros dígitos de su campo específico. Hace pasar T007.
 
 ### Las consultas internas (en `datos`)
 
-- [ ] T009 [P] [US1] Académico: `InternoAcademicoContratoTest` en `ACA/test/java/ec/mdd/academico/adaptadores/entrada/` y la prueba del servicio:
+- [X] T009 [P] [US1] Académico: `InternoAcademicoContratoTest` en `ACA/test/java/ec/mdd/academico/adaptadores/entrada/` y la prueba del servicio:
   - cada asignatura con un paralelo `OFERTADA`, una sola vez, con sus dos campos;
   - un periodo sin oferta: lista vacía;
   - un periodo cerrado devuelve su oferta;
   - la respuesta no trae palabras clave ni tronco común;
   - un periodo que no existe: 404;
   - un token de usuario: 403.
-- [ ] T010 [P] [US1] Implementar en Académico el puerto `ConsultarAsignaturasOfertadas` en `ACA/main/java/ec/mdd/academico/puertos/entrada/`, su servicio de aplicación, y `InternoAcademicoControlador` en `adaptadores/entrada`. Hace pasar T009.
-- [ ] T011 [P] [US1] Normativa: `InternoNormativaContratoTest` en `NOR/test/java/ec/mdd/normativa/adaptadores/entrada/` y la prueba del servicio:
+- [X] T010 [P] [US1] Implementar en Académico el puerto `ConsultarAsignaturasOfertadas` en `ACA/main/java/ec/mdd/academico/puertos/entrada/`, su servicio de aplicación, y `InternoAcademicoControlador` en `adaptadores/entrada`. Hace pasar T009.
+- [X] T011 [P] [US1] Normativa: `InternoNormativaContratoTest` en `NOR/test/java/ec/mdd/normativa/adaptadores/entrada/` y la prueba del servicio:
   - un periodo con versión: su número y sus 7 pesos;
   - un periodo cerrado devuelve su versión;
   - un periodo sin versión: 404;
   - un token de usuario: 403.
-- [ ] T012 [P] [US1] Implementar en Normativa el puerto `ConsultarPesosDelPeriodo` en `NOR/main/java/ec/mdd/normativa/puertos/entrada/`, su servicio de aplicación, e `InternoNormativaControlador` en `adaptadores/entrada`. Hace pasar T011.
-- [ ] T013 [P] [US1] Docentes: `InternoDocentesContratoTest` en `DOC/test/java/ec/mdd/docentes/adaptadores/entrada/` y la prueba del servicio:
+- [X] T012 [P] [US1] Implementar en Normativa el puerto `ConsultarPesosDelPeriodo` en `NOR/main/java/ec/mdd/normativa/puertos/entrada/`, su servicio de aplicación, e `InternoNormativaControlador` en `adaptadores/entrada`. Hace pasar T011.
+- [X] T013 [P] [US1] Docentes: `InternoDocentesContratoTest` en `DOC/test/java/ec/mdd/docentes/adaptadores/entrada/` y la prueba del servicio:
   - la formación con sus campos;
   - una respuesta que no incluye correo, teléfono ni contrato, ni asignaturas afines;
   - un docente que no existe: 404;
   - un token de usuario: 403.
-- [ ] T014 [P] [US1] Implementar en Docentes el puerto `ConsultarFormacion` en `DOC/main/java/ec/mdd/docentes/puertos/entrada/`, su servicio de aplicación, e `InternoDocentesControlador` en `adaptadores/entrada`. Hace pasar T013.
+- [X] T014 [P] [US1] Implementar en Docentes el puerto `ConsultarFormacion` en `DOC/main/java/ec/mdd/docentes/puertos/entrada/`, su servicio de aplicación, e `InternoDocentesControlador` en `adaptadores/entrada`. Hace pasar T013.
 
 ### La operación de Generación
 
-- [ ] T015 [US1] `GEN/test/java/ec/mdd/generacion/aplicacion/ConsultarAfinidadServicioTest.java`, con Mockito:
+- [X] T015 [US1] `GEN/test/java/ec/mdd/generacion/aplicacion/ConsultarAfinidadServicioTest.java`, con Mockito:
   - ordena del mayor puntaje al menor y, a igual puntaje, por nombre (FR-008);
   - consulta en el orden de research §2 y corta en el primer fallo;
   - periodo inexistente, sin versión o docente inexistente: su excepción, sin puntajes;
   - sin oferta: lista vacía, con la versión.
-- [ ] T016 [US1] Implementar:
+- [X] T016 [US1] Implementar:
   - el puerto `ConsultarAfinidad` en `GEN/main/java/ec/mdd/generacion/puertos/entrada/`;
   - el puerto `DatosParaAfinidad` en `GEN/main/java/ec/mdd/generacion/puertos/salida/`;
   - `ConsultarAfinidadServicio` en `GEN/main/java/ec/mdd/generacion/aplicacion/`.
 
   Hace pasar T015.
-- [ ] T017 [US1] `GEN/test/java/ec/mdd/generacion/adaptadores/salida/DatosDesdeProcesoDatosTest.java`, contra `ReceptorSimulado`: traduce las 3 respuestas a los valores del dominio, y cada 404 al resultado que le corresponde.
-- [ ] T018 [US1] Implementar `DatosDesdeProcesoDatos` en `GEN/main/java/ec/mdd/generacion/adaptadores/salida/` y la propiedad `mdd.procesos.datos` en `backend/apps/distributivo/src/main/resources/application.yaml`. Hace pasar T017.
-- [ ] T019 [US1] `GEN/test/java/ec/mdd/generacion/adaptadores/entrada/AfinidadContratoTest.java` y `VerificadorDePermisos`:
+- [X] T017 [US1] `GEN/test/java/ec/mdd/generacion/adaptadores/salida/DatosDesdeProcesoDatosTest.java`, contra `ReceptorSimulado`: traduce las 3 respuestas a los valores del dominio, y cada 404 al resultado que le corresponde.
+- [X] T018 [US1] Implementar `DatosDesdeProcesoDatos` en `GEN/main/java/ec/mdd/generacion/adaptadores/salida/` y la propiedad `mdd.procesos.datos` en `backend/apps/distributivo/src/main/resources/application.yaml`. Hace pasar T017.
+- [X] T019 [US1] `GEN/test/java/ec/mdd/generacion/adaptadores/entrada/AfinidadContratoTest.java` y `VerificadorDePermisos`:
   - 200 válido contra el contrato;
   - 400 con el periodo o la identificación mal escritos, con caso válido e inválido;
   - 404 y 409 con sus códigos;
   - 502 y 504;
   - 403 sin permiso, y 200 con cada uno de los tres permisos.
-- [ ] T020 [US1] Implementar `AfinidadControlador` y `ErroresGeneracion` en `GEN/main/java/ec/mdd/generacion/adaptadores/entrada/`. Hace pasar T019 y `VerificadorDeCatalogo`.
-- [ ] T021 [US1] Comprobar `ArquitecturaTest` y `ModulosTest` de los 4 servicios y de las apps `datos` y `distributivo`. Ajustar sin relajar ninguna regla.
+- [X] T020 [US1] Implementar `AfinidadControlador` y `ErroresGeneracion` en `GEN/main/java/ec/mdd/generacion/adaptadores/entrada/`. Hace pasar T019 y `VerificadorDeCatalogo`.
+- [X] T021 [US1] Comprobar `ArquitecturaTest` y `ModulosTest` de los 4 servicios y de las apps `datos` y `distributivo`. Ajustar sin relajar ninguna regla.
 
 **Checkpoint**: los tres primeros escenarios del issue pasan por la API.
 

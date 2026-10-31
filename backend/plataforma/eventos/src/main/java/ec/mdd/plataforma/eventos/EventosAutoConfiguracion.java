@@ -1,5 +1,6 @@
 package ec.mdd.plataforma.eventos;
 
+import ec.mdd.plataforma.errores.nucleo.CatalogoDeErrores;
 import java.time.Clock;
 import java.util.concurrent.Executor;
 import javax.sql.DataSource;
@@ -67,6 +68,17 @@ public class EventosAutoConfiguracion {
             PropiedadesEventos propiedades, ProveedorDeTokenDeProceso tokens) {
         return new ClienteDeEventos(
                 Clientes.http(propiedades.plazo()), propiedades.destinos(), tokens);
+    }
+
+    @Bean
+    public ConsultasEntreProcesos consultasEntreProcesos(
+            PropiedadesEventos propiedades, ProveedorDeTokenDeProceso tokens) {
+        return new ConsultasEntreProcesos(Clientes.http(propiedades.plazo()), tokens);
+    }
+
+    @Bean
+    public CatalogoDeErrores erroresEntreProcesos() {
+        return new ErroresEntreProcesos();
     }
 
     @Bean

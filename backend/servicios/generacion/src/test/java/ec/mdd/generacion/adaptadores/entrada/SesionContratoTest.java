@@ -20,7 +20,7 @@ import org.springframework.test.web.servlet.MvcResult;
  * La sesión actual de generacion cumple {@code contratos/generacion/openapi.yaml} (principio IV,
  * D-39).
  */
-@WebMvcTest
+@WebMvcTest(SesionControlador.class)
 @ImportAutoConfiguration({SeguridadProcesoAutoConfiguracion.class, ErroresAutoConfiguracion.class})
 @TestPropertySource(
         properties =

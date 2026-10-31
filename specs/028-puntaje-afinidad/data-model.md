@@ -39,7 +39,7 @@ Los pesos, los aportes y el total son `BigDecimal`; nunca `double`.
 
 | Tipo | Campos |
 |---|---|
-| `FormacionDelDocente` | Tercer nivel (título, campo amplio, campo específico; opcional), cuartos niveles (título, campo específico), experiencias (cargo, campo específico), cursos (nombre, campo específico). |
+| `FormacionDelDocente` | Tercer nivel (título, campo amplio, campo específico; obligatorio en la ficha), cuartos niveles (título, campo específico), experiencias (cargo, campo específico), cursos (nombre, campo específico). |
 | `AsignaturaOfertada` | Código, nombre, campo amplio, campo específico. |
 | `PesosAfinidad` | Los 7 valores de Normativa. |
 

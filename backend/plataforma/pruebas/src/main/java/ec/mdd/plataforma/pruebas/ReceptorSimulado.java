@@ -12,7 +12,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -25,6 +27,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * que devuelve {@code token-1}, {@code token-2}… con 5 minutos de vigencia, y {@code
  * /interno/usuarios/eventos}, que responde 204 salvo que se le pida otra cosa. Guarda cada petición
  * de eventos para comprobarla. Se puede detener y volver a levantar en el mismo puerto.
+ *
+ * <p>Cualquier otra ruta es una consulta entre procesos (ADR-023): responde lo que se le programó
+ * con {@link #responderConsulta}, en orden, y 404 si no le queda nada.
  */
 public final class ReceptorSimulado implements AutoCloseable {
 
@@ -42,7 +47,11 @@ public final class ReceptorSimulado implements AutoCloseable {
      */
     public record Peticion(String autorizacion, String cuerpo) {}
 
+    private record Respuesta(int estado, String cuerpo) {}
+
     private final List<Peticion> eventos = new CopyOnWriteArrayList<>();
+    private final List<Peticion> consultas = new CopyOnWriteArrayList<>();
+    private final Map<String, Deque<Respuesta>> respuestas = new HashMap<>();
     private final Deque<Integer> estadosEventos = new ArrayDeque<>();
     private final Deque<Integer> estadosToken = new ArrayDeque<>();
     private final AtomicInteger tokens = new AtomicInteger();
@@ -66,6 +75,7 @@ public final class ReceptorSimulado implements AutoCloseable {
         }
         servidor.createContext(RUTA_TOKEN, this::atenderToken);
         servidor.createContext(RUTA_EVENTOS, this::atenderEvento);
+        servidor.createContext("/", this::atenderConsulta);
         servidor.setExecutor(Executors.newCachedThreadPool());
         servidor.start();
         puerto = servidor.getAddress().getPort();
@@ -105,7 +115,20 @@ public final class ReceptorSimulado implements AutoCloseable {
         }
     }
 
-    /** Cuánto espera el receptor de eventos antes de responder, para probar el plazo. */
+    /**
+     * La próxima respuesta de una consulta, después de las que ya tenga programadas.
+     *
+     * @param ruta la ruta, sin la parte de la consulta
+     * @param estado el estado HTTP
+     * @param cuerpo el cuerpo JSON, o vacío
+     */
+    public synchronized void responderConsulta(String ruta, int estado, String cuerpo) {
+        respuestas
+                .computeIfAbsent(ruta, clave -> new ArrayDeque<>())
+                .add(new Respuesta(estado, cuerpo));
+    }
+
+    /** Cuánto espera el receptor antes de responder, para probar el plazo. */
     public void retrasar(Duration espera) {
         this.retraso = espera;
     }
@@ -113,6 +136,11 @@ public final class ReceptorSimulado implements AutoCloseable {
     /** Las peticiones que recibió el receptor de eventos. */
     public List<Peticion> eventosRecibidos() {
         return List.copyOf(eventos);
+    }
+
+    /** Las consultas que recibió, con su encabezado {@code Authorization}. */
+    public List<Peticion> consultasRecibidas() {
+        return List.copyOf(consultas);
     }
 
     /** Cuántos tokens emitió. */
@@ -155,6 +183,30 @@ public final class ReceptorSimulado implements AutoCloseable {
             eventos.add(new Peticion(autorizacion == null ? "" : autorizacion, cuerpo));
             intercambio.sendResponseHeaders(siguiente(estadosEventos, 204), -1);
         }
+    }
+
+    private void atenderConsulta(HttpExchange intercambio) throws IOException {
+        try (intercambio) {
+            intercambio.getRequestBody().readAllBytes();
+            String autorizacion = intercambio.getRequestHeaders().getFirst("Authorization");
+            consultas.add(new Peticion(autorizacion == null ? "" : autorizacion, ""));
+            Respuesta respuesta = siguiente(intercambio.getRequestURI().getPath());
+            esperar();
+            byte[] bytes = respuesta.cuerpo().getBytes(StandardCharsets.UTF_8);
+            if (bytes.length == 0) {
+                intercambio.sendResponseHeaders(respuesta.estado(), -1);
+                return;
+            }
+            intercambio.getResponseHeaders().add("Content-Type", "application/json");
+            intercambio.sendResponseHeaders(respuesta.estado(), bytes.length);
+            intercambio.getResponseBody().write(bytes);
+        }
+    }
+
+    private synchronized Respuesta siguiente(String ruta) {
+        Deque<Respuesta> programadas = respuestas.get(ruta);
+        Respuesta respuesta = programadas == null ? null : programadas.poll();
+        return respuesta == null ? new Respuesta(404, "") : respuesta;
     }
 
     private synchronized int siguiente(Deque<Integer> estados, int porDefecto) {

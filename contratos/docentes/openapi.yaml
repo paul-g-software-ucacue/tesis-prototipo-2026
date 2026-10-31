@@ -15,6 +15,8 @@
 # asignable en un periodo si está aprobado o en ejecución y su vigencia se cruza con el periodo
 # (RN-25). Los mismos permisos de escritura; para leer, los mismos tres: «Proyectos y horas de
 # participantes: lectura» no basta, porque su «solo lo propio» todavía no se puede aplicar (D-64).
+# Desde F06-H01: la formación del docente para Generación, por una ruta interna, sin datos de
+# contacto ni de contrato (ADR-023, principio IX).
 openapi: 3.0.3
 info:
   title: MDD · Docentes
@@ -24,6 +26,8 @@ servers:
 security:
   - bearer: []
 tags:
+  - name: Interno
+    description: Consultas entre procesos (ADR-023). El API Gateway no enruta /interno/.
   - name: Docentes
     description: >-
       Los docentes con su ficha académica (RF-16, RF-17, carga 6). Ninguno se borra: cambia su
@@ -120,6 +124,33 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /interno/docentes/{identificacion}/formacion:
+    parameters:
+      - $ref: '#/components/parameters/Identificacion'
+    get:
+      tags: [Interno]
+      operationId: consultarFormacion
+      summary: Devuelve la formación del docente, con sus campos de conocimiento.
+      description: >-
+        Solo entre procesos, con el token de proceso: lo usa Generación para calcular la afinidad
+        (ADR-010, ADR-023). No lleva datos de contacto ni de contrato (principio IX).
+      responses:
+        '200':
+          description: La formación.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormacionDelDocente'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
   /api/docentes/docentes/{identificacion}:
     parameters:
       - $ref: '#/components/parameters/Identificacion'
@@ -689,6 +720,44 @@ components:
           exclusiveMinimum: true
           maximum: 60
           example: 3
+    FormacionDelDocente:
+      description: Lo que Generación necesita de la ficha académica (principio IX).
+      type: object
+      required: [tercerNivel, cuartoNivel, experiencia, cursos]
+      properties:
+        tercerNivel:
+          $ref: '#/components/schemas/TercerNivelDeFormacion'
+        cuartoNivel:
+          type: array
+          items:
+            $ref: '#/components/schemas/ElementoDeFormacion'
+        experiencia:
+          type: array
+          items:
+            $ref: '#/components/schemas/ElementoDeFormacion'
+        cursos:
+          type: array
+          items:
+            $ref: '#/components/schemas/ElementoDeFormacion'
+    TercerNivelDeFormacion:
+      type: object
+      required: [nombre, campoAmplio, campoEspecifico]
+      properties:
+        nombre:
+          $ref: '#/components/schemas/Texto150'
+        campoAmplio:
+          $ref: '#/components/schemas/CodigoDeCampoAmplio'
+        campoEspecifico:
+          $ref: '#/components/schemas/CodigoDeCampoEspecifico'
+    ElementoDeFormacion:
+      description: Un título de cuarto nivel, un cargo o un curso, con su campo específico.
+      type: object
+      required: [nombre, campoEspecifico]
+      properties:
+        nombre:
+          $ref: '#/components/schemas/Texto150'
+        campoEspecifico:
+          $ref: '#/components/schemas/CodigoDeCampoEspecifico'
     FichaAcademica:
       description: Formación y experiencia del docente, dentro de su registro (RF-17).
       type: object

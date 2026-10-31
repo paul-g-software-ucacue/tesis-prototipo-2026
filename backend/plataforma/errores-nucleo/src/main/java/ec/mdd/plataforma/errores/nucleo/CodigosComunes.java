@@ -86,6 +86,24 @@ public final class CodigosComunes {
                     "Servicio no disponible",
                     "El servicio no está disponible en este momento. Intenta de nuevo en unos minutos.");
 
+    /** 502: otro proceso falló o no se pudo conectar con él (ADR-023). */
+    public static final DefinicionDeCodigo PROCESO_CON_ERROR =
+            new DefinicionDeCodigo(
+                    "COMUN_PROCESO_CON_ERROR",
+                    502,
+                    "Servicio con problemas",
+                    "Una parte del sistema tuvo un problema y no se pudo completar la consulta."
+                            + " Intenta de nuevo en unos minutos.");
+
+    /** 504: otro proceso no respondió dentro del plazo (ADR-009, ADR-023). */
+    public static final DefinicionDeCodigo PROCESO_SIN_RESPUESTA =
+            new DefinicionDeCodigo(
+                    "COMUN_PROCESO_SIN_RESPUESTA",
+                    504,
+                    "Servicio sin respuesta",
+                    "Una parte del sistema tardó demasiado en responder. Intenta de nuevo en unos"
+                            + " minutos.");
+
     /** 400: un receptor de eventos recibe un tipo sin manejador (ADR-018). */
     public static final DefinicionDeCodigo EVENTO_NO_RECONOCIDO =
             new DefinicionDeCodigo(
@@ -126,6 +144,8 @@ public final class CodigosComunes {
                     CONTENIDO_DEMASIADO_GRANDE,
                     TIPO_NO_SOPORTADO,
                     SERVICIO_NO_DISPONIBLE,
+                    PROCESO_CON_ERROR,
+                    PROCESO_SIN_RESPUESTA,
                     EVENTO_NO_RECONOCIDO,
                     SEGURIDAD_NO_AUTENTICADO,
                     ACCESO_NO_AUTORIZADO);

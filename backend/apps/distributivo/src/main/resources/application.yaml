@@ -27,6 +27,8 @@ mdd.eventos.reenvio.intervalo: PT30S
 mdd.eventos.destinos.usuarios: ${MDD_URI_IDENTIDAD:http://identidad:8080}/interno/usuarios/eventos
 mdd.eventos.token-proceso: ${MDD_URI_IDENTIDAD:http://identidad:8080}/interno/usuarios/token-proceso
 mdd.eventos.proceso: distributivo
+# Las consultas al proceso datos, por sus rutas internas (ADR-023).
+mdd.procesos.datos: ${MDD_URI_DATOS:http://datos:8080}
 # Clave del proceso (D-49); vacía, el proceso arranca y las entregas fallan hasta configurarla.
 mdd.eventos.clave: ${MDD_CLAVE_PROCESO_DISTRIBUTIVO:}
 # Evento de prueba de Generación, apagado por defecto; solo en local y en la CI (D-48).

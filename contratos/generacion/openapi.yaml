@@ -1,6 +1,7 @@
 # Contrato de generacion. En B00-H03 solo tiene la sesión actual, para probar la autenticación de
 # punta a punta (D-39); las operaciones de negocio llegan con sus historias. Desde B00-H05, el
-# evento de prueba, apagado por defecto (D-48).
+# evento de prueba, apagado por defecto (D-48). Desde F06-H01: el puntaje de afinidad de un docente en
+# la oferta de un periodo (RF-17, RN-24, ADR-010). Lo leen quienes pueden leer un docente (D-70).
 openapi: 3.0.3
 info:
   title: MDD · generacion
@@ -14,6 +15,8 @@ tags:
     description: Sesión actual.
   - name: EventosPrueba
     description: Evento de prueba entre procesos, solo en el entorno de prueba (D-48).
+  - name: Afinidad
+    description: El puntaje de afinidad de un docente, con su desglose (RF-17, RN-24, ADR-010).
 paths:
   /api/generacion/sesion:
     get:
@@ -33,6 +36,68 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/generacion/docentes/{identificacion}/afinidad:
+    parameters:
+      - name: identificacion
+        in: path
+        required: true
+        description: Número de identificación del docente, el que usa Docentes.
+        schema:
+          type: string
+          pattern: '^[0-9A-Z]{1,13}$'
+        example: '0109990010'
+      - name: periodo
+        in: query
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2026-I
+    get:
+      tags: [Afinidad]
+      operationId: consultarAfinidadDelDocente
+      summary: Devuelve el puntaje del docente en cada asignatura de la oferta del periodo.
+      description: >-
+        Se calcula en cada consulta con la ficha del docente y los pesos de la versión de normativa
+        que rige el periodo; no se guarda. Ordenado del mayor puntaje al menor y, a igual puntaje,
+        por nombre. Sin oferta, la lista viene vacía.
+      x-mdd-permiso: [DOCENTES:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]
+      responses:
+        '200':
+          description: El puntaje por asignatura.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AfinidadDelDocente'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: >-
+            El periodo (GENERACION_PERIODO_NO_ENCONTRADO) o el docente
+            (GENERACION_DOCENTE_NO_ENCONTRADO) no existen.
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '409':
+          description: El periodo no tiene su versión de normativa (GENERACION_PERIODO_SIN_ABRIR).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
   /api/generacion/eventos-prueba:
     post:
       tags: [EventosPrueba]
@@ -70,6 +135,61 @@ components:
           type: string
           format: uuid
           description: Identificador del evento publicado.
+    AfinidadDelDocente:
+      type: object
+      required: [periodo, version, puntajes]
+      properties:
+        periodo:
+          type: string
+          description: Código del periodo.
+        version:
+          type: integer
+          minimum: 1
+          description: Número de la versión de normativa que da los pesos.
+        puntajes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PuntajeAfinidad'
+    PuntajeAfinidad:
+      type: object
+      required: [asignatura, nombre, total, topeAplicado, desglose]
+      properties:
+        asignatura:
+          type: string
+          description: Código de la asignatura.
+        nombre:
+          type: string
+        total:
+          type: number
+          minimum: 0
+        topeAplicado:
+          type: boolean
+          description: Si los cursos relacionados pasaban del tope de la versión.
+        desglose:
+          type: array
+          items:
+            $ref: '#/components/schemas/AporteDeAfinidad'
+    AporteDeAfinidad:
+      type: object
+      required: [tipo, nombre, coincidencia, aporte]
+      properties:
+        tipo:
+          $ref: '#/components/schemas/TipoDeAporte'
+        nombre:
+          type: string
+          description: El título, el cargo o el nombre del curso.
+        coincidencia:
+          $ref: '#/components/schemas/CoincidenciaDeCampo'
+        aporte:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+    TipoDeAporte:
+      type: string
+      enum: [TERCER_NIVEL, CUARTO_NIVEL, EXPERIENCIA, CURSO]
+    CoincidenciaDeCampo:
+      type: string
+      enum: [CAMPO_ESPECIFICO, CAMPO_AMPLIO]
   securitySchemes:
     bearer:
       $ref: '../comun/seguridad.yaml#/components/securitySchemes/bearer'

@@ -6,6 +6,7 @@
 # Leer exige «Parámetros y normativa: lectura» y escribir, «Parámetros y normativa: escritura», con
 # x-mdd-permiso (ADR-021). Las dos las tienen el Administrador del sistema y el Vicerrector
 # académico (D-65, D-66, D-67).
+# Desde F06-H01: los pesos de afinidad del periodo para Generación, por una ruta interna (ADR-023).
 openapi: 3.0.3
 info:
   title: MDD · Normativa
@@ -21,6 +22,8 @@ tags:
     description: >-
       La versión de normativa que rige cada periodo académico (asignación normativa). Un periodo
       tiene una sola versión, y una versión que rige un periodo ya no cambia.
+  - name: Interno
+    description: Consultas entre procesos (ADR-023). El API Gateway no enruta /interno/.
 paths:
   /api/normativa/versiones:
     get:
@@ -150,6 +153,39 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /interno/normativa/periodos/{periodo}/pesos-de-afinidad:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        example: 2025-1
+    get:
+      tags: [Interno]
+      operationId: consultarPesosDelPeriodo
+      summary: Devuelve los pesos de afinidad de la versión que rige el periodo.
+      description: >-
+        Solo entre procesos, con el token de proceso: lo usa Generación para calcular la afinidad
+        (ADR-010, ADR-023). Un periodo sin versión responde 404.
+      responses:
+        '200':
+          description: La versión y sus pesos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PesosDelPeriodo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrada'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
   /api/normativa/periodos/{periodo}:
     parameters:
       - name: periodo
@@ -509,6 +545,51 @@ components:
           type: integer
           minimum: 1
           example: 1
+    PesosDelPeriodo:
+      type: object
+      required: [periodo, version, pesos]
+      properties:
+        periodo:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        version:
+          type: integer
+          minimum: 1
+        pesos:
+          $ref: '#/components/schemas/PesosDeAfinidad'
+    PesosDeAfinidad:
+      description: Los puntos que suma cada título, experiencia o curso relacionado (RN-24).
+      type: object
+      required:
+        - cuartoNivelCampoEspecifico
+        - cuartoNivelCampoAmplio
+        - tercerNivelCampoEspecifico
+        - tercerNivelCampoAmplio
+        - experienciaRelacionada
+        - cursoRelacionado
+        - topeCursos
+      properties:
+        cuartoNivelCampoEspecifico:
+          type: number
+          minimum: 0
+        cuartoNivelCampoAmplio:
+          type: number
+          minimum: 0
+        tercerNivelCampoEspecifico:
+          type: number
+          minimum: 0
+        tercerNivelCampoAmplio:
+          type: number
+          minimum: 0
+        experienciaRelacionada:
+          type: number
+          minimum: 0
+        cursoRelacionado:
+          type: number
+          minimum: 0
+        topeCursos:
+          description: Lo máximo que suman los cursos.
+          type: number
+          minimum: 0
     PeriodoNormativo:
       type: object
       required: [periodo, version, asociadaEn]

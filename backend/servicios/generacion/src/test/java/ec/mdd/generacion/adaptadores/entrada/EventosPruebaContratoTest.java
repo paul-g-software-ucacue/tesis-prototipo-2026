@@ -69,7 +69,7 @@ class EventosPruebaContratoTest {
     }
 
     @Nested
-    @WebMvcTest
+    @WebMvcTest(EventosPruebaControlador.class)
     @ImportAutoConfiguration({
         SeguridadProcesoAutoConfiguracion.class,
         ErroresAutoConfiguracion.class
