@@ -22,8 +22,11 @@ export type CargaQueFalta = components['schemas']['CargaQueFalta'];
 /** La clave del estado de las cargas, para invalidarlo después de confirmar (F01-H05). */
 export const CLAVE_ESTADO = ['cargas', 'estado'] as const;
 
-/** El código de un periodo, como en la carga 3: «2026-I» o «2026-II» (contrato, principio XIV). */
-export const PERIODO = /^[0-9]{4}-(I|II)$/;
+/**
+ * El código de un periodo, con la regla de Académico, su dueño: «2026-I» o, registrado en su
+ * pantalla, «003» (contrato, principio XIV).
+ */
+export const PERIODO = /^[A-Za-z0-9._-]{1,20}$/;
 
 /** El diccionario de datos de las 10 cargas; no cambia mientras el servidor corre. */
 export function useDiccionario() {

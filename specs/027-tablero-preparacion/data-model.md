@@ -6,7 +6,7 @@ Nada se guarda: el tablero se calcula en cada consulta.
 
 | Campo | Tipo | Regla |
 |---|---|---|
-| `periodo` | texto, `^[0-9]{4}-(I\|II)$` | El periodo del tablero. |
+| `periodo` | texto, `^[A-Za-z0-9._-]{1,20}$` | El periodo del tablero, con la regla de Académico. |
 | `abierto` | sí o no | Tiene su versión de normativa (F02-H01). |
 | `cerrado` | sí o no | Su estado es Cerrado. |
 | `cargas` | 10 `CargaDelPeriodo`, en su orden | Ver abajo. |

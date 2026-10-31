@@ -158,6 +158,32 @@ describe('Preparación del periodo', () => {
     expect(screen.getByRole('button', { name: 'Crear distributivo' })).toBeEnabled();
   });
 
+  it('elige un periodo con otro código de Académico, como 003', async () => {
+    sesionCon(simulada, VICERRECTOR);
+    simulada.responder('GET', '/api/cargas/preparacion', () => {
+      const ultima = simulada.peticiones.at(-1);
+      const periodo = ultima ? new URL(ultima.url).searchParams.get('periodo') : null;
+      return json(200, {
+        ...tablero(periodo ?? '2026-II'),
+        periodos: [
+          { codigo: '2026-II', nombre: 'Periodo académico 2026-II' },
+          { codigo: '003', nombre: '2027-01' },
+        ],
+      });
+    });
+    const usuario = userEvent.setup();
+    montarSpa('/preparacion');
+    await filaDe('Carreras');
+
+    await usuario.click(screen.getByRole('combobox', { name: 'Periodo' }));
+    await usuario.click(await screen.findByRole('option', { name: '003 · 2027-01' }));
+
+    expect(await screen.findByRole('table', { name: 'Cargas del periodo 003' })).toBeVisible();
+    expect(
+      simulada.peticiones.some((una) => new URL(una.url).searchParams.get('periodo') === '003'),
+    ).toBe(true);
+  });
+
   it('sin periodos, pide cargar antes los ciclos académicos', async () => {
     sesionCon(simulada, VICERRECTOR);
     responder(SIN_PERIODOS);

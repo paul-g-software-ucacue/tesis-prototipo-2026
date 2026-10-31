@@ -5,7 +5,7 @@
 ### `consultarPreparacionDelPeriodo` · `GET /api/cargas/preparacion`
 
 - **Permiso**: `x-mdd-permiso: [CARGAS:LECTURA, DISTRIBUTIVO:LECTURA]` (D-70).
-- **Parámetro** `periodo` (query, opcional): `CodigoDePeriodo` (`^[0-9]{4}-(I|II)$`, hasta 10). Sin él, el periodo que empieza más tarde.
+- **Parámetro** `periodo` (query, opcional): `CodigoDePeriodo` (`^[A-Za-z0-9._-]{1,20}$`, la regla de Académico). Sin él, el periodo que empieza más tarde.
 - **200**: `PreparacionDelPeriodo`.
 - **400**:
   - `COMUN_SOLICITUD_INVALIDA` si el periodo no cumple su formato;

@@ -117,7 +117,7 @@ class PreparacionContratoTest {
 
     /** Válidos e inválidos del periodo (principio XIV). */
     @ParameterizedTest(name = "{0}")
-    @ValueSource(strings = {"2026-III", "26-I", "2026-i", "20260-IIII", "2026-I'"})
+    @ValueSource(strings = {"2026/I", "año-1", "123456789012345678901", "2026-I'"})
     void unPeriodoQueNoCumpleSuFormato_es400SolicitudInvalida(String invalido) throws Exception {
         MvcResult resultado = tablero("?periodo=" + invalido);
 

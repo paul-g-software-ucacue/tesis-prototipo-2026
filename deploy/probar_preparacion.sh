@@ -8,7 +8,8 @@
 # (ficticias, RNF-SEG-06), un archivo de docentes con errores y 2026-I «sin proyectos», el tablero de
 # 2026-I no está listo, docentes está «con errores» y faltan docentes y cargos; con las 10, solo le
 # falta abrirse; abierto con la política de prueba, está listo; 2026-II no tiene su oferta; un periodo
-# que no existe o mal escrito se rechaza; y quién lo ve (D-70). La política (carga 07) entra como una
+# que no existe o mal escrito se rechaza; un periodo registrado en su pantalla, con otro código que
+# la carga 3, tiene su tablero y su «sin proyectos»; y quién lo ve (D-70). La política (carga 07) entra como una
 # versión nueva, con un código con prefijo al azar, para no tocar la versión 1. Si la base ya tiene
 # alguno de esos datos, el script falla sin tocar nada. Al terminar, aunque un paso falle, borra en la
 # base solo lo que creó y sus registros, también la apertura de 2026-I. Termina con 0 si todos los
@@ -145,7 +146,8 @@ escribir('docentes_con_errores.csv', encabezados, con_errores)
 PY
 unidades=$(cat "$carpeta/unidades.lista")
 carreras=$(cat "$carpeta/carreras.lista")
-periodos=$(cat "$carpeta/periodos.lista")
+# Con el periodo que el paso 6 registra en la pantalla, para que también se borre.
+periodos="$(cat "$carpeta/periodos.lista"),'$prefijo'"
 docentes=$(cat "$carpeta/docentes.lista")
 proyectos=$(cat "$carpeta/proyectos.lista")
 inicio=$(consultar_base "select now()")
@@ -287,13 +289,26 @@ otro_periodo() {
 periodos_invalidos() {
     pedir GET "$GATEWAY/api/cargas/preparacion?periodo=2027-I" "Bearer $token"
     [[ $estado == 400 && $(jq -r '.codigo' <<<"$cuerpo") == CARGAS_PERIODO_NO_ENCONTRADO ]] || return 1
-    pedir GET "$GATEWAY/api/cargas/preparacion?periodo=2026-III" "Bearer $token"
+    pedir GET "$GATEWAY/api/cargas/preparacion?periodo=2026%20III" "Bearer $token"
     [[ $estado == 400 && $(jq -r '.codigo' <<<"$cuerpo") == COMUN_SOLICITUD_INVALIDA ]]
+}
+
+# Un periodo registrado en su pantalla, con otro código que la carga 3: como 003 en la demo.
+codigo_de_la_pantalla() {
+    pedir POST "$GATEWAY/api/academico/periodos" "Bearer $token" \
+        '{"codigo":"'"$prefijo"'","nombre":"Periodo de la pantalla","inicio":"2028-04-03","fin":"2028-08-04"}'
+    [[ $estado == 201 ]] || { echo "       registrar $prefijo: $estado" >&2; return 1; }
+    tablero "$prefijo" || return 1
+    [[ $(jq -r '.periodo' <<<"$tablero") == "$prefijo" ]] || return 1
+    sin_proyectos '{"periodo":"'"$prefijo"'"}'
+    [[ $estado == 201 ]] || { echo "       sin proyectos de $prefijo: $estado" >&2; return 1; }
+    tablero "$prefijo" || return 1
+    [[ $(estado_en proyectos_practicas) == SIN_PROYECTOS ]]
 }
 
 quien_lo_ve() {
     pedir GET "$GATEWAY/api/cargas/preparacion" "Bearer $token"
-    [[ $estado == 200 && $(jq -r '.periodo' <<<"$cuerpo") == 2026-II ]] || return 1
+    [[ $estado == 200 ]] || return 1
     iniciar coordinacion.demo
     pedir GET "$GATEWAY/api/cargas/preparacion" "Bearer $token"
     [[ $estado == 200 ]] || return 1
@@ -306,8 +321,9 @@ verificar 1 "Sin docentes, con un archivo de docentes con errores y 2026-I «sin
 verificar 2 "Con las 10 cargas de prueba, 2026-I solo tiene pendiente abrirse" con_las_diez
 verificar 3 "vicerrectorado.demo abre 2026-I con la versión $version: está listo" abierto_y_listo
 verificar 4 "2026-II no tiene su oferta ni sus matriculados: le faltan la oferta y abrirse" otro_periodo
-verificar 5 "2027-I: 400 CARGAS_PERIODO_NO_ENCONTRADO; 2026-III: 400 COMUN_SOLICITUD_INVALIDA" periodos_invalidos
-verificar 6 "Sin periodo, el que empieza más tarde; coordinacion.demo lo ve y docente.demo recibe 403" quien_lo_ve
+verificar 5 "2027-I: 400 CARGAS_PERIODO_NO_ENCONTRADO; «2026 III»: 400 COMUN_SOLICITUD_INVALIDA" periodos_invalidos
+verificar 6 "Un periodo con otro código de Académico ($prefijo): su tablero y «sin proyectos»" codigo_de_la_pantalla
+verificar 7 "coordinacion.demo lo ve y docente.demo recibe 403" quien_lo_ve
 
 if ((fallas > 0)); then
     echo "El tablero de preparación de punta a punta: $fallas paso(s) fallan."

@@ -286,7 +286,7 @@ periodo_con_proyectos() {
 periodos_invalidos() {
     sin_proyectos '{"periodo":"2027-I"}'
     [[ $estado == 400 && $(jq -r '.codigo' <<<"$cuerpo") == CARGAS_PERIODO_NO_ENCONTRADO ]] || return 1
-    sin_proyectos '{"periodo":"2026-III"}'
+    sin_proyectos '{"periodo":"2026 III"}'
     [[ $estado == 400 && $(jq -r '.codigo' <<<"$cuerpo") == COMUN_SOLICITUD_INVALIDA ]]
 }
 
@@ -315,7 +315,7 @@ verificar 3 "Las cargas 01 a 08 de prueba en orden: las 8 cargadas y la 9 pendie
 verificar 4 "consolidacion.demo confirma 2026-II «sin proyectos»: 201, la segunda 200, y la 9 queda «sin proyectos»" sin_proyectos_una_vez
 verificar 5 "Con la 09 y la 10 de prueba, las 10 quedan cargadas y «sin proyectos» deja de valer" con_los_proyectos
 verificar 6 "2026-II «sin proyectos» con proyectos asignables: 409 CARGAS_PERIODO_CON_PROYECTOS" periodo_con_proyectos
-verificar 7 "2027-I: 400 CARGAS_PERIODO_NO_ENCONTRADO; 2026-III: 400 COMUN_SOLICITUD_INVALIDA" periodos_invalidos
+verificar 7 "2027-I: 400 CARGAS_PERIODO_NO_ENCONTRADO; «2026 III»: 400 COMUN_SOLICITUD_INVALIDA" periodos_invalidos
 verificar 8 "El historial de la 9 tiene la carga y la confirmación «sin proyectos» con su periodo" historial_de_proyectos
 verificar 9 "coordinacion.demo ve el estado pero no confirma; docente.demo, ni lo uno ni lo otro (403)" quien_lee_y_quien_confirma
 

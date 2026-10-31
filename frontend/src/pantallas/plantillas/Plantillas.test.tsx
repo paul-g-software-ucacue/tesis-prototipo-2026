@@ -868,12 +868,12 @@ describe('Plantillas de carga', () => {
       montarSpa('/plantillas');
       const { usuario, dialogo } = await abrir();
 
-      await usuario.type(within(dialogo).getByRole('combobox', { name: /Periodo/ }), '2026-III');
+      await usuario.type(within(dialogo).getByRole('combobox', { name: /Periodo/ }), '2026 III');
       await usuario.click(within(dialogo).getByRole('button', { name: 'Confirmar sin proyectos' }));
 
       expect(
         within(dialogo).getByRole('combobox', { name: /Periodo/ }),
-      ).toHaveAccessibleDescription('Escribe el periodo como 2026-I o 2026-II.');
+      ).toHaveAccessibleDescription(/^Escribe el código del periodo/);
       expect(simulada.peticiones.some((una) => una.method === 'POST')).toBe(false);
     });
 
