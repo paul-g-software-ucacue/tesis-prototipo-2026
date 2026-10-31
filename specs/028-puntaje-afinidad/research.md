@@ -6,7 +6,7 @@ Fase 0 del plan de F06-H01 (issue #46). Cada sección responde una pregunta del 
 
 Es la primera consulta por HTTP entre procesos: Generación corre en `distributivo`; Docentes, Académico y Normativa, en `datos`.
 
-**Decisión**: rutas internas con el token de proceso, como fija ADR-018 para toda operación entre procesos:
+**Decisión**: rutas internas con el token de proceso. ADR-018 las fija solo para los eventos, y ADR-023 las extiende a las consultas:
 - Cada dueño publica una consulta en `/interno/<servicio>/…`. El API Gateway no las enruta, y `plataforma:seguridad` solo admite ahí el rol `PROCESO`.
 - Generación las llama con el token de proceso que ya existe (D-49), con un plazo de espera (ADR-009).
 - Cada ruta devuelve solo lo que el cálculo necesita (principio IX), con un modelo propio, no el del dominio del dueño.
@@ -18,7 +18,10 @@ Es la primera consulta por HTTP entre procesos: Generación corre en `distributi
 - **Copiar los datos a Generación por eventos:** evita la llamada, pero suma tablas de réplica y datos viejos para un cálculo que debe reflejar la ficha de ese momento (FR-017).
 - **Mover el cálculo a `datos`:** contradice ADR-010.
 
-**Requiere ADR-023**, que apruebas tú antes del código (§6.4 de la constitución): extiende ADR-018 de eventos a consultas, y fija los errores 502 y 504 que ADR-009 dejó pendientes.
+**Requiere ADR-023**, que apruebas tú antes del código (§6.4 de la constitución). Hace tres cosas:
+- extiende ADR-018 de eventos a consultas;
+- precisa ADR-010, que dice que la ficha se pide «por la API de Docentes»: se pide por una ruta interna de esa API, no por la pública;
+- fija los errores 502 y 504 que quedaron pendientes para la primera llamada entre procesos.
 
 ## §2 · Las rutas internas
 
@@ -30,7 +33,7 @@ Es la primera consulta por HTTP entre procesos: Generación corre en `distributi
 | 2 | `GET /interno/normativa/periodos/{periodo}/pesos-de-afinidad` | Normativa | La versión que rige el periodo y sus pesos | El periodo no tiene versión: no está abierto |
 | 3 | `GET /interno/docentes/{identificacion}/formacion` | Docentes | Títulos, cursos y experiencia, con sus campos. Sin datos personales de contacto ni contrato | El docente no existe |
 
-**Contrato (principio IV):** van en el `openapi.yaml` de cada dueño, con la etiqueta `Interno`, sin `x-mdd-permiso`: la seguridad es por ruta y rol, no por permiso de usuario. El evento de prueba ya sigue ese criterio. `ValidadorDeContrato` las valida como a las demás.
+**Contrato (principio IV):** van en el `openapi.yaml` de cada dueño, con la etiqueta `Interno`, sin `x-mdd-permiso`: la seguridad es por ruta y rol, no por permiso de usuario. `/interno/usuarios/token-proceso`, en el contrato de Usuarios, ya está declarada así. `ValidadorDeContrato` las valida como a las demás.
 
 ## §3 · El cliente entre procesos
 
@@ -38,6 +41,7 @@ Es la primera consulta por HTTP entre procesos: Generación corre en `distributi
 - Un GET con el token de proceso y, ante un 401, otro token y un reintento (como `ClienteDeEventos`).
 - 404 se devuelve como un resultado vacío, para que cada adaptador diga qué significa.
 - Se agota el plazo: `ProcesoSinRespuesta`. No se puede conectar, o responde 5xx: `ProcesoConError`.
+- Usuarios no emite el token (`EntregaFallida` de `ProveedorDeTokenDeProceso`): también `ProcesoConError`, para que el usuario vea el mensaje del catálogo y no un error sin traducir.
 
 El plazo es el de `mdd.eventos.plazo` (5 s). Las tres consultas van al mismo proceso y la primera que falla corta, así que el usuario espera como máximo un plazo si `datos` está caído (SC-004: menos de 10 s, con holgura).
 
@@ -53,7 +57,7 @@ El plazo es el de `mdd.eventos.plazo` (5 s). Las tres consultas van al mismo pro
 | `COMUN_PROCESO_CON_ERROR` | 502 | Otro proceso falló o no se pudo conectar con él. |
 | `COMUN_PROCESO_SIN_RESPUESTA` | 504 | Otro proceso no respondió dentro del plazo. |
 
-Cada uno con sus 8 columnas (D-72) y en «tú» (D-74). Los dos `COMUN_` son los que ADR-009 y ADR-016 anunciaban para «la primera llamada entre procesos».
+Cada uno con sus 8 columnas (D-72) y en «tú» (D-74). Los dos `COMUN_` son los 502 y 504 que `docs/decisiones.md` dejó pendientes para la primera llamada entre procesos.
 
 ## §5 · El dominio de Generación (DDD táctico, principio II)
 
@@ -74,7 +78,7 @@ Cada uno con sus 8 columnas (D-72) y en «tú» (D-74). Los dos `COMUN_` son los
 
 **Decisión**: `consultarAfinidadDelDocente` (`GET /api/generacion/docentes/{identificacion}/afinidad?periodo=…`), con `[DOCENTES:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]`, los permisos de `consultarDocente` (FR-014, D-70). El API Gateway ya enruta `/api/generacion/**` a `distributivo`.
 
-La identificación y el periodo usan las reglas de sus dueños (principio XIV, la lección de F02-H02): el patrón de Docentes y `^[A-Za-z0-9._-]{1,20}$`.
+La identificación y el periodo usan las reglas de sus dueños (principio XIV, la lección de F02-H02): `^[0-9A-Z]{1,13}$` (`NumeroDeIdentificacion`, Docentes) y `^[A-Za-z0-9._-]{1,20}$` (Académico).
 
 ## §7 · La pantalla
 

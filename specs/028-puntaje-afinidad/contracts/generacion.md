@@ -6,7 +6,7 @@
 
 - **Permiso**: `x-mdd-permiso: [DOCENTES:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]`, los de `consultarDocente` (D-70).
 - **Parámetros**:
-  - `identificacion` (ruta): el patrón del contrato de Docentes;
+  - `identificacion` (ruta): `^[0-9A-Z]{1,13}$`, `NumeroDeIdentificacion` del contrato de Docentes;
   - `periodo` (query, obligatorio): `^[A-Za-z0-9._-]{1,20}$`, la regla de Académico.
 - **200**: `AfinidadDelDocente`.
 - **400**: `COMUN_SOLICITUD_INVALIDA` si no cumplen su formato.

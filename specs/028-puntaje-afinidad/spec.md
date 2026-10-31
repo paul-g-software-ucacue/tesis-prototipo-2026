@@ -2,11 +2,11 @@
 
 **Feature Branch**: `028-puntaje-afinidad`
 
-**Created**: 2026-10-31
+**Created**: 2026-10-30
 
 **Status**: Draft
 
-**Input**: User description: "Especifica la historia F06-H01 · Calcular el puntaje de afinidad con su desglose (issue #46), a partir de RN-19, RN-24, RF-17 y ADR-010, con las cuatro aclaraciones del autor del 2026-10-31."
+**Input**: User description: "Especifica la historia F06-H01 · Calcular el puntaje de afinidad con su desglose (issue #46), a partir de RN-19, RN-24, RF-17 y ADR-010, con las cuatro aclaraciones del autor del 2026-10-30."
 
 **Origen**: issue #46 · F06-H01 · sub-issue de F06 (Proponer un docente por asignatura con sugerencias por afinidad, #8) · milestone «Ola 2 · Distributivo válido» · Ola del secuenciador MVP · etiquetas `tipo:historia`, `prioridad:must`, `modulo:05-generacion`, `RF-17`, `RN-19`, `RN-24` · tamaño propuesto L · depende de #38 (F03-H04) y #42 (F04-H03), cerradas. Es la primera historia de la Ola 2.
 
@@ -29,7 +29,7 @@ Esta historia agrega:
 
 ## Clarifications
 
-### Session 2026-10-31
+### Session 2026-10-30
 
 - Q: ¿Cuándo un curso o una experiencia está relacionada con la asignatura? → A: Si su campo específico es el de la asignatura. Las palabras clave de la asignatura no suman en esta historia, aunque RN-19 las nombra.
 - Q: Si un docente tiene dos títulos que coinciden con la asignatura, ¿suman los dos? → A: Sí. Cada título, experiencia o curso relacionado suma, como dice el glosario («Pesos de afinidad»). Solo los cursos tienen tope.

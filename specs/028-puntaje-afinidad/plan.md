@@ -1,6 +1,6 @@
 # Implementation Plan: Calcular el puntaje de afinidad con su desglose
 
-**Branch**: `028-puntaje-afinidad` | **Date**: 2026-10-31 | **Spec**: [spec.md](spec.md)
+**Branch**: `028-puntaje-afinidad` | **Date**: 2026-10-30 | **Spec**: [spec.md](spec.md)
 
 **Input**: Feature specification from `specs/028-puntaje-afinidad/spec.md` (issue #46, F06-H01)
 

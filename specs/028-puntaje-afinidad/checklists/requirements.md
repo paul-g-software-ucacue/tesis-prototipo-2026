@@ -1,7 +1,7 @@
 # Specification Quality Checklist: Calcular el puntaje de afinidad con su desglose
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
-**Created**: 2026-10-31
+**Created**: 2026-10-30
 **Feature**: [spec.md](../spec.md)
 
 ## Content Quality
@@ -31,6 +31,6 @@
 
 ## Notes
 
-- Las cuatro aclaraciones del autor (2026-10-31) están en «Clarifications»; no quedan marcas [NEEDS CLARIFICATION].
+- Las cuatro aclaraciones del autor (2026-10-30) están en «Clarifications»; no quedan marcas [NEEDS CLARIFICATION].
 - La spec nombra los servicios (Generación, Docentes, Normativa) porque ADR-010 los fija como requisito; no fija tecnologías.
 - SC-003 y SC-004 llevan holgura, como pide el autor para las métricas de tiempo.
