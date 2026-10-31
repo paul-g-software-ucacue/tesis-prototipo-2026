@@ -77,7 +77,7 @@ Plan aprobado por el autor el 2026-10-30.
   - `contratos/comun/errores.md`: los 5 códigos, con sus 8 columnas.
 - [ ] T003 [P] Definir `PROCESO_CON_ERROR` (502) y `PROCESO_SIN_RESPUESTA` (504) en `NUC/main/java/ec/mdd/plataforma/errores/nucleo/CodigosComunes.java`, con su prueba.
 - [ ] T004 [P] Extender `backend/plataforma/pruebas/src/main/java/ec/mdd/plataforma/pruebas/ReceptorSimulado.java` para que atienda GET: una respuesta programable por ruta (estado y cuerpo), que usa el `retraso` que ya existe y guarda el encabezado `Authorization`. Las pruebas de eventos siguen pasando sin cambios.
-- [ ] T005 [P] `EVE/test/java/ec/mdd/plataforma/eventos/ConsultasEntreProcesosTest.java`, contra `ReceptorSimulado`:
+- [ ] T005 `EVE/test/java/ec/mdd/plataforma/eventos/ConsultasEntreProcesosTest.java`, contra `ReceptorSimulado`:
   - 200 con el cuerpo;
   - 404 como resultado vacío;
   - 401: otro token y un reintento;
@@ -212,8 +212,9 @@ Plan aprobado por el autor el 2026-10-30.
 - **T001:** antes de todo.
 - **Fundacional:**
   - T002 antes de todo el código;
-  - T003, T004 y T005 son [P] después de T002;
-  - T006 depende de T003, T004 y T005.
+  - T003 y T004 son [P] después de T002;
+  - T005 depende de T004;
+  - T006 depende de T003 y T005.
 - **Fase 3:**
   - T007 y T008, después de T002;
   - T009 a T014 son [P] después de T002, cada implementación después de su prueba;
@@ -227,7 +228,7 @@ Plan aprobado por el autor el 2026-10-30.
 ## Parallel Example
 
 ```text
-Después de T002: T003, T004 y T005 a la vez.
+Después de T002: T003 y T004 a la vez.
 Después de T002: T009-T010 (Académico), T011-T012 (Normativa) y T013-T014 (Docentes) a la vez.
 ```
 
