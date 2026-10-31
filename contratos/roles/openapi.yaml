@@ -4,7 +4,8 @@
 # 403 AccesoNoAutorizado (ADR-021). VerificadorDePermisos comprueba que el código lo respeta.
 # Desde F05-H03: el Responsable de consolidación de cada periodo (D-13, ADR-003), que designa el
 # Vicerrector académico con «Distributivo del periodo: escritura» (D-69), y el receptor de los
-# eventos de Académico con los periodos y su estado (ADR-018).
+# eventos de Académico con los periodos y su estado (ADR-018). Desde F06-H05: la carrera del
+# coordinador, que indica quien tiene «Usuarios y roles: escritura» (D-64, D-76).
 openapi: 3.0.3
 info:
   title: MDD · Roles
@@ -245,6 +246,70 @@ paths:
           $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
         '409':
           $ref: '#/components/responses/Conflicto'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/roles/usuarios/{usuario}/carrera:
+    parameters:
+      - $ref: '#/components/parameters/Usuario'
+    put:
+      tags: [RolesDeUsuarios]
+      operationId: indicarCarrera
+      summary: Indica la carrera de un Coordinador de carrera; reemplaza la que tenga.
+      description: >-
+        Vale desde la próxima renovación de la sesión del usuario (D-62). Solo se revisa el formato
+        del código; la pantalla ofrece las carreras vigentes (D-76). Sin el rol, responde 409
+        (ROLES_CARRERA_SIN_ROL).
+      x-mdd-permiso: USUARIOS_ROLES:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CarreraDelCoordinador'
+      responses:
+        '200':
+          description: Carrera indicada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RolesDeUsuario'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '409':
+          $ref: '#/components/responses/Conflicto'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+    delete:
+      tags: [RolesDeUsuarios]
+      operationId: quitarCarrera
+      summary: Quita la carrera de un usuario.
+      description: Vale desde la próxima renovación de la sesión del usuario (D-62).
+      x-mdd-permiso: USUARIOS_ROLES:ESCRITURA
+      responses:
+        '200':
+          description: Carrera quitada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RolesDeUsuario'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: El usuario no tiene carrera (ROLES_USUARIO_SIN_CARRERA).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
         '500':
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
@@ -552,8 +617,19 @@ components:
             type: string
             pattern: '^[A-Z0-9_]{1,64}$'
           example: [DOCENTE, AUDITOR_DE_CARGAS]
+    CodigoDeCarrera:
+      description: El código de la carrera, con la regla de Académico.
+      type: string
+      pattern: '^[0-9A-Z-]{1,20}$'
+      example: 550613A01-P-0301
+    CarreraDelCoordinador:
+      type: object
+      required: [carrera]
+      properties:
+        carrera:
+          $ref: '#/components/schemas/CodigoDeCarrera'
     RolesDeUsuario:
-      description: Las asignaciones de rol de un usuario.
+      description: Las asignaciones de rol de un usuario y, si es coordinador, su carrera.
       type: object
       required: [usuario, roles]
       properties:
@@ -566,6 +642,8 @@ components:
           items:
             type: string
           example: [AUDITOR_DE_CARGAS, DOCENTE]
+        carrera:
+          $ref: '#/components/schemas/CodigoDeCarrera'
     Autorizacion:
       type: object
       required: [usuario, roles, permisos]
@@ -579,6 +657,8 @@ components:
           items:
             type: string
           example: [COORDINADOR_CARRERA, DOCENTE]
+        carrera:
+          $ref: '#/components/schemas/CodigoDeCarrera'
         permisos:
           type: array
           description: >-

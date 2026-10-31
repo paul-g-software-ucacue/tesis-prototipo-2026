@@ -35,7 +35,7 @@ class PermisosRolesTest {
     @Test
     void dadoElContratoDeRoles_cuandoSeVerificaCadaOperacion_entoncesExigeSuPermiso() {
         // 8 de F05-H02 y 3 del Responsable de consolidación (F05-H03, D-69).
-        assertThat(verificador.operaciones()).hasSize(11);
+        assertThat(verificador.operaciones()).hasSize(13);
         assertThat(verificador.operaciones())
                 .extracting(VerificadorDePermisos.OperacionProtegida::toString)
                 .contains(

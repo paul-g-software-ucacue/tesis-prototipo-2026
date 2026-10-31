@@ -73,7 +73,7 @@ export function AfinidadDelDocente({ identificacion }: { identificacion: string 
         {afinidad.isFetching && <Typography role="status">Calculando la afinidad…</Typography>}
         {afinidad.error && <AvisoDeError mensaje={traducirError(afinidad.error)} />}
         {datos && !afinidad.isFetching && datos.puntajes.length === 0 && (
-          <Typography>Este periodo todavía no tiene oferta.</Typography>
+          <Typography>No hay oferta para mostrar en este periodo.</Typography>
         )}
         {datos && !afinidad.isFetching && datos.puntajes.length > 0 && (
           <div>

@@ -354,7 +354,7 @@ abierto_y_cargado() {
 # Todos los paralelos de la oferta, comparados con la sugerencia hecha aparte (SC-001).
 toda_la_oferta() {
     local asignatura paralelo numero=0
-    iniciar coordinacion.demo
+    iniciar vicerrectorado.demo
     mkdir "$carpeta/respuestas"
     while IFS=$'\t' read -r asignatura paralelo; do
         sugerencia 2026-I "$asignatura" "$paralelo"
@@ -374,7 +374,7 @@ cambiar_estado() {  # cambiar_estado <docente> <estado>
     iniciar datos.demo
     pedir PUT "$GATEWAY/api/docentes/docentes/$1/estado" "Bearer $token" "{\"estado\":\"$2\"}"
     [[ $estado == 200 ]] || { echo "       $1 a $2: $estado" >&2; return 1; }
-    iniciar coordinacion.demo
+    iniciar vicerrectorado.demo
 }
 
 aparece() {  # aparece <docente>: en la sugerencia de $asignatura_b $paralelo_b
@@ -411,7 +411,7 @@ ofertar() {  # ofertar <paralelo>: en 2026-II, con el token de $token
 # Otra versión con otro mínimo, que abre 2026-II: cambia quién aparece (SC-002).
 otro_minimo() {
     local version_nueva numero_b edicion antes
-    iniciar coordinacion.demo
+    iniciar vicerrectorado.demo
     sugerencia 2026-I "$asignatura_b" "$paralelo_b"
     antes=$(jq -r '.fueraPorElMinimo' <<<"$cuerpo")
     iniciar vicerrectorado.demo
@@ -431,7 +431,7 @@ otro_minimo() {
     [[ $estado == 200 ]] || { echo "       editar $version_b: $estado" >&2; return 1; }
     abrir 2026-II "$numero_b" || return 1
     guardar_pesos "$numero_b" "$carpeta/pesos_b.json" || return 1
-    iniciar coordinacion.demo
+    iniciar vicerrectorado.demo
     mkdir "$carpeta/respuestas_b"
     sugerencia 2026-II "$asignatura_b" "$paralelo_b"
     [[ $estado == 200 ]] || return 1
@@ -448,7 +448,7 @@ retirado() {
     pedir PUT "$GATEWAY/api/academico/periodos/2026-II/oferta/$asignatura_b/$PARALELO_RETIRADO/estado" \
         "Bearer $token" '{"estado":"RETIRADA"}'
     [[ $estado == 200 ]] || { echo "       retirar: $estado" >&2; return 1; }
-    iniciar coordinacion.demo
+    iniciar vicerrectorado.demo
     sugerencia 2026-II "$asignatura_b" "$PARALELO_RETIRADO"
     es_codigo 409 GENERACION_PARALELO_RETIRADO
 }
@@ -473,7 +473,7 @@ permisos() {
     token=''
     sugerencia 2026-I "$asignatura_b" "$paralelo_b"
     [[ $estado == 401 ]] || return 1
-    iniciar coordinacion.demo
+    iniciar vicerrectorado.demo
 }
 
 # El API Gateway no las enruta y las rechaza; dentro de la red, un token de usuario recibe 403.
@@ -530,7 +530,7 @@ numero_a=''
 comparados=''
 
 verificar 1 "Las cargas de prueba y 2026-I abierto con la versión $version" abierto_y_cargado
-verificar 2 "coordinacion.demo ve la sugerencia de los 165 paralelos, igual a una hecha aparte" toda_la_oferta
+verificar 2 "vicerrectorado.demo ve la sugerencia de los 165 paralelos, igual a una hecha aparte" toda_la_oferta
 echo "       comparó: ${comparados:-nada}"
 verificar 3 "Un docente en licencia desaparece y vuelve al activarlo" licencia_y_vuelta
 verificar 4 "2026-II sin abrir: 409 GENERACION_PERIODO_SIN_ABRIR" sin_abrir

@@ -67,6 +67,28 @@ class EmisorJwtTest {
         assertThat(jwt.getExpiresAt()).isEqualTo(ahora.plus(Duration.ofMinutes(30)));
         assertThat(token.venceEn()).isEqualTo(jwt.getExpiresAt());
         assertThat(token.toString()).doesNotContain(token.valor());
+        assertThat(jwt.getClaims()).doesNotContainKey("carrera");
+    }
+
+    @Test
+    void dadoUnCoordinadorConCarrera_cuandoSeEmiteSuToken_entoncesLaLleva() throws Exception {
+        Usuario usuario = new Usuario("autor.prueba", "Autor de prueba", "hash", true);
+
+        TokenEmitido token =
+                emisor.emitir(
+                        usuario,
+                        new AutorizacionDeUsuario(
+                                List.of("COORDINADOR_CARRERA"),
+                                List.of("OFERTA:LECTURA:PROPIO"),
+                                "DS-01"),
+                        ahora);
+
+        assertThat(
+                        NimbusJwtDecoder.withPublicKey(llaves.llave().toRSAPublicKey())
+                                .build()
+                                .decode(token.valor())
+                                .getClaimAsString("carrera"))
+                .isEqualTo("DS-01");
     }
 
     @Test

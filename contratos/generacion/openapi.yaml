@@ -4,6 +4,7 @@
 # la oferta de un periodo (RF-17, RN-24, ADR-010). Lo leen quienes pueden leer un docente (D-70).
 # Desde F06-H02: la sugerencia de docentes para una asignatura-paralelo (RF-25, RN-19), con el mismo
 # permiso. Las horas asignadas son 0 hasta que F06-H03 traiga las asignaciones.
+# Desde F06-H05: las dos se filtran por la carrera de quien solo tiene «lo propio» (D-64).
 openapi: 3.0.3
 info:
   title: MDD · generacion
@@ -65,7 +66,8 @@ paths:
       description: >-
         Se calcula en cada consulta con la ficha del docente y los pesos de la versión de normativa
         que rige el periodo; no se guarda. Ordenado del mayor puntaje al menor y, a igual puntaje,
-        por nombre. Sin oferta, la lista viene vacía.
+        por nombre. Sin oferta, la lista viene vacía. Quien solo tiene «lo propio» sobre la oferta recibe
+        las asignaturas de su carrera; sin carrera, 403 COMUN_CARRERA_SIN_INDICAR (F06-H05, D-64).
       x-mdd-permiso: [DOCENTES:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]
       responses:
         '200':
@@ -137,7 +139,8 @@ paths:
         versión de normativa que rige el periodo; no se guarda. Primero van los candidatos con horas
         suficientes y, dentro de cada grupo, del mayor puntaje al menor; a igual puntaje, más horas
         disponibles primero, y después por nombre. Sin tronco común, quien no alcanza el mínimo no
-        aparece y solo se cuenta.
+        aparece y solo se cuenta. Quien solo tiene «lo propio» sobre la oferta recibe 403 con otra carrera, y 403
+        COMUN_CARRERA_SIN_INDICAR sin carrera (F06-H05, D-64).
       x-mdd-permiso: [DOCENTES:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]
       responses:
         '200':

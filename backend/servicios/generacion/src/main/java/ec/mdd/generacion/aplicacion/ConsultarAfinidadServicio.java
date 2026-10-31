@@ -11,6 +11,7 @@ import ec.mdd.generacion.puertos.entrada.PeriodoNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.PeriodoSinAbrir;
 import ec.mdd.generacion.puertos.salida.DatosParaAfinidad;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Calcula la afinidad en cada consulta, así que siempre refleja la ficha de ese momento; nada se
@@ -28,9 +29,10 @@ public final class ConsultarAfinidadServicio implements ConsultarAfinidad {
     }
 
     @Override
-    public AfinidadDelDocente afinidad(String identificacion, String periodo) {
+    public AfinidadDelDocente afinidad(
+            String identificacion, String periodo, Optional<String> carrera) {
         List<AsignaturaOfertada> asignaturas =
-                datos.asignaturasOfertadas(periodo).orElseThrow(PeriodoNoEncontrado::new);
+                datos.asignaturasOfertadas(periodo, carrera).orElseThrow(PeriodoNoEncontrado::new);
         PesosDelPeriodo pesos = datos.pesos(periodo).orElseThrow(PeriodoSinAbrir::new);
         FormacionDelDocente formacion =
                 datos.formacion(identificacion).orElseThrow(DocenteNoEncontrado::new);

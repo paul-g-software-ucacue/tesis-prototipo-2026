@@ -163,6 +163,33 @@ class OfertaDelPeriodoTest {
     }
 
     @Test
+    void dadaUnaCarrera_cuandoSeFiltra_entoncesSoloQuedanSusParalelosYSusHoras() {
+        OfertaDelPeriodo oferta =
+                new OfertaDelPeriodo(
+                        periodo(EstadoPeriodo.VIGENTE),
+                        List.of(en("DS-1", "A_NOCTURNA"), en("CONT-1", "A_NOCTURNA")),
+                        datos());
+
+        OfertaDelPeriodo deDs = oferta.deCarrera(DS);
+
+        assertThat(deDs.asignaturasParalelo())
+                .extracting(AsignaturaParalelo::asignatura)
+                .containsExactly("DS-1");
+        assertThat(deDs.horasACubrir().carreras()).hasSize(1);
+        assertThat(deDs.horasACubrir().total()).isEqualByComparingTo("3");
+        assertThat(oferta.horasACubrir().total()).isEqualByComparingTo("6");
+    }
+
+    @Test
+    void dadaUnaCarreraSinOferta_cuandoSeFiltra_entoncesQuedaVacia() {
+        OfertaDelPeriodo oferta =
+                new OfertaDelPeriodo(
+                        periodo(EstadoPeriodo.VIGENTE), List.of(en("DS-1", "A_NOCTURNA")), datos());
+
+        assertThat(oferta.deCarrera("CONT").asignaturasParalelo()).isEmpty();
+    }
+
+    @Test
     void
             dadaLaMismaAsignaturaYParalelo_cuandoSeOfertaOtraVez_entoncesLanzaRepetidaAunqueEsteRetirada() {
         AsignaturaParalelo retirada =

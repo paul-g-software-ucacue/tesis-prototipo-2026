@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { instalarApiSimulada, json, type ApiSimulada } from '../../pruebas/apiSimulada';
 import { montarSpa } from '../../pruebas/montarSpa';
 import { cerrarSesion, iniciarSesion } from '../../sesion/almacen';
+import { CARRERAS } from '../carreras/datosDePrueba';
 import {
   ADMINISTRADOR,
   ADMINISTRADOR_SESION,
@@ -25,6 +26,9 @@ async function cuerpoDe(simulada: ApiSimulada, metodo: string, ruta: string): Pr
   return (await peticion.json()) as unknown;
 }
 
+const VIGENTE = CARRERAS.find((carrera) => carrera.estado === 'VIGENTE') ?? CARRERAS[0];
+const NO_VIGENTE = CARRERAS.find((carrera) => carrera.estado !== 'VIGENTE') ?? CARRERAS[0];
+
 describe('Roles', () => {
   let simulada: ApiSimulada;
 
@@ -34,6 +38,7 @@ describe('Roles', () => {
     simulada.responder('GET', '/api/roles', json(200, [ADMINISTRADOR, AUDITOR, REVISOR_ASIGNADO]));
     simulada.responder('GET', '/api/roles/usuarios', json(200, ROLES_DE_USUARIOS));
     simulada.responder('GET', '/api/usuarios/usuarios', json(200, USUARIOS));
+    simulada.responder('GET', '/api/academico/carreras', json(200, CARRERAS));
     iniciarSesion('cabecera.cuerpo.firma', new Date(Date.now() + 60_000));
   });
 
@@ -258,6 +263,162 @@ describe('Roles', () => {
       });
     });
 
+    describe('la carrera del coordinador', () => {
+      const CON_CARRERA = [
+        ROLES_DE_USUARIOS[0],
+        ROLES_DE_USUARIOS[1],
+        { ...ROLES_DE_USUARIOS[2], carrera: VIGENTE.codigo },
+      ];
+
+      async function tablaDeUsuarios(usuario: ReturnType<typeof userEvent.setup>) {
+        montarSpa('/roles');
+        await usuario.click(await screen.findByRole('tab', { name: 'Usuarios' }));
+        return screen.findByRole('table', { name: 'Usuarios y sus roles' });
+      }
+
+      it('se ve junto a los roles', async () => {
+        simulada.responder('GET', '/api/roles/usuarios', json(200, CON_CARRERA));
+        const tabla = await tablaDeUsuarios(userEvent.setup());
+
+        expect(within(tabla).getByRole('row', { name: /coordinacion\.demo/ })).toHaveTextContent(
+          VIGENTE.nombre,
+        );
+      });
+
+      it('sin carrera, la fila del coordinador dice que falta', async () => {
+        const tabla = await tablaDeUsuarios(userEvent.setup());
+
+        expect(within(tabla).getByRole('row', { name: /coordinacion\.demo/ })).toHaveTextContent(
+          'Sin carrera',
+        );
+      });
+
+      it('solo los coordinadores ofrecen indicar la carrera', async () => {
+        const tabla = await tablaDeUsuarios(userEvent.setup());
+
+        expect(
+          within(tabla).getByRole('button', { name: 'Indicar la carrera de coordinacion.demo' }),
+        ).toBeInTheDocument();
+        expect(
+          within(tabla).queryByRole('button', { name: /carrera de docente\.demo/ }),
+        ).not.toBeInTheDocument();
+      });
+
+      it('la lista trae solo las carreras vigentes, y dice cuándo vale el cambio', async () => {
+        const usuario = userEvent.setup();
+        const tabla = await tablaDeUsuarios(usuario);
+        await usuario.click(
+          within(tabla).getByRole('button', { name: 'Indicar la carrera de coordinacion.demo' }),
+        );
+
+        const dialogo = await screen.findByRole('dialog', {
+          name: 'Carrera de coordinacion.demo',
+        });
+        expect(within(dialogo).getByRole('option', { name: VIGENTE.nombre })).toBeInTheDocument();
+        expect(
+          within(dialogo).queryByRole('option', { name: NO_VIGENTE.nombre }),
+        ).not.toBeInTheDocument();
+        expect(within(dialogo).getByText(/próxima renovación de su sesión/)).toBeInTheDocument();
+      });
+
+      it('la indica y recarga la lista', async () => {
+        simulada.responder(
+          'PUT',
+          '/api/roles/usuarios/coordinacion.demo/carrera',
+          json(200, CON_CARRERA[2]),
+        );
+        const usuario = userEvent.setup();
+        const tabla = await tablaDeUsuarios(usuario);
+        await usuario.click(
+          within(tabla).getByRole('button', { name: 'Indicar la carrera de coordinacion.demo' }),
+        );
+        const dialogo = await screen.findByRole('dialog', {
+          name: 'Carrera de coordinacion.demo',
+        });
+
+        await usuario.selectOptions(
+          within(dialogo).getByLabelText('Carrera'),
+          within(dialogo).getByRole('option', { name: VIGENTE.nombre }),
+        );
+        await usuario.click(within(dialogo).getByRole('button', { name: 'Guardar' }));
+
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+        expect(
+          await cuerpoDe(simulada, 'PUT', '/api/roles/usuarios/coordinacion.demo/carrera'),
+        ).toEqual({ carrera: VIGENTE.codigo });
+      });
+
+      it('sin elegir una carrera no deja guardar', async () => {
+        const usuario = userEvent.setup();
+        const tabla = await tablaDeUsuarios(usuario);
+        await usuario.click(
+          within(tabla).getByRole('button', { name: 'Indicar la carrera de coordinacion.demo' }),
+        );
+
+        const dialogo = await screen.findByRole('dialog', {
+          name: 'Carrera de coordinacion.demo',
+        });
+        expect(within(dialogo).getByRole('button', { name: 'Guardar' })).toBeDisabled();
+        expect(
+          within(dialogo).queryByRole('button', { name: 'Quitar carrera' }),
+        ).not.toBeInTheDocument();
+      });
+
+      it('la quita', async () => {
+        simulada.responder('GET', '/api/roles/usuarios', json(200, CON_CARRERA));
+        simulada.responder(
+          'DELETE',
+          '/api/roles/usuarios/coordinacion.demo/carrera',
+          json(200, ROLES_DE_USUARIOS[2]),
+        );
+        const usuario = userEvent.setup();
+        const tabla = await tablaDeUsuarios(usuario);
+        await usuario.click(
+          within(tabla).getByRole('button', { name: 'Indicar la carrera de coordinacion.demo' }),
+        );
+        const dialogo = await screen.findByRole('dialog', {
+          name: 'Carrera de coordinacion.demo',
+        });
+
+        await usuario.click(within(dialogo).getByRole('button', { name: 'Quitar carrera' }));
+
+        await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+        expect(simulada.peticiones.some((peticion) => peticion.method === 'DELETE')).toBe(true);
+      });
+
+      it('un 409 muestra el aviso del catálogo y no cierra', async () => {
+        simulada.responder(
+          'PUT',
+          '/api/roles/usuarios/coordinacion.demo/carrera',
+          json(409, {
+            titulo: 'Usuario sin rol de coordinador',
+            descripcion:
+              'Solo un usuario con el rol Coordinador de carrera puede tener carrera. Dale ese rol primero.',
+            codigo: 'ROLES_CARRERA_SIN_ROL',
+          }),
+        );
+        const usuario = userEvent.setup();
+        const tabla = await tablaDeUsuarios(usuario);
+        await usuario.click(
+          within(tabla).getByRole('button', { name: 'Indicar la carrera de coordinacion.demo' }),
+        );
+        const dialogo = await screen.findByRole('dialog', {
+          name: 'Carrera de coordinacion.demo',
+        });
+
+        await usuario.selectOptions(
+          within(dialogo).getByLabelText('Carrera'),
+          within(dialogo).getByRole('option', { name: VIGENTE.nombre }),
+        );
+        await usuario.click(within(dialogo).getByRole('button', { name: 'Guardar' }));
+
+        expect(
+          await within(dialogo).findByText('Usuario sin rol de coordinador'),
+        ).toBeInTheDocument();
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+    });
+
     it('si el cambio dejaría al sistema sin administrador, lo dice y no cierra', async () => {
       const usuario = userEvent.setup();
       simulada.responder(
@@ -288,6 +449,18 @@ describe('Roles', () => {
   describe('con solo lectura de «Usuarios y roles»', () => {
     beforeEach(() => {
       simulada.responder('GET', '/api/usuarios/sesion', json(200, SOLO_LECTURA_SESION));
+    });
+
+    it('ve la carrera, pero no la indica', async () => {
+      const usuario = userEvent.setup();
+      montarSpa('/roles');
+
+      await usuario.click(await screen.findByRole('tab', { name: 'Usuarios' }));
+      const tabla = await screen.findByRole('table', { name: 'Usuarios y sus roles' });
+      expect(within(tabla).getByRole('row', { name: /coordinacion\.demo/ })).toHaveTextContent(
+        'Sin carrera',
+      );
+      expect(screen.queryByRole('button', { name: /^Indicar la carrera/ })).not.toBeInTheDocument();
     });
 
     it('ve los roles y los usuarios, pero no crear, editar, borrar ni asignar', async () => {

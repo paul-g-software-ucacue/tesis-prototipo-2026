@@ -9,6 +9,7 @@ import ec.mdd.academico.puertos.entrada.ConsultarParaleloDeLaOferta;
 import ec.mdd.academico.puertos.entrada.ParaleloConCampos;
 import ec.mdd.academico.puertos.entrada.PeriodoNoEncontrado;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,10 +32,11 @@ class InternoAcademicoControlador implements InternoApi {
     }
 
     @Override
-    public ResponseEntity<List<AsignaturaOfertada>> consultarAsignaturasOfertadas(String codigo) {
+    public ResponseEntity<List<AsignaturaOfertada>> consultarAsignaturasOfertadas(
+            String codigo, String carrera) {
         try {
             return ResponseEntity.ok(
-                    consultar.delPeriodo(codigo).stream()
+                    consultar.delPeriodo(codigo, Optional.ofNullable(carrera)).stream()
                             .map(
                                     asignatura ->
                                             new AsignaturaOfertada(

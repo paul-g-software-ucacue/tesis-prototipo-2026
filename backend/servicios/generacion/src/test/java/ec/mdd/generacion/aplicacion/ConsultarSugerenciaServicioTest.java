@@ -20,6 +20,7 @@ import ec.mdd.generacion.dominio.PesosAfinidad;
 import ec.mdd.generacion.dominio.PesosDelPeriodo;
 import ec.mdd.generacion.dominio.Sugerencia;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
+import ec.mdd.generacion.puertos.entrada.OtraCarrera;
 import ec.mdd.generacion.puertos.entrada.ParaleloNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.ParaleloRetirado;
 import ec.mdd.generacion.puertos.entrada.PeriodoSinAbrir;
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.Test;
 class ConsultarSugerenciaServicioTest {
 
     private static final String PERIODO = "2026-I";
+    private static final Optional<String> TODAS = Optional.empty();
 
     private static final AsignaturaOfertada ASIGNATURA =
             new AsignaturaOfertada("POO-204", "Programación", "06", "061");
@@ -89,7 +91,7 @@ class ConsultarSugerenciaServicioTest {
                                 DOCENTE.identificacion(),
                                 new HorasDelDocente(new BigDecimal("10"), new BigDecimal("6"))));
 
-        Sugerencia sugerencia = servicio.sugerencia(PERIODO, "POO-204", "A");
+        Sugerencia sugerencia = servicio.sugerencia(PERIODO, "POO-204", "A", TODAS);
 
         assertThat(sugerencia.version()).isEqualTo(2);
         assertThat(sugerencia.minimoAfinidad()).isEqualByComparingTo("3.5");
@@ -103,17 +105,39 @@ class ConsultarSugerenciaServicioTest {
     void dadoUnParaleloQueNoExiste_cuandoSeConsulta_entoncesNoPideNadaMas() {
         when(datos.paralelo(PERIODO, "POO-204", "A")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> servicio.sugerencia(PERIODO, "POO-204", "A"))
+        assertThatThrownBy(() -> servicio.sugerencia(PERIODO, "POO-204", "A", TODAS))
                 .isInstanceOf(ParaleloNoEncontrado.class);
         verify(afinidad, never()).pesos(any());
         verify(datos, never()).docentesActivos();
     }
 
     @Test
+    void dadoUnParaleloDeOtraCarrera_cuandoSeConsulta_entoncesNoPideNadaMas() {
+        when(datos.paralelo(PERIODO, "POO-204", "A")).thenReturn(Optional.of(OFERTADO));
+
+        assertThatThrownBy(
+                        () -> servicio.sugerencia(PERIODO, "POO-204", "A", Optional.of("OTRA-01")))
+                .isInstanceOf(OtraCarrera.class);
+        verify(afinidad, never()).pesos(any());
+        verify(datos, never()).docentesActivos();
+    }
+
+    @Test
+    void dadoUnParaleloDeSuCarrera_cuandoSeConsulta_entoncesResponde() {
+        when(datos.paralelo(PERIODO, "POO-204", "A")).thenReturn(Optional.of(OFERTADO));
+        when(afinidad.pesos(PERIODO)).thenReturn(Optional.of(PESOS));
+        when(datos.docentesActivos()).thenReturn(List.of(DOCENTE));
+        when(horas.delPeriodo(PERIODO, "TDS")).thenReturn(Map.of());
+
+        assertThat(servicio.sugerencia(PERIODO, "POO-204", "A", Optional.of("TDS")).candidatos())
+                .hasSize(1);
+    }
+
+    @Test
     void dadoUnParaleloRetirado_cuandoSeConsulta_entoncesNoPideNadaMas() {
         when(datos.paralelo(PERIODO, "POO-204", "A")).thenReturn(Optional.of(RETIRADO));
 
-        assertThatThrownBy(() -> servicio.sugerencia(PERIODO, "POO-204", "A"))
+        assertThatThrownBy(() -> servicio.sugerencia(PERIODO, "POO-204", "A", TODAS))
                 .isInstanceOf(ParaleloRetirado.class);
         verify(afinidad, never()).pesos(any());
         verify(datos, never()).docentesActivos();
@@ -124,7 +148,7 @@ class ConsultarSugerenciaServicioTest {
         when(datos.paralelo(PERIODO, "POO-204", "A")).thenReturn(Optional.of(OFERTADO));
         when(afinidad.pesos(PERIODO)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> servicio.sugerencia(PERIODO, "POO-204", "A"))
+        assertThatThrownBy(() -> servicio.sugerencia(PERIODO, "POO-204", "A", TODAS))
                 .isInstanceOf(PeriodoSinAbrir.class);
         verify(datos, never()).docentesActivos();
     }
@@ -135,7 +159,7 @@ class ConsultarSugerenciaServicioTest {
         when(afinidad.pesos(PERIODO)).thenReturn(Optional.of(PESOS));
         when(datos.docentesActivos()).thenThrow(new ProcesoConError("500"));
 
-        assertThatThrownBy(() -> servicio.sugerencia(PERIODO, "POO-204", "A"))
+        assertThatThrownBy(() -> servicio.sugerencia(PERIODO, "POO-204", "A", TODAS))
                 .isInstanceOf(ProcesoConError.class);
     }
 }

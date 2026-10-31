@@ -37,6 +37,10 @@ public record CambioDeRoles(
         QUITAR_ROL,
         /** Roles iniciales de un usuario de la demo (research §8). */
         INICIALIZAR,
+        /** Carrera indicada a un coordinador (F06-H05). */
+        INDICAR_CARRERA,
+        /** Carrera quitada a un coordinador (F06-H05). */
+        QUITAR_CARRERA,
         /** Responsable de consolidación designado en un periodo, con el anterior (F05-H03). */
         DESIGNAR_RESPONSABLE
     }

@@ -21,15 +21,19 @@ import ec.mdd.academico.puertos.entrada.ConsultarCarreras;
 import ec.mdd.academico.puertos.entrada.ConsultarOferta;
 import ec.mdd.academico.puertos.entrada.MantenerOferta;
 import ec.mdd.academico.puertos.entrada.PeriodoNoEncontrado;
+import ec.mdd.plataforma.errores.nucleo.AlcanceDeCarrera;
 import ec.mdd.plataforma.errores.nucleo.DetalleRespuesta;
 import ec.mdd.plataforma.errores.nucleo.SolicitudInvalida;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -69,8 +73,11 @@ class OfertaControlador implements OfertaApi {
     @Override
     @PreAuthorize(LECTURA)
     public ResponseEntity<OfertaDelPeriodo> consultarOferta(String codigo) {
-        ec.mdd.academico.dominio.OfertaDelPeriodo oferta =
+        Optional<String> propia = carreraPropia();
+        ec.mdd.academico.dominio.OfertaDelPeriodo completa =
                 existente(() -> consultar.oferta(codigo));
+        ec.mdd.academico.dominio.OfertaDelPeriodo oferta =
+                propia.map(completa::deCarrera).orElse(completa);
         Map<String, String> nombres = nombresDeLosCampos();
         HorasACubrir horas = oferta.horasACubrir();
         return ResponseEntity.ok(
@@ -143,11 +150,16 @@ class OfertaControlador implements OfertaApi {
     @PreAuthorize(LECTURA)
     public ResponseEntity<AsignaturaParalelo> consultarAsignaturaParalelo(
             String codigo, String asignatura, String paralelo) {
+        Optional<String> propia = carreraPropia();
         ec.mdd.academico.dominio.OfertaDelPeriodo oferta =
                 existente(() -> consultar.oferta(codigo));
         ec.mdd.academico.dominio.AsignaturaParalelo una =
                 oferta.asignaturaParalelo(asignatura, paralelo)
                         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        String suCarrera = oferta.datos().asignatura(asignatura).orElseThrow().carrera();
+        if (propia.isPresent() && !propia.get().equals(suCarrera)) {
+            throw new AccessDeniedException("La asignatura-paralelo es de otra carrera");
+        }
         return ResponseEntity.ok(respuesta(una, oferta, nombresDeLosCampos()));
     }
 
@@ -201,6 +213,14 @@ class OfertaControlador implements OfertaApi {
     private AsignaturaParalelo respuesta(
             String periodo, ec.mdd.academico.dominio.AsignaturaParalelo asignaturaParalelo) {
         return respuesta(asignaturaParalelo, consultar.oferta(periodo), nombresDeLosCampos());
+    }
+
+    /** La carrera a la que se limita quien solo tiene «lo propio» (D-64). */
+    private static Optional<String> carreraPropia() {
+        return AlcanceDeCarrera.propia(
+                SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .toList());
     }
 
     private static AsignaturaParalelo respuesta(

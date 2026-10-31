@@ -9,8 +9,10 @@ import java.util.List;
  * @param usuario nombre de usuario normalizado
  * @param roles identificadores de sus roles, ordenados
  * @param permisos permisos efectivos en la forma {@code FUNCIONALIDAD:TIPO[:PROPIO]}, ordenados
+ * @param carrera la carrera del coordinador; {@code null} si no tiene (D-64)
  */
-public record Autorizacion(String usuario, List<String> roles, List<String> permisos) {
+public record Autorizacion(
+        String usuario, List<String> roles, List<String> permisos, String carrera) {
 
     /** Copia las listas. */
     public Autorizacion {

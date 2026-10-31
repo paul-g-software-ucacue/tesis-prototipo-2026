@@ -51,6 +51,7 @@ public final class ReceptorSimulado implements AutoCloseable {
 
     private final List<Peticion> eventos = new CopyOnWriteArrayList<>();
     private final List<Peticion> consultas = new CopyOnWriteArrayList<>();
+    private final List<String> direcciones = new CopyOnWriteArrayList<>();
     private final Map<String, Deque<Respuesta>> respuestas = new HashMap<>();
     private final Deque<Integer> estadosEventos = new ArrayDeque<>();
     private final Deque<Integer> estadosToken = new ArrayDeque<>();
@@ -143,6 +144,11 @@ public final class ReceptorSimulado implements AutoCloseable {
         return List.copyOf(consultas);
     }
 
+    /** Las direcciones consultadas, con su query si la traen, en orden de llegada. */
+    public List<String> direccionesConsultadas() {
+        return List.copyOf(direcciones);
+    }
+
     /** Cuántos tokens emitió. */
     public int tokensEmitidos() {
         return tokens.get();
@@ -190,6 +196,7 @@ public final class ReceptorSimulado implements AutoCloseable {
             intercambio.getRequestBody().readAllBytes();
             String autorizacion = intercambio.getRequestHeaders().getFirst("Authorization");
             consultas.add(new Peticion(autorizacion == null ? "" : autorizacion, ""));
+            direcciones.add(intercambio.getRequestURI().toString());
             Respuesta respuesta = siguiente(intercambio.getRequestURI().getPath());
             esperar();
             byte[] bytes = respuesta.cuerpo().getBytes(StandardCharsets.UTF_8);

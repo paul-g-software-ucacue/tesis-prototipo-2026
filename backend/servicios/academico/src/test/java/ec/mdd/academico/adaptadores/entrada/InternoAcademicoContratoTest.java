@@ -59,6 +59,19 @@ class InternoAcademicoContratoTest {
     }
 
     @Test
+    void dadaUnaCarrera_cuandoConsulta_entoncesSoloLasDeEsaCarrera() throws Exception {
+        MvcResult resultado =
+                mvc.perform(
+                                get(RUTA.formatted("2026-I"))
+                                        .param("carrera", "OTRA")
+                                        .with(deProceso()))
+                        .andReturn();
+
+        assertThat(resultado.getResponse().getContentAsString()).isEqualTo("[]");
+        contrato.validar(resultado);
+    }
+
+    @Test
     void dadoUnPeriodoSinOferta_cuandoConsulta_entoncesListaVacia() throws Exception {
         MvcResult resultado = pedir("2026-II", deProceso());
 
@@ -176,12 +189,14 @@ class InternoAcademicoContratoTest {
 
         @Bean
         ConsultarAsignaturasOfertadas consultarAsignaturasOfertadas() {
-            return periodo ->
+            return (periodo, carrera) ->
                     switch (periodo) {
                         case "2026-I" ->
-                                List.of(
-                                        new AsignaturaConCampos(
-                                                "POO-204", "Programación", "06", "061"));
+                                carrera.filter("OTRA"::equals).isPresent()
+                                        ? List.of()
+                                        : List.of(
+                                                new AsignaturaConCampos(
+                                                        "POO-204", "Programación", "06", "061"));
                         case "2026-II" -> List.of();
                         default -> throw new PeriodoNoEncontrado(periodo);
                     };

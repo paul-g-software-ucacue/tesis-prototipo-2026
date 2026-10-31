@@ -34,10 +34,19 @@ class ErroresRolesTest {
                         org.assertj.core.groups.Tuple.tuple(
                                 ec.mdd.roles.dominio.PeriodoCerrado.class, "ROLES_PERIODO_CERRADO"),
                         org.assertj.core.groups.Tuple.tuple(
+                                ec.mdd.roles.puertos.entrada.CarreraSinRol.class,
+                                "ROLES_CARRERA_SIN_ROL"),
+                        org.assertj.core.groups.Tuple.tuple(
+                                ec.mdd.roles.puertos.entrada.UsuarioSinCarrera.class,
+                                "ROLES_USUARIO_SIN_CARRERA"),
+                        org.assertj.core.groups.Tuple.tuple(
                                 ec.mdd.roles.aplicacion.EventoNoReconocido.class,
                                 "COMUN_EVENTO_NO_RECONOCIDO"));
         assertThat(new ErroresRoles().entradas())
                 .filteredOn(entrada -> entrada.definicion().codigo().startsWith("ROLES_"))
+                .filteredOn(
+                        entrada ->
+                                !"ROLES_USUARIO_SIN_CARRERA".equals(entrada.definicion().codigo()))
                 .allMatch(entrada -> entrada.definicion().estado() == 409);
     }
 }

@@ -888,6 +888,14 @@ paths:
       description: >-
         Solo entre procesos, con el token de proceso: lo usa Generación para calcular la afinidad
         (ADR-010, ADR-023). Un periodo sin oferta responde la lista vacía; uno que no existe, 404.
+      parameters:
+        - name: carrera
+          in: query
+          required: false
+          description: Solo las de esta carrera, para quien solo tiene «lo propio» (F06-H05).
+          schema:
+            type: string
+            pattern: '^[0-9A-Z-]{1,20}$'
       responses:
         '200':
           description: Las asignaturas, una vez cada una.
@@ -916,7 +924,8 @@ paths:
       summary: 'Devuelve la oferta del periodo con las horas a cubrir: por asignatura, por carrera y del periodo.'
       description: >-
         Las retiradas se ven, pero no suman (RF-15). Dice si la oferta se puede cambiar: solo
-        mientras el periodo está en Planificación.
+        mientras el periodo está en Planificación. Quien solo tiene «lo propio» recibe su carrera,
+        con sus horas; sin carrera, 403 COMUN_CARRERA_SIN_INDICAR (F06-H05, D-64).
       x-mdd-permiso: [OFERTA:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]
       responses:
         '200':
@@ -980,6 +989,9 @@ paths:
       tags: [Oferta]
       operationId: consultarAsignaturaParalelo
       summary: 'Devuelve una asignatura-paralelo con los datos de su asignatura para la afinidad: campos, palabras clave y tronco común.'
+      description: >-
+        Quien solo tiene «lo propio» recibe 403 con otra carrera, y 403
+        COMUN_CARRERA_SIN_INDICAR sin carrera (F06-H05, D-64).
       x-mdd-permiso: [OFERTA:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]
       responses:
         '200':

@@ -34,12 +34,21 @@ const DOCENTE = {
 };
 
 /** La API de Roles y la lista de usuarios, con estado: lo que se crea y se asigna queda. */
+const CARRERA = {
+  codigo: '550613A01-P-0301',
+  nombre: 'DESARROLLO DE SOFTWARE',
+  estado: 'VIGENTE',
+};
+
 async function simularRoles(pagina: Page) {
   const roles: Record<string, unknown>[] = [ADMINISTRADOR, DOCENTE];
   const asignaciones: Record<string, string[]> = {
     'admin.demo': ['ADMINISTRADOR'],
     'docente.demo': ['DOCENTE'],
+    'coordinacion.demo': ['COORDINADOR_CARRERA'],
   };
+  const carreras: Record<string, string> = {};
+  await pagina.route('**/api/academico/carreras', (ruta) => ruta.fulfill({ json: [CARRERA] }));
   await pagina.route('**/api/roles/funcionalidades', (ruta) =>
     ruta.fulfill({ json: FUNCIONALIDADES }),
   );
@@ -59,9 +68,19 @@ async function simularRoles(pagina: Page) {
   });
   await pagina.route('**/api/roles/usuarios', (ruta) =>
     ruta.fulfill({
-      json: Object.entries(asignaciones).map(([usuario, suyos]) => ({ usuario, roles: suyos })),
+      json: Object.entries(asignaciones).map(([usuario, suyos]) => ({
+        usuario,
+        roles: suyos,
+        ...(carreras[usuario] ? { carrera: carreras[usuario] } : {}),
+      })),
     }),
   );
+  await pagina.route('**/api/roles/usuarios/*/carrera', async (ruta) => {
+    const usuario = decodeURIComponent(ruta.request().url().split('/').at(-2) ?? '');
+    const { carrera } = ruta.request().postDataJSON() as { carrera: string };
+    carreras[usuario] = carrera;
+    await ruta.fulfill({ json: { usuario, roles: asignaciones[usuario], carrera } });
+  });
   await pagina.route('**/api/roles/usuarios/*', async (ruta) => {
     const usuario = decodeURIComponent(ruta.request().url().split('/').at(-1) ?? '');
     const { roles: nuevos } = ruta.request().postDataJSON() as { roles: string[] };
@@ -73,6 +92,7 @@ async function simularRoles(pagina: Page) {
       json: [
         { usuario: 'admin.demo', nombre: 'Administración del sistema (demo)', activo: true },
         { usuario: 'docente.demo', nombre: 'Docente (demo)', activo: true },
+        { usuario: 'coordinacion.demo', nombre: 'Coordinación de carrera (demo)', activo: true },
       ],
     }),
   );
@@ -202,5 +222,32 @@ test.describe('accesibilidad de la pantalla «Roles»', () => {
     await page.getByRole('tab', { name: 'Usuarios' }).click();
     await expect(page.getByRole('table', { name: 'Usuarios y sus roles' })).toBeVisible();
     await sinFallas(page);
+  });
+
+  test('indicar la carrera de un coordinador', async ({ page }) => {
+    await simularApi(page, { sesion: SESION_ADMINISTRADOR });
+    await simularRoles(page);
+    await page.goto('/iniciar-sesion');
+    await ingresar(page, 'admin.demo');
+    await page.getByRole('link', { name: 'Roles' }).click();
+    await page.getByRole('tab', { name: 'Usuarios' }).click();
+    const tabla = page.getByRole('table', { name: 'Usuarios y sus roles' });
+    await expect(tabla.getByRole('row', { name: /coordinacion\.demo/ })).toContainText(
+      'Sin carrera',
+    );
+
+    await page.getByRole('button', { name: 'Indicar la carrera de coordinacion.demo' }).click();
+    const dialogo = page.getByRole('dialog', { name: 'Carrera de coordinacion.demo' });
+    await expect(dialogo).toBeVisible();
+    await expect(page.locator('.MuiDialog-container')).toHaveCSS('opacity', '1');
+    await sinFallas(page);
+
+    await dialogo.getByLabel('Carrera').selectOption(CARRERA.codigo);
+    await dialogo.getByRole('button', { name: 'Guardar' }).click();
+
+    await expect(dialogo).toBeHidden();
+    await expect(tabla.getByRole('row', { name: /coordinacion\.demo/ })).toContainText(
+      CARRERA.nombre,
+    );
   });
 });
