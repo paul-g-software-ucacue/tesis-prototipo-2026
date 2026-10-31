@@ -129,7 +129,7 @@ Escenario: Cargas completas
 **Transversales**
 
 - **FR-010**: Consultar el tablero MUST requerir leer el distributivo o leer las cargas (D-70).
-- **FR-011**: El periodo pedido MUST validarse por tipo, caracteres y largo con la regla de `codigo_periodo` del diccionario de datos (`AAAA-I` o `AAAA-II`, hasta 10), en el servidor y en la pantalla. Un periodo que no existe MUST responderse con un error del catálogo.
+- **FR-011**: El periodo pedido MUST validarse por tipo, caracteres y largo con la regla de Académico, su dueño (letras, números, punto, guion y guion bajo, hasta 20), en el servidor y en la pantalla. La regla de `codigo_periodo` del diccionario (`AAAA-I` o `AAAA-II`) es la del archivo de la carga 3: un periodo registrado en su pantalla puede tener otro código. Un periodo que no existe MUST responderse con un error del catálogo.
 - **FR-012**: Todo mensaje nuevo al usuario MUST salir del catálogo de errores, en «tú», sin detalles técnicos, y decir qué hacer (D-72, D-74).
 - **FR-013**: El tablero MUST NOT mostrar datos personales: solo dice si hay datos, no cuáles.
 

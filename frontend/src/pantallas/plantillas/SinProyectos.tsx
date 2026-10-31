@@ -70,10 +70,10 @@ export function SinProyectos({
             value={periodo}
             onChange={(evento) => setPeriodo(evento.target.value)}
             error={motivo !== null}
-            helperText={motivo ?? 'Como en los ciclos académicos: 2026-I o 2026-II.'}
+            helperText={motivo ?? 'El código del periodo, como está en «Periodos».'}
             required
             fullWidth
-            slotProps={{ htmlInput: { maxLength: 10, list: SUGERENCIAS } }}
+            slotProps={{ htmlInput: { maxLength: 20, list: SUGERENCIAS } }}
           />
           <datalist id={SUGERENCIAS}>
             {(periodos.data ?? []).map((uno) => (

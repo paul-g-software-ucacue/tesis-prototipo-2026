@@ -169,7 +169,7 @@ class HistorialDeCargasJdbcIntegrationTest {
     @ValueSource(
             strings = {
                 "periodo = NULL",
-                "periodo = '2026-III'",
+                "periodo = 'con espacio'",
                 "archivo = 'a.csv'",
                 "resultado = 'APLICADA'"
             })
@@ -185,5 +185,18 @@ class HistorialDeCargasJdbcIntegrationTest {
                                                         + " WHERE carga = 'matriculados_carrera'")
                                         .update())
                 .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void sinProyectos_admiteLosCodigosDeAcademico_noSoloLosDeLaCarga3() {
+        EntradaDeHistorial otroCodigo =
+                EntradaDeHistorial.sinProyectos("docentes", "003", "datos.demo", PRIMERA);
+        EntradaDeHistorial largo =
+                EntradaDeHistorial.sinProyectos(
+                        "docentes", "prueba-20.periodo_01", "datos.demo", PRIMERA.plusSeconds(1));
+
+        assertThat(historial.confirmarSinProyectos(otroCodigo).nueva()).isTrue();
+        assertThat(historial.confirmarSinProyectos(largo).nueva()).isTrue();
+        assertThat(historial.sinProyectos("docentes")).containsExactly(otroCodigo, largo);
     }
 }

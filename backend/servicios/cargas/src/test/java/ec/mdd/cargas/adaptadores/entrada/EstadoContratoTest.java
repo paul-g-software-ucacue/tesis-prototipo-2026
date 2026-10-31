@@ -156,10 +156,10 @@ class EstadoContratoTest {
             strings = {
                 "{}",
                 "{\"periodo\": \"\"}",
-                "{\"periodo\": \"2026-III\"}",
-                "{\"periodo\": \"26-I\"}",
-                "{\"periodo\": \"2026-i\"}",
-                "{\"periodo\": \"20260-IIII\"}"
+                "{\"periodo\": \"2026 I\"}",
+                "{\"periodo\": \"2026/I\"}",
+                "{\"periodo\": \"año-1\"}",
+                "{\"periodo\": \"123456789012345678901\"}"
             })
     void unPeriodoQueNoCumpleSuFormato_es400SolicitudInvalidaSinGuardar(String invalido)
             throws Exception {
@@ -177,5 +177,26 @@ class EstadoContratoTest {
                 .isEqualTo(201);
         assertThat(sinProyectos("{\"periodo\": \"2026-II\"}").getResponse().getStatus())
                 .isEqualTo(201);
+    }
+
+    /** Académico admite otros códigos, registrados en su pantalla, como 003 (F02-H02). */
+    @Test
+    void unPeriodoConOtroCodigoDeAcademico_tambienSeConfirma() throws Exception {
+        asignables.con("003", AsignablesDelPeriodo.NINGUNO);
+
+        MvcResult resultado = sinProyectos("{\"periodo\": \"003\"}");
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(201);
+        assertThat(JsonPath.<String>read(cuerpo(resultado), "$.periodo")).isEqualTo("003");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void unCodigoBienEscritoQueNoExiste_esPeriodoNoEncontrado() throws Exception {
+        MvcResult resultado = sinProyectos("{\"periodo\": \"2026-III\"}");
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(400);
+        assertThat(JsonPath.<String>read(cuerpo(resultado), "$.codigo"))
+                .isEqualTo("CARGAS_PERIODO_NO_ENCONTRADO");
     }
 }
