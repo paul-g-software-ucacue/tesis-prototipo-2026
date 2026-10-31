@@ -237,7 +237,7 @@ Plan aprobado por el autor el 2026-10-31.
   - los criterios de terminado de la constitución (§6).
 
   La evidencia debe decir que el escenario «Horas en otras carreras» solo se probó con datos simulados, y que queda para F06-H03. Commit, push, PR en borrador con `Refs #47` y marcarlo listo cuando sus comprobaciones pasen.
-- [ ] T029 Agregar en el issue #48 (F06-H03) los tres pendientes de esta historia:
+- [X] T029 Agregar en el issue #48 (F06-H03) los tres pendientes de esta historia:
   - demostrar el escenario «Horas en otras carreras» con datos reales;
   - aplicar el filtro de «lo propio» con el usuario ligado a su carrera;
   - el glosario dice que `Horas` son enteras, pero la oferta admite decimales: precisarlo cuando nazcan las asignaciones.
