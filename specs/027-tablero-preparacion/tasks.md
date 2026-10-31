@@ -184,7 +184,7 @@ Plan aprobado por el autor el 2026-10-30.
   - los criterios de terminado de la constitución (§6).
 
   Completar la evidencia. Commit, push, PR en borrador con `Refs #33` y marcarlo listo cuando sus comprobaciones pasen.
-- [ ] T015 Fusionar solo con la aprobación del autor. Verificar el despliegue en el equipo de demostración con evidencia (GitHub `demostracion` y los 8 contenedores sanos con la versión nueva). Después: la comprobación del autor, el PR de evidencia con `Closes #33` y borrar las ramas. F02 (#4) queda abierta hasta F02-H03 (#34, Ola 4). Si todas las historias del milestone «Ola 1 · Datos listos» están cerradas, cerrar el milestone.
+- [X] T015 Fusionar solo con la aprobación del autor. Verificar el despliegue en el equipo de demostración con evidencia (GitHub `demostracion` y los 8 contenedores sanos con la versión nueva). Después: la comprobación del autor, el PR de evidencia con `Closes #33` y borrar las ramas. F02 (#4) queda abierta hasta F02-H03 (#34, Ola 4). Si todas las historias del milestone «Ola 1 · Datos listos» están cerradas, cerrar el milestone.
 
 ---
 
