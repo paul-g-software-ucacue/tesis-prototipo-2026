@@ -186,7 +186,7 @@ Plan aprobado por el autor el 2026-10-30.
 
 ## Phase 5: Polish & Cross-Cutting Concerns
 
-- [ ] T026 `deploy/probar_afinidad.sh`, según [quickstart.md](quickstart.md), con los dos procesos reales, y su paso en `.github/workflows/perfil-consolidado.yml`:
+- [X] T026 `deploy/probar_afinidad.sh`, según [quickstart.md](quickstart.md), con los dos procesos reales, y su paso en `.github/workflows/perfil-consolidado.yml`:
   - un docente y una versión con pesos distintos en otro periodo (SC-002);
   - los errores y permisos de quickstart §4;
   - una ruta `/interno/…` con token de usuario, y por el API Gateway;
@@ -194,7 +194,7 @@ Plan aprobado por el autor el 2026-10-30.
   - con `datos` detenido, el mensaje en menos de 10 s (SC-004), y `datos` de vuelta y sano al terminar;
   - una ficha que no aparece en los logs de ningún contenedor (SC-005);
   - la base limpia al terminar.
-- [ ] T027 Crear `specs/028-puntaje-afinidad/evidencia.md`, y verificar:
+- [X] T027 Crear `specs/028-puntaje-afinidad/evidencia.md`, y verificar:
   - todas las pruebas del backend y la SPA, con su cobertura por módulo;
   - Spotless, SpotBugs, ESLint y TypeScript;
   - los scripts de `deploy/`, shellcheck y Gitleaks;
