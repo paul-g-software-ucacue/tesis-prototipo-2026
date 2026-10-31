@@ -61,6 +61,14 @@ Registro de las comprobaciones de la historia (issue #33): el tablero de prepara
 | El equipo de demostración con esta rama | `probar_equipo.sh` pasa todos sus pasos (código 0): despliegue, sin cambios, el token tras reiniciar identidad, el túnel, las claves, la vuelta atrás (131 s con `ESPERA_SALUD=60`) y el primer despliegue roto; 1396,5 MiB después de iniciar sesión (alerta: 7168). El equipo de demostración siguió con sus 8 contenedores sanos | `BUILDX_BUILDER=mdd-limpio deploy/equipo/probar_equipo.sh` | 2026-10-30 |
 | Criterios de terminado de la constitución 2.2.0 (§6) | Los 2 escenarios del issue pasan; contrato publicado y verificado; `ArquitecturaTest` y `ModulosTest` pasan; sin códigos de error nuevos; el periodo validado en contrato, servidor y pantalla con casos válidos e inválidos; mensajes en «tú»; JavaDoc al día; SpotBugs en verde; el glosario no cambia | Esta evidencia | 2026-10-30 |
 
+## El arreglo del código del periodo
+
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| Las pruebas | Primero fallaron con `003`, y después pasan. `EstadoContratoTest`: `003` se confirma «sin proyectos» (201) y `2026-III`, bien escrito pero inexistente, es `CARGAS_PERIODO_NO_ENCONTRADO`; `2026 I`, `2026/I`, `año-1` y uno de 21 caracteres dan `COMUN_SOLICITUD_INVALIDA`. `HistorialDeCargasJdbcIntegrationTest`, 16 de 16: la base admite `003` y uno de 20 caracteres, y rechaza uno con espacio. `Preparacion.test.tsx`: se elige `003 · 2027-01` y pide su tablero | `./gradlew :servicios:cargas:test integrationTest`, `npx vitest run` | 2026-10-31 |
+| De punta a punta | `probar_preparacion.sh`, 7 de 7, con un periodo registrado en la pantalla con otro código: su tablero y «sin proyectos». Los 17 scripts terminan en 0; la base sin nada de prueba; 0 valores de prueba en los logs | `deploy/probar_*.sh`, perfil reconstruido | 2026-10-31 |
+| Todo lo demás | Backend: 1475 pruebas sin fallas. SPA: 274 de Vitest y 94 de 94 de Playwright. `probar_equipo.sh`, código 0; el equipo de demostración siguió con sus 8 contenedores sanos. shellcheck y Gitleaks sin observaciones | `./gradlew build integrationTest`, `npx playwright test`, `deploy/equipo/probar_equipo.sh` | 2026-10-31 |
+
 ## Notas
 
 - **Un corte en la verificación.** La PC se reinició en medio de los scripts, y la limpieza del que corría no llegó a ejecutarse: quedaron datos de prueba en la base del perfil local. Se vació solo ese volumen (`tesis-prototipo-2026_datos-postgres`) y se repitió la corrida completa; el del equipo de demostración (`mdd_datos-postgres`) no se tocó. El equipo volvió solo después del reinicio.
