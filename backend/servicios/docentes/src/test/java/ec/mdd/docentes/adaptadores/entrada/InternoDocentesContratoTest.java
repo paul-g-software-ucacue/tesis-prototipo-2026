@@ -5,11 +5,13 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import ec.mdd.docentes.dominio.DocentesDePrueba;
+import ec.mdd.docentes.puertos.entrada.ConsultarDocentesActivos;
 import ec.mdd.docentes.puertos.entrada.ConsultarFormacion;
 import ec.mdd.docentes.puertos.entrada.DocenteNoEncontrado;
 import ec.mdd.plataforma.errores.ErroresAutoConfiguracion;
 import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
 import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -24,7 +26,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 /**
- * La consulta interna de la formación cumple su contrato y da lo mínimo (ADR-023, principio IX).
+ * Las consultas internas de Docentes cumplen su contrato y dan lo mínimo (ADR-023, principio IX).
  */
 @WebMvcTest(InternoDocentesControlador.class)
 @ImportAutoConfiguration({SeguridadProcesoAutoConfiguracion.class, ErroresAutoConfiguracion.class})
@@ -35,6 +37,7 @@ import org.springframework.test.web.servlet.MvcResult;
 class InternoDocentesContratoTest {
 
     private static final String RUTA = "/interno/docentes/%s/formacion";
+    private static final String RUTA_ACTIVOS = "/interno/docentes/activos";
 
     private final ValidadorDeContrato contrato = ValidadorDeContrato.para("docentes");
 
@@ -90,6 +93,37 @@ class InternoDocentesContratoTest {
         contrato.validar(resultado);
     }
 
+    @Test
+    void dadoUnProceso_cuandoConsultaLosActivos_entonces200SoloConLoNecesario() throws Exception {
+        MvcResult resultado = mvc.perform(get(RUTA_ACTIVOS).with(deProceso())).andReturn();
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString())
+                .startsWith(
+                        "[{\"identificacion\":\"0109990010\","
+                                + "\"nombre\":\"PERALTA MALDONADO JUAN ANDRES\","
+                                + "\"dedicacion\":\"TC\",\"horasContratadas\":40,"
+                                + "\"formacion\":{\"tercerNivel\":")
+                .doesNotContain(
+                        "correo",
+                        "telefono",
+                        "tipoPersonal",
+                        "fechaIngreso",
+                        "EMPRESA XYZ",
+                        "registroSenescyt",
+                        "asignaturasAfines",
+                        "carreraBase");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnTokenDeUsuario_cuandoConsultaLosActivos_entonces403() throws Exception {
+        MvcResult resultado = mvc.perform(get(RUTA_ACTIVOS).with(jwt())).andReturn();
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(403);
+        contrato.validar(resultado);
+    }
+
     private MvcResult pedir(String identificacion, JwtRequestPostProcessor token) throws Exception {
         return mvc.perform(get(RUTA.formatted(identificacion)).with(token)).andReturn();
     }
@@ -110,6 +144,11 @@ class InternoDocentesContratoTest {
                 }
                 return DocentesDePrueba.ficha();
             };
+        }
+
+        @Bean
+        ConsultarDocentesActivos consultarDocentesActivos() {
+            return () -> List.of(DocentesDePrueba.docente());
         }
     }
 }

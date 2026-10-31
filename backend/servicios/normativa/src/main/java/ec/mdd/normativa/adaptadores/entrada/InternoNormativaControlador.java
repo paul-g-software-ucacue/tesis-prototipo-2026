@@ -30,7 +30,11 @@ class InternoNormativaControlador implements InternoApi {
         try {
             PesosDeLaVersion pesos = consultar.pesos(periodo);
             return ResponseEntity.ok(
-                    new PesosDelPeriodo(periodo, pesos.version(), respuesta(pesos.pesos())));
+                    new PesosDelPeriodo(
+                            periodo,
+                            pesos.version(),
+                            respuesta(pesos.pesos()),
+                            pesos.minimo().valor()));
         } catch (PeriodoSinVersion error) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }

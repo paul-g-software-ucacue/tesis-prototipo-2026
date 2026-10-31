@@ -4,13 +4,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
+import ec.mdd.academico.dominio.EstadoDeAsignaturaParalelo;
 import ec.mdd.academico.puertos.entrada.AsignaturaConCampos;
 import ec.mdd.academico.puertos.entrada.ConsultarAsignaturasOfertadas;
+import ec.mdd.academico.puertos.entrada.ConsultarParaleloDeLaOferta;
+import ec.mdd.academico.puertos.entrada.ParaleloConCampos;
 import ec.mdd.academico.puertos.entrada.PeriodoNoEncontrado;
 import ec.mdd.plataforma.errores.ErroresAutoConfiguracion;
 import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
 import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -24,7 +29,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-/** La consulta interna de las asignaturas ofertadas cumple su contrato (ADR-023). */
+/** Las consultas internas de la oferta cumplen su contrato y dan lo mínimo (ADR-023). */
 @WebMvcTest(InternoAcademicoControlador.class)
 @ImportAutoConfiguration({SeguridadProcesoAutoConfiguracion.class, ErroresAutoConfiguracion.class})
 @Import(InternoAcademicoContratoTest.Dobles.class)
@@ -34,6 +39,7 @@ import org.springframework.test.web.servlet.MvcResult;
 class InternoAcademicoContratoTest {
 
     private static final String RUTA = "/interno/academico/periodos/%s/asignaturas-ofertadas";
+    private static final String RUTA_PARALELO = "/interno/academico/periodos/%s/oferta/%s/%s";
 
     private final ValidadorDeContrato contrato = ValidadorDeContrato.para("academico");
 
@@ -91,8 +97,73 @@ class InternoAcademicoContratoTest {
         contrato.validar(resultado);
     }
 
+    @Test
+    void dadoUnParalelo_cuandoConsulta_entonces200SoloConLoQueNecesitaLaSugerencia()
+            throws Exception {
+        MvcResult resultado = pedirParalelo("2026-I", "POO-204", "A_NOCTURNA", deProceso());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString())
+                .isEqualTo(
+                        "{\"asignatura\":\"POO-204\",\"nombre\":\"Programación\","
+                                + "\"carrera\":\"TDS\",\"paralelo\":\"A_NOCTURNA\","
+                                + "\"campoAmplio\":\"06\",\"campoEspecifico\":\"061\","
+                                + "\"troncoComun\":true,\"horasSemanales\":2.5,"
+                                + "\"estado\":\"OFERTADA\"}")
+                .doesNotContain("palabrasClave", "estudiantes", "sede");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnParaleloRetirado_cuandoConsulta_entonces200ConSuEstado() throws Exception {
+        MvcResult resultado = pedirParalelo("2026-I", "POO-204", "B", deProceso());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("\"estado\":\"RETIRADA\"");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnParaleloQueNoEstaEnLaOferta_cuandoConsulta_entonces404() throws Exception {
+        MvcResult resultado = pedirParalelo("2026-I", "POO-204", "Z", deProceso());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(404);
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnPeriodoQueNoExiste_cuandoConsultaUnParalelo_entonces404() throws Exception {
+        MvcResult resultado = pedirParalelo("NADA", "POO-204", "A", deProceso());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(404);
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnParaleloMalEscrito_cuandoConsulta_entonces400() throws Exception {
+        MvcResult resultado = pedirParalelo("2026-I", "POO-204", "a b", deProceso());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(400);
+    }
+
+    @Test
+    void dadoUnTokenDeUsuario_cuandoConsultaUnParalelo_entonces403() throws Exception {
+        MvcResult resultado = pedirParalelo("2026-I", "POO-204", "B", jwt());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(403);
+        contrato.validar(resultado);
+    }
+
     private MvcResult pedir(String periodo, JwtRequestPostProcessor token) throws Exception {
         return mvc.perform(get(RUTA.formatted(periodo)).with(token)).andReturn();
+    }
+
+    private MvcResult pedirParalelo(
+            String periodo, String asignatura, String paralelo, JwtRequestPostProcessor token)
+            throws Exception {
+        return mvc.perform(get(RUTA_PARALELO.formatted(periodo, asignatura, paralelo)).with(token))
+                .andReturn();
     }
 
     private static JwtRequestPostProcessor deProceso() {
@@ -114,6 +185,33 @@ class InternoAcademicoContratoTest {
                         case "2026-II" -> List.of();
                         default -> throw new PeriodoNoEncontrado(periodo);
                     };
+        }
+
+        @Bean
+        ConsultarParaleloDeLaOferta consultarParaleloDeLaOferta() {
+            return (periodo, asignatura, paralelo) -> {
+                if (!"2026-I".equals(periodo)) {
+                    throw new PeriodoNoEncontrado(periodo);
+                }
+                return switch (paralelo) {
+                    case "A_NOCTURNA" -> Optional.of(uno(EstadoDeAsignaturaParalelo.OFERTADA));
+                    case "B" -> Optional.of(uno(EstadoDeAsignaturaParalelo.RETIRADA));
+                    default -> Optional.empty();
+                };
+            };
+        }
+
+        private static ParaleloConCampos uno(EstadoDeAsignaturaParalelo estado) {
+            return new ParaleloConCampos(
+                    "POO-204",
+                    "Programación",
+                    "TDS",
+                    "A_NOCTURNA",
+                    "06",
+                    "061",
+                    true,
+                    new BigDecimal("2.5"),
+                    estado);
         }
     }
 }

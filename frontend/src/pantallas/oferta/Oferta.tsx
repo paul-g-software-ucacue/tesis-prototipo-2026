@@ -3,7 +3,8 @@
 // del periodo. La ven quienes leen la oferta, el distributivo o los catálogos; con «Catálogos y
 // datos maestros: escritura» o «Distributivo del periodo: escritura», y solo con el periodo en
 // Planificación, se oferta, se corrige, se retira y se vuelve a ofertar (D-70). Nada se borra; el
-// servidor valida cada operación.
+// servidor valida cada operación. Quien puede leer un docente ve, en cada fila ofertada y en
+// cualquier estado del periodo, la sugerencia de docentes (F06-H02).
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -21,7 +22,7 @@ import { useState } from 'react';
 import { AvisoDeError } from '../../errores/AvisoDeError';
 import { traducirError, type MensajeDeError } from '../../errores/traducir';
 import { useTitulo } from '../../navegacion/useTitulo';
-import { ESCRITURA_DE_LAS_CARRERAS } from '../../sesion/funcionalidades';
+import { ESCRITURA_DE_LAS_CARRERAS, LECTURA_DE_LOS_DOCENTES } from '../../sesion/funcionalidades';
 import { tieneAlguno } from '../../sesion/permisos';
 import { useSesionActual } from '../../sesion/useSesionActual';
 import { useCarreras } from '../carreras/consultas';
@@ -39,11 +40,12 @@ import {
   type OfertaDelPeriodo,
 } from './consultas';
 import { DialogoCorregir, DialogoOfertar } from './DialogosDeOferta';
+import { SugerenciaDelParalelo } from './SugerenciaDelParalelo';
 
 /** Lo que está abierto: un diálogo, para ofertar o sobre una asignatura-paralelo. */
 type Abierto =
   | { que: 'ofertar' }
-  | { que: 'corregir' | 'retirar'; asignaturaParalelo: AsignaturaParalelo }
+  | { que: 'corregir' | 'retirar' | 'sugerencia'; asignaturaParalelo: AsignaturaParalelo }
   | null;
 
 function paralelos(cantidad: number) {
@@ -54,6 +56,7 @@ export function Oferta() {
   useTitulo('Oferta del periodo');
   const sesion = useSesionActual();
   const escritura = tieneAlguno(sesion.data?.permisos, ESCRITURA_DE_LAS_CARRERAS);
+  const puedeVerSugerencia = tieneAlguno(sesion.data?.permisos, LECTURA_DE_LOS_DOCENTES);
   const consultas = useQueryClient();
   const periodos = usePeriodos();
   const [elegido, setElegido] = useState<string | null>(null);
@@ -146,6 +149,7 @@ export function Oferta() {
               carrera={carrera}
               oferta={oferta.data}
               puedeCambiar={puedeCambiar}
+              puedeVerSugerencia={puedeVerSugerencia}
               alAbrir={setAbierto}
               alVolverAOfertar={(una) => void cambiarEstado(una, 'OFERTADA')}
             />
@@ -172,6 +176,13 @@ export function Oferta() {
           alGuardar={terminar}
         />
       )}
+      {abierto?.que === 'sugerencia' && periodo && (
+        <SugerenciaDelParalelo
+          periodo={periodo}
+          asignaturaParalelo={abierto.asignaturaParalelo}
+          alCerrar={() => setAbierto(null)}
+        />
+      )}
       {abierto?.que === 'retirar' && (
         <DialogoConfirmar
           titulo={`Retirar ${abierto.asignaturaParalelo.asignatura} de ${abierto.asignaturaParalelo.paralelo}`}
@@ -190,12 +201,14 @@ function OfertaDeCarrera({
   carrera,
   oferta,
   puedeCambiar,
+  puedeVerSugerencia,
   alAbrir,
   alVolverAOfertar,
 }: {
   carrera: OfertaDelPeriodo['carreras'][number];
   oferta: OfertaDelPeriodo;
   puedeCambiar: boolean;
+  puedeVerSugerencia: boolean;
   alAbrir: (abierto: Abierto) => void;
   alVolverAOfertar: (asignaturaParalelo: AsignaturaParalelo) => void;
 }) {
@@ -231,6 +244,7 @@ function OfertaDeCarrera({
                           key={una.paralelo}
                           asignaturaParalelo={una}
                           puedeCambiar={puedeCambiar}
+                          puedeVerSugerencia={puedeVerSugerencia}
                           alAbrir={alAbrir}
                           alVolverAOfertar={alVolverAOfertar}
                         />
@@ -255,11 +269,13 @@ function OfertaDeCarrera({
 function Paralelo({
   asignaturaParalelo: una,
   puedeCambiar,
+  puedeVerSugerencia,
   alAbrir,
   alVolverAOfertar,
 }: {
   asignaturaParalelo: AsignaturaParalelo;
   puedeCambiar: boolean;
+  puedeVerSugerencia: boolean;
   alAbrir: (abierto: Abierto) => void;
   alVolverAOfertar: (asignaturaParalelo: AsignaturaParalelo) => void;
 }) {
@@ -287,9 +303,18 @@ function Paralelo({
           {`Pasa las ${horas(una.horasDeLaAsignatura)} h de la asignatura: corrígela.`}
         </Typography>
       )}
-      {puedeCambiar && (
+      {(puedeCambiar || (puedeVerSugerencia && !retirada)) && (
         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
-          {retirada ? (
+          {puedeVerSugerencia && !retirada && (
+            <Button
+              size="small"
+              aria-label={`Sugerencia de ${una.asignatura} ${una.paralelo}`}
+              onClick={() => alAbrir({ que: 'sugerencia', asignaturaParalelo: una })}
+            >
+              Sugerencia
+            </Button>
+          )}
+          {puedeCambiar && retirada && (
             <Button
               size="small"
               aria-label={`Volver a ofertar ${una.asignatura} ${una.paralelo}`}
@@ -297,7 +322,8 @@ function Paralelo({
             >
               Volver a ofertar
             </Button>
-          ) : (
+          )}
+          {puedeCambiar && !retirada && (
             <>
               <Button
                 size="small"

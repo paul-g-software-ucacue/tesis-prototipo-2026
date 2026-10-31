@@ -56,7 +56,8 @@ class ConsultarAfinidadServicioTest {
                             new BigDecimal("3"),
                             new BigDecimal("2.5"),
                             new BigDecimal("1.5"),
-                            new BigDecimal("4")));
+                            new BigDecimal("4")),
+                    new BigDecimal("3.5"));
 
     private final DatosParaAfinidad datos = mock(DatosParaAfinidad.class);
     private final ConsultarAfinidadServicio servicio = new ConsultarAfinidadServicio(datos);

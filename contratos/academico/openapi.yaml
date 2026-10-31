@@ -848,6 +848,36 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /interno/academico/periodos/{codigo}/oferta/{asignatura}/{paralelo}:
+    parameters:
+      - $ref: '#/components/parameters/Codigo'
+      - $ref: '#/components/parameters/AsignaturaDeLaOferta'
+      - $ref: '#/components/parameters/Paralelo'
+    get:
+      tags: [Interno]
+      operationId: consultarParaleloDeLaOferta
+      summary: Devuelve una asignatura-paralelo con lo que hace falta para sugerir docentes.
+      description: >-
+        Solo entre procesos, con el token de proceso: lo usa Generación para la sugerencia (RF-25,
+        ADR-023). Una retirada responde 200, con su estado; un periodo o un paralelo que no existen,
+        404.
+      responses:
+        '200':
+          description: La asignatura-paralelo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParaleloDeLaOferta'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
   /interno/academico/periodos/{codigo}/asignaturas-ofertadas:
     parameters:
       - $ref: '#/components/parameters/Codigo'
@@ -1146,6 +1176,30 @@ components:
           schema:
             $ref: '../comun/errores.yaml#/components/schemas/Error'
   schemas:
+    ParaleloDeLaOferta:
+      description: Lo que Generación necesita de una asignatura-paralelo (principio IX).
+      type: object
+      required: [asignatura, nombre, carrera, paralelo, campoAmplio, campoEspecifico, troncoComun, horasSemanales, estado]
+      properties:
+        asignatura:
+          $ref: '#/components/schemas/CodigoDeAsignatura'
+        nombre:
+          type: string
+        carrera:
+          type: string
+        paralelo:
+          $ref: '#/components/schemas/CodigoDeParalelo'
+        campoAmplio:
+          $ref: '#/components/schemas/CodigoDeCampoAmplio'
+        campoEspecifico:
+          $ref: '#/components/schemas/CodigoDeCampoEspecifico'
+        troncoComun:
+          type: boolean
+        horasSemanales:
+          description: Las horas efectivas del paralelo; admiten decimales.
+          type: number
+        estado:
+          $ref: '#/components/schemas/EstadoDeAsignaturaParalelo'
     AsignaturaOfertada:
       description: Lo que Generación necesita de una asignatura ofertada (principio IX).
       type: object

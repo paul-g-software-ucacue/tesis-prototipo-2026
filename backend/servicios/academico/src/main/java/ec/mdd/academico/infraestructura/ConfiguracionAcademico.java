@@ -15,6 +15,7 @@ import ec.mdd.academico.aplicacion.ConsultarAsignaturasOfertadasServicio;
 import ec.mdd.academico.aplicacion.ConsultarCarrerasServicio;
 import ec.mdd.academico.aplicacion.ConsultarEstructuraServicio;
 import ec.mdd.academico.aplicacion.ConsultarOfertaServicio;
+import ec.mdd.academico.aplicacion.ConsultarParaleloDeLaOfertaServicio;
 import ec.mdd.academico.aplicacion.ConsultarPeriodosServicio;
 import ec.mdd.academico.aplicacion.ConsultarReferenciasServicio;
 import ec.mdd.academico.aplicacion.CorregirPeriodoServicio;
@@ -30,6 +31,7 @@ import ec.mdd.academico.puertos.entrada.ConsultarAsignaturasOfertadas;
 import ec.mdd.academico.puertos.entrada.ConsultarCarreras;
 import ec.mdd.academico.puertos.entrada.ConsultarEstructura;
 import ec.mdd.academico.puertos.entrada.ConsultarOferta;
+import ec.mdd.academico.puertos.entrada.ConsultarParaleloDeLaOferta;
 import ec.mdd.academico.puertos.entrada.ConsultarPeriodos;
 import ec.mdd.academico.puertos.entrada.ConsultarReferencias;
 import ec.mdd.academico.puertos.entrada.CorregirPeriodo;
@@ -208,6 +210,12 @@ public class ConfiguracionAcademico {
     public ConsultarAsignaturasOfertadas consultarAsignaturasOfertadas(
             RepositorioPeriodos periodos, RepositorioOferta oferta, RepositorioCarreras carreras) {
         return new ConsultarAsignaturasOfertadasServicio(periodos, oferta, carreras);
+    }
+
+    /** Una asignatura-paralelo de la oferta, para otros procesos (F06-H02, ADR-023). */
+    @Bean
+    public ConsultarParaleloDeLaOferta consultarParaleloDeLaOferta(ConsultarOferta consultar) {
+        return new ConsultarParaleloDeLaOfertaServicio(consultar);
     }
 
     /** Las referencias que Docentes valida y muestra (F03-H04): su API publicada en el proceso. */

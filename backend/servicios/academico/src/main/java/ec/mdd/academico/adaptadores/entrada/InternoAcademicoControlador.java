@@ -1,8 +1,12 @@
 package ec.mdd.academico.adaptadores.entrada;
 
 import ec.mdd.academico.adaptadores.entrada.api.AsignaturaOfertada;
+import ec.mdd.academico.adaptadores.entrada.api.EstadoDeAsignaturaParalelo;
 import ec.mdd.academico.adaptadores.entrada.api.InternoApi;
+import ec.mdd.academico.adaptadores.entrada.api.ParaleloDeLaOferta;
 import ec.mdd.academico.puertos.entrada.ConsultarAsignaturasOfertadas;
+import ec.mdd.academico.puertos.entrada.ConsultarParaleloDeLaOferta;
+import ec.mdd.academico.puertos.entrada.ParaleloConCampos;
 import ec.mdd.academico.puertos.entrada.PeriodoNoEncontrado;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -18,9 +22,12 @@ import org.springframework.web.server.ResponseStatusException;
 class InternoAcademicoControlador implements InternoApi {
 
     private final ConsultarAsignaturasOfertadas consultar;
+    private final ConsultarParaleloDeLaOferta paralelos;
 
-    InternoAcademicoControlador(ConsultarAsignaturasOfertadas consultar) {
+    InternoAcademicoControlador(
+            ConsultarAsignaturasOfertadas consultar, ConsultarParaleloDeLaOferta paralelos) {
         this.consultar = consultar;
+        this.paralelos = paralelos;
     }
 
     @Override
@@ -39,5 +46,32 @@ class InternoAcademicoControlador implements InternoApi {
         } catch (PeriodoNoEncontrado error) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
+    }
+
+    @Override
+    public ResponseEntity<ParaleloDeLaOferta> consultarParaleloDeLaOferta(
+            String codigo, String asignatura, String paralelo) {
+        try {
+            return paralelos
+                    .paralelo(codigo, asignatura, paralelo)
+                    .map(InternoAcademicoControlador::respuesta)
+                    .map(ResponseEntity::ok)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        } catch (PeriodoNoEncontrado error) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    private static ParaleloDeLaOferta respuesta(ParaleloConCampos paralelo) {
+        return new ParaleloDeLaOferta(
+                paralelo.asignatura(),
+                paralelo.nombre(),
+                paralelo.carrera(),
+                paralelo.paralelo(),
+                paralelo.campoAmplio(),
+                paralelo.campoEspecifico(),
+                paralelo.troncoComun(),
+                paralelo.horasSemanales(),
+                EstadoDeAsignaturaParalelo.fromValue(paralelo.estado().name()));
     }
 }

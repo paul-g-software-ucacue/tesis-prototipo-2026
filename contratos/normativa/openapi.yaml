@@ -7,6 +7,7 @@
 # x-mdd-permiso (ADR-021). Las dos las tienen el Administrador del sistema y el Vicerrector
 # académico (D-65, D-66, D-67).
 # Desde F06-H01: los pesos de afinidad del periodo para Generación, por una ruta interna (ADR-023).
+# Desde F06-H02: esa ruta también trae el mínimo de afinidad (RN-19).
 openapi: 3.0.3
 info:
   title: MDD · Normativa
@@ -165,13 +166,13 @@ paths:
     get:
       tags: [Interno]
       operationId: consultarPesosDelPeriodo
-      summary: Devuelve los pesos de afinidad de la versión que rige el periodo.
+      summary: Devuelve los pesos y el mínimo de afinidad de la versión que rige el periodo.
       description: >-
         Solo entre procesos, con el token de proceso: lo usa Generación para calcular la afinidad
         (ADR-010, ADR-023). Un periodo sin versión responde 404.
       responses:
         '200':
-          description: La versión y sus pesos.
+          description: La versión, sus pesos y su mínimo.
           content:
             application/json:
               schema:
@@ -547,7 +548,7 @@ components:
           example: 1
     PesosDelPeriodo:
       type: object
-      required: [periodo, version, pesos]
+      required: [periodo, version, pesos, minimoAfinidad]
       properties:
         periodo:
           $ref: '#/components/schemas/CodigoDePeriodo'
@@ -556,6 +557,9 @@ components:
           minimum: 1
         pesos:
           $ref: '#/components/schemas/PesosDeAfinidad'
+        minimoAfinidad:
+          description: El puntaje desde el cual se sugiere un docente (RN-19).
+          type: number
     PesosDeAfinidad:
       description: Los puntos que suma cada título, experiencia o curso relacionado (RN-24).
       type: object
