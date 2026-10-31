@@ -56,7 +56,8 @@ Registro de las comprobaciones de la historia (issue #46): el puntaje de afinida
 |---|---|---|---|
 | El despliegue | `e935075` (#161): «success · Sano en 64 s». Los 8 contenedores sanos, con las 6 imágenes propias en `…-e93507532bf5` | GitHub Deployments, `docker ps` (solo lectura) | 2026-10-31 |
 | La comprobación del autor con la ficha | «Afinidad por asignatura» aparece al final de la ficha y pide elegir un periodo. `001 · 2026-2`, sin oferta: «Este periodo todavía no tiene oferta.» `003 · 2027-01`, sin abrir: el aviso «Periodo sin abrir» con el mensaje del catálogo. Las dos respuestas pasaron por la consulta real de `distributivo` a `datos`, donde están el periodo, su versión y su oferta | Capturas del autor (no se copian al repositorio) | 2026-10-31 |
-| Lo que no se vio en la demo | El autor no abrió `003`, único periodo con oferta, así que en su demo no hay puntajes ni desglose. Eso quedó comprobado con el script, con los dos procesos reales, y con Playwright | `probar_afinidad.sh`, `e2e/docentes.spec.ts` | 2026-10-31 |
+| El cálculo en la demo | El autor abrió `003` con la versión 1. La ficha muestra «Con los pesos de la versión 1 de la normativa» y una sola fila, SOCIALES Y HUMANIDADES, con 0 puntos y «Nada de la ficha coincide con el campo de esta asignatura.» Es correcto, según una consulta de solo lectura: los 3 paralelos ofertados son de esa asignatura, con campo 03 y específico 032, y los títulos del docente están en 07/074 y 06/061 | Captura del autor, base del equipo (solo lectura) | 2026-10-31 |
+| Lo que no se vio en la demo | Un puntaje mayor que 0 con su desglose, porque nada de la ficha coincide con la asignatura ofertada. Eso quedó comprobado con el script, con los dos procesos reales, y con Playwright | `probar_afinidad.sh`, `e2e/docentes.spec.ts` | 2026-10-31 |
 
 ## Notas
 
