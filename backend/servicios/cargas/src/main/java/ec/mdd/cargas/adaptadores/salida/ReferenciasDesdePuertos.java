@@ -7,8 +7,10 @@ import ec.mdd.academico.puertos.entrada.PeriodoDeReferencia;
 import ec.mdd.academico.puertos.entrada.ReferenciasDeAcademico;
 import ec.mdd.academico.puertos.entrada.UnidadDeReferencia;
 import ec.mdd.cargas.dominio.ReferenciasExistentes;
+import ec.mdd.cargas.puertos.salida.PeriodoAcademico;
 import ec.mdd.cargas.puertos.salida.ReferenciasDelSistema;
 import ec.mdd.docentes.puertos.entrada.ConsultarIdentificaciones;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -41,6 +43,21 @@ public final class ReferenciasDesdePuertos implements ReferenciasDelSistema {
                 codigos(referencias.periodos(), PeriodoDeReferencia::codigo),
                 codigos(referencias.asignaturas(), AsignaturaDeReferencia::codigo),
                 docentes.identificaciones());
+    }
+
+    @Override
+    public List<PeriodoAcademico> periodos() {
+        return academico.referencias().periodos().stream()
+                .sorted(Comparator.comparing(PeriodoDeReferencia::inicio).reversed())
+                .map(
+                        periodo ->
+                                new PeriodoAcademico(
+                                        periodo.codigo(),
+                                        periodo.nombre(),
+                                        periodo.inicio(),
+                                        periodo.abierto(),
+                                        periodo.cerrado()))
+                .toList();
     }
 
     private static <T> Set<String> codigos(List<T> lista, Function<T, String> codigo) {

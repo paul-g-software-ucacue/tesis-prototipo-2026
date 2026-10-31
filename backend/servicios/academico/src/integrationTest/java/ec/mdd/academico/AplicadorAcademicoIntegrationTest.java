@@ -229,6 +229,29 @@ class AplicadorAcademicoIntegrationTest {
     }
 
     @Test
+    void tieneDatosEn_laOfertaYLosMatriculadosSoloCuentanEnSuPeriodo() {
+        confirmar(LotesDePrueba.lote("estructura_organica", "01_estructura_organica.csv"));
+        confirmar(LotesDePrueba.lote("carreras", "02_carreras.csv"));
+        confirmar(LotesDePrueba.lote("ciclos_academicos", "03_ciclos_academicos.csv"));
+        confirmar(LotesDePrueba.lote("asignaturas_malla", "04_asignaturas_malla.csv"));
+        confirmar(LotesDePrueba.lote("oferta_periodo", "05_oferta_periodo.csv"));
+        confirmar(LotesDePrueba.lote("matriculados_carrera", "10_matriculados_carrera.csv"));
+
+        assertThat(aplicador.tieneDatosEn("oferta_periodo", "2026-I")).isTrue();
+        assertThat(aplicador.tieneDatosEn("oferta_periodo", "2026-II")).isFalse();
+        assertThat(aplicador.tieneDatosEn("matriculados_carrera", "2026-I")).isTrue();
+        assertThat(aplicador.tieneDatosEn("matriculados_carrera", "2026-II")).isFalse();
+        assertThat(aplicador.tieneDatosEn("carreras", "2026-II"))
+                .as("una carga que no depende del periodo responde como tieneDatos")
+                .isTrue();
+
+        jdbc.sql("UPDATE academico.asignatura_paralelo SET estado = 'RETIRADA'").update();
+        assertThat(aplicador.tieneDatosEn("oferta_periodo", "2026-I"))
+                .as("solo retiradas")
+                .isFalse();
+    }
+
+    @Test
     void unaSegundaSedeMatriz_rechazaSuFilaYNoAplicaNada() {
         LoteDeCarga estructura =
                 LotesDePrueba.lote("estructura_organica", "01_estructura_organica.csv");

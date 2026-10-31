@@ -19,6 +19,7 @@ import {
   LECTURA_DE_LA_ESTRUCTURA,
   LECTURA_DE_LA_OFERTA,
   LECTURA_DE_LOS_DOCENTES,
+  PREPARACION_DEL_PERIODO,
 } from '../sesion/funcionalidades';
 import { tieneAlguno, type PermisoRequerido } from '../sesion/permisos';
 import { useSesionActual } from '../sesion/useSesionActual';
@@ -53,6 +54,7 @@ const ENTRADAS: Entrada[] = [
   { ruta: '/cargos', texto: 'Cargos', permiso: LECTURA_DE_LOS_DOCENTES },
   { ruta: '/proyectos', texto: 'Proyectos', permiso: LECTURA_DE_LOS_DOCENTES },
   { ruta: '/plantillas', texto: 'Plantillas de carga', permiso: DESCARGA_DE_PLANTILLAS },
+  { ruta: '/preparacion', texto: 'Preparación del periodo', permiso: PREPARACION_DEL_PERIODO },
 ];
 
 export function Marco() {

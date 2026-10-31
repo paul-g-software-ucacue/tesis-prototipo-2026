@@ -15,6 +15,7 @@ import ec.mdd.academico.dominio.UnidadOrganica;
 import ec.mdd.academico.puertos.entrada.ConsultarCarreras;
 import ec.mdd.academico.puertos.entrada.ConsultarReferencias;
 import ec.mdd.academico.puertos.entrada.MantenerCarreras;
+import ec.mdd.academico.puertos.salida.NormativaDelPeriodo;
 import ec.mdd.academico.puertos.salida.RepositorioCarreras;
 import ec.mdd.academico.puertos.salida.RepositorioEstructura;
 import ec.mdd.academico.puertos.salida.RepositorioPeriodos;
@@ -26,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -68,7 +70,19 @@ final class CarrerasEnMemoria implements RepositorioCarreras {
 
     /** Las referencias reales sobre este doble, la estructura de prueba y el periodo 2026-I. */
     ConsultarReferencias referencias() {
-        return new ConsultarReferenciasServicio(this, estructura(), periodos());
+        return new ConsultarReferenciasServicio(
+                this,
+                estructura(),
+                periodos(),
+                new NormativaDelPeriodo() {
+                    @Override
+                    public OptionalInt versionDe(String codigo) {
+                        return OptionalInt.empty();
+                    }
+
+                    @Override
+                    public void asociar(String codigo, int version, String quien) {}
+                });
     }
 
     /** Un solo periodo de prueba, 2026-I, para las referencias de Docentes (F03-H05). */

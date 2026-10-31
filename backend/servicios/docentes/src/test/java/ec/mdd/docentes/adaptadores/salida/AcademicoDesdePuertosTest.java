@@ -50,7 +50,9 @@ class AcademicoDesdePuertosTest {
                                             "2026-I",
                                             "Periodo académico 2026-I",
                                             LocalDate.of(2026, 4, 6),
-                                            LocalDate.of(2026, 8, 7))));
+                                            LocalDate.of(2026, 8, 7),
+                                            false,
+                                            false)));
 
     @Test
     void dadasLasReferenciasDeAcademico_cuandoSePiden_entoncesTraenCadaNombrePorCodigo() {

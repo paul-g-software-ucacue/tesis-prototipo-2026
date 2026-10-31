@@ -145,6 +145,12 @@ jobs:
         shell: bash
         run: deploy/probar_orden_cargas.sh
 
+      # F02-H02: el tablero de preparación de 2026-I con docentes «con errores», con las 10 cargas,
+      # abierto y listo; 2026-II sin su oferta; los periodos inválidos y quién lo ve. Borra lo que creó.
+      - name: El tablero de preparación de punta a punta
+        shell: bash
+        run: deploy/probar_preparacion.sh
+
       # shell: bash agrega pipefail, así que tee no oculta el código de salida del script.
       # Después de iniciar sesión (D-34): la medición de referencia de R-19 desde B00-H03.
       - name: Medición de R-19 después de iniciar sesión

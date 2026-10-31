@@ -13,12 +13,14 @@ import { Docentes } from './pantallas/docentes/Docentes';
 import { Proyectos } from './pantallas/proyectos/Proyectos';
 import { Oferta } from './pantallas/oferta/Oferta';
 import { Plantillas } from './pantallas/plantillas/Plantillas';
+import { Preparacion } from './pantallas/preparacion/Preparacion';
 import { Periodos } from './pantallas/periodos/Periodos';
 import { Roles } from './pantallas/roles/Roles';
 import { RutaConPermiso } from './sesion/RutaConPermiso';
 import { RutaProtegida } from './sesion/RutaProtegida';
 import {
   DESCARGA_DE_PLANTILLAS,
+  PREPARACION_DEL_PERIODO,
   LECTURA_DE_LA_ESTRUCTURA,
   LECTURA_DE_LA_OFERTA,
   LECTURA_DE_LOS_DOCENTES,
@@ -111,6 +113,14 @@ export const rutasDeLaSpa: RouteObject[] = [
         element: (
           <RutaConPermiso cualquieraDe={DESCARGA_DE_PLANTILLAS}>
             <Plantillas />
+          </RutaConPermiso>
+        ),
+      },
+      {
+        path: 'preparacion',
+        element: (
+          <RutaConPermiso cualquieraDe={PREPARACION_DEL_PERIODO}>
+            <Preparacion />
           </RutaConPermiso>
         ),
       },

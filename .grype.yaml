@@ -38,6 +38,77 @@ ignore:
     reason: "La imagen oficial de Caddy 2.11.7 trae curl 8.22.0-r0 de Alpine; el arreglo (8.23.0-r0) exige que la reconstruyan. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1. La imagen del frontend ya actualiza curl (F01-H04)."
     desde: 2026-10-27
     vence: 2026-11-16
+  # PostgreSQL y Caddy: las demás de curl y libcurl de Alpine, de la misma versión
+  - vulnerability: CVE-2026-86411
+    package: { name: libcurl, version: "8.22.0-r0", type: apk }
+    reason: "Vulnerabilidad crítica. Las imágenes oficiales de PostgreSQL 18.6 y Caddy 2.11.7, también las del 2026-10-21, traen libcurl 8.22.0-r0 de Alpine; el arreglo (8.23.0-r0) exige que las reconstruyan. PostgreSQL no se expone fuera de la red de Docker y, mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1. La imagen del frontend ya actualiza curl (F02-H02)."
+    desde: 2026-10-30
+    vence: 2026-11-16
+  - vulnerability: CVE-2026-86411
+    package: { name: curl, version: "8.22.0-r0", type: apk }
+    reason: "Vulnerabilidad crítica. La imagen oficial de Caddy 2.11.7, también la del 2026-10-21, trae curl 8.22.0-r0 de Alpine; el arreglo (8.23.0-r0) exige que la reconstruyan. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1. La imagen del frontend ya actualiza curl (F02-H02)."
+    desde: 2026-10-30
+    vence: 2026-11-16
+  - vulnerability: CVE-2026-87866
+    package: { name: libcurl, version: "8.22.0-r0", type: apk }
+    reason: "Vulnerabilidad crítica. Las imágenes oficiales de PostgreSQL 18.6 y Caddy 2.11.7, también las del 2026-10-21, traen libcurl 8.22.0-r0 de Alpine; el arreglo (8.23.0-r0) exige que las reconstruyan. PostgreSQL no se expone fuera de la red de Docker y, mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1. La imagen del frontend ya actualiza curl (F02-H02)."
+    desde: 2026-10-30
+    vence: 2026-11-16
+  - vulnerability: CVE-2026-87866
+    package: { name: curl, version: "8.22.0-r0", type: apk }
+    reason: "Vulnerabilidad crítica. La imagen oficial de Caddy 2.11.7, también la del 2026-10-21, trae curl 8.22.0-r0 de Alpine; el arreglo (8.23.0-r0) exige que la reconstruyan. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1. La imagen del frontend ya actualiza curl (F02-H02)."
+    desde: 2026-10-30
+    vence: 2026-11-16
+  - vulnerability: CVE-2026-86409
+    package: { name: libcurl, version: "8.22.0-r0", type: apk }
+    reason: "Vulnerabilidad alta. Las imágenes oficiales de PostgreSQL 18.6 y Caddy 2.11.7, también las del 2026-10-21, traen libcurl 8.22.0-r0 de Alpine; el arreglo (8.23.0-r0) exige que las reconstruyan. PostgreSQL no se expone fuera de la red de Docker y, mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1. La imagen del frontend ya actualiza curl (F02-H02)."
+    desde: 2026-10-30
+    vence: 2026-11-16
+  - vulnerability: CVE-2026-86409
+    package: { name: curl, version: "8.22.0-r0", type: apk }
+    reason: "Vulnerabilidad alta. La imagen oficial de Caddy 2.11.7, también la del 2026-10-21, trae curl 8.22.0-r0 de Alpine; el arreglo (8.23.0-r0) exige que la reconstruyan. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1. La imagen del frontend ya actualiza curl (F02-H02)."
+    desde: 2026-10-30
+    vence: 2026-11-16
+  - vulnerability: CVE-2026-86410
+    package: { name: libcurl, version: "8.22.0-r0", type: apk }
+    reason: "Vulnerabilidad alta. Las imágenes oficiales de PostgreSQL 18.6 y Caddy 2.11.7, también las del 2026-10-21, traen libcurl 8.22.0-r0 de Alpine; el arreglo (8.23.0-r0) exige que las reconstruyan. PostgreSQL no se expone fuera de la red de Docker y, mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1. La imagen del frontend ya actualiza curl (F02-H02)."
+    desde: 2026-10-30
+    vence: 2026-11-16
+  - vulnerability: CVE-2026-86410
+    package: { name: curl, version: "8.22.0-r0", type: apk }
+    reason: "Vulnerabilidad alta. La imagen oficial de Caddy 2.11.7, también la del 2026-10-21, trae curl 8.22.0-r0 de Alpine; el arreglo (8.23.0-r0) exige que la reconstruyan. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1. La imagen del frontend ya actualiza curl (F02-H02)."
+    desde: 2026-10-30
+    vence: 2026-11-16
+  - vulnerability: CVE-2026-86412
+    package: { name: libcurl, version: "8.22.0-r0", type: apk }
+    reason: "Vulnerabilidad alta. Las imágenes oficiales de PostgreSQL 18.6 y Caddy 2.11.7, también las del 2026-10-21, traen libcurl 8.22.0-r0 de Alpine; el arreglo (8.23.0-r0) exige que las reconstruyan. PostgreSQL no se expone fuera de la red de Docker y, mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1. La imagen del frontend ya actualiza curl (F02-H02)."
+    desde: 2026-10-30
+    vence: 2026-11-16
+  - vulnerability: CVE-2026-86412
+    package: { name: curl, version: "8.22.0-r0", type: apk }
+    reason: "Vulnerabilidad alta. La imagen oficial de Caddy 2.11.7, también la del 2026-10-21, trae curl 8.22.0-r0 de Alpine; el arreglo (8.23.0-r0) exige que la reconstruyan. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1. La imagen del frontend ya actualiza curl (F02-H02)."
+    desde: 2026-10-30
+    vence: 2026-11-16
+  - vulnerability: CVE-2026-92386
+    package: { name: libcurl, version: "8.22.0-r0", type: apk }
+    reason: "Vulnerabilidad alta. Las imágenes oficiales de PostgreSQL 18.6 y Caddy 2.11.7, también las del 2026-10-21, traen libcurl 8.22.0-r0 de Alpine; el arreglo (8.23.0-r0) exige que las reconstruyan. PostgreSQL no se expone fuera de la red de Docker y, mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1. La imagen del frontend ya actualiza curl (F02-H02)."
+    desde: 2026-10-30
+    vence: 2026-11-16
+  - vulnerability: CVE-2026-92386
+    package: { name: curl, version: "8.22.0-r0", type: apk }
+    reason: "Vulnerabilidad alta. La imagen oficial de Caddy 2.11.7, también la del 2026-10-21, trae curl 8.22.0-r0 de Alpine; el arreglo (8.23.0-r0) exige que la reconstruyan. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1. La imagen del frontend ya actualiza curl (F02-H02)."
+    desde: 2026-10-30
+    vence: 2026-11-16
+  - vulnerability: CVE-2026-92387
+    package: { name: libcurl, version: "8.22.0-r0", type: apk }
+    reason: "Vulnerabilidad alta. Las imágenes oficiales de PostgreSQL 18.6 y Caddy 2.11.7, también las del 2026-10-21, traen libcurl 8.22.0-r0 de Alpine; el arreglo (8.23.0-r0) exige que las reconstruyan. PostgreSQL no se expone fuera de la red de Docker y, mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1. La imagen del frontend ya actualiza curl (F02-H02)."
+    desde: 2026-10-30
+    vence: 2026-11-16
+  - vulnerability: CVE-2026-92387
+    package: { name: curl, version: "8.22.0-r0", type: apk }
+    reason: "Vulnerabilidad alta. La imagen oficial de Caddy 2.11.7, también la del 2026-10-21, trae curl 8.22.0-r0 de Alpine; el arreglo (8.23.0-r0) exige que la reconstruyan. Mientras dure, el túnel no se activa: Caddy queda solo en 127.0.0.1. La imagen del frontend ya actualiza curl (F02-H02)."
+    desde: 2026-10-30
+    vence: 2026-11-16
   # Caddy y cloudflared: go-jose de sus binarios
   - vulnerability: GHSA-mgcc-cww5-fp2q
     package: { name: github.com/go-jose/go-jose/v4, version: "v4.1.5", type: go-module, location: "/usr/bin/caddy" }

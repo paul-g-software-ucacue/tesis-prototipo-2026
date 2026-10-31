@@ -20,6 +20,9 @@
 # archivo. consultarEstadoDeLasCargas dice si cada carga está pendiente o cargada, según lo que tiene
 # su servicio dueño; confirmarSinProyectos declara que un periodo no tiene proyectos aprobados (RF-18)
 # y queda en el historial de la carga de proyectos.
+# Desde F02-H02: consultarPreparacionDelPeriodo es el tablero de preparación de un periodo (RF-56):
+# el estado de cada carga en ese periodo, también «con errores», lo que falta para crear el
+# distributivo y si está listo, con la lista de periodos para elegir.
 openapi: 3.0.3
 info:
   title: MDD · cargas
@@ -41,6 +44,8 @@ tags:
     description: El historial de las cargas confirmadas (RF-10).
   - name: Estado
     description: El estado de cada carga y la confirmación «sin proyectos» (RF-56, RF-18).
+  - name: Preparacion
+    description: El tablero de preparación del periodo (RF-56, glosario «Tablero de preparación»).
 paths:
   /api/cargas/sesion:
     get:
@@ -330,6 +335,50 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EstadoDeLasCargas'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/cargas/preparacion:
+    get:
+      tags: [Preparacion]
+      operationId: consultarPreparacionDelPeriodo
+      summary: El tablero de preparación de un periodo, con la lista de periodos para elegir.
+      description: >-
+        El estado de cada carga en el periodo: la oferta y los matriculados cuentan solo con datos de
+        ese periodo; los proyectos, si alguno es asignable en él o está confirmado «sin proyectos»;
+        las demás, como en consultarEstadoDeLasCargas. Una carga sin datos cuyo último intento de
+        confirmar fue rechazado está CON_ERRORES. Lo que falta son las cargas obligatorias que no
+        están cargadas y, si es el caso, el periodo sin abrir (sin su versión de normativa) o
+        cerrado. Sin el parámetro, usa el periodo que empieza más tarde. Se calcula en cada
+        consulta; no muestra datos, solo si los hay.
+      x-mdd-permiso: [CARGAS:LECTURA, DISTRIBUTIVO:LECTURA]
+      parameters:
+        - name: periodo
+          in: query
+          required: false
+          description: El periodo del tablero; si no va, el que empieza más tarde.
+          schema:
+            $ref: '#/components/schemas/CodigoDePeriodo'
+      responses:
+        '200':
+          description: El tablero del periodo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreparacionDelPeriodo'
+        '400':
+          description: >-
+            COMUN_SOLICITUD_INVALIDA si el periodo no cumple su formato, o
+            CARGAS_PERIODO_NO_ENCONTRADO si no está en los ciclos académicos (errores.md).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
         '401':
           $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
         '403':
@@ -802,8 +851,11 @@ components:
         periodo:
           $ref: '#/components/schemas/CodigoDePeriodo'
     EstadoDeLaCarga:
+      description: >-
+        Si una carga tiene datos (glosario «Estado de la carga»). CON_ERRORES solo lo da el tablero
+        de preparación (F02-H02): una carga sin datos cuyo último intento de confirmar fue rechazado.
       type: string
-      enum: [PENDIENTE, CARGADA, SIN_PROYECTOS]
+      enum: [PENDIENTE, CARGADA, SIN_PROYECTOS, CON_ERRORES]
     CargaQueFalta:
       description: Una carga anterior que todavía no tiene datos.
       type: object
@@ -854,3 +906,82 @@ components:
           maxItems: 10
           items:
             $ref: '#/components/schemas/EstadoDeCarga'
+    PeriodoParaElegir:
+      type: object
+      required: [codigo, nombre]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        nombre:
+          type: string
+          example: Periodo académico 2026-I
+    CargaDelPeriodo:
+      description: Una de las 10 cargas, con su estado en el periodo del tablero.
+      type: object
+      required: [numero, codigo, nombre, obligatoriedad, estado]
+      properties:
+        numero:
+          type: integer
+          minimum: 1
+          maximum: 10
+        codigo:
+          type: string
+          pattern: '^[a-z_]{1,40}$'
+          example: docentes
+        nombre:
+          type: string
+          example: Docentes contratados (con ficha académica)
+        obligatoriedad:
+          $ref: '#/components/schemas/Obligatoriedad'
+        estado:
+          $ref: '#/components/schemas/EstadoDeLaCarga'
+        motivo:
+          description: Solo en CON_ERRORES, el código del catálogo del último rechazo.
+          type: string
+          example: CARGAS_CARGA_CON_ERRORES
+    TipoDeLoQueFalta:
+      type: string
+      enum: [CARGA, PERIODO_SIN_ABRIR, PERIODO_CERRADO, SIN_PERIODOS]
+    LoQueFalta:
+      description: >-
+        Algo que falta para crear el distributivo: una carga obligatoria que no está cargada, el
+        periodo sin abrir o cerrado, o que no hay periodos.
+      type: object
+      required: [tipo]
+      properties:
+        tipo:
+          $ref: '#/components/schemas/TipoDeLoQueFalta'
+        carga:
+          $ref: '#/components/schemas/CargaQueFalta'
+        estado:
+          $ref: '#/components/schemas/EstadoDeLaCarga'
+    PreparacionDelPeriodo:
+      description: El tablero de preparación de un periodo (glosario «Tablero de preparación», RF-56).
+      type: object
+      required: [periodos, cargas, faltan, listo]
+      properties:
+        periodos:
+          description: Los periodos de los ciclos académicos, del que empieza más tarde al más antiguo.
+          type: array
+          items:
+            $ref: '#/components/schemas/PeriodoParaElegir'
+        periodo:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        abierto:
+          description: Si el periodo tiene su versión de normativa (F02-H01).
+          type: boolean
+        cerrado:
+          type: boolean
+        cargas:
+          description: Las 10 cargas en su orden; ninguna si no hay periodos.
+          type: array
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/CargaDelPeriodo'
+        faltan:
+          type: array
+          items:
+            $ref: '#/components/schemas/LoQueFalta'
+        listo:
+          description: Si se puede crear el distributivo del periodo; verdadero solo si no falta nada.
+          type: boolean

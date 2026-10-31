@@ -5,11 +5,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 import ec.mdd.academico.dominio.TipoDeUnidad;
+import ec.mdd.academico.puertos.entrada.AbrirPeriodo;
 import ec.mdd.academico.puertos.entrada.MantenerEstructura;
 import ec.mdd.cargas.dominio.CargaQueFalta;
 import ec.mdd.cargas.dominio.EntradaDeHistorial;
 import ec.mdd.cargas.dominio.EstadoDeCarga;
 import ec.mdd.cargas.dominio.EstadoDeLaCarga;
+import ec.mdd.cargas.dominio.PreparacionDelPeriodo;
 import ec.mdd.cargas.dominio.ResultadoDeHistorial;
 import ec.mdd.cargas.puertos.entrada.ArchivoSubido;
 import ec.mdd.cargas.puertos.entrada.ArchivoValidado;
@@ -19,7 +21,10 @@ import ec.mdd.cargas.puertos.entrada.ConfirmarCarga;
 import ec.mdd.cargas.puertos.entrada.ConfirmarSinProyectos;
 import ec.mdd.cargas.puertos.entrada.ConsultarEstadoDeLasCargas;
 import ec.mdd.cargas.puertos.entrada.ConsultarHistorial;
+import ec.mdd.cargas.puertos.entrada.ConsultarPreparacion;
 import ec.mdd.cargas.puertos.entrada.PeriodoConProyectos;
+import ec.mdd.cargas.puertos.entrada.PeriodoParaElegir;
+import ec.mdd.cargas.puertos.entrada.PreparacionConsultada;
 import ec.mdd.cargas.puertos.entrada.ValidarArchivo;
 import ec.mdd.cargas.puertos.salida.PeriodoNoEncontrado;
 import ec.mdd.plataforma.cargas.TipoDeRegistro;
@@ -30,6 +35,7 @@ import java.io.UncheckedIOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -78,6 +84,8 @@ class ConfirmarLasDiezCargasIntegrationTest {
     @Autowired private ConsultarEstadoDeLasCargas estado;
     @Autowired private ConfirmarSinProyectos sinProyectos;
     @Autowired private MantenerEstructura estructura;
+    @Autowired private ConsultarPreparacion preparacion;
+    @Autowired private AbrirPeriodo abrir;
 
     private static ArchivoSubido archivo(String carga) {
         int numero = List.copyOf(CARGAS.keySet()).indexOf(carga) + 1;
@@ -174,6 +182,9 @@ class ConfirmarLasDiezCargasIntegrationTest {
     @Order(2)
     void lasDiezCargasEnSuOrden_quedanAplicadasSinErrores() {
         for (Map.Entry<String, Integer> carga : CARGAS.entrySet()) {
+            if (carga.getKey().equals("docentes")) {
+                elTableroSinDocentes();
+            }
             if (carga.getKey().equals("proyectos_practicas")) {
                 sinProyectosAntesDeLosProyectos();
             }
@@ -222,6 +233,35 @@ class ConfirmarLasDiezCargasIntegrationTest {
                 .extracting(EntradaDeHistorial::resultado)
                 .as("la confirmación se queda en el historial")
                 .containsExactly(ResultadoDeHistorial.APLICADA, ResultadoDeHistorial.SIN_PROYECTOS);
+    }
+
+    private static List<String> queFalta(PreparacionDelPeriodo tablero) {
+        return tablero.faltan().stream()
+                .map(falta -> falta.carga().map(CargaQueFalta::codigo).orElse(falta.tipo().name()))
+                .toList();
+    }
+
+    private static EstadoDeLaCarga estadoEn(PreparacionDelPeriodo tablero, String carga) {
+        return tablero.cargas().stream()
+                .filter(una -> una.codigo().equals(carga))
+                .findFirst()
+                .orElseThrow()
+                .estado();
+    }
+
+    /** Escenario 1 de F02-H02: con las cargas 01 a 05, sin docentes, el tablero no está listo. */
+    private void elTableroSinDocentes() {
+        PreparacionDelPeriodo tablero = preparacion.preparacion(Optional.of("2026-I")).tablero();
+
+        assertThat(tablero.listo()).isFalse();
+        assertThat(estadoEn(tablero, "docentes")).isEqualTo(EstadoDeLaCarga.PENDIENTE);
+        assertThat(queFalta(tablero))
+                .as("la política viene precargada (F04-H01)")
+                .containsExactly(
+                        "docentes",
+                        "cargos_autoridades",
+                        "proyectos_practicas",
+                        "PERIODO_SIN_ABRIR");
     }
 
     /** Con las cargas 01 a 08 y sin proyectos, el periodo 2026-II se confirma «sin proyectos». */
@@ -344,6 +384,36 @@ class ConfirmarLasDiezCargasIntegrationTest {
         assertThat(filas("cargas.historial_carga"))
                 .as("las 10 aplicadas, «sin proyectos» de 2026-II y esta repetida")
                 .isEqualTo(12);
+    }
+
+    @Test
+    @Order(6)
+    void elTableroDe2026I_conTodoYElPeriodoAbierto_estaListo_y2026IINoTieneSuOferta() {
+        PreparacionDelPeriodo antes = preparacion.preparacion(Optional.of("2026-I")).tablero();
+        assertThat(queFalta(antes))
+                .as("las 10 cargadas; solo falta abrir el periodo")
+                .containsExactly("PERIODO_SIN_ABRIR");
+
+        abrir.abrir("2026-I", 1, QUIEN);
+        long inicio = System.nanoTime();
+        PreparacionConsultada consultada = preparacion.preparacion(Optional.empty());
+        long milisegundos = (System.nanoTime() - inicio) / 1_000_000;
+        System.out.println("Tablero de preparación: " + milisegundos + " ms");
+
+        assertThat(milisegundos).as("SC-003: menos de 3 s").isLessThan(3_000);
+        assertThat(consultada.periodos())
+                .extracting(PeriodoParaElegir::codigo)
+                .containsExactly("2026-II", "2026-I");
+        PreparacionDelPeriodo listo = preparacion.preparacion(Optional.of("2026-I")).tablero();
+        assertThat(listo.listo()).isTrue();
+        assertThat(listo.cargas())
+                .allSatisfy(una -> assertThat(una.estado()).isEqualTo(EstadoDeLaCarga.CARGADA));
+
+        PreparacionDelPeriodo segundo = consultada.tablero();
+        assertThat(segundo.periodo()).contains("2026-II");
+        assertThat(estadoEn(segundo, "oferta_periodo")).isEqualTo(EstadoDeLaCarga.PENDIENTE);
+        assertThat(estadoEn(segundo, "matriculados_carrera")).isEqualTo(EstadoDeLaCarga.PENDIENTE);
+        assertThat(queFalta(segundo)).containsExactly("oferta_periodo", "PERIODO_SIN_ABRIR");
     }
 
     @Test

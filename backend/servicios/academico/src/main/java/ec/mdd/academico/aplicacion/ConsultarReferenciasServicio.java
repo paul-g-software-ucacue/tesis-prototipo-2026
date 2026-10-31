@@ -1,5 +1,6 @@
 package ec.mdd.academico.aplicacion;
 
+import ec.mdd.academico.dominio.EstadoPeriodo;
 import ec.mdd.academico.puertos.entrada.AsignaturaDeReferencia;
 import ec.mdd.academico.puertos.entrada.CampoAmplioDeReferencia;
 import ec.mdd.academico.puertos.entrada.CarreraDeReferencia;
@@ -7,6 +8,7 @@ import ec.mdd.academico.puertos.entrada.ConsultarReferencias;
 import ec.mdd.academico.puertos.entrada.PeriodoDeReferencia;
 import ec.mdd.academico.puertos.entrada.ReferenciasDeAcademico;
 import ec.mdd.academico.puertos.entrada.UnidadDeReferencia;
+import ec.mdd.academico.puertos.salida.NormativaDelPeriodo;
 import ec.mdd.academico.puertos.salida.RepositorioCarreras;
 import ec.mdd.academico.puertos.salida.RepositorioEstructura;
 import ec.mdd.academico.puertos.salida.RepositorioPeriodos;
@@ -21,15 +23,21 @@ public final class ConsultarReferenciasServicio implements ConsultarReferencias 
     private final RepositorioCarreras repositorio;
     private final RepositorioEstructura estructura;
     private final RepositorioPeriodos periodos;
+    private final NormativaDelPeriodo normativa;
 
-    /** Recibe los repositorios de las carreras, de la estructura orgánica y de los periodos. */
+    /**
+     * Recibe los repositorios de las carreras, de la estructura orgánica y de los periodos, y la
+     * versión de normativa de cada periodo (F02-H02).
+     */
     public ConsultarReferenciasServicio(
             RepositorioCarreras repositorio,
             RepositorioEstructura estructura,
-            RepositorioPeriodos periodos) {
+            RepositorioPeriodos periodos,
+            NormativaDelPeriodo normativa) {
         this.repositorio = repositorio;
         this.estructura = estructura;
         this.periodos = periodos;
+        this.normativa = normativa;
     }
 
     @Override
@@ -62,7 +70,12 @@ public final class ConsultarReferenciasServicio implements ConsultarReferencias 
                         .map(
                                 p ->
                                         new PeriodoDeReferencia(
-                                                p.codigo(), p.nombre(), p.inicio(), p.fin()))
+                                                p.codigo(),
+                                                p.nombre(),
+                                                p.inicio(),
+                                                p.fin(),
+                                                normativa.versionDe(p.codigo()).isPresent(),
+                                                p.estado() == EstadoPeriodo.CERRADO))
                         .sorted(Comparator.comparing(PeriodoDeReferencia::codigo))
                         .toList());
     }

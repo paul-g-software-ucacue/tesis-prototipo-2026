@@ -18,6 +18,13 @@ public interface AplicadorDeCargas {
      */
     boolean tieneDatos(String carga);
 
+    /**
+     * Si el dueño tiene al menos un registro vigente de la carga en ese periodo (F02-H02).
+     *
+     * @throws IllegalArgumentException si no atiende esa carga
+     */
+    boolean tieneDatosEn(String carga, String periodo);
+
     /** La vista previa del lote frente a lo que tiene el dueño. */
     VistaPreviaDelLote previsualizar(LoteDeCarga lote);
 

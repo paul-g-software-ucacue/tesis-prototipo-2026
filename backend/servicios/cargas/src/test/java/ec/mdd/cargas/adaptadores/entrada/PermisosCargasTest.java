@@ -26,7 +26,8 @@ import org.springframework.test.web.servlet.MockMvc;
     PlantillasControlador.class,
     SubidaControlador.class,
     HistorialControlador.class,
-    EstadoControlador.class
+    EstadoControlador.class,
+    PreparacionControlador.class
 })
 @ImportAutoConfiguration({SeguridadProcesoAutoConfiguracion.class, ErroresAutoConfiguracion.class})
 @Import({ConfiguracionCargas.class, ErroresCargas.class, ReferenciasDePrueba.class})
@@ -60,7 +61,8 @@ class PermisosCargasTest {
                         "GET /api/cargas/plantillas/estructura_organica/historial"
                                 + " ([CARGAS:LECTURA, DISTRIBUTIVO:LECTURA])",
                         "GET /api/cargas/estado ([CARGAS:LECTURA, DISTRIBUTIVO:LECTURA])",
-                        "POST /api/cargas/sin-proyectos (CARGAS:ESCRITURA)");
+                        "POST /api/cargas/sin-proyectos (CARGAS:ESCRITURA)",
+                        "GET /api/cargas/preparacion ([CARGAS:LECTURA, DISTRIBUTIVO:LECTURA])");
 
         verificador.verificar(mvc, conversor);
     }
