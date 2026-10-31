@@ -202,7 +202,7 @@ Plan aprobado por el autor el 2026-10-30.
   - los criterios de terminado de la constitución (§6).
 
   Completar la evidencia. Commit, push, PR en borrador con `Refs #46` y marcarlo listo cuando sus comprobaciones pasen.
-- [ ] T028 Fusionar solo con la aprobación del autor. Verificar el despliegue en el equipo de demostración con evidencia (GitHub `demostracion` y los 8 contenedores sanos con la versión nueva). Después: la comprobación del autor y el PR de evidencia con `Closes #46`.
+- [X] T028 Fusionar solo con la aprobación del autor. Verificar el despliegue en el equipo de demostración con evidencia (GitHub `demostracion` y los 8 contenedores sanos con la versión nueva). Después: la comprobación del autor y el PR de evidencia con `Closes #46`.
 
 ---
 
