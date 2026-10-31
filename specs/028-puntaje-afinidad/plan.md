@@ -42,7 +42,7 @@
 - solo rutas internas entre procesos (ADR-018);
 - ninguna ficha en los logs (principio IX);
 - ningún peso en el código (principio VI);
-- 60 % de líneas por módulo, y la meta del núcleo en el dominio de Generación.
+- 60 % de líneas por módulo, también en el dominio de Generación (principio VIII).
 
 **Scale/Scope**:
 - 1 operación pública y 3 internas;

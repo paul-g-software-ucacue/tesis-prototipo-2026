@@ -31,7 +31,7 @@ Es la primera consulta por HTTP entre procesos: Generación corre en `distributi
 |---|---|---|---|---|
 | 1 | `GET /interno/academico/periodos/{codigo}/asignaturas-ofertadas` | Académico | Cada asignatura `OFERTADA` del periodo, una vez: código, nombre, campo amplio y específico | El periodo no existe |
 | 2 | `GET /interno/normativa/periodos/{periodo}/pesos-de-afinidad` | Normativa | La versión que rige el periodo y sus pesos | El periodo no tiene versión: no está abierto |
-| 3 | `GET /interno/docentes/{identificacion}/formacion` | Docentes | Títulos, cursos y experiencia, con sus campos. Sin datos personales de contacto ni contrato | El docente no existe |
+| 3 | `GET /interno/docentes/{identificacion}/formacion` | Docentes | Títulos, cursos y experiencia, con sus campos. Sin datos personales de contacto ni contrato, ni asignaturas afines | El docente no existe |
 
 **Contrato (principio IV):** van en el `openapi.yaml` de cada dueño, con la etiqueta `Interno`, sin `x-mdd-permiso`: la seguridad es por ruta y rol, no por permiso de usuario. `/interno/usuarios/token-proceso`, en el contrato de Usuarios, ya está declarada así. `ValidadorDeContrato` las valida como a las demás.
 
@@ -90,7 +90,7 @@ La identificación y el periodo usan las reglas de sus dueños (principio XIV, l
 
 ## §8 · Pruebas
 
-- **Dominio:** `CalculadoraAfinidadTest`, sin dobles, con los 8 escenarios de la spec y pesos que no son los de por defecto. Cuenta para la meta de cobertura del núcleo.
+- **Dominio:** `CalculadoraAfinidadTest`, sin dobles, con los 8 escenarios de la spec y pesos que no son los de por defecto.
 - **Rutas internas:** una prueba de contrato en cada dueño y la de seguridad: un token de usuario recibe 403, y uno de proceso, 200.
 - **Cliente:** `ConsultasEntreProcesosTest` con `ReceptorSimulado`: 200, 404, 401 con reintento, 500 y el plazo agotado.
 - **Generación:** Mockito en la aplicación; `AfinidadContratoTest` y sus permisos.

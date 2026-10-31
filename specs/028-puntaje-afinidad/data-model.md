@@ -2,6 +2,8 @@
 
 Nada se guarda: el puntaje se calcula en cada consulta (FR-017). Sin migraciones.
 
+Los pesos, los aportes y el total son `BigDecimal`; nunca `double`.
+
 ## Dominio de Generación
 
 ### `PuntajeAfinidad` (objeto de valor)
@@ -51,7 +53,7 @@ Nada se guarda: el puntaje se calcula en cada consulta (FR-017). Sin migraciones
 
 ## Plataforma (`:plataforma:eventos`)
 
-`ConsultasEntreProcesos.obtener(URI, Class<T>) → Optional<T>`, con `ProcesoConError` y `ProcesoSinRespuesta`. Las dos excepciones van en el catálogo común.
+`ConsultasEntreProcesos.obtener(URI, Class<T>) → Optional<T>`, con `ProcesoConError` y `ProcesoSinRespuesta`. Las dos quedan en `:plataforma:eventos`, y `ErroresEntreProcesos` (`CatalogoDeErrores`) las registra con `COMUN_PROCESO_CON_ERROR` y `COMUN_PROCESO_SIN_RESPUESTA`.
 
 ## Configuración del proceso `distributivo`
 
