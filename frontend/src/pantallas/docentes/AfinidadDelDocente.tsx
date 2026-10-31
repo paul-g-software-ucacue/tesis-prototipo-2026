@@ -12,34 +12,16 @@ import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 import { AvisoDeError } from '../../errores/AvisoDeError';
 import { traducirError } from '../../errores/traducir';
+import { DesgloseDeAfinidad } from '../comun/DesgloseDeAfinidad';
+import { puntos } from '../comun/numeros';
 import {
   useAfinidadDelDocente,
   useReferenciasDeDocentes,
-  type AporteDeAfinidad,
-  type PuntajeAfinidad,
-  type TipoDeAporte,
+  type AfinidadDelDocente as Afinidad,
 } from './consultas';
 
-const NOMBRE_DEL_APORTE: Record<TipoDeAporte, string> = {
-  TERCER_NIVEL: 'Título de tercer nivel',
-  CUARTO_NIVEL: 'Título de cuarto nivel',
-  EXPERIENCIA: 'Experiencia',
-  CURSO: 'Curso',
-};
-
-const NUMERO = new Intl.NumberFormat('es-EC', { maximumFractionDigits: 2 });
-
-function puntos(valor: number) {
-  return `${NUMERO.format(valor)} ${valor === 1 ? 'punto' : 'puntos'}`;
-}
-
-function textoDelAporte({ tipo, nombre, coincidencia, aporte }: AporteDeAfinidad) {
-  const campo = coincidencia === 'CAMPO_ESPECIFICO' ? 'campo específico' : 'solo campo amplio';
-  return `${NOMBRE_DEL_APORTE[tipo]}: ${nombre} · ${campo} · ${puntos(aporte)}`;
-}
-
 /** Una asignatura con su puntaje; se despliega para ver de dónde sale. */
-function Puntaje({ puntaje }: { puntaje: PuntajeAfinidad }) {
+function Puntaje({ puntaje }: { puntaje: Afinidad['puntajes'][number] }) {
   return (
     <Accordion disableGutters variant="outlined" slotProps={{ heading: { component: 'h3' } }}>
       <AccordionSummary>
@@ -51,19 +33,7 @@ function Puntaje({ puntaje }: { puntaje: PuntajeAfinidad }) {
         </Stack>
       </AccordionSummary>
       <AccordionDetails>
-        {puntaje.desglose.length === 0 && (
-          <Typography color="text.secondary">
-            Nada de la ficha coincide con el campo de esta asignatura.
-          </Typography>
-        )}
-        {puntaje.desglose.map((aporte) => (
-          <Typography key={`${aporte.tipo}-${aporte.nombre}`}>{textoDelAporte(aporte)}</Typography>
-        ))}
-        {puntaje.topeAplicado && (
-          <Typography color="text.secondary">
-            Se aplicó el tope de cursos de la normativa: los demás cursos ya no suman.
-          </Typography>
-        )}
+        <DesgloseDeAfinidad puntaje={puntaje} />
       </AccordionDetails>
     </Accordion>
   );

@@ -1,6 +1,7 @@
 // F03-H03 en un navegador, con la API simulada: el Vicerrector oferta una asignatura de 4 horas en
 // 3 paralelos y ve 12 horas a cubrir; retira uno y ve 8. También la accesibilidad de «Oferta del
-// periodo» y de sus diálogos con axe-core (WCAG 2.1 AA).
+// periodo» y de sus diálogos con axe-core (WCAG 2.1 AA). Y F06-H02: la sugerencia de docentes de una
+// asignatura-paralelo, con su desglose.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { ingresar, simularApi } from './simulacion';
@@ -258,3 +259,84 @@ for (const [boton, titulo] of [
     await sinFallas(page);
   });
 }
+
+const SUGERENCIA = {
+  periodo: '2026-2',
+  asignatura: POO.codigo,
+  nombre: POO.nombre,
+  paralelo: 'A_NOCTURNA',
+  horasDelParalelo: 4,
+  troncoComun: false,
+  version: 2,
+  minimoAfinidad: 2,
+  fueraPorElMinimo: 1,
+  candidatos: [
+    {
+      identificacion: '0109990010',
+      nombre: 'PERALTA MALDONADO JUAN ANDRES',
+      dedicacion: 'TC',
+      horasContratadas: 40,
+      horasDisponibles: 37.5,
+      horasEnOtrasCarreras: 2.5,
+      horasSuficientes: true,
+      puntaje: {
+        asignatura: POO.codigo,
+        nombre: POO.nombre,
+        total: 7,
+        topeAplicado: false,
+        desglose: [
+          {
+            tipo: 'CUARTO_NIVEL',
+            nombre: 'MÁSTER EN TELEMÁTICA',
+            coincidencia: 'CAMPO_ESPECIFICO',
+            aporte: 7,
+          },
+        ],
+      },
+    },
+    {
+      identificacion: '0109990020',
+      nombre: 'TORRES LEON LUIS',
+      dedicacion: 'TP',
+      horasContratadas: 10,
+      horasDisponibles: 2,
+      horasEnOtrasCarreras: 8,
+      horasSuficientes: false,
+      puntaje: {
+        asignatura: POO.codigo,
+        nombre: POO.nombre,
+        total: 9,
+        topeAplicado: false,
+        desglose: [],
+      },
+    },
+  ],
+};
+
+test('la sugerencia de docentes de una asignatura-paralelo, con su desglose', async ({ page }) => {
+  await page.route('**/api/generacion/periodos/*/oferta/*/*/sugerencia', (ruta) =>
+    ruta.fulfill({ json: SUGERENCIA }),
+  );
+  await abrirOferta(page, [nocturna('A_NOCTURNA')]);
+
+  await page.getByRole('button', { name: `Sugerencia de ${POO.codigo} A_NOCTURNA` }).click();
+
+  const dialogo = page.getByRole('dialog', {
+    name: `Docentes sugeridos para ${POO.nombre} · A_NOCTURNA`,
+  });
+  await expect(page.locator('.MuiDialog-container')).toHaveCSS('opacity', '1');
+  await expect(dialogo.getByText('1 docente quedó fuera por no alcanzar el mínimo.')).toBeVisible();
+  await expect(
+    dialogo.getByText(
+      'Tiempo completo · 40 h contratadas · 37,5 h disponibles · 2,5 h en otras carreras y unidades',
+    ),
+  ).toBeVisible();
+  await expect(dialogo.getByText('Sin horas suficientes')).toBeVisible();
+
+  await dialogo.getByRole('button', { name: /PERALTA MALDONADO/ }).click();
+  await expect(
+    dialogo.getByText('Título de cuarto nivel: MÁSTER EN TELEMÁTICA · campo específico · 7 puntos'),
+  ).toBeVisible();
+
+  await sinFallas(page);
+});

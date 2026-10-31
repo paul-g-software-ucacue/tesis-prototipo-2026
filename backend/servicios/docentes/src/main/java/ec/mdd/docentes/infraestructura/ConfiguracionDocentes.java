@@ -9,6 +9,7 @@ import ec.mdd.docentes.adaptadores.salida.RepositorioProyectosJdbc;
 import ec.mdd.docentes.adaptadores.salida.TransaccionSpring;
 import ec.mdd.docentes.aplicacion.ConsultarAsignablesServicio;
 import ec.mdd.docentes.aplicacion.ConsultarCargosServicio;
+import ec.mdd.docentes.aplicacion.ConsultarDocentesActivosServicio;
 import ec.mdd.docentes.aplicacion.ConsultarDocentesServicio;
 import ec.mdd.docentes.aplicacion.ConsultarFormacionServicio;
 import ec.mdd.docentes.aplicacion.ConsultarIdentificacionesServicio;
@@ -20,6 +21,7 @@ import ec.mdd.docentes.aplicacion.cargas.CargasDeDocentes;
 import ec.mdd.docentes.puertos.entrada.ConsultarAsignablesDelPeriodo;
 import ec.mdd.docentes.puertos.entrada.ConsultarCargos;
 import ec.mdd.docentes.puertos.entrada.ConsultarDocentes;
+import ec.mdd.docentes.puertos.entrada.ConsultarDocentesActivos;
 import ec.mdd.docentes.puertos.entrada.ConsultarFormacion;
 import ec.mdd.docentes.puertos.entrada.ConsultarIdentificaciones;
 import ec.mdd.docentes.puertos.entrada.ConsultarProyectos;
@@ -83,6 +85,12 @@ public class ConfiguracionDocentes {
     @Bean
     public ConsultarFormacion consultarFormacion(RepositorioDocentes repositorio) {
         return new ConsultarFormacionServicio(repositorio);
+    }
+
+    /** Los docentes activos, para otros procesos (F06-H02, ADR-023). */
+    @Bean
+    public ConsultarDocentesActivos consultarDocentesActivos(RepositorioDocentes repositorio) {
+        return new ConsultarDocentesActivosServicio(repositorio);
     }
 
     /**

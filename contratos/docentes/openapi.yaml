@@ -16,7 +16,8 @@
 # (RN-25). Los mismos permisos de escritura; para leer, los mismos tres: «Proyectos y horas de
 # participantes: lectura» no basta, porque su «solo lo propio» todavía no se puede aplicar (D-64).
 # Desde F06-H01: la formación del docente para Generación, por una ruta interna, sin datos de
-# contacto ni de contrato (ADR-023, principio IX).
+# contacto ni de contrato (ADR-023, principio IX). Desde F06-H02: los docentes activos con esa
+# formación y sus horas contratadas, para la sugerencia (RF-25).
 openapi: 3.0.3
 info:
   title: MDD · Docentes
@@ -124,6 +125,30 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /interno/docentes/activos:
+    get:
+      tags: [Interno]
+      operationId: consultarDocentesActivos
+      summary: Devuelve los docentes activos, con lo que hace falta para sugerirlos.
+      description: >-
+        Solo entre procesos, con el token de proceso: lo usa Generación para la sugerencia (RF-25,
+        ADR-023). De todas las carreras base. No lleva datos de contacto ni de contrato (principio
+        IX).
+      responses:
+        '200':
+          description: Los docentes activos, por apellidos y nombres.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DocenteActivo'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
   /interno/docentes/{identificacion}/formacion:
     parameters:
       - $ref: '#/components/parameters/Identificacion'
@@ -720,6 +745,24 @@ components:
           exclusiveMinimum: true
           maximum: 60
           example: 3
+    DocenteActivo:
+      description: Lo que Generación necesita de un docente activo (principio IX).
+      type: object
+      required: [identificacion, nombre, dedicacion, horasContratadas, formacion]
+      properties:
+        identificacion:
+          type: string
+        nombre:
+          description: Los apellidos y los nombres.
+          type: string
+        dedicacion:
+          $ref: '#/components/schemas/Dedicacion'
+        horasContratadas:
+          type: integer
+          minimum: 1
+          maximum: 40
+        formacion:
+          $ref: '#/components/schemas/FormacionDelDocente'
     FormacionDelDocente:
       description: Lo que Generación necesita de la ficha académica (principio IX).
       type: object

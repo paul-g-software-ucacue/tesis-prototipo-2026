@@ -1,8 +1,12 @@
 package ec.mdd.generacion.adaptadores.salida;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ec.mdd.generacion.dominio.AsignaturaOfertada;
+import ec.mdd.generacion.dominio.AsignaturaParalelo;
+import ec.mdd.generacion.dominio.Dedicacion;
+import ec.mdd.generacion.dominio.DocenteActivo;
 import ec.mdd.generacion.dominio.ElementoDeFormacion;
 import ec.mdd.generacion.dominio.FormacionDelDocente;
 import ec.mdd.generacion.dominio.PesosDelPeriodo;
@@ -10,6 +14,7 @@ import ec.mdd.generacion.dominio.TituloDeTercerNivel;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
 import ec.mdd.plataforma.eventos.ProveedorDeTokenDeProceso;
 import ec.mdd.plataforma.pruebas.ReceptorSimulado;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -28,6 +33,9 @@ class DatosDesdeProcesoDatosTest {
             "/interno/academico/periodos/2026-I/asignaturas-ofertadas";
     private static final String RUTA_PESOS = "/interno/normativa/periodos/2026-I/pesos-de-afinidad";
     private static final String RUTA_FORMACION = "/interno/docentes/0109990010/formacion";
+    private static final String RUTA_PARALELO =
+            "/interno/academico/periodos/2026-I/oferta/POO-204/A_NOCTURNA";
+    private static final String RUTA_ACTIVOS = "/interno/docentes/activos";
 
     private final ReceptorSimulado receptor = new ReceptorSimulado();
     private final DatosDesdeProcesoDatos datos =
@@ -73,7 +81,7 @@ class DatosDesdeProcesoDatosTest {
                         + "\"cuartoNivelCampoEspecifico\":7,\"cuartoNivelCampoAmplio\":4,"
                         + "\"tercerNivelCampoEspecifico\":5,\"tercerNivelCampoAmplio\":3,"
                         + "\"experienciaRelacionada\":2.5,\"cursoRelacionado\":1.5,"
-                        + "\"topeCursos\":4}}");
+                        + "\"topeCursos\":4},\"minimoAfinidad\":3.5}");
 
         PesosDelPeriodo pesos = datos.pesos(PERIODO).orElseThrow();
 
@@ -85,6 +93,7 @@ class DatosDesdeProcesoDatosTest {
         assertThat(pesos.pesos().experienciaRelacionada()).isEqualByComparingTo("2.5");
         assertThat(pesos.pesos().cursoRelacionado()).isEqualByComparingTo("1.5");
         assertThat(pesos.pesos().topeCursos()).isEqualByComparingTo("4");
+        assertThat(pesos.minimoAfinidad()).isEqualByComparingTo("3.5");
     }
 
     @Test
@@ -115,5 +124,88 @@ class DatosDesdeProcesoDatosTest {
     @Test
     void dadoUnDocenteQueNoExiste_cuandoSePide_entoncesVacio() {
         assertThat(datos.formacion(DOCENTE)).isEmpty();
+    }
+
+    @Test
+    void dadoUnParalelo_cuandoSePide_entoncesLoPasaASusTipos() {
+        receptor.responderConsulta(RUTA_PARALELO, 200, paralelo("OFERTADA"));
+
+        assertThat(datos.paralelo(PERIODO, "POO-204", "A_NOCTURNA"))
+                .contains(
+                        new AsignaturaParalelo(
+                                new AsignaturaOfertada("POO-204", "Programación", "06", "061"),
+                                "A_NOCTURNA",
+                                "TDS",
+                                new BigDecimal("2.5"),
+                                true,
+                                false));
+    }
+
+    @Test
+    void dadoUnParaleloRetirado_cuandoSePide_entoncesLoDice() {
+        receptor.responderConsulta(RUTA_PARALELO, 200, paralelo("RETIRADA"));
+
+        assertThat(datos.paralelo(PERIODO, "POO-204", "A_NOCTURNA").orElseThrow().retirada())
+                .isTrue();
+    }
+
+    @Test
+    void dadoUnParaleloQueAcademicoNoTiene_cuandoSePide_entoncesVacio() {
+        assertThat(datos.paralelo(PERIODO, "POO-204", "A_NOCTURNA")).isEmpty();
+    }
+
+    @Test
+    void dadoUnCodigoConCaracteresEspeciales_cuandoSePide_entoncesLoEscapaEnLaRuta() {
+        // El receptor compara la ruta ya decodificada: sin escapar, ni siquiera sale la consulta.
+        receptor.responderConsulta(
+                "/interno/academico/periodos/2026-I/oferta/POO-204/A B", 200, paralelo("OFERTADA"));
+
+        assertThat(datos.paralelo(PERIODO, "POO-204", "A B")).isPresent();
+    }
+
+    @Test
+    void dadosLosDocentesActivos_cuandoSePiden_entoncesLosPasaASusTipos() {
+        receptor.responderConsulta(
+                RUTA_ACTIVOS,
+                200,
+                "[{\"identificacion\":\"0109990010\",\"nombre\":\"PEREZ LUIS\","
+                        + "\"dedicacion\":\"MT\",\"horasContratadas\":20,\"formacion\":{"
+                        + "\"tercerNivel\":{\"nombre\":\"Ingeniería\",\"campoAmplio\":\"06\","
+                        + "\"campoEspecifico\":\"061\"},"
+                        + "\"cuartoNivel\":[],\"experiencia\":[],\"cursos\":[]}}]");
+
+        assertThat(datos.docentesActivos())
+                .containsExactly(
+                        new DocenteActivo(
+                                "0109990010",
+                                "PEREZ LUIS",
+                                Dedicacion.MT,
+                                20,
+                                new FormacionDelDocente(
+                                        new TituloDeTercerNivel("Ingeniería", "06", "061"),
+                                        List.of(),
+                                        List.of(),
+                                        List.of())));
+    }
+
+    @Test
+    void dadoQueNoHayDocentesActivos_cuandoSePiden_entoncesListaVacia() {
+        receptor.responderConsulta(RUTA_ACTIVOS, 200, "[]");
+
+        assertThat(datos.docentesActivos()).isEmpty();
+    }
+
+    @Test
+    void dadoQueLaRutaDeActivosNoResponde_cuandoSePiden_entoncesFallaEnVezDeDecirQueNoHay() {
+        assertThatThrownBy(datos::docentesActivos).isInstanceOf(IllegalStateException.class);
+    }
+
+    private static String paralelo(String estado) {
+        return "{\"asignatura\":\"POO-204\",\"nombre\":\"Programación\",\"carrera\":\"TDS\","
+                + "\"paralelo\":\"A_NOCTURNA\",\"campoAmplio\":\"06\","
+                + "\"campoEspecifico\":\"061\",\"troncoComun\":true,"
+                + "\"horasSemanales\":2.5,\"estado\":\""
+                + estado
+                + "\"}";
     }
 }

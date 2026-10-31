@@ -11,11 +11,15 @@ import { cerrarSesion, iniciarSesion } from '../../sesion/almacen';
 import { ASIGNATURAS, CARRERAS } from '../carreras/datosDePrueba';
 import { UNIDADES } from '../estructura/datosDePrueba';
 import { PERIODOS } from '../periodos/datosDePrueba';
-import { OFERTA_EN_PLANIFICACION, OFERTA_VIGENTE } from './datosDePrueba';
+import { OFERTA_EN_PLANIFICACION, OFERTA_VIGENTE, SUGERENCIA } from './datosDePrueba';
 
 const VICERRECTOR = ['DISTRIBUTIVO:LECTURA', 'DISTRIBUTIVO:ESCRITURA'];
 const CONSOLIDACION = ['OFERTA:LECTURA', 'DISTRIBUTIVO:LECTURA'];
 const RUTA = '/api/academico/periodos/2026-2/oferta';
+const COORDINACION = ['OFERTA:LECTURA', 'DISTRIBUTIVO:LECTURA', 'DOCENTES:LECTURA'];
+const SOLO_OFERTA = ['OFERTA:LECTURA'];
+const RUTA_SUGERENCIA =
+  '/api/generacion/periodos/2026-2/oferta/DS-P-II-POO-204/A_NOCTURNA/sugerencia';
 
 function sesionCon(simulada: ApiSimulada, usuario: string, permisos: string[]) {
   simulada.responder(
@@ -287,6 +291,205 @@ describe('Oferta del periodo', () => {
       expect(await screen.findByRole('link', { name: 'Oferta del periodo' })).toBeInTheDocument();
     },
   );
+
+  describe('sugerencia', () => {
+    async function abrirSugerencia() {
+      sesionCon(simulada, 'coordinacion.demo', COORDINACION);
+      montarSpa('/oferta');
+      const boton = await screen.findByRole('button', {
+        name: 'Sugerencia de DS-P-II-POO-204 A_NOCTURNA',
+      });
+      await userEvent.click(boton);
+      return screen.findByRole('dialog', {
+        name: 'Docentes sugeridos para PROGRAMACIÓN ORIENTADA A OBJETOS · A_NOCTURNA',
+      });
+    }
+
+    it('ofrece la acción en cada fila ofertada a quien lee docentes, aunque no cambie la oferta', async () => {
+      sesionCon(simulada, 'coordinacion.demo', COORDINACION);
+      montarSpa('/oferta');
+
+      expect(
+        await screen.findByRole('button', { name: 'Sugerencia de DS-P-II-POO-204 B_NOCTURNA' }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^Corregir/ })).not.toBeInTheDocument();
+    });
+
+    it('una fila retirada no la ofrece', async () => {
+      sesionCon(simulada, 'coordinacion.demo', COORDINACION);
+      montarSpa('/oferta');
+
+      await screen.findByRole('button', { name: 'Sugerencia de DS-P-II-POO-204 A_NOCTURNA' });
+      expect(
+        screen.queryByRole('button', { name: 'Sugerencia de DS-B-I-MD-101 A_NOCTURNA' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('quien lee la oferta sin leer docentes no la ve', async () => {
+      sesionCon(simulada, 'lector.demo', SOLO_OFERTA);
+      montarSpa('/oferta');
+
+      await screen.findByRole('table', { name: 'Oferta de DESARROLLO DE SOFTWARE' });
+      expect(screen.queryByRole('button', { name: /^Sugerencia/ })).not.toBeInTheDocument();
+    });
+
+    it('con el periodo fuera de Planificación también se puede abrir', async () => {
+      sesionCon(simulada, 'coordinacion.demo', COORDINACION);
+      simulada.responder('GET', '/api/academico/periodos', json(200, [PERIODOS[1]]));
+      montarSpa('/oferta');
+
+      expect(
+        await screen.findByRole('button', { name: 'Sugerencia de DS-P-II-POO-204 A_NOCTURNA' }),
+      ).toBeInTheDocument();
+    });
+
+    it('muestra los candidatos en el orden en que llegan, con sus horas y sin datos de más', async () => {
+      simulada.responder('GET', RUTA_SUGERENCIA, json(200, SUGERENCIA));
+      const dialogo = await abrirSugerencia();
+
+      expect(
+        await within(dialogo).findByText(
+          'Con el mínimo de 2 puntos de la versión 2 de la normativa.',
+        ),
+      ).toBeInTheDocument();
+      const nombres = within(dialogo)
+        .getAllByRole('button', { expanded: false })
+        .map((uno) => uno.textContent);
+      expect(nombres[0]).toContain('PERALTA MALDONADO JUAN ANDRES');
+      expect(nombres[1]).toContain('SALINAS VEGA ANA MARIA');
+      expect(nombres[2]).toContain('TORRES LEON LUIS');
+      expect(
+        within(dialogo).getByText(
+          'Tiempo completo · 40 h contratadas · 40 h disponibles · 0 h en otras carreras y unidades',
+        ),
+      ).toBeInTheDocument();
+      expect(within(dialogo).queryByText(/0109990010/)).not.toBeInTheDocument();
+      expect(within(dialogo).queryByRole('button', { name: /^Proponer/ })).not.toBeInTheDocument();
+    });
+
+    it('las horas con decimales se muestran con coma y sin redondear', async () => {
+      simulada.responder('GET', RUTA_SUGERENCIA, json(200, SUGERENCIA));
+      const dialogo = await abrirSugerencia();
+
+      expect(
+        await within(dialogo).findByText(
+          'Medio tiempo · 20 h contratadas · 14,25 h disponibles · 5,75 h en otras carreras y unidades',
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it('marca a quien no le alcanzan las horas y solo a él', async () => {
+      simulada.responder('GET', RUTA_SUGERENCIA, json(200, SUGERENCIA));
+      const dialogo = await abrirSugerencia();
+
+      expect(await within(dialogo).findAllByText('Sin horas suficientes')).toHaveLength(1);
+    });
+
+    it('despliega el desglose del candidato', async () => {
+      simulada.responder('GET', RUTA_SUGERENCIA, json(200, SUGERENCIA));
+      const dialogo = await abrirSugerencia();
+
+      await userEvent.click(
+        await within(dialogo).findByRole('button', { name: /PERALTA MALDONADO/ }),
+      );
+
+      expect(
+        await within(dialogo).findByText(
+          'Título de cuarto nivel: MÁSTER EN TELEMÁTICA · campo específico · 7 puntos',
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it('dice cuántos quedaron fuera por el mínimo, sin nombrarlos', async () => {
+      simulada.responder('GET', RUTA_SUGERENCIA, json(200, SUGERENCIA));
+      const dialogo = await abrirSugerencia();
+
+      expect(
+        await within(dialogo).findByText('3 docentes quedaron fuera por no alcanzar el mínimo.'),
+      ).toBeInTheDocument();
+    });
+
+    it('en tronco común dice que el mínimo no aplica', async () => {
+      simulada.responder(
+        'GET',
+        RUTA_SUGERENCIA,
+        json(200, { ...SUGERENCIA, troncoComun: true, fueraPorElMinimo: 0 }),
+      );
+      const dialogo = await abrirSugerencia();
+
+      expect(
+        await within(dialogo).findByText('Es de tronco común: el mínimo de afinidad no aplica.'),
+      ).toBeInTheDocument();
+      expect(within(dialogo).queryByText(/quedaron fuera|quedó fuera/)).not.toBeInTheDocument();
+    });
+
+    it('sin candidatos dice que nadie alcanza el mínimo', async () => {
+      simulada.responder(
+        'GET',
+        RUTA_SUGERENCIA,
+        json(200, { ...SUGERENCIA, candidatos: [], fueraPorElMinimo: 1 }),
+      );
+      const dialogo = await abrirSugerencia();
+
+      expect(
+        await within(dialogo).findByText('Ningún docente alcanza el mínimo en esta asignatura.'),
+      ).toBeInTheDocument();
+      expect(
+        within(dialogo).getByText('1 docente quedó fuera por no alcanzar el mínimo.'),
+      ).toBeInTheDocument();
+    });
+
+    it('sin docentes activos lo dice', async () => {
+      simulada.responder(
+        'GET',
+        RUTA_SUGERENCIA,
+        json(200, { ...SUGERENCIA, candidatos: [], fueraPorElMinimo: 0 }),
+      );
+      const dialogo = await abrirSugerencia();
+
+      expect(await within(dialogo).findByText('No hay docentes activos.')).toBeInTheDocument();
+    });
+
+    it.each([
+      [
+        409,
+        'GENERACION_PERIODO_SIN_ABRIR',
+        'Periodo sin abrir',
+        'El periodo todavía no tiene su versión de normativa. Ábrelo en «Periodos» para calcular la afinidad.',
+      ],
+      [
+        502,
+        'COMUN_PROCESO_CON_ERROR',
+        'Servicio con problemas',
+        'Una parte del sistema tuvo un problema y no se pudo completar la consulta. Intenta de nuevo en unos minutos.',
+      ],
+      [
+        504,
+        'COMUN_PROCESO_SIN_RESPUESTA',
+        'Servicio sin respuesta',
+        'Una parte del sistema tardó demasiado en responder. Intenta de nuevo en unos minutos.',
+      ],
+    ])(
+      'un %i muestra el aviso del catálogo, sin una lista',
+      async (estado, codigo, titulo, descripcion) => {
+        simulada.responder('GET', RUTA_SUGERENCIA, json(estado, { titulo, descripcion, codigo }));
+        const dialogo = await abrirSugerencia();
+
+        expect(await within(dialogo).findByText(titulo)).toBeInTheDocument();
+        expect(within(dialogo).getByText(descripcion)).toBeInTheDocument();
+        expect(within(dialogo).queryByText(/puntos?$/)).not.toBeInTheDocument();
+      },
+    );
+
+    it('se cierra', async () => {
+      simulada.responder('GET', RUTA_SUGERENCIA, json(200, SUGERENCIA));
+      const dialogo = await abrirSugerencia();
+
+      await userEvent.click(within(dialogo).getByRole('button', { name: 'Cerrar' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    });
+  });
 
   it('sin ninguno de los tres permisos no está en el menú y la ruta no la muestra', async () => {
     sesionCon(simulada, 'docente.demo', ['MI_DISTRIBUTIVO:LECTURA:PROPIO']);

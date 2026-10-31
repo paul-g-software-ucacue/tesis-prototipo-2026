@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-75 · ADR-024.
+- **Siguiente número libre:** D-76 · ADR-024.
 
 ## Índice
 
@@ -72,6 +72,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | ADR-022 | 2026-10-26 | El lenguaje publicado de las cargas y el motor del lote, en `:plataforma:lenguaje-cargas` | Aceptada | MD-13 y ADR-009 (cómo llega el lote al dueño) |
 | D-74 | 2026-10-26 | Los mensajes al usuario lo tratan de «tú» | Aceptada | Principio XIII (mensajes consistentes); motivos y pantalla de F01-H03 |
 | ADR-023 | 2026-10-30 | Consultas entre procesos por rutas internas con token de proceso | Aceptada | ADR-018 (extiende las rutas internas a las consultas), ADR-010 (precisa cómo se pide la ficha), ADR-009 (fija los errores 502 y 504) |
+| D-75 | 2026-10-31 | Las horas disponibles de un docente salen de sus horas contratadas | Aceptada | Glosario «Horas disponibles», RF-25 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1357,3 +1358,19 @@ El catálogo `CARGOS` de `diccionario-de-datos.yaml` cambia la fila del rango po
 - `plataforma:eventos` ya no es solo de eventos: su `package-info` lo dice.
 
 **Documentos que hay que poner al día.** `contratos/comun/errores.md`, con los dos códigos comunes.
+
+## D-75. Las horas disponibles de un docente salen de sus horas contratadas
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-31 · **Decidido por:** autor de la tesis (aclaración de F06-H02, aprobada en su plan)
+- **Origen:** `specs/029-docentes-sugeridos/research.md` §9
+- **Modifica a:** el glosario `sdd/modelo_dominio.md` §7, «Horas disponibles», que decía «Dedicación del docente menos sus horas ya asignadas»
+
+**Decisión.** Las horas disponibles de un docente son sus horas contratadas menos sus horas ya asignadas en todas las carreras y unidades, y nunca menos de 0.
+
+**Por qué.** El tiempo parcial llega «hasta 19 h»: la dedicación no da un número fijo. Las horas contratadas son el número exacto de cada docente, y el que se tiene en el registro.
+
+**Alternativas.** Restar de la dedicación, como decía el glosario: un docente a tiempo parcial tomaría 19 h aunque tuviera menos contratadas, y uno a tiempo completo con 20 h contratadas tomaría 40.
+
+**Consecuencias.** RF-25 no cambia: la sugerencia muestra la dedicación y las horas disponibles, y la dedicación no ordena por sí sola. Que las horas contratadas cuadren con la dedicación lo sigue revisando la validación del distributivo (F07).
+
+**Documentos que hay que poner al día.** El glosario, ya actualizado, junto con el término nuevo «Candidato».

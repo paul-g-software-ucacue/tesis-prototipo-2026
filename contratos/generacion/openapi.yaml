@@ -2,6 +2,8 @@
 # punta a punta (D-39); las operaciones de negocio llegan con sus historias. Desde B00-H05, el
 # evento de prueba, apagado por defecto (D-48). Desde F06-H01: el puntaje de afinidad de un docente en
 # la oferta de un periodo (RF-17, RN-24, ADR-010). Lo leen quienes pueden leer un docente (D-70).
+# Desde F06-H02: la sugerencia de docentes para una asignatura-paralelo (RF-25, RN-19), con el mismo
+# permiso. Las horas asignadas son 0 hasta que F06-H03 traiga las asignaciones.
 openapi: 3.0.3
 info:
   title: MDD · generacion
@@ -17,6 +19,8 @@ tags:
     description: Evento de prueba entre procesos, solo en el entorno de prueba (D-48).
   - name: Afinidad
     description: El puntaje de afinidad de un docente, con su desglose (RF-17, RN-24, ADR-010).
+  - name: Sugerencia
+    description: Los docentes sugeridos para una asignatura-paralelo (RF-25, RN-19).
 paths:
   /api/generacion/sesion:
     get:
@@ -98,6 +102,78 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
         '504':
           $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/generacion/periodos/{periodo}/oferta/{asignatura}/{paralelo}/sugerencia:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2026-I
+      - name: asignatura
+        in: path
+        required: true
+        description: Código de la asignatura ofertada, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[0-9A-Z-]{1,30}$'
+        example: DS-P-II-POO-204
+      - name: paralelo
+        in: path
+        required: true
+        description: El paralelo de la asignatura en el periodo, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[0-9A-Z_-]{1,20}$'
+        example: A_NOCTURNA
+    get:
+      tags: [Sugerencia]
+      operationId: consultarSugerencia
+      summary: Devuelve los docentes sugeridos para una asignatura-paralelo ofertada.
+      description: >-
+        Se calcula en cada consulta con la ficha de los docentes activos y los pesos y el mínimo de la
+        versión de normativa que rige el periodo; no se guarda. Primero van los candidatos con horas
+        suficientes y, dentro de cada grupo, del mayor puntaje al menor; a igual puntaje, más horas
+        disponibles primero, y después por nombre. Sin tronco común, quien no alcanza el mínimo no
+        aparece y solo se cuenta.
+      x-mdd-permiso: [DOCENTES:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]
+      responses:
+        '200':
+          description: La sugerencia.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sugerencia'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: La asignatura-paralelo no está en la oferta del periodo (GENERACION_PARALELO_NO_ENCONTRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '409':
+          description: >-
+            La asignatura-paralelo está retirada (GENERACION_PARALELO_RETIRADO) o el periodo no tiene
+            su versión de normativa (GENERACION_PERIODO_SIN_ABRIR).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
   /api/generacion/eventos-prueba:
     post:
       tags: [EventosPrueba]
@@ -135,6 +211,89 @@ components:
           type: string
           format: uuid
           description: Identificador del evento publicado.
+    Sugerencia:
+      description: >-
+        Los candidatos de una asignatura-paralelo, en orden, y cuántos docentes activos quedaron fuera
+        por el mínimo (RF-25, RN-19).
+      type: object
+      required:
+        - periodo
+        - asignatura
+        - nombre
+        - paralelo
+        - horasDelParalelo
+        - troncoComun
+        - version
+        - minimoAfinidad
+        - fueraPorElMinimo
+        - candidatos
+      properties:
+        periodo:
+          type: string
+        asignatura:
+          type: string
+        nombre:
+          type: string
+        paralelo:
+          type: string
+        horasDelParalelo:
+          description: Las horas semanales efectivas del paralelo; admiten decimales.
+          type: number
+        troncoComun:
+          description: Si es de tronco común, el mínimo no aplica.
+          type: boolean
+        version:
+          description: El número de la versión de normativa que rige el periodo.
+          type: integer
+        minimoAfinidad:
+          type: number
+        fueraPorElMinimo:
+          description: Docentes activos que no alcanzan el mínimo; 0 en tronco común.
+          type: integer
+          minimum: 0
+        candidatos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Candidato'
+    Candidato:
+      description: Un docente activo de la sugerencia, con su puntaje y sus horas.
+      type: object
+      required:
+        - identificacion
+        - nombre
+        - dedicacion
+        - horasContratadas
+        - horasDisponibles
+        - horasEnOtrasCarreras
+        - horasSuficientes
+        - puntaje
+      properties:
+        identificacion:
+          type: string
+        nombre:
+          type: string
+        dedicacion:
+          $ref: '#/components/schemas/Dedicacion'
+        horasContratadas:
+          type: integer
+          minimum: 1
+        horasDisponibles:
+          description: Horas contratadas menos horas asignadas, nunca menos de 0 (D-75).
+          type: number
+          minimum: 0
+        horasEnOtrasCarreras:
+          description: Las horas asignadas en otras carreras y unidades (D-01).
+          type: number
+          minimum: 0
+        horasSuficientes:
+          description: Si sus horas disponibles alcanzan para las del paralelo.
+          type: boolean
+        puntaje:
+          $ref: '#/components/schemas/PuntajeAfinidad'
+    Dedicacion:
+      description: Tiempo completo, medio tiempo o tiempo parcial (RN-01).
+      type: string
+      enum: [TC, MT, TP]
     AfinidadDelDocente:
       type: object
       required: [periodo, version, puntajes]

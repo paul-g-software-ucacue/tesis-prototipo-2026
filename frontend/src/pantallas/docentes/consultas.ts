@@ -19,9 +19,6 @@ export type TipoDeIdentificacion = components['schemas']['TipoDeIdentificacion']
 export type TipoDeTituloDeCuartoNivel = components['schemas']['TipoDeTituloDeCuartoNivel'];
 export type FichaAcademica = components['schemas']['FichaAcademica'];
 export type AfinidadDelDocente = componentesDeGeneracion['schemas']['AfinidadDelDocente'];
-export type PuntajeAfinidad = componentesDeGeneracion['schemas']['PuntajeAfinidad'];
-export type AporteDeAfinidad = componentesDeGeneracion['schemas']['AporteDeAfinidad'];
-export type TipoDeAporte = componentesDeGeneracion['schemas']['TipoDeAporte'];
 
 /** La clave de los docentes, para recargarlos después de un cambio. */
 export const CLAVE_DOCENTES = ['docentes'] as const;

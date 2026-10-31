@@ -1,6 +1,7 @@
 // Datos de prueba de «Oferta del periodo»: la oferta del periodo en Planificación, con POO de 4 horas
-// en 3 paralelos (12 horas a cubrir) y Matemática discreta retirada; y la del periodo vigente.
-import type { AsignaturaParalelo, OfertaDelPeriodo } from './consultas';
+// en 3 paralelos (12 horas a cubrir) y Matemática discreta retirada; y la del periodo vigente. Y la
+// sugerencia de POO: uno con horas de sobra, uno con decimales y uno sin horas suficientes.
+import type { AsignaturaParalelo, Candidato, OfertaDelPeriodo, Sugerencia } from './consultas';
 
 const CAMPO = { codigo: '06', nombre: 'Tecnologías de la información y la comunicación' };
 
@@ -78,3 +79,54 @@ function oferta(periodo: string, estado: 'PLANIFICACION' | 'VIGENTE'): OfertaDel
 
 export const OFERTA_EN_PLANIFICACION = oferta('2026-2', 'PLANIFICACION');
 export const OFERTA_VIGENTE = oferta('2026-1', 'VIGENTE');
+
+const APORTE = {
+  tipo: 'CUARTO_NIVEL',
+  nombre: 'MÁSTER EN TELEMÁTICA',
+  coincidencia: 'CAMPO_ESPECIFICO',
+  aporte: 3,
+} as const;
+
+function candidato(
+  identificacion: string,
+  nombre: string,
+  dedicacion: Candidato['dedicacion'],
+  horasContratadas: number,
+  horasDisponibles: number,
+  horasEnOtrasCarreras: number,
+  total: number,
+): Candidato {
+  return {
+    identificacion,
+    nombre,
+    dedicacion,
+    horasContratadas,
+    horasDisponibles,
+    horasEnOtrasCarreras,
+    horasSuficientes: horasDisponibles >= 4,
+    puntaje: {
+      asignatura: 'DS-P-II-POO-204',
+      nombre: 'PROGRAMACIÓN ORIENTADA A OBJETOS',
+      total,
+      topeAplicado: false,
+      desglose: [{ ...APORTE, aporte: total }],
+    },
+  };
+}
+
+export const SUGERENCIA: Sugerencia = {
+  periodo: '2026-2',
+  asignatura: 'DS-P-II-POO-204',
+  nombre: 'PROGRAMACIÓN ORIENTADA A OBJETOS',
+  paralelo: 'A_NOCTURNA',
+  horasDelParalelo: 4,
+  troncoComun: false,
+  version: 2,
+  minimoAfinidad: 2,
+  fueraPorElMinimo: 3,
+  candidatos: [
+    candidato('0109990010', 'PERALTA MALDONADO JUAN ANDRES', 'TC', 40, 40, 0, 7),
+    candidato('0109990020', 'SALINAS VEGA ANA MARIA', 'MT', 20, 14.25, 5.75, 5),
+    candidato('0109990030', 'TORRES LEON LUIS', 'TP', 10, 2, 8, 9),
+  ],
+};

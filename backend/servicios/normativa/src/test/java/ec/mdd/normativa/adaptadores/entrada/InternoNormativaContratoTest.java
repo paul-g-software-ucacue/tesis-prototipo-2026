@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
+import ec.mdd.normativa.dominio.MinimoAfinidad;
 import ec.mdd.normativa.dominio.PesosAfinidad;
 import ec.mdd.normativa.puertos.entrada.ConsultarPesosDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.PeriodoSinVersion;
@@ -41,7 +42,7 @@ class InternoNormativaContratoTest {
     @Autowired private MockMvc mvc;
 
     @Test
-    void dadoUnProceso_cuandoConsulta_entonces200ConLaVersionYSusSietePesos() throws Exception {
+    void dadoUnProceso_cuandoConsulta_entonces200ConLaVersionSusPesosYSuMinimo() throws Exception {
         MvcResult resultado = pedir("2026-I", deProceso());
 
         assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
@@ -51,7 +52,7 @@ class InternoNormativaContratoTest {
                                 + "\"cuartoNivelCampoEspecifico\":7,\"cuartoNivelCampoAmplio\":4,"
                                 + "\"tercerNivelCampoEspecifico\":5,\"tercerNivelCampoAmplio\":3,"
                                 + "\"experienciaRelacionada\":2.5,\"cursoRelacionado\":1.5,"
-                                + "\"topeCursos\":4}}");
+                                + "\"topeCursos\":4},\"minimoAfinidad\":2.5}");
         contrato.validar(resultado);
     }
 
@@ -98,7 +99,8 @@ class InternoNormativaContratoTest {
                                 new BigDecimal("3"),
                                 new BigDecimal("2.5"),
                                 new BigDecimal("1.5"),
-                                new BigDecimal("4")));
+                                new BigDecimal("4")),
+                        new MinimoAfinidad(new BigDecimal("2.5")));
             };
         }
     }

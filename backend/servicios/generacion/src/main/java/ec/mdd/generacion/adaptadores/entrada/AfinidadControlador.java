@@ -43,7 +43,7 @@ class AfinidadControlador implements AfinidadApi {
                         afinidad.puntajes().stream().map(AfinidadControlador::puntaje).toList()));
     }
 
-    private static PuntajeAfinidad puntaje(ec.mdd.generacion.dominio.PuntajeAfinidad puntaje) {
+    static PuntajeAfinidad puntaje(ec.mdd.generacion.dominio.PuntajeAfinidad puntaje) {
         return new PuntajeAfinidad(
                 puntaje.codigo(),
                 puntaje.nombre(),
