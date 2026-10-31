@@ -60,7 +60,7 @@
 |---|---|---|
 | I. Capas | La calculadora es dominio puro; los clientes HTTP, adaptadores de salida; los puertos de entrada son obligatorios en Generación (ADR-009). | ✅ |
 | II. DDD según el subdominio | Generación es núcleo: servicio de dominio y objetos de valor, con su capa anticorrupción. Los dueños solo agregan una consulta. | ✅ |
-| III. Lenguaje ubicuo | `CalculadoraAfinidad` y `PuntajeAfinidad`, del modelo táctico. Propone agregar «Puntaje de afinidad» al glosario antes del código (research §10). | ⏳ aprobación |
+| III. Lenguaje ubicuo | `CalculadoraAfinidad` y `PuntajeAfinidad`, del modelo táctico. El término ya estaba en el glosario; su definición se amplió con tu aprobación (research §10). | ✅ |
 | IV. API primero | Los contratos, también las rutas internas, antes del código. | ✅ |
 | V. Límites | Entre procesos, solo `/interno/…` con el token de proceso. Sin tipos compartidos. | ✅ con ADR-023 |
 | VI. Las reglas son datos | Todos los pesos salen de la versión de normativa del periodo. | ✅ |
@@ -71,9 +71,9 @@
 | XI y XII | Sin módulos nuevos. JavaDoc en español. | ✅ |
 | XIII. Errores | 5 códigos con sus 8 columnas, en «tú». | ✅ |
 | XIV. Validación de las entradas | El periodo y la identificación, con las reglas de sus dueños, en el contrato, el servidor y la pantalla, con pruebas válidas e inválidas. | ✅ |
-| §6.4 Decisiones | ADR-023 y la entrada del glosario, que apruebas tú antes de implementar. | ⏳ aprobación |
+| §6.4 Decisiones | ADR-023, aprobado por el autor el 2026-10-30. | ✅ |
 
-**Resultado del gate antes de la fase 0:** pasa, con ADR-023 y el glosario pendientes de tu aprobación.
+**Resultado del gate antes de la fase 0:** pasa. ADR-023 y el glosario quedaron aprobados por el autor el 2026-10-30.
 
 **Revisión después de la fase 1:** pasa. [data-model.md](data-model.md) y [contracts/](contracts/) solo agregan lo listado.
 
@@ -118,7 +118,7 @@ docs/decisiones.md                                # ADR-023
 ## Fases de implementación (guía para /speckit-tasks)
 
 1. **Base:**
-   - ADR-023 y el glosario, con tu aprobación;
+   - ADR-023 en `docs/decisiones.md`;
    - los contratos y los 5 códigos;
    - `CalculadoraAfinidad`, probada sin dobles.
 2. **Las consultas internas:** una en cada dueño, con su prueba de contrato y de seguridad.

@@ -103,4 +103,4 @@ Tres consultas y un cálculo en memoria por asignatura. La meta es menos de 3 s 
 
 ## §10 · Glosario
 
-`PuntajeAfinidad` y `CalculadoraAfinidad` están en el modelo táctico, y «Pesos de afinidad», «Afinidad» y «Ficha académica», en el glosario. **Propuesta para aprobar antes del código:** agregar a §7 «Puntaje de afinidad: valor de un docente para una asignatura en un periodo, con su desglose de qué título, curso o experiencia aportó cada parte. Se calcula con la ficha y los pesos de la versión de normativa del periodo; no se guarda. `PuntajeAfinidad`, Distributivo, RF-17, RN-24.»
+`PuntajeAfinidad` y `CalculadoraAfinidad` están en el modelo táctico, y «Pesos de afinidad», «Afinidad», «Puntaje de afinidad» y «Ficha académica», en el glosario. No hay términos nuevos. El autor aprobó el 2026-10-30 ampliar la definición de «Puntaje de afinidad» con el periodo, el origen de los pesos y que no se guarda; ya está aplicada en `sdd/modelo_dominio.md` §7.
