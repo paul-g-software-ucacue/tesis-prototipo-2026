@@ -292,6 +292,44 @@ describe('Oferta del periodo', () => {
     },
   );
 
+  it('sin oferta para mostrar, lo dice sin hablar del periodo entero', async () => {
+    simulada.responder(
+      'GET',
+      RUTA,
+      json(200, {
+        ...OFERTA_EN_PLANIFICACION,
+        horasACubrir: 0,
+        carreras: [],
+        asignaturasParalelo: [],
+      }),
+    );
+    sesionCon(simulada, 'coordinacion.demo', COORDINACION);
+    montarSpa('/oferta');
+
+    expect(
+      await screen.findByText('No hay oferta para mostrar en este periodo.'),
+    ).toBeInTheDocument();
+  });
+
+  it('sin carrera indicada, el coordinador ve el aviso y ninguna asignatura', async () => {
+    simulada.responder(
+      'GET',
+      RUTA,
+      json(403, {
+        titulo: 'Falta tu carrera',
+        descripcion:
+          'Todavía no tienes una carrera indicada. Pide al Administrador del sistema que la indique en «Roles de usuarios».',
+        codigo: 'COMUN_CARRERA_SIN_INDICAR',
+      }),
+    );
+    sesionCon(simulada, 'coordinacion.demo', COORDINACION);
+    montarSpa('/oferta');
+
+    expect(await screen.findByText('Falta tu carrera')).toBeInTheDocument();
+    expect(screen.getByText(/«Roles de usuarios»/)).toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  });
+
   describe('sugerencia', () => {
     async function abrirSugerencia() {
       sesionCon(simulada, 'coordinacion.demo', COORDINACION);

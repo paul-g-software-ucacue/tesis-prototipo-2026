@@ -23,8 +23,10 @@ class AutorizacionControlador implements AutorizacionApi {
     @Override
     public ResponseEntity<Autorizacion> consultarAutorizacion(String usuario) {
         ec.mdd.roles.puertos.entrada.Autorizacion autorizacion = consultar.consultar(usuario);
-        return ResponseEntity.ok(
+        Autorizacion respuesta =
                 new Autorizacion(
-                        autorizacion.usuario(), autorizacion.roles(), autorizacion.permisos()));
+                        autorizacion.usuario(), autorizacion.roles(), autorizacion.permisos());
+        respuesta.setCarrera(autorizacion.carrera());
+        return ResponseEntity.ok(respuesta);
     }
 }

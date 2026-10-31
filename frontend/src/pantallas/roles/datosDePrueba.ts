@@ -40,11 +40,13 @@ export const REVISOR_ASIGNADO = {
 export const USUARIOS = [
   { usuario: 'admin.demo', nombre: 'Administración del sistema (demo)', activo: true },
   { usuario: 'docente.demo', nombre: 'Docente (demo)', activo: true },
+  { usuario: 'coordinacion.demo', nombre: 'Coordinación de carrera (demo)', activo: true },
 ];
 
 export const ROLES_DE_USUARIOS = [
   { usuario: 'admin.demo', roles: ['ADMINISTRADOR'] },
   { usuario: 'docente.demo', roles: ['AUDITOR_DE_CARGAS'] },
+  { usuario: 'coordinacion.demo', roles: ['COORDINADOR_CARRERA'] },
 ];
 
 export const ADMINISTRADOR_SESION = {

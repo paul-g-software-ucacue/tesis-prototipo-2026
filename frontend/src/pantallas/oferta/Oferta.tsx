@@ -141,7 +141,7 @@ export function Oferta() {
             </Button>
           )}
           {oferta.data.carreras.length === 0 && (
-            <Typography sx={{ mt: 2 }}>El periodo todavía no tiene oferta.</Typography>
+            <Typography sx={{ mt: 2 }}>No hay oferta para mostrar en este periodo.</Typography>
           )}
           {oferta.data.carreras.map((carrera) => (
             <OfertaDeCarrera

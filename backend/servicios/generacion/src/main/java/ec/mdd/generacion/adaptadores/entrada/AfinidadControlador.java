@@ -7,8 +7,12 @@ import ec.mdd.generacion.adaptadores.entrada.api.CoincidenciaDeCampo;
 import ec.mdd.generacion.adaptadores.entrada.api.PuntajeAfinidad;
 import ec.mdd.generacion.adaptadores.entrada.api.TipoDeAporte;
 import ec.mdd.generacion.puertos.entrada.ConsultarAfinidad;
+import ec.mdd.plataforma.errores.nucleo.AlcanceDeCarrera;
+import java.util.Optional;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -35,12 +39,20 @@ class AfinidadControlador implements AfinidadApi {
     public ResponseEntity<AfinidadDelDocente> consultarAfinidadDelDocente(
             String identificacion, String periodo) {
         ec.mdd.generacion.dominio.AfinidadDelDocente afinidad =
-                consultar.afinidad(identificacion, periodo);
+                consultar.afinidad(identificacion, periodo, carreraPropia());
         return ResponseEntity.ok(
                 new AfinidadDelDocente(
                         afinidad.periodo(),
                         afinidad.version(),
                         afinidad.puntajes().stream().map(AfinidadControlador::puntaje).toList()));
+    }
+
+    /** La carrera a la que se limita quien solo tiene «lo propio» sobre la oferta (D-64). */
+    static Optional<String> carreraPropia() {
+        return AlcanceDeCarrera.propia(
+                SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .toList());
     }
 
     static PuntajeAfinidad puntaje(ec.mdd.generacion.dominio.PuntajeAfinidad puntaje) {

@@ -2,6 +2,7 @@ package ec.mdd.roles.adaptadores.entrada;
 
 import ec.mdd.plataforma.errores.nucleo.DetalleRespuesta;
 import ec.mdd.plataforma.errores.nucleo.SolicitudInvalida;
+import ec.mdd.roles.adaptadores.entrada.api.CarreraDelCoordinador;
 import ec.mdd.roles.adaptadores.entrada.api.Funcionalidad;
 import ec.mdd.roles.adaptadores.entrada.api.FuncionalidadesApi;
 import ec.mdd.roles.adaptadores.entrada.api.Permiso;
@@ -14,6 +15,7 @@ import ec.mdd.roles.adaptadores.entrada.api.RolesDeUsuariosApi;
 import ec.mdd.roles.dominio.Alcance;
 import ec.mdd.roles.dominio.PermisosInvalidos;
 import ec.mdd.roles.dominio.TipoDePermiso;
+import ec.mdd.roles.puertos.entrada.AsignarCarrera;
 import ec.mdd.roles.puertos.entrada.AsignarRoles;
 import ec.mdd.roles.puertos.entrada.DatosDeRol;
 import ec.mdd.roles.puertos.entrada.GestionarRoles;
@@ -48,10 +50,12 @@ class RolesControlador implements FuncionalidadesApi, RolesApi, RolesDeUsuariosA
 
     private final GestionarRoles gestionar;
     private final AsignarRoles asignar;
+    private final AsignarCarrera carreras;
 
-    RolesControlador(GestionarRoles gestionar, AsignarRoles asignar) {
+    RolesControlador(GestionarRoles gestionar, AsignarRoles asignar, AsignarCarrera carreras) {
         this.gestionar = gestionar;
         this.asignar = asignar;
+        this.carreras = carreras;
     }
 
     @Override
@@ -124,11 +128,46 @@ class RolesControlador implements FuncionalidadesApi, RolesApi, RolesDeUsuariosA
     @Override
     @PreAuthorize(LECTURA)
     public ResponseEntity<List<RolesDeUsuario>> listarRolesDeUsuarios() {
+        java.util.Map<String, String> indicadas = carreras.carreras();
         return ResponseEntity.ok(
                 asignar.rolesDeUsuarios().entrySet().stream()
                         .sorted(java.util.Map.Entry.comparingByKey())
-                        .map(fila -> new RolesDeUsuario(fila.getKey(), fila.getValue()))
+                        .map(
+                                fila ->
+                                        respuesta(
+                                                fila.getKey(),
+                                                fila.getValue(),
+                                                indicadas.get(fila.getKey())))
                         .toList());
+    }
+
+    @Override
+    @PreAuthorize(ESCRITURA)
+    public ResponseEntity<RolesDeUsuario> indicarCarrera(
+            String usuario, CarreraDelCoordinador carrera) {
+        carreras.indicar(usuario, carrera.getCarrera(), quien());
+        return ResponseEntity.ok(deUsuario(usuario));
+    }
+
+    @Override
+    @PreAuthorize(ESCRITURA)
+    public ResponseEntity<RolesDeUsuario> quitarCarrera(String usuario) {
+        carreras.quitar(usuario, quien());
+        return ResponseEntity.ok(deUsuario(usuario));
+    }
+
+    private RolesDeUsuario deUsuario(String usuario) {
+        String nombre = ec.mdd.roles.dominio.NombreDeUsuario.normalizar(usuario);
+        return respuesta(
+                nombre,
+                asignar.rolesDeUsuarios().getOrDefault(nombre, List.of()),
+                carreras.carreras().get(nombre));
+    }
+
+    private static RolesDeUsuario respuesta(String usuario, List<String> roles, String carrera) {
+        RolesDeUsuario respuesta = new RolesDeUsuario(usuario, roles);
+        respuesta.setCarrera(carrera);
+        return respuesta;
     }
 
     @Override
@@ -136,9 +175,8 @@ class RolesControlador implements FuncionalidadesApi, RolesApi, RolesDeUsuariosA
     public ResponseEntity<RolesDeUsuario> asignarRoles(String usuario, RolesAsignados roles) {
         try {
             List<String> asignados = asignar.asignar(usuario, roles.getRoles(), quien());
-            return ResponseEntity.ok(
-                    new RolesDeUsuario(
-                            ec.mdd.roles.dominio.NombreDeUsuario.normalizar(usuario), asignados));
+            String nombre = ec.mdd.roles.dominio.NombreDeUsuario.normalizar(usuario);
+            return ResponseEntity.ok(respuesta(nombre, asignados, carreras.carreras().get(nombre)));
         } catch (RolDesconocido error) {
             throw new SolicitudInvalida(
                     List.of(

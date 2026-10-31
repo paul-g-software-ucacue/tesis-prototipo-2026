@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-76 · ADR-024.
+- **Siguiente número libre:** D-77 · ADR-024.
 
 ## Índice
 
@@ -73,6 +73,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-74 | 2026-10-26 | Los mensajes al usuario lo tratan de «tú» | Aceptada | Principio XIII (mensajes consistentes); motivos y pantalla de F01-H03 |
 | ADR-023 | 2026-10-30 | Consultas entre procesos por rutas internas con token de proceso | Aceptada | ADR-018 (extiende las rutas internas a las consultas), ADR-010 (precisa cómo se pide la ficha), ADR-009 (fija los errores 502 y 504) |
 | D-75 | 2026-10-31 | Las horas disponibles de un docente salen de sus horas contratadas | Aceptada | Glosario «Horas disponibles», RF-25 |
+| D-76 | 2026-10-31 | Roles no consulta a Académico al guardar la carrera del coordinador | Aceptada | D-64, F06-H05 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1374,3 +1375,21 @@ El catálogo `CARGOS` de `diccionario-de-datos.yaml` cambia la fila del rango po
 **Consecuencias.** RF-25 no cambia: la sugerencia muestra la dedicación y las horas disponibles, y la dedicación no ordena por sí sola. Que las horas contratadas cuadren con la dedicación lo sigue revisando la validación del distributivo (F07).
 
 **Documentos que hay que poner al día.** El glosario, ya actualizado, junto con el término nuevo «Candidato».
+
+## D-76. Roles no consulta a Académico al guardar la carrera del coordinador
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-31 · **Decidido por:** autor de la tesis (aprobada en el plan de F06-H05)
+- **Origen:** `specs/030-carrera-coordinador/research.md` §2
+- **Modifica a:** —
+
+**Decisión.** Roles valida el formato del código de la carrera del coordinador, pero no comprueba que exista en Académico. La pantalla «Roles de usuarios» solo ofrece las carreras vigentes.
+
+**Por qué.** Roles corre en el proceso `identidad`, que no tiene `:plataforma:eventos`, ni clave de proceso, ni la URL de `datos`. El filtro falla cerrado: un código que no es de ninguna carrera no coincide con nada, y el coordinador no ve datos. Solo se llega ahí llamando a la API a mano, con permiso de Administrador.
+
+**Alternativas.**
+- **Una consulta de `identidad` a `datos`:** suma un secreto `MDD_CLAVE_PROCESO_IDENTIDAD` y obliga a correr `preparar.sh` en el equipo, para validar un dato que la pantalla ya ofrece bien.
+- **Que Académico avise a Roles de sus carreras por eventos, como con los periodos:** las carreras que ya existen no tienen evento, así que haría falta una carga inicial.
+
+**Consecuencias.** Roles guarda un código sin comprobar. Si llega una gestión real de usuarios, esta validación se puede revisar.
+
+**Documentos que hay que poner al día.** Ninguno.

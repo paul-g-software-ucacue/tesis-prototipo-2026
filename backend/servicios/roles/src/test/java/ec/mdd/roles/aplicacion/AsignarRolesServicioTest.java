@@ -20,12 +20,15 @@ import ec.mdd.roles.puertos.entrada.RolDesconocido;
 import ec.mdd.roles.puertos.salida.CambioDeRoles;
 import ec.mdd.roles.puertos.salida.RegistroDeCambios;
 import ec.mdd.roles.puertos.salida.RepositorioAsignacionesDeRol;
+import ec.mdd.roles.puertos.salida.RepositorioCarrerasDeCoordinadores;
 import ec.mdd.roles.puertos.salida.RepositorioRoles;
+import ec.mdd.roles.puertos.salida.Transaccion;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -55,13 +58,37 @@ class AsignarRolesServicioTest {
                     "Lee roles.",
                     List.of(new Permiso("USUARIOS_ROLES", TipoDePermiso.LECTURA, Alcance.TODO)));
 
+    private static final Rol COORDINADOR =
+            new Rol(
+                    "COORDINADOR_CARRERA",
+                    "Coordinador de carrera",
+                    "Planifica la oferta.",
+                    true,
+                    List.of(new Permiso("OFERTA", TipoDePermiso.LECTURA, Alcance.PROPIO)));
+
     private final RepositorioRoles roles = mock(RepositorioRoles.class);
     private final RepositorioAsignacionesDeRol asignaciones =
             mock(RepositorioAsignacionesDeRol.class);
     private final RegistroDeCambios registro = mock(RegistroDeCambios.class);
+    private final RepositorioCarrerasDeCoordinadores carreras =
+            mock(RepositorioCarrerasDeCoordinadores.class);
+    private final Transaccion transaccion =
+            new Transaccion() {
+                @Override
+                public <T> T ejecutar(Supplier<T> trabajo) {
+                    dentroDeLaTransaccion = true;
+                    return trabajo.get();
+                }
+            };
+    private boolean dentroDeLaTransaccion;
     private final AsignarRolesServicio servicio =
             new AsignarRolesServicio(
-                    roles, asignaciones, registro, Clock.fixed(AHORA, ZoneOffset.UTC));
+                    roles,
+                    asignaciones,
+                    registro,
+                    carreras,
+                    transaccion,
+                    Clock.fixed(AHORA, ZoneOffset.UTC));
 
     @BeforeEach
     void preparar() {
@@ -105,6 +132,40 @@ class AsignarRolesServicioTest {
         CambioDeRoles cambio = registrado(1).getFirst();
         assertThat(cambio.accion()).isEqualTo(CambioDeRoles.Accion.QUITAR_ROL);
         assertThat(cambio.detalle()).containsEntry("roles", List.of("DOCENTE"));
+    }
+
+    @Test
+    void dadoQuienPierdeElRolDeCoordinador_cuandoSeAsigna_entoncesSuCarreraSeBorraYSeRegistra() {
+        when(asignaciones.rolesDe("docente.demo")).thenReturn(List.of("COORDINADOR_CARRERA"));
+        when(carreras.quitar("docente.demo")).thenReturn(true);
+
+        servicio.asignar("docente.demo", List.of("DOCENTE"), "admin.demo");
+
+        assertThat(dentroDeLaTransaccion).isTrue();
+        assertThat(registrado(3))
+                .extracting(CambioDeRoles::accion)
+                .containsExactly(
+                        CambioDeRoles.Accion.ASIGNAR_ROL,
+                        CambioDeRoles.Accion.QUITAR_ROL,
+                        CambioDeRoles.Accion.QUITAR_CARRERA);
+    }
+
+    @Test
+    void dadoQuienConservaElRolDeCoordinador_cuandoSeAsigna_entoncesConservaSuCarrera() {
+        when(roles.todos()).thenReturn(List.of(ADMINISTRADOR, AUDITOR, DOCENTE, COORDINADOR));
+
+        servicio.asignar("docente.demo", List.of("COORDINADOR_CARRERA"), "admin.demo");
+
+        verify(carreras, never()).quitar(anyString());
+    }
+
+    @Test
+    void dadoQueBorrarLaCarreraFalla_cuandoSeAsigna_entoncesElFalloLlegaALaTransaccion() {
+        when(carreras.quitar("docente.demo")).thenThrow(new IllegalStateException("base caída"));
+
+        assertThatThrownBy(() -> servicio.asignar("docente.demo", List.of(), "admin.demo"))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(dentroDeLaTransaccion).isTrue();
     }
 
     @Test

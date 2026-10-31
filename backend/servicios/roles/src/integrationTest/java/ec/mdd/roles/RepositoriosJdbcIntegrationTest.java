@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ec.mdd.roles.adaptadores.salida.RegistroDeCambiosJdbc;
 import ec.mdd.roles.adaptadores.salida.RepositorioAsignacionesDeRolJdbc;
+import ec.mdd.roles.adaptadores.salida.RepositorioCarrerasDeCoordinadoresJdbc;
 import ec.mdd.roles.adaptadores.salida.RepositorioRolesJdbc;
 import ec.mdd.roles.dominio.Alcance;
 import ec.mdd.roles.dominio.Funcionalidad;
@@ -27,7 +28,7 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
-/** Los repositorios de Roles contra PostgreSQL real, con las migraciones V1 a V3. */
+/** Los repositorios de Roles contra PostgreSQL real, con todas sus migraciones. */
 class RepositoriosJdbcIntegrationTest {
 
     private static final PostgreSQLContainer POSTGRES =
@@ -57,6 +58,38 @@ class RepositoriosJdbcIntegrationTest {
     @AfterAll
     static void detener() {
         POSTGRES.stop();
+    }
+
+    @Test
+    void dadaUnaCarrera_cuandoSeGuardaSeReemplazaYSeQuita_entoncesSeLeeIgualCadaVez() {
+        RepositorioCarrerasDeCoordinadoresJdbc carreras =
+                new RepositorioCarrerasDeCoordinadoresJdbc(jdbc);
+        String usuario = "coordinador." + sufijo();
+
+        carreras.guardar(usuario, "DS-01", "admin.demo", AHORA);
+        carreras.guardar(usuario, "DS-02", "admin.demo", AHORA);
+
+        assertThat(carreras.de(usuario)).contains("DS-02");
+        assertThat(carreras.todas()).containsEntry(usuario, "DS-02");
+        assertThat(carreras.quitar(usuario)).isTrue();
+        assertThat(carreras.quitar(usuario)).isFalse();
+        assertThat(carreras.de(usuario)).isEmpty();
+    }
+
+    @Test
+    void dadoUnCambioDeCarrera_cuandoSeRegistra_entoncesLaRestriccionLoAcepta() {
+        registro.registrar(
+                new CambioDeRoles(
+                        AHORA,
+                        "admin.demo",
+                        CambioDeRoles.Accion.INDICAR_CARRERA,
+                        java.util.Map.of("usuario", "coordinacion.demo", "carrera", "DS-01")));
+        registro.registrar(
+                new CambioDeRoles(
+                        AHORA,
+                        "admin.demo",
+                        CambioDeRoles.Accion.QUITAR_CARRERA,
+                        java.util.Map.of("usuario", "coordinacion.demo")));
     }
 
     @Test

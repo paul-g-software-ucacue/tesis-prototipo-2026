@@ -7,6 +7,7 @@ import ec.mdd.usuarios.puertos.salida.EmisorDeTokens;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
@@ -63,16 +64,17 @@ public final class EmisorJwt implements EmisorDeTokens {
     @Override
     public TokenEmitido emitir(
             Usuario usuario, AutorizacionDeUsuario autorizacion, Instant inicio) {
+        Map<String, Object> reclamos = new HashMap<>();
+        reclamos.put("nombre", usuario.nombreParaMostrar());
+        reclamos.put("inicio", inicio.getEpochSecond());
+        reclamos.put("permisos", autorizacion.permisos().stream().sorted().toList());
+        if (autorizacion.carrera() != null) {
+            reclamos.put("carrera", autorizacion.carrera());
+        }
         return firmar(
                 usuario.nombreUsuario(),
                 autorizacion.roles().stream().sorted().toList(),
-                Map.of(
-                        "nombre",
-                        usuario.nombreParaMostrar(),
-                        "inicio",
-                        inicio.getEpochSecond(),
-                        "permisos",
-                        autorizacion.permisos().stream().sorted().toList()),
+                reclamos,
                 vigencia);
     }
 

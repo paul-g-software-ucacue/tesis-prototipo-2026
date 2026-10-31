@@ -5,8 +5,10 @@ import ec.mdd.generacion.adaptadores.entrada.api.Dedicacion;
 import ec.mdd.generacion.adaptadores.entrada.api.Sugerencia;
 import ec.mdd.generacion.adaptadores.entrada.api.SugerenciaApi;
 import ec.mdd.generacion.puertos.entrada.ConsultarSugerencia;
+import ec.mdd.generacion.puertos.entrada.OtraCarrera;
 import java.math.BigDecimal;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -33,8 +35,14 @@ class SugerenciaControlador implements SugerenciaApi {
     @PreAuthorize(LECTURA)
     public ResponseEntity<Sugerencia> consultarSugerencia(
             String periodo, String asignatura, String paralelo) {
-        ec.mdd.generacion.dominio.Sugerencia sugerencia =
-                consultar.sugerencia(periodo, asignatura, paralelo);
+        ec.mdd.generacion.dominio.Sugerencia sugerencia;
+        try {
+            sugerencia =
+                    consultar.sugerencia(
+                            periodo, asignatura, paralelo, AfinidadControlador.carreraPropia());
+        } catch (OtraCarrera error) {
+            throw new AccessDeniedException("La asignatura-paralelo es de otra carrera", error);
+        }
         BigDecimal horasDelParalelo = sugerencia.paralelo().horasSemanales();
         return ResponseEntity.ok(
                 new Sugerencia(

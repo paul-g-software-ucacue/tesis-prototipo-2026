@@ -551,8 +551,28 @@ describe('Afinidad por asignatura', () => {
     await elegirPeriodo(usuario, ficha, /^2026-I ·/);
 
     expect(
-      await within(ficha).findByText('Este periodo todavía no tiene oferta.'),
+      await within(ficha).findByText('No hay oferta para mostrar en este periodo.'),
     ).toBeInTheDocument();
+  });
+
+  it('sin carrera indicada, el coordinador ve el aviso y ningún puntaje', async () => {
+    simulada.responder(
+      'GET',
+      RUTA_AFINIDAD,
+      json(403, {
+        titulo: 'Falta tu carrera',
+        descripcion:
+          'Todavía no tienes una carrera indicada. Pide al Administrador del sistema que la indique en «Roles de usuarios».',
+        codigo: 'COMUN_CARRERA_SIN_INDICAR',
+      }),
+    );
+    const usuario = userEvent.setup();
+    const ficha = await abrirFicha(usuario);
+
+    await elegirPeriodo(usuario, ficha, /^2026-I ·/);
+
+    expect(await within(ficha).findByText('Falta tu carrera')).toBeInTheDocument();
+    expect(within(ficha).queryByText(/puntos?$/)).not.toBeInTheDocument();
   });
 
   it.each([

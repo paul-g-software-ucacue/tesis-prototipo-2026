@@ -23,6 +23,7 @@ import ec.mdd.academico.puertos.entrada.ConsultarOferta;
 import ec.mdd.academico.puertos.entrada.MantenerOferta;
 import ec.mdd.plataforma.errores.ErroresAutoConfiguracion;
 import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
+import ec.mdd.plataforma.seguridad.AutoridadesDelToken;
 import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -367,6 +368,107 @@ class OfertaContratoTest {
         contrato.validar(corregir);
         contrato.validar(retirar);
         contrato.validar(consultar);
+    }
+
+    @Test
+    void dadoUnCoordinadorDeLaCarrera_cuandoConsulta_entoncesVeSuOferta() throws Exception {
+        pedir(json(post(RUTA), NOCTURNA), escritura());
+
+        MvcResult resultado = pedir(get(RUTA), coordinador("550613A01-P-0301"));
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(JsonPath.<Integer>read(cuerpo(resultado), "$.horasACubrir")).isEqualTo(4);
+        assertThat(cuerpo(resultado)).contains(POO);
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnCoordinadorDeOtraCarrera_cuandoConsulta_entoncesNoVeNadaDeEsta() throws Exception {
+        pedir(json(post(RUTA), NOCTURNA), escritura());
+
+        MvcResult resultado = pedir(get(RUTA), coordinador("OTRA-01"));
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(JsonPath.<Integer>read(cuerpo(resultado), "$.horasACubrir")).isZero();
+        assertThat(cuerpo(resultado)).doesNotContain(POO);
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnCoordinadorDeOtraCarrera_cuandoConsultaUnParalelo_entonces403SinDatos()
+            throws Exception {
+        pedir(json(post(RUTA), NOCTURNA), escritura());
+
+        MvcResult resultado = pedir(get(RUTA + "/" + POO + "/A_NOCTURNA"), coordinador("OTRA-01"));
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(403);
+        assertThat(cuerpo(resultado))
+                .contains("SEGURIDAD_ACCESO_NO_AUTORIZADO")
+                .doesNotContain(POO);
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnCoordinadorDeLaCarrera_cuandoConsultaUnParalelo_entonces200() throws Exception {
+        pedir(json(post(RUTA), NOCTURNA), escritura());
+
+        assertThat(
+                        pedir(
+                                        get(RUTA + "/" + POO + "/A_NOCTURNA"),
+                                        coordinador("550613A01-P-0301"))
+                                .getResponse()
+                                .getStatus())
+                .isEqualTo(200);
+    }
+
+    @Test
+    void dadoUnCoordinadorSinCarrera_cuandoConsulta_entonces403QueDiceQuePidaSuCarrera()
+            throws Exception {
+        pedir(json(post(RUTA), NOCTURNA), escritura());
+
+        for (MvcResult resultado :
+                List.of(
+                        pedir(get(RUTA), coordinador(null)),
+                        pedir(get(RUTA + "/" + POO + "/A_NOCTURNA"), coordinador(null)))) {
+            assertThat(resultado.getResponse().getStatus()).isEqualTo(403);
+            assertThat(cuerpo(resultado))
+                    .contains("COMUN_CARRERA_SIN_INDICAR", "Roles de usuarios")
+                    .doesNotContain(POO);
+            contrato.validar(resultado);
+        }
+    }
+
+    @Test
+    void dadoQuienTieneUnPermisoConAlcanceTotal_cuandoConsulta_entoncesVeTodoSinCarrera()
+            throws Exception {
+        pedir(json(post(RUTA), NOCTURNA), escritura());
+
+        MvcResult resultado =
+                pedir(
+                        get(RUTA),
+                        conPermisos(null, "OFERTA:LECTURA:PROPIO", "DISTRIBUTIVO:LECTURA"));
+
+        assertThat(cuerpo(resultado)).contains(POO);
+    }
+
+    /** Un Coordinador de carrera, con el token real: «Oferta» solo sobre lo propio (D-65). */
+    private static JwtRequestPostProcessor coordinador(String carrera) {
+        return conPermisos(
+                carrera,
+                "OFERTA:LECTURA:PROPIO",
+                "DISTRIBUTIVO:LECTURA:PROPIO",
+                "DOCENTES:LECTURA");
+    }
+
+    private static JwtRequestPostProcessor conPermisos(String carrera, String... permisos) {
+        return jwt().jwt(
+                        token -> {
+                            token.claim("permisos", List.of(permisos));
+                            if (carrera != null) {
+                                token.claim("carrera", carrera);
+                            }
+                        })
+                .authorities(new AutoridadesDelToken());
     }
 
     MvcResult pedir(MockHttpServletRequestBuilder peticion, JwtRequestPostProcessor token)

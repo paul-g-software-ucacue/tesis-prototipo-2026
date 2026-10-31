@@ -63,6 +63,19 @@ public final class OfertaDelPeriodo {
         return Optional.ofNullable(oferta.get(clave(asignatura, paralelo)));
     }
 
+    /**
+     * La misma oferta con solo las asignaturas-paralelo de esa carrera: las horas a cubrir son las
+     * suyas. Es lo que ve quien solo tiene «lo propio» (D-64).
+     */
+    public OfertaDelPeriodo deCarrera(String carrera) {
+        return new OfertaDelPeriodo(
+                periodo,
+                oferta.values().stream()
+                        .filter(una -> asignaturaDe(una).carrera().equals(carrera))
+                        .toList(),
+                datos);
+    }
+
     /** La misma oferta con esta asignatura-paralelo agregada o reemplazada. */
     public OfertaDelPeriodo con(AsignaturaParalelo asignaturaParalelo) {
         List<AsignaturaParalelo> todas = new ArrayList<>(oferta.values());

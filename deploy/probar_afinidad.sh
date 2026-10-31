@@ -314,7 +314,7 @@ abierto_y_cargado() {
 # 47 docentes por toda la oferta, comparados con la suma aparte (SC-001).
 todos_los_docentes() {
     local uno
-    iniciar coordinacion.demo
+    iniciar vicerrectorado.demo
     mkdir "$carpeta/respuestas"
     while read -r uno; do
         afinidad "$uno" 2026-I
@@ -367,7 +367,7 @@ otros_pesos() {
     [[ $estado == 200 ]] || { echo "       editar $version_b: $estado" >&2; return 1; }
     abrir 2026-II "$numero_b" || return 1
     guardar_pesos "$numero_b" "$carpeta/pesos_b.json" || return 1
-    iniciar coordinacion.demo
+    iniciar vicerrectorado.demo
     mkdir "$carpeta/respuestas_b"
     afinidad "$DOCENTE" 2026-II
     [[ $estado == 200 && $(jq -r '.version' <<<"$cuerpo") == "$numero_b" ]] || return 1
@@ -383,7 +383,7 @@ sin_oferta() {
         '{"codigo":"'"$prefijo"'","nombre":"Periodo sin oferta","inicio":"2028-04-03","fin":"2028-08-04"}'
     [[ $estado == 201 ]] || { echo "       registrar $prefijo: $estado" >&2; return 1; }
     abrir "$prefijo" "$numero_a" || return 1
-    iniciar coordinacion.demo
+    iniciar vicerrectorado.demo
     afinidad "$DOCENTE" "$prefijo"
     [[ $estado == 200 && $(jq -r '.puntajes | length' <<<"$cuerpo") == 0 ]]
 }
@@ -406,7 +406,7 @@ permisos() {
     token=''
     afinidad "$DOCENTE" 2026-I
     [[ $estado == 401 ]] || return 1
-    iniciar coordinacion.demo
+    iniciar vicerrectorado.demo
 }
 
 # El API Gateway no las enruta y las rechaza; dentro de la red, un token de usuario recibe 403.
@@ -463,7 +463,7 @@ numero_a=''
 comparados=0
 
 verificar 1 "Las cargas de prueba y 2026-I abierto con la versión $version" abierto_y_cargado
-verificar 2 "coordinacion.demo ve los 47 docentes en toda la oferta, iguales a una suma hecha aparte" todos_los_docentes
+verificar 2 "vicerrectorado.demo ve los 47 docentes en toda la oferta, iguales a una suma hecha aparte" todos_los_docentes
 echo "       comparó ${comparados:-0} puntajes"
 verificar 3 "El desglose nombra el título de cuarto nivel con el peso de la versión" el_desglose_lo_dice
 verificar 4 "2026-II sin abrir: 409 GENERACION_PERIODO_SIN_ABRIR" sin_abrir

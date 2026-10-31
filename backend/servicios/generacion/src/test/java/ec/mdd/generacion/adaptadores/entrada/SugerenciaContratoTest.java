@@ -15,6 +15,7 @@ import ec.mdd.generacion.dominio.PuntajeAfinidad;
 import ec.mdd.generacion.dominio.Sugerencia;
 import ec.mdd.generacion.dominio.TipoDeAporte;
 import ec.mdd.generacion.puertos.entrada.ConsultarSugerencia;
+import ec.mdd.generacion.puertos.entrada.OtraCarrera;
 import ec.mdd.generacion.puertos.entrada.ParaleloNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.ParaleloRetirado;
 import ec.mdd.generacion.puertos.entrada.PeriodoSinAbrir;
@@ -23,6 +24,7 @@ import ec.mdd.plataforma.eventos.ErroresEntreProcesos;
 import ec.mdd.plataforma.eventos.ProcesoConError;
 import ec.mdd.plataforma.eventos.ProcesoSinRespuesta;
 import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
+import ec.mdd.plataforma.seguridad.AutoridadesDelToken;
 import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
 import java.math.BigDecimal;
 import java.util.List;
@@ -157,6 +159,62 @@ class SugerenciaContratoTest {
     }
 
     @Test
+    void dadoUnCoordinadorDeSuCarrera_cuandoConsulta_entonces200() throws Exception {
+        assertThat(
+                        pedirCon("TDS", "OFERTA:LECTURA:PROPIO", "DOCENTES:LECTURA")
+                                .getResponse()
+                                .getStatus())
+                .isEqualTo(200);
+    }
+
+    @Test
+    void dadoUnCoordinadorDeOtraCarrera_cuandoConsulta_entonces403SinDatos() throws Exception {
+        MvcResult resultado = pedirCon("OTRA-01", "OFERTA:LECTURA:PROPIO", "DOCENTES:LECTURA");
+
+        assertError(resultado, 403, "SEGURIDAD_ACCESO_NO_AUTORIZADO");
+        assertThat(resultado.getResponse().getContentAsString()).doesNotContain("POO-204");
+    }
+
+    @Test
+    void dadoUnCoordinadorSinCarrera_cuandoConsulta_entonces403QueDiceQuePidaSuCarrera()
+            throws Exception {
+        assertError(
+                pedirCon(null, "OFERTA:LECTURA:PROPIO", "DOCENTES:LECTURA"),
+                403,
+                "COMUN_CARRERA_SIN_INDICAR");
+    }
+
+    @Test
+    void dadoQuienTieneLaOfertaSobreTodo_cuandoConsulta_entonces200SinCarrera() throws Exception {
+        assertThat(pedirCon(null, "DISTRIBUTIVO:LECTURA").getResponse().getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    void dadoUnRolPropioYOtroSobreTodo_cuandoConsulta_entoncesValeElMasAmplio() throws Exception {
+        assertThat(
+                        pedirCon(null, "OFERTA:LECTURA:PROPIO", "CATALOGOS:LECTURA")
+                                .getResponse()
+                                .getStatus())
+                .isEqualTo(200);
+    }
+
+    private MvcResult pedirCon(String carrera, String... permisos) throws Exception {
+        return mvc.perform(
+                        get(RUTA.formatted("2026-I", "POO-204", "A"))
+                                .with(
+                                        jwt().jwt(
+                                                        token -> {
+                                                            token.claim(
+                                                                    "permisos", List.of(permisos));
+                                                            if (carrera != null) {
+                                                                token.claim("carrera", carrera);
+                                                            }
+                                                        })
+                                                .authorities(new AutoridadesDelToken())))
+                .andReturn();
+    }
+
+    @Test
     void dadoQuienNoTieneToken_cuandoConsulta_entonces401() throws Exception {
         MvcResult resultado =
                 mvc.perform(get(RUTA.formatted("2026-I", "POO-204", "A"))).andReturn();
@@ -200,7 +258,10 @@ class SugerenciaContratoTest {
 
         @Bean
         ConsultarSugerencia consultarSugerencia() {
-            return (periodo, asignatura, paralelo) -> {
+            return (periodo, asignatura, paralelo, carrera) -> {
+                if (carrera.isPresent() && !"TDS".equals(carrera.get())) {
+                    throw new OtraCarrera();
+                }
                 switch (periodo) {
                     case "NADA" -> throw new ParaleloNoEncontrado();
                     case "RETIRADO" -> throw new ParaleloRetirado();

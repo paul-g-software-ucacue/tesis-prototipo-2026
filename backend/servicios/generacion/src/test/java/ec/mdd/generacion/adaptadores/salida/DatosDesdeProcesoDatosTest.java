@@ -17,6 +17,7 @@ import ec.mdd.plataforma.pruebas.ReceptorSimulado;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.client.RestClient;
@@ -63,13 +64,31 @@ class DatosDesdeProcesoDatosTest {
                 "[{\"codigo\":\"POO-204\",\"nombre\":\"Programación\","
                         + "\"campoAmplio\":\"06\",\"campoEspecifico\":\"061\"}]");
 
-        assertThat(datos.asignaturasOfertadas(PERIODO))
+        assertThat(datos.asignaturasOfertadas(PERIODO, Optional.empty()))
                 .contains(List.of(new AsignaturaOfertada("POO-204", "Programación", "06", "061")));
     }
 
     @Test
+    void dadaUnaCarrera_cuandoSePideLaOferta_entoncesLaConsultaLaLleva() {
+        receptor.responderConsulta(RUTA_OFERTA, 200, "[]");
+
+        datos.asignaturasOfertadas(PERIODO, Optional.of("DS-01"));
+
+        assertThat(receptor.direccionesConsultadas().getLast()).endsWith("?carrera=DS-01");
+    }
+
+    @Test
+    void dadoQueNoHayCarrera_cuandoSePideLaOferta_entoncesLaConsultaNoLaLleva() {
+        receptor.responderConsulta(RUTA_OFERTA, 200, "[]");
+
+        datos.asignaturasOfertadas(PERIODO, Optional.empty());
+
+        assertThat(receptor.direccionesConsultadas().getLast()).doesNotContain("carrera");
+    }
+
+    @Test
     void dadoUnPeriodoQueAcademicoNoTiene_cuandoSePide_entoncesVacio() {
-        assertThat(datos.asignaturasOfertadas(PERIODO)).isEmpty();
+        assertThat(datos.asignaturasOfertadas(PERIODO, Optional.empty())).isEmpty();
     }
 
     @Test

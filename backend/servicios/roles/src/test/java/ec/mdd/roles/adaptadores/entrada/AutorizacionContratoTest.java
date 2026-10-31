@@ -56,7 +56,7 @@ class AutorizacionContratoTest {
                         "{\"usuario\":\"docente.coordinador.demo\","
                                 + "\"roles\":[\"COORDINADOR_CARRERA\",\"DOCENTE\"],"
                                 + "\"permisos\":[\"DOCENTES:LECTURA\","
-                                + "\"MI_DISTRIBUTIVO:LECTURA:PROPIO\"]}");
+                                + "\"MI_DISTRIBUTIVO:LECTURA:PROPIO\"],\"carrera\":\"DS-01\"}");
         contrato.validar(resultado);
     }
 
@@ -86,7 +86,8 @@ class AutorizacionContratoTest {
                     new Autorizacion(
                             usuario,
                             List.of("COORDINADOR_CARRERA", "DOCENTE"),
-                            List.of("DOCENTES:LECTURA", "MI_DISTRIBUTIVO:LECTURA:PROPIO"));
+                            List.of("DOCENTES:LECTURA", "MI_DISTRIBUTIVO:LECTURA:PROPIO"),
+                            "DS-01");
         }
     }
 }

@@ -3,12 +3,15 @@ package ec.mdd.roles.aplicacion;
 import ec.mdd.roles.dominio.NombreDeUsuario;
 import ec.mdd.roles.dominio.ReglaDeAdministracion;
 import ec.mdd.roles.dominio.Rol;
+import ec.mdd.roles.puertos.entrada.AsignarCarrera;
 import ec.mdd.roles.puertos.entrada.AsignarRoles;
 import ec.mdd.roles.puertos.entrada.RolDesconocido;
 import ec.mdd.roles.puertos.salida.CambioDeRoles;
 import ec.mdd.roles.puertos.salida.RegistroDeCambios;
 import ec.mdd.roles.puertos.salida.RepositorioAsignacionesDeRol;
+import ec.mdd.roles.puertos.salida.RepositorioCarrerasDeCoordinadores;
 import ec.mdd.roles.puertos.salida.RepositorioRoles;
+import ec.mdd.roles.puertos.salida.Transaccion;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Collection;
@@ -17,12 +20,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/** Asignaciones de rol con la regla de no quedarse sin administrador y su registro (FR-011). */
+/**
+ * Asignaciones de rol con la regla de no quedarse sin administrador y su registro (FR-011). Al
+ * quitar el rol Coordinador de carrera, la carrera se va con él, en la misma transacción (F06-H05).
+ */
 public final class AsignarRolesServicio implements AsignarRoles {
 
     private final RepositorioRoles roles;
     private final RepositorioAsignacionesDeRol asignaciones;
     private final RegistroDeCambios registro;
+    private final RepositorioCarrerasDeCoordinadores carreras;
+    private final Transaccion transaccion;
     private final Clock reloj;
 
     /** Recibe los puertos de salida y el reloj. */
@@ -30,10 +38,14 @@ public final class AsignarRolesServicio implements AsignarRoles {
             RepositorioRoles roles,
             RepositorioAsignacionesDeRol asignaciones,
             RegistroDeCambios registro,
+            RepositorioCarrerasDeCoordinadores carreras,
+            Transaccion transaccion,
             Clock reloj) {
         this.roles = roles;
         this.asignaciones = asignaciones;
         this.registro = registro;
+        this.carreras = carreras;
+        this.transaccion = transaccion;
         this.reloj = reloj;
     }
 
@@ -57,20 +69,31 @@ public final class AsignarRolesServicio implements AsignarRoles {
                 RolesDespues.de(asignaciones.todas(), todos, nombre, ordenados), quien);
         List<String> antes = asignaciones.rolesDe(nombre);
         Instant ahora = reloj.instant();
-        asignaciones.reemplazar(nombre, ordenados, quien, ahora);
-        registrar(
-                ahora,
-                quien,
-                CambioDeRoles.Accion.ASIGNAR_ROL,
-                nombre,
-                diferencia(ordenados, antes));
-        registrar(
-                ahora,
-                quien,
-                CambioDeRoles.Accion.QUITAR_ROL,
-                nombre,
-                diferencia(antes, ordenados));
-        return ordenados;
+        return transaccion.ejecutar(
+                () -> {
+                    asignaciones.reemplazar(nombre, ordenados, quien, ahora);
+                    registrar(
+                            ahora,
+                            quien,
+                            CambioDeRoles.Accion.ASIGNAR_ROL,
+                            nombre,
+                            diferencia(ordenados, antes));
+                    registrar(
+                            ahora,
+                            quien,
+                            CambioDeRoles.Accion.QUITAR_ROL,
+                            nombre,
+                            diferencia(antes, ordenados));
+                    if (!ordenados.contains(AsignarCarrera.ROL) && carreras.quitar(nombre)) {
+                        registro.registrar(
+                                new CambioDeRoles(
+                                        ahora,
+                                        quien,
+                                        CambioDeRoles.Accion.QUITAR_CARRERA,
+                                        Map.of("usuario", nombre)));
+                    }
+                    return ordenados;
+                });
     }
 
     private void registrar(
