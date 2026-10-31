@@ -2,17 +2,20 @@ package ec.mdd.roles.infraestructura;
 
 import ec.mdd.roles.adaptadores.salida.RegistroDeCambiosJdbc;
 import ec.mdd.roles.adaptadores.salida.RepositorioAsignacionesDeRolJdbc;
+import ec.mdd.roles.adaptadores.salida.RepositorioCarrerasDeCoordinadoresJdbc;
 import ec.mdd.roles.adaptadores.salida.RepositorioDesignacionesJdbc;
 import ec.mdd.roles.adaptadores.salida.RepositorioEventosRecibidosJdbc;
 import ec.mdd.roles.adaptadores.salida.RepositorioPeriodosConocidosJdbc;
 import ec.mdd.roles.adaptadores.salida.RepositorioRolesJdbc;
 import ec.mdd.roles.adaptadores.salida.TransaccionSpring;
+import ec.mdd.roles.aplicacion.AsignarCarreraServicio;
 import ec.mdd.roles.aplicacion.AsignarRolesInicialesServicio;
 import ec.mdd.roles.aplicacion.AsignarRolesServicio;
 import ec.mdd.roles.aplicacion.ConsultarAutorizacionServicio;
 import ec.mdd.roles.aplicacion.DesignarResponsableServicio;
 import ec.mdd.roles.aplicacion.GestionarRolesServicio;
 import ec.mdd.roles.aplicacion.RecibirEventosServicio;
+import ec.mdd.roles.puertos.entrada.AsignarCarrera;
 import ec.mdd.roles.puertos.entrada.AsignarRoles;
 import ec.mdd.roles.puertos.entrada.AsignarRolesIniciales;
 import ec.mdd.roles.puertos.entrada.ConsultarAutorizacion;
@@ -20,6 +23,7 @@ import ec.mdd.roles.puertos.entrada.GestionarRoles;
 import ec.mdd.roles.puertos.entrada.RecibirEventos;
 import ec.mdd.roles.puertos.salida.RegistroDeCambios;
 import ec.mdd.roles.puertos.salida.RepositorioAsignacionesDeRol;
+import ec.mdd.roles.puertos.salida.RepositorioCarrerasDeCoordinadores;
 import ec.mdd.roles.puertos.salida.RepositorioDesignaciones;
 import ec.mdd.roles.puertos.salida.RepositorioEventosRecibidos;
 import ec.mdd.roles.puertos.salida.RepositorioPeriodosConocidos;
@@ -114,8 +118,9 @@ public class ConfiguracionRoles {
     public ConsultarAutorizacion consultarAutorizacion(
             RepositorioRoles roles,
             RepositorioAsignacionesDeRol asignaciones,
-            RepositorioDesignaciones designaciones) {
-        return new ConsultarAutorizacionServicio(roles, asignaciones, designaciones);
+            RepositorioDesignaciones designaciones,
+            RepositorioCarrerasDeCoordinadores carreras) {
+        return new ConsultarAutorizacionServicio(roles, asignaciones, designaciones, carreras);
     }
 
     /** La administración de roles (RF-02, FR-004). */
@@ -132,8 +137,28 @@ public class ConfiguracionRoles {
     public AsignarRoles asignarRoles(
             RepositorioRoles roles,
             RepositorioAsignacionesDeRol asignaciones,
-            RegistroDeCambios registro) {
-        return new AsignarRolesServicio(roles, asignaciones, registro, Clock.systemUTC());
+            RegistroDeCambios registro,
+            RepositorioCarrerasDeCoordinadores carreras,
+            Transaccion transaccion) {
+        return new AsignarRolesServicio(
+                roles, asignaciones, registro, carreras, transaccion, Clock.systemUTC());
+    }
+
+    /** La carrera de cada coordinador (F06-H05). */
+    @Bean
+    public RepositorioCarrerasDeCoordinadores repositorioCarrerasDeCoordinadores(JdbcClient jdbc) {
+        return new RepositorioCarrerasDeCoordinadoresJdbc(jdbc);
+    }
+
+    /** Indicar y quitar la carrera de un coordinador (F06-H05, D-64). */
+    @Bean
+    public AsignarCarrera asignarCarrera(
+            RepositorioCarrerasDeCoordinadores carreras,
+            RepositorioAsignacionesDeRol asignaciones,
+            RegistroDeCambios registro,
+            Transaccion transaccion) {
+        return new AsignarCarreraServicio(
+                carreras, asignaciones, registro, transaccion, Clock.systemUTC());
     }
 
     /** Roles iniciales de la demo, una sola vez por usuario (research §8). */

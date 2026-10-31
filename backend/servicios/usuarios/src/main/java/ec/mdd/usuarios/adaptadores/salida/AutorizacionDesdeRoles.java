@@ -27,7 +27,8 @@ public final class AutorizacionDesdeRoles implements ProveedorDeAutorizacion {
     @Override
     public AutorizacionDeUsuario consultar(String nombreUsuario) {
         Autorizacion autorizacion = consultar.consultar(nombreUsuario);
-        return new AutorizacionDeUsuario(autorizacion.roles(), autorizacion.permisos());
+        return new AutorizacionDeUsuario(
+                autorizacion.roles(), autorizacion.permisos(), autorizacion.carrera());
     }
 
     @Override

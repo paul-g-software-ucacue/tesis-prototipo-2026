@@ -20,18 +20,23 @@ import ec.mdd.roles.dominio.RolAsignado;
 import ec.mdd.roles.dominio.RolPredefinido;
 import ec.mdd.roles.dominio.SinAdministrador;
 import ec.mdd.roles.dominio.TipoDePermiso;
+import ec.mdd.roles.puertos.entrada.AsignarCarrera;
 import ec.mdd.roles.puertos.entrada.AsignarRoles;
+import ec.mdd.roles.puertos.entrada.CarreraSinRol;
 import ec.mdd.roles.puertos.entrada.DatosDeRol;
 import ec.mdd.roles.puertos.entrada.GestionarRoles;
 import ec.mdd.roles.puertos.entrada.RolConUsuarios;
 import ec.mdd.roles.puertos.entrada.RolDesconocido;
 import ec.mdd.roles.puertos.entrada.RolNoEncontrado;
+import ec.mdd.roles.puertos.entrada.UsuarioSinCarrera;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -72,6 +77,13 @@ class RolesContratoTest {
             Rol.nuevo("Auditor de cargas", "Revisa cargas.", List.of(LEER_CARGAS));
 
     private static final AtomicReference<String> QUIEN = new AtomicReference<>();
+
+    private static final Map<String, List<String>> USUARIOS =
+            Map.of(
+                    "docente.demo",
+                    List.of("DOCENTE"),
+                    "coordinacion.demo",
+                    List.of("COORDINADOR_CARRERA"));
 
     private final ValidadorDeContrato contrato = ValidadorDeContrato.para("roles");
 
@@ -236,13 +248,88 @@ class RolesContratoTest {
                                 .content("{\"roles\":[\"DOCENTE\",\"AUDITOR_DE_ROLES\"]}"));
 
         assertThat(lista.getResponse().getContentAsString())
-                .isEqualTo("[{\"usuario\":\"docente.demo\",\"roles\":[\"DOCENTE\"]}]");
+                .isEqualTo(
+                        "[{\"usuario\":\"coordinacion.demo\","
+                                + "\"roles\":[\"COORDINADOR_CARRERA\"],\"carrera\":\"DS-01\"},"
+                                + "{\"usuario\":\"docente.demo\",\"roles\":[\"DOCENTE\"]}]");
         assertThat(asignado.getResponse().getContentAsString())
                 .isEqualTo(
                         "{\"usuario\":\"docente.demo\","
                                 + "\"roles\":[\"AUDITOR_DE_ROLES\",\"DOCENTE\"]}");
         contrato.validar(lista);
         contrato.validar(asignado);
+    }
+
+    @Test
+    void dadoUnCoordinador_cuandoSeIndicaSuCarrera_entonces200ConLaCarrera() throws Exception {
+        MvcResult resultado = pedir(carrera("coordinacion.demo", "DS-01"));
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString())
+                .isEqualTo(
+                        "{\"usuario\":\"coordinacion.demo\","
+                                + "\"roles\":[\"COORDINADOR_CARRERA\"],\"carrera\":\"DS-01\"}");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoQuienNoEsCoordinador_cuandoSeIndicaSuCarrera_entonces409DelCatalogo()
+            throws Exception {
+        MvcResult resultado = pedir(carrera("docente.demo", "DS-01"));
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(409);
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("\"codigo\":\"ROLES_CARRERA_SIN_ROL\"");
+        contrato.validar(resultado);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ds-01", "DS 01", "CODIGO-DEMASIADO-LARGO-PARA-LA-CARRERA", ""})
+    void dadoUnCodigoInvalido_cuandoSeIndicaLaCarrera_entonces400(String codigo) throws Exception {
+        assertThat(pedir(carrera("coordinacion.demo", codigo)).getResponse().getStatus())
+                .isEqualTo(400);
+    }
+
+    @Test
+    void dadoElCodigoMasLargo_cuandoSeIndicaLaCarrera_entonces200() throws Exception {
+        assertThat(
+                        pedir(carrera("coordinacion.demo", "ABCDEFGHIJ-123456789"))
+                                .getResponse()
+                                .getStatus())
+                .isEqualTo(200);
+    }
+
+    @Test
+    void dadoUnCoordinadorConCarrera_cuandoSeQuita_entonces200() throws Exception {
+        MvcResult resultado = pedir(delete("/api/roles/usuarios/coordinacion.demo/carrera"));
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoQuienNoTieneCarrera_cuandoSeQuita_entonces404DelCatalogo() throws Exception {
+        MvcResult resultado = pedir(delete("/api/roles/usuarios/docente.demo/carrera"));
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(404);
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("\"codigo\":\"ROLES_USUARIO_SIN_CARRERA\"");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoLasAsignaciones_cuandoSeListan_entoncesTraenLaCarreraDelCoordinador()
+            throws Exception {
+        MvcResult lista = pedir(get("/api/roles/usuarios"));
+
+        assertThat(lista.getResponse().getContentAsString()).doesNotContain("\"carrera\":null");
+        contrato.validar(lista);
+    }
+
+    private static MockHttpServletRequestBuilder carrera(String usuario, String carrera) {
+        return put("/api/roles/usuarios/" + usuario + "/carrera")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"carrera\":\"" + carrera + "\"}");
     }
 
     @Test
@@ -370,12 +457,37 @@ class RolesContratoTest {
         }
 
         @Bean
+        AsignarCarrera asignarCarrera() {
+            return new AsignarCarrera() {
+
+                @Override
+                public Map<String, String> carreras() {
+                    return Map.of("coordinacion.demo", "DS-01");
+                }
+
+                @Override
+                public void indicar(String usuario, String carrera, String quien) {
+                    if ("docente.demo".equals(usuario)) {
+                        throw new CarreraSinRol();
+                    }
+                }
+
+                @Override
+                public void quitar(String usuario, String quien) {
+                    if ("docente.demo".equals(usuario)) {
+                        throw new UsuarioSinCarrera();
+                    }
+                }
+            };
+        }
+
+        @Bean
         AsignarRoles asignarRoles() {
             return new AsignarRoles() {
 
                 @Override
                 public Map<String, List<String>> rolesDeUsuarios() {
-                    return Map.of("docente.demo", List.of("DOCENTE"));
+                    return USUARIOS;
                 }
 
                 @Override

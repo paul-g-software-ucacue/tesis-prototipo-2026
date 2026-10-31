@@ -32,6 +32,12 @@ public class ErroresAutoConfiguracion {
         return new RegistroDeErrores(catalogos.orderedStream().toList());
     }
 
+    /** El coordinador sin carrera lo responden varios servicios de distintos procesos (D-64). */
+    @Bean
+    public ErroresDeAlcance erroresDeAlcance() {
+        return new ErroresDeAlcance();
+    }
+
     @Bean
     @ConditionalOnMissingBean
     public ManejadorDeErrores manejadorDeErrores(RegistroDeErrores registro) {

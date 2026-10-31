@@ -18,9 +18,12 @@ import ec.mdd.plataforma.eventos.ErroresEntreProcesos;
 import ec.mdd.plataforma.eventos.ProcesoConError;
 import ec.mdd.plataforma.eventos.ProcesoSinRespuesta;
 import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
+import ec.mdd.plataforma.seguridad.AutoridadesDelToken;
 import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -48,6 +51,7 @@ class AfinidadContratoTest {
 
     private static final String RUTA = "/api/generacion/docentes/%s/afinidad";
     private static final String DOCENTE = "0109990010";
+    private static final AtomicReference<Optional<String>> CARRERA = new AtomicReference<>();
 
     private final ValidadorDeContrato contrato = ValidadorDeContrato.para("generacion");
 
@@ -137,6 +141,60 @@ class AfinidadContratoTest {
     }
 
     @Test
+    void dadoUnCoordinadorConCarrera_cuandoConsulta_entoncesSoloPideSuCarrera() throws Exception {
+        pedirCon(conPermisos("DS-01", "OFERTA:LECTURA:PROPIO", "DOCENTES:LECTURA"));
+
+        assertThat(CARRERA.get()).contains("DS-01");
+    }
+
+    @Test
+    void dadoUnCoordinadorSinCarrera_cuandoConsulta_entonces403SinCalcular() throws Exception {
+        CARRERA.set(Optional.of("sin consultar"));
+
+        MvcResult resultado =
+                pedirCon(conPermisos(null, "DISTRIBUTIVO:LECTURA:PROPIO", "DOCENTES:LECTURA"));
+
+        assertError(resultado, 403, "COMUN_CARRERA_SIN_INDICAR");
+        assertThat(CARRERA.get()).contains("sin consultar");
+    }
+
+    @Test
+    void dadoQuienTieneLaOfertaSobreTodo_cuandoConsulta_entoncesVeTodas() throws Exception {
+        pedirCon(conPermisos(null, "DISTRIBUTIVO:LECTURA"));
+
+        assertThat(CARRERA.get()).isEmpty();
+    }
+
+    @Test
+    void dadoQuienNoTienePermisosDeLaOferta_cuandoConsulta_entoncesVeTodas() throws Exception {
+        pedirCon(conPermisos(null, "DOCENTES:LECTURA"));
+
+        assertThat(CARRERA.get()).isEmpty();
+    }
+
+    private MvcResult pedirCon(
+            org.springframework.security.test.web.servlet.request
+                            .SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor
+                    token)
+            throws Exception {
+        return mvc.perform(get(RUTA.formatted(DOCENTE)).param("periodo", "2026-I").with(token))
+                .andReturn();
+    }
+
+    private static org.springframework.security.test.web.servlet.request
+                    .SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor
+            conPermisos(String carrera, String... permisos) {
+        return jwt().jwt(
+                        token -> {
+                            token.claim("permisos", List.of(permisos));
+                            if (carrera != null) {
+                                token.claim("carrera", carrera);
+                            }
+                        })
+                .authorities(new AutoridadesDelToken());
+    }
+
+    @Test
     void dadoQuienNoTieneToken_cuandoConsulta_entonces401() throws Exception {
         MvcResult resultado =
                 mvc.perform(get(RUTA.formatted(DOCENTE)).param("periodo", "2026-I")).andReturn();
@@ -171,7 +229,8 @@ class AfinidadContratoTest {
 
         @Bean
         ConsultarAfinidad consultarAfinidad() {
-            return (identificacion, periodo) -> {
+            return (identificacion, periodo, carrera) -> {
+                CARRERA.set(carrera);
                 switch (periodo) {
                     case "NADA" -> throw new PeriodoNoEncontrado();
                     case "2026-II" -> throw new PeriodoSinAbrir();

@@ -7,6 +7,7 @@ import ec.mdd.roles.dominio.Rol;
 import ec.mdd.roles.puertos.entrada.Autorizacion;
 import ec.mdd.roles.puertos.entrada.ConsultarAutorizacion;
 import ec.mdd.roles.puertos.salida.RepositorioAsignacionesDeRol;
+import ec.mdd.roles.puertos.salida.RepositorioCarrerasDeCoordinadores;
 import ec.mdd.roles.puertos.salida.RepositorioDesignaciones;
 import ec.mdd.roles.puertos.salida.RepositorioRoles;
 import java.util.ArrayList;
@@ -22,15 +23,18 @@ public final class ConsultarAutorizacionServicio implements ConsultarAutorizacio
     private final RepositorioRoles roles;
     private final RepositorioAsignacionesDeRol asignaciones;
     private final RepositorioDesignaciones designaciones;
+    private final RepositorioCarrerasDeCoordinadores carreras;
 
     /** Recibe los puertos de salida. */
     public ConsultarAutorizacionServicio(
             RepositorioRoles roles,
             RepositorioAsignacionesDeRol asignaciones,
-            RepositorioDesignaciones designaciones) {
+            RepositorioDesignaciones designaciones,
+            RepositorioCarrerasDeCoordinadores carreras) {
         this.roles = roles;
         this.asignaciones = asignaciones;
         this.designaciones = designaciones;
+        this.carreras = carreras;
     }
 
     @Override
@@ -42,11 +46,12 @@ public final class ConsultarAutorizacionServicio implements ConsultarAutorizacio
             suyos.add(Designacion.ROL);
         }
         if (suyos.isEmpty()) {
-            return new Autorizacion(nombre, List.of(), List.of());
+            return new Autorizacion(nombre, List.of(), List.of(), null);
         }
         List<Rol> asignados =
                 roles.todos().stream().filter(rol -> suyos.contains(rol.identificador())).toList();
         PermisosEfectivos efectivos = PermisosEfectivos.de(asignados);
-        return new Autorizacion(nombre, efectivos.roles(), efectivos.textos());
+        return new Autorizacion(
+                nombre, efectivos.roles(), efectivos.textos(), carreras.de(nombre).orElse(null));
     }
 }

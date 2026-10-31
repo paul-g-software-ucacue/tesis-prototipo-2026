@@ -16,9 +16,11 @@ public interface DatosParaAfinidad {
     /**
      * Las asignaturas ofertadas del periodo.
      *
+     * @param carrera solo las de esta carrera; vacío, todas
      * @return vacío si el periodo no existe; una lista vacía si existe sin oferta
      */
-    Optional<List<AsignaturaOfertada>> asignaturasOfertadas(String periodo);
+    Optional<List<AsignaturaOfertada>> asignaturasOfertadas(
+            String periodo, Optional<String> carrera);
 
     /**
      * Los pesos de la versión que rige el periodo.

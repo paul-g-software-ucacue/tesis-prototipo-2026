@@ -39,12 +39,15 @@ public final class DatosDesdeProcesoDatos implements DatosParaAfinidad, DatosPar
     }
 
     @Override
-    public Optional<List<AsignaturaOfertada>> asignaturasOfertadas(String periodo) {
-        return consultas
-                .obtener(
-                        ruta("academico", "periodos", periodo, "asignaturas-ofertadas"),
-                        AsignaturaOfertada[].class)
-                .map(List::of);
+    public Optional<List<AsignaturaOfertada>> asignaturasOfertadas(
+            String periodo, Optional<String> carrera) {
+        URI ofertadas =
+                UriComponentsBuilder.fromUri(
+                                ruta("academico", "periodos", periodo, "asignaturas-ofertadas"))
+                        .queryParamIfPresent("carrera", carrera)
+                        .build(true)
+                        .toUri();
+        return consultas.obtener(ofertadas, AsignaturaOfertada[].class).map(List::of);
     }
 
     @Override

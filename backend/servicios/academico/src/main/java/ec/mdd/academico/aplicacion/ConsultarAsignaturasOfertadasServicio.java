@@ -9,6 +9,7 @@ import ec.mdd.academico.puertos.salida.RepositorioCarreras;
 import ec.mdd.academico.puertos.salida.RepositorioOferta;
 import ec.mdd.academico.puertos.salida.RepositorioPeriodos;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -31,7 +32,7 @@ public final class ConsultarAsignaturasOfertadasServicio implements ConsultarAsi
     }
 
     @Override
-    public List<AsignaturaConCampos> delPeriodo(String periodo) {
+    public List<AsignaturaConCampos> delPeriodo(String periodo, Optional<String> carrera) {
         periodos.porCodigo(periodo).orElseThrow(() -> new PeriodoNoEncontrado(periodo));
         Set<String> ofertadas =
                 oferta.delPeriodo(periodo).stream()
@@ -42,6 +43,9 @@ public final class ConsultarAsignaturasOfertadasServicio implements ConsultarAsi
                         .collect(Collectors.toSet());
         return carreras.asignaturas().stream()
                 .filter(asignatura -> ofertadas.contains(asignatura.codigo()))
+                .filter(
+                        asignatura ->
+                                carrera.isEmpty() || carrera.get().equals(asignatura.carrera()))
                 .map(
                         asignatura ->
                                 new AsignaturaConCampos(

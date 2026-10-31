@@ -9,6 +9,8 @@ import ec.mdd.roles.dominio.PeriodoCerrado;
 import ec.mdd.roles.dominio.RolAsignado;
 import ec.mdd.roles.dominio.RolPredefinido;
 import ec.mdd.roles.dominio.SinAdministrador;
+import ec.mdd.roles.puertos.entrada.CarreraSinRol;
+import ec.mdd.roles.puertos.entrada.UsuarioSinCarrera;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
@@ -54,6 +56,19 @@ class ErroresRoles implements CatalogoDeErrores {
                         409,
                         "Periodo cerrado",
                         "El periodo está cerrado y ya no admite cambios."),
+                EntradaCatalogo.de(
+                        CarreraSinRol.class,
+                        "ROLES_CARRERA_SIN_ROL",
+                        409,
+                        "Usuario sin rol de coordinador",
+                        "Solo un usuario con el rol Coordinador de carrera puede tener carrera."
+                                + " Dale ese rol primero."),
+                EntradaCatalogo.de(
+                        UsuarioSinCarrera.class,
+                        "ROLES_USUARIO_SIN_CARRERA",
+                        404,
+                        "Usuario sin carrera",
+                        "Este usuario no tiene una carrera indicada."),
                 new EntradaCatalogo(EventoNoReconocido.class, CodigosComunes.EVENTO_NO_RECONOCIDO));
     }
 }

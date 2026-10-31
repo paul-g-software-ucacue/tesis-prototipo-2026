@@ -132,6 +132,15 @@ public final class CodigosComunes {
                     "No tienes permiso para esta acción. Si crees que deberías tenerlo, pide al"
                             + " administrador que revise tus roles.");
 
+    /** 403: quien solo tiene «lo propio» sobre la oferta no tiene carrera indicada (D-64). */
+    public static final DefinicionDeCodigo CARRERA_SIN_INDICAR =
+            new DefinicionDeCodigo(
+                    "COMUN_CARRERA_SIN_INDICAR",
+                    403,
+                    "Falta tu carrera",
+                    "Todavía no tienes una carrera indicada. Pide al Administrador del sistema que"
+                            + " la indique en «Roles de usuarios».");
+
     /** Todos los códigos de la plataforma, para verificarlos contra el catálogo documentado. */
     public static final List<DefinicionDeCodigo> TODOS =
             List.of(
@@ -148,7 +157,8 @@ public final class CodigosComunes {
                     PROCESO_SIN_RESPUESTA,
                     EVENTO_NO_RECONOCIDO,
                     SEGURIDAD_NO_AUTENTICADO,
-                    ACCESO_NO_AUTORIZADO);
+                    ACCESO_NO_AUTORIZADO,
+                    CARRERA_SIN_INDICAR);
 
     private CodigosComunes() {}
 

@@ -33,6 +33,7 @@ class ConsultarAfinidadServicioTest {
 
     private static final String PERIODO = "2026-I";
     private static final String DOCENTE = "0109990010";
+    private static final Optional<String> TODAS = Optional.empty();
 
     private static final AsignaturaOfertada PROGRAMACION =
             new AsignaturaOfertada("POO-204", "Programación", "06", "061");
@@ -64,12 +65,12 @@ class ConsultarAfinidadServicioTest {
 
     @Test
     void dadosLosDatos_cuandoSeConsulta_entoncesCalculaConLaVersionDelPeriodoYOrdena() {
-        when(datos.asignaturasOfertadas(PERIODO))
+        when(datos.asignaturasOfertadas(PERIODO, TODAS))
                 .thenReturn(Optional.of(List.of(ANATOMIA, PROGRAMACION)));
         when(datos.pesos(PERIODO)).thenReturn(Optional.of(PESOS));
         when(datos.formacion(DOCENTE)).thenReturn(Optional.of(FORMACION));
 
-        AfinidadDelDocente afinidad = servicio.afinidad(DOCENTE, PERIODO);
+        AfinidadDelDocente afinidad = servicio.afinidad(DOCENTE, PERIODO, TODAS);
 
         assertThat(afinidad.periodo()).isEqualTo(PERIODO);
         assertThat(afinidad.version()).isEqualTo(2);
@@ -82,11 +83,11 @@ class ConsultarAfinidadServicioTest {
 
     @Test
     void dadoUnPeriodoSinOferta_cuandoSeConsulta_entoncesListaVaciaConSuVersion() {
-        when(datos.asignaturasOfertadas(PERIODO)).thenReturn(Optional.of(List.of()));
+        when(datos.asignaturasOfertadas(PERIODO, TODAS)).thenReturn(Optional.of(List.of()));
         when(datos.pesos(PERIODO)).thenReturn(Optional.of(PESOS));
         when(datos.formacion(DOCENTE)).thenReturn(Optional.of(FORMACION));
 
-        AfinidadDelDocente afinidad = servicio.afinidad(DOCENTE, PERIODO);
+        AfinidadDelDocente afinidad = servicio.afinidad(DOCENTE, PERIODO, TODAS);
 
         assertThat(afinidad.puntajes()).isEmpty();
         assertThat(afinidad.version()).isEqualTo(2);
@@ -94,23 +95,23 @@ class ConsultarAfinidadServicioTest {
 
     @Test
     void dadosLosDatos_cuandoSeConsulta_entoncesPideOfertaPesosYFormacionEnEseOrden() {
-        when(datos.asignaturasOfertadas(PERIODO)).thenReturn(Optional.of(List.of()));
+        when(datos.asignaturasOfertadas(PERIODO, TODAS)).thenReturn(Optional.of(List.of()));
         when(datos.pesos(PERIODO)).thenReturn(Optional.of(PESOS));
         when(datos.formacion(DOCENTE)).thenReturn(Optional.of(FORMACION));
 
-        servicio.afinidad(DOCENTE, PERIODO);
+        servicio.afinidad(DOCENTE, PERIODO, TODAS);
 
         InOrder orden = inOrder(datos);
-        orden.verify(datos).asignaturasOfertadas(PERIODO);
+        orden.verify(datos).asignaturasOfertadas(PERIODO, TODAS);
         orden.verify(datos).pesos(PERIODO);
         orden.verify(datos).formacion(DOCENTE);
     }
 
     @Test
     void dadoUnPeriodoQueNoExiste_cuandoSeConsulta_entoncesPeriodoNoEncontradoYNoSigue() {
-        when(datos.asignaturasOfertadas(PERIODO)).thenReturn(Optional.empty());
+        when(datos.asignaturasOfertadas(PERIODO, TODAS)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> servicio.afinidad(DOCENTE, PERIODO))
+        assertThatThrownBy(() -> servicio.afinidad(DOCENTE, PERIODO, TODAS))
                 .isInstanceOf(PeriodoNoEncontrado.class);
 
         verify(datos, never()).pesos(any());
@@ -119,10 +120,11 @@ class ConsultarAfinidadServicioTest {
 
     @Test
     void dadoUnPeriodoSinVersion_cuandoSeConsulta_entoncesPeriodoSinAbrirYNoPideLaFicha() {
-        when(datos.asignaturasOfertadas(PERIODO)).thenReturn(Optional.of(List.of(PROGRAMACION)));
+        when(datos.asignaturasOfertadas(PERIODO, TODAS))
+                .thenReturn(Optional.of(List.of(PROGRAMACION)));
         when(datos.pesos(PERIODO)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> servicio.afinidad(DOCENTE, PERIODO))
+        assertThatThrownBy(() -> servicio.afinidad(DOCENTE, PERIODO, TODAS))
                 .isInstanceOf(PeriodoSinAbrir.class);
 
         verify(datos, never()).formacion(any());
@@ -130,20 +132,33 @@ class ConsultarAfinidadServicioTest {
 
     @Test
     void dadoUnDocenteQueNoExiste_cuandoSeConsulta_entoncesDocenteNoEncontrado() {
-        when(datos.asignaturasOfertadas(PERIODO)).thenReturn(Optional.of(List.of(PROGRAMACION)));
+        when(datos.asignaturasOfertadas(PERIODO, TODAS))
+                .thenReturn(Optional.of(List.of(PROGRAMACION)));
         when(datos.pesos(PERIODO)).thenReturn(Optional.of(PESOS));
         when(datos.formacion(DOCENTE)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> servicio.afinidad(DOCENTE, PERIODO))
+        assertThatThrownBy(() -> servicio.afinidad(DOCENTE, PERIODO, TODAS))
                 .isInstanceOf(DocenteNoEncontrado.class);
     }
 
     @Test
     void dadoOtroProcesoQueFalla_cuandoSeConsulta_entoncesPropagaElFalloSinPuntajeParcial() {
-        when(datos.asignaturasOfertadas(PERIODO)).thenReturn(Optional.of(List.of(PROGRAMACION)));
+        when(datos.asignaturasOfertadas(PERIODO, TODAS))
+                .thenReturn(Optional.of(List.of(PROGRAMACION)));
         when(datos.pesos(PERIODO)).thenThrow(new ProcesoConError("500"));
 
-        assertThatThrownBy(() -> servicio.afinidad(DOCENTE, PERIODO))
+        assertThatThrownBy(() -> servicio.afinidad(DOCENTE, PERIODO, TODAS))
                 .isInstanceOf(ProcesoConError.class);
+    }
+
+    @Test
+    void dadoUnCoordinador_cuandoSeConsulta_entoncesSoloPideLasDeSuCarrera() {
+        when(datos.asignaturasOfertadas(PERIODO, Optional.of("DS-01")))
+                .thenReturn(Optional.of(List.of(PROGRAMACION)));
+        when(datos.pesos(PERIODO)).thenReturn(Optional.of(PESOS));
+        when(datos.formacion(DOCENTE)).thenReturn(Optional.of(FORMACION));
+
+        assertThat(servicio.afinidad(DOCENTE, PERIODO, Optional.of("DS-01")).puntajes()).hasSize(1);
+        verify(datos, never()).asignaturasOfertadas(PERIODO, TODAS);
     }
 }

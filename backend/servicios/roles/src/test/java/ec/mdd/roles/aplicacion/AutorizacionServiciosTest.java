@@ -19,6 +19,7 @@ import ec.mdd.roles.puertos.entrada.RolDesconocido;
 import ec.mdd.roles.puertos.salida.CambioDeRoles;
 import ec.mdd.roles.puertos.salida.RegistroDeCambios;
 import ec.mdd.roles.puertos.salida.RepositorioAsignacionesDeRol;
+import ec.mdd.roles.puertos.salida.RepositorioCarrerasDeCoordinadores;
 import ec.mdd.roles.puertos.salida.RepositorioDesignaciones;
 import ec.mdd.roles.puertos.salida.RepositorioRoles;
 import java.time.Clock;
@@ -26,6 +27,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -65,11 +67,13 @@ class AutorizacionServiciosTest {
     private final RepositorioAsignacionesDeRol asignaciones =
             mock(RepositorioAsignacionesDeRol.class);
     private final RepositorioDesignaciones designaciones = mock(RepositorioDesignaciones.class);
+    private final RepositorioCarrerasDeCoordinadores carreras =
+            mock(RepositorioCarrerasDeCoordinadores.class);
     private final RegistroDeCambios registro = mock(RegistroDeCambios.class);
     private final Clock reloj = Clock.fixed(AHORA, ZoneOffset.UTC);
 
     private final ConsultarAutorizacionServicio consultar =
-            new ConsultarAutorizacionServicio(roles, asignaciones, designaciones);
+            new ConsultarAutorizacionServicio(roles, asignaciones, designaciones, carreras);
     private final AsignarRolesInicialesServicio iniciales =
             new AsignarRolesInicialesServicio(roles, asignaciones, registro, reloj);
 
@@ -85,6 +89,23 @@ class AutorizacionServiciosTest {
         assertThat(autorizacion.roles()).containsExactly("DOCENTE", "RESPONSABLE_CONSOLIDACION");
         assertThat(autorizacion.permisos())
                 .contains("CONSOLIDACION:ESCRITURA", "DISTRIBUTIVO:FIRMA");
+    }
+
+    @Test
+    void dadoUnCoordinadorConCarrera_cuandoSeConsulta_entoncesLaTrae() {
+        when(asignaciones.rolesDe("coordinacion.demo")).thenReturn(List.of("COORDINADOR_CARRERA"));
+        when(roles.todos()).thenReturn(List.of(COORDINADOR));
+        when(carreras.de("coordinacion.demo")).thenReturn(Optional.of("DS-01"));
+
+        assertThat(consultar.consultar("coordinacion.demo").carrera()).isEqualTo("DS-01");
+    }
+
+    @Test
+    void dadoUnCoordinadorSinCarrera_cuandoSeConsulta_entoncesVieneVacia() {
+        when(asignaciones.rolesDe("coordinacion.demo")).thenReturn(List.of("COORDINADOR_CARRERA"));
+        when(roles.todos()).thenReturn(List.of(COORDINADOR));
+
+        assertThat(consultar.consultar("coordinacion.demo").carrera()).isNull();
     }
 
     @Test

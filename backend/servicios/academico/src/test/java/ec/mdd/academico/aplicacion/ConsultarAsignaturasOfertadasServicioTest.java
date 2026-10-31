@@ -46,7 +46,7 @@ class ConsultarAsignaturasOfertadasServicioTest {
         when(carreras.asignaturas())
                 .thenReturn(List.of(asignatura("POO-204"), asignatura("RED-101")));
 
-        assertThat(servicio.delPeriodo(PERIODO))
+        assertThat(servicio.delPeriodo(PERIODO, Optional.empty()))
                 .containsExactly(
                         new AsignaturaConCampos("POO-204", "Asignatura POO-204", "06", "061"));
     }
@@ -58,7 +58,18 @@ class ConsultarAsignaturasOfertadasServicioTest {
                 .thenReturn(List.of(paralelo("POO-204", "A", EstadoDeAsignaturaParalelo.RETIRADA)));
         when(carreras.asignaturas()).thenReturn(List.of(asignatura("POO-204")));
 
-        assertThat(servicio.delPeriodo(PERIODO)).isEmpty();
+        assertThat(servicio.delPeriodo(PERIODO, Optional.empty())).isEmpty();
+    }
+
+    @Test
+    void dadaUnaCarrera_cuandoSeConsulta_entoncesSoloDevuelveLasDeEsaCarrera() {
+        periodoEn(EstadoPeriodo.VIGENTE);
+        when(oferta.delPeriodo(PERIODO))
+                .thenReturn(List.of(paralelo("POO-204", "A", EstadoDeAsignaturaParalelo.OFERTADA)));
+        when(carreras.asignaturas()).thenReturn(List.of(asignatura("POO-204")));
+
+        assertThat(servicio.delPeriodo(PERIODO, Optional.of("CARRERA"))).hasSize(1);
+        assertThat(servicio.delPeriodo(PERIODO, Optional.of("OTRA"))).isEmpty();
     }
 
     @Test
@@ -68,14 +79,14 @@ class ConsultarAsignaturasOfertadasServicioTest {
                 .thenReturn(List.of(paralelo("POO-204", "A", EstadoDeAsignaturaParalelo.OFERTADA)));
         when(carreras.asignaturas()).thenReturn(List.of(asignatura("POO-204")));
 
-        assertThat(servicio.delPeriodo(PERIODO)).hasSize(1);
+        assertThat(servicio.delPeriodo(PERIODO, Optional.empty())).hasSize(1);
     }
 
     @Test
     void dadoUnPeriodoQueNoExiste_cuandoSeConsulta_entoncesPeriodoNoEncontrado() {
         when(periodos.porCodigo("NADA")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> servicio.delPeriodo("NADA"))
+        assertThatThrownBy(() -> servicio.delPeriodo("NADA", Optional.empty()))
                 .isInstanceOf(PeriodoNoEncontrado.class);
     }
 
