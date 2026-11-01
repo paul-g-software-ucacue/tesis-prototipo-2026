@@ -50,6 +50,18 @@ Registro de las comprobaciones de la historia (issue #166): la carrera del coord
 | Scripts | Los 20 de `deploy/probar_*.sh` terminan en 0; el nuevo deja la base limpia y le devuelve el rol a `coordinacion.demo` | Local | 2026-10-31 |
 | `probar_equipo.sh` | Código 0 | Local | 2026-10-31 |
 | shellcheck y Gitleaks | Sin observaciones | Local | 2026-10-31 |
+| CI del PR #167 | 12 de 12 en verde. Vitest 310 de 310 con cobertura: 94,01 % de sentencias y 94,12 % de líneas. `probar_carrera_coordinador.sh` en `perfil-consolidado` pasa todos sus pasos | GitHub Actions | 2026-10-31 |
+
+## Equipo de demostración
+
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| El despliegue | `d96237d` (#167): «success · Sano en 66 s». Los 8 contenedores sanos, con las 6 imágenes propias en `…-d96237d03a8e`, y la migración V8 de Roles aplicada | GitHub Deployments, `docker ps`, la base (solo lectura) | 2026-10-31 |
+| Sin carrera | Con `coordinacion.demo`, «Falta tu carrera» en la oferta y en la afinidad de la ficha, sin datos | Capturas del autor (no se copian al repositorio) | 2026-10-31 |
+| Indicar la carrera | Con `admin.demo`, «Indicar carrera» solo en los dos coordinadores; «Sin carrera» pasó a `SOCIALES` | Capturas del autor | 2026-10-31 |
+| Con su carrera | Con `coordinacion.demo` en `003`: `SOCIALES`, sus 19 h, «Sugerencia» en los 3 paralelos ofertados y no en el retirado; las sugerencias de `A` y `A_NOCTURNA` responden | Capturas del autor | 2026-10-31 |
+| SC-004, el tiempo | El autor no informó un tiempo medido. Entre su captura con «Sin carrera» y la captura con `SOCIALES` pasaron 28 s, dentro de la meta de 1 minuto: es una aproximación | Hora de las capturas | 2026-10-31 |
+| Lo que no se vio en la demo | Una carrera sin oferta, con «No hay oferta para mostrar en este periodo.», y otra carrera filtrada: en esa prueba, solo `SOCIALES` tiene oferta. Quedó comprobado con el script y Vitest | `probar_carrera_coordinador.sh`, `Oferta.test.tsx` | 2026-10-31 |
 
 ## Notas
 
@@ -60,4 +72,5 @@ Registro de las comprobaciones de la historia (issue #166): la carrera del coord
   - `AlcanceDeCarrera` pasó a `errores-nucleo`, porque los servicios no conocen el token;
   - `ReceptorSimulado` suma `direccionesConsultadas`, para probar la query de la afinidad.
 - **Prueba de integración:** `RepositorioCarrerasDeCoordinadoresJdbc` se prueba contra PostgreSQL en `test-integracion`, en la CI.
+- **Un texto por revisar:** la oferta filtrada dice «Horas a cubrir del periodo», aunque son las de la carrera del coordinador. En la demo coinciden, porque solo `SOCIALES` tiene oferta. Queda para una historia que toque esa pantalla.
 - **Un cambio visible:** al desplegar, `coordinacion.demo` deja de ver la oferta, las sugerencias y los puntajes hasta que `admin.demo` le indique su carrera. Es el comportamiento decidido por el autor.

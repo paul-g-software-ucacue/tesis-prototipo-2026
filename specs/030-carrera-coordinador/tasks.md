@@ -184,7 +184,7 @@ Plan aprobado por el autor el 2026-10-31.
   - quitar el rol borra la carrera;
   - la oferta en menos de 3 s (SC-005);
   - la base limpia al terminar, también los roles y la carrera de `coordinacion.demo`.
-- [ ] T028 Crear `specs/030-carrera-coordinador/evidencia.md`, y verificar:
+- [X] T028 Crear `specs/030-carrera-coordinador/evidencia.md`, y verificar:
   - todas las pruebas del backend y la SPA, con su cobertura por módulo, regenerando JaCoCo;
   - Spotless, SpotBugs, ESLint y TypeScript;
   - los scripts de `deploy/`, shellcheck y Gitleaks;
@@ -192,7 +192,7 @@ Plan aprobado por el autor el 2026-10-31.
   - los criterios de terminado de la constitución (§6).
 
   Commit, push, PR en borrador con `Refs #166` y marcarlo listo cuando sus comprobaciones pasen.
-- [ ] T029 Fusionar solo con la aprobación del autor. Verificar el despliegue en el equipo de demostración con evidencia (GitHub `demostracion` y los 8 contenedores sanos con la versión nueva). Después: la comprobación del autor, indicando la carrera con `admin.demo`, y el PR de evidencia con `Closes #166`. El autor mide cuánto tarda en indicar la carrera (SC-004); si no lo mide, la evidencia lo dice.
+- [X] T029 Fusionar solo con la aprobación del autor. Verificar el despliegue en el equipo de demostración con evidencia (GitHub `demostracion` y los 8 contenedores sanos con la versión nueva). Después: la comprobación del autor, indicando la carrera con `admin.demo`, y el PR de evidencia con `Closes #166`. El autor mide cuánto tarda en indicar la carrera (SC-004); si no lo mide, la evidencia lo dice.
 
 ---
 
