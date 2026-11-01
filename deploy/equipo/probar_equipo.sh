@@ -22,7 +22,7 @@ readonly REGISTRO=127.0.0.1:5000
 readonly REPOSITORIO_PRUEBA=localhost:5000/mdd
 readonly IMAGEN_REGISTRO=registry:2.8.3@sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373
 readonly IMAGEN_CURL=curlimages/curl:8.22.0@sha256:58adaa4e8dca9c988bae2aba4ab3434a0bb2da16bbe3f92dec39ec7785166777
-readonly COMPONENTES=(identidad datos distributivo salida gateway frontend)
+readonly COMPONENTES=(identidad datos distributivo salida gateway frontend caddy postgres)
 readonly ESPERA_SANO=${ESPERA_SANO:-240}   # versión sana: margen para un runner lento
 readonly ESPERA_ROTO=${ESPERA_ROTO:-60}    # versión rota: no hace falta esperar los 180 s reales
 
