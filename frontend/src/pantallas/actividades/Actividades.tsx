@@ -25,12 +25,13 @@ import { useSesionActual } from '../../sesion/useSesionActual';
 import { useCarreras } from '../carreras/consultas';
 import { DialogoConfirmar } from '../carreras/DialogosDeCarrera';
 import { horas } from '../carreras/nombres';
+import { CLAVE_CARGA_HORARIA, porComponente } from '../comun/cargaHoraria';
 import { SELECCION } from '../comun/formulario';
+import { PanelDeCarga } from '../comun/PanelDeCarga';
 import { usePeriodos } from '../periodos/consultas';
 import { NOMBRE_DEL_ESTADO } from '../periodos/estados';
 import {
   CLAVE_ACTIVIDADES,
-  NOMBRE_DEL_COMPONENTE,
   literal,
   quitarActividad,
   useActividades,
@@ -51,13 +52,11 @@ type Abierto =
     }
   | null;
 
-function sumas({ horasPorComponente: suma }: ActividadesDelDocente) {
-  return [
-    [NOMBRE_DEL_COMPONENTE.OTRAS_DOCENCIA, suma.otrasDocencia],
-    [NOMBRE_DEL_COMPONENTE.INVESTIGACION, suma.investigacion],
-    [NOMBRE_DEL_COMPONENTE.VINCULACION, suma.vinculacion],
-    [NOMBRE_DEL_COMPONENTE.GESTION, suma.gestion],
-  ] as const;
+/** El docente del panel: el último que se guardó o se quitó, en un periodo. */
+interface DocenteALaVista {
+  periodo: string;
+  docente: string;
+  guardada: boolean;
 }
 
 export function Actividades() {
@@ -70,6 +69,7 @@ export function Actividades() {
   const [abierto, setAbierto] = useState<Abierto>(null);
   const [fallo, setFallo] = useState<MensajeDeError | null>(null);
   const [avisoDeHoras, setAvisoDeHoras] = useState<string | null>(null);
+  const [aLaVista, setALaVista] = useState<DocenteALaVista | null>(null);
   // Por omisión, el más reciente en Planificación; si no hay, el más reciente.
   const porOmision =
     periodos.data?.find((periodo) => periodo.estado === 'PLANIFICACION')?.codigo ??
@@ -80,7 +80,11 @@ export function Actividades() {
   const puedeEscribir =
     tieneAlguno(sesion.data?.permisos, ESCRITURA_DE_LA_PROPUESTA) && estado !== 'CERRADO';
 
-  const recargar = () => consultas.invalidateQueries({ queryKey: CLAVE_ACTIVIDADES });
+  const recargar = () =>
+    Promise.all([
+      consultas.invalidateQueries({ queryKey: CLAVE_ACTIVIDADES }),
+      consultas.invalidateQueries({ queryKey: CLAVE_CARGA_HORARIA }),
+    ]);
 
   const quitar = async (
     carrera: string,
@@ -100,6 +104,7 @@ export function Actividades() {
         },
         actividad.proyecto,
       );
+      setALaVista({ periodo: periodo ?? '', docente: docente.docente, guardada: false });
       await recargar();
     } catch (error) {
       setFallo(traducirError(error));
@@ -143,6 +148,15 @@ export function Actividades() {
           ))}
         </TextField>
       )}
+      {aLaVista && aLaVista.periodo === periodo && (
+        <Box sx={{ my: 1 }}>
+          <PanelDeCarga
+            periodo={aLaVista.periodo}
+            docente={aLaVista.docente}
+            guardada={aLaVista.guardada}
+          />
+        </Box>
+      )}
       {actividades.data && !actividades.data.creado && (
         <Alert severity="info" sx={{ my: 1 }}>
           El periodo todavía no tiene distributivo. Pide al Vicerrector académico que lo cree.
@@ -163,9 +177,10 @@ export function Actividades() {
           periodo={periodo}
           carrera={abierto.carrera}
           alCerrar={() => setAbierto(null)}
-          alGuardar={async (aviso) => {
+          alGuardar={async (aviso, docente) => {
             setFallo(null);
             setAvisoDeHoras(aviso);
+            setALaVista({ periodo, docente, guardada: true });
             await recargar();
             setAbierto(null);
           }}
@@ -184,7 +199,7 @@ export function Actividades() {
   );
 }
 
-/** Una carrera: una fila por docente, con sus actividades y su suma por componente. */
+/** Una carrera: una fila por docente, con sus actividades aquí y sus totales en todas las carreras. */
 function ActividadesDeLaCarrera({
   carrera,
   nombre,
@@ -220,7 +235,7 @@ function ActividadesDeLaCarrera({
               <TableRow>
                 <TableCell>Docente</TableCell>
                 <TableCell>Actividades</TableCell>
-                <TableCell>Horas por componente</TableCell>
+                <TableCell>Totales en todas las carreras</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -260,7 +275,7 @@ function ActividadesDeLaCarrera({
                     </Stack>
                   </TableCell>
                   <TableCell>
-                    {sumas(docente)
+                    {porComponente(docente.totales)
                       .filter(([, valor]) => valor > 0)
                       .map(([componente, valor]) => (
                         <Typography key={componente} variant="body2">

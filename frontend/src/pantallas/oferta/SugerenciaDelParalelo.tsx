@@ -15,13 +15,14 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { AvisoDeError } from '../../errores/AvisoDeError';
 import { traducirError } from '../../errores/traducir';
 import { DesgloseDeAfinidad } from '../comun/DesgloseDeAfinidad';
 import { Avisos, Marco } from '../comun/Formulario';
 import { ayuda, detalleDe } from '../comun/formulario';
 import { numero, puntos } from '../comun/numeros';
+import { PanelDeCarga } from '../comun/PanelDeCarga';
 import { useEnvio } from '../comun/useEnvio';
 import { NOMBRE_DE_LA_DEDICACION } from '../docentes/nombres';
 import {
@@ -51,11 +52,16 @@ function Candidato({
   candidato,
   nivel,
   accion,
+  periodo,
 }: {
   candidato: DatosDelCandidato;
   nivel: 'h3' | 'h4';
   accion: ReactNode;
+  /** El periodo de sus totales; sin distributivo no se pide. */
+  periodo: string | undefined;
 }) {
+  // Los totales se piden al desplegarlo: una sugerencia trae decenas de candidatos.
+  const [desplegado, setDesplegado] = useState(false);
   return (
     <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
       <Accordion
@@ -63,6 +69,11 @@ function Candidato({
         variant="outlined"
         slotProps={{ heading: { component: nivel } }}
         sx={{ flexGrow: 1, minWidth: 0 }}
+        onChange={(_, abierto) => {
+          if (abierto) {
+            setDesplegado(true);
+          }
+        }}
       >
         <AccordionSummary>
           <Stack sx={{ width: '100%' }}>
@@ -88,6 +99,11 @@ function Candidato({
         </AccordionSummary>
         <AccordionDetails>
           <DesgloseDeAfinidad puntaje={candidato.puntaje} />
+          {desplegado && periodo && (
+            <Box sx={{ mt: 1 }}>
+              <PanelDeCarga periodo={periodo} docente={candidato.identificacion} />
+            </Box>
+          )}
         </AccordionDetails>
       </Accordion>
       {accion}
@@ -166,6 +182,7 @@ function Candidatos({
 }) {
   const { candidatos, bajoElMinimo, fueraPorElMinimo, propuesta } = sugerencia;
   const propone = puedeProponer && sugerencia.distributivoCreado;
+  const periodoDeLaCarga = sugerencia.distributivoCreado ? sugerencia.periodo : undefined;
   const accion = (candidato: DatosDelCandidato, conTexto: boolean) => {
     if (propuesta?.docente === candidato.identificacion) {
       return <Typography variant="body2">Propuesto</Typography>;
@@ -212,6 +229,7 @@ function Candidatos({
             candidato={candidato}
             nivel="h3"
             accion={accion(candidato, false)}
+            periodo={periodoDeLaCarga}
           />
         ))}
       </div>
@@ -230,6 +248,7 @@ function Candidatos({
                 candidato={candidato}
                 nivel="h4"
                 accion={accion(candidato, true)}
+                periodo={periodoDeLaCarga}
               />
             ))}
           </AccordionDetails>
@@ -251,12 +270,14 @@ export function SugerenciaDelParalelo({
   asignaturaParalelo: AsignaturaParalelo;
   puedeProponer: boolean;
   alCerrar: () => void;
-  /** Se llama con la propuesta guardada: recarga la oferta y cierra. */
-  alProponer: () => Promise<void>;
+  /** Se llama con el docente de la propuesta guardada: recarga la oferta y cierra. */
+  alProponer: (docente: string) => Promise<void>;
 }) {
   const { asignatura, nombre, paralelo } = asignaturaParalelo;
   const sugerencia = useSugerencia(periodo, asignatura, paralelo);
-  const { aviso, enviando, enviar } = useEnvio(alProponer);
+  // Una referencia, no un estado: se lee justo después de guardar, antes de volver a pintar.
+  const propuesto = useRef('');
+  const { aviso, enviando, enviar } = useEnvio(() => alProponer(propuesto.current));
   const [porJustificar, setPorJustificar] = useState<DatosDelCandidato | null>(null);
 
   const proponer = (docente: string, texto?: string) =>
@@ -266,6 +287,7 @@ export function SugerenciaDelParalelo({
     if (conTexto) {
       setPorJustificar(candidato);
     } else {
+      propuesto.current = candidato.identificacion;
       enviar(() => proponer(candidato.identificacion));
     }
   };
@@ -298,7 +320,7 @@ export function SugerenciaDelParalelo({
           candidato={porJustificar}
           alCerrar={() => setPorJustificar(null)}
           alEnviar={(texto) => proponer(porJustificar.identificacion, texto)}
-          alGuardar={alProponer}
+          alGuardar={() => alProponer(porJustificar.identificacion)}
         />
       )}
     </Dialog>

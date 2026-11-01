@@ -373,7 +373,7 @@ una_sola_actividad() {
     [[ $estado == 200 && $(actividades_guardadas "$libre" 140-b) == 1 ]] || return 1
     actividades
     jq -e --arg d "$libre" '.carreras[0].docentes[] | select(.docente == $d)
-        | .horasPorComponente.otrasDocencia == 6' <<<"$cuerpo" >/dev/null || return 1
+        | .totales.otrasDocencia == 6' <<<"$cuerpo" >/dev/null || return 1
     [[ $(consultar_base "select count(*) from generacion.registro_cambio where accion = 'ACTIVIDAD_GUARDADA' and detalle ->> 'horasAnteriores' = '4.25'") == 1 ]] \
         || return 1
     quitar "$carrera_a" "$libre" 140-b

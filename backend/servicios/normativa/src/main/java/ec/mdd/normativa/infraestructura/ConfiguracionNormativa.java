@@ -8,6 +8,7 @@ import ec.mdd.normativa.aplicacion.AsociarVersionAPeriodoServicio;
 import ec.mdd.normativa.aplicacion.ConsultarActividadesDelPeriodoServicio;
 import ec.mdd.normativa.aplicacion.ConsultarNormativaServicio;
 import ec.mdd.normativa.aplicacion.ConsultarPesosDelPeriodoServicio;
+import ec.mdd.normativa.aplicacion.ConsultarProporcionDelPeriodoServicio;
 import ec.mdd.normativa.aplicacion.CrearVersionServicio;
 import ec.mdd.normativa.aplicacion.EditarVersionServicio;
 import ec.mdd.normativa.aplicacion.cargas.CargasDeNormativa;
@@ -15,6 +16,7 @@ import ec.mdd.normativa.puertos.entrada.AsociarVersionAPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarActividadesDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarNormativa;
 import ec.mdd.normativa.puertos.entrada.ConsultarPesosDelPeriodo;
+import ec.mdd.normativa.puertos.entrada.ConsultarProporcionDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.CrearVersion;
 import ec.mdd.normativa.puertos.entrada.EditarVersion;
 import ec.mdd.normativa.puertos.salida.RegistroDeCambios;
@@ -57,6 +59,13 @@ public class ConfiguracionNormativa {
     @Bean
     public ConsultarNormativa consultarNormativa(RepositorioVersiones repositorio) {
         return new ConsultarNormativaServicio(repositorio);
+    }
+
+    /** La meta de la proporción de un periodo (RN-05). */
+    @Bean
+    public ConsultarProporcionDelPeriodo consultarProporcionDelPeriodo(
+            RepositorioVersiones repositorio) {
+        return new ConsultarProporcionDelPeriodoServicio(repositorio);
     }
 
     /** Los pesos de afinidad de un periodo, para otros procesos (F06-H01, ADR-023). */

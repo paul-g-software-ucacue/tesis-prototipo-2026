@@ -57,7 +57,8 @@ class ConfiguracionGeneracionTest {
         assertThat(configuracion.consultarSugerencia(null, null, null)).isNotNull();
         assertThat(configuracion.asignarActividad(null, null, null, null, null)).isNotNull();
         assertThat(configuracion.consultarActividadesPosibles(null, null)).isNotNull();
-        assertThat(configuracion.consultarActividades(null)).isNotNull();
+        assertThat(configuracion.consultarActividades(null, null)).isNotNull();
+        assertThat(configuracion.consultarCargaHoraria(null, null, null)).isNotNull();
     }
 
     @Test

@@ -1,6 +1,7 @@
 package ec.mdd.generacion.puertos.salida;
 
 import ec.mdd.generacion.dominio.ActividadDelCatalogo;
+import ec.mdd.generacion.dominio.MetaDeProporcion;
 import ec.mdd.generacion.dominio.ProyectosYCargosDelDocente;
 import java.util.List;
 import java.util.Optional;
@@ -21,4 +22,11 @@ public interface DatosParaActividades {
      * @return vacío si el docente o el periodo no existen
      */
     Optional<ProyectosYCargosDelDocente> proyectosYCargos(String docente, String periodo);
+
+    /**
+     * La meta de la proporción en la versión que rige el periodo (RN-05).
+     *
+     * @return vacío si el periodo no tiene versión
+     */
+    Optional<MetaDeProporcion> meta(String periodo);
 }

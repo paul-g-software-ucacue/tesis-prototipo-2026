@@ -154,6 +154,39 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /interno/normativa/periodos/{periodo}/proporcion:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        example: 2025-1
+    get:
+      tags: [Interno]
+      operationId: consultarProporcionDelPeriodo
+      summary: Devuelve la meta de la proporción de la versión que rige el periodo.
+      description: >-
+        Solo entre procesos, con el token de proceso: lo usa Generación para mostrar los totales del
+        docente junto a la meta de RN-05 (RF-27, ADR-023). Un periodo sin versión responde 404.
+      responses:
+        '200':
+          description: La versión y los dos porcentajes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProporcionDelPeriodo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrada'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
   /interno/normativa/periodos/{periodo}/pesos-de-afinidad:
     parameters:
       - name: periodo
@@ -579,6 +612,21 @@ components:
           type: integer
           minimum: 1
           example: 1
+    ProporcionDelPeriodo:
+      type: object
+      required: [periodo, version, clase, otrasDocencia]
+      properties:
+        periodo:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        version:
+          type: integer
+          minimum: 1
+        clase:
+          description: El porcentaje de horas de clase (RN-05).
+          type: number
+        otrasDocencia:
+          description: El porcentaje de otras actividades de docencia (RN-05).
+          type: number
     PesosDelPeriodo:
       type: object
       required: [periodo, version, pesos, minimoAfinidad]

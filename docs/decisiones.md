@@ -79,6 +79,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-79 | 2026-11-01 | El catálogo de actividades vive en Normativa, por versión, y lo que exige cada actividad es un dato | Aceptada | RF-21, RN-22, RN-25, F06-H04 |
 | D-80 | 2026-11-01 | PostgreSQL y Caddy se publican como imágenes propias, derivadas de las oficiales | Aceptada | D-54, D-58 |
 | D-81 | 2026-11-01 | `cloudflared` sube a una versión con menos de dos semanas, como excepción | Aceptada | D-55, D-80 |
+| D-82 | 2026-11-01 | La carga horaria de un docente se lee sin filtro de carrera, solo con sumas | Aceptada | D-01, D-64, F07-H01 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1476,5 +1477,21 @@ Las 19 excepciones de `cloudflared` no cambian: su imagen no corre con el túnel
 **Alternativas.** Esperar al 2026-11-13: mantiene la regla, con 19 excepciones hasta entonces. Quitar `cloudflared` de la demo: pierde el túnel opcional de D-55.
 
 **Consecuencias.** El túnel sigue apagado: encenderlo es una decisión aparte, y antes hay que probar esta versión con un túnel real, porque aquí no se pudo.
+
+**Documentos que hay que poner al día.** Ninguno.
+
+## D-82. La carga horaria de un docente se lee sin filtro de carrera, solo con sumas
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-01 · **Decidido por:** autor de la tesis
+- **Origen:** plan de F07-H01
+- **Excepción a:** D-64, que limita a su carrera las lecturas de quien tiene alcance propio
+
+**Decisión.** `consultarCargaHoraria` se lee con los permisos de leer la oferta, el distributivo o los catálogos, y un coordinador puede pedirla de cualquier docente activo. Solo trae sumas por componente, las horas contratadas, asignadas y disponibles, y la proporción.
+
+**Por qué.** Para saber si a un docente le caben horas hay que ver lo que tiene en todas las carreras (D-01), también antes de asignarle algo. La sugerencia ya muestra sus horas en otras carreras.
+
+**Alternativas.** Limitarla a los docentes del parcial propio: el coordinador solo vería a un docente después de asignarle algo.
+
+**Consecuencias.** Con esos permisos ven los totales el Administrador, el Coordinador de carrera, el Responsable de consolidación, el Vicerrector, el Rector, el OCS y la Secretaría General. Un coordinador sigue sin ver en qué asignaturas o actividades está un docente en otra carrera. RF-30 sigue fuera del prototipo.
 
 **Documentos que hay que poner al día.** Ninguno.

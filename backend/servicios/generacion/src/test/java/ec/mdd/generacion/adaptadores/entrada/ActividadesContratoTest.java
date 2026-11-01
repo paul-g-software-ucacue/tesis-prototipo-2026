@@ -8,13 +8,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import ec.mdd.generacion.dominio.ActividadDelCatalogo;
 import ec.mdd.generacion.dominio.ActividadNoLectiva;
+import ec.mdd.generacion.dominio.CargaHoraria;
 import ec.mdd.generacion.dominio.CargoNoVigente;
 import ec.mdd.generacion.dominio.Componente;
 import ec.mdd.generacion.dominio.HorasNoValidas;
 import ec.mdd.generacion.dominio.ParcialNoEditable;
 import ec.mdd.generacion.dominio.ProyectoDelDocente;
 import ec.mdd.generacion.dominio.ProyectoNoValido;
-import ec.mdd.generacion.dominio.SumaPorComponente;
 import ec.mdd.generacion.puertos.entrada.ActividadFueraDelCatalogo;
 import ec.mdd.generacion.puertos.entrada.ActividadGuardada;
 import ec.mdd.generacion.puertos.entrada.ActividadNoEncontrada;
@@ -294,7 +294,7 @@ class ActividadesContratoTest {
         assertThat(resultado.getResponse().getContentAsString())
                 .startsWith("{\"creado\":true,\"carreras\":[{\"carrera\":\"AGRO\"")
                 .contains(
-                        "\"horasPorComponente\":{\"otrasDocencia\":4.25,\"investigacion\":0,"
+                        "\"totales\":{\"clase\":8,\"otrasDocencia\":4.25,\"investigacion\":0,"
                                 + "\"vinculacion\":0,\"gestion\":0}");
         contrato.validar(resultado);
     }
@@ -503,7 +503,12 @@ class ActividadesContratoTest {
                                                 "0109990010",
                                                 "PEREZ LUIS",
                                                 List.of(una),
-                                                SumaPorComponente.de(List.of(una)))));
+                                                new CargaHoraria(
+                                                        new BigDecimal("8"),
+                                                        new BigDecimal("4.25"),
+                                                        BigDecimal.ZERO,
+                                                        BigDecimal.ZERO,
+                                                        BigDecimal.ZERO))));
                 ActividadesDeCarrera agro = new ActividadesDeCarrera("AGRO", List.of());
                 return new ActividadesDelPeriodo(
                         true, carrera.isPresent() ? List.of(tds) : List.of(agro, tds));

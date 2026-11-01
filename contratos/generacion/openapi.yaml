@@ -9,6 +9,8 @@
 # docentes, con su justificación (RF-24, RF-56, D-19, RNF-EQU-01). Crea quien escribe el distributivo;
 # propone quien escribe la oferta y la propuesta, sobre lo propio (D-64).
 # Desde F06-H04: las actividades no lectivas, con el mismo permiso de proponer (RF-26, RN-22, RN-25).
+# Desde F07-H01: la carga horaria de un docente, con sus totales y su proporción (RF-27, RN-05, D-01).
+# La leen quienes leen la oferta, sin filtro de carrera, porque solo trae sumas (D-82).
 openapi: 3.0.3
 info:
   title: MDD · generacion
@@ -30,6 +32,8 @@ tags:
     description: El distributivo del periodo, sus parciales y las propuestas (RF-24, RF-56, D-19).
   - name: Actividades
     description: Las actividades no lectivas de cada parcial (RF-26, RN-22, RN-25).
+  - name: CargaHoraria
+    description: Los totales de un docente y su proporción (RF-27, RN-05, D-01, D-82).
 paths:
   /api/generacion/sesion:
     get:
@@ -443,7 +447,7 @@ paths:
       operationId: consultarActividades
       summary: Devuelve las actividades no lectivas del periodo, por carrera y docente.
       description: >-
-        Con la suma por componente de cada docente. Quien solo tiene «lo propio» recibe su carrera,
+        Con los totales de cada docente en todas las carreras. Quien solo tiene «lo propio» recibe su carrera,
         aunque aún no tenga parcial; sin carrera, 403 COMUN_CARRERA_SIN_INDICAR (D-64). Sin
         distributivo, creado es falso.
       x-mdd-permiso: [OFERTA:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]
@@ -510,6 +514,62 @@ paths:
         '409':
           description: >-
             Docente no activo (GENERACION_DOCENTE_NO_ACTIVO) o periodo sin abrir (GENERACION_PERIODO_SIN_ABRIR).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/generacion/periodos/{periodo}/docentes/{docente}/carga-horaria:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2026-I
+      - name: docente
+        in: path
+        required: true
+        description: Número de identificación del docente, el que usa Docentes.
+        schema:
+          type: string
+          pattern: '^[0-9A-Z]{1,13}$'
+        example: '0109990010'
+    get:
+      tags: [CargaHoraria]
+      operationId: consultarCargaHoraria
+      summary: Devuelve los totales de un docente activo y su proporción.
+      description: >-
+        Suma todas las carreras y unidades de la versión vigente, sin decir en qué asignaturas o
+        actividades están las horas. No se filtra por carrera (D-82). Es solo lectura.
+      x-mdd-permiso: [OFERTA:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]
+      responses:
+        '200':
+          description: La carga horaria del docente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CargaHoraria'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '409':
+          description: >-
+            Docente no activo (GENERACION_DOCENTE_NO_ACTIVO), periodo sin distributivo, también si
+            no existe (GENERACION_SIN_DISTRIBUTIVO), o sin versión de normativa
+            (GENERACION_PERIODO_SIN_ABRIR).
           content:
             application/json:
               schema:
@@ -853,7 +913,7 @@ components:
             $ref: '#/components/schemas/ActividadesDelDocente'
     ActividadesDelDocente:
       type: object
-      required: [docente, nombreDocente, actividades, horasPorComponente]
+      required: [docente, nombreDocente, actividades, totales]
       properties:
         docente:
           type: string
@@ -863,13 +923,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ActividadAsignada'
-        horasPorComponente:
+        totales:
           $ref: '#/components/schemas/HorasPorComponente'
     HorasPorComponente:
-      description: La suma de las actividades del docente en este parcial, por componente.
+      description: Las horas del docente por componente, en todas las carreras y unidades (D-01).
       type: object
-      required: [otrasDocencia, investigacion, vinculacion, gestion]
+      required: [clase, otrasDocencia, investigacion, vinculacion, gestion]
       properties:
+        clase:
+          type: number
         otrasDocencia:
           type: number
         investigacion:
@@ -877,6 +939,65 @@ components:
         vinculacion:
           type: number
         gestion:
+          type: number
+    CargaHoraria:
+      description: Los totales de un docente, sin el detalle de otras carreras (D-82).
+      type: object
+      required:
+        - docente
+        - nombreDocente
+        - horasContratadas
+        - totales
+        - asignadas
+        - disponibles
+        - exceso
+        - meta
+      properties:
+        docente:
+          type: string
+        nombreDocente:
+          type: string
+        horasContratadas:
+          type: integer
+          minimum: 0
+        totales:
+          $ref: '#/components/schemas/HorasPorComponente'
+        asignadas:
+          description: La suma de los cinco componentes.
+          type: number
+        disponibles:
+          description: Horas contratadas menos asignadas, nunca menos de 0 (D-75).
+          type: number
+        exceso:
+          description: Lo que pasa de las contratadas; 0 si no se pasa (D-78).
+          type: number
+        proporcion:
+          $ref: '#/components/schemas/Proporcion'
+        meta:
+          $ref: '#/components/schemas/MetaDeProporcion'
+    Proporcion:
+      description: >-
+        Los porcentajes de clase y de otras actividades de docencia, enteros, que suman 100. No
+        viene si el docente no tiene horas en ninguna.
+      type: object
+      required: [clase, otrasDocencia]
+      properties:
+        clase:
+          type: integer
+          minimum: 0
+          maximum: 100
+        otrasDocencia:
+          type: integer
+          minimum: 0
+          maximum: 100
+    MetaDeProporcion:
+      description: Los porcentajes de RN-05 en la versión de normativa que rige el periodo.
+      type: object
+      required: [clase, otrasDocencia]
+      properties:
+        clase:
+          type: number
+        otrasDocencia:
           type: number
     ActividadAsignada:
       type: object

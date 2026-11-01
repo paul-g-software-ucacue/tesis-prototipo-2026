@@ -1,6 +1,7 @@
 // Las actividades de 2026-2 para las pruebas: ficticias. Un docente con una actividad de docencia y
 // otra con proyecto, y las actividades posibles: libre, con proyecto, sin proyectos, sin cargo y una
 // de gestión que no pide cargo.
+import type { CargaHoraria } from '../comun/cargaHoraria';
 import type { ActividadesDelPeriodo, ActividadesPosibles } from './consultas';
 
 export const CARRERA = '550613A01-P-0301';
@@ -30,11 +31,24 @@ export const ACTIVIDADES: ActividadesDelPeriodo = {
               nombreProyecto: 'Monitoreo de hatos',
             },
           ],
-          horasPorComponente: { otrasDocencia: 4.25, investigacion: 6, vinculacion: 0, gestion: 0 },
+          totales: { clase: 8, otrasDocencia: 7.25, investigacion: 6, vinculacion: 0, gestion: 0 },
         },
       ],
     },
   ],
+};
+
+/** La carga horaria de ese docente. */
+export const CARGA: CargaHoraria = {
+  docente: '0109990010',
+  nombreDocente: 'PERALTA MALDONADO JUAN ANDRES',
+  horasContratadas: 40,
+  totales: { clase: 8, otrasDocencia: 7.25, investigacion: 6, vinculacion: 0, gestion: 0 },
+  asignadas: 21.25,
+  disponibles: 18.75,
+  exceso: 0,
+  proporcion: { clase: 52, otrasDocencia: 48 },
+  meta: { clase: 60, otrasDocencia: 40 },
 };
 
 export const SIN_ACTIVIDADES: ActividadesDelPeriodo = {

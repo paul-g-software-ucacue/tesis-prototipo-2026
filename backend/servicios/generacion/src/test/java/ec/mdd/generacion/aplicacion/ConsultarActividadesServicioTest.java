@@ -5,13 +5,19 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import ec.mdd.generacion.dominio.ActividadNoLectiva;
+import ec.mdd.generacion.dominio.AsignaturaOfertada;
+import ec.mdd.generacion.dominio.AsignaturaParalelo;
 import ec.mdd.generacion.dominio.Componente;
 import ec.mdd.generacion.dominio.EstadoDeVersion;
+import ec.mdd.generacion.dominio.Justificacion;
 import ec.mdd.generacion.dominio.ParcialCarrera;
+import ec.mdd.generacion.dominio.Propuesta;
+import ec.mdd.generacion.dominio.TipoDeJustificacion;
 import ec.mdd.generacion.dominio.VersionDistributivo;
 import ec.mdd.generacion.puertos.entrada.ActividadesDeCarrera;
 import ec.mdd.generacion.puertos.entrada.ActividadesDelDocente;
 import ec.mdd.generacion.puertos.entrada.ActividadesDelPeriodo;
+import ec.mdd.generacion.puertos.salida.DatosParaSugerencia;
 import ec.mdd.generacion.puertos.salida.RepositorioDistributivos;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -26,9 +32,10 @@ class ConsultarActividadesServicioTest {
     private static final String PERIODO = "2026-I";
     private static final Optional<String> TODAS = Optional.empty();
 
+    private final DatosParaSugerencia datos = mock(DatosParaSugerencia.class);
     private final RepositorioDistributivos distributivos = mock(RepositorioDistributivos.class);
     private final ConsultarActividadesServicio servicio =
-            new ConsultarActividadesServicio(distributivos);
+            new ConsultarActividadesServicio(datos, distributivos);
 
     @Test
     void dadoQueNoHayDistributivo_cuandoSeConsulta_entoncesCreadoEnFalso() {
@@ -60,7 +67,58 @@ class ConsultarActividadesServicioTest {
                 .extracting(ActividadesDelDocente::nombreDocente)
                 .containsExactly("ALVAREZ LUIS", "ZAMORA ANA");
         assertThat(tds.get(1).actividades()).hasSize(2);
-        assertThat(tds.get(1).suma().otrasDocencia()).isEqualByComparingTo("6.75");
+        assertThat(tds.get(1).totales().otrasDocencia()).isEqualByComparingTo("6.75");
+    }
+
+    @Test
+    void dadoUnDocenteEnDosCarreras_cuandoSeConsulta_entoncesSusTotalesSumanLasDos() {
+        AsignaturaParalelo clase =
+                new AsignaturaParalelo(
+                        new AsignaturaOfertada("SOC-101", "Asignatura", "06", "061"),
+                        "A",
+                        "AGRO",
+                        new BigDecimal("5"),
+                        false,
+                        false);
+        when(datos.ofertaDelPeriodo(PERIODO)).thenReturn(Optional.of(List.of(clase)));
+        Propuesta propuesta =
+                new Propuesta(
+                        "SOC-101",
+                        "A",
+                        "AGRO",
+                        "1",
+                        "ALVAREZ LUIS",
+                        new Justificacion(TipoDeJustificacion.DISPONIBILIDAD, null),
+                        Instant.parse("2026-10-31T15:00:00Z"),
+                        "coordinacion.demo");
+        when(distributivos.vigenteDe(PERIODO))
+                .thenReturn(
+                        Optional.of(
+                                new VersionDistributivo(
+                                        UUID.randomUUID(),
+                                        1,
+                                        EstadoDeVersion.EDITABLE,
+                                        List.of(ParcialCarrera.nuevo("TDS")),
+                                        List.of(propuesta),
+                                        List.of(
+                                                actividad("TDS", "1", "ALVAREZ LUIS", "140-b", "3"),
+                                                actividad(
+                                                        "AGRO",
+                                                        "1",
+                                                        "ALVAREZ LUIS",
+                                                        "140-g",
+                                                        "1")))));
+
+        ActividadesDelDocente docente =
+                servicio.actividades(PERIODO, Optional.of("TDS"))
+                        .carreras()
+                        .getFirst()
+                        .docentes()
+                        .getFirst();
+
+        assertThat(docente.actividades()).hasSize(1);
+        assertThat(docente.totales().clase()).isEqualByComparingTo("5");
+        assertThat(docente.totales().otrasDocencia()).isEqualByComparingTo("4");
     }
 
     @Test
