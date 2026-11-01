@@ -45,6 +45,51 @@ class SugerenciaTest {
     private static final FormacionDelDocente DE_0 = formacion("091");
 
     @Test
+    void dadosDocentesBajoElMinimo_cuandoSeArma_entoncesVanAparteYEnElMismoOrden() {
+        Sugerencia sugerencia =
+                Sugerencia.armar(
+                        PERIODO,
+                        DE_4_HORAS,
+                        new PesosDelPeriodo(2, PESOS, new BigDecimal("5")),
+                        List.of(
+                                docente("A", 40, DE_0),
+                                docente("B", 40, DE_3),
+                                docente("C", 40, DE_5)),
+                        Map.of("ID-B", new HorasDelDocente(new BigDecimal("6"), BigDecimal.ZERO)));
+
+        assertThat(sugerencia.candidatos())
+                .extracting(Candidato::identificacion)
+                .containsExactly("ID-C");
+        assertThat(sugerencia.bajoElMinimo())
+                .extracting(Candidato::identificacion)
+                .containsExactly("ID-B", "ID-A");
+        assertThat(sugerencia.bajoElMinimo().getFirst().horasDisponibles())
+                .isEqualByComparingTo("34");
+    }
+
+    @Test
+    void dadosDocentesBajoElMinimo_cuandoSeArma_entoncesLaCuentaEsElTamanoDeLaLista() {
+        Sugerencia sugerencia = armar(docente("A", 40, DE_0), docente("B", 40, DE_0));
+
+        assertThat(sugerencia.fueraPorElMinimo()).isEqualTo(sugerencia.bajoElMinimo().size());
+        assertThat(sugerencia.fueraPorElMinimo()).isEqualTo(2);
+    }
+
+    @Test
+    void dadoTroncoComun_cuandoSeArma_entoncesNadieQuedaBajoElMinimo() {
+        Sugerencia sugerencia =
+                Sugerencia.armar(
+                        PERIODO,
+                        paralelo(new BigDecimal("4"), true),
+                        CON_MINIMO_3,
+                        List.of(docente("A", 40, DE_0)),
+                        Map.of());
+
+        assertThat(sugerencia.candidatos()).hasSize(1);
+        assertThat(sugerencia.bajoElMinimo()).isEmpty();
+    }
+
+    @Test
     void dadosVariosDocentes_cuandoSeArma_entoncesVanDelMayorPuntajeAlMenor() {
         Sugerencia sugerencia =
                 armar(docente("B", 40, DE_5), docente("A", 40, DE_5), docente("C", 40, DE_7));

@@ -11,14 +11,19 @@ import ec.mdd.generacion.dominio.Candidato;
 import ec.mdd.generacion.dominio.CoincidenciaDeCampo;
 import ec.mdd.generacion.dominio.Dedicacion;
 import ec.mdd.generacion.dominio.HorasDelDocente;
+import ec.mdd.generacion.dominio.Justificacion;
+import ec.mdd.generacion.dominio.Propuesta;
 import ec.mdd.generacion.dominio.PuntajeAfinidad;
 import ec.mdd.generacion.dominio.Sugerencia;
 import ec.mdd.generacion.dominio.TipoDeAporte;
+import ec.mdd.generacion.dominio.TipoDeJustificacion;
 import ec.mdd.generacion.puertos.entrada.ConsultarSugerencia;
 import ec.mdd.generacion.puertos.entrada.OtraCarrera;
 import ec.mdd.generacion.puertos.entrada.ParaleloNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.ParaleloRetirado;
 import ec.mdd.generacion.puertos.entrada.PeriodoSinAbrir;
+import ec.mdd.generacion.puertos.entrada.PropuestaVista;
+import ec.mdd.generacion.puertos.entrada.SugerenciaDelParalelo;
 import ec.mdd.plataforma.errores.ErroresAutoConfiguracion;
 import ec.mdd.plataforma.eventos.ErroresEntreProcesos;
 import ec.mdd.plataforma.eventos.ProcesoConError;
@@ -27,7 +32,9 @@ import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
 import ec.mdd.plataforma.seguridad.AutoridadesDelToken;
 import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -67,7 +74,7 @@ class SugerenciaContratoTest {
                         "{\"periodo\":\"2026-I\",\"asignatura\":\"POO-204\","
                                 + "\"nombre\":\"Programación\",\"paralelo\":\"A_NOCTURNA\","
                                 + "\"horasDelParalelo\":2.5,\"troncoComun\":false,\"version\":2,"
-                                + "\"minimoAfinidad\":3.5,\"fueraPorElMinimo\":4,\"candidatos\":[{"
+                                + "\"minimoAfinidad\":3.5,\"fueraPorElMinimo\":1,\"candidatos\":[{"
                                 + "\"identificacion\":\"0109990010\",\"nombre\":\"PEREZ LUIS\","
                                 + "\"dedicacion\":\"TC\",\"horasContratadas\":40,"
                                 + "\"horasDisponibles\":30.5,\"horasEnOtrasCarreras\":6,"
@@ -75,8 +82,31 @@ class SugerenciaContratoTest {
                                 + "\"asignatura\":\"POO-204\",\"nombre\":\"Programación\","
                                 + "\"total\":7,\"topeAplicado\":false,\"desglose\":[{"
                                 + "\"tipo\":\"CUARTO_NIVEL\",\"nombre\":\"Maestría\","
-                                + "\"coincidencia\":\"CAMPO_ESPECIFICO\",\"aporte\":7}]}}]}")
+                                + "\"coincidencia\":\"CAMPO_ESPECIFICO\",\"aporte\":7}]}}],"
+                                + "\"bajoElMinimo\":[{\"identificacion\":\"0109990020\","
+                                + "\"nombre\":\"LOPEZ ANA\",\"dedicacion\":\"TC\","
+                                + "\"horasContratadas\":40,\"horasDisponibles\":40,"
+                                + "\"horasEnOtrasCarreras\":0,\"horasSuficientes\":true,"
+                                + "\"puntaje\":{\"asignatura\":\"POO-204\","
+                                + "\"nombre\":\"Programación\",\"total\":0,"
+                                + "\"topeAplicado\":false,\"desglose\":[]}}],"
+                                + "\"distributivoCreado\":false}")
                 .doesNotContain("correo", "telefono");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadaUnaPropuesta_cuandoConsulta_entoncesLaTraeConSuJustificacion() throws Exception {
+        MvcResult resultado = pedir("CON-PROPUESTA", "POO-204", "A");
+
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains(
+                        "\"distributivoCreado\":true,\"propuesta\":{"
+                                + "\"asignatura\":\"POO-204\",\"paralelo\":\"A\","
+                                + "\"docente\":\"0109990010\",\"nombreDocente\":\"PEREZ LUIS\","
+                                + "\"justificacion\":\"EXCEPCION\",\"retirada\":false,"
+                                + "\"horasSuficientes\":false,"
+                                + "\"texto\":\"Tiene experiencia en la materia\"}");
         contrato.validar(resultado);
     }
 
@@ -256,6 +286,16 @@ class SugerenciaContratoTest {
                                         CoincidenciaDeCampo.CAMPO_ESPECIFICO,
                                         new BigDecimal("7"))));
 
+        private static final Candidato BAJO_EL_MINIMO =
+                new Candidato(
+                        "0109990020",
+                        "LOPEZ ANA",
+                        Dedicacion.TC,
+                        40,
+                        HorasDelDocente.NINGUNA,
+                        new PuntajeAfinidad(
+                                "POO-204", "Programación", BigDecimal.ZERO, false, List.of()));
+
         @Bean
         ConsultarSugerencia consultarSugerencia() {
             return (periodo, asignatura, paralelo, carrera) -> {
@@ -284,19 +324,42 @@ class SugerenciaContratoTest {
                                                 new HorasDelDocente(
                                                         new BigDecimal("9.5"), new BigDecimal("6")),
                                                 PUNTAJE));
-                return new Sugerencia(
-                        periodo,
-                        new AsignaturaParalelo(
-                                new AsignaturaOfertada("POO-204", "Programación", "06", "061"),
-                                paralelo,
-                                "TDS",
-                                new BigDecimal("2.5"),
-                                false,
-                                false),
-                        2,
-                        new BigDecimal("3.5"),
-                        candidatos,
-                        4);
+                Sugerencia sugerencia =
+                        new Sugerencia(
+                                periodo,
+                                new AsignaturaParalelo(
+                                        new AsignaturaOfertada(
+                                                "POO-204", "Programación", "06", "061"),
+                                        paralelo,
+                                        "TDS",
+                                        new BigDecimal("2.5"),
+                                        false,
+                                        false),
+                                2,
+                                new BigDecimal("3.5"),
+                                candidatos,
+                                "VACIO".equals(periodo) ? List.of() : List.of(BAJO_EL_MINIMO));
+                boolean conPropuesta = "CON-PROPUESTA".equals(periodo);
+                return new SugerenciaDelParalelo(
+                        sugerencia,
+                        conPropuesta,
+                        conPropuesta
+                                ? Optional.of(
+                                        new PropuestaVista(
+                                                new Propuesta(
+                                                        "POO-204",
+                                                        "A",
+                                                        "TDS",
+                                                        "0109990010",
+                                                        "PEREZ LUIS",
+                                                        new Justificacion(
+                                                                TipoDeJustificacion.EXCEPCION,
+                                                                "Tiene experiencia en la materia"),
+                                                        Instant.parse("2026-10-31T15:00:00Z"),
+                                                        "coordinacion.demo"),
+                                                false,
+                                                false))
+                                : Optional.empty());
             };
         }
     }

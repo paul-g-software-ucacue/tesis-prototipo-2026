@@ -10,6 +10,9 @@ import org.junit.jupiter.api.Test;
 class AlcanceDeCarreraTest {
 
     private static final String CARRERA = "CARRERA_DS-01";
+    private static final String ESCRITURA = "OFERTA:ESCRITURA";
+    private static final List<String> ESCRIBE_LO_PROPIO_CON_CARRERA =
+            List.of("PERMISO_OFERTA:ESCRITURA", "ALCANCE_PROPIO_OFERTA:ESCRITURA", CARRERA);
 
     @Test
     void dadoUnPermisoDeLaOfertaSinAlcancePropio_cuandoSePregunta_entoncesVeTodas() {
@@ -72,5 +75,39 @@ class AlcanceDeCarreraTest {
     @Test
     void dadoQueNoTieneAutoridades_cuandoSePregunta_entoncesVeTodas() {
         assertThat(AlcanceDeCarrera.propia(List.of())).isEmpty();
+    }
+
+    @Test
+    void dadoUnPermisoSobreTodo_cuandoSePreguntaPorEl_entoncesVeTodas() {
+        assertThat(AlcanceDeCarrera.propia(List.of("PERMISO_OFERTA:ESCRITURA"), ESCRITURA))
+                .isEmpty();
+    }
+
+    @Test
+    void dadoUnPermisoPropioConCarrera_cuandoSePreguntaPorEl_entoncesSoloEsa() {
+        assertThat(AlcanceDeCarrera.propia(ESCRIBE_LO_PROPIO_CON_CARRERA, ESCRITURA))
+                .contains("DS-01");
+    }
+
+    @Test
+    void dadoUnRolSinLecturaConEscrituraPropia_cuandoSePreguntaPorLaLectura_entoncesVeTodas() {
+        assertThat(AlcanceDeCarrera.propia(ESCRIBE_LO_PROPIO_CON_CARRERA)).isEmpty();
+    }
+
+    @Test
+    void dadoUnPermisoPropioSinCarrera_cuandoSePreguntaPorEl_entoncesCarreraSinIndicar() {
+        assertThatThrownBy(
+                        () ->
+                                AlcanceDeCarrera.propia(
+                                        List.of(
+                                                "PERMISO_OFERTA:ESCRITURA",
+                                                "ALCANCE_PROPIO_OFERTA:ESCRITURA"),
+                                        ESCRITURA))
+                .isInstanceOf(CarreraSinIndicar.class);
+    }
+
+    @Test
+    void dadoQueNoTieneElPermiso_cuandoSePreguntaPorEl_entoncesVacio() {
+        assertThat(AlcanceDeCarrera.propia(List.of("PERMISO_OFERTA:LECTURA"), ESCRITURA)).isEmpty();
     }
 }

@@ -9,7 +9,8 @@
 # hecha aparte, sin el código de Generación; pasa un docente a licencia y lo devuelve; abre 2026-II
 # con otro mínimo; prueba un paralelo retirado, un periodo sin abrir, los errores, los permisos y las
 # rutas internas; mide la lista; detiene el proceso datos y lo vuelve a levantar, y busca la ficha y
-# un correo en los registros. Las horas asignadas son 0 hasta F06-H03: aquí no se prueban otras.
+# un correo en los registros. Sin distributivo, las horas asignadas son 0: las reales las prueba
+# probar_propuestas.sh (F06-H03).
 # La política entra como una versión nueva, con un código con prefijo al azar, para no tocar la
 # versión 1. Si la base ya tiene alguno de esos datos, el script falla sin tocar nada. Al terminar,
 # aunque un paso falle, levanta datos y borra en la base solo lo que creó y sus registros. Termina con

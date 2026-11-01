@@ -12,6 +12,18 @@ export type DatosDeAsignaturaParalelo = components['schemas']['DatosDeAsignatura
 export type EstadoDeAsignaturaParalelo = components['schemas']['EstadoDeAsignaturaParalelo'];
 export type Sugerencia = componentesDeGeneracion['schemas']['Sugerencia'];
 export type Candidato = componentesDeGeneracion['schemas']['Candidato'];
+export type Parciales = componentesDeGeneracion['schemas']['Parciales'];
+export type ParcialDeCarrera = componentesDeGeneracion['schemas']['ParcialDeCarrera'];
+export type Propuesta = componentesDeGeneracion['schemas']['Propuesta'];
+export type PropuestaNueva = componentesDeGeneracion['schemas']['PropuestaNueva'];
+export type TipoDeJustificacion = componentesDeGeneracion['schemas']['TipoDeJustificacion'];
+
+/** Cómo se llama cada justificación en pantalla. */
+export const NOMBRE_DE_LA_JUSTIFICACION: Record<TipoDeJustificacion, string> = {
+  AFINIDAD: 'Afinidad',
+  DISPONIBILIDAD: 'Disponibilidad',
+  EXCEPCION: 'Excepción',
+};
 
 /** La clave de la oferta de todos los periodos, para recargarla después de un cambio. */
 export const CLAVE_OFERTA = ['academico', 'oferta'] as const;
@@ -46,6 +58,48 @@ export function useOferta(periodo: string | undefined) {
       ),
     enabled: Boolean(periodo),
   });
+}
+
+/**
+ * Los parciales del periodo, con su avance y sus propuestas (RF-24). Van bajo la clave de la oferta:
+ * retirar o volver a ofertar cambia su avance.
+ */
+export function useParciales(periodo: string | undefined) {
+  return useQuery({
+    queryKey: [...CLAVE_OFERTA, 'parciales', periodo],
+    queryFn: () =>
+      llamar(
+        apiGeneracion.GET('/api/generacion/periodos/{periodo}/parciales', {
+          params: { path: { periodo: periodo ?? '' } },
+        }),
+      ),
+    enabled: Boolean(periodo),
+  });
+}
+
+/** Propone un docente, o reemplaza al que tenga. La justificación la decide el servidor. */
+export function proponerDocente(
+  periodo: string,
+  asignatura: string,
+  paralelo: string,
+  cuerpo: PropuestaNueva,
+) {
+  return llamar(
+    apiGeneracion.PUT(
+      '/api/generacion/periodos/{periodo}/oferta/{asignatura}/{paralelo}/propuesta',
+      { params: { path: { periodo, asignatura, paralelo } }, body: cuerpo },
+    ),
+  );
+}
+
+/** Quita la propuesta de una asignatura-paralelo. */
+export function quitarPropuesta({ periodo, asignatura, paralelo }: AsignaturaParalelo) {
+  return llamar(
+    apiGeneracion.DELETE(
+      '/api/generacion/periodos/{periodo}/oferta/{asignatura}/{paralelo}/propuesta',
+      { params: { path: { periodo, asignatura, paralelo } } },
+    ),
+  );
 }
 
 /** Oferta una asignatura activa de una carrera vigente en un paralelo del periodo. */

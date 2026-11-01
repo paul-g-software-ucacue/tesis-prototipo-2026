@@ -4,10 +4,12 @@
 // datos maestros: escritura» o «Distributivo del periodo: escritura», y solo con el periodo en
 // Planificación, se oferta, se corrige, se retira y se vuelve a ofertar (D-70). Nada se borra; el
 // servidor valida cada operación. Quien puede leer un docente ve, en cada fila ofertada y en
-// cualquier estado del periodo, la sugerencia de docentes (F06-H02).
+// cualquier estado del periodo, la sugerencia de docentes (F06-H02). Cada fila muestra su propuesta,
+// y cada carrera cuántas lleva de cuántas; quien escribe la oferta propone y quita (F06-H03).
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -22,7 +24,11 @@ import { useState } from 'react';
 import { AvisoDeError } from '../../errores/AvisoDeError';
 import { traducirError, type MensajeDeError } from '../../errores/traducir';
 import { useTitulo } from '../../navegacion/useTitulo';
-import { ESCRITURA_DE_LAS_CARRERAS, LECTURA_DE_LOS_DOCENTES } from '../../sesion/funcionalidades';
+import {
+  ESCRITURA_DE_LAS_CARRERAS,
+  ESCRITURA_DE_LA_PROPUESTA,
+  LECTURA_DE_LOS_DOCENTES,
+} from '../../sesion/funcionalidades';
 import { tieneAlguno } from '../../sesion/permisos';
 import { useSesionActual } from '../../sesion/useSesionActual';
 import { useCarreras } from '../carreras/consultas';
@@ -34,10 +40,15 @@ import { usePeriodos } from '../periodos/consultas';
 import { NOMBRE_DEL_ESTADO } from '../periodos/estados';
 import {
   CLAVE_OFERTA,
+  NOMBRE_DE_LA_JUSTIFICACION,
   cambiarEstadoAsignaturaParalelo,
+  quitarPropuesta,
   useOferta,
+  useParciales,
   type AsignaturaParalelo,
   type OfertaDelPeriodo,
+  type ParcialDeCarrera,
+  type Propuesta,
 } from './consultas';
 import { DialogoCorregir, DialogoOfertar } from './DialogosDeOferta';
 import { SugerenciaDelParalelo } from './SugerenciaDelParalelo';
@@ -45,7 +56,10 @@ import { SugerenciaDelParalelo } from './SugerenciaDelParalelo';
 /** Lo que está abierto: un diálogo, para ofertar o sobre una asignatura-paralelo. */
 type Abierto =
   | { que: 'ofertar' }
-  | { que: 'corregir' | 'retirar' | 'sugerencia'; asignaturaParalelo: AsignaturaParalelo }
+  | {
+      que: 'corregir' | 'retirar' | 'sugerencia' | 'quitar';
+      asignaturaParalelo: AsignaturaParalelo;
+    }
   | null;
 
 function paralelos(cantidad: number) {
@@ -66,11 +80,15 @@ export function Oferta() {
     periodos.data?.[0]?.codigo;
   const periodo = elegido ?? porOmision;
   const oferta = useOferta(periodo);
+  const parciales = useParciales(periodo);
   const carreras = useCarreras();
   const unidades = useUnidades();
   const [abierto, setAbierto] = useState<Abierto>(null);
   const [aviso, setAviso] = useState<MensajeDeError | null>(null);
   const puedeCambiar = escritura && Boolean(oferta.data?.modificable);
+  const puedeProponer =
+    tieneAlguno(sesion.data?.permisos, ESCRITURA_DE_LA_PROPUESTA) &&
+    oferta.data?.estadoDelPeriodo !== 'CERRADO';
 
   const terminar = async () => {
     await consultas.invalidateQueries({ queryKey: CLAVE_OFERTA });
@@ -91,6 +109,17 @@ export function Oferta() {
     }
   };
 
+  const quitar = async (asignaturaParalelo: AsignaturaParalelo) => {
+    setAviso(null);
+    setAbierto(null);
+    try {
+      await quitarPropuesta(asignaturaParalelo);
+      await consultas.invalidateQueries({ queryKey: CLAVE_OFERTA });
+    } catch (fallo) {
+      setAviso(traducirError(fallo));
+    }
+  };
+
   return (
     <>
       <Typography component="h1" variant="h4" gutterBottom>
@@ -98,6 +127,9 @@ export function Oferta() {
       </Typography>
       {periodos.error && <AvisoDeError mensaje={traducirError(periodos.error)} />}
       {oferta.error && <AvisoDeError mensaje={traducirError(oferta.error)} />}
+      {parciales.error && !oferta.error && (
+        <AvisoDeError mensaje={traducirError(parciales.error)} />
+      )}
       {aviso && <AvisoDeError mensaje={aviso} />}
       {periodos.data && (
         <TextField
@@ -119,7 +151,7 @@ export function Oferta() {
       {oferta.data && (
         <>
           <Typography variant="h6" component="p" sx={{ mt: 1 }}>
-            {`Horas a cubrir del periodo: ${horas(oferta.data.horasACubrir)} h`}
+            {`Horas a cubrir: ${horas(oferta.data.horasACubrir)} h`}
           </Typography>
           {!oferta.data.modificable && (
             <Alert severity="info" sx={{ my: 1 }}>
@@ -148,8 +180,10 @@ export function Oferta() {
               key={carrera.carrera}
               carrera={carrera}
               oferta={oferta.data}
+              parcial={parciales.data?.parciales.find((uno) => uno.carrera === carrera.carrera)}
               puedeCambiar={puedeCambiar}
               puedeVerSugerencia={puedeVerSugerencia}
+              puedeProponer={puedeProponer}
               alAbrir={setAbierto}
               alVolverAOfertar={(una) => void cambiarEstado(una, 'OFERTADA')}
             />
@@ -180,7 +214,18 @@ export function Oferta() {
         <SugerenciaDelParalelo
           periodo={periodo}
           asignaturaParalelo={abierto.asignaturaParalelo}
+          puedeProponer={puedeProponer}
           alCerrar={() => setAbierto(null)}
+          alProponer={terminar}
+        />
+      )}
+      {abierto?.que === 'quitar' && (
+        <DialogoConfirmar
+          titulo={`Quitar la propuesta de ${abierto.asignaturaParalelo.asignatura} ${abierto.asignaturaParalelo.paralelo}`}
+          texto="La asignatura-paralelo queda sin docente propuesto, y el cambio queda registrado. Puedes volver a proponer."
+          accion="Quitar"
+          alCerrar={() => setAbierto(null)}
+          alConfirmar={() => void quitar(abierto.asignaturaParalelo)}
         />
       )}
       {abierto?.que === 'retirar' && (
@@ -200,15 +245,19 @@ export function Oferta() {
 function OfertaDeCarrera({
   carrera,
   oferta,
+  parcial,
   puedeCambiar,
   puedeVerSugerencia,
+  puedeProponer,
   alAbrir,
   alVolverAOfertar,
 }: {
   carrera: OfertaDelPeriodo['carreras'][number];
   oferta: OfertaDelPeriodo;
+  parcial: ParcialDeCarrera | undefined;
   puedeCambiar: boolean;
   puedeVerSugerencia: boolean;
+  puedeProponer: boolean;
   alAbrir: (abierto: Abierto) => void;
   alVolverAOfertar: (asignaturaParalelo: AsignaturaParalelo) => void;
 }) {
@@ -218,6 +267,16 @@ function OfertaDeCarrera({
       <Typography id={idDelTitulo} component="h2" variant="h5">
         {`${carrera.nombre} · ${horas(carrera.horasACubrir)} h a cubrir`}
       </Typography>
+      {parcial && (
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', my: 0.5 }}>
+          <Typography>
+            {`${String(parcial.conPropuesta)} de ${String(parcial.ofertadas)} propuestas`}
+          </Typography>
+          {parcial.completo && (
+            <Chip size="small" color="success" variant="outlined" label="Parcial completo" />
+          )}
+        </Stack>
+      )}
       <TableContainer>
         <Table aria-label={`Oferta de ${carrera.nombre}`} size="small">
           <TableHead>
@@ -243,8 +302,14 @@ function OfertaDeCarrera({
                         <Paralelo
                           key={una.paralelo}
                           asignaturaParalelo={una}
+                          propuesta={parcial?.propuestas.find(
+                            (propuesta) =>
+                              propuesta.asignatura === una.asignatura &&
+                              propuesta.paralelo === una.paralelo,
+                          )}
                           puedeCambiar={puedeCambiar}
                           puedeVerSugerencia={puedeVerSugerencia}
+                          puedeProponer={puedeProponer}
                           alAbrir={alAbrir}
                           alVolverAOfertar={alVolverAOfertar}
                         />
@@ -266,20 +331,51 @@ function OfertaDeCarrera({
   );
 }
 
+/** La propuesta de una fila, con su justificación y sus avisos. */
+function PropuestaDeLaFila({ propuesta }: { propuesta: Propuesta }) {
+  return (
+    <>
+      <Typography variant="body2">
+        {`Propuesto: ${propuesta.nombreDocente} · ${NOMBRE_DE_LA_JUSTIFICACION[propuesta.justificacion]}`}
+      </Typography>
+      {propuesta.texto && (
+        <Typography variant="body2" color="text.secondary">
+          {propuesta.texto}
+        </Typography>
+      )}
+      {propuesta.retirada && (
+        <Typography variant="body2" color="error">
+          Paralelo retirado: no cuenta para el parcial.
+        </Typography>
+      )}
+      {!propuesta.retirada && !propuesta.horasSuficientes && (
+        <Typography variant="body2" color="error">
+          Sin horas suficientes
+        </Typography>
+      )}
+    </>
+  );
+}
+
 function Paralelo({
   asignaturaParalelo: una,
+  propuesta,
   puedeCambiar,
   puedeVerSugerencia,
+  puedeProponer,
   alAbrir,
   alVolverAOfertar,
 }: {
   asignaturaParalelo: AsignaturaParalelo;
+  propuesta: Propuesta | undefined;
   puedeCambiar: boolean;
   puedeVerSugerencia: boolean;
+  puedeProponer: boolean;
   alAbrir: (abierto: Abierto) => void;
   alVolverAOfertar: (asignaturaParalelo: AsignaturaParalelo) => void;
 }) {
   const retirada = una.estado === 'RETIRADA';
+  const puedeQuitar = puedeProponer && Boolean(propuesta);
   const texto = [
     una.paralelo,
     NOMBRE_DE_LA_JORNADA[una.jornada],
@@ -303,7 +399,8 @@ function Paralelo({
           {`Pasa las ${horas(una.horasDeLaAsignatura)} h de la asignatura: corrígela.`}
         </Typography>
       )}
-      {(puedeCambiar || (puedeVerSugerencia && !retirada)) && (
+      {propuesta && <PropuestaDeLaFila propuesta={propuesta} />}
+      {(puedeCambiar || puedeQuitar || (puedeVerSugerencia && !retirada)) && (
         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
           {puedeVerSugerencia && !retirada && (
             <Button
@@ -312,6 +409,15 @@ function Paralelo({
               onClick={() => alAbrir({ que: 'sugerencia', asignaturaParalelo: una })}
             >
               Sugerencia
+            </Button>
+          )}
+          {puedeQuitar && (
+            <Button
+              size="small"
+              aria-label={`Quitar propuesta de ${una.asignatura} ${una.paralelo}`}
+              onClick={() => alAbrir({ que: 'quitar', asignaturaParalelo: una })}
+            >
+              Quitar propuesta
             </Button>
           )}
           {puedeCambiar && retirada && (

@@ -6,6 +6,7 @@ import ec.mdd.generacion.dominio.Dedicacion;
 import ec.mdd.generacion.dominio.DocenteActivo;
 import ec.mdd.generacion.dominio.ElementoDeFormacion;
 import ec.mdd.generacion.dominio.FormacionDelDocente;
+import ec.mdd.generacion.dominio.PeriodoListo;
 import ec.mdd.generacion.dominio.PesosAfinidad;
 import ec.mdd.generacion.dominio.PesosDelPeriodo;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
@@ -85,6 +86,19 @@ public final class DatosDesdeProcesoDatos implements DatosParaAfinidad, DatosPar
                                         "Docentes no publica sus docentes activos"));
     }
 
+    @Override
+    public Optional<List<AsignaturaParalelo>> ofertaDelPeriodo(String periodo) {
+        return consultas
+                .obtener(ruta("academico", "periodos", periodo, "oferta"), Paralelo[].class)
+                .map(paralelos -> Arrays.stream(paralelos).map(Paralelo::deLaOferta).toList());
+    }
+
+    @Override
+    public Optional<PeriodoListo> periodoListo(String periodo) {
+        return consultas.obtener(
+                ruta("cargas", "periodos", periodo, "preparacion"), PeriodoListo.class);
+    }
+
     private URI ruta(String... segmentos) {
         return UriComponentsBuilder.fromUri(base)
                 .pathSegment("interno")
@@ -103,7 +117,8 @@ public final class DatosDesdeProcesoDatos implements DatosParaAfinidad, DatosPar
             String campoEspecifico,
             boolean troncoComun,
             BigDecimal horasSemanales,
-            String estado) {
+            String estado,
+            boolean periodoCerrado) {
 
         AsignaturaParalelo deLaOferta() {
             return new AsignaturaParalelo(
@@ -112,7 +127,8 @@ public final class DatosDesdeProcesoDatos implements DatosParaAfinidad, DatosPar
                     carrera,
                     horasSemanales,
                     troncoComun,
-                    "RETIRADA".equals(estado));
+                    "RETIRADA".equals(estado),
+                    periodoCerrado);
         }
     }
 

@@ -1,7 +1,14 @@
 // Datos de prueba de «Oferta del periodo»: la oferta del periodo en Planificación, con POO de 4 horas
 // en 3 paralelos (12 horas a cubrir) y Matemática discreta retirada; y la del periodo vigente. Y la
 // sugerencia de POO: uno con horas de sobra, uno con decimales y uno sin horas suficientes.
-import type { AsignaturaParalelo, Candidato, OfertaDelPeriodo, Sugerencia } from './consultas';
+import type {
+  AsignaturaParalelo,
+  Candidato,
+  OfertaDelPeriodo,
+  Parciales,
+  Propuesta,
+  Sugerencia,
+} from './consultas';
 
 const CAMPO = { codigo: '06', nombre: 'Tecnologías de la información y la comunicación' };
 
@@ -129,4 +136,38 @@ export const SUGERENCIA: Sugerencia = {
     candidato('0109990020', 'SALINAS VEGA ANA MARIA', 'MT', 20, 14.25, 5.75, 5),
     candidato('0109990030', 'TORRES LEON LUIS', 'TP', 10, 2, 8, 9),
   ],
+  bajoElMinimo: [
+    candidato('0109990040', 'VERA CAMPOS ROSA', 'TC', 40, 38, 0, 1.5),
+    candidato('0109990050', 'ZAMBRANO RIOS PEDRO', 'TC', 40, 36, 0, 1),
+    candidato('0109990060', 'ORTIZ MENA CARLA', 'MT', 20, 20, 0, 0.5),
+  ],
+  distributivoCreado: true,
 };
+
+/** Una propuesta de POO · A_NOCTURNA. */
+export const PROPUESTA: Propuesta = {
+  asignatura: 'DS-P-II-POO-204',
+  paralelo: 'A_NOCTURNA',
+  docente: '0109990010',
+  nombreDocente: 'PERALTA MALDONADO JUAN ANDRES',
+  justificacion: 'AFINIDAD',
+  retirada: false,
+  horasSuficientes: true,
+};
+
+/** Los parciales de 2026-2: una carrera con 1 de 3 propuestas. */
+export const PARCIALES: Parciales = {
+  creado: true,
+  parciales: [
+    {
+      carrera: '550613A01-P-0301',
+      estado: 'EN_ELABORACION',
+      ofertadas: 3,
+      conPropuesta: 1,
+      completo: false,
+      propuestas: [PROPUESTA],
+    },
+  ],
+};
+
+export const SIN_PARCIALES: Parciales = { creado: false, parciales: [] };

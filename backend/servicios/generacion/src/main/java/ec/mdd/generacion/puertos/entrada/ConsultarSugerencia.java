@@ -1,6 +1,5 @@
 package ec.mdd.generacion.puertos.entrada;
 
-import ec.mdd.generacion.dominio.Sugerencia;
 import java.util.Optional;
 
 /** Los docentes sugeridos para una asignatura-paralelo (RF-25, RN-19, ADR-010). */
@@ -19,6 +18,6 @@ public interface ConsultarSugerencia {
      * @throws ParaleloRetirado si se retiró de la oferta
      * @throws PeriodoSinAbrir si el periodo no tiene su versión de normativa
      */
-    Sugerencia sugerencia(
+    SugerenciaDelParalelo sugerencia(
             String periodo, String asignatura, String paralelo, Optional<String> carrera);
 }

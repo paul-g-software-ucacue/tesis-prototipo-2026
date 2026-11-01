@@ -1,8 +1,8 @@
 // La pantalla «Preparación del periodo» (F02-H02, RF-56, glosario «Tablero de preparación»): el
 // estado de cada carga en el periodo elegido, lo que falta para crear el distributivo y si está
 // listo. La ven quienes leen el distributivo o las cargas (D-70); «Crear distributivo» solo aparece
-// para quien escribe el distributivo (D-69) y se habilita con el periodo listo. Por ahora no crea
-// nada: la construcción del distributivo llega con F06 (Ola 2).
+// para quien escribe el distributivo (D-69), se habilita con el periodo listo y crea la versión 1 con
+// un parcial por carrera (F06-H03). Un periodo con distributivo lo dice y deja de ofrecerlo.
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
@@ -16,13 +16,18 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { AvisoDeError } from '../../errores/AvisoDeError';
 import { traducirError } from '../../errores/traducir';
 import { useTitulo } from '../../navegacion/useTitulo';
 import { tienePermiso } from '../../sesion/permisos';
 import { useSesionActual } from '../../sesion/useSesionActual';
+import { useEnvio } from '../comun/useEnvio';
 import {
+  CLAVE_DISTRIBUTIVO,
+  crearDistributivo,
+  useDistributivo,
   usePreparacion,
   type CargaDelPeriodo,
   type EstadoDeLaCarga,
@@ -83,14 +88,38 @@ function queFalta(falta: LoQueFalta): string {
   }
 }
 
+/** «Crear distributivo», con lo que responde el servidor; cada periodo empieza sin avisos. */
+function CrearDistributivo({ periodo, listo }: { periodo: string; listo: boolean }) {
+  const consultas = useQueryClient();
+  const { aviso, enviando, enviar } = useEnvio(() =>
+    consultas.invalidateQueries({ queryKey: CLAVE_DISTRIBUTIVO }),
+  );
+  return (
+    <>
+      {aviso && <AvisoDeError mensaje={aviso} />}
+      <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+        <Button
+          variant="contained"
+          disabled={!listo || enviando}
+          aria-describedby={listo ? undefined : LO_QUE_FALTA}
+          onClick={() => enviar(() => crearDistributivo(periodo))}
+        >
+          Crear distributivo
+        </Button>
+      </Stack>
+    </>
+  );
+}
+
 export function Preparacion() {
   useTitulo('Preparación del periodo');
   const [elegido, setElegido] = useState<string | null>(null);
-  const [avisoDeCrear, setAvisoDeCrear] = useState(false);
   const preparacion = usePreparacion(elegido);
   const sesion = useSesionActual();
   const creaElDistributivo = tienePermiso(sesion.data?.permisos, 'DISTRIBUTIVO', 'ESCRITURA');
   const tablero = preparacion.data;
+  const distributivo = useDistributivo(tablero?.periodo);
+  const creado = distributivo.data;
 
   return (
     <>
@@ -101,6 +130,7 @@ export function Preparacion() {
         Elige un periodo para ver qué cargas tiene y qué falta para crear su distributivo.
       </Typography>
       {preparacion.error && <AvisoDeError mensaje={traducirError(preparacion.error)} />}
+      {distributivo.error && <AvisoDeError mensaje={traducirError(distributivo.error)} />}
       {tablero && tablero.periodos.length === 0 && (
         <Alert severity="info" sx={{ mb: 2 }}>
           Todavía no hay periodos: carga antes los ciclos académicos en «Plantillas de carga».
@@ -112,10 +142,7 @@ export function Preparacion() {
             select
             label="Periodo"
             value={tablero.periodo}
-            onChange={(evento) => {
-              setAvisoDeCrear(false);
-              setElegido(evento.target.value);
-            }}
+            onChange={(evento) => setElegido(evento.target.value)}
             sx={{ minWidth: 260, mb: 2 }}
           >
             {tablero.periodos.map((periodo) => (
@@ -153,11 +180,17 @@ export function Preparacion() {
               </TableBody>
             </Table>
           </TableContainer>
-          {tablero.listo ? (
+          {creado && (
+            <Alert severity="success" role="status" sx={{ mb: 2 }}>
+              {`El periodo ${creado.periodo} ya tiene su distributivo, en la versión ${String(creado.version)}.`}
+            </Alert>
+          )}
+          {!creado && tablero.listo && (
             <Alert severity="success" sx={{ mb: 2 }}>
               {`El periodo ${tablero.periodo} tiene todas sus cargas obligatorias: está listo para crear su distributivo.`}
             </Alert>
-          ) : (
+          )}
+          {!creado && !tablero.listo && (
             <section aria-labelledby="titulo-de-lo-que-falta">
               <Typography id="titulo-de-lo-que-falta" component="h2" variant="h6">
                 Qué falta para crear el distributivo
@@ -169,22 +202,12 @@ export function Preparacion() {
               </ul>
             </section>
           )}
-          {creaElDistributivo && (
-            <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-              <Button
-                variant="contained"
-                disabled={!tablero.listo}
-                aria-describedby={tablero.listo ? undefined : LO_QUE_FALTA}
-                onClick={() => setAvisoDeCrear(true)}
-              >
-                Crear distributivo
-              </Button>
-            </Stack>
-          )}
-          {avisoDeCrear && (
-            <Alert severity="info" role="status" sx={{ mt: 2 }}>
-              {`El periodo ${tablero.periodo} está listo. La construcción del distributivo llega con F06, en la Ola 2: por ahora no se crea nada.`}
-            </Alert>
+          {creaElDistributivo && !distributivo.isPending && !creado && (
+            <CrearDistributivo
+              key={tablero.periodo}
+              periodo={tablero.periodo}
+              listo={tablero.listo}
+            />
           )}
         </>
       )}

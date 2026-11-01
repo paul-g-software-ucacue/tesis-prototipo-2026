@@ -1,7 +1,7 @@
 // F03-H03 en un navegador, con la API simulada: el Vicerrector oferta una asignatura de 4 horas en
 // 3 paralelos y ve 12 horas a cubrir; retira uno y ve 8. También la accesibilidad de «Oferta del
 // periodo» y de sus diálogos con axe-core (WCAG 2.1 AA). Y F06-H02: la sugerencia de docentes de una
-// asignatura-paralelo, con su desglose.
+// asignatura-paralelo, con su desglose. Y F06-H03: proponer con y sin justificación.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { ingresar, simularApi } from './simulacion';
@@ -125,6 +125,9 @@ async function simularAcademico(pagina: Page, iniciales: Paralelo[]) {
         .map(respuesta),
     };
   };
+  await pagina.route('**/api/generacion/periodos/*/parciales', (ruta) =>
+    ruta.fulfill({ json: { creado: false, parciales: [] } }),
+  );
   await pagina.route('**/api/academico/periodos', (ruta) => ruta.fulfill({ json: PERIODOS }));
   await pagina.route('**/api/academico/carreras', (ruta) => ruta.fulfill({ json: [DS] }));
   await pagina.route('**/api/academico/unidades', (ruta) =>
@@ -175,11 +178,15 @@ function nocturna(paralelo: string): Paralelo {
   };
 }
 
-async function abrirOferta(pagina: Page, iniciales: Paralelo[] = []) {
-  await simularApi(pagina, { sesion: VICERRECTOR });
+async function abrirOferta(
+  pagina: Page,
+  iniciales: Paralelo[] = [],
+  sesion: typeof VICERRECTOR = VICERRECTOR,
+) {
+  await simularApi(pagina, { sesion });
   await simularAcademico(pagina, iniciales);
   await pagina.goto('/iniciar-sesion');
-  await ingresar(pagina, 'vicerrectorado.demo');
+  await ingresar(pagina, sesion.cuerpo.usuario);
   await pagina.getByRole('link', { name: 'Oferta del periodo' }).click();
   await expect(pagina.getByRole('heading', { level: 1, name: 'Oferta del periodo' })).toBeVisible();
 }
@@ -211,7 +218,7 @@ test('el Vicerrector oferta una asignatura de 4 horas en 3 paralelos, ve 12 hora
     await expect(dialogo).toBeHidden();
   }
 
-  await expect(page.getByText('Horas a cubrir del periodo: 12 h')).toBeVisible();
+  await expect(page.getByText('Horas a cubrir: 12 h')).toBeVisible();
   const tabla = page.getByRole('table', { name: 'Oferta de DESARROLLO DE SOFTWARE' });
   await expect(tabla).toContainText('3 paralelos');
 
@@ -220,7 +227,7 @@ test('el Vicerrector oferta una asignatura de 4 horas en 3 paralelos, ve 12 hora
     .getByRole('dialog', { name: `Retirar ${POO.codigo} de C_NOCTURNA` })
     .getByRole('button', { name: 'Retirar' })
     .click();
-  await expect(page.getByText('Horas a cubrir del periodo: 8 h')).toBeVisible();
+  await expect(page.getByText('Horas a cubrir: 8 h')).toBeVisible();
   await expect(tabla).toContainText(
     'C_NOCTURNA · Nocturna · Presencial · 28 estudiantes · 4 h · Retirada',
   );
@@ -311,6 +318,25 @@ const SUGERENCIA = {
       },
     },
   ],
+  bajoElMinimo: [
+    {
+      identificacion: '0109990040',
+      nombre: 'VERA CAMPOS ROSA',
+      dedicacion: 'TC',
+      horasContratadas: 40,
+      horasDisponibles: 40,
+      horasEnOtrasCarreras: 0,
+      horasSuficientes: true,
+      puntaje: {
+        asignatura: POO.codigo,
+        nombre: POO.nombre,
+        total: 1,
+        topeAplicado: false,
+        desglose: [],
+      },
+    },
+  ],
+  distributivoCreado: true,
 };
 
 test('la sugerencia de docentes de una asignatura-paralelo, con su desglose', async ({ page }) => {
@@ -325,7 +351,7 @@ test('la sugerencia de docentes de una asignatura-paralelo, con su desglose', as
     name: `Docentes sugeridos para ${POO.nombre} · A_NOCTURNA`,
   });
   await expect(page.locator('.MuiDialog-container')).toHaveCSS('opacity', '1');
-  await expect(dialogo.getByText('1 docente quedó fuera por no alcanzar el mínimo.')).toBeVisible();
+  await expect(dialogo.getByRole('button', { name: 'Docentes bajo el mínimo (1)' })).toBeVisible();
   await expect(
     dialogo.getByText(
       'Tiempo completo · 40 h contratadas · 37,5 h disponibles · 2,5 h en otras carreras y unidades',
@@ -338,5 +364,106 @@ test('la sugerencia de docentes de una asignatura-paralelo, con su desglose', as
     dialogo.getByText('Título de cuarto nivel: MÁSTER EN TELEMÁTICA · campo específico · 7 puntos'),
   ).toBeVisible();
 
+  await sinFallas(page);
+});
+
+const COORDINADOR = {
+  estado: 200,
+  cuerpo: {
+    usuario: 'coordinacion.demo',
+    nombre: 'Coordinación (demo)',
+    roles: ['COORDINADOR_CARRERA'],
+    permisos: [
+      'OFERTA:LECTURA:PROPIO',
+      'OFERTA:ESCRITURA:PROPIO',
+      'DISTRIBUTIVO:LECTURA:PROPIO',
+      'DOCENTES:LECTURA',
+    ],
+  },
+};
+
+/** El coordinador abre la sugerencia; cada propuesta queda en los parciales simulados. */
+async function abrirComoCoordinador(pagina: Page) {
+  const propuestas: unknown[] = [];
+  await pagina.route('**/api/generacion/periodos/*/oferta/*/*/sugerencia', (ruta) =>
+    ruta.fulfill({ json: SUGERENCIA }),
+  );
+  await pagina.route('**/api/generacion/periodos/*/oferta/*/*/propuesta', async (ruta) => {
+    const { docente, texto } = ruta.request().postDataJSON() as {
+      docente: string;
+      texto?: string;
+    };
+    const propuesta = {
+      asignatura: POO.codigo,
+      paralelo: 'A_NOCTURNA',
+      docente,
+      nombreDocente: 'PROPUESTO DEL SERVIDOR',
+      justificacion: texto ? 'EXCEPCION' : 'AFINIDAD',
+      texto,
+      retirada: false,
+      horasSuficientes: true,
+    };
+    propuestas.push(propuesta);
+    await ruta.fulfill({ json: propuesta });
+  });
+  await abrirOferta(pagina, [nocturna('A_NOCTURNA')], COORDINADOR);
+  await pagina.route('**/api/generacion/periodos/*/parciales', (ruta) =>
+    ruta.fulfill({
+      json: {
+        creado: true,
+        parciales: [
+          {
+            carrera: DS.codigo,
+            estado: 'EN_ELABORACION',
+            ofertadas: 1,
+            conPropuesta: propuestas.length,
+            completo: propuestas.length === 1,
+            propuestas,
+          },
+        ],
+      },
+    }),
+  );
+  await pagina.getByRole('button', { name: `Sugerencia de ${POO.codigo} A_NOCTURNA` }).click();
+  await expect(pagina.locator('.MuiDialog-container').first()).toHaveCSS('opacity', '1');
+  return pagina.getByRole('dialog', { name: /^Docentes sugeridos para/ });
+}
+
+test('el coordinador propone a un candidato y ve el parcial completo', async ({ page }) => {
+  const dialogo = await abrirComoCoordinador(page);
+
+  await dialogo.getByRole('button', { name: /^Proponer a PERALTA/ }).click();
+
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect(page.getByText('Propuesto: PROPUESTO DEL SERVIDOR · Afinidad')).toBeVisible();
+  await expect(page.getByText('1 de 1 propuestas')).toBeVisible();
+  await expect(page.getByText('Parcial completo')).toBeVisible();
+  await sinFallas(page);
+});
+
+test('proponer bajo el mínimo exige la justificación, y el diálogo es accesible', async ({
+  page,
+}) => {
+  const dialogo = await abrirComoCoordinador(page);
+
+  await dialogo.getByRole('button', { name: 'Docentes bajo el mínimo (1)' }).click();
+  await sinFallas(page);
+  await dialogo
+    .getByRole('button', { name: /^Proponer a / })
+    .last()
+    .click();
+
+  const justificar = page.getByRole('dialog', { name: /^Justificar a / });
+  await expect(page.locator('.MuiDialog-container').last()).toHaveCSS('opacity', '1');
+  await justificar.getByRole('button', { name: 'Guardar propuesta' }).click();
+  await expect(justificar.getByText(/en 10 a 500 caracteres/)).toBeVisible();
+  await sinFallas(page);
+
+  await justificar.getByLabel(/Justificación/).fill('Dictó esta materia durante tres años');
+  await justificar.getByRole('button', { name: 'Guardar propuesta' }).click();
+
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect(page.getByText('Propuesto: PROPUESTO DEL SERVIDOR · Excepción')).toBeVisible();
+  await expect(page.getByText('Dictó esta materia durante tres años')).toBeVisible();
   await sinFallas(page);
 });

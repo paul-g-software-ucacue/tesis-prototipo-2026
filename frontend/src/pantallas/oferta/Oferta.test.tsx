@@ -11,7 +11,14 @@ import { cerrarSesion, iniciarSesion } from '../../sesion/almacen';
 import { ASIGNATURAS, CARRERAS } from '../carreras/datosDePrueba';
 import { UNIDADES } from '../estructura/datosDePrueba';
 import { PERIODOS } from '../periodos/datosDePrueba';
-import { OFERTA_EN_PLANIFICACION, OFERTA_VIGENTE, SUGERENCIA } from './datosDePrueba';
+import {
+  OFERTA_EN_PLANIFICACION,
+  OFERTA_VIGENTE,
+  PARCIALES,
+  PROPUESTA,
+  SIN_PARCIALES,
+  SUGERENCIA,
+} from './datosDePrueba';
 
 const VICERRECTOR = ['DISTRIBUTIVO:LECTURA', 'DISTRIBUTIVO:ESCRITURA'];
 const CONSOLIDACION = ['OFERTA:LECTURA', 'DISTRIBUTIVO:LECTURA'];
@@ -20,6 +27,12 @@ const COORDINACION = ['OFERTA:LECTURA', 'DISTRIBUTIVO:LECTURA', 'DOCENTES:LECTUR
 const SOLO_OFERTA = ['OFERTA:LECTURA'];
 const RUTA_SUGERENCIA =
   '/api/generacion/periodos/2026-2/oferta/DS-P-II-POO-204/A_NOCTURNA/sugerencia';
+const RUTA_PARCIALES = '/api/generacion/periodos/2026-2/parciales';
+const RUTA_PROPUESTA =
+  '/api/generacion/periodos/2026-2/oferta/DS-P-II-POO-204/A_NOCTURNA/propuesta';
+const COORDINADOR = [...COORDINACION, 'OFERTA:ESCRITURA:PROPIO'];
+const TEXTO = 'Dictó esta materia durante tres años';
+const CARRERA_DE_LA_PRUEBA = 'Oferta de DESARROLLO DE SOFTWARE';
 
 function sesionCon(simulada: ApiSimulada, usuario: string, permisos: string[]) {
   simulada.responder(
@@ -54,6 +67,12 @@ describe('Oferta del periodo', () => {
       '/api/academico/carreras/550613A01-P-0301/asignaturas',
       json(200, ASIGNATURAS),
     );
+    simulada.responder('GET', RUTA_PARCIALES, json(200, SIN_PARCIALES));
+    simulada.responder(
+      'GET',
+      '/api/generacion/periodos/2026-1/parciales',
+      json(200, SIN_PARCIALES),
+    );
     iniciarSesion('cabecera.cuerpo.firma', new Date(Date.now() + 60_000));
   });
 
@@ -69,7 +88,7 @@ describe('Oferta del periodo', () => {
       await screen.findByRole('heading', { level: 1, name: 'Oferta del periodo' }),
     ).toBeInTheDocument();
     expect(await screen.findByLabelText('Periodo')).toHaveValue('2026-2');
-    expect(await screen.findByText('Horas a cubrir del periodo: 12 h')).toBeInTheDocument();
+    expect(await screen.findByText('Horas a cubrir: 12 h')).toBeInTheDocument();
     const tabla = await screen.findByRole('table', { name: 'Oferta de DESARROLLO DE SOFTWARE' });
     expect(
       screen.getByRole('heading', { name: 'DESARROLLO DE SOFTWARE · 12 h a cubrir' }),
@@ -438,13 +457,32 @@ describe('Oferta del periodo', () => {
       ).toBeInTheDocument();
     });
 
-    it('dice cuántos quedaron fuera por el mínimo, sin nombrarlos', async () => {
+    it('deja a los docentes bajo el mínimo en una sección cerrada, con su puntaje', async () => {
       simulada.responder('GET', RUTA_SUGERENCIA, json(200, SUGERENCIA));
       const dialogo = await abrirSugerencia();
 
-      expect(
-        await within(dialogo).findByText('3 docentes quedaron fuera por no alcanzar el mínimo.'),
-      ).toBeInTheDocument();
+      const seccion = await within(dialogo).findByRole('button', {
+        name: 'Docentes bajo el mínimo (3)',
+      });
+      expect(seccion).toHaveAttribute('aria-expanded', 'false');
+      expect(within(dialogo).getByText('VERA CAMPOS ROSA')).not.toBeVisible();
+
+      await userEvent.click(seccion);
+
+      expect(await within(dialogo).findByText('VERA CAMPOS ROSA')).toBeVisible();
+      expect(within(dialogo).getByText('1,5 puntos')).toBeVisible();
+    });
+
+    it('en tronco común no hay sección de docentes bajo el mínimo', async () => {
+      simulada.responder(
+        'GET',
+        RUTA_SUGERENCIA,
+        json(200, { ...SUGERENCIA, troncoComun: true, bajoElMinimo: [], fueraPorElMinimo: 0 }),
+      );
+      const dialogo = await abrirSugerencia();
+
+      await within(dialogo).findByText('Es de tronco común: el mínimo de afinidad no aplica.');
+      expect(within(dialogo).queryByText(/Docentes bajo el mínimo/)).not.toBeInTheDocument();
     });
 
     it('en tronco común dice que el mínimo no aplica', async () => {
@@ -473,7 +511,7 @@ describe('Oferta del periodo', () => {
         await within(dialogo).findByText('Ningún docente alcanza el mínimo en esta asignatura.'),
       ).toBeInTheDocument();
       expect(
-        within(dialogo).getByText('1 docente quedó fuera por no alcanzar el mínimo.'),
+        within(dialogo).getByRole('button', { name: 'Docentes bajo el mínimo (3)' }),
       ).toBeInTheDocument();
     });
 
@@ -527,6 +565,385 @@ describe('Oferta del periodo', () => {
 
       await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     });
+  });
+
+  describe('propuesta', () => {
+    async function abrirComoCoordinador(permisos = COORDINADOR) {
+      sesionCon(simulada, 'coordinacion.demo', permisos);
+      montarSpa('/oferta');
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Sugerencia de DS-P-II-POO-204 A_NOCTURNA' }),
+      );
+      return screen.findByRole('dialog', { name: /^Docentes sugeridos para/ });
+    }
+
+    function conSugerencia(cambios = {}) {
+      simulada.responder('GET', RUTA_SUGERENCIA, json(200, { ...SUGERENCIA, ...cambios }));
+    }
+
+    it('ofrece «Proponer» en cada candidato a quien escribe la oferta', async () => {
+      conSugerencia();
+      const dialogo = await abrirComoCoordinador();
+
+      expect(
+        await within(dialogo).findByRole('button', {
+          name: 'Proponer a PERALTA MALDONADO JUAN ANDRES',
+        }),
+      ).toBeEnabled();
+      // Los de la sección cerrada también se ofrecen, pero no se ven hasta abrirla.
+      expect(within(dialogo).getAllByRole('button', { name: /^Proponer a/ })).toHaveLength(3);
+    });
+
+    it('sin distributivo lo dice y no ofrece proponer', async () => {
+      conSugerencia({ distributivoCreado: false });
+      const dialogo = await abrirComoCoordinador();
+
+      expect(
+        await within(dialogo).findByText(/todavía no tiene distributivo\. Pide al Vicerrector/),
+      ).toBeVisible();
+      expect(
+        within(dialogo).queryByRole('button', { name: /^Proponer a/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('quien no escribe la oferta ve la lista sin proponer', async () => {
+      conSugerencia();
+      const dialogo = await abrirComoCoordinador(COORDINACION);
+
+      await within(dialogo).findByText('PERALTA MALDONADO JUAN ANDRES');
+      expect(
+        within(dialogo).queryByRole('button', { name: /^Proponer a/ }),
+      ).not.toBeInTheDocument();
+      expect(within(dialogo).queryByText(/Pide al Vicerrector/)).not.toBeInTheDocument();
+    });
+
+    it('con el periodo cerrado no ofrece proponer', async () => {
+      conSugerencia();
+      simulada.responder(
+        'GET',
+        RUTA,
+        json(200, { ...OFERTA_EN_PLANIFICACION, estadoDelPeriodo: 'CERRADO' }),
+      );
+      const dialogo = await abrirComoCoordinador();
+
+      await within(dialogo).findByText('PERALTA MALDONADO JUAN ANDRES');
+      expect(
+        within(dialogo).queryByRole('button', { name: /^Proponer a/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('proponer manda solo el docente, cierra y recarga la oferta', async () => {
+      conSugerencia();
+      simulada.responder('PUT', RUTA_PROPUESTA, json(200, PROPUESTA));
+      const dialogo = await abrirComoCoordinador();
+
+      simulada.responder('GET', RUTA_PARCIALES, json(200, PARCIALES));
+      await userEvent.click(
+        await within(dialogo).findByRole('button', {
+          name: 'Proponer a PERALTA MALDONADO JUAN ANDRES',
+        }),
+      );
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(await cuerpoDe(simulada, 'PUT', RUTA_PROPUESTA)).toEqual({ docente: '0109990010' });
+      expect(
+        await screen.findByText('Propuesto: PERALTA MALDONADO JUAN ANDRES · Afinidad'),
+      ).toBeVisible();
+      expect(screen.getByText('1 de 3 propuestas')).toBeVisible();
+    });
+
+    it('un docente propuesto sin horas suficientes queda avisado en la fila', async () => {
+      simulada.responder(
+        'GET',
+        RUTA_PARCIALES,
+        json(200, {
+          ...PARCIALES,
+          parciales: [
+            {
+              ...PARCIALES.parciales[0],
+              propuestas: [{ ...PROPUESTA, horasSuficientes: false }],
+            },
+          ],
+        }),
+      );
+      sesionCon(simulada, 'coordinacion.demo', COORDINADOR);
+      montarSpa('/oferta');
+
+      expect(await screen.findByText('Sin horas suficientes')).toBeVisible();
+    });
+
+    it('un error del catálogo no cierra el diálogo', async () => {
+      conSugerencia();
+      simulada.responder(
+        'PUT',
+        RUTA_PROPUESTA,
+        json(409, {
+          titulo: 'Docente no activo',
+          descripcion: 'Ese docente no está activo. Elige otro.',
+          codigo: 'GENERACION_DOCENTE_NO_ACTIVO',
+        }),
+      );
+      const dialogo = await abrirComoCoordinador();
+
+      await userEvent.click(
+        await within(dialogo).findByRole('button', {
+          name: 'Proponer a PERALTA MALDONADO JUAN ANDRES',
+        }),
+      );
+
+      expect(await within(dialogo).findByText('Docente no activo')).toBeVisible();
+      expect(within(dialogo).getByText('SALINAS VEGA ANA MARIA')).toBeVisible();
+    });
+
+    it('muestra la propuesta actual y no ofrece volver a proponer a ese docente', async () => {
+      conSugerencia({ propuesta: PROPUESTA });
+      const dialogo = await abrirComoCoordinador();
+
+      expect(
+        await within(dialogo).findByText(
+          'Propuesta actual: PERALTA MALDONADO JUAN ANDRES · Afinidad',
+        ),
+      ).toBeVisible();
+      expect(within(dialogo).getByText('Propuesto')).toBeVisible();
+      expect(
+        within(dialogo).queryByRole('button', { name: 'Proponer a PERALTA MALDONADO JUAN ANDRES' }),
+      ).not.toBeInTheDocument();
+    });
+
+    async function pedirJustificacion() {
+      conSugerencia();
+      const dialogo = await abrirComoCoordinador();
+      await userEvent.click(
+        await within(dialogo).findByRole('button', { name: 'Docentes bajo el mínimo (3)' }),
+      );
+      await userEvent.click(
+        await within(dialogo).findByRole('button', { name: 'Proponer a VERA CAMPOS ROSA' }),
+      );
+      return screen.findByRole('dialog', { name: 'Justificar a VERA CAMPOS ROSA' });
+    }
+
+    it('proponer bajo el mínimo pide el texto, con su contador y su largo', async () => {
+      const justificar = await pedirJustificacion();
+
+      const campo = within(justificar).getByLabelText(/Justificación/);
+      expect(campo).toHaveAttribute('maxlength', '500');
+      expect(within(justificar).getByText('0 de 500 caracteres.')).toBeVisible();
+
+      await userEvent.type(campo, 'Hola');
+
+      expect(within(justificar).getByText('4 de 500 caracteres.')).toBeVisible();
+    });
+
+    it('sin un texto de 10 caracteres no se guarda', async () => {
+      const justificar = await pedirJustificacion();
+
+      await userEvent.type(within(justificar).getByLabelText(/Justificación/), ' corto   ');
+      await userEvent.click(within(justificar).getByRole('button', { name: 'Guardar propuesta' }));
+
+      expect(
+        await within(justificar).findByText(/en 10 a 500 caracteres\. 9 de 500 caracteres\./),
+      ).toBeVisible();
+      expect(simulada.peticiones.some((peticion) => peticion.method === 'PUT')).toBe(false);
+    });
+
+    it('con el texto guarda el docente y el texto limpio', async () => {
+      simulada.responder('PUT', RUTA_PROPUESTA, json(200, PROPUESTA));
+      const justificar = await pedirJustificacion();
+
+      await userEvent.type(within(justificar).getByLabelText(/Justificación/), `  ${TEXTO}  `);
+      await userEvent.click(within(justificar).getByRole('button', { name: 'Guardar propuesta' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(await cuerpoDe(simulada, 'PUT', RUTA_PROPUESTA)).toEqual({
+        docente: '0109990040',
+        texto: TEXTO,
+      });
+    });
+
+    it('un 400 del servidor se muestra en el campo y no cierra', async () => {
+      simulada.responder(
+        'PUT',
+        RUTA_PROPUESTA,
+        json(400, {
+          titulo: 'Solicitud inválida',
+          descripcion: 'Revisa los campos marcados y vuelve a intentarlo.',
+          codigo: 'COMUN_SOLICITUD_INVALIDA',
+          detalles: [{ campo: 'texto', descripcion: 'Escribe por qué propones a este docente' }],
+        }),
+      );
+      const justificar = await pedirJustificacion();
+
+      await userEvent.type(within(justificar).getByLabelText(/Justificación/), TEXTO);
+      await userEvent.click(within(justificar).getByRole('button', { name: 'Guardar propuesta' }));
+
+      expect(
+        await within(justificar).findByText(/Escribe por qué propones a este docente\./),
+      ).toBeVisible();
+      expect(within(justificar).getByLabelText(/Justificación/)).toHaveAttribute(
+        'aria-invalid',
+        'true',
+      );
+    });
+
+    it('cancelar la justificación vuelve a la lista', async () => {
+      const justificar = await pedirJustificacion();
+
+      await userEvent.click(within(justificar).getByRole('button', { name: 'Cancelar' }));
+
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('dialog', { name: 'Justificar a VERA CAMPOS ROSA' }),
+        ).not.toBeInTheDocument(),
+      );
+      expect(screen.getByRole('dialog', { name: /^Docentes sugeridos para/ })).toBeVisible();
+    });
+  });
+
+  describe('parcial', () => {
+    function conParcial(cambios = {}, propuesta = {}) {
+      simulada.responder(
+        'GET',
+        RUTA_PARCIALES,
+        json(200, {
+          creado: true,
+          parciales: [
+            {
+              ...PARCIALES.parciales[0],
+              ...cambios,
+              propuestas: [{ ...PROPUESTA, ...propuesta }],
+            },
+          ],
+        }),
+      );
+    }
+
+    it('cada fila muestra el docente propuesto, su justificación y su texto', async () => {
+      conParcial({}, { justificacion: 'EXCEPCION', texto: TEXTO });
+      sesionCon(simulada, 'consolidacion.demo', CONSOLIDACION);
+      montarSpa('/oferta');
+
+      const tabla = await screen.findByRole('table', { name: CARRERA_DE_LA_PRUEBA });
+      expect(
+        await within(tabla).findByText('Propuesto: PERALTA MALDONADO JUAN ANDRES · Excepción'),
+      ).toBeVisible();
+      expect(within(tabla).getByText(TEXTO)).toBeVisible();
+    });
+
+    it('sin distributivo no habla de propuestas', async () => {
+      sesionCon(simulada, 'consolidacion.demo', CONSOLIDACION);
+      montarSpa('/oferta');
+
+      await screen.findByRole('table', { name: CARRERA_DE_LA_PRUEBA });
+      expect(screen.queryByText(/propuestas$/)).not.toBeInTheDocument();
+    });
+
+    it('dice cuando el parcial está completo', async () => {
+      conParcial({ ofertadas: 3, conPropuesta: 3, completo: true });
+      sesionCon(simulada, 'consolidacion.demo', CONSOLIDACION);
+      montarSpa('/oferta');
+
+      expect(await screen.findByText('3 de 3 propuestas')).toBeVisible();
+      expect(screen.getByText('Parcial completo')).toBeVisible();
+    });
+
+    it('marca la propuesta de un paralelo retirado', async () => {
+      conParcial({}, { retirada: true, horasSuficientes: false });
+      sesionCon(simulada, 'coordinacion.demo', COORDINADOR);
+      montarSpa('/oferta');
+
+      expect(
+        await screen.findByText('Paralelo retirado: no cuenta para el parcial.'),
+      ).toBeVisible();
+      expect(screen.queryByText('Sin horas suficientes')).not.toBeInTheDocument();
+    });
+
+    it('quita la propuesta con confirmación y recarga', async () => {
+      conParcial();
+      simulada.responder('DELETE', RUTA_PROPUESTA, json(204));
+      sesionCon(simulada, 'coordinacion.demo', COORDINADOR);
+      montarSpa('/oferta');
+
+      await userEvent.click(
+        await screen.findByRole('button', {
+          name: 'Quitar propuesta de DS-P-II-POO-204 A_NOCTURNA',
+        }),
+      );
+      const confirmar = await screen.findByRole('dialog', {
+        name: 'Quitar la propuesta de DS-P-II-POO-204 A_NOCTURNA',
+      });
+      simulada.responder('GET', RUTA_PARCIALES, json(200, SIN_PARCIALES));
+      await userEvent.click(within(confirmar).getByRole('button', { name: 'Quitar' }));
+
+      await waitFor(() =>
+        expect(screen.queryByText(/^Propuesto: PERALTA/)).not.toBeInTheDocument(),
+      );
+      expect(
+        simulada.peticiones.some(
+          (peticion) =>
+            peticion.method === 'DELETE' && new URL(peticion.url).pathname === RUTA_PROPUESTA,
+        ),
+      ).toBe(true);
+    });
+
+    it('un error al quitar se muestra', async () => {
+      conParcial();
+      simulada.responder(
+        'DELETE',
+        RUTA_PROPUESTA,
+        json(409, {
+          titulo: 'Parcial cerrado',
+          descripcion: 'Este parcial ya no admite cambios.',
+          codigo: 'GENERACION_PARCIAL_NO_EDITABLE',
+        }),
+      );
+      sesionCon(simulada, 'coordinacion.demo', COORDINADOR);
+      montarSpa('/oferta');
+
+      await userEvent.click(
+        await screen.findByRole('button', {
+          name: 'Quitar propuesta de DS-P-II-POO-204 A_NOCTURNA',
+        }),
+      );
+      await userEvent.click(
+        within(await screen.findByRole('dialog')).getByRole('button', { name: 'Quitar' }),
+      );
+
+      expect(await screen.findByText('Parcial cerrado')).toBeVisible();
+    });
+
+    it('quien no escribe la oferta no ve «Quitar propuesta»', async () => {
+      conParcial();
+      sesionCon(simulada, 'coordinacion.demo', COORDINACION);
+      montarSpa('/oferta');
+
+      await screen.findByText(/^Propuesto: PERALTA/);
+      expect(screen.queryByRole('button', { name: /^Quitar propuesta/ })).not.toBeInTheDocument();
+    });
+
+    it('si Generación no responde, la oferta se sigue viendo con el aviso', async () => {
+      simulada.responder(
+        'GET',
+        RUTA_PARCIALES,
+        json(503, {
+          titulo: 'Servicio no disponible',
+          descripcion: 'Intenta de nuevo en unos minutos.',
+          codigo: 'COMUN_SERVICIO_NO_DISPONIBLE',
+        }),
+      );
+      sesionCon(simulada, 'consolidacion.demo', CONSOLIDACION);
+      montarSpa('/oferta');
+
+      expect(await screen.findByText('Servicio no disponible')).toBeVisible();
+      expect(screen.getByRole('table', { name: CARRERA_DE_LA_PRUEBA })).toBeVisible();
+    });
+  });
+
+  it('muestra las horas con hasta dos decimales', async () => {
+    simulada.responder('GET', RUTA, json(200, { ...OFERTA_EN_PLANIFICACION, horasACubrir: 12.25 }));
+    sesionCon(simulada, 'consolidacion.demo', CONSOLIDACION);
+    montarSpa('/oferta');
+
+    expect(await screen.findByText('Horas a cubrir: 12,25 h')).toBeVisible();
   });
 
   it('sin ninguno de los tres permisos no está en el menú y la ruta no la muestra', async () => {

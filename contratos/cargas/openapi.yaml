@@ -22,7 +22,8 @@
 # y queda en el historial de la carga de proyectos.
 # Desde F02-H02: consultarPreparacionDelPeriodo es el tablero de preparación de un periodo (RF-56):
 # el estado de cada carga en ese periodo, también «con errores», lo que falta para crear el
-# distributivo y si está listo, con la lista de periodos para elegir.
+# distributivo y si está listo, con la lista de periodos para elegir. Desde F06-H03: si el periodo
+# está listo, para Generación, por una ruta interna (ADR-023).
 openapi: 3.0.3
 info:
   title: MDD · cargas
@@ -46,6 +47,8 @@ tags:
     description: El estado de cada carga y la confirmación «sin proyectos» (RF-56, RF-18).
   - name: Preparacion
     description: El tablero de preparación del periodo (RF-56, glosario «Tablero de preparación»).
+  - name: Interno
+    description: Consultas entre procesos (ADR-023). El API Gateway no enruta /interno/.
 paths:
   /api/cargas/sesion:
     get:
@@ -343,6 +346,42 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /interno/cargas/periodos/{periodo}/preparacion:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+    get:
+      tags: [Interno]
+      operationId: consultarPeriodoListo
+      summary: Dice si el periodo está listo para su distributivo.
+      description: >-
+        Solo entre procesos, con el token de proceso: lo usa Generación para crear el distributivo
+        (RF-56, ADR-023). Es la misma regla del tablero.
+      responses:
+        '200':
+          description: El estado del periodo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PeriodoListo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: El periodo no existe.
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
   /api/cargas/preparacion:
     get:
       tags: [Preparacion]
@@ -958,6 +997,17 @@ components:
           $ref: '#/components/schemas/CargaQueFalta'
         estado:
           $ref: '#/components/schemas/EstadoDeLaCarga'
+    PeriodoListo:
+      description: Lo que Generación necesita del tablero (principio IX).
+      type: object
+      required: [abierto, cerrado, listo]
+      properties:
+        abierto:
+          type: boolean
+        cerrado:
+          type: boolean
+        listo:
+          type: boolean
     PreparacionDelPeriodo:
       description: El tablero de preparación de un periodo (glosario «Tablero de preparación», RF-56).
       type: object

@@ -878,6 +878,36 @@ paths:
           $ref: '#/components/responses/NoEncontrado'
         '500':
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+  /interno/academico/periodos/{codigo}/oferta:
+    parameters:
+      - $ref: '#/components/parameters/Codigo'
+    get:
+      tags: [Interno]
+      operationId: consultarOfertaDelPeriodo
+      summary: Devuelve todas las asignaturas-paralelo del periodo, también las retiradas.
+      description: >-
+        Solo entre procesos, con el token de proceso: lo usa Generación para los parciales y las
+        horas (RF-24, D-01, ADR-023). Un periodo sin oferta responde la lista vacía; uno que no
+        existe, 404.
+      responses:
+        '200':
+          description: La oferta.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ParaleloDeLaOferta'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
   /interno/academico/periodos/{codigo}/asignaturas-ofertadas:
     parameters:
       - $ref: '#/components/parameters/Codigo'
@@ -1191,7 +1221,7 @@ components:
     ParaleloDeLaOferta:
       description: Lo que Generación necesita de una asignatura-paralelo (principio IX).
       type: object
-      required: [asignatura, nombre, carrera, paralelo, campoAmplio, campoEspecifico, troncoComun, horasSemanales, estado]
+      required: [asignatura, nombre, carrera, paralelo, campoAmplio, campoEspecifico, troncoComun, horasSemanales, estado, periodoCerrado]
       properties:
         asignatura:
           $ref: '#/components/schemas/CodigoDeAsignatura'
@@ -1212,6 +1242,9 @@ components:
           type: number
         estado:
           $ref: '#/components/schemas/EstadoDeAsignaturaParalelo'
+        periodoCerrado:
+          description: Si el periodo está cerrado.
+          type: boolean
     AsignaturaOfertada:
       description: Lo que Generación necesita de una asignatura ofertada (principio IX).
       type: object

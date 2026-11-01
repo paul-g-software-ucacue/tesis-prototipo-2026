@@ -40,6 +40,7 @@ class InternoAcademicoContratoTest {
 
     private static final String RUTA = "/interno/academico/periodos/%s/asignaturas-ofertadas";
     private static final String RUTA_PARALELO = "/interno/academico/periodos/%s/oferta/%s/%s";
+    private static final String RUTA_OFERTA = "/interno/academico/periodos/%s/oferta";
 
     private final ValidadorDeContrato contrato = ValidadorDeContrato.para("academico");
 
@@ -122,7 +123,7 @@ class InternoAcademicoContratoTest {
                                 + "\"carrera\":\"TDS\",\"paralelo\":\"A_NOCTURNA\","
                                 + "\"campoAmplio\":\"06\",\"campoEspecifico\":\"061\","
                                 + "\"troncoComun\":true,\"horasSemanales\":2.5,"
-                                + "\"estado\":\"OFERTADA\"}")
+                                + "\"estado\":\"OFERTADA\",\"periodoCerrado\":false}")
                 .doesNotContain("palabrasClave", "estudiantes", "sede");
         contrato.validar(resultado);
     }
@@ -168,6 +169,44 @@ class InternoAcademicoContratoTest {
         contrato.validar(resultado);
     }
 
+    @Test
+    void dadoUnProceso_cuandoConsultaLaOferta_entonces200TambienConLasRetiradas() throws Exception {
+        MvcResult resultado =
+                mvc.perform(get(RUTA_OFERTA.formatted("2026-I")).with(deProceso())).andReturn();
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("\"estado\":\"OFERTADA\"", "\"estado\":\"RETIRADA\"");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnPeriodoSinOferta_cuandoConsultaLaOferta_entoncesListaVacia() throws Exception {
+        MvcResult resultado =
+                mvc.perform(get(RUTA_OFERTA.formatted("2026-II")).with(deProceso())).andReturn();
+
+        assertThat(resultado.getResponse().getContentAsString()).isEqualTo("[]");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnPeriodoQueNoExiste_cuandoConsultaLaOferta_entonces404() throws Exception {
+        MvcResult resultado =
+                mvc.perform(get(RUTA_OFERTA.formatted("NADA")).with(deProceso())).andReturn();
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(404);
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnTokenDeUsuario_cuandoConsultaLaOferta_entonces403() throws Exception {
+        MvcResult resultado =
+                mvc.perform(get(RUTA_OFERTA.formatted("2026-I")).with(jwt())).andReturn();
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(403);
+        contrato.validar(resultado);
+    }
+
     private MvcResult pedir(String periodo, JwtRequestPostProcessor token) throws Exception {
         return mvc.perform(get(RUTA.formatted(periodo)).with(token)).andReturn();
     }
@@ -204,15 +243,32 @@ class InternoAcademicoContratoTest {
 
         @Bean
         ConsultarParaleloDeLaOferta consultarParaleloDeLaOferta() {
-            return (periodo, asignatura, paralelo) -> {
-                if (!"2026-I".equals(periodo)) {
-                    throw new PeriodoNoEncontrado(periodo);
+            return new ConsultarParaleloDeLaOferta() {
+
+                @Override
+                public Optional<ParaleloConCampos> paralelo(
+                        String periodo, String asignatura, String paralelo) {
+                    if (!"2026-I".equals(periodo)) {
+                        throw new PeriodoNoEncontrado(periodo);
+                    }
+                    return switch (paralelo) {
+                        case "A_NOCTURNA" -> Optional.of(uno(EstadoDeAsignaturaParalelo.OFERTADA));
+                        case "B" -> Optional.of(uno(EstadoDeAsignaturaParalelo.RETIRADA));
+                        default -> Optional.empty();
+                    };
                 }
-                return switch (paralelo) {
-                    case "A_NOCTURNA" -> Optional.of(uno(EstadoDeAsignaturaParalelo.OFERTADA));
-                    case "B" -> Optional.of(uno(EstadoDeAsignaturaParalelo.RETIRADA));
-                    default -> Optional.empty();
-                };
+
+                @Override
+                public List<ParaleloConCampos> delPeriodo(String periodo) {
+                    return switch (periodo) {
+                        case "2026-I" ->
+                                List.of(
+                                        uno(EstadoDeAsignaturaParalelo.OFERTADA),
+                                        uno(EstadoDeAsignaturaParalelo.RETIRADA));
+                        case "2026-II" -> List.of();
+                        default -> throw new PeriodoNoEncontrado(periodo);
+                    };
+                }
             };
         }
 
@@ -226,7 +282,8 @@ class InternoAcademicoContratoTest {
                     "061",
                     true,
                     new BigDecimal("2.5"),
-                    estado);
+                    estado,
+                    false);
         }
     }
 }

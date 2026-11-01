@@ -68,6 +68,15 @@ export const ESCRITURA_DE_LAS_CARRERAS: readonly { funcionalidad: string; tipo: 
   ];
 
 /**
+ * Quién propone docentes: quien escribe «Oferta y propuesta de docentes» (F06-H03). Es el
+ * Coordinador de carrera, sobre su carrera; el servidor aplica ese alcance (D-64).
+ */
+export const ESCRITURA_DE_LA_PROPUESTA: readonly {
+  funcionalidad: string;
+  tipo: TipoDePermiso;
+}[] = [{ funcionalidad: 'OFERTA', tipo: 'ESCRITURA' }];
+
+/**
  * Quién lee los docentes con su ficha académica: quien lee los docentes, el distributivo o los
  * catálogos (D-70, F03-H04). Lo comparten la ruta y la entrada del menú. También leen así los
  * cargos y los proyectos (F03-H05): «Proyectos y horas de participantes: lectura» no basta, porque

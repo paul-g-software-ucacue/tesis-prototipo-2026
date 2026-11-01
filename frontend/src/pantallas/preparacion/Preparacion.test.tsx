@@ -10,6 +10,8 @@ import { SIN_PERIODOS, tablero } from './datosDePrueba';
 
 const DOCENTES = 'Docentes contratados (con ficha académica)';
 const VICERRECTOR = ['DISTRIBUTIVO:LECTURA', 'DISTRIBUTIVO:ESCRITURA', 'CARGAS:LECTURA'];
+const RUTA_DISTRIBUTIVO = '/api/generacion/periodos/2026-II/distributivo';
+const DISTRIBUTIVO = { periodo: '2026-II', version: 1, carreras: ['550613A01-P-0301'] };
 
 function sesionCon(simulada: ApiSimulada, permisos: string[]) {
   simulada.responder(
@@ -75,7 +77,7 @@ describe('Preparación del periodo', () => {
     ).toBeVisible();
   });
 
-  it('con las cargas obligatorias, «Crear distributivo» está habilitado y avisa que llega con F06', async () => {
+  it('con las cargas obligatorias, crea el distributivo, lo dice y deja de ofrecerlo', async () => {
     sesionCon(simulada, VICERRECTOR);
     responder(tablero('2026-II', { matriculados_carrera: { estado: 'PENDIENTE' } }));
     const usuario = userEvent.setup();
@@ -86,11 +88,67 @@ describe('Preparación del periodo', () => {
     expect(screen.getByText(/está listo para crear su distributivo/)).toBeVisible();
     expect(await filaDe('Matriculados por carrera')).toHaveTextContent('Pendiente');
 
+    simulada.responder('POST', RUTA_DISTRIBUTIVO, json(201, DISTRIBUTIVO));
+    simulada.responder('GET', RUTA_DISTRIBUTIVO, json(200, DISTRIBUTIVO));
     await usuario.click(crear);
 
     expect(await screen.findByRole('status')).toHaveTextContent(
-      'El periodo 2026-II está listo. La construcción del distributivo llega con F06',
+      'El periodo 2026-II ya tiene su distributivo, en la versión 1.',
     );
+    expect(screen.queryByRole('button', { name: 'Crear distributivo' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/está listo para crear su distributivo/)).not.toBeInTheDocument();
+    expect(simulada.peticiones.filter((peticion) => peticion.method === 'POST')).toHaveLength(1);
+  });
+
+  it('un periodo que ya tiene distributivo no ofrece crearlo ni dice qué falta', async () => {
+    sesionCon(simulada, VICERRECTOR);
+    responder(tablero('2026-II', { docentes: { estado: 'PENDIENTE' } }));
+    simulada.responder('GET', RUTA_DISTRIBUTIVO, json(200, DISTRIBUTIVO));
+    montarSpa('/preparacion');
+
+    expect(await screen.findByRole('status')).toHaveTextContent('ya tiene su distributivo');
+    expect(screen.queryByRole('button', { name: 'Crear distributivo' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'Qué falta para crear el distributivo' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('un error del catálogo al crear se muestra y deja el botón', async () => {
+    sesionCon(simulada, VICERRECTOR);
+    responder(tablero('2026-II', { matriculados_carrera: { estado: 'PENDIENTE' } }));
+    simulada.responder(
+      'POST',
+      RUTA_DISTRIBUTIVO,
+      json(409, {
+        titulo: 'Periodo sin preparar',
+        descripcion: 'El periodo todavía no está listo para su distributivo.',
+        codigo: 'GENERACION_PERIODO_NO_LISTO',
+      }),
+    );
+    const usuario = userEvent.setup();
+    montarSpa('/preparacion');
+
+    await usuario.click(await screen.findByRole('button', { name: 'Crear distributivo' }));
+
+    expect(await screen.findByText('Periodo sin preparar')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Crear distributivo' })).toBeEnabled();
+  });
+
+  it('si no se puede saber si tiene distributivo, lo dice', async () => {
+    sesionCon(simulada, VICERRECTOR);
+    responder(tablero('2026-II', { matriculados_carrera: { estado: 'PENDIENTE' } }));
+    simulada.responder(
+      'GET',
+      RUTA_DISTRIBUTIVO,
+      json(503, {
+        titulo: 'Servicio no disponible',
+        descripcion: 'Intenta de nuevo en unos minutos.',
+        codigo: 'COMUN_SERVICIO_NO_DISPONIBLE',
+      }),
+    );
+    montarSpa('/preparacion');
+
+    expect(await screen.findByText('Servicio no disponible')).toBeVisible();
   });
 
   it('muestra cada estado, con el motivo de «con errores»', async () => {
