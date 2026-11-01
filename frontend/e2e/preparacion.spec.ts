@@ -1,6 +1,7 @@
 // F02-H02 en un navegador, con la API simulada: el tablero de preparación del periodo con la carga
 // de docentes pendiente («Crear distributivo» deshabilitado, con lo que falta) y con todo listo (el
-// aviso de F06), y su accesibilidad con axe-core (WCAG 2.1 AA).
+// distributivo de F06-H03, que se crea y deja de ofrecerse), y su accesibilidad con axe-core (WCAG 2.1
+// AA).
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { ingresar, simularApi } from './simulacion';
@@ -77,6 +78,25 @@ function tablero(conDocentes: boolean) {
 }
 
 async function abrirPreparacion(pagina: Page, conDocentes: boolean) {
+  let creado = false;
+  await pagina.route('**/api/generacion/periodos/*/distributivo', async (ruta) => {
+    if (ruta.request().method() === 'POST') {
+      creado = true;
+    }
+    await (creado
+      ? ruta.fulfill({
+          status: ruta.request().method() === 'POST' ? 201 : 200,
+          json: { periodo: '2026-II', version: 1, carreras: ['550613A01-P-0301'] },
+        })
+      : ruta.fulfill({
+          status: 404,
+          json: {
+            titulo: 'Distributivo no encontrado',
+            descripcion: 'El periodo todavía no tiene distributivo.',
+            codigo: 'GENERACION_DISTRIBUTIVO_NO_ENCONTRADO',
+          },
+        }));
+  });
   await simularApi(pagina, { sesion: VICERRECTOR });
   await pagina.route('**/api/cargas/preparacion*', (ruta) =>
     ruta.fulfill({ json: tablero(conDocentes) }),
@@ -114,15 +134,14 @@ test('con docentes pendiente, «Crear distributivo» está deshabilitado y dice 
   await sinFallas(page);
 });
 
-test('con las cargas obligatorias, «Crear distributivo» avisa que la construcción llega con F06', async ({
-  page,
-}) => {
+test('con las cargas obligatorias, crea el distributivo y deja de ofrecerlo', async ({ page }) => {
   await abrirPreparacion(page, true);
 
   await page.getByRole('button', { name: 'Crear distributivo' }).click();
 
   await expect(page.getByRole('status')).toContainText(
-    'La construcción del distributivo llega con F06',
+    'El periodo 2026-II ya tiene su distributivo, en la versión 1.',
   );
+  await expect(page.getByRole('button', { name: 'Crear distributivo' })).toBeHidden();
   await sinFallas(page);
 });

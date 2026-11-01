@@ -2,6 +2,7 @@ package ec.mdd.generacion.puertos.salida;
 
 import ec.mdd.generacion.dominio.AsignaturaParalelo;
 import ec.mdd.generacion.dominio.DocenteActivo;
+import ec.mdd.generacion.dominio.PeriodoListo;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,4 +22,18 @@ public interface DatosParaSugerencia {
 
     /** Los docentes activos, de todas las carreras base. */
     List<DocenteActivo> docentesActivos();
+
+    /**
+     * Todas las asignaturas-paralelo del periodo, también las retiradas.
+     *
+     * @return vacío si el periodo no existe
+     */
+    Optional<List<AsignaturaParalelo>> ofertaDelPeriodo(String periodo);
+
+    /**
+     * Lo que dice el tablero de preparación del periodo.
+     *
+     * @return vacío si el periodo no existe
+     */
+    Optional<PeriodoListo> periodoListo(String periodo);
 }

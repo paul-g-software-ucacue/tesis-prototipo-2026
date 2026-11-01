@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-77 · ADR-024.
+- **Siguiente número libre:** D-79 · ADR-024.
 
 ## Índice
 
@@ -74,6 +74,8 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | ADR-023 | 2026-10-30 | Consultas entre procesos por rutas internas con token de proceso | Aceptada | ADR-018 (extiende las rutas internas a las consultas), ADR-010 (precisa cómo se pide la ficha), ADR-009 (fija los errores 502 y 504) |
 | D-75 | 2026-10-31 | Las horas disponibles de un docente salen de sus horas contratadas | Aceptada | Glosario «Horas disponibles», RF-25 |
 | D-76 | 2026-10-31 | Roles no consulta a Académico al guardar la carrera del coordinador | Aceptada | D-64, F06-H05 |
+| D-77 | 2026-10-31 | Las horas semanales admiten hasta dos decimales | Aceptada | RN-18, F03-H03, modelo táctico |
+| D-78 | 2026-10-31 | F06-H03 va antes que F07-H02, y mientras tanto una propuesta sin horas suficientes se guarda con un aviso | Aceptada | Issues #48 y #51 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1391,5 +1393,37 @@ El catálogo `CARGOS` de `diccionario-de-datos.yaml` cambia la fila del rango po
 - **Que Académico avise a Roles de sus carreras por eventos, como con los periodos:** las carreras que ya existen no tienen evento, así que haría falta una carga inicial.
 
 **Consecuencias.** Roles guarda un código sin comprobar. Si llega una gestión real de usuarios, esta validación se puede revisar.
+
+**Documentos que hay que poner al día.** Ninguno.
+
+## D-77. Las horas semanales admiten hasta dos decimales
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-31 · **Decidido por:** autor de la tesis (aprobada en el plan de F06-H03)
+- **Origen:** `specs/031-proponer-docente/research.md` §10
+- **Modifica a:** `Horas` en el modelo táctico de `sdd/modelo_dominio.md`, que decía «Horas semanales enteras y no negativas»
+
+**Decisión.** Las horas semanales son no negativas y admiten hasta dos decimales.
+
+**Por qué.** La oferta ya las admite (F03-H03): un paralelo puede tener 2,5 h. Una propuesta las hereda, así que el modelo tenía que decir lo mismo.
+
+**Alternativas.** Redondear las horas de la oferta: cambiaría un dato que el autor ya aprobó, y los totales dejarían de cuadrar.
+
+**Consecuencias.** Las horas se comparan con `BigDecimal`, también las disponibles. Las horas contratadas siguen enteras.
+
+**Documentos que hay que poner al día.** El modelo táctico, ya actualizado.
+
+## D-78. F06-H03 va antes que F07-H02, y mientras tanto una propuesta sin horas suficientes se guarda con un aviso
+
+- **Estado:** Aceptada · **Fecha:** 2026-10-31 · **Decidido por:** autor de la tesis
+- **Origen:** especificación de F06-H03
+- **Modifica a:** las dependencias de los issues #48 y #51, que eran circulares
+
+**Decisión.** Primero se propone (F06-H03), y después se bloquea (F07-H02). Mientras tanto, proponer a un docente sin horas suficientes se guarda con un aviso.
+
+**Por qué.** F07-H02 valida asignaciones, y sin F06-H03 no hay ninguna que validar.
+
+**Alternativas.** Bloquear ya en F06-H03: adelanta parte de F07-H02, y habría que rehacerla con la normativa y el control de concurrencia.
+
+**Consecuencias.** Entre las dos historias se puede pasar de las horas contratadas, solo con un aviso. F07-H02 lo convierte en bloqueo, con el caso de dos coordinadores a la vez.
 
 **Documentos que hay que poner al día.** Ninguno.

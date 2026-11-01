@@ -17,7 +17,8 @@ import java.util.Objects;
  * @param version el número de la versión de normativa que rige el periodo
  * @param minimoAfinidad el mínimo de esa versión
  * @param candidatos los candidatos, en orden
- * @param fueraPorElMinimo los docentes activos que no alcanzan el mínimo; 0 en tronco común
+ * @param bajoElMinimo los docentes activos que no alcanzan el mínimo, en el mismo orden; vacía en
+ *     tronco común
  */
 public record Sugerencia(
         String periodo,
@@ -25,14 +26,20 @@ public record Sugerencia(
         int version,
         BigDecimal minimoAfinidad,
         List<Candidato> candidatos,
-        int fueraPorElMinimo) {
+        List<Candidato> bajoElMinimo) {
 
-    /** Exige los datos y copia los candidatos. */
+    /** Exige los datos y copia las listas. */
     public Sugerencia {
         Objects.requireNonNull(periodo, "periodo");
         Objects.requireNonNull(paralelo, "paralelo");
         Objects.requireNonNull(minimoAfinidad, "minimoAfinidad");
         candidatos = List.copyOf(candidatos);
+        bajoElMinimo = List.copyOf(bajoElMinimo);
+    }
+
+    /** Cuántos docentes activos no alcanzan el mínimo. */
+    public int fueraPorElMinimo() {
+        return bajoElMinimo.size();
     }
 
     /**
@@ -70,21 +77,26 @@ public record Sugerencia(
                                                         paralelo.asignatura(),
                                                         pesos.pesos())))
                         .toList();
-        List<Candidato> candidatos =
-                todos.stream()
-                        .filter(
-                                candidato ->
-                                        paralelo.troncoComun()
-                                                || alcanza(candidato, pesos.minimoAfinidad()))
-                        .sorted(orden(paralelo.horasSemanales()))
-                        .toList();
+        Comparator<Candidato> orden = orden(paralelo.horasSemanales());
         return new Sugerencia(
                 periodo,
                 paralelo,
                 pesos.version(),
                 pesos.minimoAfinidad(),
-                candidatos,
-                todos.size() - candidatos.size());
+                todos.stream()
+                        .filter(
+                                candidato ->
+                                        paralelo.troncoComun()
+                                                || alcanza(candidato, pesos.minimoAfinidad()))
+                        .sorted(orden)
+                        .toList(),
+                todos.stream()
+                        .filter(
+                                candidato ->
+                                        !paralelo.troncoComun()
+                                                && !alcanza(candidato, pesos.minimoAfinidad()))
+                        .sorted(orden)
+                        .toList());
     }
 
     private static boolean alcanza(Candidato candidato, BigDecimal minimo) {

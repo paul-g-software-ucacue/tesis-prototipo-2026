@@ -64,6 +64,18 @@ class InternoAcademicoControlador implements InternoApi {
         }
     }
 
+    @Override
+    public ResponseEntity<List<ParaleloDeLaOferta>> consultarOfertaDelPeriodo(String codigo) {
+        try {
+            return ResponseEntity.ok(
+                    paralelos.delPeriodo(codigo).stream()
+                            .map(InternoAcademicoControlador::respuesta)
+                            .toList());
+        } catch (PeriodoNoEncontrado error) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+    }
+
     private static ParaleloDeLaOferta respuesta(ParaleloConCampos paralelo) {
         return new ParaleloDeLaOferta(
                 paralelo.asignatura(),
@@ -74,6 +86,7 @@ class InternoAcademicoControlador implements InternoApi {
                 paralelo.campoEspecifico(),
                 paralelo.troncoComun(),
                 paralelo.horasSemanales(),
-                EstadoDeAsignaturaParalelo.fromValue(paralelo.estado().name()));
+                EstadoDeAsignaturaParalelo.fromValue(paralelo.estado().name()),
+                paralelo.periodoCerrado());
     }
 }

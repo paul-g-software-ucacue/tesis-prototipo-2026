@@ -14,24 +14,32 @@ import ec.mdd.generacion.dominio.Candidato;
 import ec.mdd.generacion.dominio.Dedicacion;
 import ec.mdd.generacion.dominio.DocenteActivo;
 import ec.mdd.generacion.dominio.ElementoDeFormacion;
+import ec.mdd.generacion.dominio.EstadoDeVersion;
 import ec.mdd.generacion.dominio.FormacionDelDocente;
-import ec.mdd.generacion.dominio.HorasDelDocente;
+import ec.mdd.generacion.dominio.Justificacion;
+import ec.mdd.generacion.dominio.ParcialCarrera;
 import ec.mdd.generacion.dominio.PesosAfinidad;
 import ec.mdd.generacion.dominio.PesosDelPeriodo;
+import ec.mdd.generacion.dominio.Propuesta;
 import ec.mdd.generacion.dominio.Sugerencia;
+import ec.mdd.generacion.dominio.TipoDeJustificacion;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
+import ec.mdd.generacion.dominio.VersionDistributivo;
 import ec.mdd.generacion.puertos.entrada.OtraCarrera;
 import ec.mdd.generacion.puertos.entrada.ParaleloNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.ParaleloRetirado;
 import ec.mdd.generacion.puertos.entrada.PeriodoSinAbrir;
+import ec.mdd.generacion.puertos.entrada.PropuestaVista;
+import ec.mdd.generacion.puertos.entrada.SugerenciaDelParalelo;
 import ec.mdd.generacion.puertos.salida.DatosParaAfinidad;
 import ec.mdd.generacion.puertos.salida.DatosParaSugerencia;
-import ec.mdd.generacion.puertos.salida.HorasAsignadas;
+import ec.mdd.generacion.puertos.salida.RepositorioDistributivos;
 import ec.mdd.plataforma.eventos.ProcesoConError;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /** La sugerencia de una asignatura-paralelo, con los datos simulados con Mockito. */
@@ -61,6 +69,21 @@ class ConsultarSugerenciaServicioTest {
                             List.of(),
                             List.of()));
 
+    private static final DocenteActivo AJENO =
+            new DocenteActivo(
+                    "0109990020",
+                    "LOPEZ ANA",
+                    Dedicacion.TC,
+                    40,
+                    new FormacionDelDocente(
+                            new TituloDeTercerNivel("Medicina", "09", "091"),
+                            List.of(),
+                            List.of(),
+                            List.of()));
+
+    private static final AsignaturaOfertada BD =
+            new AsignaturaOfertada("BD-301", "Bases de datos", "06", "061");
+
     private static final PesosDelPeriodo PESOS =
             new PesosDelPeriodo(
                     2,
@@ -76,29 +99,114 @@ class ConsultarSugerenciaServicioTest {
 
     private final DatosParaSugerencia datos = mock(DatosParaSugerencia.class);
     private final DatosParaAfinidad afinidad = mock(DatosParaAfinidad.class);
-    private final HorasAsignadas horas = mock(HorasAsignadas.class);
+    private final RepositorioDistributivos distributivos = mock(RepositorioDistributivos.class);
     private final ConsultarSugerenciaServicio servicio =
-            new ConsultarSugerenciaServicio(datos, afinidad, horas);
+            new ConsultarSugerenciaServicio(datos, afinidad, distributivos);
 
     @Test
-    void dadosLosDatos_cuandoSeConsulta_entoncesArmaLaSugerenciaConLasHoras() {
-        when(datos.paralelo(PERIODO, "POO-204", "A")).thenReturn(Optional.of(OFERTADO));
-        when(afinidad.pesos(PERIODO)).thenReturn(Optional.of(PESOS));
-        when(datos.docentesActivos()).thenReturn(List.of(DOCENTE));
-        when(horas.delPeriodo(PERIODO, "TDS"))
-                .thenReturn(
-                        Map.of(
-                                DOCENTE.identificacion(),
-                                new HorasDelDocente(new BigDecimal("10"), new BigDecimal("6"))));
+    void dadasPropuestasEnElPeriodo_cuandoSeConsulta_entoncesLasHorasSonLasReales() {
+        AsignaturaParalelo deLaCarrera =
+                new AsignaturaParalelo(BD, "A", "TDS", new BigDecimal("4"), false, false);
+        AsignaturaParalelo deOtra =
+                new AsignaturaParalelo(BD, "B", "AGRO", new BigDecimal("6"), false, false);
+        conLosDatos();
+        when(distributivos.vigenteDe(PERIODO))
+                .thenReturn(Optional.of(version(propuesta(deLaCarrera), propuesta(deOtra))));
+        when(datos.ofertaDelPeriodo(PERIODO))
+                .thenReturn(Optional.of(List.of(OFERTADO, deLaCarrera, deOtra)));
 
-        Sugerencia sugerencia = servicio.sugerencia(PERIODO, "POO-204", "A", TODAS);
+        SugerenciaDelParalelo delParalelo = servicio.sugerencia(PERIODO, "POO-204", "A", TODAS);
 
+        Sugerencia sugerencia = delParalelo.sugerencia();
         assertThat(sugerencia.version()).isEqualTo(2);
         assertThat(sugerencia.minimoAfinidad()).isEqualByComparingTo("3.5");
         Candidato candidato = sugerencia.candidatos().getFirst();
         assertThat(candidato.puntaje().total()).isEqualByComparingTo("12");
         assertThat(candidato.horasDisponibles()).isEqualByComparingTo("30");
         assertThat(candidato.horas().enOtrasCarreras()).isEqualByComparingTo("6");
+        assertThat(delParalelo.distributivoCreado()).isTrue();
+        assertThat(delParalelo.propuesta()).isEmpty();
+    }
+
+    @Test
+    void dadoQueNoHayDistributivo_cuandoSeConsulta_entoncesNoHayHorasNiPideLaOferta() {
+        conLosDatos();
+
+        SugerenciaDelParalelo delParalelo = servicio.sugerencia(PERIODO, "POO-204", "A", TODAS);
+
+        assertThat(delParalelo.distributivoCreado()).isFalse();
+        assertThat(delParalelo.sugerencia().candidatos().getFirst().horasDisponibles())
+                .isEqualByComparingTo("40");
+        verify(datos, never()).ofertaDelPeriodo(any());
+    }
+
+    @Test
+    void dadoUnDocenteBajoElMinimo_cuandoSeConsulta_entoncesVieneAparte() {
+        conLosDatos();
+        when(datos.docentesActivos()).thenReturn(List.of(DOCENTE, AJENO));
+
+        Sugerencia sugerencia = servicio.sugerencia(PERIODO, "POO-204", "A", TODAS).sugerencia();
+
+        assertThat(sugerencia.candidatos()).hasSize(1);
+        assertThat(sugerencia.bajoElMinimo())
+                .extracting(Candidato::identificacion)
+                .containsExactly(AJENO.identificacion());
+    }
+
+    @Test
+    void dadaLaPropuestaDelParalelo_cuandoSeConsulta_entoncesLaTraeYNoCuentaEnSusHoras() {
+        conLosDatos();
+        when(distributivos.vigenteDe(PERIODO))
+                .thenReturn(Optional.of(version(propuesta(OFERTADO))));
+        when(datos.ofertaDelPeriodo(PERIODO)).thenReturn(Optional.of(List.of(OFERTADO)));
+
+        SugerenciaDelParalelo delParalelo = servicio.sugerencia(PERIODO, "POO-204", "A", TODAS);
+
+        PropuestaVista propuesta = delParalelo.propuesta().orElseThrow();
+        assertThat(propuesta.propuesta().docente()).isEqualTo(DOCENTE.identificacion());
+        assertThat(propuesta.retirada()).isFalse();
+        assertThat(propuesta.horasSuficientes()).isTrue();
+        assertThat(delParalelo.sugerencia().candidatos().getFirst().horasDisponibles())
+                .isEqualByComparingTo("40");
+    }
+
+    @Test
+    void dadaUnaPropuestaDeUnDocenteSinHoras_cuandoSeConsulta_entoncesLoAvisa() {
+        DocenteActivo sinHoras =
+                new DocenteActivo(
+                        DOCENTE.identificacion(),
+                        DOCENTE.nombre(),
+                        Dedicacion.TP,
+                        2,
+                        DOCENTE.formacion());
+        conLosDatos();
+        when(datos.docentesActivos()).thenReturn(List.of(sinHoras));
+        when(distributivos.vigenteDe(PERIODO))
+                .thenReturn(Optional.of(version(propuesta(OFERTADO))));
+        when(datos.ofertaDelPeriodo(PERIODO)).thenReturn(Optional.of(List.of(OFERTADO)));
+
+        assertThat(
+                        servicio.sugerencia(PERIODO, "POO-204", "A", TODAS)
+                                .propuesta()
+                                .orElseThrow()
+                                .horasSuficientes())
+                .isFalse();
+    }
+
+    @Test
+    void dadaUnaPropuestaDeQuienYaNoEstaActivo_cuandoSeConsulta_entoncesNoAvisaDeLasHoras() {
+        conLosDatos();
+        when(datos.docentesActivos()).thenReturn(List.of(AJENO));
+        when(distributivos.vigenteDe(PERIODO))
+                .thenReturn(Optional.of(version(propuesta(OFERTADO))));
+        when(datos.ofertaDelPeriodo(PERIODO)).thenReturn(Optional.of(List.of(OFERTADO)));
+
+        assertThat(
+                        servicio.sugerencia(PERIODO, "POO-204", "A", TODAS)
+                                .propuesta()
+                                .orElseThrow()
+                                .horasSuficientes())
+                .isTrue();
     }
 
     @Test
@@ -127,9 +235,11 @@ class ConsultarSugerenciaServicioTest {
         when(datos.paralelo(PERIODO, "POO-204", "A")).thenReturn(Optional.of(OFERTADO));
         when(afinidad.pesos(PERIODO)).thenReturn(Optional.of(PESOS));
         when(datos.docentesActivos()).thenReturn(List.of(DOCENTE));
-        when(horas.delPeriodo(PERIODO, "TDS")).thenReturn(Map.of());
 
-        assertThat(servicio.sugerencia(PERIODO, "POO-204", "A", Optional.of("TDS")).candidatos())
+        assertThat(
+                        servicio.sugerencia(PERIODO, "POO-204", "A", Optional.of("TDS"))
+                                .sugerencia()
+                                .candidatos())
                 .hasSize(1);
     }
 
@@ -161,5 +271,33 @@ class ConsultarSugerenciaServicioTest {
 
         assertThatThrownBy(() -> servicio.sugerencia(PERIODO, "POO-204", "A", TODAS))
                 .isInstanceOf(ProcesoConError.class);
+    }
+
+    private void conLosDatos() {
+        when(datos.paralelo(PERIODO, "POO-204", "A")).thenReturn(Optional.of(OFERTADO));
+        when(afinidad.pesos(PERIODO)).thenReturn(Optional.of(PESOS));
+        when(datos.docentesActivos()).thenReturn(List.of(DOCENTE));
+        when(distributivos.vigenteDe(PERIODO)).thenReturn(Optional.empty());
+    }
+
+    private static VersionDistributivo version(Propuesta... propuestas) {
+        return new VersionDistributivo(
+                UUID.randomUUID(),
+                1,
+                EstadoDeVersion.EDITABLE,
+                List.of(ParcialCarrera.nuevo("TDS")),
+                List.of(propuestas));
+    }
+
+    private static Propuesta propuesta(AsignaturaParalelo paralelo) {
+        return new Propuesta(
+                paralelo.asignatura().codigo(),
+                paralelo.paralelo(),
+                paralelo.carrera(),
+                DOCENTE.identificacion(),
+                DOCENTE.nombre(),
+                new Justificacion(TipoDeJustificacion.AFINIDAD, null),
+                Instant.parse("2026-10-31T15:00:00Z"),
+                "coordinacion.demo");
     }
 }

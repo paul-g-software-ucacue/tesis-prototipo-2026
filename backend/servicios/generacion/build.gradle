@@ -14,4 +14,6 @@ dependencies {
     implementation project(':plataforma:eventos')
     // La fila del evento de prueba en generacion.evento_prueba, en la transacción que publica.
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    // El detalle de cada cambio en jsonb, en generacion.registro_cambio (F06-H03).
+    implementation 'tools.jackson.core:jackson-databind'
 }

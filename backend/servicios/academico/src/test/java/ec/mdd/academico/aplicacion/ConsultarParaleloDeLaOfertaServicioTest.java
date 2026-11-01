@@ -2,6 +2,7 @@ package ec.mdd.academico.aplicacion;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -46,7 +47,8 @@ class ConsultarParaleloDeLaOfertaServicioTest {
                                 "061",
                                 true,
                                 new BigDecimal("2.5"),
-                                EstadoDeAsignaturaParalelo.OFERTADA));
+                                EstadoDeAsignaturaParalelo.OFERTADA,
+                                false));
     }
 
     @Test
@@ -84,12 +86,40 @@ class ConsultarParaleloDeLaOfertaServicioTest {
                 .isInstanceOf(PeriodoNoEncontrado.class);
     }
 
+    @Test
+    void dadoUnPeriodoCerrado_cuandoSeConsulta_entoncesLoDice() {
+        ofertaEn(EstadoPeriodo.CERRADO, paralelo("A", null, EstadoDeAsignaturaParalelo.OFERTADA));
+
+        assertThat(servicio.paralelo(PERIODO, "POO-204", "A"))
+                .get()
+                .extracting(ParaleloConCampos::periodoCerrado)
+                .isEqualTo(true);
+    }
+
+    @Test
+    void dadaLaOferta_cuandoSeConsultaEntera_entoncesTraeTambienLasRetiradas() {
+        ofertaEn(
+                EstadoPeriodo.VIGENTE,
+                paralelo("A", null, EstadoDeAsignaturaParalelo.OFERTADA),
+                paralelo("B", null, EstadoDeAsignaturaParalelo.RETIRADA));
+
+        assertThat(servicio.delPeriodo(PERIODO))
+                .extracting(ParaleloConCampos::paralelo, ParaleloConCampos::estado)
+                .containsExactly(
+                        tuple("A", EstadoDeAsignaturaParalelo.OFERTADA),
+                        tuple("B", EstadoDeAsignaturaParalelo.RETIRADA));
+    }
+
     private void oferta(AsignaturaParalelo paralelo) {
+        ofertaEn(EstadoPeriodo.VIGENTE, paralelo);
+    }
+
+    private void ofertaEn(EstadoPeriodo estado, AsignaturaParalelo... paralelos) {
         when(consultar.oferta(PERIODO))
                 .thenReturn(
                         new OfertaDelPeriodo(
-                                DatosDePrueba.periodo(EstadoPeriodo.VIGENTE),
-                                List.of(paralelo),
+                                DatosDePrueba.periodo(estado),
+                                List.of(paralelos),
                                 new DatosMaestros(
                                         List.of(),
                                         List.of(),

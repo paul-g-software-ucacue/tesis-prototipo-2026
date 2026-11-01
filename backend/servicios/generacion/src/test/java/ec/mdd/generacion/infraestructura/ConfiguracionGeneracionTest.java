@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.springframework.transaction.support.TransactionOperations;
 
 /** Los métodos @Bean de la configuración, llamados directamente. */
 class ConfiguracionGeneracionTest {
@@ -44,5 +45,24 @@ class ConfiguracionGeneracionTest {
                                 Map.of("nota", "x")));
         assertThat(configuracion.repositorioEventosDePrueba(null)).isNotNull();
         assertThat(configuracion.publicarEventoDePrueba(null, null)).isNotNull();
+    }
+
+    @Test
+    void dadosLosPuertos_cuandoSePidenLosCasosDeUso_entoncesLosArma() {
+        assertThat(configuracion.repositorioDistributivos(null)).isNotNull();
+        assertThat(configuracion.registroDeCambiosGeneracion(null)).isNotNull();
+        assertThat(configuracion.crearDistributivo(null, null, null, null)).isNotNull();
+        assertThat(configuracion.proponerDocente(null, null, null, null, null)).isNotNull();
+        assertThat(configuracion.consultarParciales(null, null)).isNotNull();
+        assertThat(configuracion.consultarSugerencia(null, null, null)).isNotNull();
+    }
+
+    @Test
+    void dadaLaPlantillaDeTransacciones_cuandoSeEjecuta_entoncesDevuelveElResultado() {
+        assertThat(
+                        configuracion
+                                .transaccionGeneracion(TransactionOperations.withoutTransaction())
+                                .ejecutar(() -> "hecho"))
+                .isEqualTo("hecho");
     }
 }

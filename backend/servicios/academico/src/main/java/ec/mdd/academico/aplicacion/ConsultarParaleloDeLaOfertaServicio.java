@@ -2,10 +2,12 @@ package ec.mdd.academico.aplicacion;
 
 import ec.mdd.academico.dominio.Asignatura;
 import ec.mdd.academico.dominio.AsignaturaParalelo;
+import ec.mdd.academico.dominio.EstadoPeriodo;
 import ec.mdd.academico.dominio.OfertaDelPeriodo;
 import ec.mdd.academico.puertos.entrada.ConsultarOferta;
 import ec.mdd.academico.puertos.entrada.ConsultarParaleloDeLaOferta;
 import ec.mdd.academico.puertos.entrada.ParaleloConCampos;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -33,6 +35,17 @@ public final class ConsultarParaleloDeLaOfertaServicio implements ConsultarParal
                                         .map(datos -> respuesta(oferta, una, datos)));
     }
 
+    @Override
+    public List<ParaleloConCampos> delPeriodo(String periodo) {
+        OfertaDelPeriodo oferta = consultar.oferta(periodo);
+        return oferta.asignaturasParalelo().stream()
+                .flatMap(
+                        una ->
+                                oferta.datos().asignatura(una.asignatura()).stream()
+                                        .map(datos -> respuesta(oferta, una, datos)))
+                .toList();
+    }
+
     private static ParaleloConCampos respuesta(
             OfertaDelPeriodo oferta, AsignaturaParalelo una, Asignatura asignatura) {
         return new ParaleloConCampos(
@@ -44,6 +57,7 @@ public final class ConsultarParaleloDeLaOfertaServicio implements ConsultarParal
                 asignatura.campo().especifico(),
                 asignatura.troncoComun(),
                 oferta.horasDe(una),
-                una.estado());
+                una.estado(),
+                oferta.periodo().estado() == EstadoPeriodo.CERRADO);
     }
 }

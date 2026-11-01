@@ -32,9 +32,7 @@ public record Candidato(
 
     /** Sus horas contratadas menos las asignadas, nunca menos de 0 (D-75). */
     public BigDecimal horasDisponibles() {
-        return BigDecimal.valueOf(horasContratadas)
-                .subtract(horas.asignadas())
-                .max(BigDecimal.ZERO);
+        return horas.disponibles(horasContratadas);
     }
 
     /** Si sus horas disponibles alcanzan para las del paralelo. */

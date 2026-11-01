@@ -14,6 +14,11 @@ public record HorasDelDocente(BigDecimal asignadas, BigDecimal enOtrasCarreras) 
     public static final HorasDelDocente NINGUNA =
             new HorasDelDocente(BigDecimal.ZERO, BigDecimal.ZERO);
 
+    /** Sus horas contratadas menos las asignadas, nunca menos de 0 (D-75). */
+    public BigDecimal disponibles(int horasContratadas) {
+        return BigDecimal.valueOf(horasContratadas).subtract(asignadas).max(BigDecimal.ZERO);
+    }
+
     /** Exige horas no negativas, y que las de otras carreras no pasen de las asignadas. */
     public HorasDelDocente {
         if (asignadas.signum() < 0 || enOtrasCarreras.signum() < 0) {

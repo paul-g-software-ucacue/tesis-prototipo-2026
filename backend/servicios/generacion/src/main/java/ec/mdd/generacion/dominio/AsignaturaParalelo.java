@@ -13,6 +13,7 @@ import java.util.Objects;
  * @param horasSemanales sus horas efectivas; admiten decimales
  * @param troncoComun si su asignatura es de tronco común: queda exenta del mínimo
  * @param retirada si salió de la oferta
+ * @param periodoCerrado si el periodo está cerrado
  */
 public record AsignaturaParalelo(
         AsignaturaOfertada asignatura,
@@ -20,7 +21,8 @@ public record AsignaturaParalelo(
         String carrera,
         BigDecimal horasSemanales,
         boolean troncoComun,
-        boolean retirada) {
+        boolean retirada,
+        boolean periodoCerrado) {
 
     /** Exige los datos. */
     public AsignaturaParalelo {
@@ -28,5 +30,16 @@ public record AsignaturaParalelo(
         Objects.requireNonNull(paralelo, "paralelo");
         Objects.requireNonNull(carrera, "carrera");
         Objects.requireNonNull(horasSemanales, "horasSemanales");
+    }
+
+    /** Una asignatura-paralelo de un periodo que no está cerrado. */
+    public AsignaturaParalelo(
+            AsignaturaOfertada asignatura,
+            String paralelo,
+            String carrera,
+            BigDecimal horasSemanales,
+            boolean troncoComun,
+            boolean retirada) {
+        this(asignatura, paralelo, carrera, horasSemanales, troncoComun, retirada, false);
     }
 }

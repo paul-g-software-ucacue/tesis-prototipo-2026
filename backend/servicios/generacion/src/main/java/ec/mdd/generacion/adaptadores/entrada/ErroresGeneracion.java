@@ -1,10 +1,18 @@
 package ec.mdd.generacion.adaptadores.entrada;
 
+import ec.mdd.generacion.dominio.ParcialNoEditable;
+import ec.mdd.generacion.puertos.entrada.DistributivoNoEncontrado;
+import ec.mdd.generacion.puertos.entrada.DistributivoRepetido;
+import ec.mdd.generacion.puertos.entrada.DocenteNoActivo;
 import ec.mdd.generacion.puertos.entrada.DocenteNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.ParaleloNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.ParaleloRetirado;
+import ec.mdd.generacion.puertos.entrada.PeriodoCerrado;
 import ec.mdd.generacion.puertos.entrada.PeriodoNoEncontrado;
+import ec.mdd.generacion.puertos.entrada.PeriodoNoListo;
 import ec.mdd.generacion.puertos.entrada.PeriodoSinAbrir;
+import ec.mdd.generacion.puertos.entrada.PropuestaNoEncontrada;
+import ec.mdd.generacion.puertos.entrada.SinDistributivo;
 import ec.mdd.plataforma.errores.nucleo.CatalogoDeErrores;
 import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
 import java.util.List;
@@ -47,6 +55,56 @@ class ErroresGeneracion implements CatalogoDeErrores {
                         "Asignatura-paralelo retirada",
                         "Esta asignatura-paralelo se retiró de la oferta y no recibe sugerencias."
                                 + " Vuelve a ofertarla si hace falta."),
+                EntradaCatalogo.de(
+                        PeriodoNoListo.class,
+                        "GENERACION_PERIODO_NO_LISTO",
+                        409,
+                        "Periodo sin preparar",
+                        "El periodo todavía no está listo para su distributivo. Revisa lo que falta"
+                                + " en «Preparación del periodo»."),
+                EntradaCatalogo.de(
+                        DistributivoRepetido.class,
+                        "GENERACION_DISTRIBUTIVO_REPETIDO",
+                        409,
+                        "Distributivo ya creado",
+                        "Este periodo ya tiene su distributivo."),
+                EntradaCatalogo.de(
+                        DistributivoNoEncontrado.class,
+                        "GENERACION_DISTRIBUTIVO_NO_ENCONTRADO",
+                        404,
+                        "Distributivo no encontrado",
+                        "El periodo todavía no tiene distributivo."),
+                EntradaCatalogo.de(
+                        SinDistributivo.class,
+                        "GENERACION_SIN_DISTRIBUTIVO",
+                        409,
+                        "Sin distributivo",
+                        "El periodo todavía no tiene distributivo. Pide al Vicerrector académico"
+                                + " que lo cree."),
+                EntradaCatalogo.de(
+                        PeriodoCerrado.class,
+                        "GENERACION_PERIODO_CERRADO",
+                        409,
+                        "Periodo cerrado",
+                        "El periodo está cerrado y ya no admite propuestas."),
+                EntradaCatalogo.de(
+                        DocenteNoActivo.class,
+                        "GENERACION_DOCENTE_NO_ACTIVO",
+                        409,
+                        "Docente no activo",
+                        "Ese docente no está activo. Elige otro."),
+                EntradaCatalogo.de(
+                        ParcialNoEditable.class,
+                        "GENERACION_PARCIAL_NO_EDITABLE",
+                        409,
+                        "Parcial cerrado",
+                        "Este parcial ya no admite cambios."),
+                EntradaCatalogo.de(
+                        PropuestaNoEncontrada.class,
+                        "GENERACION_PROPUESTA_NO_ENCONTRADA",
+                        404,
+                        "Sin propuesta",
+                        "Esta asignatura-paralelo no tiene una propuesta."),
                 EntradaCatalogo.de(
                         DocenteNoEncontrado.class,
                         "GENERACION_DOCENTE_NO_ENCONTRADO",

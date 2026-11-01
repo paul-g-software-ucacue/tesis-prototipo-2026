@@ -9,6 +9,7 @@ import ec.mdd.generacion.dominio.Dedicacion;
 import ec.mdd.generacion.dominio.DocenteActivo;
 import ec.mdd.generacion.dominio.ElementoDeFormacion;
 import ec.mdd.generacion.dominio.FormacionDelDocente;
+import ec.mdd.generacion.dominio.PeriodoListo;
 import ec.mdd.generacion.dominio.PesosDelPeriodo;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
@@ -37,6 +38,8 @@ class DatosDesdeProcesoDatosTest {
     private static final String RUTA_PARALELO =
             "/interno/academico/periodos/2026-I/oferta/POO-204/A_NOCTURNA";
     private static final String RUTA_ACTIVOS = "/interno/docentes/activos";
+    private static final String RUTA_PREPARACION = "/interno/cargas/periodos/2026-I/preparacion";
+    private static final String RUTA_OFERTA_COMPLETA = "/interno/academico/periodos/2026-I/oferta";
 
     private final ReceptorSimulado receptor = new ReceptorSimulado();
     private final DatosDesdeProcesoDatos datos =
@@ -219,12 +222,51 @@ class DatosDesdeProcesoDatosTest {
         assertThatThrownBy(datos::docentesActivos).isInstanceOf(IllegalStateException.class);
     }
 
+    @Test
+    void dadoElTablero_cuandoSePide_entoncesLoPasaASuTipo() {
+        receptor.responderConsulta(
+                RUTA_PREPARACION, 200, "{\"abierto\":true,\"cerrado\":false,\"listo\":true}");
+
+        assertThat(datos.periodoListo(PERIODO)).contains(new PeriodoListo(true, false, true));
+    }
+
+    @Test
+    void dadoUnPeriodoQueCargasNoTiene_cuandoSePideElTablero_entoncesVacio() {
+        assertThat(datos.periodoListo(PERIODO)).isEmpty();
+    }
+
+    @Test
+    void dadaLaOfertaDelPeriodo_cuandoSePide_entoncesTraeTambienLasRetiradas() {
+        receptor.responderConsulta(
+                RUTA_OFERTA_COMPLETA,
+                200,
+                "[" + paralelo("OFERTADA") + "," + paralelo("RETIRADA") + "]");
+
+        assertThat(datos.ofertaDelPeriodo(PERIODO).orElseThrow())
+                .extracting(AsignaturaParalelo::retirada)
+                .containsExactly(false, true);
+    }
+
+    @Test
+    void dadoUnPeriodoQueAcademicoNoTiene_cuandoSePideSuOferta_entoncesVacio() {
+        assertThat(datos.ofertaDelPeriodo(PERIODO)).isEmpty();
+    }
+
+    @Test
+    void dadoUnPeriodoCerrado_cuandoSePideElParalelo_entoncesLoDice() {
+        receptor.responderConsulta(
+                RUTA_PARALELO, 200, paralelo("OFERTADA").replace("false}", "true}"));
+
+        assertThat(datos.paralelo(PERIODO, "POO-204", "A_NOCTURNA").orElseThrow().periodoCerrado())
+                .isTrue();
+    }
+
     private static String paralelo(String estado) {
         return "{\"asignatura\":\"POO-204\",\"nombre\":\"Programación\",\"carrera\":\"TDS\","
                 + "\"paralelo\":\"A_NOCTURNA\",\"campoAmplio\":\"06\","
                 + "\"campoEspecifico\":\"061\",\"troncoComun\":true,"
                 + "\"horasSemanales\":2.5,\"estado\":\""
                 + estado
-                + "\"}";
+                + "\",\"periodoCerrado\":false}";
     }
 }

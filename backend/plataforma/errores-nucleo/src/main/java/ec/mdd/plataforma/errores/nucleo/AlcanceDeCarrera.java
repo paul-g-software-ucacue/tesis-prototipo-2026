@@ -38,9 +38,26 @@ public final class AlcanceDeCarrera {
      * @throws CarreraSinIndicar si solo ve lo propio y no tiene carrera
      */
     public static Optional<String> propia(Collection<String> autoridades) {
+        return segun(autoridades, PERMISOS_DE_LA_OFERTA);
+    }
+
+    /**
+     * La carrera a la que se limita el usuario con un permiso: al escribir, importa ese permiso y
+     * no los de lectura. Si no, un rol propio sin lectura pasaría como «ve todas».
+     *
+     * @param autoridades los nombres de sus autoridades
+     * @param permiso el permiso, como {@code OFERTA:ESCRITURA}
+     * @return vacío si lo tiene sobre todo o no lo tiene; su carrera si solo sobre lo propio
+     * @throws CarreraSinIndicar si es solo sobre lo propio y no tiene carrera
+     */
+    public static Optional<String> propia(Collection<String> autoridades, String permiso) {
+        return segun(autoridades, List.of(permiso));
+    }
+
+    private static Optional<String> segun(Collection<String> autoridades, List<String> permisos) {
         Set<String> suyas = Set.copyOf(autoridades);
         List<String> deLaOferta =
-                PERMISOS_DE_LA_OFERTA.stream()
+                permisos.stream()
                         .filter(permiso -> suyas.contains(PREFIJO_PERMISO + permiso))
                         .toList();
         boolean soloLoPropio =

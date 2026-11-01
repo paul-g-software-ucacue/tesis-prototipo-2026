@@ -16,15 +16,15 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
- * La prueba de autorización por operación de Generación (RNF-SEG-03, FR-014): sin uno de los tres
- * permisos de leer un docente, la afinidad y la sugerencia responden 403, y con cualquiera de ellos
- * pasan.
+ * La prueba de autorización por operación de Generación (RNF-SEG-03): sin uno de los permisos que
+ * declara el contrato, cada operación responde 403, y con cualquiera de ellos pasa.
  */
-@WebMvcTest({AfinidadControlador.class, SugerenciaControlador.class})
+@WebMvcTest({AfinidadControlador.class, SugerenciaControlador.class, DistributivoControlador.class})
 @ImportAutoConfiguration({SeguridadProcesoAutoConfiguracion.class, ErroresAutoConfiguracion.class})
 @Import({
     AfinidadContratoTest.Dobles.class,
     SugerenciaContratoTest.Dobles.class,
+    DistributivoContratoTest.Dobles.class,
     ErroresGeneracion.class,
     ErroresEntreProcesos.class
 })
@@ -43,16 +43,11 @@ class PermisosGeneracionTest {
     void dadoElContratoDeGeneracion_cuandoSeVerificaCadaOperacion_entoncesExigeSuPermiso() {
         assertThat(verificador.operaciones())
                 .extracting(VerificadorDePermisos.OperacionProtegida::toString)
-                .hasSize(2)
-                .allSatisfy(
-                        operacion ->
-                                assertThat(operacion)
-                                        .contains(
-                                                "DOCENTES:LECTURA",
-                                                "DISTRIBUTIVO:LECTURA",
-                                                "CATALOGOS:LECTURA"))
+                .hasSize(7)
                 .anySatisfy(operacion -> assertThat(operacion).contains("/afinidad"))
-                .anySatisfy(operacion -> assertThat(operacion).contains("/sugerencia"));
+                .anySatisfy(operacion -> assertThat(operacion).contains("/sugerencia"))
+                .anySatisfy(operacion -> assertThat(operacion).contains("DISTRIBUTIVO:ESCRITURA"))
+                .anySatisfy(operacion -> assertThat(operacion).contains("OFERTA:ESCRITURA"));
 
         verificador.verificar(mvc, conversor);
     }

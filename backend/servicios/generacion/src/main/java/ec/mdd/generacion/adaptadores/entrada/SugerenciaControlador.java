@@ -6,7 +6,9 @@ import ec.mdd.generacion.adaptadores.entrada.api.Sugerencia;
 import ec.mdd.generacion.adaptadores.entrada.api.SugerenciaApi;
 import ec.mdd.generacion.puertos.entrada.ConsultarSugerencia;
 import ec.mdd.generacion.puertos.entrada.OtraCarrera;
+import ec.mdd.generacion.puertos.entrada.SugerenciaDelParalelo;
 import java.math.BigDecimal;
+import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,16 +37,17 @@ class SugerenciaControlador implements SugerenciaApi {
     @PreAuthorize(LECTURA)
     public ResponseEntity<Sugerencia> consultarSugerencia(
             String periodo, String asignatura, String paralelo) {
-        ec.mdd.generacion.dominio.Sugerencia sugerencia;
+        SugerenciaDelParalelo delParalelo;
         try {
-            sugerencia =
+            delParalelo =
                     consultar.sugerencia(
                             periodo, asignatura, paralelo, AfinidadControlador.carreraPropia());
         } catch (OtraCarrera error) {
             throw new AccessDeniedException("La asignatura-paralelo es de otra carrera", error);
         }
+        ec.mdd.generacion.dominio.Sugerencia sugerencia = delParalelo.sugerencia();
         BigDecimal horasDelParalelo = sugerencia.paralelo().horasSemanales();
-        return ResponseEntity.ok(
+        Sugerencia respuesta =
                 new Sugerencia(
                         sugerencia.periodo(),
                         sugerencia.paralelo().asignatura().codigo(),
@@ -55,9 +58,19 @@ class SugerenciaControlador implements SugerenciaApi {
                         sugerencia.version(),
                         sugerencia.minimoAfinidad(),
                         sugerencia.fueraPorElMinimo(),
-                        sugerencia.candidatos().stream()
-                                .map(candidato -> candidato(candidato, horasDelParalelo))
-                                .toList()));
+                        candidatos(sugerencia.candidatos(), horasDelParalelo),
+                        candidatos(sugerencia.bajoElMinimo(), horasDelParalelo),
+                        delParalelo.distributivoCreado());
+        delParalelo
+                .propuesta()
+                .map(DistributivoControlador::propuesta)
+                .ifPresent(respuesta::setPropuesta);
+        return ResponseEntity.ok(respuesta);
+    }
+
+    private static List<Candidato> candidatos(
+            List<ec.mdd.generacion.dominio.Candidato> candidatos, BigDecimal horasDelParalelo) {
+        return candidatos.stream().map(uno -> candidato(uno, horasDelParalelo)).toList();
     }
 
     private static Candidato candidato(

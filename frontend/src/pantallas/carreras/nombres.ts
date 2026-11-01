@@ -54,7 +54,7 @@ export function jornadasEnTexto(jornadas: readonly Jornada[]): string {
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
-/** Las horas con coma decimal: 4,5. */
+/** Las horas con coma decimal y hasta dos decimales: 4,5 o 4,25 (D-77). */
 export function horas(valor: number): string {
-  return valor.toLocaleString('es-EC', { maximumFractionDigits: 1 });
+  return valor.toLocaleString('es-EC', { maximumFractionDigits: 2 });
 }
