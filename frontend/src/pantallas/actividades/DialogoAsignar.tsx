@@ -1,6 +1,7 @@
 // El diálogo de asignar una actividad (F06-H04, RF-26). Solo ofrece lo que responde el servidor: cada
 // actividad dice si está disponible y por qué no, y qué proyectos se pueden elegir. Las horas se
 // validan aquí y en el servidor (principio XIV).
+import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useRef, useState } from 'react';
@@ -18,6 +19,7 @@ import {
   type ActividadPosible,
   type Componente,
 } from './consultas';
+import { SelectorLargo } from './SelectorLargo';
 
 const CAMPOS = ['horas', 'proyecto'];
 const COMPONENTES = Object.keys(NOMBRE_DEL_COMPONENTE) as Componente[];
@@ -25,6 +27,16 @@ const HORAS = /^\d{1,2}([.,]\d{1,2})?$/;
 const TOPE_DE_HORAS = 40;
 const HORAS_NO_VALIDAS = 'Escribe unas horas mayores que 0 y hasta 40, con hasta dos decimales.';
 const PISTA_DE_HORAS = 'Horas semanales, con hasta dos decimales.';
+
+type ProyectoPosible = ActividadPosible['proyectos'][number];
+
+function textoDeLaActividad(una: ActividadPosible) {
+  return `${literal(una.actividad)} ${una.nombre}`;
+}
+
+function textoDelProyecto(uno: ProyectoPosible) {
+  return `${uno.codigo} · ${uno.nombre}`;
+}
 
 /** Las horas escritas, o nada si no son válidas. */
 function horasEscritas(texto: string) {
@@ -60,7 +72,11 @@ export function DialogoAsignar({
   const avisoDeHoras = useRef<string | null>(null);
   const envio = useEnvio(() => alGuardar(avisoDeHoras.current));
   const actividades = posibles.data?.actividades ?? [];
+  const ordenadas = COMPONENTES.flatMap((componente) =>
+    actividades.filter((una) => una.componente === componente),
+  );
   const elegida: ActividadPosible | undefined = actividades.find((una) => una.actividad === codigo);
+  const proyectoElegido = elegida?.proyectos.find((uno) => uno.codigo === proyecto);
   const nombreDelDocente = docentes.data?.find(
     (uno) => uno.identificacion === docente,
   )?.nombreCompleto;
@@ -123,49 +139,49 @@ export function DialogoAsignar({
           </option>
         ))}
       </TextField>
-      <TextField
-        select
-        label="Actividad"
-        value={codigo}
-        onChange={(evento) => {
-          setCodigo(evento.target.value);
+      <SelectorLargo
+        etiqueta="Actividad"
+        opciones={ordenadas}
+        elegida={elegida ?? null}
+        claveDe={(una) => una.actividad}
+        textoDe={textoDeLaActividad}
+        grupoDe={(una) => NOMBRE_DEL_COMPONENTE[una.componente]}
+        alElegir={(una) => {
+          setCodigo(una?.actividad ?? '');
           setProyecto('');
         }}
         disabled={actividades.length === 0}
         error={elegida?.disponible === false}
-        helperText={elegida?.motivo ?? (docente ? undefined : 'Elige primero el docente.')}
-        slotProps={SELECCION}
-      >
-        <option value="">Elige una</option>
-        {COMPONENTES.map((componente) => (
-          <optgroup key={componente} label={NOMBRE_DEL_COMPONENTE[componente]}>
-            {actividades
-              .filter((una) => una.componente === componente)
-              .map((una) => (
-                <option key={una.actividad} value={una.actividad}>
-                  {`${literal(una.actividad)} ${una.nombre}`}
-                </option>
-              ))}
-          </optgroup>
-        ))}
-      </TextField>
+        ayuda={
+          elegida ? (
+            <>
+              {textoDeLaActividad(elegida)}
+              {elegida.motivo && (
+                <Box component="span" sx={{ display: 'block' }}>
+                  {elegida.motivo}
+                </Box>
+              )}
+            </>
+          ) : docente ? undefined : (
+            'Elige primero el docente.'
+          )
+        }
+      />
       {elegida?.exigeProyecto && elegida.disponible && (
-        <TextField
-          select
-          label="Proyecto"
-          value={proyecto}
-          onChange={(evento) => setProyecto(evento.target.value)}
+        <SelectorLargo
+          etiqueta="Proyecto"
+          opciones={elegida.proyectos}
+          elegida={proyectoElegido ?? null}
+          claveDe={(uno) => uno.codigo}
+          textoDe={textoDelProyecto}
+          alElegir={(uno) => setProyecto(uno?.codigo ?? '')}
           error={Boolean(detalleDe(envio.aviso, 'proyecto'))}
-          helperText={ayuda(envio.aviso, 'proyecto', 'Los proyectos asignables del docente.')}
-          slotProps={SELECCION}
-        >
-          <option value="">Elige uno</option>
-          {elegida.proyectos.map((uno) => (
-            <option key={uno.codigo} value={uno.codigo}>
-              {`${uno.codigo} · ${uno.nombre}`}
-            </option>
-          ))}
-        </TextField>
+          ayuda={
+            proyectoElegido
+              ? textoDelProyecto(proyectoElegido)
+              : ayuda(envio.aviso, 'proyecto', 'Los proyectos asignables del docente.')
+          }
+        />
       )}
       <TextField
         label="Horas semanales"
