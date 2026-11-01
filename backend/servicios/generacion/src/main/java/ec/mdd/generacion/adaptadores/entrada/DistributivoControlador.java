@@ -138,7 +138,8 @@ class DistributivoControlador implements DistributivoApi {
         return ResponseEntity.noContent().build();
     }
 
-    private static Optional<String> carreraDeQuienEscribe() {
+    /** La carrera a la que alcanza quien escribe; vacío si escribe sobre todo (D-64). */
+    static Optional<String> carreraDeQuienEscribe() {
         return AlcanceDeCarrera.propia(
                 autenticacion().getAuthorities().stream()
                         .map(GrantedAuthority::getAuthority)
@@ -146,7 +147,8 @@ class DistributivoControlador implements DistributivoApi {
                 ESCRIBE_LA_PROPUESTA);
     }
 
-    private static Authentication autenticacion() {
+    /** Quien hace la petición. */
+    static Authentication autenticacion() {
         return SecurityContextHolder.getContext().getAuthentication();
     }
 

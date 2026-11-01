@@ -1,5 +1,6 @@
 package ec.mdd.generacion.puertos.salida;
 
+import ec.mdd.generacion.dominio.ActividadNoLectiva;
 import ec.mdd.generacion.dominio.ParcialCarrera;
 import ec.mdd.generacion.dominio.Propuesta;
 import ec.mdd.generacion.dominio.VersionDistributivo;
@@ -26,6 +27,17 @@ public interface RepositorioDistributivos {
 
     /** Guarda la propuesta; reemplaza la de esa asignatura-paralelo. */
     void guardarPropuesta(UUID version, Propuesta propuesta);
+
+    /** Guarda la actividad; reemplaza sus horas si el parcial ya la tiene. */
+    void guardarActividad(UUID version, ActividadNoLectiva actividad);
+
+    /**
+     * Quita una actividad.
+     *
+     * @return si existía
+     */
+    boolean quitarActividad(
+            UUID version, String carrera, String docente, String actividad, String proyecto);
 
     /**
      * Quita una propuesta.

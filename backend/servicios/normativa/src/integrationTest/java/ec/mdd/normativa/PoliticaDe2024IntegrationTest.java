@@ -175,7 +175,8 @@ class PoliticaDe2024IntegrationTest {
                                 "select usuario, (detalle ->> 'numero')::int as numero,"
                                         + " jsonb_array_length(detalle -> 'cambios') as cambios"
                                         + " from normativa.registro_cambio"
-                                        + " where accion = 'VERSION_EDITADA'")
+                                        + " where accion = 'VERSION_EDITADA'"
+                                        + " and detalle::text not like '%actividades%'")
                         .query()
                         .singleRow();
         List<Map<String, Object>> severidades =

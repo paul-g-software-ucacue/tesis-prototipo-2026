@@ -9,8 +9,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ec.mdd.generacion.dominio.ActividadNoLectiva;
 import ec.mdd.generacion.dominio.AsignaturaOfertada;
 import ec.mdd.generacion.dominio.AsignaturaParalelo;
+import ec.mdd.generacion.dominio.Componente;
 import ec.mdd.generacion.dominio.Dedicacion;
 import ec.mdd.generacion.dominio.DocenteActivo;
 import ec.mdd.generacion.dominio.ElementoDeFormacion;
@@ -447,6 +449,45 @@ class ProponerDocenteServicioTest {
                 .isInstanceOf(ParcialNoEditable.class);
 
         verify(distributivos, never()).quitarPropuesta(any(), any(), any());
+    }
+
+    @Test
+    void dadoUnPeriodoCerrado_cuandoSeQuita_entoncesNoBorraNada() {
+        conTodo(version(propuestaDe(AFIN.identificacion())));
+        when(datos.paralelo(PERIODO, ASIGNATURA, "A"))
+                .thenReturn(Optional.of(paralelo(false, true)));
+
+        assertThatThrownBy(() -> servicio.quitar(PERIODO, ASIGNATURA, "A", TODAS, QUIEN))
+                .isInstanceOf(PeriodoCerrado.class);
+
+        verify(distributivos, never()).quitarPropuesta(any(), any(), any());
+    }
+
+    @Test
+    void dadasActividadesDelDocente_cuandoSePropone_entoncesCuentanParaElAviso() {
+        ActividadNoLectiva gestion =
+                new ActividadNoLectiva(
+                        "AGRO",
+                        AFIN.identificacion(),
+                        AFIN.nombre(),
+                        "143-k",
+                        "Eventos",
+                        Componente.GESTION,
+                        null,
+                        null,
+                        new BigDecimal("37.5"),
+                        AHORA,
+                        QUIEN);
+        conTodo(
+                new VersionDistributivo(
+                        VERSION,
+                        1,
+                        EstadoDeVersion.EDITABLE,
+                        List.of(ParcialCarrera.nuevo("TDS")),
+                        List.of(),
+                        List.of(gestion)));
+
+        assertThat(servicio.proponer(solicitud(AFIN, null)).horasSuficientes()).isFalse();
     }
 
     private void conTodo(VersionDistributivo version) {

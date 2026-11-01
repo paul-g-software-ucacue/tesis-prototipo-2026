@@ -5,12 +5,20 @@ import ec.mdd.docentes.adaptadores.entrada.api.DocenteActivo;
 import ec.mdd.docentes.adaptadores.entrada.api.ElementoDeFormacion;
 import ec.mdd.docentes.adaptadores.entrada.api.FormacionDelDocente;
 import ec.mdd.docentes.adaptadores.entrada.api.InternoApi;
+import ec.mdd.docentes.adaptadores.entrada.api.ProyectoDelDocente;
+import ec.mdd.docentes.adaptadores.entrada.api.ProyectosYCargosDelDocente;
 import ec.mdd.docentes.adaptadores.entrada.api.TercerNivelDeFormacion;
+import ec.mdd.docentes.adaptadores.entrada.api.TipoDeCargo;
+import ec.mdd.docentes.adaptadores.entrada.api.TipoDeProyecto;
+import ec.mdd.docentes.dominio.DatoInvalido;
 import ec.mdd.docentes.dominio.Docente;
 import ec.mdd.docentes.dominio.FichaAcademica;
+import ec.mdd.docentes.dominio.Proyecto;
 import ec.mdd.docentes.puertos.entrada.ConsultarDocentesActivos;
 import ec.mdd.docentes.puertos.entrada.ConsultarFormacion;
+import ec.mdd.docentes.puertos.entrada.ConsultarProyectosYCargos;
 import ec.mdd.docentes.puertos.entrada.DocenteNoEncontrado;
+import ec.mdd.docentes.puertos.entrada.ProyectosYCargos;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,10 +35,15 @@ class InternoDocentesControlador implements InternoApi {
 
     private final ConsultarFormacion consultar;
     private final ConsultarDocentesActivos activos;
+    private final ConsultarProyectosYCargos proyectosYCargos;
 
-    InternoDocentesControlador(ConsultarFormacion consultar, ConsultarDocentesActivos activos) {
+    InternoDocentesControlador(
+            ConsultarFormacion consultar,
+            ConsultarDocentesActivos activos,
+            ConsultarProyectosYCargos proyectosYCargos) {
         this.consultar = consultar;
         this.activos = activos;
+        this.proyectosYCargos = proyectosYCargos;
     }
 
     @Override
@@ -46,6 +59,31 @@ class InternoDocentesControlador implements InternoApi {
     public ResponseEntity<List<DocenteActivo>> consultarDocentesActivos() {
         return ResponseEntity.ok(
                 activos.activos().stream().map(InternoDocentesControlador::respuesta).toList());
+    }
+
+    @Override
+    public ResponseEntity<ProyectosYCargosDelDocente> consultarProyectosYCargosDelDocente(
+            String identificacion, String periodo) {
+        try {
+            ProyectosYCargos delDocente = proyectosYCargos.delDocente(identificacion, periodo);
+            return ResponseEntity.ok(
+                    new ProyectosYCargosDelDocente(
+                            delDocente.proyectos().stream()
+                                    .map(InternoDocentesControlador::respuesta)
+                                    .toList(),
+                            delDocente.cargos().stream()
+                                    .map(cargo -> TipoDeCargo.fromValue(cargo.name()))
+                                    .toList()));
+        } catch (DocenteNoEncontrado | DatoInvalido error) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    private static ProyectoDelDocente respuesta(Proyecto proyecto) {
+        return new ProyectoDelDocente(
+                proyecto.codigo(),
+                proyecto.nombre(),
+                TipoDeProyecto.fromValue(proyecto.tipo().name()));
     }
 
     private static DocenteActivo respuesta(Docente docente) {

@@ -30,6 +30,10 @@ public record CambioDeDistributivo(
         /** Propuesta guardada o reemplazada. */
         PROPUESTA_GUARDADA,
         /** Propuesta quitada. */
-        PROPUESTA_QUITADA
+        PROPUESTA_QUITADA,
+        /** Actividad no lectiva guardada o reemplazada. */
+        ACTIVIDAD_GUARDADA,
+        /** Actividad no lectiva quitada. */
+        ACTIVIDAD_QUITADA
     }
 }

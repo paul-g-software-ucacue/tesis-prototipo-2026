@@ -11,6 +11,7 @@ import { Estructura } from './pantallas/estructura/Estructura';
 import { Cargos } from './pantallas/cargos/Cargos';
 import { Docentes } from './pantallas/docentes/Docentes';
 import { Proyectos } from './pantallas/proyectos/Proyectos';
+import { Actividades } from './pantallas/actividades/Actividades';
 import { Oferta } from './pantallas/oferta/Oferta';
 import { Plantillas } from './pantallas/plantillas/Plantillas';
 import { Preparacion } from './pantallas/preparacion/Preparacion';
@@ -81,6 +82,14 @@ export const rutasDeLaSpa: RouteObject[] = [
         element: (
           <RutaConPermiso cualquieraDe={LECTURA_DE_LA_OFERTA}>
             <Oferta />
+          </RutaConPermiso>
+        ),
+      },
+      {
+        path: 'actividades',
+        element: (
+          <RutaConPermiso cualquieraDe={LECTURA_DE_LA_OFERTA}>
+            <Actividades />
           </RutaConPermiso>
         ),
       },

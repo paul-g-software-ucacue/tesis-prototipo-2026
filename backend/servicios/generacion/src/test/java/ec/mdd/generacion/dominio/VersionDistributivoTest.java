@@ -16,6 +16,43 @@ class VersionDistributivoTest {
     private static final UUID ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     @Test
+    void dadaUnaActividad_cuandoSeBusca_entoncesElProyectoEsParteDeLaLlave() {
+        ActividadNoLectiva sinProyecto = actividad("140-b", null);
+        ActividadNoLectiva conProyecto = actividad("141-a", "INV-2025-01");
+        VersionDistributivo version =
+                new VersionDistributivo(
+                        ID,
+                        1,
+                        EstadoDeVersion.EDITABLE,
+                        List.of(ParcialCarrera.nuevo("TDS")),
+                        List.of(),
+                        List.of(sinProyecto, conProyecto));
+
+        assertThat(version.actividadDe("TDS", "0109990010", "140-b", null)).contains(sinProyecto);
+        assertThat(version.actividadDe("TDS", "0109990010", "141-a", "INV-2025-01"))
+                .contains(conProyecto);
+        assertThat(version.actividadDe("TDS", "0109990010", "141-a", "INV-2025-02")).isEmpty();
+        assertThat(version.actividadDe("TDS", "0109990010", "141-a", null)).isEmpty();
+        assertThat(version.actividadDe("CONT", "0109990010", "140-b", null)).isEmpty();
+        assertThat(version.actividadDe("TDS", "0109990020", "140-b", null)).isEmpty();
+    }
+
+    private static ActividadNoLectiva actividad(String codigo, String proyecto) {
+        return new ActividadNoLectiva(
+                "TDS",
+                "0109990010",
+                "PEREZ LUIS",
+                codigo,
+                "Una actividad",
+                Componente.OTRAS_DOCENCIA,
+                proyecto,
+                proyecto == null ? null : "Un proyecto",
+                new BigDecimal("4"),
+                Instant.parse("2026-11-01T15:00:00Z"),
+                "coordinacion.demo");
+    }
+
+    @Test
     void dadasLasCarreras_cuandoNace_entoncesTieneUnParcialEnElaboracionPorCarrera() {
         VersionDistributivo version =
                 VersionDistributivo.primera(ID, List.of("TDS", "CONT", "TDS"));

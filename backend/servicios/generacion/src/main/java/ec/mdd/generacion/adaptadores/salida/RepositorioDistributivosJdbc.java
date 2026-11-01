@@ -1,5 +1,7 @@
 package ec.mdd.generacion.adaptadores.salida;
 
+import ec.mdd.generacion.dominio.ActividadNoLectiva;
+import ec.mdd.generacion.dominio.Componente;
 import ec.mdd.generacion.dominio.EstadoDeVersion;
 import ec.mdd.generacion.dominio.EstadoDelParcial;
 import ec.mdd.generacion.dominio.Justificacion;
@@ -35,6 +37,33 @@ public final class RepositorioDistributivosJdbc implements RepositorioDistributi
             "SELECT asignatura, paralelo, carrera, docente, nombre_docente, justificacion, texto,"
                     + " propuesta_en, propuesta_por FROM generacion.propuesta"
                     + " WHERE version_id = :version ORDER BY asignatura, paralelo";
+
+    private static final String ACTIVIDADES =
+            "SELECT carrera, docente, nombre_docente, actividad, nombre_actividad, componente,"
+                    + " proyecto, nombre_proyecto, horas, asignada_en, asignada_por"
+                    + " FROM generacion.actividad_no_lectiva WHERE version_id = :version"
+                    + " ORDER BY carrera, nombre_docente, actividad";
+
+    private static final String GUARDAR_ACTIVIDAD =
+            "INSERT INTO generacion.actividad_no_lectiva (id, version_id, carrera, docente,"
+                    + " nombre_docente, actividad, nombre_actividad, componente, proyecto,"
+                    + " nombre_proyecto, horas, asignada_en, asignada_por)"
+                    + " VALUES (:id, :version, :carrera, :docente, :nombreDocente, :actividad,"
+                    + " :nombreActividad, :componente, :proyecto, :nombreProyecto, :horas,"
+                    + " :momento, :quien)"
+                    + " ON CONFLICT (version_id, carrera, docente, actividad,"
+                    + " coalesce(proyecto, '')) DO UPDATE SET"
+                    + " nombre_docente = EXCLUDED.nombre_docente,"
+                    + " nombre_actividad = EXCLUDED.nombre_actividad,"
+                    + " componente = EXCLUDED.componente,"
+                    + " nombre_proyecto = EXCLUDED.nombre_proyecto, horas = EXCLUDED.horas,"
+                    + " asignada_en = EXCLUDED.asignada_en,"
+                    + " asignada_por = EXCLUDED.asignada_por";
+
+    private static final String QUITAR_ACTIVIDAD =
+            "DELETE FROM generacion.actividad_no_lectiva WHERE version_id = :version"
+                    + " AND carrera = :carrera AND docente = :docente"
+                    + " AND actividad = :actividad AND coalesce(proyecto, '') = :proyecto";
 
     private static final String CREAR_DISTRIBUTIVO =
             "INSERT INTO generacion.distributivo (id, periodo, creado_en, creado_por)"
@@ -100,8 +129,33 @@ public final class RepositorioDistributivosJdbc implements RepositorioDistributi
                         .param("version", cabecera.id())
                         .query((fila, numero) -> propuesta(fila))
                         .list();
+        List<ActividadNoLectiva> actividades =
+                jdbc.sql(ACTIVIDADES)
+                        .param("version", cabecera.id())
+                        .query((fila, numero) -> actividad(fila))
+                        .list();
         return new VersionDistributivo(
-                cabecera.id(), cabecera.numero(), cabecera.estado(), parciales, propuestas);
+                cabecera.id(),
+                cabecera.numero(),
+                cabecera.estado(),
+                parciales,
+                propuestas,
+                actividades);
+    }
+
+    private static ActividadNoLectiva actividad(ResultSet fila) throws SQLException {
+        return new ActividadNoLectiva(
+                fila.getString("carrera"),
+                fila.getString("docente"),
+                fila.getString("nombre_docente"),
+                fila.getString("actividad"),
+                fila.getString("nombre_actividad"),
+                Componente.valueOf(fila.getString("componente")),
+                fila.getString("proyecto"),
+                fila.getString("nombre_proyecto"),
+                fila.getBigDecimal("horas"),
+                fila.getTimestamp("asignada_en").toInstant(),
+                fila.getString("asignada_por"));
     }
 
     private static Propuesta propuesta(ResultSet fila) throws SQLException {
@@ -171,6 +225,38 @@ public final class RepositorioDistributivosJdbc implements RepositorioDistributi
                         .param("version", version)
                         .param("asignatura", asignatura)
                         .param("paralelo", paralelo)
+                        .update()
+                > 0;
+    }
+
+    @Override
+    public void guardarActividad(UUID version, ActividadNoLectiva actividad) {
+        jdbc.sql(GUARDAR_ACTIVIDAD)
+                .param("id", UUID.randomUUID())
+                .param("version", version)
+                .param("carrera", actividad.carrera())
+                .param("docente", actividad.docente())
+                .param("nombreDocente", actividad.nombreDocente())
+                .param("actividad", actividad.actividad())
+                .param("nombreActividad", actividad.nombreActividad())
+                .param("componente", actividad.componente().name())
+                .param("proyecto", actividad.proyecto())
+                .param("nombreProyecto", actividad.nombreProyecto())
+                .param("horas", actividad.horas())
+                .param("momento", Timestamp.from(actividad.asignadaEn()))
+                .param("quien", actividad.asignadaPor())
+                .update();
+    }
+
+    @Override
+    public boolean quitarActividad(
+            UUID version, String carrera, String docente, String actividad, String proyecto) {
+        return jdbc.sql(QUITAR_ACTIVIDAD)
+                        .param("version", version)
+                        .param("carrera", carrera)
+                        .param("docente", docente)
+                        .param("actividad", actividad)
+                        .param("proyecto", proyecto == null ? "" : proyecto)
                         .update()
                 > 0;
     }

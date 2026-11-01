@@ -104,7 +104,8 @@ public final class ConsultarParcialesServicio implements ConsultarParciales {
             return true;
         }
         BigDecimal disponibles =
-                HorasDelPeriodo.calcular(version.propuestas(), oferta, paralelo)
+                HorasDelPeriodo.calcular(
+                                version.propuestas(), version.actividades(), oferta, paralelo)
                         .getOrDefault(propuesta.docente(), HorasDelDocente.NINGUNA)
                         .disponibles(docente.horasContratadas());
         return disponibles.compareTo(paralelo.horasSemanales()) >= 0;

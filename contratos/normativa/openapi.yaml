@@ -187,6 +187,39 @@ paths:
           $ref: '#/components/responses/NoEncontrada'
         '500':
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+  /interno/normativa/periodos/{periodo}/actividades:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        example: 2025-1
+    get:
+      tags: [Interno]
+      operationId: consultarActividadesDelPeriodo
+      summary: Devuelve el catálogo de actividades de la versión que rige el periodo.
+      description: >-
+        Solo entre procesos, con el token de proceso: lo usa Generación para asignar actividades no
+        lectivas (RF-21, RN-22, ADR-023, D-79). Un periodo sin versión responde 404.
+      responses:
+        '200':
+          description: La versión y sus actividades, en el orden de la norma.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActividadesDelPeriodo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrada'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
   /api/normativa/periodos/{periodo}:
     parameters:
       - name: periodo
@@ -560,6 +593,44 @@ components:
         minimoAfinidad:
           description: El puntaje desde el cual se sugiere un docente (RN-19).
           type: number
+    ActividadesDelPeriodo:
+      type: object
+      required: [periodo, version, actividades]
+      properties:
+        periodo:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        version:
+          type: integer
+          minimum: 1
+        actividades:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActividadDelCatalogo'
+    ActividadDelCatalogo:
+      description: Una actividad de los arts. 140 a 143 del RCE y lo que exige (RN-22, RN-25, D-79).
+      type: object
+      required: [codigo, nombre, componente, tiposDeProyecto, cargos]
+      properties:
+        codigo:
+          description: Artículo y literal.
+          type: string
+          pattern: '^14[0-3]-[a-p]$'
+        nombre:
+          description: El texto del literal.
+          type: string
+        componente:
+          type: string
+          enum: [OTRAS_DOCENCIA, INVESTIGACION, VINCULACION, GESTION]
+        tiposDeProyecto:
+          description: Los tipos de proyecto que sirven; vacía si no exige un proyecto.
+          type: array
+          items:
+            type: string
+        cargos:
+          description: Los cargos que sirven; vacía si no exige un cargo.
+          type: array
+          items:
+            type: string
     PesosDeAfinidad:
       description: Los puntos que suma cada título, experiencia o curso relacionado (RN-24).
       type: object

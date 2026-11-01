@@ -8,6 +8,7 @@
 # Desde F06-H03: el distributivo del periodo, con su versión 1 y sus parciales, y las propuestas de
 # docentes, con su justificación (RF-24, RF-56, D-19, RNF-EQU-01). Crea quien escribe el distributivo;
 # propone quien escribe la oferta y la propuesta, sobre lo propio (D-64).
+# Desde F06-H04: las actividades no lectivas, con el mismo permiso de proponer (RF-26, RN-22, RN-25).
 openapi: 3.0.3
 info:
   title: MDD · generacion
@@ -27,6 +28,8 @@ tags:
     description: Los docentes sugeridos para una asignatura-paralelo (RF-25, RN-19).
   - name: Distributivo
     description: El distributivo del periodo, sus parciales y las propuestas (RF-24, RF-56, D-19).
+  - name: Actividades
+    description: Las actividades no lectivas de cada parcial (RF-26, RN-22, RN-25).
 paths:
   /api/generacion/sesion:
     get:
@@ -410,7 +413,231 @@ paths:
               schema:
                 $ref: '../comun/errores.yaml#/components/schemas/Error'
         '409':
-          description: El parcial ya no admite cambios (GENERACION_PARCIAL_NO_EDITABLE).
+          description: >-
+            Periodo cerrado (GENERACION_PERIODO_CERRADO) o parcial que ya no admite cambios
+            (GENERACION_PARCIAL_NO_EDITABLE).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/generacion/periodos/{periodo}/actividades:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2026-I
+    get:
+      tags: [Actividades]
+      operationId: consultarActividades
+      summary: Devuelve las actividades no lectivas del periodo, por carrera y docente.
+      description: >-
+        Con la suma por componente de cada docente. Quien solo tiene «lo propio» recibe su carrera,
+        aunque aún no tenga parcial; sin carrera, 403 COMUN_CARRERA_SIN_INDICAR (D-64). Sin
+        distributivo, creado es falso.
+      x-mdd-permiso: [OFERTA:LECTURA, DISTRIBUTIVO:LECTURA, CATALOGOS:LECTURA]
+      responses:
+        '200':
+          description: Las actividades.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActividadesDelPeriodo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/generacion/periodos/{periodo}/docentes/{docente}/actividades-posibles:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2026-I
+      - name: docente
+        in: path
+        required: true
+        description: Número de identificación del docente, el que usa Docentes.
+        schema:
+          type: string
+          pattern: '^[0-9A-Z]{1,13}$'
+        example: '0109990010'
+    get:
+      tags: [Actividades]
+      operationId: consultarActividadesPosibles
+      summary: Devuelve las actividades del catálogo y si se le pueden asignar al docente.
+      description: >-
+        Cada una dice si está disponible y por qué no, con los proyectos que se pueden elegir. La
+        regla está en el servidor: la pantalla solo muestra esto (RN-22, RN-25).
+      x-mdd-permiso: OFERTA:ESCRITURA
+      responses:
+        '200':
+          description: Las actividades posibles.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActividadesPosibles'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '409':
+          description: >-
+            Docente no activo (GENERACION_DOCENTE_NO_ACTIVO) o periodo sin abrir (GENERACION_PERIODO_SIN_ABRIR).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/generacion/periodos/{periodo}/parciales/{carrera}/docentes/{docente}/actividades/{actividad}:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2026-I
+      - name: carrera
+        in: path
+        required: true
+        description: Código de la carrera dueña del parcial.
+        schema:
+          type: string
+          pattern: '^[0-9A-Z_-]{1,20}$'
+        example: 550613A01-P-0301
+      - name: docente
+        in: path
+        required: true
+        description: Número de identificación del docente, el que usa Docentes.
+        schema:
+          type: string
+          pattern: '^[0-9A-Z]{1,13}$'
+        example: '0109990010'
+      - name: actividad
+        in: path
+        required: true
+        description: Código de la actividad del catálogo, artículo y literal.
+        schema:
+          type: string
+          pattern: '^14[0-3]-[a-p]$'
+        example: 140-b
+    put:
+      tags: [Actividades]
+      operationId: asignarActividad
+      summary: Asigna una actividad al docente en el parcial; reemplaza las horas si ya la tiene.
+      description: >-
+        El tope de 40 h es de validación: las reglas de horas llegan con F07-H02. Sin horas
+        suficientes se guarda igual, con horasSuficientes en falso (D-78).
+      x-mdd-permiso: OFERTA:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActividadNueva'
+      responses:
+        '200':
+          description: La actividad guardada, con el aviso de las horas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActividadGuardada'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: >-
+            La actividad no está en el catálogo (GENERACION_ACTIVIDAD_FUERA_DEL_CATALOGO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '409':
+          description: >-
+            Periodo cerrado (GENERACION_PERIODO_CERRADO), sin abrir (GENERACION_PERIODO_SIN_ABRIR), sin distributivo (GENERACION_SIN_DISTRIBUTIVO), docente no activo (GENERACION_DOCENTE_NO_ACTIVO), parcial que no admite cambios (GENERACION_PARCIAL_NO_EDITABLE), proyecto no válido (GENERACION_PROYECTO_NO_VALIDO) o cargo no vigente (GENERACION_CARGO_NO_VIGENTE).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+    delete:
+      tags: [Actividades]
+      operationId: quitarActividad
+      summary: Quita la actividad del docente en el parcial.
+      x-mdd-permiso: OFERTA:ESCRITURA
+      parameters:
+        - name: proyecto
+          in: query
+          required: false
+          description: El proyecto de la actividad, si tiene.
+          schema:
+            type: string
+            pattern: '^[0-9A-Z-]{1,30}$'
+          example: INV-2025-01
+      responses:
+        '204':
+          description: Actividad quitada.
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: >-
+            No tiene esa actividad (GENERACION_ACTIVIDAD_NO_ENCONTRADA).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '409':
+          description: >-
+            Periodo cerrado (GENERACION_PERIODO_CERRADO) o parcial que no admite cambios (GENERACION_PARCIAL_NO_EDITABLE).
           content:
             application/json:
               schema:
@@ -603,6 +830,137 @@ components:
     TipoDeJustificacion:
       type: string
       enum: [AFINIDAD, DISPONIBILIDAD, EXCEPCION]
+    ActividadesDelPeriodo:
+      type: object
+      required: [creado, carreras]
+      properties:
+        creado:
+          description: Si el periodo ya tiene distributivo.
+          type: boolean
+        carreras:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActividadesDeCarrera'
+    ActividadesDeCarrera:
+      type: object
+      required: [carrera, docentes]
+      properties:
+        carrera:
+          type: string
+        docentes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActividadesDelDocente'
+    ActividadesDelDocente:
+      type: object
+      required: [docente, nombreDocente, actividades, horasPorComponente]
+      properties:
+        docente:
+          type: string
+        nombreDocente:
+          type: string
+        actividades:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActividadAsignada'
+        horasPorComponente:
+          $ref: '#/components/schemas/HorasPorComponente'
+    HorasPorComponente:
+      description: La suma de las actividades del docente en este parcial, por componente.
+      type: object
+      required: [otrasDocencia, investigacion, vinculacion, gestion]
+      properties:
+        otrasDocencia:
+          type: number
+        investigacion:
+          type: number
+        vinculacion:
+          type: number
+        gestion:
+          type: number
+    ActividadAsignada:
+      type: object
+      required: [actividad, nombre, componente, horas]
+      properties:
+        actividad:
+          description: Código de la actividad, artículo y literal.
+          type: string
+        nombre:
+          type: string
+        componente:
+          $ref: '#/components/schemas/Componente'
+        horas:
+          type: number
+        proyecto:
+          type: string
+        nombreProyecto:
+          type: string
+    ActividadGuardada:
+      type: object
+      required: [actividad, horasSuficientes]
+      properties:
+        actividad:
+          $ref: '#/components/schemas/ActividadAsignada'
+        horasSuficientes:
+          description: Si al docente le alcanzan las horas (D-78).
+          type: boolean
+    ActividadNueva:
+      type: object
+      required: [horas]
+      properties:
+        horas:
+          description: Horas semanales, con hasta dos decimales (D-77).
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 40
+        proyecto:
+          description: Obligatorio en las actividades que exigen un proyecto (RN-25).
+          type: string
+          pattern: '^[0-9A-Z-]{1,30}$'
+    ActividadesPosibles:
+      type: object
+      required: [docente, actividades]
+      properties:
+        docente:
+          type: string
+        actividades:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActividadPosible'
+    ActividadPosible:
+      type: object
+      required: [actividad, nombre, componente, disponible, exigeProyecto, proyectos]
+      properties:
+        actividad:
+          type: string
+        nombre:
+          type: string
+        componente:
+          $ref: '#/components/schemas/Componente'
+        disponible:
+          type: boolean
+        exigeProyecto:
+          type: boolean
+        proyectos:
+          description: Los proyectos del docente que se pueden elegir.
+          type: array
+          items:
+            $ref: '#/components/schemas/ProyectoPosible'
+        motivo:
+          description: Por qué no está disponible.
+          type: string
+    ProyectoPosible:
+      type: object
+      required: [codigo, nombre]
+      properties:
+        codigo:
+          type: string
+        nombre:
+          type: string
+    Componente:
+      type: string
+      enum: [OTRAS_DOCENCIA, INVESTIGACION, VINCULACION, GESTION]
     Candidato:
       description: Un docente activo de la sugerencia, con su puntaje y sus horas.
       type: object

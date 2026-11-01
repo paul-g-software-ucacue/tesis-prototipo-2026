@@ -63,6 +63,7 @@ public final class ConsultarSugerenciaServicio implements ConsultarSugerencia {
                                 version ->
                                         HorasDelPeriodo.calcular(
                                                 version.propuestas(),
+                                                version.actividades(),
                                                 datos.ofertaDelPeriodo(periodo).orElse(List.of()),
                                                 uno))
                         .orElse(Map.of());

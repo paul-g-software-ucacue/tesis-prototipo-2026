@@ -1,9 +1,13 @@
 package ec.mdd.normativa.adaptadores.entrada;
 
+import ec.mdd.normativa.adaptadores.entrada.api.ActividadesDelPeriodo;
 import ec.mdd.normativa.adaptadores.entrada.api.InternoApi;
 import ec.mdd.normativa.adaptadores.entrada.api.PesosDeAfinidad;
 import ec.mdd.normativa.adaptadores.entrada.api.PesosDelPeriodo;
+import ec.mdd.normativa.dominio.ActividadDelCatalogo;
 import ec.mdd.normativa.dominio.PesosAfinidad;
+import ec.mdd.normativa.puertos.entrada.ActividadesDeLaVersion;
+import ec.mdd.normativa.puertos.entrada.ConsultarActividadesDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarPesosDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.PeriodoSinVersion;
 import ec.mdd.normativa.puertos.entrada.PesosDeLaVersion;
@@ -20,9 +24,12 @@ import org.springframework.web.server.ResponseStatusException;
 class InternoNormativaControlador implements InternoApi {
 
     private final ConsultarPesosDelPeriodo consultar;
+    private final ConsultarActividadesDelPeriodo actividades;
 
-    InternoNormativaControlador(ConsultarPesosDelPeriodo consultar) {
+    InternoNormativaControlador(
+            ConsultarPesosDelPeriodo consultar, ConsultarActividadesDelPeriodo actividades) {
         this.consultar = consultar;
+        this.actividades = actividades;
     }
 
     @Override
@@ -38,6 +45,33 @@ class InternoNormativaControlador implements InternoApi {
         } catch (PeriodoSinVersion error) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
+    }
+
+    @Override
+    public ResponseEntity<ActividadesDelPeriodo> consultarActividadesDelPeriodo(String periodo) {
+        try {
+            ActividadesDeLaVersion catalogo = actividades.actividades(periodo);
+            return ResponseEntity.ok(
+                    new ActividadesDelPeriodo(
+                            periodo,
+                            catalogo.version(),
+                            catalogo.actividades().stream()
+                                    .map(InternoNormativaControlador::respuesta)
+                                    .toList()));
+        } catch (PeriodoSinVersion error) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    private static ec.mdd.normativa.adaptadores.entrada.api.ActividadDelCatalogo respuesta(
+            ActividadDelCatalogo actividad) {
+        return new ec.mdd.normativa.adaptadores.entrada.api.ActividadDelCatalogo(
+                actividad.codigo(),
+                actividad.nombre(),
+                ec.mdd.normativa.adaptadores.entrada.api.ActividadDelCatalogo.ComponenteEnum
+                        .fromValue(actividad.componente().name()),
+                actividad.tiposDeProyecto(),
+                actividad.cargos());
     }
 
     private static PesosDeAfinidad respuesta(PesosAfinidad pesos) {

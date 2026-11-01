@@ -4,8 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
+import ec.mdd.normativa.dominio.ActividadDelCatalogo;
+import ec.mdd.normativa.dominio.Componente;
 import ec.mdd.normativa.dominio.MinimoAfinidad;
 import ec.mdd.normativa.dominio.PesosAfinidad;
+import ec.mdd.normativa.puertos.entrada.ActividadesDeLaVersion;
+import ec.mdd.normativa.puertos.entrada.ConsultarActividadesDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarPesosDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.PeriodoSinVersion;
 import ec.mdd.normativa.puertos.entrada.PesosDeLaVersion;
@@ -13,6 +17,7 @@ import ec.mdd.plataforma.errores.ErroresAutoConfiguracion;
 import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
 import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
 import java.math.BigDecimal;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -36,6 +41,7 @@ import org.springframework.test.web.servlet.MvcResult;
 class InternoNormativaContratoTest {
 
     private static final String RUTA = "/interno/normativa/periodos/%s/pesos-de-afinidad";
+    private static final String RUTA_ACTIVIDADES = "/interno/normativa/periodos/%s/actividades";
 
     private final ValidadorDeContrato contrato = ValidadorDeContrato.para("normativa");
 
@@ -72,6 +78,48 @@ class InternoNormativaContratoTest {
         contrato.validar(resultado);
     }
 
+    @Test
+    void dadoUnProceso_cuandoConsultaLasActividades_entonces200ConLoQueExigeCadaUna()
+            throws Exception {
+        MvcResult resultado = pedirActividades("2026-I", deProceso());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString())
+                .isEqualTo(
+                        "{\"periodo\":\"2026-I\",\"version\":2,\"actividades\":["
+                                + "{\"codigo\":\"140-b\",\"nombre\":\"Planificar\","
+                                + "\"componente\":\"OTRAS_DOCENCIA\",\"tiposDeProyecto\":[],"
+                                + "\"cargos\":[]},"
+                                + "{\"codigo\":\"141-a\",\"nombre\":\"Investigar\","
+                                + "\"componente\":\"INVESTIGACION\","
+                                + "\"tiposDeProyecto\":[\"INVESTIGACION\"],\"cargos\":[]},"
+                                + "{\"codigo\":\"143-d\",\"nombre\":\"Coordinar\","
+                                + "\"componente\":\"GESTION\",\"tiposDeProyecto\":[],"
+                                + "\"cargos\":[\"COORDINADOR_CARRERA\"]}]}");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnPeriodoSinVersion_cuandoConsultaLasActividades_entonces404() throws Exception {
+        MvcResult resultado = pedirActividades("2026-II", deProceso());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(404);
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnTokenDeUsuario_cuandoConsultaLasActividades_entonces403() throws Exception {
+        MvcResult resultado = pedirActividades("2026-I", jwt());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(403);
+        contrato.validar(resultado);
+    }
+
+    private MvcResult pedirActividades(String periodo, JwtRequestPostProcessor token)
+            throws Exception {
+        return mvc.perform(get(RUTA_ACTIVIDADES.formatted(periodo)).with(token)).andReturn();
+    }
+
     private MvcResult pedir(String periodo, JwtRequestPostProcessor token) throws Exception {
         return mvc.perform(get(RUTA.formatted(periodo)).with(token)).andReturn();
     }
@@ -83,6 +131,36 @@ class InternoNormativaContratoTest {
 
     @TestConfiguration(proxyBeanMethods = false)
     static class Dobles {
+
+        @Bean
+        ConsultarActividadesDelPeriodo consultarActividadesDelPeriodo() {
+            return periodo -> {
+                if (!"2026-I".equals(periodo)) {
+                    throw new PeriodoSinVersion(periodo);
+                }
+                return new ActividadesDeLaVersion(
+                        2,
+                        List.of(
+                                new ActividadDelCatalogo(
+                                        "140-b",
+                                        "Planificar",
+                                        Componente.OTRAS_DOCENCIA,
+                                        List.of(),
+                                        List.of()),
+                                new ActividadDelCatalogo(
+                                        "141-a",
+                                        "Investigar",
+                                        Componente.INVESTIGACION,
+                                        List.of("INVESTIGACION"),
+                                        List.of()),
+                                new ActividadDelCatalogo(
+                                        "143-d",
+                                        "Coordinar",
+                                        Componente.GESTION,
+                                        List.of(),
+                                        List.of("COORDINADOR_CARRERA"))));
+            };
+        }
 
         @Bean
         ConsultarPesosDelPeriodo consultarPesosDelPeriodo() {

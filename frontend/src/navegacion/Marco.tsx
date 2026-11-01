@@ -50,6 +50,7 @@ const ENTRADAS: Entrada[] = [
   { ruta: '/estructura', texto: 'Estructura orgánica', permiso: LECTURA_DE_LA_ESTRUCTURA },
   { ruta: '/carreras', texto: 'Carreras y mallas', permiso: LECTURA_DE_LA_ESTRUCTURA },
   { ruta: '/oferta', texto: 'Oferta del periodo', permiso: LECTURA_DE_LA_OFERTA },
+  { ruta: '/actividades', texto: 'Actividades no lectivas', permiso: LECTURA_DE_LA_OFERTA },
   { ruta: '/docentes', texto: 'Docentes', permiso: LECTURA_DE_LOS_DOCENTES },
   { ruta: '/cargos', texto: 'Cargos', permiso: LECTURA_DE_LOS_DOCENTES },
   { ruta: '/proyectos', texto: 'Proyectos', permiso: LECTURA_DE_LOS_DOCENTES },

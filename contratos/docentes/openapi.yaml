@@ -176,6 +176,41 @@ paths:
           $ref: '#/components/responses/NoEncontrado'
         '500':
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+  /interno/docentes/{identificacion}/proyectos-y-cargos:
+    parameters:
+      - $ref: '#/components/parameters/Identificacion'
+      - name: periodo
+        in: query
+        required: true
+        description: Código de un periodo de Académico.
+        schema:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        example: 2026-I
+    get:
+      tags: [Interno]
+      operationId: consultarProyectosYCargosDelDocente
+      summary: Devuelve los proyectos asignables del periodo en los que participa y sus cargos vigentes.
+      description: >-
+        Solo entre procesos, con el token de proceso: lo usa Generación para asignar actividades no
+        lectivas (RN-25, ADR-023). No lleva datos de contacto ni de contrato (principio IX). Un
+        docente o un periodo que no existen responden 404.
+      responses:
+        '200':
+          description: Sus proyectos y sus cargos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProyectosYCargosDelDocente'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
   /api/docentes/docentes/{identificacion}:
     parameters:
       - $ref: '#/components/parameters/Identificacion'
@@ -745,6 +780,29 @@ components:
           exclusiveMinimum: true
           maximum: 60
           example: 3
+    ProyectosYCargosDelDocente:
+      description: Lo que Generación necesita para asignar una actividad (RN-25, principio IX).
+      type: object
+      required: [proyectos, cargos]
+      properties:
+        proyectos:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProyectoDelDocente'
+        cargos:
+          type: array
+          items:
+            $ref: '#/components/schemas/TipoDeCargo'
+    ProyectoDelDocente:
+      type: object
+      required: [codigo, nombre, tipo]
+      properties:
+        codigo:
+          $ref: '#/components/schemas/CodigoDeProyecto'
+        nombre:
+          type: string
+        tipo:
+          $ref: '#/components/schemas/TipoDeProyecto'
     DocenteActivo:
       description: Lo que Generación necesita de un docente activo (principio IX).
       type: object

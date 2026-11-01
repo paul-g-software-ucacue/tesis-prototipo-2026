@@ -1,6 +1,10 @@
 package ec.mdd.generacion.adaptadores.entrada;
 
+import ec.mdd.generacion.dominio.CargoNoVigente;
 import ec.mdd.generacion.dominio.ParcialNoEditable;
+import ec.mdd.generacion.dominio.ProyectoNoValido;
+import ec.mdd.generacion.puertos.entrada.ActividadFueraDelCatalogo;
+import ec.mdd.generacion.puertos.entrada.ActividadNoEncontrada;
 import ec.mdd.generacion.puertos.entrada.DistributivoNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.DistributivoRepetido;
 import ec.mdd.generacion.puertos.entrada.DocenteNoActivo;
@@ -105,6 +109,34 @@ class ErroresGeneracion implements CatalogoDeErrores {
                         404,
                         "Sin propuesta",
                         "Esta asignatura-paralelo no tiene una propuesta."),
+                EntradaCatalogo.de(
+                        ActividadFueraDelCatalogo.class,
+                        "GENERACION_ACTIVIDAD_FUERA_DEL_CATALOGO",
+                        404,
+                        "Actividad fuera del catálogo",
+                        "Esa actividad no está en el catálogo de la normativa del periodo. Elige"
+                                + " otra."),
+                EntradaCatalogo.de(
+                        ProyectoNoValido.class,
+                        "GENERACION_PROYECTO_NO_VALIDO",
+                        409,
+                        "Proyecto no válido",
+                        "Esa actividad necesita un proyecto aprobado del docente, del tipo que"
+                                + " corresponde y asignable en el periodo. Revisa el proyecto"
+                                + " elegido."),
+                EntradaCatalogo.de(
+                        CargoNoVigente.class,
+                        "GENERACION_CARGO_NO_VIGENTE",
+                        409,
+                        "Cargo no vigente",
+                        "El docente no tiene vigente el cargo que exige esa actividad. Elige otra"
+                                + " o revisa sus cargos."),
+                EntradaCatalogo.de(
+                        ActividadNoEncontrada.class,
+                        "GENERACION_ACTIVIDAD_NO_ENCONTRADA",
+                        404,
+                        "Sin actividad",
+                        "Ese docente no tiene esa actividad en este parcial."),
                 EntradaCatalogo.de(
                         DocenteNoEncontrado.class,
                         "GENERACION_DOCENTE_NO_ENCONTRADO",

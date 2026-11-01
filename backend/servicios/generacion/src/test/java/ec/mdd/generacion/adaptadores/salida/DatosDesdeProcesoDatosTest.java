@@ -3,14 +3,18 @@ package ec.mdd.generacion.adaptadores.salida;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ec.mdd.generacion.dominio.ActividadDelCatalogo;
 import ec.mdd.generacion.dominio.AsignaturaOfertada;
 import ec.mdd.generacion.dominio.AsignaturaParalelo;
+import ec.mdd.generacion.dominio.Componente;
 import ec.mdd.generacion.dominio.Dedicacion;
 import ec.mdd.generacion.dominio.DocenteActivo;
 import ec.mdd.generacion.dominio.ElementoDeFormacion;
 import ec.mdd.generacion.dominio.FormacionDelDocente;
 import ec.mdd.generacion.dominio.PeriodoListo;
 import ec.mdd.generacion.dominio.PesosDelPeriodo;
+import ec.mdd.generacion.dominio.ProyectoDelDocente;
+import ec.mdd.generacion.dominio.ProyectosYCargosDelDocente;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
 import ec.mdd.plataforma.eventos.ProveedorDeTokenDeProceso;
@@ -38,6 +42,9 @@ class DatosDesdeProcesoDatosTest {
     private static final String RUTA_PARALELO =
             "/interno/academico/periodos/2026-I/oferta/POO-204/A_NOCTURNA";
     private static final String RUTA_ACTIVOS = "/interno/docentes/activos";
+    private static final String RUTA_ACTIVIDADES = "/interno/normativa/periodos/2026-I/actividades";
+    private static final String RUTA_PROYECTOS_Y_CARGOS =
+            "/interno/docentes/0109990010/proyectos-y-cargos";
     private static final String RUTA_PREPARACION = "/interno/cargas/periodos/2026-I/preparacion";
     private static final String RUTA_OFERTA_COMPLETA = "/interno/academico/periodos/2026-I/oferta";
 
@@ -259,6 +266,55 @@ class DatosDesdeProcesoDatosTest {
 
         assertThat(datos.paralelo(PERIODO, "POO-204", "A_NOCTURNA").orElseThrow().periodoCerrado())
                 .isTrue();
+    }
+
+    @Test
+    void dadoElCatalogo_cuandoSePide_entoncesLoPasaASusTipos() {
+        receptor.responderConsulta(
+                RUTA_ACTIVIDADES,
+                200,
+                "{\"periodo\":\"2026-I\",\"version\":2,\"actividades\":["
+                        + "{\"codigo\":\"141-a\",\"nombre\":\"Investigar\","
+                        + "\"componente\":\"INVESTIGACION\","
+                        + "\"tiposDeProyecto\":[\"INVESTIGACION\"],\"cargos\":[]}]}");
+
+        assertThat(datos.catalogo(PERIODO))
+                .contains(
+                        List.of(
+                                new ActividadDelCatalogo(
+                                        "141-a",
+                                        "Investigar",
+                                        Componente.INVESTIGACION,
+                                        List.of("INVESTIGACION"),
+                                        List.of())));
+    }
+
+    @Test
+    void dadoUnPeriodoSinVersion_cuandoSePideElCatalogo_entoncesVacio() {
+        assertThat(datos.catalogo(PERIODO)).isEmpty();
+    }
+
+    @Test
+    void dadosLosProyectosYCargos_cuandoSePiden_entoncesLaConsultaLlevaElPeriodo() {
+        receptor.responderConsulta(
+                RUTA_PROYECTOS_Y_CARGOS,
+                200,
+                "{\"proyectos\":[{\"codigo\":\"INV-2025-01\",\"nombre\":\"Monitoreo\","
+                        + "\"tipo\":\"INVESTIGACION\"}],\"cargos\":[\"RECTOR\"]}");
+
+        assertThat(datos.proyectosYCargos(DOCENTE, PERIODO))
+                .contains(
+                        new ProyectosYCargosDelDocente(
+                                List.of(
+                                        new ProyectoDelDocente(
+                                                "INV-2025-01", "Monitoreo", "INVESTIGACION")),
+                                List.of("RECTOR")));
+        assertThat(receptor.direccionesConsultadas().getLast()).endsWith("?periodo=2026-I");
+    }
+
+    @Test
+    void dadoUnDocenteQueDocentesNoTiene_cuandoSePidenSusProyectos_entoncesVacio() {
+        assertThat(datos.proyectosYCargos(DOCENTE, PERIODO)).isEmpty();
     }
 
     private static String paralelo(String estado) {
