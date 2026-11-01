@@ -152,6 +152,7 @@ describe('Docentes', () => {
     }
   });
 
+  // Llena unos 20 campos con user-event: con cobertura y la suite en paralelo pasa de los 15 s.
   it('Talento Humano registra un docente: la categoría sigue al tipo de personal y dice qué falta', async () => {
     sesionCon(simulada, 'datos.demo', TALENTO_HUMANO);
     simulada.responder('POST', LISTA, json(201, PERALTA));
@@ -227,7 +228,7 @@ describe('Docentes', () => {
         asignaturasAfines: ['DS-P-II-POO-204'],
       },
     });
-  });
+  }, 30_000);
 
   it('cada campo admite solo lo suyo y, al registrar, marca de una vez lo que está mal sin enviar', async () => {
     sesionCon(simulada, 'datos.demo', TALENTO_HUMANO);

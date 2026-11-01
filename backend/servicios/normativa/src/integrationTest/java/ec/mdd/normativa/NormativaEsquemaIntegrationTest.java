@@ -153,6 +153,7 @@ class NormativaEsquemaIntegrationTest {
                                             "select (detalle ->> 'numero')::int from"
                                                     + " normativa.registro_cambio"
                                                     + " where accion = 'VERSION_EDITADA'"
+                                                    + " and detalle::text not like '%actividades%'"
                                                     + " order by 1")
                                     .query(Integer.class)
                                     .list())

@@ -88,6 +88,16 @@ public final class RepositorioVersionesJdbc implements RepositorioVersiones {
             "INSERT INTO normativa.parametro_regla (version_id, regla, nombre, valor)"
                     + " VALUES (:version, :regla, :nombre, :valor)";
 
+    // Una versión nueva hereda el catálogo de la anterior: es fijo en el prototipo (D-79).
+    private static final String COPIAR_CATALOGO =
+            "INSERT INTO normativa.actividad_catalogo (version_id, codigo, orden, componente,"
+                    + " nombre, tipos_de_proyecto, cargos)"
+                    + " SELECT :version, a.codigo, a.orden, a.componente, a.nombre,"
+                    + " a.tipos_de_proyecto, a.cargos FROM normativa.actividad_catalogo a"
+                    + " JOIN normativa.version_normativa v ON v.id = a.version_id"
+                    + " WHERE v.numero = (SELECT max(numero) FROM normativa.version_normativa"
+                    + " WHERE numero < :numero)";
+
     private static final String INSERTAR_ASIGNACION =
             "INSERT INTO normativa.asignacion_normativa"
                     + " (version_id, periodo, asociada_en, asociada_por)"
@@ -196,6 +206,10 @@ public final class RepositorioVersionesJdbc implements RepositorioVersiones {
                     .param("tipo", version.tipoIst().name())
                     .param("creada", Timestamp.from(momento))
                     .param("copiada", version.copiadaDe())
+                    .update();
+            jdbc.sql(COPIAR_CATALOGO)
+                    .param("version", id)
+                    .param("numero", version.numero())
                     .update();
         }
         insertarFilas(id, version.tabla().filas());

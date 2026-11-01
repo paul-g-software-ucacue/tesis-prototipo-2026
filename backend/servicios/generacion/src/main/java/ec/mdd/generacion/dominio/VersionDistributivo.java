@@ -14,13 +14,15 @@ import java.util.UUID;
  * @param estado su estado
  * @param parciales un parcial por carrera
  * @param propuestas una por asignatura-paralelo
+ * @param actividades las actividades no lectivas de sus parciales
  */
 public record VersionDistributivo(
         UUID id,
         int numero,
         EstadoDeVersion estado,
         List<ParcialCarrera> parciales,
-        List<Propuesta> propuestas) {
+        List<Propuesta> propuestas,
+        List<ActividadNoLectiva> actividades) {
 
     /** Exige los datos y copia las listas. */
     public VersionDistributivo {
@@ -28,6 +30,17 @@ public record VersionDistributivo(
         Objects.requireNonNull(estado, "estado");
         parciales = List.copyOf(parciales);
         propuestas = List.copyOf(propuestas);
+        actividades = List.copyOf(actividades);
+    }
+
+    /** Una versión sin actividades no lectivas. */
+    public VersionDistributivo(
+            UUID id,
+            int numero,
+            EstadoDeVersion estado,
+            List<ParcialCarrera> parciales,
+            List<Propuesta> propuestas) {
+        this(id, numero, estado, parciales, propuestas, List.of());
     }
 
     /** La versión 1, editable, con un parcial en elaboración por carrera. */
@@ -43,6 +56,14 @@ public record VersionDistributivo(
     /** El parcial de esa carrera, si ya existe. */
     public Optional<ParcialCarrera> parcialDe(String carrera) {
         return parciales.stream().filter(uno -> uno.carrera().equals(carrera)).findFirst();
+    }
+
+    /** Esa actividad del parcial, si la tiene; el proyecto es parte de la llave. */
+    public Optional<ActividadNoLectiva> actividadDe(
+            String carrera, String docente, String actividad, String proyecto) {
+        return actividades.stream()
+                .filter(una -> una.esDe(carrera, docente, actividad, proyecto))
+                .findFirst();
     }
 
     /** La propuesta de esa asignatura-paralelo, si tiene. */

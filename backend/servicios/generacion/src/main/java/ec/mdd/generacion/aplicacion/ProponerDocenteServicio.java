@@ -95,7 +95,7 @@ public final class ProponerDocenteServicio implements ProponerDocente {
                         puntaje, pesos.minimoAfinidad(), uno.troncoComun(), solicitud.texto());
         List<AsignaturaParalelo> oferta = datos.ofertaDelPeriodo(periodo).orElse(List.of());
         HorasDelDocente horas =
-                HorasDelPeriodo.calcular(version.propuestas(), oferta, uno)
+                HorasDelPeriodo.calcular(version.propuestas(), version.actividades(), oferta, uno)
                         .getOrDefault(docente.identificacion(), HorasDelDocente.NINGUNA);
         Instant ahora = reloj.instant();
         Propuesta propuesta =
@@ -135,6 +135,9 @@ public final class ProponerDocenteServicio implements ProponerDocente {
             Optional<String> carrera,
             String quien) {
         AsignaturaParalelo uno = paraleloDeSuCarrera(periodo, asignatura, paralelo, carrera);
+        if (uno.periodoCerrado()) {
+            throw new PeriodoCerrado();
+        }
         VersionDistributivo version =
                 distributivos.vigenteDe(periodo).orElseThrow(PropuestaNoEncontrada::new);
         version.exigirEditable(uno.carrera());

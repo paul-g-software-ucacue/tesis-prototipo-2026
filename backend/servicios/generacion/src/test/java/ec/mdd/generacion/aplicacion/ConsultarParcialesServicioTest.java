@@ -8,8 +8,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ec.mdd.generacion.dominio.ActividadNoLectiva;
 import ec.mdd.generacion.dominio.AsignaturaOfertada;
 import ec.mdd.generacion.dominio.AsignaturaParalelo;
+import ec.mdd.generacion.dominio.Componente;
 import ec.mdd.generacion.dominio.Dedicacion;
 import ec.mdd.generacion.dominio.DocenteActivo;
 import ec.mdd.generacion.dominio.EstadoDeVersion;
@@ -183,6 +185,41 @@ class ConsultarParcialesServicioTest {
         assertThat(servicio.parciales(PERIODO, TODAS).parciales().getFirst().propuestas())
                 .extracting(PropuestaVista::horasSuficientes)
                 .containsExactly(false, false);
+    }
+
+    @Test
+    void dadasActividadesDelDocente_cuandoSeConsulta_entoncesCuentanParaElAviso() {
+        ActividadNoLectiva gestion =
+                new ActividadNoLectiva(
+                        "AGRO",
+                        DOCENTE,
+                        "PEREZ LUIS",
+                        "143-k",
+                        "Eventos",
+                        Componente.GESTION,
+                        null,
+                        null,
+                        new BigDecimal("37"),
+                        Instant.parse("2026-11-01T15:00:00Z"),
+                        "coordinacion.demo");
+        VersionDistributivo conActividad =
+                new VersionDistributivo(
+                        UUID.randomUUID(),
+                        1,
+                        EstadoDeVersion.EDITABLE,
+                        List.of(ParcialCarrera.nuevo("TDS")),
+                        List.of(propuesta(TDS_A)),
+                        List.of(gestion));
+        con(List.of(TDS_A), conActividad, 40);
+
+        assertThat(
+                        servicio.parciales(PERIODO, TODAS)
+                                .parciales()
+                                .getFirst()
+                                .propuestas()
+                                .getFirst()
+                                .horasSuficientes())
+                .isFalse();
     }
 
     @Test

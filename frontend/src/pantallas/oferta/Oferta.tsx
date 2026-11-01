@@ -160,7 +160,9 @@ export function Oferta() {
           )}
           {oferta.data.modificable && !escritura && (
             <Alert severity="info" sx={{ my: 1 }}>
-              Solo lectura: tu rol no cambia la oferta.
+              {puedeProponer
+                ? 'No cambias la oferta, pero propones sus docentes.'
+                : 'Solo lectura: tu rol no cambia la oferta.'}
             </Alert>
           )}
           {puedeCambiar && (

@@ -29,6 +29,7 @@ public interface ProponerDocente {
      * @param quien el usuario que la quita
      * @throws ParaleloNoEncontrado si no está en la oferta
      * @throws OtraCarrera si es de otra carrera
+     * @throws PeriodoCerrado si el periodo se cerró
      * @throws PropuestaNoEncontrada si no tiene propuesta
      * @throws ec.mdd.generacion.dominio.ParcialNoEditable si el parcial ya no admite cambios
      */

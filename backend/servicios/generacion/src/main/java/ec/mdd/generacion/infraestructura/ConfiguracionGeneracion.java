@@ -6,17 +6,24 @@ import ec.mdd.generacion.adaptadores.salida.RegistroDeCambiosJdbc;
 import ec.mdd.generacion.adaptadores.salida.RepositorioDistributivosJdbc;
 import ec.mdd.generacion.adaptadores.salida.RepositorioEventosDePruebaJdbc;
 import ec.mdd.generacion.adaptadores.salida.TransaccionSpring;
+import ec.mdd.generacion.aplicacion.AsignarActividadServicio;
+import ec.mdd.generacion.aplicacion.ConsultarActividadesPosiblesServicio;
+import ec.mdd.generacion.aplicacion.ConsultarActividadesServicio;
 import ec.mdd.generacion.aplicacion.ConsultarAfinidadServicio;
 import ec.mdd.generacion.aplicacion.ConsultarParcialesServicio;
 import ec.mdd.generacion.aplicacion.ConsultarSugerenciaServicio;
 import ec.mdd.generacion.aplicacion.CrearDistributivoServicio;
 import ec.mdd.generacion.aplicacion.ProponerDocenteServicio;
 import ec.mdd.generacion.aplicacion.PublicarEventoDePruebaServicio;
+import ec.mdd.generacion.puertos.entrada.AsignarActividad;
+import ec.mdd.generacion.puertos.entrada.ConsultarActividades;
+import ec.mdd.generacion.puertos.entrada.ConsultarActividadesPosibles;
 import ec.mdd.generacion.puertos.entrada.ConsultarAfinidad;
 import ec.mdd.generacion.puertos.entrada.ConsultarParciales;
 import ec.mdd.generacion.puertos.entrada.ConsultarSugerencia;
 import ec.mdd.generacion.puertos.entrada.ProponerDocente;
 import ec.mdd.generacion.puertos.entrada.PublicarEventoDePrueba;
+import ec.mdd.generacion.puertos.salida.DatosParaActividades;
 import ec.mdd.generacion.puertos.salida.DatosParaAfinidad;
 import ec.mdd.generacion.puertos.salida.DatosParaSugerencia;
 import ec.mdd.generacion.puertos.salida.PublicadorDeEventos;
@@ -105,6 +112,31 @@ public class ConfiguracionGeneracion {
             Transaccion transaccion) {
         return new ProponerDocenteServicio(
                 datos, afinidad, distributivos, registro, transaccion, Clock.systemUTC());
+    }
+
+    /** Asignar y quitar actividades no lectivas (RF-26). */
+    @Bean
+    public AsignarActividad asignarActividad(
+            DatosParaSugerencia datos,
+            DatosParaActividades actividades,
+            RepositorioDistributivos distributivos,
+            RegistroDeCambios registro,
+            Transaccion transaccion) {
+        return new AsignarActividadServicio(
+                datos, actividades, distributivos, registro, transaccion, Clock.systemUTC());
+    }
+
+    /** Lo que el formulario puede ofrecer para un docente (RN-22, RN-25). */
+    @Bean
+    public ConsultarActividadesPosibles consultarActividadesPosibles(
+            DatosParaSugerencia datos, DatosParaActividades actividades) {
+        return new ConsultarActividadesPosiblesServicio(datos, actividades);
+    }
+
+    /** Las actividades del periodo, por carrera y docente (RF-26). */
+    @Bean
+    public ConsultarActividades consultarActividades(RepositorioDistributivos distributivos) {
+        return new ConsultarActividadesServicio(distributivos);
     }
 
     /** Los parciales del periodo (RF-24). */

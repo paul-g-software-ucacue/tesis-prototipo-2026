@@ -1,20 +1,24 @@
 package ec.mdd.normativa.infraestructura;
 
 import ec.mdd.normativa.adaptadores.salida.RegistroDeCambiosJdbc;
+import ec.mdd.normativa.adaptadores.salida.RepositorioActividadesJdbc;
 import ec.mdd.normativa.adaptadores.salida.RepositorioVersionesJdbc;
 import ec.mdd.normativa.adaptadores.salida.TransaccionSpring;
 import ec.mdd.normativa.aplicacion.AsociarVersionAPeriodoServicio;
+import ec.mdd.normativa.aplicacion.ConsultarActividadesDelPeriodoServicio;
 import ec.mdd.normativa.aplicacion.ConsultarNormativaServicio;
 import ec.mdd.normativa.aplicacion.ConsultarPesosDelPeriodoServicio;
 import ec.mdd.normativa.aplicacion.CrearVersionServicio;
 import ec.mdd.normativa.aplicacion.EditarVersionServicio;
 import ec.mdd.normativa.aplicacion.cargas.CargasDeNormativa;
 import ec.mdd.normativa.puertos.entrada.AsociarVersionAPeriodo;
+import ec.mdd.normativa.puertos.entrada.ConsultarActividadesDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarNormativa;
 import ec.mdd.normativa.puertos.entrada.ConsultarPesosDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.CrearVersion;
 import ec.mdd.normativa.puertos.entrada.EditarVersion;
 import ec.mdd.normativa.puertos.salida.RegistroDeCambios;
+import ec.mdd.normativa.puertos.salida.RepositorioActividades;
 import ec.mdd.normativa.puertos.salida.RepositorioVersiones;
 import ec.mdd.normativa.puertos.salida.Transaccion;
 import ec.mdd.plataforma.cargas.AplicadorDeCargas;
@@ -59,6 +63,19 @@ public class ConfiguracionNormativa {
     @Bean
     public ConsultarPesosDelPeriodo consultarPesosDelPeriodo(RepositorioVersiones repositorio) {
         return new ConsultarPesosDelPeriodoServicio(repositorio);
+    }
+
+    /** El catálogo de actividades de cada versión (D-79). */
+    @Bean
+    public RepositorioActividades repositorioActividades(JdbcClient jdbc) {
+        return new RepositorioActividadesJdbc(jdbc);
+    }
+
+    /** El catálogo de un periodo, para otros procesos (F06-H04, ADR-023). */
+    @Bean
+    public ConsultarActividadesDelPeriodo consultarActividadesDelPeriodo(
+            RepositorioVersiones versiones, RepositorioActividades actividades) {
+        return new ConsultarActividadesDelPeriodoServicio(versiones, actividades);
     }
 
     /** Crear una versión nueva copiando otra (F04-H02). */

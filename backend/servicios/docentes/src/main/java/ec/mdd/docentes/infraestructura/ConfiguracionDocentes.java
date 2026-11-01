@@ -14,6 +14,7 @@ import ec.mdd.docentes.aplicacion.ConsultarDocentesServicio;
 import ec.mdd.docentes.aplicacion.ConsultarFormacionServicio;
 import ec.mdd.docentes.aplicacion.ConsultarIdentificacionesServicio;
 import ec.mdd.docentes.aplicacion.ConsultarProyectosServicio;
+import ec.mdd.docentes.aplicacion.ConsultarProyectosYCargosServicio;
 import ec.mdd.docentes.aplicacion.MantenerCargosServicio;
 import ec.mdd.docentes.aplicacion.MantenerDocentesServicio;
 import ec.mdd.docentes.aplicacion.MantenerProyectosServicio;
@@ -25,6 +26,7 @@ import ec.mdd.docentes.puertos.entrada.ConsultarDocentesActivos;
 import ec.mdd.docentes.puertos.entrada.ConsultarFormacion;
 import ec.mdd.docentes.puertos.entrada.ConsultarIdentificaciones;
 import ec.mdd.docentes.puertos.entrada.ConsultarProyectos;
+import ec.mdd.docentes.puertos.entrada.ConsultarProyectosYCargos;
 import ec.mdd.docentes.puertos.entrada.MantenerCargos;
 import ec.mdd.docentes.puertos.entrada.MantenerDocentes;
 import ec.mdd.docentes.puertos.entrada.MantenerProyectos;
@@ -85,6 +87,13 @@ public class ConfiguracionDocentes {
     @Bean
     public ConsultarFormacion consultarFormacion(RepositorioDocentes repositorio) {
         return new ConsultarFormacionServicio(repositorio);
+    }
+
+    /** Los proyectos y cargos de un docente, para otros procesos (F06-H04, ADR-023). */
+    @Bean
+    public ConsultarProyectosYCargos consultarProyectosYCargos(
+            RepositorioDocentes docentes, ConsultarProyectos proyectos, ConsultarCargos cargos) {
+        return new ConsultarProyectosYCargosServicio(docentes, proyectos, cargos);
     }
 
     /** Los docentes activos, para otros procesos (F06-H02, ADR-023). */

@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-79 · ADR-024.
+- **Siguiente número libre:** D-80 · ADR-024.
 
 ## Índice
 
@@ -76,6 +76,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-76 | 2026-10-31 | Roles no consulta a Académico al guardar la carrera del coordinador | Aceptada | D-64, F06-H05 |
 | D-77 | 2026-10-31 | Las horas semanales admiten hasta dos decimales | Aceptada | RN-18, F03-H03, modelo táctico |
 | D-78 | 2026-10-31 | F06-H03 va antes que F07-H02, y mientras tanto una propuesta sin horas suficientes se guarda con un aviso | Aceptada | Issues #48 y #51 |
+| D-79 | 2026-11-01 | El catálogo de actividades vive en Normativa, por versión, y lo que exige cada actividad es un dato | Aceptada | RF-21, RN-22, RN-25, F06-H04 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1427,3 +1428,17 @@ El catálogo `CARGOS` de `diccionario-de-datos.yaml` cambia la fila del rango po
 **Consecuencias.** Entre las dos historias se puede pasar de las horas contratadas, solo con un aviso. F07-H02 lo convierte en bloqueo, con el caso de dos coordinadores a la vez.
 
 **Documentos que hay que poner al día.** Ninguno.
+
+## D-79. El catálogo de actividades vive en Normativa, por versión, y lo que exige cada actividad es un dato
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-01 · **Decidido por:** autor de la tesis
+- **Origen:** plan de F06-H04
+- **Precisa a:** RF-21, que lo declara fijo en el prototipo y sembrado con la versión de normativa
+
+**Decisión.** El catálogo son 47 actividades, una por cada literal concreto de los arts. 140 a 143 del RCE. Vive en Normativa, con una copia por versión: una versión nueva copia las de la anterior. Cada actividad guarda los tipos de proyecto o los cargos que exige. Quedan fuera 140 a), que son las clases; 143 i), comisiones (C-12); y los literales «Las demás que defina…».
+
+**Por qué.** El modelo de dominio lo pone dentro de las reglas del periodo, y el principio VI pide que las reglas sean datos. Así Generación no tiene escrito en su código qué literal pide qué.
+
+**Alternativas.** Una tabla sin versión: es más simple, pero habría que migrarla cuando el catálogo cambie. Una lista en el código de Generación: rompe el principio VI.
+
+**Consecuencias.** Guardar una versión nueva también copia su catálogo. RF-21 completo, habilitar actividades por periodo, parte de esta tabla.

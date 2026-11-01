@@ -1,5 +1,6 @@
 package ec.mdd.generacion.adaptadores.salida;
 
+import ec.mdd.generacion.dominio.ActividadDelCatalogo;
 import ec.mdd.generacion.dominio.AsignaturaOfertada;
 import ec.mdd.generacion.dominio.AsignaturaParalelo;
 import ec.mdd.generacion.dominio.Dedicacion;
@@ -9,7 +10,9 @@ import ec.mdd.generacion.dominio.FormacionDelDocente;
 import ec.mdd.generacion.dominio.PeriodoListo;
 import ec.mdd.generacion.dominio.PesosAfinidad;
 import ec.mdd.generacion.dominio.PesosDelPeriodo;
+import ec.mdd.generacion.dominio.ProyectosYCargosDelDocente;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
+import ec.mdd.generacion.puertos.salida.DatosParaActividades;
 import ec.mdd.generacion.puertos.salida.DatosParaAfinidad;
 import ec.mdd.generacion.puertos.salida.DatosParaSugerencia;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
@@ -25,7 +28,8 @@ import org.springframework.web.util.UriComponentsBuilder;
  * afinidad y la sugerencia, por sus rutas internas (ADR-023). Sus respuestas se leen con tipos
  * propios de este adaptador: Generación no comparte tipos con sus dueños (principio V).
  */
-public final class DatosDesdeProcesoDatos implements DatosParaAfinidad, DatosParaSugerencia {
+public final class DatosDesdeProcesoDatos
+        implements DatosParaAfinidad, DatosParaSugerencia, DatosParaActividades {
 
     private final ConsultasEntreProcesos consultas;
     private final URI base;
@@ -99,6 +103,23 @@ public final class DatosDesdeProcesoDatos implements DatosParaAfinidad, DatosPar
                 ruta("cargas", "periodos", periodo, "preparacion"), PeriodoListo.class);
     }
 
+    @Override
+    public Optional<List<ActividadDelCatalogo>> catalogo(String periodo) {
+        return consultas
+                .obtener(ruta("normativa", "periodos", periodo, "actividades"), Catalogo.class)
+                .map(Catalogo::actividades);
+    }
+
+    @Override
+    public Optional<ProyectosYCargosDelDocente> proyectosYCargos(String docente, String periodo) {
+        URI delDocente =
+                UriComponentsBuilder.fromUri(ruta("docentes", docente, "proyectos-y-cargos"))
+                        .queryParam("periodo", periodo)
+                        .build(true)
+                        .toUri();
+        return consultas.obtener(delDocente, ProyectosYCargosDelDocente.class);
+    }
+
     private URI ruta(String... segmentos) {
         return UriComponentsBuilder.fromUri(base)
                 .pathSegment("interno")
@@ -107,6 +128,8 @@ public final class DatosDesdeProcesoDatos implements DatosParaAfinidad, DatosPar
                 .encode()
                 .toUri();
     }
+
+    private record Catalogo(String periodo, int version, List<ActividadDelCatalogo> actividades) {}
 
     private record Paralelo(
             String asignatura,

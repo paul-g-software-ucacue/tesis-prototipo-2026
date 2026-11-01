@@ -19,12 +19,18 @@ import org.springframework.test.web.servlet.MockMvc;
  * La prueba de autorización por operación de Generación (RNF-SEG-03): sin uno de los permisos que
  * declara el contrato, cada operación responde 403, y con cualquiera de ellos pasa.
  */
-@WebMvcTest({AfinidadControlador.class, SugerenciaControlador.class, DistributivoControlador.class})
+@WebMvcTest({
+    AfinidadControlador.class,
+    SugerenciaControlador.class,
+    DistributivoControlador.class,
+    ActividadesControlador.class
+})
 @ImportAutoConfiguration({SeguridadProcesoAutoConfiguracion.class, ErroresAutoConfiguracion.class})
 @Import({
     AfinidadContratoTest.Dobles.class,
     SugerenciaContratoTest.Dobles.class,
     DistributivoContratoTest.Dobles.class,
+    ActividadesContratoTest.Dobles.class,
     ErroresGeneracion.class,
     ErroresEntreProcesos.class
 })
@@ -43,7 +49,7 @@ class PermisosGeneracionTest {
     void dadoElContratoDeGeneracion_cuandoSeVerificaCadaOperacion_entoncesExigeSuPermiso() {
         assertThat(verificador.operaciones())
                 .extracting(VerificadorDePermisos.OperacionProtegida::toString)
-                .hasSize(7)
+                .hasSize(11)
                 .anySatisfy(operacion -> assertThat(operacion).contains("/afinidad"))
                 .anySatisfy(operacion -> assertThat(operacion).contains("/sugerencia"))
                 .anySatisfy(operacion -> assertThat(operacion).contains("DISTRIBUTIVO:ESCRITURA"))

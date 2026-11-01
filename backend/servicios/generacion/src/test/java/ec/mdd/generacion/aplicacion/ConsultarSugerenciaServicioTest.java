@@ -8,9 +8,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ec.mdd.generacion.dominio.ActividadNoLectiva;
 import ec.mdd.generacion.dominio.AsignaturaOfertada;
 import ec.mdd.generacion.dominio.AsignaturaParalelo;
 import ec.mdd.generacion.dominio.Candidato;
+import ec.mdd.generacion.dominio.Componente;
 import ec.mdd.generacion.dominio.Dedicacion;
 import ec.mdd.generacion.dominio.DocenteActivo;
 import ec.mdd.generacion.dominio.ElementoDeFormacion;
@@ -271,6 +273,43 @@ class ConsultarSugerenciaServicioTest {
 
         assertThatThrownBy(() -> servicio.sugerencia(PERIODO, "POO-204", "A", TODAS))
                 .isInstanceOf(ProcesoConError.class);
+    }
+
+    @Test
+    void dadasActividadesEnOtraCarrera_cuandoSeConsulta_entoncesCuentanEnSusHoras() {
+        conLosDatos();
+        when(distributivos.vigenteDe(PERIODO))
+                .thenReturn(
+                        Optional.of(
+                                new VersionDistributivo(
+                                        UUID.randomUUID(),
+                                        1,
+                                        EstadoDeVersion.EDITABLE,
+                                        List.of(ParcialCarrera.nuevo("TDS")),
+                                        List.of(),
+                                        List.of(
+                                                new ActividadNoLectiva(
+                                                        "AGRO",
+                                                        DOCENTE.identificacion(),
+                                                        DOCENTE.nombre(),
+                                                        "143-k",
+                                                        "Eventos",
+                                                        Componente.GESTION,
+                                                        null,
+                                                        null,
+                                                        new BigDecimal("10"),
+                                                        Instant.parse("2026-11-01T15:00:00Z"),
+                                                        "coordinacion.demo")))));
+        when(datos.ofertaDelPeriodo(PERIODO)).thenReturn(Optional.of(List.of(OFERTADO)));
+
+        Candidato candidato =
+                servicio.sugerencia(PERIODO, "POO-204", "A", TODAS)
+                        .sugerencia()
+                        .candidatos()
+                        .getFirst();
+
+        assertThat(candidato.horas().enOtrasCarreras()).isEqualByComparingTo("10");
+        assertThat(candidato.horasDisponibles()).isEqualByComparingTo("30");
     }
 
     private void conLosDatos() {

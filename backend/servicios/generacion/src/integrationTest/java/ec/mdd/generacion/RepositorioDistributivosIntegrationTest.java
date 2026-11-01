@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ec.mdd.generacion.adaptadores.salida.RegistroDeCambiosJdbc;
 import ec.mdd.generacion.adaptadores.salida.RepositorioDistributivosJdbc;
+import ec.mdd.generacion.dominio.ActividadNoLectiva;
+import ec.mdd.generacion.dominio.Componente;
 import ec.mdd.generacion.dominio.Justificacion;
 import ec.mdd.generacion.dominio.ParcialCarrera;
 import ec.mdd.generacion.dominio.Propuesta;
@@ -13,6 +15,7 @@ import ec.mdd.generacion.dominio.VersionDistributivo;
 import ec.mdd.generacion.infraestructura.GeneracionFlywayConfig;
 import ec.mdd.generacion.puertos.entrada.DistributivoRepetido;
 import ec.mdd.generacion.puertos.salida.CambioDeDistributivo;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -178,6 +181,136 @@ class RepositorioDistributivosIntegrationTest {
 
         assertThatThrownBy(() -> repositorio.guardarPropuesta(version.id(), conTexto))
                 .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void dadaUnaActividad_cuandoSeGuarda_entoncesSeLeeEntera() {
+        String periodo = periodo();
+        VersionDistributivo version = crear(periodo, "TDS");
+        ActividadNoLectiva actividad = actividad("141-a", "INV-2025-01", "6.25");
+
+        repositorio.guardarActividad(version.id(), actividad);
+
+        assertThat(repositorio.vigenteDe(periodo).orElseThrow().actividades())
+                .singleElement()
+                .satisfies(
+                        leida -> {
+                            assertThat(leida.horas()).isEqualByComparingTo("6.25");
+                            assertThat(leida.proyecto()).isEqualTo("INV-2025-01");
+                            assertThat(leida.nombreProyecto()).isEqualTo("Un proyecto");
+                            assertThat(leida.nombreActividad()).isEqualTo("Una actividad");
+                            assertThat(leida.componente()).isEqualTo(Componente.OTRAS_DOCENCIA);
+                            assertThat(leida.asignadaEn()).isEqualTo(MOMENTO);
+                            assertThat(leida.asignadaPor()).isEqualTo(QUIEN);
+                        });
+    }
+
+    @Test
+    void dadaUnaActividadSinProyecto_cuandoSeGuardaOtraVez_entoncesReemplazaSusHoras() {
+        String periodo = periodo();
+        VersionDistributivo version = crear(periodo, "TDS");
+        repositorio.guardarActividad(version.id(), actividad("140-b", null, "4"));
+
+        repositorio.guardarActividad(version.id(), actividad("140-b", null, "6"));
+
+        assertThat(repositorio.vigenteDe(periodo).orElseThrow().actividades())
+                .singleElement()
+                .satisfies(leida -> assertThat(leida.horas()).isEqualByComparingTo("6"));
+    }
+
+    @Test
+    void dadaUnaActividadConProyecto_cuandoSeGuardaOtraVez_entoncesReemplazaSusHoras() {
+        String periodo = periodo();
+        VersionDistributivo version = crear(periodo, "TDS");
+        repositorio.guardarActividad(version.id(), actividad("141-a", "INV-2025-01", "4"));
+
+        repositorio.guardarActividad(version.id(), actividad("141-a", "INV-2025-01", "6"));
+
+        assertThat(repositorio.vigenteDe(periodo).orElseThrow().actividades()).hasSize(1);
+    }
+
+    @Test
+    void dadoOtroProyecto_cuandoSeGuarda_entoncesSonDosActividades() {
+        String periodo = periodo();
+        VersionDistributivo version = crear(periodo, "TDS");
+        repositorio.guardarActividad(version.id(), actividad("141-a", "INV-2025-01", "4"));
+
+        repositorio.guardarActividad(version.id(), actividad("141-a", "INV-2025-02", "6"));
+
+        assertThat(repositorio.vigenteDe(periodo).orElseThrow().actividades()).hasSize(2);
+    }
+
+    @Test
+    void dadaUnaActividad_cuandoSeQuita_entoncesDesapareceSoloEsa() {
+        String periodo = periodo();
+        VersionDistributivo version = crear(periodo, "TDS");
+        repositorio.guardarActividad(version.id(), actividad("140-b", null, "4"));
+        repositorio.guardarActividad(version.id(), actividad("141-a", "INV-2025-01", "6"));
+
+        assertThat(repositorio.quitarActividad(version.id(), "TDS", DOCENTE, "140-b", null))
+                .isTrue();
+
+        assertThat(repositorio.vigenteDe(periodo).orElseThrow().actividades())
+                .extracting(ActividadNoLectiva::actividad)
+                .containsExactly("141-a");
+    }
+
+    @Test
+    void dadaUnaActividadConProyecto_cuandoSeQuita_entoncesUsaElProyectoEnLaLlave() {
+        VersionDistributivo version = crear(periodo(), "TDS");
+        repositorio.guardarActividad(version.id(), actividad("141-a", "INV-2025-01", "6"));
+
+        assertThat(repositorio.quitarActividad(version.id(), "TDS", DOCENTE, "141-a", null))
+                .isFalse();
+        assertThat(
+                        repositorio.quitarActividad(
+                                version.id(), "TDS", DOCENTE, "141-a", "INV-2025-01"))
+                .isTrue();
+    }
+
+    @Test
+    void dadaUnaCarreraSinParcial_cuandoSeGuardaUnaActividad_entoncesLaBaseLaRechaza() {
+        VersionDistributivo version = crear(periodo(), "AGRO");
+        ActividadNoLectiva sinParcial = actividad("140-b", null, "4");
+
+        assertThatThrownBy(() -> repositorio.guardarActividad(version.id(), sinParcial))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void dadoElRegistro_cuandoSeGuardaUnaActividad_entoncesAdmiteSusAcciones() {
+        String usuario = "registro-" + UUID.randomUUID().toString().substring(0, 8);
+
+        new RegistroDeCambiosJdbc(jdbc)
+                .registrar(
+                        new CambioDeDistributivo(
+                                MOMENTO,
+                                usuario,
+                                CambioDeDistributivo.Accion.ACTIVIDAD_GUARDADA,
+                                Map.of("actividad", "140-b")));
+
+        assertThat(
+                        jdbc.sql(
+                                        "SELECT count(*) FROM generacion.registro_cambio WHERE usuario = ?")
+                                .param(usuario)
+                                .query(Long.class)
+                                .single())
+                .isEqualTo(1L);
+    }
+
+    private static ActividadNoLectiva actividad(String codigo, String proyecto, String horas) {
+        return new ActividadNoLectiva(
+                "TDS",
+                DOCENTE,
+                "PEREZ LUIS",
+                codigo,
+                "Una actividad",
+                Componente.OTRAS_DOCENCIA,
+                proyecto,
+                proyecto == null ? null : "Un proyecto",
+                new BigDecimal(horas),
+                MOMENTO,
+                QUIEN);
     }
 
     @Test

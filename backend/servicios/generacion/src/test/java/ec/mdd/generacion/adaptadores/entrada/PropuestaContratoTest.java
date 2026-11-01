@@ -186,6 +186,7 @@ class PropuestaContratoTest {
     @ParameterizedTest
     @CsvSource({
         "SIN-PROPUESTA,404,GENERACION_PROPUESTA_NO_ENCONTRADA",
+        "CERRADO,409,GENERACION_PERIODO_CERRADO",
         "ENVIADO,409,GENERACION_PARCIAL_NO_EDITABLE"
     })
     void dadoUnFallo_cuandoQuita_entoncesResponde(String periodo, int estado, String codigo)

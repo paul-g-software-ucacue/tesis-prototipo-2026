@@ -3,7 +3,11 @@ package ec.mdd.generacion.adaptadores.entrada;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
+import ec.mdd.generacion.dominio.CargoNoVigente;
 import ec.mdd.generacion.dominio.ParcialNoEditable;
+import ec.mdd.generacion.dominio.ProyectoNoValido;
+import ec.mdd.generacion.puertos.entrada.ActividadFueraDelCatalogo;
+import ec.mdd.generacion.puertos.entrada.ActividadNoEncontrada;
 import ec.mdd.generacion.puertos.entrada.DistributivoNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.DistributivoRepetido;
 import ec.mdd.generacion.puertos.entrada.DocenteNoActivo;
@@ -53,6 +57,16 @@ class ErroresGeneracionTest {
                         tuple(
                                 PropuestaNoEncontrada.class,
                                 "GENERACION_PROPUESTA_NO_ENCONTRADA",
+                                404),
+                        tuple(
+                                ActividadFueraDelCatalogo.class,
+                                "GENERACION_ACTIVIDAD_FUERA_DEL_CATALOGO",
+                                404),
+                        tuple(ProyectoNoValido.class, "GENERACION_PROYECTO_NO_VALIDO", 409),
+                        tuple(CargoNoVigente.class, "GENERACION_CARGO_NO_VIGENTE", 409),
+                        tuple(
+                                ActividadNoEncontrada.class,
+                                "GENERACION_ACTIVIDAD_NO_ENCONTRADA",
                                 404),
                         tuple(DocenteNoEncontrado.class, "GENERACION_DOCENTE_NO_ENCONTRADO", 404));
     }

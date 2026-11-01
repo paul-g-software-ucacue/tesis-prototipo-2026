@@ -22,7 +22,7 @@ class HorasDelPeriodoTest {
     @Test
     void dadasVariasPropuestas_cuandoSeCalcula_entoncesSumaPorDocenteConDecimales() {
         Map<String, HorasDelDocente> horas =
-                HorasDelPeriodo.calcular(
+                calcular(
                         List.of(propuesta(DE_TDS, DOCENTE), propuesta(DE_OTRA, DOCENTE)),
                         List.of(MIRADO, DE_TDS, DE_OTRA),
                         MIRADO);
@@ -33,7 +33,7 @@ class HorasDelPeriodoTest {
     @Test
     void dadaUnaPropuestaDeOtraCarrera_cuandoSeCalcula_entoncesVaAparte() {
         HorasDelDocente horas =
-                HorasDelPeriodo.calcular(
+                calcular(
                                 List.of(propuesta(DE_TDS, DOCENTE), propuesta(DE_OTRA, DOCENTE)),
                                 List.of(MIRADO, DE_TDS, DE_OTRA),
                                 MIRADO)
@@ -45,7 +45,7 @@ class HorasDelPeriodoTest {
     @Test
     void dadosDosDocentes_cuandoSeCalcula_entoncesCadaUnoTieneLasSuyas() {
         Map<String, HorasDelDocente> horas =
-                HorasDelPeriodo.calcular(
+                calcular(
                         List.of(propuesta(DE_TDS, DOCENTE), propuesta(DE_OTRA, OTRO_DOCENTE)),
                         List.of(MIRADO, DE_TDS, DE_OTRA),
                         MIRADO);
@@ -56,9 +56,7 @@ class HorasDelPeriodoTest {
 
     @Test
     void dadaLaPropuestaDelParaleloMirado_cuandoSeCalcula_entoncesNoCuentaPorqueSeReemplaza() {
-        assertThat(
-                        HorasDelPeriodo.calcular(
-                                List.of(propuesta(MIRADO, DOCENTE)), List.of(MIRADO), MIRADO))
+        assertThat(calcular(List.of(propuesta(MIRADO, DOCENTE)), List.of(MIRADO), MIRADO))
                 .isEmpty();
     }
 
@@ -67,7 +65,7 @@ class HorasDelPeriodoTest {
         AsignaturaParalelo mismoParalelo = paralelo("POO-205", "A", "TDS", "4", false);
 
         assertThat(
-                        HorasDelPeriodo.calcular(
+                        calcular(
                                 List.of(propuesta(mismoParalelo, DOCENTE)),
                                 List.of(MIRADO, mismoParalelo),
                                 MIRADO))
@@ -79,7 +77,7 @@ class HorasDelPeriodoTest {
         AsignaturaParalelo retirado = paralelo("BD-301", "A", "TDS", "2.5", true);
 
         assertThat(
-                        HorasDelPeriodo.calcular(
+                        calcular(
                                 List.of(propuesta(retirado, DOCENTE)),
                                 List.of(MIRADO, retirado),
                                 MIRADO))
@@ -91,7 +89,7 @@ class HorasDelPeriodoTest {
         AsignaturaParalelo corregido = paralelo("BD-301", "A", "TDS", "6", false);
 
         assertThat(
-                        HorasDelPeriodo.calcular(
+                        calcular(
                                         List.of(propuesta(DE_TDS, DOCENTE)),
                                         List.of(MIRADO, corregido),
                                         MIRADO)
@@ -102,15 +100,117 @@ class HorasDelPeriodoTest {
 
     @Test
     void dadaUnaPropuestaQueYaNoEstaEnLaOferta_cuandoSeCalcula_entoncesNoCuenta() {
-        assertThat(
-                        HorasDelPeriodo.calcular(
-                                List.of(propuesta(DE_TDS, DOCENTE)), List.of(MIRADO), MIRADO))
+        assertThat(calcular(List.of(propuesta(DE_TDS, DOCENTE)), List.of(MIRADO), MIRADO))
                 .isEmpty();
     }
 
     @Test
     void dadoQueNoHayPropuestas_cuandoSeCalcula_entoncesVacio() {
-        assertThat(HorasDelPeriodo.calcular(List.of(), List.of(MIRADO), MIRADO)).isEmpty();
+        assertThat(calcular(List.of(), List.of(MIRADO), MIRADO)).isEmpty();
+    }
+
+    @Test
+    void dadaUnaActividadDeSuCarrera_cuandoSeCalcula_entoncesSumaALasAsignadasYNoAOtras() {
+        HorasDelDocente horas =
+                HorasDelPeriodo.calcular(
+                                List.of(),
+                                List.of(actividad("TDS", "140-b", "4.25")),
+                                List.of(MIRADO),
+                                MIRADO)
+                        .get(DOCENTE);
+
+        assertThat(horas.asignadas()).isEqualByComparingTo("4.25");
+        assertThat(horas.enOtrasCarreras()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void dadaUnaActividadDeOtraCarrera_cuandoSeCalcula_entoncesTambienSumaAOtrasCarreras() {
+        HorasDelDocente horas =
+                HorasDelPeriodo.calcular(
+                                List.of(),
+                                List.of(actividad("AGRO", "143-k", "10")),
+                                List.of(MIRADO),
+                                MIRADO)
+                        .get(DOCENTE);
+
+        assertThat(horas.asignadas()).isEqualByComparingTo("10");
+        assertThat(horas.enOtrasCarreras()).isEqualByComparingTo("10");
+    }
+
+    @Test
+    void dadasPropuestasYActividades_cuandoSeCalcula_entoncesSumaTodoConDecimales() {
+        HorasDelDocente horas =
+                HorasDelPeriodo.calcular(
+                                List.of(propuesta(DE_TDS, DOCENTE), propuesta(DE_OTRA, DOCENTE)),
+                                List.of(
+                                        actividad("TDS", "140-b", "1.25"),
+                                        actividad("AGRO", "140-g", "2.5")),
+                                List.of(MIRADO, DE_TDS, DE_OTRA),
+                                MIRADO)
+                        .get(DOCENTE);
+
+        assertThat(horas.asignadas()).isEqualByComparingTo("9.5");
+        assertThat(horas.enOtrasCarreras()).isEqualByComparingTo("5.75");
+    }
+
+    @Test
+    void dadoElParaleloMirado_cuandoSeCalcula_entoncesNoExcluyeNingunaActividad() {
+        assertThat(
+                        HorasDelPeriodo.calcular(
+                                        List.of(propuesta(MIRADO, DOCENTE)),
+                                        List.of(actividad("TDS", "140-b", "4")),
+                                        List.of(MIRADO),
+                                        MIRADO)
+                                .get(DOCENTE)
+                                .asignadas())
+                .isEqualByComparingTo("4");
+    }
+
+    @Test
+    void dadaLaActividadQueSeReemplaza_cuandoSeCalcula_entoncesSusHorasAnterioresNoCuentan() {
+        Map<String, HorasDelDocente> horas =
+                HorasDelPeriodo.sinLaActividad(
+                        List.of(propuesta(DE_TDS, DOCENTE)),
+                        List.of(actividad("TDS", "140-b", "4"), actividad("TDS", "140-g", "3")),
+                        List.of(MIRADO, DE_TDS),
+                        actividad("TDS", "140-b", "6"));
+
+        assertThat(horas.get(DOCENTE).asignadas()).isEqualByComparingTo("5.5");
+    }
+
+    @Test
+    void dadaOtraCarreraConLaMismaActividad_cuandoSeCalcula_entoncesSiCuenta() {
+        Map<String, HorasDelDocente> horas =
+                HorasDelPeriodo.sinLaActividad(
+                        List.of(),
+                        List.of(actividad("AGRO", "140-b", "4")),
+                        List.of(),
+                        actividad("TDS", "140-b", "6"));
+
+        assertThat(horas.get(DOCENTE).asignadas()).isEqualByComparingTo("4");
+        assertThat(horas.get(DOCENTE).enOtrasCarreras()).isEqualByComparingTo("4");
+    }
+
+    private static Map<String, HorasDelDocente> calcular(
+            List<Propuesta> propuestas,
+            List<AsignaturaParalelo> oferta,
+            AsignaturaParalelo paralelo) {
+        return HorasDelPeriodo.calcular(propuestas, List.of(), oferta, paralelo);
+    }
+
+    private static ActividadNoLectiva actividad(String carrera, String codigo, String horas) {
+        return new ActividadNoLectiva(
+                carrera,
+                DOCENTE,
+                "PEREZ LUIS",
+                codigo,
+                "Una actividad",
+                Componente.OTRAS_DOCENCIA,
+                null,
+                null,
+                new BigDecimal(horas),
+                Instant.parse("2026-11-01T15:00:00Z"),
+                "coordinacion.demo");
     }
 
     private static AsignaturaParalelo paralelo(

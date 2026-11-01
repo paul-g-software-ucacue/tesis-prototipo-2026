@@ -4,13 +4,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
+import ec.mdd.docentes.dominio.DatoInvalido;
 import ec.mdd.docentes.dominio.DocentesDePrueba;
+import ec.mdd.docentes.dominio.EstadoDeProyecto;
+import ec.mdd.docentes.dominio.Participante;
+import ec.mdd.docentes.dominio.Proyecto;
+import ec.mdd.docentes.dominio.RolDeParticipante;
+import ec.mdd.docentes.dominio.TipoDeCargo;
+import ec.mdd.docentes.dominio.TipoDeProyecto;
 import ec.mdd.docentes.puertos.entrada.ConsultarDocentesActivos;
 import ec.mdd.docentes.puertos.entrada.ConsultarFormacion;
+import ec.mdd.docentes.puertos.entrada.ConsultarProyectosYCargos;
 import ec.mdd.docentes.puertos.entrada.DocenteNoEncontrado;
+import ec.mdd.docentes.puertos.entrada.ProyectosYCargos;
 import ec.mdd.plataforma.errores.ErroresAutoConfiguracion;
 import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
 import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -133,8 +144,87 @@ class InternoDocentesContratoTest {
                 .authorities(new SimpleGrantedAuthority("ROLE_PROCESO"));
     }
 
+    @Test
+    void dadoUnProceso_cuandoConsultaProyectosYCargos_entonces200SoloConLoNecesario()
+            throws Exception {
+        MvcResult resultado = pedirProyectosYCargos(DocentesDePrueba.CEDULA, "2026-I", deProceso());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString())
+                .isEqualTo(
+                        "{\"proyectos\":[{\"codigo\":\"INV-2025-01\",\"nombre\":\"Monitoreo\","
+                                + "\"tipo\":\"INVESTIGACION\"}],\"cargos\":[\"RECTOR\"]}")
+                .doesNotContain("correo", "telefono", "horas", "resolucion");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnDocenteQueNoExiste_cuandoConsultaProyectosYCargos_entonces404() throws Exception {
+        MvcResult resultado = pedirProyectosYCargos("0109990099", "2026-I", deProceso());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(404);
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnPeriodoQueNoExiste_cuandoConsultaProyectosYCargos_entonces404() throws Exception {
+        MvcResult resultado = pedirProyectosYCargos(DocentesDePrueba.CEDULA, "NADA", deProceso());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(404);
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnTokenDeUsuario_cuandoConsultaProyectosYCargos_entonces403() throws Exception {
+        MvcResult resultado = pedirProyectosYCargos(DocentesDePrueba.CEDULA, "2026-I", jwt());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(403);
+        contrato.validar(resultado);
+    }
+
+    private MvcResult pedirProyectosYCargos(
+            String docente, String periodo, JwtRequestPostProcessor token) throws Exception {
+        return mvc.perform(
+                        get("/interno/docentes/%s/proyectos-y-cargos".formatted(docente))
+                                .param("periodo", periodo)
+                                .with(token))
+                .andReturn();
+    }
+
     @TestConfiguration(proxyBeanMethods = false)
     static class Dobles {
+
+        @Bean
+        ConsultarProyectosYCargos consultarProyectosYCargos() {
+            return (identificacion, periodo) -> {
+                if (!DocentesDePrueba.CEDULA.equals(identificacion)) {
+                    throw new DocenteNoEncontrado();
+                }
+                if ("NADA".equals(periodo)) {
+                    throw new DatoInvalido("periodo", "El periodo no existe");
+                }
+                return new ProyectosYCargos(
+                        List.of(
+                                new Proyecto(
+                                        "INV-2025-01",
+                                        "Monitoreo",
+                                        TipoDeProyecto.INVESTIGACION,
+                                        List.of("550613A01-P-0301"),
+                                        "RES-OCS-1",
+                                        LocalDate.of(2025, 3, 20),
+                                        EstadoDeProyecto.EN_EJECUCION,
+                                        LocalDate.of(2025, 4, 1),
+                                        LocalDate.of(2026, 12, 31),
+                                        DocentesDePrueba.CEDULA,
+                                        List.of(
+                                                new Participante(
+                                                        DocentesDePrueba.CEDULA,
+                                                        RolDeParticipante.DIRECTOR,
+                                                        new BigDecimal("10"))),
+                                        new BigDecimal("20"))),
+                        List.of(TipoDeCargo.RECTOR));
+            };
+        }
 
         @Bean
         ConsultarFormacion consultarFormacion() {
