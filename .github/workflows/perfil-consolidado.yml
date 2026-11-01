@@ -173,6 +173,10 @@ jobs:
         shell: bash
         run: deploy/probar_actividades.sh
 
+      - name: Los totales del docente de punta a punta
+        shell: bash
+        run: deploy/probar_totales.sh
+
       # shell: bash agrega pipefail, así que tee no oculta el código de salida del script.
       # Después de iniciar sesión (D-34): la medición de referencia de R-19 desde B00-H03.
       - name: Medición de R-19 después de iniciar sesión

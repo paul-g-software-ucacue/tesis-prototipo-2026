@@ -11,6 +11,7 @@ import ec.mdd.generacion.dominio.Dedicacion;
 import ec.mdd.generacion.dominio.DocenteActivo;
 import ec.mdd.generacion.dominio.ElementoDeFormacion;
 import ec.mdd.generacion.dominio.FormacionDelDocente;
+import ec.mdd.generacion.dominio.MetaDeProporcion;
 import ec.mdd.generacion.dominio.PeriodoListo;
 import ec.mdd.generacion.dominio.PesosDelPeriodo;
 import ec.mdd.generacion.dominio.ProyectoDelDocente;
@@ -99,6 +100,24 @@ class DatosDesdeProcesoDatosTest {
     @Test
     void dadoUnPeriodoQueAcademicoNoTiene_cuandoSePide_entoncesVacio() {
         assertThat(datos.asignaturasOfertadas(PERIODO, Optional.empty())).isEmpty();
+    }
+
+    @Test
+    void dadaLaMeta_cuandoSePide_entoncesTraeLosDosPorcentajes() {
+        receptor.responderConsulta(
+                "/interno/normativa/periodos/2026-I/proporcion",
+                200,
+                "{\"periodo\":\"2026-I\",\"version\":2,\"clase\":60.00,\"otrasDocencia\":40.00}");
+
+        MetaDeProporcion meta = datos.meta(PERIODO).orElseThrow();
+
+        assertThat(meta.clase()).isEqualByComparingTo("60");
+        assertThat(meta.otrasDocencia()).isEqualByComparingTo("40");
+    }
+
+    @Test
+    void dadoUnPeriodoSinVersion_cuandoSePideLaMeta_entoncesVacio() {
+        assertThat(datos.meta(PERIODO)).isEmpty();
     }
 
     @Test

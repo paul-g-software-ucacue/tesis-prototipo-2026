@@ -10,6 +10,7 @@ import ec.mdd.generacion.aplicacion.AsignarActividadServicio;
 import ec.mdd.generacion.aplicacion.ConsultarActividadesPosiblesServicio;
 import ec.mdd.generacion.aplicacion.ConsultarActividadesServicio;
 import ec.mdd.generacion.aplicacion.ConsultarAfinidadServicio;
+import ec.mdd.generacion.aplicacion.ConsultarCargaHorariaServicio;
 import ec.mdd.generacion.aplicacion.ConsultarParcialesServicio;
 import ec.mdd.generacion.aplicacion.ConsultarSugerenciaServicio;
 import ec.mdd.generacion.aplicacion.CrearDistributivoServicio;
@@ -19,6 +20,7 @@ import ec.mdd.generacion.puertos.entrada.AsignarActividad;
 import ec.mdd.generacion.puertos.entrada.ConsultarActividades;
 import ec.mdd.generacion.puertos.entrada.ConsultarActividadesPosibles;
 import ec.mdd.generacion.puertos.entrada.ConsultarAfinidad;
+import ec.mdd.generacion.puertos.entrada.ConsultarCargaHoraria;
 import ec.mdd.generacion.puertos.entrada.ConsultarParciales;
 import ec.mdd.generacion.puertos.entrada.ConsultarSugerencia;
 import ec.mdd.generacion.puertos.entrada.ProponerDocente;
@@ -133,10 +135,20 @@ public class ConfiguracionGeneracion {
         return new ConsultarActividadesPosiblesServicio(datos, actividades);
     }
 
+    /** La carga horaria de un docente (RF-27, D-82). */
+    @Bean
+    public ConsultarCargaHoraria consultarCargaHoraria(
+            DatosParaSugerencia datos,
+            DatosParaActividades normativa,
+            RepositorioDistributivos distributivos) {
+        return new ConsultarCargaHorariaServicio(datos, normativa, distributivos);
+    }
+
     /** Las actividades del periodo, por carrera y docente (RF-26). */
     @Bean
-    public ConsultarActividades consultarActividades(RepositorioDistributivos distributivos) {
-        return new ConsultarActividadesServicio(distributivos);
+    public ConsultarActividades consultarActividades(
+            DatosParaSugerencia datos, RepositorioDistributivos distributivos) {
+        return new ConsultarActividadesServicio(datos, distributivos);
     }
 
     /** Los parciales del periodo (RF-24). */

@@ -4,13 +4,16 @@ import ec.mdd.normativa.adaptadores.entrada.api.ActividadesDelPeriodo;
 import ec.mdd.normativa.adaptadores.entrada.api.InternoApi;
 import ec.mdd.normativa.adaptadores.entrada.api.PesosDeAfinidad;
 import ec.mdd.normativa.adaptadores.entrada.api.PesosDelPeriodo;
+import ec.mdd.normativa.adaptadores.entrada.api.ProporcionDelPeriodo;
 import ec.mdd.normativa.dominio.ActividadDelCatalogo;
 import ec.mdd.normativa.dominio.PesosAfinidad;
 import ec.mdd.normativa.puertos.entrada.ActividadesDeLaVersion;
 import ec.mdd.normativa.puertos.entrada.ConsultarActividadesDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarPesosDelPeriodo;
+import ec.mdd.normativa.puertos.entrada.ConsultarProporcionDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.PeriodoSinVersion;
 import ec.mdd.normativa.puertos.entrada.PesosDeLaVersion;
+import ec.mdd.normativa.puertos.entrada.ProporcionDeLaVersion;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,11 +28,15 @@ class InternoNormativaControlador implements InternoApi {
 
     private final ConsultarPesosDelPeriodo consultar;
     private final ConsultarActividadesDelPeriodo actividades;
+    private final ConsultarProporcionDelPeriodo proporcion;
 
     InternoNormativaControlador(
-            ConsultarPesosDelPeriodo consultar, ConsultarActividadesDelPeriodo actividades) {
+            ConsultarPesosDelPeriodo consultar,
+            ConsultarActividadesDelPeriodo actividades,
+            ConsultarProporcionDelPeriodo proporcion) {
         this.consultar = consultar;
         this.actividades = actividades;
+        this.proporcion = proporcion;
     }
 
     @Override
@@ -58,6 +65,18 @@ class InternoNormativaControlador implements InternoApi {
                             catalogo.actividades().stream()
                                     .map(InternoNormativaControlador::respuesta)
                                     .toList()));
+        } catch (PeriodoSinVersion error) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @Override
+    public ResponseEntity<ProporcionDelPeriodo> consultarProporcionDelPeriodo(String periodo) {
+        try {
+            ProporcionDeLaVersion meta = proporcion.proporcion(periodo);
+            return ResponseEntity.ok(
+                    new ProporcionDelPeriodo(
+                            periodo, meta.version(), meta.clase(), meta.otrasDocencia()));
         } catch (PeriodoSinVersion error) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }

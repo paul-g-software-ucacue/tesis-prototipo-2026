@@ -10,11 +10,9 @@ import ec.mdd.generacion.adaptadores.entrada.api.ActividadesDelDocente;
 import ec.mdd.generacion.adaptadores.entrada.api.ActividadesDelPeriodo;
 import ec.mdd.generacion.adaptadores.entrada.api.ActividadesPosibles;
 import ec.mdd.generacion.adaptadores.entrada.api.Componente;
-import ec.mdd.generacion.adaptadores.entrada.api.HorasPorComponente;
 import ec.mdd.generacion.adaptadores.entrada.api.ProyectoPosible;
 import ec.mdd.generacion.dominio.ActividadNoLectiva;
 import ec.mdd.generacion.dominio.HorasNoValidas;
-import ec.mdd.generacion.dominio.SumaPorComponente;
 import ec.mdd.generacion.puertos.entrada.ActividadQuitada;
 import ec.mdd.generacion.puertos.entrada.AsignarActividad;
 import ec.mdd.generacion.puertos.entrada.ConsultarActividades;
@@ -150,12 +148,7 @@ class ActividadesControlador implements ActividadesApi {
                 uno.docente(),
                 uno.nombreDocente(),
                 uno.actividades().stream().map(ActividadesControlador::asignada).toList(),
-                horas(uno.suma()));
-    }
-
-    private static HorasPorComponente horas(SumaPorComponente suma) {
-        return new HorasPorComponente(
-                suma.otrasDocencia(), suma.investigacion(), suma.vinculacion(), suma.gestion());
+                CargaHorariaControlador.totales(uno.totales()));
     }
 
     private static ActividadAsignada asignada(ActividadNoLectiva actividad) {

@@ -34,7 +34,9 @@ import { useSesionActual } from '../../sesion/useSesionActual';
 import { useCarreras } from '../carreras/consultas';
 import { DialogoConfirmar } from '../carreras/DialogosDeCarrera';
 import { NOMBRE_DE_LA_JORNADA, NOMBRE_DE_LA_MODALIDAD, horas } from '../carreras/nombres';
+import { CLAVE_CARGA_HORARIA } from '../comun/cargaHoraria';
 import { SELECCION } from '../comun/formulario';
+import { PanelDeCarga } from '../comun/PanelDeCarga';
 import { useUnidades } from '../estructura/consultas';
 import { usePeriodos } from '../periodos/consultas';
 import { NOMBRE_DEL_ESTADO } from '../periodos/estados';
@@ -85,6 +87,7 @@ export function Oferta() {
   const unidades = useUnidades();
   const [abierto, setAbierto] = useState<Abierto>(null);
   const [aviso, setAviso] = useState<MensajeDeError | null>(null);
+  const [propuesto, setPropuesto] = useState<{ periodo: string; docente: string } | null>(null);
   const puedeCambiar = escritura && Boolean(oferta.data?.modificable);
   const puedeProponer =
     tieneAlguno(sesion.data?.permisos, ESCRITURA_DE_LA_PROPUESTA) &&
@@ -93,6 +96,13 @@ export function Oferta() {
   const terminar = async () => {
     await consultas.invalidateQueries({ queryKey: CLAVE_OFERTA });
     setAbierto(null);
+  };
+
+  const recargarCargas = () => consultas.invalidateQueries({ queryKey: CLAVE_CARGA_HORARIA });
+
+  const alProponer = async (docente: string) => {
+    setPropuesto({ periodo: periodo ?? '', docente });
+    await Promise.all([terminar(), recargarCargas()]);
   };
 
   const cambiarEstado = async (
@@ -114,7 +124,10 @@ export function Oferta() {
     setAbierto(null);
     try {
       await quitarPropuesta(asignaturaParalelo);
-      await consultas.invalidateQueries({ queryKey: CLAVE_OFERTA });
+      await Promise.all([
+        consultas.invalidateQueries({ queryKey: CLAVE_OFERTA }),
+        recargarCargas(),
+      ]);
     } catch (fallo) {
       setAviso(traducirError(fallo));
     }
@@ -147,6 +160,11 @@ export function Oferta() {
             </option>
           ))}
         </TextField>
+      )}
+      {propuesto && propuesto.periodo === periodo && (
+        <Box sx={{ my: 1 }}>
+          <PanelDeCarga periodo={propuesto.periodo} docente={propuesto.docente} guardada />
+        </Box>
       )}
       {oferta.data && (
         <>
@@ -218,7 +236,7 @@ export function Oferta() {
           asignaturaParalelo={abierto.asignaturaParalelo}
           puedeProponer={puedeProponer}
           alCerrar={() => setAbierto(null)}
-          alProponer={terminar}
+          alProponer={alProponer}
         />
       )}
       {abierto?.que === 'quitar' && (

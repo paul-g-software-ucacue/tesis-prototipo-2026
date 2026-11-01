@@ -11,7 +11,14 @@ import { CARRERAS } from '../carreras/datosDePrueba';
 import { RESUMENES } from '../docentes/datosDePrueba';
 import { PERIODOS } from '../periodos/datosDePrueba';
 import { literal } from './consultas';
-import { ACTIVIDADES, CARRERA, POSIBLES, SIN_ACTIVIDADES, SIN_DISTRIBUTIVO } from './datosDePrueba';
+import {
+  ACTIVIDADES,
+  CARGA,
+  CARRERA,
+  POSIBLES,
+  SIN_ACTIVIDADES,
+  SIN_DISTRIBUTIVO,
+} from './datosDePrueba';
 
 const COORDINADOR = [
   'OFERTA:LECTURA:PROPIO',
@@ -23,6 +30,8 @@ const VICERRECTOR = ['DISTRIBUTIVO:LECTURA', 'DISTRIBUTIVO:ESCRITURA'];
 const DOCENTE = '0109990010';
 const RUTA = '/api/generacion/periodos/2026-2/actividades';
 const RUTA_POSIBLES = `/api/generacion/periodos/2026-2/docentes/${DOCENTE}/actividades-posibles`;
+const RUTA_CARGA = `/api/generacion/periodos/2026-2/docentes/${DOCENTE}/carga-horaria`;
+const TOTALES = 'Totales de PERALTA MALDONADO JUAN ANDRES';
 const RUTA_ACTIVIDAD = (actividad: string) =>
   `/api/generacion/periodos/2026-2/parciales/${CARRERA}/docentes/${DOCENTE}/actividades/${actividad}`;
 const GUARDADA = {
@@ -58,6 +67,7 @@ describe('Actividades no lectivas', () => {
     simulada.responder('GET', '/api/docentes/docentes', json(200, RESUMENES));
     simulada.responder('GET', RUTA, json(200, SIN_ACTIVIDADES));
     simulada.responder('GET', RUTA_POSIBLES, json(200, POSIBLES));
+    simulada.responder('GET', RUTA_CARGA, json(200, CARGA));
     iniciarSesion('cabecera.cuerpo.firma', new Date(Date.now() + 60_000));
   });
 
@@ -91,6 +101,116 @@ describe('Actividades no lectivas', () => {
       }),
     );
   }
+
+  function pedidosDeLaCarga() {
+    return simulada.peticiones.filter((uno) => new URL(uno.url).pathname === RUTA_CARGA).length;
+  }
+
+  describe('totales del docente', () => {
+    it('al elegir un docente en el formulario ve su panel antes de guardar', async () => {
+      const dialogo = await abrirFormulario();
+
+      expect(await within(dialogo).findByRole('region', { name: TOTALES })).toBeVisible();
+      expect(within(dialogo).getByText('Clase: 8 h')).toBeVisible();
+    });
+
+    it('sin elegir docente no pide los totales', async () => {
+      sesionCon(simulada, COORDINADOR);
+      montarSpa('/actividades');
+      await userEvent.click(await screen.findByRole('button', { name: 'Asignar actividad' }));
+      await screen.findByRole('dialog', { name: 'Asignar actividad' });
+
+      expect(pedidosDeLaCarga()).toBe(0);
+    });
+
+    it('al guardar muestra el panel del docente en la pantalla, actualizado', async () => {
+      simulada.responder('PUT', RUTA_ACTIVIDAD('140-b'), json(200, GUARDADA));
+      const dialogo = await abrirFormulario();
+      await within(dialogo).findByRole('region', { name: TOTALES });
+      const antes = pedidosDeLaCarga();
+
+      await elegir(dialogo, '140-b');
+      await userEvent.type(within(dialogo).getByLabelText('Horas semanales'), '4');
+      simulada.responder('GET', RUTA, json(200, ACTIVIDADES));
+      await userEvent.click(within(dialogo).getByRole('button', { name: 'Asignar' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(await screen.findByRole('region', { name: TOTALES })).toBeVisible();
+      await waitFor(() => expect(pedidosDeLaCarga()).toBeGreaterThan(antes));
+    });
+
+    it('si los totales fallan después de guardar, aclara que sí se guardó', async () => {
+      simulada.responder('PUT', RUTA_ACTIVIDAD('140-b'), json(200, GUARDADA));
+      const dialogo = await abrirFormulario();
+      await within(dialogo).findByRole('region', { name: TOTALES });
+      await elegir(dialogo, '140-b');
+      await userEvent.type(within(dialogo).getByLabelText('Horas semanales'), '4');
+      simulada.responder(
+        'GET',
+        RUTA_CARGA,
+        json(504, { titulo: 'Sin respuesta', descripcion: 'No responde.', codigo: 'PRUEBA' }),
+      );
+      await userEvent.click(within(dialogo).getByRole('button', { name: 'Asignar' }));
+
+      expect(
+        await screen.findByText('La asignación se guardó. Solo faltó cargar los totales.'),
+      ).toBeVisible();
+    });
+
+    it('al quitar una actividad muestra el panel actualizado', async () => {
+      simulada.responder('GET', RUTA, json(200, ACTIVIDADES));
+      simulada.responder('DELETE', RUTA_ACTIVIDAD('140-b'), json(204));
+      sesionCon(simulada, COORDINADOR);
+      montarSpa('/actividades');
+
+      await userEvent.click(
+        await screen.findByRole('button', {
+          name: 'Quitar 140-b de PERALTA MALDONADO JUAN ANDRES',
+        }),
+      );
+      const confirmar = await screen.findByRole('dialog');
+      await userEvent.click(within(confirmar).getByRole('button', { name: 'Quitar' }));
+
+      expect(await screen.findByRole('region', { name: TOTALES })).toBeVisible();
+      expect(screen.queryByText(/se guardó/)).not.toBeInTheDocument();
+    });
+
+    it('la columna muestra los totales de todas las carreras, con la clase', async () => {
+      simulada.responder('GET', RUTA, json(200, ACTIVIDADES));
+      sesionCon(simulada, COORDINADOR);
+      montarSpa('/actividades');
+
+      const tabla = await screen.findByRole('table', {
+        name: 'Actividades de DESARROLLO DE SOFTWARE',
+      });
+      expect(within(tabla).getByText('Clase: 8 h')).toBeVisible();
+      expect(within(tabla).getByText('Otras actividades de docencia: 7,25 h')).toBeVisible();
+      expect(
+        within(tabla).getByRole('columnheader', { name: 'Totales en todas las carreras' }),
+      ).toBeVisible();
+    });
+
+    it('el Vicerrector ve los totales de la lista, sin acciones', async () => {
+      simulada.responder('GET', RUTA, json(200, ACTIVIDADES));
+      sesionCon(simulada, VICERRECTOR);
+      montarSpa('/actividades');
+
+      expect(await screen.findByText('Clase: 8 h')).toBeVisible();
+      expect(screen.queryByRole('button', { name: /^Quitar/ })).not.toBeInTheDocument();
+    });
+
+    it('si la lista falla muestra el mensaje en palabras claras', async () => {
+      simulada.responder(
+        'GET',
+        RUTA,
+        json(504, { titulo: 'Sin respuesta', descripcion: 'No responde.', codigo: 'PRUEBA' }),
+      );
+      sesionCon(simulada, COORDINADOR);
+      montarSpa('/actividades');
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('Sin respuesta');
+    });
+  });
 
   it('está en el menú de quien lee la oferta, y no para los demás', async () => {
     sesionCon(simulada, COORDINADOR);
@@ -423,7 +543,7 @@ describe('Actividades no lectivas', () => {
   });
 
   describe('la lista', () => {
-    it('cada docente con sus actividades, sus horas, su proyecto y la suma por componente', async () => {
+    it('cada docente con sus actividades, sus horas, su proyecto y sus totales', async () => {
       simulada.responder('GET', RUTA, json(200, ACTIVIDADES));
       sesionCon(simulada, COORDINADOR);
       montarSpa('/actividades');
@@ -437,7 +557,7 @@ describe('Actividades no lectivas', () => {
       );
       expect(fila).toHaveTextContent('141 a) Diseñar y ejecutar proyectos de investigación · 6 h');
       expect(fila).toHaveTextContent('Proyecto: Monitoreo de hatos');
-      expect(fila).toHaveTextContent('Otras actividades de docencia: 4,25 h');
+      expect(fila).toHaveTextContent('Otras actividades de docencia: 7,25 h');
       expect(fila).toHaveTextContent('Investigación: 6 h');
       expect(fila).not.toHaveTextContent('Gestión');
     });

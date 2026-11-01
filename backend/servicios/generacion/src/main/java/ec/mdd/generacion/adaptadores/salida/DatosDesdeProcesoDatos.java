@@ -7,6 +7,7 @@ import ec.mdd.generacion.dominio.Dedicacion;
 import ec.mdd.generacion.dominio.DocenteActivo;
 import ec.mdd.generacion.dominio.ElementoDeFormacion;
 import ec.mdd.generacion.dominio.FormacionDelDocente;
+import ec.mdd.generacion.dominio.MetaDeProporcion;
 import ec.mdd.generacion.dominio.PeriodoListo;
 import ec.mdd.generacion.dominio.PesosAfinidad;
 import ec.mdd.generacion.dominio.PesosDelPeriodo;
@@ -108,6 +109,12 @@ public final class DatosDesdeProcesoDatos
         return consultas
                 .obtener(ruta("normativa", "periodos", periodo, "actividades"), Catalogo.class)
                 .map(Catalogo::actividades);
+    }
+
+    @Override
+    public Optional<MetaDeProporcion> meta(String periodo) {
+        return consultas.obtener(
+                ruta("normativa", "periodos", periodo, "proporcion"), MetaDeProporcion.class);
     }
 
     @Override

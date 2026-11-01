@@ -10,6 +10,7 @@ import { traducirError } from '../../errores/traducir';
 import { Avisos, Marco } from '../comun/Formulario';
 import { SELECCION, ayuda, detalleDe, queFalta } from '../comun/formulario';
 import { useEnvio } from '../comun/useEnvio';
+import { PanelDeCarga } from '../comun/PanelDeCarga';
 import { useDocentes } from '../docentes/consultas';
 import {
   NOMBRE_DEL_COMPONENTE,
@@ -58,7 +59,7 @@ export function DialogoAsignar({
   carrera: string;
   alCerrar: () => void;
   /** Se llama con lo guardado: recarga y cierra. Recibe el aviso de horas, si hace falta. */
-  alGuardar: (aviso: string | null) => Promise<void>;
+  alGuardar: (aviso: string | null, docente: string) => Promise<void>;
 }) {
   const [docente, setDocente] = useState('');
   const [codigo, setCodigo] = useState('');
@@ -70,7 +71,7 @@ export function DialogoAsignar({
   const posibles = useActividadesPosibles(periodo, docente);
   // Una referencia, no un estado: se lee justo después de guardar, antes de volver a pintar.
   const avisoDeHoras = useRef<string | null>(null);
-  const envio = useEnvio(() => alGuardar(avisoDeHoras.current));
+  const envio = useEnvio(() => alGuardar(avisoDeHoras.current, docente));
   const actividades = posibles.data?.actividades ?? [];
   const ordenadas = COMPONENTES.flatMap((componente) =>
     actividades.filter((una) => una.componente === componente),
@@ -139,6 +140,7 @@ export function DialogoAsignar({
           </option>
         ))}
       </TextField>
+      {docente && <PanelDeCarga periodo={periodo} docente={docente} />}
       <SelectorLargo
         etiqueta="Actividad"
         opciones={ordenadas}

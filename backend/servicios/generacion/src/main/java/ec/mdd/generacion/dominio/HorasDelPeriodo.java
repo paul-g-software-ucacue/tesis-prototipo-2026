@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Las horas ya asignadas a los docentes, a partir de las propuestas, las actividades y la oferta de
@@ -75,20 +76,31 @@ public final class HorasDelPeriodo {
             Propuesta propuesta,
             List<AsignaturaParalelo> oferta,
             String carrera) {
-        oferta.stream()
+        horasDe(propuesta, oferta)
+                .ifPresent(
+                        suyas ->
+                                sumar(
+                                        horas,
+                                        propuesta.docente(),
+                                        suyas,
+                                        !propuesta.carrera().equals(carrera)));
+    }
+
+    /**
+     * Las horas actuales de una propuesta. Es la única forma de contarlas: la usan también los
+     * totales del docente (RF-27).
+     *
+     * @return vacío si su paralelo se retiró o ya no está en la oferta
+     */
+    static Optional<BigDecimal> horasDe(Propuesta propuesta, List<AsignaturaParalelo> oferta) {
+        return oferta.stream()
                 .filter(
                         una ->
                                 !una.retirada()
                                         && propuesta.esDe(
                                                 una.asignatura().codigo(), una.paralelo()))
                 .findFirst()
-                .ifPresent(
-                        una ->
-                                sumar(
-                                        horas,
-                                        propuesta.docente(),
-                                        una.horasSemanales(),
-                                        !propuesta.carrera().equals(carrera)));
+                .map(AsignaturaParalelo::horasSemanales);
     }
 
     private static void sumarActividad(

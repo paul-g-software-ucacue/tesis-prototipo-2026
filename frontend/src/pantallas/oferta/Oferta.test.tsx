@@ -19,6 +19,7 @@ import {
   SIN_PARCIALES,
   SUGERENCIA,
 } from './datosDePrueba';
+import { CARGA } from '../actividades/datosDePrueba';
 
 const VICERRECTOR = ['DISTRIBUTIVO:LECTURA', 'DISTRIBUTIVO:ESCRITURA'];
 const CONSOLIDACION = ['OFERTA:LECTURA', 'DISTRIBUTIVO:LECTURA'];
@@ -28,6 +29,8 @@ const SOLO_OFERTA = ['OFERTA:LECTURA'];
 const RUTA_SUGERENCIA =
   '/api/generacion/periodos/2026-2/oferta/DS-P-II-POO-204/A_NOCTURNA/sugerencia';
 const RUTA_PARCIALES = '/api/generacion/periodos/2026-2/parciales';
+const RUTA_CARGA = '/api/generacion/periodos/2026-2/docentes/0109990010/carga-horaria';
+const TOTALES = 'Totales de PERALTA MALDONADO JUAN ANDRES';
 const RUTA_PROPUESTA =
   '/api/generacion/periodos/2026-2/oferta/DS-P-II-POO-204/A_NOCTURNA/propuesta';
 const COORDINADOR = [...COORDINACION, 'OFERTA:ESCRITURA:PROPIO'];
@@ -580,6 +583,50 @@ describe('Oferta del periodo', () => {
     function conSugerencia(cambios = {}) {
       simulada.responder('GET', RUTA_SUGERENCIA, json(200, { ...SUGERENCIA, ...cambios }));
     }
+
+    function pedidosDeLaCarga() {
+      return simulada.peticiones.filter((uno) =>
+        new URL(uno.url).pathname.endsWith('carga-horaria'),
+      ).length;
+    }
+
+    it('al desplegar un candidato ve su panel, y los demás no se piden', async () => {
+      conSugerencia();
+      simulada.responder('GET', RUTA_CARGA, json(200, CARGA));
+      const dialogo = await abrirComoCoordinador();
+      await within(dialogo).findByText('PERALTA MALDONADO JUAN ANDRES');
+      expect(pedidosDeLaCarga()).toBe(0);
+
+      await userEvent.click(within(dialogo).getByText('PERALTA MALDONADO JUAN ANDRES'));
+
+      expect(await within(dialogo).findByRole('region', { name: TOTALES })).toBeVisible();
+      expect(pedidosDeLaCarga()).toBe(1);
+    });
+
+    it('sin distributivo, desplegar un candidato no pide los totales', async () => {
+      conSugerencia({ distributivoCreado: false });
+      const dialogo = await abrirComoCoordinador();
+
+      await userEvent.click(await within(dialogo).findByText('PERALTA MALDONADO JUAN ANDRES'));
+
+      expect(pedidosDeLaCarga()).toBe(0);
+    });
+
+    it('al guardar la propuesta ve el panel del docente en la oferta', async () => {
+      conSugerencia();
+      simulada.responder('GET', RUTA_CARGA, json(200, CARGA));
+      simulada.responder('PUT', RUTA_PROPUESTA, json(200, PROPUESTA));
+      const dialogo = await abrirComoCoordinador();
+
+      await userEvent.click(
+        await within(dialogo).findByRole('button', {
+          name: 'Proponer a PERALTA MALDONADO JUAN ANDRES',
+        }),
+      );
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(await screen.findByRole('region', { name: TOTALES })).toBeVisible();
+    });
 
     it('ofrece «Proponer» en cada candidato a quien escribe la oferta', async () => {
       conSugerencia();

@@ -111,7 +111,8 @@ async function abrir(pagina: Page) {
                       docente: DOCENTE,
                       nombreDocente: NOMBRE,
                       actividades: guardadas,
-                      horasPorComponente: {
+                      totales: {
+                        clase: 0,
                         otrasDocencia: guardadas
                           .filter((una) => una.componente === 'OTRAS_DOCENCIA')
                           .reduce((suma, una) => suma + una.horas, 0),
@@ -125,6 +126,20 @@ async function abrir(pagina: Page) {
                   ],
           },
         ],
+      },
+    }),
+  );
+  await pagina.route('**/carga-horaria', (ruta) =>
+    ruta.fulfill({
+      json: {
+        docente: DOCENTE,
+        nombreDocente: NOMBRE,
+        horasContratadas: 40,
+        totales: { clase: 0, otrasDocencia: 0, investigacion: 0, vinculacion: 0, gestion: 0 },
+        asignadas: 0,
+        disponibles: 40,
+        exceso: 0,
+        meta: { clase: 60, otrasDocencia: 40 },
       },
     }),
   );

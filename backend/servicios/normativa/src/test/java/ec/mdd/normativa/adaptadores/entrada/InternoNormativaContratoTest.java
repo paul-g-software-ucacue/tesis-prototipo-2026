@@ -11,8 +11,10 @@ import ec.mdd.normativa.dominio.PesosAfinidad;
 import ec.mdd.normativa.puertos.entrada.ActividadesDeLaVersion;
 import ec.mdd.normativa.puertos.entrada.ConsultarActividadesDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarPesosDelPeriodo;
+import ec.mdd.normativa.puertos.entrada.ConsultarProporcionDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.PeriodoSinVersion;
 import ec.mdd.normativa.puertos.entrada.PesosDeLaVersion;
+import ec.mdd.normativa.puertos.entrada.ProporcionDeLaVersion;
 import ec.mdd.plataforma.errores.ErroresAutoConfiguracion;
 import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
 import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
@@ -42,6 +44,7 @@ class InternoNormativaContratoTest {
 
     private static final String RUTA = "/interno/normativa/periodos/%s/pesos-de-afinidad";
     private static final String RUTA_ACTIVIDADES = "/interno/normativa/periodos/%s/actividades";
+    private static final String RUTA_PROPORCION = "/interno/normativa/periodos/%s/proporcion";
 
     private final ValidadorDeContrato contrato = ValidadorDeContrato.para("normativa");
 
@@ -115,6 +118,38 @@ class InternoNormativaContratoTest {
         contrato.validar(resultado);
     }
 
+    @Test
+    void dadoUnProceso_cuandoConsultaLaProporcion_entonces200ConLaMeta() throws Exception {
+        MvcResult resultado = pedirProporcion("2026-I", deProceso());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString())
+                .isEqualTo(
+                        "{\"periodo\":\"2026-I\",\"version\":2,\"clase\":60,\"otrasDocencia\":40}");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnPeriodoSinVersion_cuandoConsultaLaProporcion_entonces404() throws Exception {
+        MvcResult resultado = pedirProporcion("2099-I", deProceso());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(404);
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnTokenDeUsuario_cuandoConsultaLaProporcion_entonces403() throws Exception {
+        MvcResult resultado = pedirProporcion("2026-I", jwt());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(403);
+        contrato.validar(resultado);
+    }
+
+    private MvcResult pedirProporcion(String periodo, JwtRequestPostProcessor token)
+            throws Exception {
+        return mvc.perform(get(RUTA_PROPORCION.formatted(periodo)).with(token)).andReturn();
+    }
+
     private MvcResult pedirActividades(String periodo, JwtRequestPostProcessor token)
             throws Exception {
         return mvc.perform(get(RUTA_ACTIVIDADES.formatted(periodo)).with(token)).andReturn();
@@ -131,6 +166,16 @@ class InternoNormativaContratoTest {
 
     @TestConfiguration(proxyBeanMethods = false)
     static class Dobles {
+
+        @Bean
+        ConsultarProporcionDelPeriodo consultarProporcionDelPeriodo() {
+            return periodo -> {
+                if (!"2026-I".equals(periodo)) {
+                    throw new PeriodoSinVersion(periodo);
+                }
+                return new ProporcionDeLaVersion(2, new BigDecimal("60"), new BigDecimal("40"));
+            };
+        }
 
         @Bean
         ConsultarActividadesDelPeriodo consultarActividadesDelPeriodo() {
