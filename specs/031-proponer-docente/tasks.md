@@ -220,7 +220,7 @@ Plan aprobado por el autor el 2026-10-31.
   - la base limpia al terminar.
 
   Ajustar `deploy/probar_sugerencia.sh` y `deploy/probar_carrera_coordinador.sh` si cambian sus respuestas.
-- [ ] T035 Crear `specs/031-proponer-docente/evidencia.md`, y verificar:
+- [X] T035 Crear `specs/031-proponer-docente/evidencia.md`, y verificar:
   - todas las pruebas del backend y la SPA, con su cobertura por módulo, regenerando JaCoCo;
   - `integrationTest` de Generación;
   - Spotless, SpotBugs, ESLint, `npm run tipos` y Prettier;
@@ -229,7 +229,7 @@ Plan aprobado por el autor el 2026-10-31.
   - los criterios de terminado de la constitución (§6).
 
   Commit, push, PR en borrador con `Refs #48`, y marcarlo listo cuando sus comprobaciones pasen, sin empujar a la vez.
-- [ ] T036 Fusionar solo con la aprobación del autor. Verificar el despliegue en el equipo de demostración con evidencia (GitHub `demostracion` y los 8 contenedores sanos con la versión nueva). Antes de la comprobación, indicarle al autor qué registrar para ver varios candidatos y horas en otras carreras, si quiere. Después: la comprobación del autor, con SC-005, y el PR de evidencia con `Closes #48`, que dice qué no se vio en la demo.
+- [X] T036 Fusionar solo con la aprobación del autor. Verificar el despliegue en el equipo de demostración con evidencia (GitHub `demostracion` y los 8 contenedores sanos con la versión nueva). Antes de la comprobación, indicarle al autor qué registrar para ver varios candidatos y horas en otras carreras, si quiere. Después: la comprobación del autor, con SC-005, y el PR de evidencia con `Closes #48`, que dice qué no se vio en la demo.
 
 ---
 
