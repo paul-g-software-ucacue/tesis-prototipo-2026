@@ -78,6 +78,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-78 | 2026-10-31 | F06-H03 va antes que F07-H02, y mientras tanto una propuesta sin horas suficientes se guarda con un aviso | Aceptada | Issues #48 y #51 |
 | D-79 | 2026-11-01 | El catálogo de actividades vive en Normativa, por versión, y lo que exige cada actividad es un dato | Aceptada | RF-21, RN-22, RN-25, F06-H04 |
 | D-80 | 2026-11-01 | PostgreSQL y Caddy se publican como imágenes propias, derivadas de las oficiales | Aceptada | D-54, D-58 |
+| D-81 | 2026-11-01 | `cloudflared` sube a una versión con menos de dos semanas, como excepción | Aceptada | D-55, D-80 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1461,3 +1462,19 @@ El catálogo `CARGOS` de `diccionario-de-datos.yaml` cambia la fila del rango po
 Las 19 excepciones de `cloudflared` no cambian: su imagen no corre con el túnel apagado, y las versiones limpias cumplen dos semanas el 2026-11-13. Ese día se sube de versión y se quitan.
 
 **Documentos que hay que poner al día.** Ninguno: `specs/009-publicacion-despliegue` queda como el registro de esa historia.
+
+## D-81. `cloudflared` sube a una versión con menos de dos semanas, como excepción
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-01 · **Decidido por:** autor de la tesis
+- **Origen:** las 19 excepciones de Grype de `cloudflared` que quedaron después de D-80
+- **Precisa a:** D-80, que dejaba este cambio para el 2026-11-13
+
+**Decisión.** `cloudflared` pasa de 2026.9.3 a 2026.10.7, publicada el 2026-10-30, y `.grype.yaml` queda sin excepciones. Es una excepción puntual a la regla de usar versiones con al menos dos semanas; la regla sigue vigente.
+
+**Por qué.** La regla protege de una versión recién salida que venga mala, y esta imagen no corre con el túnel apagado. Esperar dejaba solo tres días de margen antes del vencimiento del 2026-11-16.
+
+**Alternativas.** Esperar al 2026-11-13: mantiene la regla, con 19 excepciones hasta entonces. Quitar `cloudflared` de la demo: pierde el túnel opcional de D-55.
+
+**Consecuencias.** El túnel sigue apagado: encenderlo es una decisión aparte, y antes hay que probar esta versión con un túnel real, porque aquí no se pudo.
+
+**Documentos que hay que poner al día.** Ninguno.

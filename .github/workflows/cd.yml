@@ -1,5 +1,5 @@
 # Publicación del MDD en Docker Hub (etapa 5, B00-H08; specs/009-publicacion-despliegue/contracts/publicacion.md).
-# Con cada fusión a main construye las 6 imágenes y el paquete de despliegue (D-58), Grype las revisa
+# Con cada fusión a main construye las 8 imágenes y el paquete de despliegue (D-58), Grype las revisa
 # junto con las de terceros (D-54) y, solo si todas pasan, las sube al repositorio privado. El equipo
 # de demostración las baja por su cuenta (D-55): este workflow no entra a ningún equipo.
 # En un pull request que toque el despliegue, el mismo job solo construye y revisa (check
@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
-      - name: Construcción de las 6 imágenes y del paquete
+      - name: Construcción de las 8 imágenes y del paquete
         shell: bash
         run: deploy/publicacion/construir.sh "$GITHUB_SHA"
 
