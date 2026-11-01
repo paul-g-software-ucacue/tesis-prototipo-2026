@@ -59,9 +59,31 @@ Registro de las comprobaciones de la historia (issue #48): crear el distributivo
 | Playwright | 99 de 99, con axe sobre los diálogos nuevos | Local | 2026-10-31 |
 | Scripts | Los 21 de `deploy/probar_*.sh` terminan en 0; el nuevo deja la base limpia | Local | 2026-10-31 |
 | `probar_equipo.sh` | Código 0 | Local | 2026-10-31 |
-| shellcheck | Sin observaciones | Local | 2026-10-31 |
+| shellcheck y Gitleaks | Sin observaciones | Local | 2026-10-31 |
+| CI del PR #169 | 12 de 12 en verde, con `test-integracion`, `sca`, los dos `sbom` y `perfil-consolidado`, que corre `probar_propuestas.sh` | GitHub Actions | 2026-10-31 |
+
+## Equipo de demostración
+
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| El despliegue | `a27e14a` (#169): «success · Sano en 58 s». Los 8 contenedores sanos, con las 6 imágenes propias en `…-a27e14ac4dbe`, y la migración V3 de Generación aplicada | GitHub Deployments, `docker ps`, la base (solo lectura) | 2026-10-31 |
+| Crear | Con `vicerrectorado.demo`, en 003, el tablero dice «ya tiene su distributivo, en la versión 1» y deja de ofrecer el botón. La base tiene 1 distributivo y 1 parcial en elaboración | Capturas del autor (no se copian al repositorio), la base | 2026-10-31 |
+| Proponer | Con `coordinacion.demo`, «1 de 3 propuestas» y cada fila con su docente y «Disponibilidad», por ser tronco común | Capturas del autor | 2026-10-31 |
+| Parcial completo | «3 de 3 propuestas» y «Parcial completo»; D, retirada, no cuenta | Capturas del autor | 2026-10-31 |
+| Quitar | La fila queda sin docente y el contador baja a «2 de 3». La base tiene 2 propuestas sin texto, y el registro 1 distributivo creado, 4 propuestas guardadas y 2 quitadas: cuadra | Capturas del autor, la base | 2026-10-31 |
+| «Horas a cubrir» | Se lee sin «del periodo» en la oferta del coordinador | Capturas del autor | 2026-10-31 |
+| SC-005, menos de 2 minutos | Entre dos propuestas seguidas pasaron 12 s y 64 s, según las horas del registro. No se cronometró, y con 1 solo candidato: el criterio pide varios, así que queda indicado, no demostrado | La base | 2026-10-31 |
+
+**No se vio en la demo**, porque tiene 1 docente y 1 carrera con oferta, de tronco común. Se comprobó con los 47 docentes de prueba en `probar_propuestas.sh`, en CI:
+
+- varios candidatos;
+- «Docentes bajo el mínimo» y la justificación escrita (la pantalla, solo en Vitest y Playwright);
+- el aviso «Sin horas suficientes»;
+- las horas en otras carreras;
+- la marca «Paralelo retirado» sobre una propuesta.
 
 ## Notas
 
 - Las pruebas de Vitest esperan hasta 5 s en lugar de 1 s (`src/pruebas/configuracion.ts`): con la consulta nueva del tablero, dos pruebas fallaban de forma intermitente con toda la suite en paralelo.
+- En la oferta, el coordinador ve «Solo lectura: tu rol no cambia la oferta» aunque sí puede proponer. Es cierto para la oferta, pero se presta a confusión; queda anotado para ajustar el texto.
 - El periodo cerrado se prueba con dobles (`ProponerDocenteServicioTest`, `CrearDistributivoServicioTest`), no en el script punta a punta.
