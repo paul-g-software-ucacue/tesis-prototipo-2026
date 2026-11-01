@@ -184,7 +184,7 @@ Plan aprobado por el autor el 2026-10-31.
   - quitar el rol borra la carrera;
   - la oferta en menos de 3 s (SC-005);
   - la base limpia al terminar, también los roles y la carrera de `coordinacion.demo`.
-- [ ] T028 Crear `specs/030-carrera-coordinador/evidencia.md`, y verificar:
+- [X] T028 Crear `specs/030-carrera-coordinador/evidencia.md`, y verificar:
   - todas las pruebas del backend y la SPA, con su cobertura por módulo, regenerando JaCoCo;
   - Spotless, SpotBugs, ESLint y TypeScript;
   - los scripts de `deploy/`, shellcheck y Gitleaks;
