@@ -204,7 +204,7 @@ Plan aprobado por el autor el 2026-11-01.
   - la base limpia al terminar.
 
   Ajustar `deploy/probar_normativa.sh` si cuenta las filas de una versión.
-- [ ] T032 Crear `specs/032-actividades-no-lectivas/evidencia.md`, y verificar:
+- [X] T032 Crear `specs/032-actividades-no-lectivas/evidencia.md`, y verificar:
   - todas las pruebas del backend y la SPA, con su cobertura por módulo, regenerando JaCoCo;
   - `integrationTest` de Generación, Normativa y Docentes;
   - Spotless, SpotBugs, ESLint, `npm run tipos` y Prettier;
@@ -213,7 +213,7 @@ Plan aprobado por el autor el 2026-11-01.
   - los criterios de terminado de la constitución (§6).
 
   Commit, push, PR en borrador con `Refs #49`, y marcarlo listo cuando sus comprobaciones pasen, sin empujar a la vez.
-- [ ] T033 Fusionar solo con la aprobación del autor. Verificar el despliegue en el equipo de demostración con evidencia (GitHub `demostracion` y los 8 contenedores sanos con la versión nueva). Antes de la comprobación, indicarle al autor qué registrar para ver un proyecto y un cargo, si quiere. Después: la comprobación del autor, con SC-005, y el PR de evidencia con `Closes #49`, que dice qué no se vio en la demo.
+- [X] T033 Fusionar solo con la aprobación del autor. Verificar el despliegue en el equipo de demostración con evidencia (GitHub `demostracion` y los 8 contenedores sanos con la versión nueva). Antes de la comprobación, indicarle al autor qué registrar para ver un proyecto y un cargo, si quiere. Después: la comprobación del autor, con SC-005, y el PR de evidencia con `Closes #49`, que dice qué no se vio en la demo.
 
 ---
 

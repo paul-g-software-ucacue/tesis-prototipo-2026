@@ -76,6 +76,7 @@
 - **Decisión:** una entrada nueva «Actividades no lectivas», con `LECTURA_DE_LA_OFERTA`. Una tabla por carrera, con una fila por docente, sus actividades y la suma por componente.
 - **Elegir al docente:** con `/api/docentes`, que el coordinador ya puede leer, solo los activos.
 - **El aviso de horas:** la respuesta de guardar trae `horasSuficientes`.
+- **La actividad y el proyecto:** no usan una lista nativa, porque no parte los textos largos y se sale de la pantalla (PR #172). Se eligen en una lista que se puede buscar.
 
 ## 10. El texto «Solo lectura»
 
