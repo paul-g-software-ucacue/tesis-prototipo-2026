@@ -2,16 +2,16 @@
 # Revisa con Grype las imágenes de una versión antes de publicarla (B00-H08, escenario 2, FR-002 y
 # FR-003, D-54; specs/009-publicacion-despliegue/contracts/publicacion.md). Uso:
 #   deploy/publicacion/revisar.sh <commit>
-# Revisa las 6 imágenes mdd/<componente>:<commit12> que dejó construir.sh y las de terceros que usa el
-# equipo de demostración (las image: con digest de deploy/equipo/compose.demo.yml, también la del
-# perfil tunel), con las mismas excepciones y el mismo resumen de 4 · sca (B00-H07). Escribe el
+# Revisa las 8 imágenes mdd/<componente>:<commit12> que dejó construir.sh y las de terceros que usa el
+# equipo de demostración (las image: con digest de deploy/equipo/compose.demo.yml: hoy, la del perfil
+# tunel), con las mismas excepciones y el mismo resumen de 4 · sca (B00-H07). Escribe el
 # resumen en Markdown en la salida estándar y termina con 1 si alguna imagen tiene una vulnerabilidad
 # alta o crítica con versión corregida sin excepción vigente, o si Grype falla.
 # GRYPE: ruta del binario (por defecto, grype en el PATH). Necesita yq 4 y jq.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
-readonly COMPONENTES=(identidad datos distributivo salida gateway frontend)
+readonly COMPONENTES=(identidad datos distributivo salida gateway frontend caddy postgres)
 readonly GRYPE=${GRYPE:-grype}
 
 commit=${1:?Uso: revisar.sh <commit>}

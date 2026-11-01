@@ -1,12 +1,14 @@
 # Contexto de construcción de las imágenes (ADR-015): deploy/docker/java.Dockerfile usa backend/ y
 # contratos/, y deploy/docker/frontend.Dockerfile usa frontend/ y contratos/ (B00-H06). Todo lo
 # demás del repositorio queda fuera, también las salidas de Gradle y de npm. El paquete de despliegue
-# (deploy/docker/despliegue.Dockerfile, D-58) usa solo estos archivos de deploy/.
+# (deploy/docker/despliegue.Dockerfile, D-58) usa solo estos archivos de deploy/, y Caddy (D-80), su
+# carpeta.
 *
 !backend/
 !contratos/
 !frontend/
 !deploy/Caddyfile
+!deploy/docker/caddy/
 !deploy/desplegar.sh
 !deploy/equipo/compose.demo.yml
 !deploy/equipo/probar_humo.sh

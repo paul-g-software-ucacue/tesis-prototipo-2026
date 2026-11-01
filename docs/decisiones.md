@@ -77,6 +77,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-77 | 2026-10-31 | Las horas semanales admiten hasta dos decimales | Aceptada | RN-18, F03-H03, modelo táctico |
 | D-78 | 2026-10-31 | F06-H03 va antes que F07-H02, y mientras tanto una propuesta sin horas suficientes se guarda con un aviso | Aceptada | Issues #48 y #51 |
 | D-79 | 2026-11-01 | El catálogo de actividades vive en Normativa, por versión, y lo que exige cada actividad es un dato | Aceptada | RF-21, RN-22, RN-25, F06-H04 |
+| D-80 | 2026-11-01 | PostgreSQL y Caddy se publican como imágenes propias, derivadas de las oficiales | Aceptada | D-54, D-58 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1442,3 +1443,21 @@ El catálogo `CARGOS` de `diccionario-de-datos.yaml` cambia la fila del rango po
 **Alternativas.** Una tabla sin versión: es más simple, pero habría que migrarla cuando el catálogo cambie. Una lista en el código de Generación: rompe el principio VI.
 
 **Consecuencias.** Guardar una versión nueva también copia su catálogo. RF-21 completo, habilitar actividades por periodo, parte de esta tabla.
+
+## D-80. PostgreSQL y Caddy se publican como imágenes propias, derivadas de las oficiales
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-01 · **Decidido por:** autor de la tesis
+- **Origen:** las 87 excepciones de Grype que vencían el 2026-11-16
+- **Modifica a:** D-58, que publica 6 imágenes y el paquete; ahora son 8 y el paquete
+
+**Decisión.** La imagen de PostgreSQL es la oficial con los paquetes de Alpine al día. La de Caddy también, y además lleva el binario 2.11.7 compilado con Go 1.26.9, x/net 0.60.0 y go-jose 4.1.6, fijados en `deploy/docker/caddy/go.mod`. Las dos se construyen, se revisan con Grype y se publican con cada commit, como las demás.
+
+**Por qué.** Las imágenes oficiales más recientes siguen trayendo esas vulnerabilidades, también las reconstruidas la misma semana. Las 68 excepciones de estas dos imágenes solo se podían renovar, no resolver. Con las imágenes propias, Grype no encuentra ninguna alta o crítica con versión corregida en ellas.
+
+**Alternativas.** Renovar las excepciones: se repite cada 30 días y Caddy es la puerta de entrada de la demo. Reemplazar Caddy por el Nginx del frontend: cambia el acceso restringido y el certificado. Esperar a las imágenes oficiales: no tiene fecha.
+
+**Consecuencias.** Cada despliegue reinicia también PostgreSQL y Caddy, porque su etiqueta cambia con el commit; los datos siguen en sus volúmenes. La publicación tarda más, porque compila Caddy. Los paquetes de Alpine se actualizan solos en cada fusión; Go y las dependencias de Caddy, con Dependabot o a mano. `preparar.sh` sigue usando la imagen oficial, solo para calcular el hash de la contraseña. `compose.yaml` y las pruebas también siguen con la oficial, porque no se publican.
+
+Las 19 excepciones de `cloudflared` no cambian: su imagen no corre con el túnel apagado, y las versiones limpias cumplen dos semanas el 2026-11-13. Ese día se sube de versión y se quitan.
+
+**Documentos que hay que poner al día.** Ninguno: `specs/009-publicacion-despliegue` queda como el registro de esa historia.

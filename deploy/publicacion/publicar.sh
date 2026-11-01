@@ -3,13 +3,13 @@
 # contracts/publicacion.md). Uso, con la sesión ya iniciada en el registro:
 #   deploy/publicacion/publicar.sh <repositorio> <commit>
 #   (por ejemplo: docker.io/p980/mdd, o localhost:5000/mdd en probar_equipo.sh)
-# Sube, en este orden, las 6 imágenes como <componente>-<commit12>, el paquete como
+# Sube, en este orden, las 8 imágenes como <componente>-<commit12>, el paquete como
 # despliegue-<commit12> y, por último, mueve despliegue-main: el equipo de demostración solo mira esa
 # etiqueta, así que nunca ve una versión a medias. Si un push falla, despliegue-main no se mueve y el
 # script termina con 1. Imprime una tabla Markdown con las etiquetas y sus digest.
 set -euo pipefail
 
-readonly COMPONENTES=(identidad datos distributivo salida gateway frontend despliegue)
+readonly COMPONENTES=(identidad datos distributivo salida gateway frontend caddy postgres despliegue)
 
 repositorio=${1:?Uso: publicar.sh <repositorio> <commit>}
 commit=${2:?Uso: publicar.sh <repositorio> <commit>}
@@ -33,7 +33,7 @@ printf '| Etiqueta | Digest |\n|---|---|\n' >"$tabla"
 for componente in "${COMPONENTES[@]}"; do
     subir "mdd/$componente:$corto" "$componente-$corto"
 done
-# Al final, cuando las 7 etiquetas del commit ya están: el punto de publicación (research §4).
+# Al final, cuando las 9 etiquetas del commit ya están: el punto de publicación (research §4).
 subir "mdd/despliegue:$corto" despliegue-main
 
 echo "### Publicación de \`$corto\` en \`$repositorio\`"
