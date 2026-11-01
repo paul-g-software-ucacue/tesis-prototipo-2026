@@ -10,6 +10,7 @@ import { cerrarSesion, iniciarSesion } from '../../sesion/almacen';
 import { CARRERAS } from '../carreras/datosDePrueba';
 import { RESUMENES } from '../docentes/datosDePrueba';
 import { PERIODOS } from '../periodos/datosDePrueba';
+import { literal } from './consultas';
 import { ACTIVIDADES, CARRERA, POSIBLES, SIN_ACTIVIDADES, SIN_DISTRIBUTIVO } from './datosDePrueba';
 
 const COORDINADOR = [
@@ -71,12 +72,24 @@ describe('Actividades no lectivas', () => {
     const dialogo = await screen.findByRole('dialog', { name: 'Asignar actividad' });
     await within(dialogo).findByRole('option', { name: 'PERALTA MALDONADO JUAN ANDRES' });
     await userEvent.selectOptions(within(dialogo).getByLabelText('Docente'), DOCENTE);
-    await within(dialogo).findByRole('option', { name: /^140 b\)/ });
+    await waitFor(() =>
+      expect(within(dialogo).getByRole('combobox', { name: 'Actividad' })).toBeEnabled(),
+    );
     return dialogo;
   }
 
+  async function abrirLaLista(dialogo: HTMLElement, etiqueta: string) {
+    await userEvent.click(within(dialogo).getByRole('combobox', { name: etiqueta }));
+    return screen.findByRole('listbox', { name: etiqueta });
+  }
+
   async function elegir(dialogo: HTMLElement, actividad: string) {
-    await userEvent.selectOptions(within(dialogo).getByLabelText('Actividad'), actividad);
+    const lista = await abrirLaLista(dialogo, 'Actividad');
+    await userEvent.click(
+      within(lista).getByRole('option', {
+        name: new RegExp(`^${literal(actividad).replace(')', '\\)')}`),
+      }),
+    );
   }
 
   it('está en el menú de quien lee la oferta, y no para los demás', async () => {
@@ -103,13 +116,44 @@ describe('Actividades no lectivas', () => {
   it('el formulario agrupa por componente y no ofrece comisiones ni clases', async () => {
     const dialogo = await abrirFormulario();
 
-    const actividad = within(dialogo).getByLabelText('Actividad');
+    const lista = await abrirLaLista(dialogo, 'Actividad');
     expect(
-      within(actividad).getByRole('group', { name: 'Otras actividades de docencia' }),
+      within(lista).getByRole('group', { name: 'Otras actividades de docencia' }),
     ).toBeInTheDocument();
-    expect(within(actividad).getByRole('group', { name: 'Gestión' })).toBeInTheDocument();
-    expect(within(actividad).queryByRole('option', { name: /comisi/i })).not.toBeInTheDocument();
-    expect(within(actividad).queryByRole('option', { name: /Impartir clases/ })).toBeNull();
+    expect(within(lista).getByRole('group', { name: 'Gestión' })).toBeInTheDocument();
+    expect(within(lista).queryByRole('option', { name: /comisi/i })).not.toBeInTheDocument();
+    expect(within(lista).queryByRole('option', { name: /Impartir clases/ })).toBeNull();
+  });
+
+  it('busca la actividad por lo que escribes, sin importar las tildes', async () => {
+    const dialogo = await abrirFormulario();
+
+    await userEvent.type(
+      within(dialogo).getByRole('combobox', { name: 'Actividad' }),
+      'vinculacion',
+    );
+
+    const lista = await screen.findByRole('listbox', { name: 'Actividad' });
+    expect(within(lista).getAllByRole('option')).toHaveLength(1);
+    expect(within(lista).getByRole('option', { name: /vinculación/ })).toBeInTheDocument();
+  });
+
+  it('sin coincidencias lo dice', async () => {
+    const dialogo = await abrirFormulario();
+
+    await userEvent.type(within(dialogo).getByRole('combobox', { name: 'Actividad' }), 'zzz');
+
+    expect(await screen.findByText('Ninguna coincide con lo que escribiste.')).toBeVisible();
+  });
+
+  it('muestra el texto completo de la actividad elegida', async () => {
+    const dialogo = await abrirFormulario();
+
+    await elegir(dialogo, '140-b');
+
+    expect(
+      within(dialogo).getByText('140 b) Planificar y actualizar contenidos de clases'),
+    ).toBeVisible();
   });
 
   it('asigna con el docente, la actividad y las horas, cierra y recarga', async () => {
@@ -315,10 +359,9 @@ describe('Actividades no lectivas', () => {
       const dialogo = await abrirFormulario();
 
       await elegir(dialogo, '141-a');
-      await userEvent.selectOptions(
-        await within(dialogo).findByLabelText('Proyecto'),
-        'INV-2025-01',
-      );
+      await within(dialogo).findByRole('combobox', { name: 'Proyecto' });
+      const lista = await abrirLaLista(dialogo, 'Proyecto');
+      await userEvent.click(within(lista).getByRole('option', { name: /^INV-2025-01/ }));
       await userEvent.type(within(dialogo).getByLabelText('Horas semanales'), '6');
       await userEvent.click(within(dialogo).getByRole('button', { name: 'Asignar' }));
 
@@ -348,7 +391,7 @@ describe('Actividades no lectivas', () => {
 
       expect(await within(dialogo).findByText(/no tiene proyectos asignables/)).toBeVisible();
       expect(within(dialogo).getByRole('button', { name: 'Asignar' })).toBeDisabled();
-      expect(within(dialogo).queryByLabelText('Proyecto')).not.toBeInTheDocument();
+      expect(within(dialogo).queryByRole('combobox', { name: 'Proyecto' })).toBeNull();
     });
 
     it('una actividad sin exigencias no pide proyecto', async () => {
@@ -356,7 +399,7 @@ describe('Actividades no lectivas', () => {
 
       await elegir(dialogo, '140-b');
 
-      expect(within(dialogo).queryByLabelText('Proyecto')).not.toBeInTheDocument();
+      expect(within(dialogo).queryByRole('combobox', { name: 'Proyecto' })).toBeNull();
     });
   });
 
