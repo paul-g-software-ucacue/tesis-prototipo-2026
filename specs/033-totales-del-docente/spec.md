@@ -33,7 +33,7 @@ Esta historia agrega:
 
 - Q: ¿Dónde ve el coordinador los totales? → A: En las dos pantallas. Al guardar una propuesta en la oferta o una actividad en «Actividades no lectivas» aparece el panel del docente, y en Actividades la columna de horas pasa a mostrar sus totales de todas las carreras.
 - Q: ¿De qué docentes puede verlos un coordinador? → A: De cualquier docente activo. Solo ve sumas por componente, sin el detalle de lo asignado en otras carreras.
-- Q: ¿Cómo se muestra un docente que se aparta de 60/40? → A: Con los porcentajes y la meta, por ejemplo «Clase 67 % · Otras 33 % (meta 60/40)», sin marcarlo como error. La meta se lee de la normativa, y la justificación llega con F07-H03.
+- Q: ¿Cómo se muestra un docente que se aparta de 60/40? → A: Con los porcentajes y la meta, por ejemplo «Clase 67 % · Otras 33 % (meta 60/40)», sin marcarlo como error. La meta se lee de la normativa. Nota del 2026-11-01: la justificación llega con F10-H01, no con F07-H03 (D-85).
 - Q: ¿Se revisa aquí que consten la planificación y la evaluación? → A: No. Es una regla global y queda para F10-H01.
 
 ## User Scenarios & Testing *(mandatory)*

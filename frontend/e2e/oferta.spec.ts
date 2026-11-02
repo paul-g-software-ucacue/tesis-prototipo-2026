@@ -383,7 +383,7 @@ const COORDINADOR = {
 };
 
 /** El coordinador abre la sugerencia; cada propuesta queda en los parciales simulados. */
-async function abrirComoCoordinador(pagina: Page) {
+async function abrirComoCoordinador(pagina: Page, { pideTexto = false } = {}) {
   const propuestas: unknown[] = [];
   await pagina.route('**/api/generacion/periodos/*/oferta/*/*/sugerencia', (ruta) =>
     ruta.fulfill({ json: SUGERENCIA }),
@@ -393,6 +393,19 @@ async function abrirComoCoordinador(pagina: Page) {
       docente: string;
       texto?: string;
     };
+    if (pideTexto && !texto) {
+      await ruta.fulfill({
+        json: {
+          guardada: false,
+          advertencia: {
+            regla: 'RN-19',
+            titulo: 'Falta la justificación',
+            descripcion: 'Este docente está bajo el mínimo de afinidad.',
+          },
+        },
+      });
+      return;
+    }
     const propuesta = {
       asignatura: POO.codigo,
       paralelo: 'A_NOCTURNA',
@@ -402,9 +415,10 @@ async function abrirComoCoordinador(pagina: Page) {
       texto,
       retirada: false,
       horasSuficientes: true,
+      ...(texto ? { inconsistencia: { regla: 'RN-19', estado: 'JUSTIFICADA' } } : {}),
     };
     propuestas.push(propuesta);
-    await ruta.fulfill({ json: propuesta });
+    await ruta.fulfill({ json: { guardada: true, propuesta } });
   });
   await abrirOferta(pagina, [nocturna('A_NOCTURNA')], COORDINADOR);
   await pagina.route('**/api/generacion/periodos/*/parciales', (ruta) =>
@@ -438,6 +452,30 @@ test('el coordinador propone a un candidato y ve el parcial completo', async ({ 
   await expect(page.getByText('Propuesto: PROPUESTO DEL SERVIDOR · Afinidad')).toBeVisible();
   await expect(page.getByText('1 de 1 propuestas')).toBeVisible();
   await expect(page.getByText('Parcial completo')).toBeVisible();
+  await sinFallas(page);
+});
+
+test('si el servidor pide la justificación, abre el campo, sin error, y guarda', async ({
+  page,
+}) => {
+  const dialogo = await abrirComoCoordinador(page, { pideTexto: true });
+
+  await dialogo
+    .getByRole('button', { name: /^Proponer a / })
+    .first()
+    .click();
+
+  const justificar = page.getByRole('dialog', { name: /^Justificar a / });
+  await expect(page.locator('.MuiDialog-container').last()).toHaveCSS('opacity', '1');
+  await expect(justificar.getByRole('status')).toContainText('Falta la justificación');
+  await expect(justificar.getByRole('alert')).toHaveCount(0);
+  await sinFallas(page);
+
+  await justificar.getByLabel(/Justificación/).fill('Dictó esta materia durante tres años');
+  await justificar.getByRole('button', { name: 'Guardar propuesta' }).click();
+
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect(page.getByText('Bajo el mínimo, justificada')).toBeVisible();
   await sinFallas(page);
 });
 

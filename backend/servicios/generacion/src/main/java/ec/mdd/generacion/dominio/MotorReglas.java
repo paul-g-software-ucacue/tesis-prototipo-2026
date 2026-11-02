@@ -39,14 +39,39 @@ public final class MotorReglas {
         if (sePasaYSube(antes.asignadas(), despues.asignadas(), limite)) {
             return Optional.of(
                     new Inconsistencia(
-                            ReglaDeAsignacion.RN_02, queQueda(limite, antes.asignadas())));
+                            ReglaDeAsignacion.RN_02,
+                            Severidad.DURA,
+                            queQueda(limite, antes.asignadas())));
         }
         BigDecimal tope = reglas.horasClaseConProyecto();
         if (conProyecto && sePasaYSube(antes.clase(), despues.clase(), tope)) {
             return Optional.of(
-                    new Inconsistencia(ReglaDeAsignacion.RN_13, queQueda(tope, antes.clase())));
+                    new Inconsistencia(
+                            ReglaDeAsignacion.RN_13,
+                            Severidad.DURA,
+                            queQueda(tope, antes.clase())));
         }
         return Optional.empty();
+    }
+
+    /**
+     * Evalúa RN-19: un docente bajo el mínimo, salvo en tronco común, con la severidad de la
+     * normativa. Se evalúa después de las reglas de horas.
+     *
+     * @param puntaje su puntaje de afinidad
+     * @param minimo el mínimo de la versión
+     * @param troncoComun si la asignatura es de tronco común
+     * @param reglas las cifras de la normativa
+     * @return la regla, si no se cumple
+     */
+    public static Optional<Inconsistencia> evaluarAfinidad(
+            BigDecimal puntaje, BigDecimal minimo, boolean troncoComun, ReglasDelPeriodo reglas) {
+        if (troncoComun || puntaje.compareTo(minimo) >= 0) {
+            return Optional.empty();
+        }
+        return Optional.of(
+                new Inconsistencia(
+                        ReglaDeAsignacion.RN_19, reglas.severidadAfinidad(), BigDecimal.ZERO));
     }
 
     /** Si alguno de sus proyectos asignables activa el tope de clase (RN-13). */

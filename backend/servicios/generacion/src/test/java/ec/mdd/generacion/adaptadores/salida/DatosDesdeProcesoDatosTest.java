@@ -17,6 +17,7 @@ import ec.mdd.generacion.dominio.PesosDelPeriodo;
 import ec.mdd.generacion.dominio.ProyectoDelDocente;
 import ec.mdd.generacion.dominio.ProyectosYCargosDelDocente;
 import ec.mdd.generacion.dominio.ReglasDelPeriodo;
+import ec.mdd.generacion.dominio.Severidad;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
 import ec.mdd.plataforma.eventos.ProveedorDeTokenDeProceso;
@@ -109,12 +110,13 @@ class DatosDesdeProcesoDatosTest {
                 "/interno/normativa/periodos/2026-I/reglas-de-asignacion",
                 200,
                 "{\"periodo\":\"2026-I\",\"version\":2,\"horasMaximasDocente\":40,"
-                        + "\"horasClaseConProyecto\":16}");
+                        + "\"horasClaseConProyecto\":16,\"severidadAfinidad\":\"DURA\"}");
 
         ReglasDelPeriodo reglas = datos.reglas(PERIODO).orElseThrow();
 
         assertThat(reglas.horasMaximasDocente()).isEqualByComparingTo("40");
         assertThat(reglas.horasClaseConProyecto()).isEqualByComparingTo("16");
+        assertThat(reglas.severidadAfinidad()).isEqualTo(Severidad.DURA);
     }
 
     @Test

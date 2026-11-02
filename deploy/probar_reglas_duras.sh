@@ -291,6 +291,11 @@ proponer() {  # proponer <asignatura> <paralelo> <docente> [texto]: con el token
         "$(jq -cn --arg d "$3" --arg t "${4:-}" 'if $t == "" then {docente: $d} else {docente: $d, texto: $t} end')"
 }
 
+# Un 200 ya no significa guardado: sin la justificación llega una advertencia (F07-H03).
+guardada() {
+    [[ $estado == 200 && $(jq -r '.guardada' <<<"$cuerpo") == true ]]
+}
+
 # asignar <carrera> <docente> <actividad> <horas> [proyecto]: con el token de $token
 asignar() {
     pedir PUT "$GATEWAY/api/generacion/periodos/$PERIODO/parciales/$1/docentes/$2/actividades/$3" \
@@ -373,7 +378,7 @@ agregar_clase() {
 # Propone con el texto si hace falta: la justificación no levanta una regla dura.
 proponer_con_texto() {  # proponer_con_texto <asignatura> <paralelo> <docente>
     proponer "$1" "$2" "$3"
-    if [[ $estado == 400 ]]; then
+    if [[ $estado == 200 && $(jq -r '.guardada' <<<"$cuerpo") == false ]]; then
         proponer "$1" "$2" "$3" 'Justificación de la prueba punta a punta'
     fi
 }
@@ -434,7 +439,7 @@ el_tope_de_clase() {
     iniciar "$COORDINADOR_A"
     proponer_con_texto "$asignatura" "$paralelo" "$con_practicas"
     echo "       con prácticas respondió $estado"
-    [[ $estado == 200 ]]
+    guardada
 }
 
 # dos_a_la_vez <docente> <horas A> <horas B>: envía las dos a la vez; deja los códigos en $codigos.
@@ -519,7 +524,7 @@ sugerencia_y_guardado() {
             | select(.identificacion != $l and .identificacion != $i)][0].identificacion' <<<"$cuerpo")
     sin_motivo=$docente
     proponer_con_texto "$asignatura_a" "$paralelo_a" "$sin_motivo"
-    [[ $estado == 200 ]] || return 1
+    guardada || return 1
     # El orden: nadie con motivo antes de alguien sin motivo.
     iniciar "$COORDINADOR_B"
     sugerencia "$asignatura_b" "$paralelo_b"

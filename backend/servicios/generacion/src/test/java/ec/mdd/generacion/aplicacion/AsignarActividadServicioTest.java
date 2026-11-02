@@ -30,6 +30,7 @@ import ec.mdd.generacion.dominio.ProyectoDelDocente;
 import ec.mdd.generacion.dominio.ProyectoNoValido;
 import ec.mdd.generacion.dominio.ProyectosYCargosDelDocente;
 import ec.mdd.generacion.dominio.ReglasDelPeriodo;
+import ec.mdd.generacion.dominio.Severidad;
 import ec.mdd.generacion.dominio.TipoDeJustificacion;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
 import ec.mdd.generacion.dominio.VersionDistributivo;
@@ -679,7 +680,10 @@ class AsignarActividadServicioTest {
         when(actividades.reglas(PERIODO))
                 .thenReturn(
                         Optional.of(
-                                new ReglasDelPeriodo(new BigDecimal("40"), new BigDecimal("16"))));
+                                new ReglasDelPeriodo(
+                                        new BigDecimal("40"),
+                                        new BigDecimal("16"),
+                                        Severidad.BLANDA)));
         when(actividades.catalogo(PERIODO))
                 .thenReturn(
                         Optional.of(

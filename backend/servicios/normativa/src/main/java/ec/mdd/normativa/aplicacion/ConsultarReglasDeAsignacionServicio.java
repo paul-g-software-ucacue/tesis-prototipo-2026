@@ -1,6 +1,8 @@
 package ec.mdd.normativa.aplicacion;
 
 import ec.mdd.normativa.dominio.FilaCargaHoraria;
+import ec.mdd.normativa.dominio.Regla;
+import ec.mdd.normativa.dominio.Severidad;
 import ec.mdd.normativa.dominio.VersionNormativa;
 import ec.mdd.normativa.puertos.entrada.ConsultarReglasDeAsignacion;
 import ec.mdd.normativa.puertos.entrada.PeriodoSinVersion;
@@ -9,12 +11,14 @@ import ec.mdd.normativa.puertos.salida.RepositorioVersiones;
 import java.math.BigDecimal;
 
 /**
- * Las cifras de las reglas duras de un periodo: el tope de horas de RN-02 y el tope de clase de la
- * fila de quien tiene proyecto, que es donde la política guarda las 16 h de RN-13.
+ * Las cifras de las reglas de una asignación: el tope de horas de RN-02, el tope de clase de la
+ * fila de quien tiene proyecto, que es donde la política guarda las 16 h de RN-13, y la severidad
+ * de RN-19.
  */
 public final class ConsultarReglasDeAsignacionServicio implements ConsultarReglasDeAsignacion {
 
     private static final String REGLA_DE_HORAS = "RN-02";
+    private static final String REGLA_DE_AFINIDAD = "RN-19";
     private static final String PARAMETRO_DE_HORAS = "horas_maximas_docente";
     private static final String PERFIL_CON_PROYECTO = "DOCENTE_INVESTIGACION_VINCULACION";
 
@@ -39,7 +43,11 @@ public final class ConsultarReglasDeAsignacionServicio implements ConsultarRegla
                         .findFirst()
                         .map(FilaCargaHoraria::horasClaseMaximo)
                         .orElseThrow(() -> sinCifra(version, PERFIL_CON_PROYECTO));
-        return new ReglasDeLaVersion(version.numero(), horas, BigDecimal.valueOf(clase));
+        Severidad afinidad =
+                version.regla(REGLA_DE_AFINIDAD)
+                        .map(Regla::severidad)
+                        .orElseThrow(() -> sinCifra(version, "la severidad de RN-19"));
+        return new ReglasDeLaVersion(version.numero(), horas, BigDecimal.valueOf(clase), afinidad);
     }
 
     private static IllegalStateException sinCifra(VersionNormativa version, String falta) {

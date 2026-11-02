@@ -590,6 +590,116 @@ describe('Oferta del periodo', () => {
       ).length;
     }
 
+    it('si falta la justificación, avisa sin error y abre el campo', async () => {
+      conSugerencia();
+      simulada.responder(
+        'PUT',
+        RUTA_PROPUESTA,
+        json(200, {
+          guardada: false,
+          advertencia: {
+            regla: 'RN-19',
+            titulo: 'Falta la justificación',
+            descripcion: 'Este docente está bajo el mínimo de afinidad.',
+          },
+        }),
+      );
+      const dialogo = await abrirComoCoordinador();
+
+      await userEvent.click(
+        await within(dialogo).findByRole('button', {
+          name: 'Proponer a PERALTA MALDONADO JUAN ANDRES',
+        }),
+      );
+
+      const justificar = await screen.findByRole('dialog', {
+        name: 'Justificar a PERALTA MALDONADO JUAN ANDRES',
+      });
+      expect(within(justificar).getByRole('status')).toHaveTextContent('Falta la justificación');
+      expect(within(justificar).queryByRole('alert')).not.toBeInTheDocument();
+      expect(screen.getAllByRole('dialog').length).toBeGreaterThan(0);
+    });
+
+    it('con la justificación guarda y cierra', async () => {
+      conSugerencia();
+      simulada.responder(
+        'PUT',
+        RUTA_PROPUESTA,
+        json(200, {
+          guardada: false,
+          advertencia: {
+            regla: 'RN-19',
+            titulo: 'Falta la justificación',
+            descripcion: 'Escribe.',
+          },
+        }),
+      );
+      const dialogo = await abrirComoCoordinador();
+      await userEvent.click(
+        await within(dialogo).findByRole('button', {
+          name: 'Proponer a PERALTA MALDONADO JUAN ANDRES',
+        }),
+      );
+      const justificar = await screen.findByRole('dialog', {
+        name: 'Justificar a PERALTA MALDONADO JUAN ANDRES',
+      });
+      simulada.responder(
+        'PUT',
+        RUTA_PROPUESTA,
+        json(200, { guardada: true, propuesta: PROPUESTA }),
+      );
+
+      await userEvent.type(within(justificar).getByLabelText(/Justificación/), TEXTO);
+      await userEvent.click(within(justificar).getByRole('button', { name: 'Guardar propuesta' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    });
+
+    it('si la justificación vuelve con un error, lo escrito sigue', async () => {
+      conSugerencia();
+      simulada.responder(
+        'PUT',
+        RUTA_PROPUESTA,
+        json(400, {
+          titulo: 'Solicitud inválida',
+          descripcion: 'Revisa los campos marcados y vuelve a intentarlo.',
+          codigo: 'COMUN_SOLICITUD_INVALIDA',
+          detalles: [{ campo: 'texto', descripcion: 'Escribe por qué propones a este docente.' }],
+        }),
+      );
+      const dialogo = await abrirComoCoordinador();
+      await userEvent.click(await within(dialogo).findByRole('button', { name: /bajo el mínimo/ }));
+      await userEvent.click(
+        await within(dialogo).findByRole('button', { name: 'Proponer a VERA CAMPOS ROSA' }),
+      );
+      const justificar = await screen.findByRole('dialog', {
+        name: 'Justificar a VERA CAMPOS ROSA',
+      });
+
+      await userEvent.type(within(justificar).getByLabelText(/Justificación/), TEXTO);
+      await userEvent.click(within(justificar).getByRole('button', { name: 'Guardar propuesta' }));
+
+      expect(await within(justificar).findByRole('alert')).toBeVisible();
+      expect(within(justificar).getByLabelText(/Justificación/)).toHaveValue(TEXTO);
+    });
+
+    it('con RN-19 dura no se puede proponer, y dice por qué', async () => {
+      const [primero, ...resto] = SUGERENCIA.candidatos;
+      conSugerencia({
+        candidatos: [{ ...primero, motivoParaNoProponer: 'AFINIDAD' }, ...resto],
+      });
+      const dialogo = await abrirComoCoordinador();
+
+      expect(
+        await within(dialogo).findByText(
+          'No se le puede proponer: está bajo el mínimo de afinidad.',
+        ),
+      ).toBeVisible();
+      expect(
+        within(dialogo).queryByRole('button', { name: 'Proponer a PERALTA MALDONADO JUAN ANDRES' }),
+      ).not.toBeInTheDocument();
+    });
+
     it('sin horas no se puede proponer, y dice por qué', async () => {
       const [primero, ...resto] = SUGERENCIA.candidatos;
       conSugerencia({
@@ -677,7 +787,11 @@ describe('Oferta del periodo', () => {
     it('al guardar la propuesta ve el panel del docente en la oferta', async () => {
       conSugerencia();
       simulada.responder('GET', RUTA_CARGA, json(200, CARGA));
-      simulada.responder('PUT', RUTA_PROPUESTA, json(200, PROPUESTA));
+      simulada.responder(
+        'PUT',
+        RUTA_PROPUESTA,
+        json(200, { guardada: true, propuesta: PROPUESTA }),
+      );
       const dialogo = await abrirComoCoordinador();
 
       await userEvent.click(
@@ -743,7 +857,11 @@ describe('Oferta del periodo', () => {
 
     it('proponer manda solo el docente, cierra y recarga la oferta', async () => {
       conSugerencia();
-      simulada.responder('PUT', RUTA_PROPUESTA, json(200, PROPUESTA));
+      simulada.responder(
+        'PUT',
+        RUTA_PROPUESTA,
+        json(200, { guardada: true, propuesta: PROPUESTA }),
+      );
       const dialogo = await abrirComoCoordinador();
 
       simulada.responder('GET', RUTA_PARCIALES, json(200, PARCIALES));
@@ -856,7 +974,11 @@ describe('Oferta del periodo', () => {
     });
 
     it('con el texto guarda el docente y el texto limpio', async () => {
-      simulada.responder('PUT', RUTA_PROPUESTA, json(200, PROPUESTA));
+      simulada.responder(
+        'PUT',
+        RUTA_PROPUESTA,
+        json(200, { guardada: true, propuesta: PROPUESTA }),
+      );
       const justificar = await pedirJustificacion();
 
       await userEvent.type(within(justificar).getByLabelText(/Justificación/), `  ${TEXTO}  `);
@@ -936,6 +1058,32 @@ describe('Oferta del periodo', () => {
         await within(tabla).findByText('Propuesto: PERALTA MALDONADO JUAN ANDRES · Excepción'),
       ).toBeVisible();
       expect(within(tabla).getByText(TEXTO)).toBeVisible();
+    });
+
+    it('una excepción dice que su inconsistencia está justificada', async () => {
+      conParcial(
+        {},
+        {
+          justificacion: 'EXCEPCION',
+          texto: TEXTO,
+          inconsistencia: { regla: 'RN-19', estado: 'JUSTIFICADA' },
+        },
+      );
+      sesionCon(simulada, 'consolidacion.demo', CONSOLIDACION);
+      montarSpa('/oferta');
+
+      const tabla = await screen.findByRole('table', { name: CARRERA_DE_LA_PRUEBA });
+      expect(await within(tabla).findByText('Bajo el mínimo, justificada')).toBeVisible();
+    });
+
+    it('una propuesta sin inconsistencia no habla de justificada', async () => {
+      conParcial();
+      sesionCon(simulada, 'consolidacion.demo', CONSOLIDACION);
+      montarSpa('/oferta');
+
+      const tabla = await screen.findByRole('table', { name: CARRERA_DE_LA_PRUEBA });
+      await within(tabla).findByText(/^Propuesto:/);
+      expect(within(tabla).queryByText('Bajo el mínimo, justificada')).not.toBeInTheDocument();
     });
 
     it('sin distributivo no habla de propuestas', async () => {

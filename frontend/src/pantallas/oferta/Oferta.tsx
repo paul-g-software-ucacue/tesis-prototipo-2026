@@ -358,6 +358,11 @@ function PropuestaDeLaFila({ propuesta }: { propuesta: Propuesta }) {
       <Typography variant="body2">
         {`Propuesto: ${propuesta.nombreDocente} · ${NOMBRE_DE_LA_JUSTIFICACION[propuesta.justificacion]}`}
       </Typography>
+      {propuesta.inconsistencia && (
+        <Typography variant="body2" color="text.secondary">
+          Bajo el mínimo, justificada
+        </Typography>
+      )}
       {propuesta.texto && (
         <Typography variant="body2" color="text.secondary">
           {propuesta.texto}

@@ -15,6 +15,7 @@ export type Candidato = componentesDeGeneracion['schemas']['Candidato'];
 export type Parciales = componentesDeGeneracion['schemas']['Parciales'];
 export type ParcialDeCarrera = componentesDeGeneracion['schemas']['ParcialDeCarrera'];
 export type Propuesta = componentesDeGeneracion['schemas']['Propuesta'];
+export type Advertencia = componentesDeGeneracion['schemas']['Advertencia'];
 export type PropuestaNueva = componentesDeGeneracion['schemas']['PropuestaNueva'];
 export type TipoDeJustificacion = componentesDeGeneracion['schemas']['TipoDeJustificacion'];
 

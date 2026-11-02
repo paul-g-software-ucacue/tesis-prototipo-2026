@@ -7,12 +7,16 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 import ec.mdd.generacion.dominio.AvanceDelParcial;
 import ec.mdd.generacion.dominio.EstadoDelParcial;
+import ec.mdd.generacion.dominio.Inconsistencia;
 import ec.mdd.generacion.dominio.Justificacion;
 import ec.mdd.generacion.dominio.JustificacionObligatoria;
 import ec.mdd.generacion.dominio.ParcialCarrera;
 import ec.mdd.generacion.dominio.ParcialNoEditable;
 import ec.mdd.generacion.dominio.Propuesta;
+import ec.mdd.generacion.dominio.ReglaDeAsignacion;
+import ec.mdd.generacion.dominio.Severidad;
 import ec.mdd.generacion.dominio.TipoDeJustificacion;
+import ec.mdd.generacion.puertos.entrada.AfinidadInsuficiente;
 import ec.mdd.generacion.puertos.entrada.ConsultarDistributivo;
 import ec.mdd.generacion.puertos.entrada.ConsultarParciales;
 import ec.mdd.generacion.puertos.entrada.CrearDistributivo;
@@ -32,6 +36,7 @@ import ec.mdd.generacion.puertos.entrada.PeriodoNoListo;
 import ec.mdd.generacion.puertos.entrada.ProponerDocente;
 import ec.mdd.generacion.puertos.entrada.PropuestaNoEncontrada;
 import ec.mdd.generacion.puertos.entrada.PropuestaVista;
+import ec.mdd.generacion.puertos.entrada.ResultadoDePropuesta;
 import ec.mdd.generacion.puertos.entrada.SinDistributivo;
 import ec.mdd.generacion.puertos.entrada.SolicitudDePropuesta;
 import ec.mdd.generacion.puertos.entrada.TopeDeClase;
@@ -206,6 +211,7 @@ class DistributivoContratoTest {
                 case "RETIRADO" -> throw new ParaleloRetirado();
                 case "NO-ACTIVO" -> throw new DocenteNoActivo();
                 case "EXCEDIDAS" -> throw new HorasExcedidas(new BigDecimal("1.5"));
+                case "AFINIDAD" -> throw new AfinidadInsuficiente();
                 case "TOPE" -> throw new TopeDeClase(new BigDecimal("2"));
                 case "ENVIADO" -> throw new ParcialNoEditable();
                 case "NADA" -> throw new PeriodoNoEncontrado();
@@ -263,13 +269,21 @@ class DistributivoContratoTest {
         ProponerDocente proponerDocente() {
             return new ProponerDocente() {
                 @Override
-                public PropuestaVista proponer(SolicitudDePropuesta solicitud) {
+                public ResultadoDePropuesta proponer(SolicitudDePropuesta solicitud) {
                     exigirCarrera(solicitud.carrera());
                     fallar(solicitud.periodo());
+                    if ("ADVERTENCIA".equals(solicitud.periodo())) {
+                        return ResultadoDePropuesta.conAdvertencia(
+                                new Inconsistencia(
+                                        ReglaDeAsignacion.RN_19,
+                                        Severidad.BLANDA,
+                                        BigDecimal.ZERO));
+                    }
                     if ("OBLIGADA".equals(solicitud.periodo()) && solicitud.texto() == null) {
                         throw new JustificacionObligatoria();
                     }
-                    return vista(solicitud.docente(), solicitud.texto());
+                    return ResultadoDePropuesta.guardada(
+                            vista(solicitud.docente(), solicitud.texto()));
                 }
 
                 @Override

@@ -97,7 +97,9 @@ class InternoNormativaControlador implements InternoApi {
                             periodo,
                             deLaVersion.version(),
                             deLaVersion.horasMaximasDocente(),
-                            deLaVersion.horasClaseConProyecto()));
+                            deLaVersion.horasClaseConProyecto(),
+                            ReglasDeAsignacion.SeveridadAfinidadEnum.fromValue(
+                                    deLaVersion.severidadAfinidad().name())));
         } catch (PeriodoSinVersion error) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }

@@ -648,7 +648,7 @@ components:
           example: 1
     ReglasDeAsignacion:
       type: object
-      required: [periodo, version, horasMaximasDocente, horasClaseConProyecto]
+      required: [periodo, version, horasMaximasDocente, horasClaseConProyecto, severidadAfinidad]
       properties:
         periodo:
           $ref: '#/components/schemas/CodigoDePeriodo'
@@ -661,6 +661,10 @@ components:
         horasClaseConProyecto:
           description: El tope de horas de clase de un docente con proyecto (RN-13).
           type: number
+        severidadAfinidad:
+          description: La severidad de RN-19 en la versión.
+          type: string
+          enum: [DURA, BLANDA]
     ProporcionDelPeriodo:
       type: object
       required: [periodo, version, clase, otrasDocencia]

@@ -25,6 +25,7 @@ import ec.mdd.generacion.dominio.PesosDelPeriodo;
 import ec.mdd.generacion.dominio.Propuesta;
 import ec.mdd.generacion.dominio.ReglaDeAsignacion;
 import ec.mdd.generacion.dominio.ReglasDelPeriodo;
+import ec.mdd.generacion.dominio.Severidad;
 import ec.mdd.generacion.dominio.Sugerencia;
 import ec.mdd.generacion.dominio.TipoDeJustificacion;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
@@ -409,7 +410,10 @@ class ConsultarSugerenciaServicioTest {
         when(actividades.reglas(PERIODO))
                 .thenReturn(
                         Optional.of(
-                                new ReglasDelPeriodo(new BigDecimal("40"), new BigDecimal("16"))));
+                                new ReglasDelPeriodo(
+                                        new BigDecimal("40"),
+                                        new BigDecimal("16"),
+                                        Severidad.BLANDA)));
         when(actividades.docentesConProyecto(PERIODO)).thenReturn(Map.of());
     }
 

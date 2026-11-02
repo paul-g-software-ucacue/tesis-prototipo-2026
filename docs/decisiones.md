@@ -82,6 +82,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-82 | 2026-11-01 | La carga horaria de un docente se lee sin filtro de carrera, solo con sumas | Aceptada | D-01, D-64, F07-H01 |
 | D-83 | 2026-11-01 | El agregado de MD-01 se protege bloqueando la versión al guardar | Aceptada | MD-01, D-78, F07-H02 |
 | D-84 | 2026-11-01 | La JVM no recuerda los nombres que no resolvieron | Aceptada | F07-H02 |
+| D-85 | 2026-11-01 | La proporción 60/40 se justifica al consolidar, no al asignar | Aceptada | RN-05, F07-H01, F07-H03 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1529,3 +1530,19 @@ Las 19 excepciones de `cloudflared` no cambian: su imagen no corre con el túnel
 **Consecuencias.** Un nombre que no resuelve se vuelve a consultar cada vez. Solo pasa con un proceso caído, y no cambia la caché de los nombres que sí resuelven.
 
 **Documentos que hay que poner al día.** Ninguno.
+
+## D-85. La proporción 60/40 se justifica al consolidar, no al asignar
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-01 · **Decidido por:** autor de la tesis
+- **Origen:** especificación de F07-H03
+- **Corrige a:** F07-H01, que decía que esa justificación llegaría con F07-H03
+
+**Decisión.** RN-05 se justifica en F10-H01, con el panel de inconsistencias, y no al guardar cada asignación.
+
+**Por qué.** El modelo la trata como una regla global. Mientras el coordinador arma la carga, casi todos los docentes se apartan de la meta, y se pediría un motivo que después se corrige solo.
+
+**Alternativas.** Pedirla al guardar cada asignación: obliga a justificar una carga a medio armar.
+
+**Consecuencias.** RN-19 es la única regla blanda que se evalúa al guardar. El panel de totales sigue mostrando la meta, sin marcar error.
+
+**Documentos que hay que poner al día.** `specs/033-totales-del-docente/spec.md`, con una nota.

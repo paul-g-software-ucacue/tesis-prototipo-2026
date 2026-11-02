@@ -8,6 +8,7 @@ import ec.mdd.normativa.dominio.ActividadDelCatalogo;
 import ec.mdd.normativa.dominio.Componente;
 import ec.mdd.normativa.dominio.MinimoAfinidad;
 import ec.mdd.normativa.dominio.PesosAfinidad;
+import ec.mdd.normativa.dominio.Severidad;
 import ec.mdd.normativa.puertos.entrada.ActividadesDeLaVersion;
 import ec.mdd.normativa.puertos.entrada.ConsultarActividadesDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarPesosDelPeriodo;
@@ -155,7 +156,7 @@ class InternoNormativaContratoTest {
         assertThat(resultado.getResponse().getContentAsString())
                 .isEqualTo(
                         "{\"periodo\":\"2026-I\",\"version\":2,\"horasMaximasDocente\":40,"
-                                + "\"horasClaseConProyecto\":16}");
+                                + "\"horasClaseConProyecto\":16,\"severidadAfinidad\":\"BLANDA\"}");
         contrato.validar(resultado);
     }
 
@@ -211,7 +212,8 @@ class InternoNormativaContratoTest {
                 if (!"2026-I".equals(periodo)) {
                     throw new PeriodoSinVersion(periodo);
                 }
-                return new ReglasDeLaVersion(2, new BigDecimal("40"), new BigDecimal("16"));
+                return new ReglasDeLaVersion(
+                        2, new BigDecimal("40"), new BigDecimal("16"), Severidad.BLANDA);
             };
         }
 

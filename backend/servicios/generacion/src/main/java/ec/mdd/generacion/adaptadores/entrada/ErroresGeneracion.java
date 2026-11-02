@@ -5,6 +5,7 @@ import ec.mdd.generacion.dominio.ParcialNoEditable;
 import ec.mdd.generacion.dominio.ProyectoNoValido;
 import ec.mdd.generacion.puertos.entrada.ActividadFueraDelCatalogo;
 import ec.mdd.generacion.puertos.entrada.ActividadNoEncontrada;
+import ec.mdd.generacion.puertos.entrada.AfinidadInsuficiente;
 import ec.mdd.generacion.puertos.entrada.DistributivoNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.DistributivoRepetido;
 import ec.mdd.generacion.puertos.entrada.DocenteNoActivo;
@@ -172,6 +173,13 @@ class ErroresGeneracion implements CatalogoDeErrores {
                                                 "Le quedan "
                                                         + formato(error.horasQueQuedan())
                                                         + " h de clase."))),
+                EntradaCatalogo.de(
+                        AfinidadInsuficiente.class,
+                        "GENERACION_AFINIDAD_INSUFICIENTE",
+                        409,
+                        "Afinidad insuficiente",
+                        "Este docente está bajo el mínimo de afinidad, y la normativa del periodo"
+                                + " no admite excepciones. Elige a otro docente."),
                 EntradaCatalogo.de(
                         DocenteNoEncontrado.class,
                         "GENERACION_DOCENTE_NO_ENCONTRADO",

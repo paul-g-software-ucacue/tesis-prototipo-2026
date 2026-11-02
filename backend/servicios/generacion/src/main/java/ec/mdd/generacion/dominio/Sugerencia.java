@@ -69,21 +69,30 @@ public record Sugerencia(
         List<Candidato> todos =
                 docentes.stream()
                         .map(
-                                docente ->
-                                        new Candidato(
-                                                docente.identificacion(),
-                                                docente.nombre(),
-                                                docente.dedicacion(),
-                                                docente.horasContratadas(),
-                                                horas.getOrDefault(
-                                                        docente.identificacion(),
-                                                        HorasDelDocente.NINGUNA),
-                                                calculadora.calcular(
-                                                        docente.formacion(),
-                                                        paralelo.asignatura(),
-                                                        pesos.pesos()),
-                                                reglas.limite(docente.horasContratadas()),
-                                                motivos.apply(docente).orElse(null)))
+                                docente -> {
+                                    PuntajeAfinidad puntaje =
+                                            calculadora.calcular(
+                                                    docente.formacion(),
+                                                    paralelo.asignatura(),
+                                                    pesos.pesos());
+                                    return new Candidato(
+                                            docente.identificacion(),
+                                            docente.nombre(),
+                                            docente.dedicacion(),
+                                            docente.horasContratadas(),
+                                            horas.getOrDefault(
+                                                    docente.identificacion(),
+                                                    HorasDelDocente.NINGUNA),
+                                            puntaje,
+                                            reglas.limite(docente.horasContratadas()),
+                                            motivos.apply(docente)
+                                                    .or(
+                                                            () ->
+                                                                    afinidadDura(
+                                                                            puntaje, paralelo,
+                                                                            pesos, reglas))
+                                                    .orElse(null));
+                                })
                         .toList();
         Comparator<Candidato> orden = orden(paralelo.horasSemanales());
         return new Sugerencia(
@@ -105,6 +114,18 @@ public record Sugerencia(
                                                 && !alcanza(candidato, pesos.minimoAfinidad()))
                         .sorted(orden)
                         .toList());
+    }
+
+    // Con RN-19 blanda se le puede proponer, con una justificación; con dura, no.
+    private static Optional<ReglaDeAsignacion> afinidadDura(
+            PuntajeAfinidad puntaje,
+            AsignaturaParalelo paralelo,
+            PesosDelPeriodo pesos,
+            ReglasDelPeriodo reglas) {
+        return MotorReglas.evaluarAfinidad(
+                        puntaje.total(), pesos.minimoAfinidad(), paralelo.troncoComun(), reglas)
+                .filter(inconsistencia -> inconsistencia.severidad() == Severidad.DURA)
+                .map(Inconsistencia::regla);
     }
 
     private static boolean alcanza(Candidato candidato, BigDecimal minimo) {

@@ -278,6 +278,11 @@ proponer() {  # proponer <asignatura> <paralelo> <docente> [texto]: con el token
         "$(jq -cn --arg d "$3" --arg t "${4:-}" 'if $t == "" then {docente: $d} else {docente: $d, texto: $t} end')"
 }
 
+# Un 200 ya no significa guardado: sin la justificación llega una advertencia (F07-H03).
+guardada() {
+    [[ $estado == 200 && $(jq -r '.guardada' <<<"$cuerpo") == true ]]
+}
+
 quitar() {  # quitar <asignatura> <paralelo>: con el token de $token
     pedir DELETE "$GATEWAY/api/generacion/periodos/$PERIODO/oferta/$1/$2/propuesta" "Bearer $token"
 }
@@ -361,10 +366,10 @@ una_sola_propuesta() {
     segundo=$(jq -r '.candidatos[1].identificacion' <<<"$cuerpo")
     proponer "$asignatura_n" "$paralelo_n" "$primero"
     echo "       proponer tardó $segundos s"
-    [[ $estado == 200 && $(jq -r '.justificacion' <<<"$cuerpo") == AFINIDAD ]] \
+    guardada && [[ $(jq -r '.propuesta.justificacion' <<<"$cuerpo") == AFINIDAD ]] \
         && menos_de "$segundos" "$SEGUNDOS_DE_PROPONER" || return 1
     proponer "$asignatura_n" "$paralelo_n" "$segundo"
-    [[ $estado == 200 ]] || return 1
+    guardada || return 1
     [[ $(propuestas_del_paralelo "$asignatura_n" "$paralelo_n") == 1 ]] || return 1
     sugerencia "$asignatura_n" "$paralelo_n"
     [[ $(jq -r '.propuesta.docente' <<<"$cuerpo") == "$segundo" ]] || return 1
@@ -383,13 +388,14 @@ tres_justificaciones() {
     bajo=$(jq -r '.bajoElMinimo[0].identificacion // empty' <<<"$cuerpo")
     [[ -n $bajo ]] || return 1
     proponer "$asignatura_n" "$paralelo_n" "$bajo"
-    [[ $estado == 400 && $(jq -r '.detalles[0].campo' <<<"$cuerpo") == texto \
+    [[ $estado == 200 && $(jq -r '.guardada' <<<"$cuerpo") == false \
+        && $(jq -r '.advertencia.regla' <<<"$cuerpo") == RN-19 \
         && $(propuestas_del_paralelo "$asignatura_n" "$paralelo_n") == 0 ]] || return 1
     proponer "$asignatura_n" "$paralelo_n" "$bajo" 'corto'
     [[ $estado == 400 ]] || return 1
     proponer "$asignatura_n" "$paralelo_n" "$bajo" "$TEXTO"
-    [[ $estado == 200 && $(jq -r '.justificacion' <<<"$cuerpo") == EXCEPCION \
-        && $(jq -r '.texto' <<<"$cuerpo") == "$TEXTO" ]] || return 1
+    guardada && [[ $(jq -r '.propuesta.justificacion' <<<"$cuerpo") == EXCEPCION \
+        && $(jq -r '.propuesta.texto' <<<"$cuerpo") == "$TEXTO" ]] || return 1
 
     # En tronco común, el mínimo no aplica: disponibilidad o afinidad, nunca el texto.
     sugerencia "$asignatura_s" "$paralelo_s"
@@ -398,10 +404,10 @@ tres_justificaciones() {
     alto=$(jq -r '.minimoAfinidad as $m | [.candidatos[] | select(.puntaje.total >= $m)][0].identificacion // empty' <<<"$cuerpo")
     [[ -n $bajo && -n $alto ]] || { echo "       sin los dos casos en tronco común" >&2; return 1; }
     proponer "$asignatura_s" "$paralelo_s" "$bajo" "$TEXTO"
-    [[ $estado == 200 && $(jq -r '.justificacion' <<<"$cuerpo") == DISPONIBILIDAD \
-        && $(jq -r '.texto // "sin texto"' <<<"$cuerpo") == 'sin texto' ]] || return 1
+    guardada && [[ $(jq -r '.propuesta.justificacion' <<<"$cuerpo") == DISPONIBILIDAD \
+        && $(jq -r '.propuesta.texto // "sin texto"' <<<"$cuerpo") == 'sin texto' ]] || return 1
     proponer "$asignatura_s" "$paralelo_s" "$alto"
-    [[ $estado == 200 && $(jq -r '.justificacion' <<<"$cuerpo") == AFINIDAD ]] || return 1
+    guardada && [[ $(jq -r '.propuesta.justificacion' <<<"$cuerpo") == AFINIDAD ]] || return 1
     [[ $(consultar_base "select count(*) from generacion.registro_cambio where detalle::text like '%tres años%'") == 0 ]]
 }
 
@@ -416,7 +422,7 @@ parcial_completo() {
         else
             proponer "$asignatura" "$paralelo" "$(jq -r '.bajoElMinimo[0].identificacion' <<<"$cuerpo")" "$TEXTO"
         fi
-        [[ $estado == 200 ]] || return 1
+        guardada || return 1
     done <"$carpeta/b.tsv"
     parciales
     jq -e --arg c "$carrera_b" --argjson n "$paralelos_b" '
@@ -484,7 +490,7 @@ horas_en_otras_carreras() {
     else
         proponer "$asignatura_h" "$paralelo_h" "$docente" "$TEXTO"
     fi
-    [[ $estado == 200 ]] || return 1
+    guardada || return 1
     sugerencia "$asignatura_n" "$paralelo_n"
     desde_a=$cuerpo
     iniciar "$COORDINADOR_B"
@@ -538,7 +544,7 @@ sin_el_proceso_datos() {
     docker compose up -d --wait --no-recreate --no-build datos >/dev/null 2>&1 || return 1
     iniciar "$COORDINADOR_A"
     proponer "$asignatura_s" "$paralelo_s" "$docente"
-    [[ $bien == 1 && $estado == 200 ]]
+    [[ $bien == 1 ]] && guardada
 }
 
 sin_la_justificacion_en_los_registros() {

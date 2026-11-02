@@ -44,7 +44,10 @@ class SugerenciaTest {
     // Puntaje 3: tercer nivel solo en el campo amplio.
     private static final FormacionDelDocente DE_3 = formacion("062");
     private static final ReglasDelPeriodo REGLAS =
-            new ReglasDelPeriodo(new BigDecimal("40"), new BigDecimal("16"));
+            new ReglasDelPeriodo(new BigDecimal("40"), new BigDecimal("16"), Severidad.BLANDA);
+
+    private static final ReglasDelPeriodo DURA =
+            new ReglasDelPeriodo(new BigDecimal("40"), new BigDecimal("16"), Severidad.DURA);
 
     // Puntaje 0: nada coincide.
     private static final FormacionDelDocente DE_0 = formacion("091");
@@ -407,11 +410,81 @@ class SugerenciaTest {
                         new PesosDelPeriodo(2, PESOS, BigDecimal.ZERO),
                         List.of(docente("A", 40, DE_5)),
                         Map.of(),
-                        new ReglasDelPeriodo(new BigDecimal("38"), new BigDecimal("16")),
+                        new ReglasDelPeriodo(
+                                new BigDecimal("38"), new BigDecimal("16"), Severidad.BLANDA),
                         docente -> Optional.empty());
 
         assertThat(sugerencia.candidatos().getFirst().horasDisponibles())
                 .isEqualByComparingTo("38");
+    }
+
+    @Test
+    void conRn19Dura_cuandoSeArma_entoncesQuienEstaBajoElMinimoNoSePuedeProponer() {
+        Sugerencia sugerencia = armarConRn19Dura(DE_4_HORAS);
+
+        assertThat(sugerencia.bajoElMinimo())
+                .extracting(Candidato::identificacion, Candidato::motivo)
+                .containsExactly(tuple("ID-A", ReglaDeAsignacion.RN_19));
+        assertThat(sugerencia.candidatos()).extracting(Candidato::motivo).containsOnlyNulls();
+    }
+
+    @Test
+    void conRn19Blanda_cuandoSeArma_entoncesQuienEstaBajoElMinimoSePuedeProponer() {
+        Sugerencia sugerencia =
+                Sugerencia.armar(
+                        PERIODO,
+                        DE_4_HORAS,
+                        new PesosDelPeriodo(2, PESOS, new BigDecimal("5")),
+                        List.of(docente("A", 40, DE_0)),
+                        Map.of(),
+                        REGLAS,
+                        docente -> Optional.empty());
+
+        assertThat(sugerencia.bajoElMinimo()).extracting(Candidato::motivo).containsOnlyNulls();
+    }
+
+    @Test
+    void conRn19DuraYSinHoras_cuandoSeArma_entoncesElMotivoEsLasHoras() {
+        Sugerencia sugerencia =
+                Sugerencia.armar(
+                        PERIODO,
+                        DE_4_HORAS,
+                        new PesosDelPeriodo(2, PESOS, new BigDecimal("5")),
+                        List.of(docente("A", 40, DE_0)),
+                        Map.of(),
+                        DURA,
+                        docente -> Optional.of(ReglaDeAsignacion.RN_02));
+
+        assertThat(sugerencia.bajoElMinimo())
+                .extracting(Candidato::motivo)
+                .containsExactly(ReglaDeAsignacion.RN_02);
+    }
+
+    @Test
+    void conRn19DuraEnTroncoComun_cuandoSeArma_entoncesNadieTieneMotivo() {
+        AsignaturaParalelo comun =
+                new AsignaturaParalelo(
+                        new AsignaturaOfertada("SOC-101", "Sociedad", "06", "061"),
+                        "A",
+                        "TDS",
+                        new BigDecimal("4"),
+                        true,
+                        false);
+
+        assertThat(armarConRn19Dura(comun).candidatos())
+                .extracting(Candidato::motivo)
+                .containsOnlyNulls();
+    }
+
+    private static Sugerencia armarConRn19Dura(AsignaturaParalelo paralelo) {
+        return Sugerencia.armar(
+                PERIODO,
+                paralelo,
+                new PesosDelPeriodo(2, PESOS, new BigDecimal("5")),
+                List.of(docente("A", 40, DE_0), docente("C", 40, DE_5)),
+                Map.of(),
+                DURA,
+                docente -> Optional.empty());
     }
 
     private static Sugerencia armar(
