@@ -2,6 +2,7 @@ package ec.mdd.generacion.dominio;
 
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * El docente que una carrera propone para una asignatura-paralelo (RF-24, D-19). Hay una sola por
@@ -42,5 +43,12 @@ public record Propuesta(
     /** Si es la de esa asignatura-paralelo. */
     public boolean esDe(String otraAsignatura, String otroParalelo) {
         return asignatura.equals(otraAsignatura) && paralelo.equals(otroParalelo);
+    }
+
+    /** La regla blanda que incumple, ya justificada: una excepción (MD-07). */
+    public Optional<ReglaDeAsignacion> inconsistenciaJustificada() {
+        return justificacion.tipo() == TipoDeJustificacion.EXCEPCION
+                ? Optional.of(ReglaDeAsignacion.RN_19)
+                : Optional.empty();
     }
 }

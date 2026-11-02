@@ -9,7 +9,7 @@ public interface ProponerDocente {
      * Guarda la propuesta, o reemplaza la que tenga. La justificación la decide el dominio.
      *
      * @param solicitud lo que pide quien propone
-     * @return la propuesta, con el aviso de las horas (D-78)
+     * @return la propuesta guardada, o la advertencia si falta la justificación de RN-19
      * @throws ParaleloNoEncontrado si no está en la oferta
      * @throws OtraCarrera si es de otra carrera
      * @throws ParaleloRetirado si se retiró
@@ -17,10 +17,14 @@ public interface ProponerDocente {
      * @throws SinDistributivo si el periodo no tiene distributivo
      * @throws PeriodoSinAbrir si el periodo no tiene su versión de normativa
      * @throws DocenteNoActivo si el docente no está activo
-     * @throws ec.mdd.generacion.dominio.JustificacionObligatoria si falta el texto de una excepción
+     * @throws HorasExcedidas si el docente queda sobre su límite
+     * @throws TopeDeClase si queda sobre su tope de clase
+     * @throws AfinidadInsuficiente si está bajo el mínimo y RN-19 es dura
+     * @throws ec.mdd.generacion.dominio.JustificacionObligatoria si el texto tiene un largo
+     *     inválido
      * @throws ec.mdd.generacion.dominio.ParcialNoEditable si el parcial ya no admite cambios
      */
-    PropuestaVista proponer(SolicitudDePropuesta solicitud);
+    ResultadoDePropuesta proponer(SolicitudDePropuesta solicitud);
 
     /**
      * Quita la propuesta de una asignatura-paralelo, también si se retiró.

@@ -57,10 +57,11 @@ class PropuestaContratoTest {
         assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
         assertThat(resultado.getResponse().getContentAsString())
                 .isEqualTo(
-                        "{\"asignatura\":\"POO-204\",\"paralelo\":\"A\","
-                                + "\"docente\":\"0109990010\",\"nombreDocente\":\"PEREZ LUIS\","
+                        "{\"guardada\":true,\"propuesta\":{\"asignatura\":\"POO-204\","
+                                + "\"paralelo\":\"A\",\"docente\":\"0109990010\","
+                                + "\"nombreDocente\":\"PEREZ LUIS\","
                                 + "\"justificacion\":\"AFINIDAD\",\"retirada\":false,"
-                                + "\"horasSuficientes\":true}");
+                                + "\"horasSuficientes\":true}}");
         contrato.validar(resultado);
     }
 
@@ -169,6 +170,7 @@ class PropuestaContratoTest {
         "ENVIADO,409,GENERACION_PARCIAL_NO_EDITABLE",
         "EXCEDIDAS,409,GENERACION_HORAS_EXCEDIDAS",
         "TOPE,409,GENERACION_TOPE_DE_CLASE",
+        "AFINIDAD,409,GENERACION_AFINIDAD_INSUFICIENTE",
         "FALLA,502,COMUN_PROCESO_CON_ERROR",
         "LENTO,504,COMUN_PROCESO_SIN_RESPUESTA"
     })
@@ -182,6 +184,20 @@ class PropuestaContratoTest {
         MvcResult resultado = quitar("2026-I", "TDS");
 
         assertThat(resultado.getResponse().getStatus()).isEqualTo(204);
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void sinJustificacion_cuandoPropone_entonces200ConLaAdvertenciaYSinGuardar() throws Exception {
+        MvcResult resultado = proponer("ADVERTENCIA", CUERPO, "TDS", ESCRIBE);
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("\"guardada\":false")
+                .contains("\"regla\":\"RN-19\"")
+                .contains("\"titulo\":\"Falta la justificación\"")
+                .contains("Escribe por qué lo propones")
+                .doesNotContain("\"propuesta\"");
         contrato.validar(resultado);
     }
 

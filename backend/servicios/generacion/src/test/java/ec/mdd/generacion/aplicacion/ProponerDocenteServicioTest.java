@@ -19,6 +19,7 @@ import ec.mdd.generacion.dominio.ElementoDeFormacion;
 import ec.mdd.generacion.dominio.EstadoDeVersion;
 import ec.mdd.generacion.dominio.EstadoDelParcial;
 import ec.mdd.generacion.dominio.FormacionDelDocente;
+import ec.mdd.generacion.dominio.Inconsistencia;
 import ec.mdd.generacion.dominio.Justificacion;
 import ec.mdd.generacion.dominio.JustificacionObligatoria;
 import ec.mdd.generacion.dominio.ParcialCarrera;
@@ -28,10 +29,13 @@ import ec.mdd.generacion.dominio.PesosDelPeriodo;
 import ec.mdd.generacion.dominio.Propuesta;
 import ec.mdd.generacion.dominio.ProyectoDelDocente;
 import ec.mdd.generacion.dominio.ProyectosYCargosDelDocente;
+import ec.mdd.generacion.dominio.ReglaDeAsignacion;
 import ec.mdd.generacion.dominio.ReglasDelPeriodo;
+import ec.mdd.generacion.dominio.Severidad;
 import ec.mdd.generacion.dominio.TipoDeJustificacion;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
 import ec.mdd.generacion.dominio.VersionDistributivo;
+import ec.mdd.generacion.puertos.entrada.AfinidadInsuficiente;
 import ec.mdd.generacion.puertos.entrada.DocenteNoActivo;
 import ec.mdd.generacion.puertos.entrada.HorasExcedidas;
 import ec.mdd.generacion.puertos.entrada.OtraCarrera;
@@ -41,6 +45,7 @@ import ec.mdd.generacion.puertos.entrada.PeriodoCerrado;
 import ec.mdd.generacion.puertos.entrada.PeriodoSinAbrir;
 import ec.mdd.generacion.puertos.entrada.PropuestaNoEncontrada;
 import ec.mdd.generacion.puertos.entrada.PropuestaVista;
+import ec.mdd.generacion.puertos.entrada.ResultadoDePropuesta;
 import ec.mdd.generacion.puertos.entrada.SinDistributivo;
 import ec.mdd.generacion.puertos.entrada.SolicitudDePropuesta;
 import ec.mdd.generacion.puertos.entrada.TopeDeClase;
@@ -123,7 +128,7 @@ class ProponerDocenteServicioTest {
     void dadoUnDocenteAfin_cuandoSePropone_entoncesGuardaConQuienYCuando() {
         conTodo(version());
 
-        PropuestaVista vista = servicio.proponer(solicitud(AFIN, null));
+        PropuestaVista vista = servicio.proponer(solicitud(AFIN, null)).propuesta().orElseThrow();
 
         Propuesta guardada = guardada();
         assertThat(vista.propuesta()).isEqualTo(guardada);
@@ -287,13 +292,91 @@ class ProponerDocenteServicioTest {
     }
 
     @Test
-    void dadoUnDocenteBajoElMinimoSinTexto_cuandoSePropone_entoncesNoGuarda() {
+    void dadoUnDocenteBajoElMinimoSinTexto_cuandoSePropone_entoncesAdvierteYNoGuarda() {
         conTodo(version());
 
-        assertThatThrownBy(() -> servicio.proponer(solicitud(AJENO, null)))
-                .isInstanceOf(JustificacionObligatoria.class);
+        ResultadoDePropuesta resultado = servicio.proponer(solicitud(AJENO, null));
 
+        assertThat(resultado.propuesta()).isEmpty();
+        assertThat(resultado.advertencia().map(Inconsistencia::regla))
+                .contains(ReglaDeAsignacion.RN_19);
         assertNoGuardoNada();
+    }
+
+    @Test
+    void conUnTextoSoloDeEspacios_cuandoSePropone_entoncesAdvierteYNoGuarda() {
+        conTodo(version());
+
+        ResultadoDePropuesta resultado = servicio.proponer(solicitud(AJENO, "    "));
+
+        assertThat(resultado.advertencia()).isPresent();
+        assertNoGuardoNada();
+    }
+
+    @Test
+    void enUnaCarreraSinParcial_cuandoAdvierte_entoncesNoCreaElParcial() {
+        conTodo(
+                new VersionDistributivo(
+                        VERSION, 1, EstadoDeVersion.EDITABLE, List.of(), List.of()));
+
+        assertThat(servicio.proponer(solicitud(AJENO, null)).advertencia()).isPresent();
+        assertNoGuardoNada();
+    }
+
+    @Test
+    void conUnTextoCorto_cuandoSePropone_entoncesPideCorregirloYNoGuarda() {
+        conTodo(version());
+
+        assertThatThrownBy(() -> servicio.proponer(solicitud(AJENO, "corto")))
+                .isInstanceOf(JustificacionObligatoria.class);
+        assertNoGuardoNada();
+    }
+
+    @Test
+    void conRn19Dura_cuandoSeProponeConOSinTexto_entoncesNoGuarda() {
+        conTodo(version());
+        conRn19Dura();
+
+        assertThatThrownBy(() -> servicio.proponer(solicitud(AJENO, null)))
+                .isInstanceOf(AfinidadInsuficiente.class);
+        assertThatThrownBy(() -> servicio.proponer(solicitud(AJENO, TEXTO)))
+                .isInstanceOf(AfinidadInsuficiente.class);
+        assertNoGuardoNada();
+    }
+
+    @Test
+    void conRn19DuraEnTroncoComun_cuandoSePropone_entoncesGuarda() {
+        conTodo(version());
+        conRn19Dura();
+        when(datos.paralelo(PERIODO, ASIGNATURA, "A")).thenReturn(Optional.of(deTroncoComun()));
+        when(datos.ofertaDelPeriodo(PERIODO)).thenReturn(Optional.of(List.of(deTroncoComun())));
+
+        servicio.proponer(solicitud(AJENO, null));
+
+        assertThat(guardada().justificacion().tipo()).isEqualTo(TipoDeJustificacion.DISPONIBILIDAD);
+    }
+
+    @Test
+    void bajoElMinimoYSinHoras_cuandoSePropone_entoncesGanaLaRegladura() {
+        DocenteActivo sinHoras = docente("0109990030", 2, "091");
+        conTodo(version());
+        when(datos.docentesActivos()).thenReturn(List.of(sinHoras));
+
+        assertThatThrownBy(() -> servicio.proponer(solicitud(sinHoras, null)))
+                .isInstanceOf(HorasExcedidas.class);
+        assertThatThrownBy(() -> servicio.proponer(solicitud(sinHoras, TEXTO)))
+                .isInstanceOf(HorasExcedidas.class);
+        assertNoGuardoNada();
+    }
+
+    private void conRn19Dura() {
+        when(actividades.reglas(PERIODO))
+                .thenReturn(
+                        Optional.of(
+                                new ReglasDelPeriodo(
+                                        new BigDecimal("40"),
+                                        new BigDecimal("16"),
+                                        Severidad.DURA)));
     }
 
     @Test
@@ -555,7 +638,10 @@ class ProponerDocenteServicioTest {
         when(actividades.reglas(PERIODO))
                 .thenReturn(
                         Optional.of(
-                                new ReglasDelPeriodo(new BigDecimal("40"), new BigDecimal("3"))));
+                                new ReglasDelPeriodo(
+                                        new BigDecimal("40"),
+                                        new BigDecimal("3"),
+                                        Severidad.BLANDA)));
 
         assertThatThrownBy(() -> servicio.proponer(solicitud(AFIN, null)))
                 .isInstanceOf(TopeDeClase.class);
@@ -572,7 +658,7 @@ class ProponerDocenteServicioTest {
                         List.of(propuestaDe(AFIN.identificacion())),
                         List.of(gestion("38"))));
 
-        PropuestaVista vista = servicio.proponer(solicitud(AFIN, null));
+        PropuestaVista vista = servicio.proponer(solicitud(AFIN, null)).propuesta().orElseThrow();
 
         assertThat(guardada().docente()).isEqualTo(AFIN.identificacion());
         assertThat(vista.horasSuficientes()).isFalse();
@@ -666,7 +752,10 @@ class ProponerDocenteServicioTest {
         when(actividades.reglas(PERIODO))
                 .thenReturn(
                         Optional.of(
-                                new ReglasDelPeriodo(new BigDecimal("40"), new BigDecimal("16"))));
+                                new ReglasDelPeriodo(
+                                        new BigDecimal("40"),
+                                        new BigDecimal("16"),
+                                        Severidad.BLANDA)));
         when(actividades.proyectosYCargos(any(), eq(PERIODO)))
                 .thenReturn(Optional.of(new ProyectosYCargosDelDocente(List.of(), List.of())));
     }

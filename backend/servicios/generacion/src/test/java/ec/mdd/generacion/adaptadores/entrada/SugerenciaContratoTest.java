@@ -108,6 +108,25 @@ class SugerenciaContratoTest {
     }
 
     @Test
+    void dadaUnaExcepcion_cuandoConsulta_entoncesDiceQueEstaJustificada() throws Exception {
+        MvcResult resultado = pedir("CON-PROPUESTA", "POO-204", "A");
+
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("\"inconsistencia\":{\"regla\":\"RN-19\",\"estado\":\"JUSTIFICADA\"}");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void conUnCandidatoBajoElMinimoConRn19Dura_cuandoConsulta_entoncesDiceAfinidad()
+            throws Exception {
+        MvcResult resultado = pedir("CON-MOTIVOS", "POO-204", "A");
+
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("\"motivoParaNoProponer\":\"AFINIDAD\"");
+        contrato.validar(resultado);
+    }
+
+    @Test
     void dadaUnaPropuesta_cuandoConsulta_entoncesLaTraeConSuJustificacion() throws Exception {
         MvcResult resultado = pedir("CON-PROPUESTA", "POO-204", "A");
 
@@ -117,8 +136,8 @@ class SugerenciaContratoTest {
                                 + "\"asignatura\":\"POO-204\",\"paralelo\":\"A\","
                                 + "\"docente\":\"0109990010\",\"nombreDocente\":\"PEREZ LUIS\","
                                 + "\"justificacion\":\"EXCEPCION\",\"retirada\":false,"
-                                + "\"horasSuficientes\":false,"
-                                + "\"texto\":\"Tiene experiencia en la materia\"}");
+                                + "\"horasSuficientes\":false,")
+                .contains("\"texto\":\"Tiene experiencia en la materia\"");
         contrato.validar(resultado);
     }
 
@@ -340,7 +359,8 @@ class SugerenciaContratoTest {
                         "CON-MOTIVOS".equals(periodo)
                                 ? List.of(
                                         conMotivo(ReglaDeAsignacion.RN_02),
-                                        conMotivo(ReglaDeAsignacion.RN_13))
+                                        conMotivo(ReglaDeAsignacion.RN_13),
+                                        conMotivo(ReglaDeAsignacion.RN_19))
                                 : "VACIO".equals(periodo)
                                         ? List.of()
                                         : List.of(

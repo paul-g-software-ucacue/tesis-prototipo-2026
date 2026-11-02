@@ -4,7 +4,6 @@ import ec.mdd.generacion.adaptadores.entrada.api.Candidato;
 import ec.mdd.generacion.adaptadores.entrada.api.Dedicacion;
 import ec.mdd.generacion.adaptadores.entrada.api.Sugerencia;
 import ec.mdd.generacion.adaptadores.entrada.api.SugerenciaApi;
-import ec.mdd.generacion.dominio.ReglaDeAsignacion;
 import ec.mdd.generacion.puertos.entrada.ConsultarSugerencia;
 import ec.mdd.generacion.puertos.entrada.OtraCarrera;
 import ec.mdd.generacion.puertos.entrada.SugerenciaDelParalelo;
@@ -88,9 +87,11 @@ class SugerenciaControlador implements SugerenciaApi {
                         AfinidadControlador.puntaje(candidato.puntaje()));
         if (!candidato.sePuedeProponer()) {
             respuesta.setMotivoParaNoProponer(
-                    candidato.motivo() == ReglaDeAsignacion.RN_02
-                            ? Candidato.MotivoParaNoProponerEnum.HORAS
-                            : Candidato.MotivoParaNoProponerEnum.TOPE_DE_CLASE);
+                    switch (candidato.motivo()) {
+                        case RN_02 -> Candidato.MotivoParaNoProponerEnum.HORAS;
+                        case RN_13 -> Candidato.MotivoParaNoProponerEnum.TOPE_DE_CLASE;
+                        case RN_19 -> Candidato.MotivoParaNoProponerEnum.AFINIDAD;
+                    });
         }
         return respuesta;
     }

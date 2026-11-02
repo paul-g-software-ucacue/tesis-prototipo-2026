@@ -1,12 +1,15 @@
 package ec.mdd.generacion.adaptadores.entrada;
 
+import ec.mdd.generacion.adaptadores.entrada.api.Advertencia;
 import ec.mdd.generacion.adaptadores.entrada.api.Distributivo;
 import ec.mdd.generacion.adaptadores.entrada.api.DistributivoApi;
 import ec.mdd.generacion.adaptadores.entrada.api.EstadoDelParcial;
+import ec.mdd.generacion.adaptadores.entrada.api.InconsistenciaJustificada;
 import ec.mdd.generacion.adaptadores.entrada.api.ParcialDeCarrera;
 import ec.mdd.generacion.adaptadores.entrada.api.Parciales;
 import ec.mdd.generacion.adaptadores.entrada.api.Propuesta;
 import ec.mdd.generacion.adaptadores.entrada.api.PropuestaNueva;
+import ec.mdd.generacion.adaptadores.entrada.api.ResultadoDePropuesta;
 import ec.mdd.generacion.adaptadores.entrada.api.TipoDeJustificacion;
 import ec.mdd.generacion.dominio.JustificacionObligatoria;
 import ec.mdd.generacion.puertos.entrada.ConsultarDistributivo;
@@ -95,11 +98,11 @@ class DistributivoControlador implements DistributivoApi {
 
     @Override
     @PreAuthorize(PROPONER)
-    public ResponseEntity<Propuesta> proponerDocente(
+    public ResponseEntity<ResultadoDePropuesta> proponerDocente(
             String periodo, String asignatura, String paralelo, PropuestaNueva nueva) {
         try {
             return ResponseEntity.ok(
-                    propuesta(
+                    resultado(
                             proponer.proponer(
                                     new SolicitudDePropuesta(
                                             periodo,
@@ -166,6 +169,24 @@ class DistributivoControlador implements DistributivoApi {
                 uno.propuestas().stream().map(DistributivoControlador::propuesta).toList());
     }
 
+    private static ResultadoDePropuesta resultado(
+            ec.mdd.generacion.puertos.entrada.ResultadoDePropuesta resultado) {
+        return resultado
+                .propuesta()
+                .map(guardada -> new ResultadoDePropuesta(true).propuesta(propuesta(guardada)))
+                .orElseGet(
+                        () ->
+                                new ResultadoDePropuesta(false)
+                                        .advertencia(
+                                                new Advertencia(
+                                                        "RN-19",
+                                                        "Falta la justificación",
+                                                        "Este docente está bajo el mínimo de"
+                                                                + " afinidad. Escribe por qué lo"
+                                                                + " propones, en 10 a 500"
+                                                                + " caracteres.")));
+    }
+
     /** La propuesta en el contrato; también la usa la sugerencia. */
     static Propuesta propuesta(PropuestaVista vista) {
         ec.mdd.generacion.dominio.Propuesta una = vista.propuesta();
@@ -179,6 +200,13 @@ class DistributivoControlador implements DistributivoApi {
                         vista.retirada(),
                         vista.horasSuficientes());
         respuesta.setTexto(una.justificacion().texto());
+        una.inconsistenciaJustificada()
+                .ifPresent(
+                        regla ->
+                                respuesta.setInconsistencia(
+                                        new InconsistenciaJustificada(
+                                                "RN-19",
+                                                InconsistenciaJustificada.EstadoEnum.JUSTIFICADA)));
         return respuesta;
     }
 }

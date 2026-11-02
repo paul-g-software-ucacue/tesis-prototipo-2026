@@ -50,6 +50,37 @@ class ConsultarReglasDeAsignacionServicioTest {
     }
 
     @Test
+    void dadaUnaVersionConRn19Dura_cuandoSeConsulta_entoncesDevuelveEsaSeveridad() {
+        VersionNormativa version = version(40, CON_PROYECTO, 16);
+        when(version.regla("RN-19"))
+                .thenReturn(Optional.of(new Regla("RN-19", Severidad.DURA, Map.of())));
+        when(repositorio.porPeriodo(PERIODO)).thenReturn(Optional.of(version));
+
+        assertThat(servicio.reglas(PERIODO).severidadAfinidad()).isEqualTo(Severidad.DURA);
+    }
+
+    @Test
+    void dadaLaPolitica_cuandoSeConsulta_entoncesRn19EsBlanda() {
+        con(40, CON_PROYECTO, 16);
+
+        assertThat(servicio.reglas(PERIODO).severidadAfinidad()).isEqualTo(Severidad.BLANDA);
+    }
+
+    @Test
+    void dadaUnaVersionSinLaSeveridad_cuandoSeConsulta_entoncesFallaSinInventarla() {
+        VersionNormativa version = version(40, CON_PROYECTO, 16);
+        when(version.regla("RN-19"))
+                .thenReturn(
+                        Optional.of(
+                                new Regla(
+                                        "RN-19", null, Map.of("minimo_afinidad", BigDecimal.ONE))));
+        when(repositorio.porPeriodo(PERIODO)).thenReturn(Optional.of(version));
+
+        assertThatThrownBy(() -> servicio.reglas(PERIODO))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
     void dadoUnPeriodoSinVersion_cuandoSeConsulta_entoncesPeriodoSinVersion() {
         when(repositorio.porPeriodo(PERIODO)).thenReturn(Optional.empty());
 
@@ -91,6 +122,8 @@ class ConsultarReglasDeAsignacionServicioTest {
                                         Map.of(
                                                 "horas_maximas_docente",
                                                 BigDecimal.valueOf(horas)))));
+        when(version.regla("RN-19"))
+                .thenReturn(Optional.of(new Regla("RN-19", Severidad.BLANDA, Map.of())));
         when(version.tabla())
                 .thenReturn(
                         new TablaCargaHoraria(

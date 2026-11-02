@@ -292,6 +292,11 @@ proponer() {  # proponer <asignatura> <paralelo> <docente> [texto]: con el token
         "$(jq -cn --arg d "$3" --arg t "${4:-}" 'if $t == "" then {docente: $d} else {docente: $d, texto: $t} end')"
 }
 
+# Un 200 ya no significa guardado: sin la justificación llega una advertencia (F07-H03).
+guardada() {
+    [[ $estado == 200 && $(jq -r '.guardada' <<<"$cuerpo") == true ]]
+}
+
 # asignar <carrera> <docente> <actividad> <horas> [proyecto]: con el token de $token
 asignar() {
     pedir PUT "$GATEWAY/api/generacion/periodos/$PERIODO/parciales/$1/docentes/$2/actividades/$3" \
@@ -369,7 +374,7 @@ en_dos_carreras() {
     else
         proponer "$asignatura_a" "$paralelo_a" "$libre" 'Justificación de la prueba punta a punta'
     fi
-    [[ $estado == 200 ]] || return 1
+    guardada || return 1
     asignar "$carrera_a" "$libre" 140-b 5.25
     [[ $estado == 200 ]] || return 1
     iniciar "$COORDINADOR_B"

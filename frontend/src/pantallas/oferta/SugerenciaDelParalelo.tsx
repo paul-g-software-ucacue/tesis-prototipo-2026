@@ -6,6 +6,7 @@ import Accordion from '@mui/material/Accordion';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import Alert from '@mui/material/Alert';
+import AlertTitle from '@mui/material/AlertTitle';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
@@ -29,6 +30,7 @@ import {
   NOMBRE_DE_LA_JUSTIFICACION,
   proponerDocente,
   useSugerencia,
+  type Advertencia,
   type AsignaturaParalelo,
   type Candidato as DatosDelCandidato,
   type Sugerencia,
@@ -44,6 +46,7 @@ const POR_QUE_NO_SE_PROPONE: Record<
 > = {
   HORAS: 'No se le puede proponer: no le alcanzan las horas.',
   TOPE_DE_CLASE: 'No se le puede proponer: su proyecto limita sus horas de clase.',
+  AFINIDAD: 'No se le puede proponer: está bajo el mínimo de afinidad.',
 };
 
 function textoDeLasHoras(candidato: DatosDelCandidato) {
@@ -122,11 +125,14 @@ function Candidato({
 /** Pide el texto de una excepción; el servidor lo vuelve a validar. */
 function DialogoDeJustificacion({
   candidato,
+  advertencia,
   alCerrar,
   alEnviar,
   alGuardar,
 }: {
   candidato: DatosDelCandidato;
+  /** Lo que pidió el servidor, si la pantalla no sabía que hacía falta justificar. */
+  advertencia: Advertencia | null;
   alCerrar: () => void;
   alEnviar: (texto: string) => Promise<unknown>;
   alGuardar: () => Promise<void>;
@@ -154,6 +160,12 @@ function DialogoDeJustificacion({
       alCerrar={alCerrar}
       alEnviar={guardar}
     >
+      {advertencia && (
+        <Alert severity="warning" role="status">
+          <AlertTitle>{advertencia.titulo}</AlertTitle>
+          {advertencia.descripcion}
+        </Alert>
+      )}
       <Typography>
         No alcanza el mínimo de afinidad: la propuesta queda como una excepción, con tu
         justificación.
@@ -292,18 +304,36 @@ export function SugerenciaDelParalelo({
   const sugerencia = useSugerencia(periodo, asignatura, paralelo);
   // Una referencia, no un estado: se lee justo después de guardar, antes de volver a pintar.
   const propuesto = useRef('');
-  const { aviso, enviando, enviar } = useEnvio(() => alProponer(propuesto.current));
+  const advertido = useRef<{ candidato: DatosDelCandidato; advertencia: Advertencia } | null>(null);
   const [porJustificar, setPorJustificar] = useState<DatosDelCandidato | null>(null);
+  const [advertencia, setAdvertencia] = useState<Advertencia | null>(null);
+  const { aviso, enviando, enviar } = useEnvio(async () => {
+    const pendiente = advertido.current;
+    if (pendiente) {
+      // Una regla blanda sin justificar no es un error: no se guardó, y se pide el texto.
+      advertido.current = null;
+      setAdvertencia(pendiente.advertencia);
+      setPorJustificar(pendiente.candidato);
+      return;
+    }
+    await alProponer(propuesto.current);
+  });
 
   const proponer = (docente: string, texto?: string) =>
     proponerDocente(periodo, asignatura, paralelo, { docente, texto });
 
   const elegir = (candidato: DatosDelCandidato, conTexto: boolean) => {
     if (conTexto) {
+      setAdvertencia(null);
       setPorJustificar(candidato);
     } else {
       propuesto.current = candidato.identificacion;
-      enviar(() => proponer(candidato.identificacion));
+      enviar(async () => {
+        const resultado = await proponer(candidato.identificacion);
+        if (resultado.advertencia) {
+          advertido.current = { candidato, advertencia: resultado.advertencia };
+        }
+      });
     }
   };
 
@@ -333,6 +363,7 @@ export function SugerenciaDelParalelo({
       {porJustificar && (
         <DialogoDeJustificacion
           candidato={porJustificar}
+          advertencia={advertencia}
           alCerrar={() => setPorJustificar(null)}
           alEnviar={(texto) => proponer(porJustificar.identificacion, texto)}
           alGuardar={() => alProponer(porJustificar.identificacion)}

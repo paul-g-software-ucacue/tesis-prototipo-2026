@@ -1,5 +1,6 @@
 package ec.mdd.normativa.puertos.entrada;
 
+import ec.mdd.normativa.dominio.Severidad;
 import java.math.BigDecimal;
 
 /**
@@ -8,6 +9,10 @@ import java.math.BigDecimal;
  * @param version el número de la versión
  * @param horasMaximasDocente el tope de horas de un docente (RN-02)
  * @param horasClaseConProyecto el tope de horas de clase de un docente con proyecto (RN-13)
+ * @param severidadAfinidad la severidad de RN-19
  */
 public record ReglasDeLaVersion(
-        int version, BigDecimal horasMaximasDocente, BigDecimal horasClaseConProyecto) {}
+        int version,
+        BigDecimal horasMaximasDocente,
+        BigDecimal horasClaseConProyecto,
+        Severidad severidadAfinidad) {}

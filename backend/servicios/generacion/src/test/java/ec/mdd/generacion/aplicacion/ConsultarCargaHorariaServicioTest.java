@@ -22,6 +22,7 @@ import ec.mdd.generacion.dominio.ParcialCarrera;
 import ec.mdd.generacion.dominio.Proporcion;
 import ec.mdd.generacion.dominio.Propuesta;
 import ec.mdd.generacion.dominio.ReglasDelPeriodo;
+import ec.mdd.generacion.dominio.Severidad;
 import ec.mdd.generacion.dominio.TipoDeJustificacion;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
 import ec.mdd.generacion.dominio.VersionDistributivo;
@@ -64,7 +65,10 @@ class ConsultarCargaHorariaServicioTest {
         when(normativa.reglas(PERIODO))
                 .thenReturn(
                         Optional.of(
-                                new ReglasDelPeriodo(new BigDecimal("40"), new BigDecimal("16"))));
+                                new ReglasDelPeriodo(
+                                        new BigDecimal("40"),
+                                        new BigDecimal("16"),
+                                        Severidad.BLANDA)));
     }
 
     @Test
@@ -88,7 +92,10 @@ class ConsultarCargaHorariaServicioTest {
         when(normativa.reglas(PERIODO))
                 .thenReturn(
                         Optional.of(
-                                new ReglasDelPeriodo(new BigDecimal("18"), new BigDecimal("16"))));
+                                new ReglasDelPeriodo(
+                                        new BigDecimal("18"),
+                                        new BigDecimal("16"),
+                                        Severidad.BLANDA)));
 
         assertThat(servicio.carga(PERIODO, DOCENTE).limite()).isEqualByComparingTo("18");
     }
