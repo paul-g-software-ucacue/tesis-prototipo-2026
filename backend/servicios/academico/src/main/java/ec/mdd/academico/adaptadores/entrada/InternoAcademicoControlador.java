@@ -86,6 +86,7 @@ class InternoAcademicoControlador implements InternoApi {
                 paralelo.campoEspecifico(),
                 paralelo.troncoComun(),
                 paralelo.horasSemanales(),
+                paralelo.horasDeLaAsignatura(),
                 EstadoDeAsignaturaParalelo.fromValue(paralelo.estado().name()),
                 paralelo.periodoCerrado());
     }

@@ -14,6 +14,7 @@ import java.math.BigDecimal;
  * @param campoEspecifico el campo específico de su asignatura
  * @param troncoComun si su asignatura es de tronco común
  * @param horasSemanales sus horas efectivas
+ * @param horasDeLaAsignatura las horas actuales de su asignatura en la malla (RN-18)
  * @param estado ofertada o retirada
  * @param periodoCerrado si el periodo está cerrado
  */
@@ -26,5 +27,6 @@ public record ParaleloConCampos(
         String campoEspecifico,
         boolean troncoComun,
         BigDecimal horasSemanales,
+        BigDecimal horasDeLaAsignatura,
         EstadoDeAsignaturaParalelo estado,
         boolean periodoCerrado) {}

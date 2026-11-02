@@ -1,5 +1,6 @@
 package ec.mdd.docentes.adaptadores.entrada;
 
+import ec.mdd.docentes.adaptadores.entrada.api.CargoVigente;
 import ec.mdd.docentes.adaptadores.entrada.api.Dedicacion;
 import ec.mdd.docentes.adaptadores.entrada.api.DocenteActivo;
 import ec.mdd.docentes.adaptadores.entrada.api.ElementoDeFormacion;
@@ -10,10 +11,14 @@ import ec.mdd.docentes.adaptadores.entrada.api.ProyectosYCargosDelDocente;
 import ec.mdd.docentes.adaptadores.entrada.api.TercerNivelDeFormacion;
 import ec.mdd.docentes.adaptadores.entrada.api.TipoDeCargo;
 import ec.mdd.docentes.adaptadores.entrada.api.TipoDeProyecto;
+import ec.mdd.docentes.dominio.Cargo;
 import ec.mdd.docentes.dominio.DatoInvalido;
 import ec.mdd.docentes.dominio.Docente;
+import ec.mdd.docentes.dominio.EstadoDeCargo;
 import ec.mdd.docentes.dominio.FichaAcademica;
 import ec.mdd.docentes.dominio.Proyecto;
+import ec.mdd.docentes.puertos.entrada.CargoConsultado;
+import ec.mdd.docentes.puertos.entrada.ConsultarCargos;
 import ec.mdd.docentes.puertos.entrada.ConsultarDocentesActivos;
 import ec.mdd.docentes.puertos.entrada.ConsultarDocentesConProyecto;
 import ec.mdd.docentes.puertos.entrada.ConsultarFormacion;
@@ -38,16 +43,28 @@ class InternoDocentesControlador implements InternoApi {
     private final ConsultarDocentesActivos activos;
     private final ConsultarProyectosYCargos proyectosYCargos;
     private final ConsultarDocentesConProyecto conProyecto;
+    private final ConsultarCargos cargos;
 
     InternoDocentesControlador(
             ConsultarFormacion consultar,
             ConsultarDocentesActivos activos,
             ConsultarProyectosYCargos proyectosYCargos,
-            ConsultarDocentesConProyecto conProyecto) {
+            ConsultarDocentesConProyecto conProyecto,
+            ConsultarCargos cargos) {
         this.consultar = consultar;
         this.activos = activos;
         this.proyectosYCargos = proyectosYCargos;
         this.conProyecto = conProyecto;
+        this.cargos = cargos;
+    }
+
+    @Override
+    public ResponseEntity<List<CargoVigente>> consultarCargosVigentes() {
+        return ResponseEntity.ok(
+                cargos.listar(EstadoDeCargo.VIGENTE, null).stream()
+                        .map(CargoConsultado::cargo)
+                        .map(InternoDocentesControlador::respuesta)
+                        .toList());
     }
 
     @Override
@@ -114,6 +131,12 @@ class InternoDocentesControlador implements InternoApi {
                 Dedicacion.fromValue(docente.datos().dedicacion().name()),
                 docente.datos().horasContratadas(),
                 respuesta(docente.datos().ficha()));
+    }
+
+    private static CargoVigente respuesta(Cargo cargo) {
+        CargoVigente vigente = new CargoVigente(cargo.docente(), cargo.tipo().name());
+        vigente.setCarrera(cargo.carrera());
+        return vigente;
     }
 
     private static FormacionDelDocente respuesta(FichaAcademica ficha) {

@@ -27,7 +27,12 @@ class ConsultarActividadesDelPeriodoServicioTest {
     void dadoUnPeriodoConVersion_cuandoSeConsulta_entoncesTraeElCatalogoDeEsaVersion() {
         ActividadDelCatalogo planificar =
                 new ActividadDelCatalogo(
-                        "140-b", "Planificar", Componente.OTRAS_DOCENCIA, List.of(), List.of());
+                        "140-b",
+                        "Planificar",
+                        Componente.OTRAS_DOCENCIA,
+                        List.of(),
+                        List.of(),
+                        false);
         when(versiones.porPeriodo("2026-I")).thenReturn(Optional.of(DatosDePrueba.dos()));
         when(actividades.deLaVersion(2)).thenReturn(List.of(planificar));
 

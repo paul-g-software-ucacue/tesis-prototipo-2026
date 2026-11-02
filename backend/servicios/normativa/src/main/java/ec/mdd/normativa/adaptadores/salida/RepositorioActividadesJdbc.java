@@ -13,7 +13,8 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 public final class RepositorioActividadesJdbc implements RepositorioActividades {
 
     private static final String DE_LA_VERSION =
-            "SELECT a.codigo, a.nombre, a.componente, a.tipos_de_proyecto, a.cargos"
+            "SELECT a.codigo, a.nombre, a.componente, a.tipos_de_proyecto, a.cargos,"
+                    + " a.obligatoria"
                     + " FROM normativa.actividad_catalogo a"
                     + " JOIN normativa.version_normativa v ON v.id = a.version_id"
                     + " WHERE v.numero = :numero ORDER BY a.orden";
@@ -39,7 +40,8 @@ public final class RepositorioActividadesJdbc implements RepositorioActividades 
                 fila.getString("nombre"),
                 Componente.valueOf(fila.getString("componente")),
                 lista(fila.getArray("tipos_de_proyecto")),
-                lista(fila.getArray("cargos")));
+                lista(fila.getArray("cargos")),
+                fila.getBoolean("obligatoria"));
     }
 
     private static List<String> lista(Array arreglo) throws SQLException {

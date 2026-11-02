@@ -83,6 +83,8 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-83 | 2026-11-01 | El agregado de MD-01 se protege bloqueando la versión al guardar | Aceptada | MD-01, D-78, F07-H02 |
 | D-84 | 2026-11-01 | La JVM no recuerda los nombres que no resolvieron | Aceptada | F07-H02 |
 | D-85 | 2026-11-01 | La proporción 60/40 se justifica al consolidar, no al asignar | Aceptada | RN-05, F07-H01, F07-H03 |
+| D-86 | 2026-11-02 | El margen de 60/40 es un dato de la normativa, y RN-05 revisa la planificación y la evaluación | Aceptada | RN-05, D-85 |
+| D-87 | 2026-11-02 | RN-18 se mide por paralelo en el panel, y la matriz D-16 no cambia | Aceptada | RN-18, F03-H03, D-16 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1546,3 +1548,41 @@ Las 19 excepciones de `cloudflared` no cambian: su imagen no corre con el túnel
 **Consecuencias.** RN-19 es la única regla blanda que se evalúa al guardar. El panel de totales sigue mostrando la meta, sin marcar error.
 
 **Documentos que hay que poner al día.** `specs/033-totales-del-docente/spec.md`, con una nota.
+
+---
+
+## D-86. El margen de 60/40 es un dato de la normativa, y RN-05 revisa la planificación y la evaluación
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-02 · **Decidido por:** autor de la tesis
+- **Origen:** especificación de F10-H01
+- **Completa a:** D-85
+
+**Decisión.** Un docente incumple la proporción si su porcentaje de clase se aparta de la meta más que un margen, con el límite incluido. El margen es el parámetro `margen_puntos` de RN-05, con 5 puntos por omisión, en cada versión de normativa. Además, a un docente con horas de clase le tienen que constar las actividades marcadas como obligatorias en el catálogo de la versión: 140 b) y 140 g).
+
+**Por qué.** La normativa fija la meta, pero no una tolerancia. Comparando exacto, un 61/39 sería una inconsistencia y casi todos los docentes tendrían que justificarse. La planificación y la evaluación son parte de RN-05 en la ERS.
+
+**Alternativas.** Exacto: un panel lleno de avisos de poco valor. Solo el total institucional: no dice qué docente corregir. Solo los porcentajes: el panel podría salir vacío con docentes sin planificación ni evaluación.
+
+**Consecuencias.** Una migración completa las versiones existentes, también las que rigen un periodo, porque no cambia un valor (D-68). El margen se edita con los demás parámetros de la versión.
+
+**Documentos que hay que poner al día.** Ninguno: el glosario ya tiene el término.
+
+---
+
+## D-87. RN-18 se mide por paralelo en el panel, y la matriz D-16 no cambia
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-02 · **Decidido por:** autor de la tesis
+- **Origen:** especificación y plan de F10-H01
+
+**Decisión.**
+
+1. RN-18 sale cuando un paralelo no retirado tiene horas por encima de las de su asignatura en la malla, como en F03-H03. Hay una inconsistencia por carrera, que lista esos paralelos.
+2. Leen el panel `CONSOLIDACION:LECTURA` o `DISTRIBUTIVO:ESCRITURA`, y justifica `CONSOLIDACION:ESCRITURA`. El Administrador lee el panel, porque D-16 le da la lectura de la consolidación.
+
+**Por qué.** Sumar todo y compararlo con el total de la malla marcaría a cualquier carrera con varios paralelos. El Vicerrector no tiene `CONSOLIDACION:LECTURA`, y `DISTRIBUTIVO:LECTURA` lo tienen también el Rector, el OCS y la Secretaría.
+
+**Alternativas.** Cambiar la matriz para que solo entren Consolidación y el Vicerrectorado: toca una decisión aprobada a cambio de ocultar una lectura al Administrador.
+
+**Consecuencias.** RN-18 solo se dispara si la asignatura se corrige después de ofertarla, y el panel lo avisa.
+
+**Documentos que hay que poner al día.** Ninguno.

@@ -3,6 +3,7 @@ package ec.mdd.generacion.adaptadores.salida;
 import ec.mdd.generacion.dominio.ActividadDelCatalogo;
 import ec.mdd.generacion.dominio.AsignaturaOfertada;
 import ec.mdd.generacion.dominio.AsignaturaParalelo;
+import ec.mdd.generacion.dominio.CargoVigente;
 import ec.mdd.generacion.dominio.Dedicacion;
 import ec.mdd.generacion.dominio.DocenteActivo;
 import ec.mdd.generacion.dominio.ElementoDeFormacion;
@@ -12,10 +13,12 @@ import ec.mdd.generacion.dominio.PeriodoListo;
 import ec.mdd.generacion.dominio.PesosAfinidad;
 import ec.mdd.generacion.dominio.PesosDelPeriodo;
 import ec.mdd.generacion.dominio.ProyectosYCargosDelDocente;
+import ec.mdd.generacion.dominio.ReglasDelPanel;
 import ec.mdd.generacion.dominio.ReglasDelPeriodo;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
 import ec.mdd.generacion.puertos.salida.DatosParaActividades;
 import ec.mdd.generacion.puertos.salida.DatosParaAfinidad;
+import ec.mdd.generacion.puertos.salida.DatosParaElPanel;
 import ec.mdd.generacion.puertos.salida.DatosParaSugerencia;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
 import java.math.BigDecimal;
@@ -33,7 +36,7 @@ import org.springframework.web.util.UriComponentsBuilder;
  * propios de este adaptador: Generación no comparte tipos con sus dueños (principio V).
  */
 public final class DatosDesdeProcesoDatos
-        implements DatosParaAfinidad, DatosParaSugerencia, DatosParaActividades {
+        implements DatosParaAfinidad, DatosParaSugerencia, DatosParaActividades, DatosParaElPanel {
 
     private final ConsultasEntreProcesos consultas;
     private final URI base;
@@ -152,6 +155,21 @@ public final class DatosDesdeProcesoDatos
         return consultas.obtener(delDocente, ProyectosYCargosDelDocente.class);
     }
 
+    @Override
+    public Optional<ReglasDelPanel> reglasDelPanel(String periodo) {
+        return consultas.obtener(
+                ruta("normativa", "periodos", periodo, "reglas-del-panel"), ReglasDelPanel.class);
+    }
+
+    @Override
+    public List<CargoVigente> cargosVigentes() {
+        return consultas
+                .obtener(ruta("docentes", "cargos-vigentes"), CargoVigente[].class)
+                .map(List::of)
+                .orElseThrow(
+                        () -> new IllegalStateException("Docentes no publica los cargos vigentes"));
+    }
+
     private URI ruta(String... segmentos) {
         return UriComponentsBuilder.fromUri(base)
                 .pathSegment("interno")
@@ -172,6 +190,7 @@ public final class DatosDesdeProcesoDatos
             String campoEspecifico,
             boolean troncoComun,
             BigDecimal horasSemanales,
+            BigDecimal horasDeLaAsignatura,
             String estado,
             boolean periodoCerrado) {
 
@@ -181,6 +200,7 @@ public final class DatosDesdeProcesoDatos
                     paralelo,
                     carrera,
                     horasSemanales,
+                    horasDeLaAsignatura,
                     troncoComun,
                     "RETIRADA".equals(estado),
                     periodoCerrado);

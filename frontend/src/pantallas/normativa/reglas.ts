@@ -28,6 +28,7 @@ const PARAMETROS: Record<string, string> = {
   dedicacion_tiempo_parcial_maxima: 'Tiempo parcial, máximo (h)',
   horas_maximas_docente: 'Máximo por docente (h)',
   porcentaje_clase: 'Clase (%)',
+  margen_puntos: 'Margen (puntos)',
   porcentaje_otras_docencia: 'Otras actividades de docencia (%)',
   estudiantes_minimos: 'Más de (estudiantes)',
   campus_minimos: 'Desde (campus)',

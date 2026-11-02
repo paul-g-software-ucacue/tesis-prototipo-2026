@@ -57,6 +57,7 @@ public final class ConsultarParaleloDeLaOfertaServicio implements ConsultarParal
                 asignatura.campo().especifico(),
                 asignatura.troncoComun(),
                 oferta.horasDe(una),
+                oferta.horasDeLaAsignatura(una),
                 una.estado(),
                 oferta.periodo().estado() == EstadoPeriodo.CERRADO);
     }

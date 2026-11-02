@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ec.mdd.generacion.dominio.ActividadDelCatalogo;
 import ec.mdd.generacion.dominio.AsignaturaOfertada;
 import ec.mdd.generacion.dominio.AsignaturaParalelo;
+import ec.mdd.generacion.dominio.CargoVigente;
 import ec.mdd.generacion.dominio.Componente;
 import ec.mdd.generacion.dominio.Dedicacion;
 import ec.mdd.generacion.dominio.DocenteActivo;
@@ -16,8 +17,10 @@ import ec.mdd.generacion.dominio.PeriodoListo;
 import ec.mdd.generacion.dominio.PesosDelPeriodo;
 import ec.mdd.generacion.dominio.ProyectoDelDocente;
 import ec.mdd.generacion.dominio.ProyectosYCargosDelDocente;
+import ec.mdd.generacion.dominio.ReglasDelPanel;
 import ec.mdd.generacion.dominio.ReglasDelPeriodo;
 import ec.mdd.generacion.dominio.Severidad;
+import ec.mdd.generacion.dominio.TipoDeInconsistencia;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
 import ec.mdd.plataforma.eventos.ProveedorDeTokenDeProceso;
@@ -125,6 +128,48 @@ class DatosDesdeProcesoDatosTest {
     }
 
     @Test
+    void dadasLasReglasDelPanel_cuandoSeConsultan_entoncesLasLee() {
+        receptor.responderConsulta(
+                "/interno/normativa/periodos/2026-I/reglas-del-panel",
+                200,
+                "{\"periodo\":\"2026-I\",\"version\":2,\"severidades\":{\"RF-24\":\"DURA\","
+                        + "\"RN-02\":\"DURA\",\"RN-05\":\"BLANDA\",\"RN-10\":\"BLANDA\","
+                        + "\"RN-12\":\"DURA\",\"RN-17\":\"DURA\",\"RN-18\":\"DURA\"},"
+                        + "\"horasMaximasDocente\":40,\"metaClase\":60,\"metaOtrasDocencia\":40,"
+                        + "\"margenPuntos\":5,\"gestoresMinimo\":8,\"gestoresMaximo\":11,"
+                        + "\"actividadesObligatorias\":[\"140-b\",\"140-g\"]}");
+
+        ReglasDelPanel reglas = datos.reglasDelPanel(PERIODO).orElseThrow();
+
+        assertThat(reglas.severidad(TipoDeInconsistencia.PROPORCION)).isEqualTo(Severidad.BLANDA);
+        assertThat(reglas.margenPuntos()).isEqualByComparingTo("5");
+        assertThat(reglas.gestoresMaximo()).isEqualTo(11);
+        assertThat(reglas.actividadesObligatorias()).containsExactly("140-b", "140-g");
+    }
+
+    @Test
+    void dadoUnPeriodoSinVersion_cuandoSeConsultanLasReglasDelPanel_entoncesVacio() {
+        receptor.responderConsulta("/interno/normativa/periodos/2026-I/reglas-del-panel", 404, "");
+
+        assertThat(datos.reglasDelPanel(PERIODO)).isEmpty();
+    }
+
+    @Test
+    void dadosLosCargosVigentes_cuandoSeConsultan_entoncesLosLee() {
+        receptor.responderConsulta(
+                "/interno/docentes/cargos-vigentes",
+                200,
+                "[{\"docente\":\"0109990010\",\"tipo\":\"COORDINADOR_CARRERA\","
+                        + "\"carrera\":\"TDS\"},"
+                        + "{\"docente\":\"0109990020\",\"tipo\":\"G06_GESTOR_VINCULACION\"}]");
+
+        assertThat(datos.cargosVigentes())
+                .containsExactly(
+                        new CargoVigente("0109990010", "COORDINADOR_CARRERA", "TDS"),
+                        new CargoVigente("0109990020", "G06_GESTOR_VINCULACION", null));
+    }
+
+    @Test
     void dadosDocentesConProyecto_cuandoSePiden_entoncesTraeSusTipos() {
         receptor.responderConsulta(
                 "/interno/docentes/con-proyecto",
@@ -218,7 +263,9 @@ class DatosDesdeProcesoDatosTest {
                                 "A_NOCTURNA",
                                 "TDS",
                                 new BigDecimal("2.5"),
+                                new BigDecimal("4"),
                                 true,
+                                false,
                                 false));
     }
 
@@ -373,7 +420,7 @@ class DatosDesdeProcesoDatosTest {
         return "{\"asignatura\":\"POO-204\",\"nombre\":\"Programación\",\"carrera\":\"TDS\","
                 + "\"paralelo\":\"A_NOCTURNA\",\"campoAmplio\":\"06\","
                 + "\"campoEspecifico\":\"061\",\"troncoComun\":true,"
-                + "\"horasSemanales\":2.5,\"estado\":\""
+                + "\"horasSemanales\":2.5,\"horasDeLaAsignatura\":4,\"estado\":\""
                 + estado
                 + "\",\"periodoCerrado\":false}";
     }

@@ -4,14 +4,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
+import ec.mdd.docentes.dominio.Cargo;
 import ec.mdd.docentes.dominio.DatoInvalido;
 import ec.mdd.docentes.dominio.DocentesDePrueba;
+import ec.mdd.docentes.dominio.EstadoDeCargo;
 import ec.mdd.docentes.dominio.EstadoDeProyecto;
 import ec.mdd.docentes.dominio.Participante;
 import ec.mdd.docentes.dominio.Proyecto;
 import ec.mdd.docentes.dominio.RolDeParticipante;
 import ec.mdd.docentes.dominio.TipoDeCargo;
 import ec.mdd.docentes.dominio.TipoDeProyecto;
+import ec.mdd.docentes.puertos.entrada.CargoConsultado;
+import ec.mdd.docentes.puertos.entrada.ConsultarCargos;
 import ec.mdd.docentes.puertos.entrada.ConsultarDocentesActivos;
 import ec.mdd.docentes.puertos.entrada.ConsultarDocentesConProyecto;
 import ec.mdd.docentes.puertos.entrada.ConsultarFormacion;
@@ -105,6 +109,28 @@ class InternoDocentesContratoTest {
 
         assertThat(resultado.getResponse().getStatus()).isEqualTo(403);
         contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnProceso_cuandoConsultaLosCargos_entonces200SoloConLoNecesario() throws Exception {
+        MvcResult resultado =
+                mvc.perform(get("/interno/docentes/cargos-vigentes").with(deProceso())).andReturn();
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString())
+                .isEqualTo(
+                        "[{\"docente\":\"0109990010\",\"tipo\":\"COORDINADOR_CARRERA\","
+                                + "\"carrera\":\"TDS\"},"
+                                + "{\"docente\":\"0109990020\",\"tipo\":\"G06_GESTOR_VINCULACION\"}]");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnTokenDeUsuario_cuandoConsultaLosCargos_entonces403() throws Exception {
+        MvcResult resultado =
+                mvc.perform(get("/interno/docentes/cargos-vigentes").with(jwt())).andReturn();
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(403);
     }
 
     @Test
@@ -226,6 +252,36 @@ class InternoDocentesContratoTest {
 
     @TestConfiguration(proxyBeanMethods = false)
     static class Dobles {
+
+        @Bean
+        ConsultarCargos consultarCargos() {
+            return (estado, docente) -> {
+                if (estado != EstadoDeCargo.VIGENTE || docente != null) {
+                    throw new IllegalArgumentException("Se piden los vigentes de todos");
+                }
+                return List.of(
+                        new CargoConsultado(
+                                cargo("0109990010", TipoDeCargo.COORDINADOR_CARRERA, "TDS"),
+                                "PEREZ LUIS",
+                                List.of()),
+                        new CargoConsultado(
+                                cargo("0109990020", TipoDeCargo.G06_GESTOR_VINCULACION, null),
+                                "LOPEZ ANA",
+                                List.of()));
+            };
+        }
+
+        private static Cargo cargo(String docente, TipoDeCargo tipo, String carrera) {
+            return new Cargo(
+                    docente,
+                    tipo,
+                    LocalDate.of(2026, 1, 15),
+                    carrera == null ? "G06" : null,
+                    carrera,
+                    null,
+                    "RES-001",
+                    EstadoDeCargo.VIGENTE);
+        }
 
         @Bean
         ConsultarDocentesConProyecto consultarDocentesConProyecto() {

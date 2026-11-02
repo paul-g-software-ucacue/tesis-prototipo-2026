@@ -10,6 +10,7 @@ import ec.mdd.normativa.aplicacion.ConsultarNormativaServicio;
 import ec.mdd.normativa.aplicacion.ConsultarPesosDelPeriodoServicio;
 import ec.mdd.normativa.aplicacion.ConsultarProporcionDelPeriodoServicio;
 import ec.mdd.normativa.aplicacion.ConsultarReglasDeAsignacionServicio;
+import ec.mdd.normativa.aplicacion.ConsultarReglasDelPanelServicio;
 import ec.mdd.normativa.aplicacion.CrearVersionServicio;
 import ec.mdd.normativa.aplicacion.EditarVersionServicio;
 import ec.mdd.normativa.aplicacion.cargas.CargasDeNormativa;
@@ -19,6 +20,7 @@ import ec.mdd.normativa.puertos.entrada.ConsultarNormativa;
 import ec.mdd.normativa.puertos.entrada.ConsultarPesosDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarProporcionDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarReglasDeAsignacion;
+import ec.mdd.normativa.puertos.entrada.ConsultarReglasDelPanel;
 import ec.mdd.normativa.puertos.entrada.CrearVersion;
 import ec.mdd.normativa.puertos.entrada.EditarVersion;
 import ec.mdd.normativa.puertos.salida.RegistroDeCambios;
@@ -68,6 +70,13 @@ public class ConfiguracionNormativa {
     public ConsultarReglasDeAsignacion consultarReglasDeAsignacion(
             RepositorioVersiones repositorio) {
         return new ConsultarReglasDeAsignacionServicio(repositorio);
+    }
+
+    /** Las severidades y las cifras del panel de inconsistencias (RF-29). */
+    @Bean
+    public ConsultarReglasDelPanel consultarReglasDelPanel(
+            RepositorioVersiones versiones, RepositorioActividades actividades) {
+        return new ConsultarReglasDelPanelServicio(versiones, actividades);
     }
 
     /** La meta de la proporción de un periodo (RN-05). */

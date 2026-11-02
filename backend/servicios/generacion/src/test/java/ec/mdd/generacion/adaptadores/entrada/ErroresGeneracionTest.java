@@ -14,6 +14,8 @@ import ec.mdd.generacion.puertos.entrada.DistributivoRepetido;
 import ec.mdd.generacion.puertos.entrada.DocenteNoActivo;
 import ec.mdd.generacion.puertos.entrada.DocenteNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.HorasExcedidas;
+import ec.mdd.generacion.puertos.entrada.InconsistenciaNoEncontrada;
+import ec.mdd.generacion.puertos.entrada.InconsistenciaNoJustificable;
 import ec.mdd.generacion.puertos.entrada.ParaleloNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.ParaleloRetirado;
 import ec.mdd.generacion.puertos.entrada.PeriodoCerrado;
@@ -72,6 +74,14 @@ class ErroresGeneracionTest {
                                 "GENERACION_ACTIVIDAD_NO_ENCONTRADA",
                                 404),
                         tuple(AfinidadInsuficiente.class, "GENERACION_AFINIDAD_INSUFICIENTE", 409),
+                        tuple(
+                                InconsistenciaNoEncontrada.class,
+                                "GENERACION_INCONSISTENCIA_NO_ENCONTRADA",
+                                409),
+                        tuple(
+                                InconsistenciaNoJustificable.class,
+                                "GENERACION_INCONSISTENCIA_DURA",
+                                409),
                         tuple(HorasExcedidas.class, "GENERACION_HORAS_EXCEDIDAS", 409),
                         tuple(TopeDeClase.class, "GENERACION_TOPE_DE_CLASE", 409),
                         tuple(DocenteNoEncontrado.class, "GENERACION_DOCENTE_NO_ENCONTRADO", 404));

@@ -91,9 +91,10 @@ public final class RepositorioVersionesJdbc implements RepositorioVersiones {
     // Una versión nueva hereda el catálogo de la anterior: es fijo en el prototipo (D-79).
     private static final String COPIAR_CATALOGO =
             "INSERT INTO normativa.actividad_catalogo (version_id, codigo, orden, componente,"
-                    + " nombre, tipos_de_proyecto, cargos)"
+                    + " nombre, tipos_de_proyecto, cargos, obligatoria)"
                     + " SELECT :version, a.codigo, a.orden, a.componente, a.nombre,"
-                    + " a.tipos_de_proyecto, a.cargos FROM normativa.actividad_catalogo a"
+                    + " a.tipos_de_proyecto, a.cargos, a.obligatoria"
+                    + " FROM normativa.actividad_catalogo a"
                     + " JOIN normativa.version_normativa v ON v.id = a.version_id"
                     + " WHERE v.numero = (SELECT max(numero) FROM normativa.version_normativa"
                     + " WHERE numero < :numero)";

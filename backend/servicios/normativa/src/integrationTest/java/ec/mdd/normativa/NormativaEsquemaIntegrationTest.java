@@ -154,6 +154,7 @@ class NormativaEsquemaIntegrationTest {
                                                     + " normativa.registro_cambio"
                                                     + " where accion = 'VERSION_EDITADA'"
                                                     + " and detalle::text not like '%actividades%'"
+                                                    + " and detalle::text not like '%margen_puntos%'"
                                                     + " order by 1")
                                     .query(Integer.class)
                                     .list())
