@@ -11,3 +11,9 @@ D-55 a D-58). Cómo prepararlo y comprobarlo: [`specs/009-publicacion-despliegue
 | `probar_equipo.sh`, `github_simulado.py` | La prueba del ciclo, sin Docker Hub ni GitHub; nunca toca el equipo real. |
 
 Ningún secreto vive en el repositorio: todos se generan o se guardan en `/opt/mdd`, con permisos solo de su dueño.
+
+## Los archivos del negocio
+
+El informe sustentado se guarda en el volumen `mdd_archivos`, montado solo en `distributivo` (D-88). La base guarda su clave y su huella.
+
+Si haces copias de seguridad, incluye ese volumen junto con la base: si se pierde, la base sigue, pero el informe no se puede descargar. El sistema todavía no hace copias por su cuenta.

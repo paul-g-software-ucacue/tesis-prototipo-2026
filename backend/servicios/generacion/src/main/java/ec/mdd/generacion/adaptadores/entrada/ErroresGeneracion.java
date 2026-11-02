@@ -1,6 +1,8 @@
 package ec.mdd.generacion.adaptadores.entrada;
 
 import ec.mdd.generacion.dominio.CargoNoVigente;
+import ec.mdd.generacion.dominio.InformeDemasiadoGrande;
+import ec.mdd.generacion.dominio.InformeNoEsPdf;
 import ec.mdd.generacion.dominio.ParcialNoEditable;
 import ec.mdd.generacion.dominio.ProyectoNoValido;
 import ec.mdd.generacion.puertos.entrada.ActividadFueraDelCatalogo;
@@ -13,6 +15,8 @@ import ec.mdd.generacion.puertos.entrada.DocenteNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.HorasExcedidas;
 import ec.mdd.generacion.puertos.entrada.InconsistenciaNoEncontrada;
 import ec.mdd.generacion.puertos.entrada.InconsistenciaNoJustificable;
+import ec.mdd.generacion.puertos.entrada.InformeIlegible;
+import ec.mdd.generacion.puertos.entrada.InformeNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.ParaleloNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.ParaleloRetirado;
 import ec.mdd.generacion.puertos.entrada.PeriodoCerrado;
@@ -20,6 +24,7 @@ import ec.mdd.generacion.puertos.entrada.PeriodoNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.PeriodoNoListo;
 import ec.mdd.generacion.puertos.entrada.PeriodoSinAbrir;
 import ec.mdd.generacion.puertos.entrada.PropuestaNoEncontrada;
+import ec.mdd.generacion.puertos.entrada.SinConsolidar;
 import ec.mdd.generacion.puertos.entrada.SinDistributivo;
 import ec.mdd.generacion.puertos.entrada.TopeDeClase;
 import ec.mdd.plataforma.errores.nucleo.CatalogoDeErrores;
@@ -175,6 +180,36 @@ class ErroresGeneracion implements CatalogoDeErrores {
                                                 "Le quedan "
                                                         + formato(error.horasQueQuedan())
                                                         + " h de clase."))),
+                EntradaCatalogo.de(
+                        SinConsolidar.class,
+                        "GENERACION_SIN_CONSOLIDAR",
+                        409,
+                        "Sin consolidar",
+                        "Primero consolida el periodo, y después adjunta el informe."),
+                EntradaCatalogo.de(
+                        InformeNoEsPdf.class,
+                        "GENERACION_INFORME_NO_ES_PDF",
+                        400,
+                        "El archivo no es un PDF",
+                        "Adjunta el informe en PDF. Si lo tienes en otro formato, expórtalo a PDF."),
+                EntradaCatalogo.de(
+                        InformeDemasiadoGrande.class,
+                        "GENERACION_INFORME_DEMASIADO_GRANDE",
+                        413,
+                        "Informe demasiado grande",
+                        "El informe pasa de 10 MB. Reduce su tamaño y vuelve a adjuntarlo."),
+                EntradaCatalogo.de(
+                        InformeNoEncontrado.class,
+                        "GENERACION_INFORME_NO_ENCONTRADO",
+                        404,
+                        "Sin informe",
+                        "Este periodo todavía no tiene informe sustentado."),
+                EntradaCatalogo.de(
+                        InformeIlegible.class,
+                        "GENERACION_INFORME_ILEGIBLE",
+                        500,
+                        "Informe no disponible",
+                        "No se pudo leer el informe guardado. Vuelve a adjuntarlo o avisa al administrador."),
                 EntradaCatalogo.de(
                         InconsistenciaNoEncontrada.class,
                         "GENERACION_INCONSISTENCIA_NO_ENCONTRADA",

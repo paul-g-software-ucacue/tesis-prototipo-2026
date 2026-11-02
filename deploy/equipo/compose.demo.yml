@@ -100,6 +100,9 @@ services:
   distributivo:
     <<: *proceso
     image: ${REPOSITORIO}:distributivo-${ETIQUETA}
+    volumes:
+      # Los archivos del negocio, separados de la base (RNF-POR-01, D-88).
+      - archivos:/var/mdd/archivos
     environment:
       <<: *jvm
       DB_CLAVE_DISTRIBUTIVO: ${DB_CLAVE_DISTRIBUTIVO}
@@ -184,5 +187,6 @@ services:
 
 volumes:
   datos-postgres:
+  archivos:
   caddy-datos:
   caddy-config:

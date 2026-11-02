@@ -78,6 +78,9 @@ services:
       context: .
       dockerfile: deploy/docker/java.Dockerfile
       args: { MODULO: "apps:distributivo", NOMBRE: distributivo }
+    volumes:
+      # Los archivos del negocio, separados de la base (RNF-POR-01, D-88).
+      - archivos:/var/mdd/archivos
 
   salida:
     <<: *proceso
@@ -125,3 +128,4 @@ services:
 
 volumes:
   datos-postgres:
+  archivos:

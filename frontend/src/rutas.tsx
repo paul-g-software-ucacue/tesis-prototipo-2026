@@ -12,6 +12,7 @@ import { Cargos } from './pantallas/cargos/Cargos';
 import { Docentes } from './pantallas/docentes/Docentes';
 import { Proyectos } from './pantallas/proyectos/Proyectos';
 import { Actividades } from './pantallas/actividades/Actividades';
+import { Consolidado } from './pantallas/consolidado/Consolidado';
 import { Inconsistencias } from './pantallas/inconsistencias/Inconsistencias';
 import { Oferta } from './pantallas/oferta/Oferta';
 import { Plantillas } from './pantallas/plantillas/Plantillas';
@@ -84,6 +85,14 @@ export const rutasDeLaSpa: RouteObject[] = [
         element: (
           <RutaConPermiso cualquieraDe={LECTURA_DEL_PANEL}>
             <Inconsistencias />
+          </RutaConPermiso>
+        ),
+      },
+      {
+        path: 'consolidado',
+        element: (
+          <RutaConPermiso cualquieraDe={LECTURA_DEL_PANEL}>
+            <Consolidado />
           </RutaConPermiso>
         ),
       },

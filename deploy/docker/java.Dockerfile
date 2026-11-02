@@ -27,8 +27,11 @@ RUN java -Djarmode=tools -jar app.jar extract --layers --launcher --destination 
 FROM eclipse-temurin:25-jre
 # La base trae /usr/bin/pebble, un supervisor de servicios de Canonical escrito en Go que el proceso
 # no usa; Grype encontró en él vulnerabilidades altas y críticas de Go (B00-H08). Se quita.
+# /var/mdd/archivos: un volumen nuevo copia dueño y permisos de la imagen, y el proceso corre como
+# 10001 (D-88). Solo distributivo monta ahí el volumen archivos.
 RUN groupadd --system --gid 10001 mdd && useradd --system --uid 10001 --gid mdd mdd \
-    && rm -f /usr/bin/pebble
+    && rm -f /usr/bin/pebble \
+    && mkdir -p /var/mdd/archivos && chown -R 10001:10001 /var/mdd
 WORKDIR /app
 COPY --from=extraccion /app/extraido/dependencies/ ./
 COPY --from=extraccion /app/extraido/spring-boot-loader/ ./
