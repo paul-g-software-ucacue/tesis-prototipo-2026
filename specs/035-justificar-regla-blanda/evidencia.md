@@ -70,6 +70,20 @@ La versión con RN-19 dura se crea por la API y abre 2026-II, porque un periodo 
 - **Limpieza del script.** La primera corrida de `probar_justificacion.sh` pasó los 8 pasos, pero no borró las actividades que crea y dejó sucia la base. Se corrigió y la base se reinició. Las corridas de esta tabla son posteriores.
 - **Gitleaks.** Una primera corrida en modo `git` sobre una copia sin historial no comprobaba lo que parecía, y se descartó. En modo `dir` aparecen 13 hallazgos, todos de la autoridad certificadora de prueba de `backend/servicios/firma`, anteriores a esta historia. El resultado que cuenta es el de la tabla, en modo `git` con la configuración del repositorio.
 
-## La comprobación del autor
+## Equipo de demostración
 
-Pendiente, después del despliegue (SC-004).
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| Despliegue | `demostracion` exitoso, «Sano en 57 s», 8 contenedores sanos; 401 sin credenciales | GitHub y `docker ps`, `04226045fa7d` | 2026-11-02 |
+| Bajo el mínimo | La asignatura `POO-23`, sin tronco común, en «Docentes bajo el mínimo» | Comprobación del autor | 2026-11-02 |
+| Justificada | «Excepción», «Bajo el mínimo, justificada» y el texto en la fila; la justificación `EXCEPCION` en la base | Comprobación del autor y consulta de solo lectura | 2026-11-02 |
+| Justificar sin ayuda (SC-004) | 46 s como máximo (meta: menos de 1 minuto), entre la captura previa y el momento guardado en la base | Hora de la captura y `propuesta_en` | 2026-11-02 |
+
+SC-004 no se midió con cronómetro. La cifra es un tope: entre la captura de las 07:40:25 y la propuesta guardada a las 07:41:11.
+
+Para ver el caso, el autor registró `POO-23`, la ofertó, bajó el paralelo a 4 h y quitó una propuesta para liberar horas. El proceso necesitó indicaciones, porque en la demo `SOC` es de tronco común y el docente estaba en 20 de 20 h. Eso no afecta a SC-004, que mide solo el paso de justificar.
+
+Lo que no se vio en la demo, y queda cubierto por las pruebas:
+
+- **El aviso «Falta la justificación».** Sale solo si el servidor pide el texto sin que la pantalla lo esperara: `Oferta.test.tsx` y `e2e/oferta.spec.ts`.
+- **RN-19 dura.** El periodo de la demo ya tiene su versión, con RN-19 blanda: `probar_justificacion.sh`, paso 8.
