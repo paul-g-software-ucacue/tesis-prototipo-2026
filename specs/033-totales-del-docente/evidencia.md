@@ -60,6 +60,27 @@ Registro de las comprobaciones de la historia (issue #50): los totales del docen
 | Playwright | 106 de 106, con axe sobre el panel, también a 390 px | Local | 2026-11-01 |
 | Scripts | Los 23 de `deploy/probar_*.sh` terminan en 0, sin avisos de limpieza | Local | 2026-11-01 |
 | `probar_equipo.sh` | 13 controles OK | Local | 2026-11-01 |
+| CI | 12 de 12 en verde. `perfil-consolidado` falló la primera vez y pasó al repetirla sin cambios; ver las notas | PR #180 | 2026-11-01 |
+| shellcheck y Gitleaks | Sin observaciones | Copias nuevas en el scratchpad | 2026-11-01 |
+
+## Equipo de demostración
+
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| Despliegue | `demostracion` exitoso, «Sano en 54 s», 8 contenedores sanos; los datos del autor siguen; 401 sin credenciales | GitHub y consulta de solo lectura, `85fea868edad` | 2026-11-01 |
+| Totales al guardar | 9 h de clase y 22 h de otras: 31 h de 20, «Se pasó por 11 h», y 0 disponibles | Comprobación del autor | 2026-11-01 |
+| Proporción | 29 % y 71 %, y con 5 h de otras, 64 % y 36 %, con la meta 60/40 y sin aviso de error | Comprobación del autor | 2026-11-01 |
+| Quitar | Con 5 h de otras: 14 h de 20 y 6 disponibles, sin exceso | Comprobación del autor | 2026-11-01 |
+| La lista | «Totales en todas las carreras» con la clase, igual que el panel | Comprobación del autor | 2026-11-01 |
+| Sin acciones | La pantalla sin «Asignar actividad» ni «Quitar», con los mismos totales | Comprobación del autor | 2026-11-01 |
+
+Lo que no se vio en la demo, y queda cubierto por las pruebas:
+
+- **El panel en Oferta:** no hay capturas al desplegar un candidato ni al proponer (`Oferta.test.tsx`).
+- **El panel antes de guardar:** no hay captura del formulario (`Actividades.test.tsx`, `e2e/totales.spec.ts`).
+- **Horas en otra carrera:** la demo tiene un solo coordinador (`probar_totales.sh`, paso 2).
+- **SC-005:** el autor no tomó el tiempo, así que el criterio queda sin medir en la demo.
+- **Quién hizo la captura sin acciones:** la captura no muestra el usuario.
 
 ## Notas
 
@@ -68,3 +89,4 @@ Registro de las comprobaciones de la historia (issue #50): los totales del docen
 - **Otro error:** sin elegir periodo, el panel se intentaba pintar sin docente y la prueba se quedaba colgada. Lo corrigió la revisión de tipos.
 - **Cambios frente al plan:** el panel se llama `PanelDeCarga`. Al proponer, el diálogo de la sugerencia se cierra, así que el panel queda en la página de Oferta. La meta sembrada ya la comprueba `PoliticaDe2024IntegrationTest`, y `probar_totales.sh` la lee de punta a punta: no hizo falta una prueba de integración nueva (T007).
 - **`SumaPorComponente`:** se quitó, porque `CargaHoraria` la reemplaza.
+- **Fallo intermitente en CI:** en la primera corrida del PR #180, `probar_actividades.sh` falló en sus pasos 9 y 10: con `datos` detenido respondió 502 al instante, en vez de 504 en 5 s, y después de levantarlo siguió con 502. Pasó al repetirla, sin cambios. No se conoce la causa, porque la corrida no guarda los registros de los servicios, y localmente no se reprodujo. Puede repetirse.
