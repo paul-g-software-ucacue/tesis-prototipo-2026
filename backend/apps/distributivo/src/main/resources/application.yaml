@@ -27,6 +27,11 @@ mdd.eventos.reenvio.intervalo: PT30S
 mdd.eventos.destinos.usuarios: ${MDD_URI_IDENTIDAD:http://identidad:8080}/interno/usuarios/eventos
 mdd.eventos.token-proceso: ${MDD_URI_IDENTIDAD:http://identidad:8080}/interno/usuarios/token-proceso
 mdd.eventos.proceso: distributivo
+# El informe sustentado: 10 MB, que limita el dominio, más la envoltura del formulario (D-88).
+spring.servlet.multipart.max-file-size: 11MB
+spring.servlet.multipart.max-request-size: 11MB
+# Los archivos del negocio, en el volumen archivos (D-88). La carpeta se crea al guardar.
+mdd.archivos.raiz: ${MDD_ARCHIVOS_RAIZ:/var/mdd/archivos}
 # Las consultas al proceso datos, por sus rutas internas (ADR-023).
 mdd.procesos.datos: ${MDD_URI_DATOS:http://datos:8080}
 # Clave del proceso (D-49); vacía, el proceso arranca y las entregas fallan hasta configurarla.

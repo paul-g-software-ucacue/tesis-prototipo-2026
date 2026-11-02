@@ -60,11 +60,11 @@ export async function descargar(carga: Carga, que: Descarga): Promise<void> {
   );
 }
 
-function nombreDelServidor(respuesta: Response): string | undefined {
+export function nombreDelServidor(respuesta: Response): string | undefined {
   return /filename="([^"]+)"/.exec(respuesta.headers.get('Content-Disposition') ?? '')?.[1];
 }
 
-function guardar(contenido: Blob, nombre: string) {
+export function guardar(contenido: Blob, nombre: string) {
   const enlace = document.createElement('a');
   enlace.href = URL.createObjectURL(contenido);
   enlace.download = nombre;

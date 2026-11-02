@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
 import ec.mdd.generacion.dominio.CargoNoVigente;
+import ec.mdd.generacion.dominio.InformeDemasiadoGrande;
+import ec.mdd.generacion.dominio.InformeNoEsPdf;
 import ec.mdd.generacion.dominio.ParcialNoEditable;
 import ec.mdd.generacion.dominio.ProyectoNoValido;
 import ec.mdd.generacion.puertos.entrada.ActividadFueraDelCatalogo;
@@ -16,6 +18,8 @@ import ec.mdd.generacion.puertos.entrada.DocenteNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.HorasExcedidas;
 import ec.mdd.generacion.puertos.entrada.InconsistenciaNoEncontrada;
 import ec.mdd.generacion.puertos.entrada.InconsistenciaNoJustificable;
+import ec.mdd.generacion.puertos.entrada.InformeIlegible;
+import ec.mdd.generacion.puertos.entrada.InformeNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.ParaleloNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.ParaleloRetirado;
 import ec.mdd.generacion.puertos.entrada.PeriodoCerrado;
@@ -23,6 +27,7 @@ import ec.mdd.generacion.puertos.entrada.PeriodoNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.PeriodoNoListo;
 import ec.mdd.generacion.puertos.entrada.PeriodoSinAbrir;
 import ec.mdd.generacion.puertos.entrada.PropuestaNoEncontrada;
+import ec.mdd.generacion.puertos.entrada.SinConsolidar;
 import ec.mdd.generacion.puertos.entrada.SinDistributivo;
 import ec.mdd.generacion.puertos.entrada.TopeDeClase;
 import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
@@ -82,6 +87,14 @@ class ErroresGeneracionTest {
                                 InconsistenciaNoJustificable.class,
                                 "GENERACION_INCONSISTENCIA_DURA",
                                 409),
+                        tuple(SinConsolidar.class, "GENERACION_SIN_CONSOLIDAR", 409),
+                        tuple(InformeNoEsPdf.class, "GENERACION_INFORME_NO_ES_PDF", 400),
+                        tuple(
+                                InformeDemasiadoGrande.class,
+                                "GENERACION_INFORME_DEMASIADO_GRANDE",
+                                413),
+                        tuple(InformeNoEncontrado.class, "GENERACION_INFORME_NO_ENCONTRADO", 404),
+                        tuple(InformeIlegible.class, "GENERACION_INFORME_ILEGIBLE", 500),
                         tuple(HorasExcedidas.class, "GENERACION_HORAS_EXCEDIDAS", 409),
                         tuple(TopeDeClase.class, "GENERACION_TOPE_DE_CLASE", 409),
                         tuple(DocenteNoEncontrado.class, "GENERACION_DOCENTE_NO_ENCONTRADO", 404));

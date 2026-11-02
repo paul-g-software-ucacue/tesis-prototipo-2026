@@ -36,6 +36,10 @@ public record CambioDeDistributivo(
         /** Actividad no lectiva quitada. */
         ACTIVIDAD_QUITADA,
         /** Inconsistencia global justificada, o justificación cambiada. */
-        INCONSISTENCIA_JUSTIFICADA
+        INCONSISTENCIA_JUSTIFICADA,
+        /** Versión consolidada, o consolidada otra vez. */
+        DISTRIBUTIVO_CONSOLIDADO,
+        /** Informe sustentado adjuntado, o reemplazado. */
+        INFORME_ADJUNTADO
     }
 }

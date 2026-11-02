@@ -189,6 +189,12 @@ estado_sesion=$(curl "${opciones_curl[@]}" -o /dev/null -w '%{http_code}' -K - "
 verificar 6 "Después de reiniciar identidad, el mismo token sigue valiendo (recibido: $estado_sesion)" \
     eval '[[ -n $token && $estado_sesion == 200 ]]'
 
+# 12. El volumen de los archivos del negocio (D-88): el proceso corre como 10001 y tiene que poder
+# escribir. Ese error solo se ve aquí, con el volumen y la imagen de verdad.
+verificar 12 "distributivo puede escribir en el volumen de archivos" \
+    compose "$equipo" exec -T distributivo sh -c \
+    'touch /var/mdd/archivos/.escritura && rm /var/mdd/archivos/.escritura'
+
 # 10. Memoria del equipo después de iniciar sesión (SC-010, R-19): por debajo de la alerta de 7 GiB.
 memoria=$(docker stats --no-stream --format '{{.Name}} {{.MemUsage}}' | awk -v p="$PROYECTO-" '
     index($1, p) == 1 {

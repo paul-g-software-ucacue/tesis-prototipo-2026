@@ -25,7 +25,8 @@ import org.springframework.test.web.servlet.MockMvc;
     DistributivoControlador.class,
     ActividadesControlador.class,
     CargaHorariaControlador.class,
-    PanelControlador.class
+    PanelControlador.class,
+    ConsolidadoControlador.class
 })
 @ImportAutoConfiguration({SeguridadProcesoAutoConfiguracion.class, ErroresAutoConfiguracion.class})
 @Import({
@@ -35,6 +36,7 @@ import org.springframework.test.web.servlet.MockMvc;
     ActividadesContratoTest.Dobles.class,
     CargaHorariaContratoTest.Dobles.class,
     PanelContratoTest.Dobles.class,
+    ConsolidadoContratoTest.Dobles.class,
     ErroresGeneracion.class,
     ErroresEntreProcesos.class
 })
@@ -53,11 +55,12 @@ class PermisosGeneracionTest {
     void dadoElContratoDeGeneracion_cuandoSeVerificaCadaOperacion_entoncesExigeSuPermiso() {
         assertThat(verificador.operaciones())
                 .extracting(VerificadorDePermisos.OperacionProtegida::toString)
-                .hasSize(14)
+                .hasSize(18)
                 .anySatisfy(operacion -> assertThat(operacion).contains("/afinidad"))
                 .anySatisfy(operacion -> assertThat(operacion).contains("/sugerencia"))
                 .anySatisfy(operacion -> assertThat(operacion).contains("/carga-horaria"))
                 .anySatisfy(operacion -> assertThat(operacion).contains("/inconsistencias"))
+                .anySatisfy(operacion -> assertThat(operacion).contains("/consolidado"))
                 .anySatisfy(operacion -> assertThat(operacion).contains("DISTRIBUTIVO:ESCRITURA"))
                 .anySatisfy(operacion -> assertThat(operacion).contains("OFERTA:ESCRITURA"));
 

@@ -15,6 +15,8 @@
 # Desde F07-H03: RN-19 sin justificar responde con una advertencia, sin guardar (RF-28, MD-07).
 # Desde F10-H01: el panel de inconsistencias del periodo y la justificación de las blandas (RF-29,
 # MD-07, D-85 a D-87). Lo leen Consolidación y el Vicerrectorado; justifica Consolidación.
+# Desde F10-H02: consolidar y el informe sustentado (RF-32, D-88). Marca sin bloquear; lo leen
+# Consolidación y el Vicerrectorado, y escribe Consolidación.
 openapi: 3.0.3
 info:
   title: MDD · generacion
@@ -40,6 +42,8 @@ tags:
     description: Los totales de un docente y su proporción (RF-27, RN-05, D-01, D-82).
   - name: Panel
     description: El panel de inconsistencias del periodo (RF-29, MD-07).
+  - name: Consolidado
+    description: Consolidar el periodo y su informe sustentado (RF-32).
 paths:
   /api/generacion/sesion:
     get:
@@ -533,6 +537,199 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/generacion/periodos/{periodo}/consolidado:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2026-I
+    get:
+      tags: [Consolidado]
+      operationId: consultarConsolidado
+      summary: Devuelve las carreras, los totales, las inconsistencias abiertas y el informe.
+      description: >-
+        Se calcula al abrirlo: solo se guarda quién y cuándo consolidó. Un periodo sin distributivo
+        responde 200 con creado en false, porque no es un error. Es solo lectura.
+      x-mdd-permiso: [CONSOLIDACION:LECTURA, DISTRIBUTIVO:ESCRITURA]
+      responses:
+        '200':
+          description: El consolidado del periodo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsolidadoDelPeriodo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: El periodo no existe (GENERACION_PERIODO_NO_ENCONTRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+    post:
+      tags: [Consolidado]
+      operationId: consolidar
+      summary: Consolida la versión vigente, sin bloquearla.
+      description: >-
+        Guarda quién y cuándo, y se puede repetir. Admite inconsistencias abiertas, y no cambia el
+        estado de los parciales (MD-04).
+      x-mdd-permiso: CONSOLIDACION:ESCRITURA
+      responses:
+        '200':
+          description: El consolidado del periodo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsolidadoDelPeriodo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: El periodo no existe (GENERACION_PERIODO_NO_ENCONTRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '409':
+          description: >-
+            Sin distributivo (GENERACION_SIN_DISTRIBUTIVO) o periodo cerrado
+            (GENERACION_PERIODO_CERRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/generacion/periodos/{periodo}/consolidado/informe:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2026-I
+    get:
+      tags: [Consolidado]
+      operationId: descargarInformeSustentado
+      summary: Descarga el informe vigente, idéntico al adjuntado.
+      description: >-
+        Comprueba su huella antes de entregarlo: nunca entrega un archivo dañado.
+      x-mdd-permiso: [CONSOLIDACION:LECTURA, DISTRIBUTIVO:ESCRITURA]
+      responses:
+        '200':
+          description: El PDF.
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: Sin informe (GENERACION_INFORME_NO_ENCONTRADO), o el periodo no existe
+            (GENERACION_PERIODO_NO_ENCONTRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          description: >-
+            No se pudo leer el archivo, o no coincide con su huella (GENERACION_INFORME_ILEGIBLE).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+    put:
+      tags: [Consolidado]
+      operationId: adjuntarInformeSustentado
+      summary: Adjunta el informe en PDF a la versión consolidada, o lo reemplaza.
+      description: >-
+        Un PDF de hasta 10 MB, comprobado por su contenido. Reemplazarlo conserva el anterior. El
+        nombre recibido solo se muestra.
+      x-mdd-permiso: CONSOLIDACION:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [archivo]
+              properties:
+                archivo:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: El informe vigente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InformeSustentado'
+        '400':
+          description: >-
+            El archivo no es un PDF, o está vacío (GENERACION_INFORME_NO_ES_PDF).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: El periodo no existe (GENERACION_PERIODO_NO_ENCONTRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '409':
+          description: >-
+            Sin consolidar (GENERACION_SIN_CONSOLIDAR), sin distributivo
+            (GENERACION_SIN_DISTRIBUTIVO) o periodo cerrado (GENERACION_PERIODO_CERRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '413':
+          description: >-
+            Pasa de 10 MB (GENERACION_INFORME_DEMASIADO_GRANDE).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
         '504':
           $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
   /api/generacion/periodos/{periodo}/inconsistencias:
@@ -1044,6 +1241,88 @@ components:
     TipoDeJustificacion:
       type: string
       enum: [AFINIDAD, DISPONIBILIDAD, EXCEPCION]
+    ConsolidadoDelPeriodo:
+      description: El distributivo institucional del periodo, calculado al abrirlo (RF-32).
+      type: object
+      required: [periodo, creado, modificable, desactualizado, carreras, totales, abiertas]
+      properties:
+        periodo:
+          type: string
+        creado:
+          description: Si el periodo tiene distributivo.
+          type: boolean
+        modificable:
+          description: Si admite consolidar y adjuntar; un periodo cerrado solo se lee.
+          type: boolean
+        version:
+          description: El número de la versión; solo si está creado.
+          type: integer
+          minimum: 1
+        consolidacion:
+          $ref: '#/components/schemas/Consolidacion'
+        desactualizado:
+          description: Si una propuesta o una actividad cambió después de consolidar.
+          type: boolean
+        carreras:
+          type: array
+          items:
+            $ref: '#/components/schemas/CarreraConsolidada'
+        totales:
+          $ref: '#/components/schemas/HorasPorComponente'
+        abiertas:
+          $ref: '#/components/schemas/TotalesDelPanel'
+        informe:
+          $ref: '#/components/schemas/InformeSustentado'
+    Consolidacion:
+      type: object
+      required: [por, en]
+      properties:
+        por:
+          description: Quién consolidó.
+          type: string
+        en:
+          type: string
+          format: date-time
+    CarreraConsolidada:
+      type: object
+      required: [carrera, estado, paralelos, propuestos, completo, horas]
+      properties:
+        carrera:
+          type: string
+        estado:
+          $ref: '#/components/schemas/EstadoDelParcial'
+        paralelos:
+          description: Los paralelos no retirados de la carrera.
+          type: integer
+          minimum: 0
+        propuestos:
+          description: Cuántos tienen propuesta.
+          type: integer
+          minimum: 0
+        completo:
+          type: boolean
+        horas:
+          $ref: '#/components/schemas/HorasPorComponente'
+    InformeSustentado:
+      type: object
+      required: [nombre, tamano, huella, por, en]
+      properties:
+        nombre:
+          description: El nombre recibido, solo para mostrarlo.
+          type: string
+        tamano:
+          description: En bytes.
+          type: integer
+          minimum: 1
+        huella:
+          description: SHA-256, en hexadecimal.
+          type: string
+        por:
+          description: Quién lo adjuntó.
+          type: string
+        en:
+          type: string
+          format: date-time
     PanelDeInconsistencias:
       description: Las inconsistencias globales de la versión vigente, abiertas y justificadas.
       type: object

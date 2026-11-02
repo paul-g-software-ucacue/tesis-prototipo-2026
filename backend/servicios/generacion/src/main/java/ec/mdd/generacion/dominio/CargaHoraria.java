@@ -38,20 +38,36 @@ public record CargaHoraria(
             List<Propuesta> propuestas,
             List<ActividadNoLectiva> actividades,
             List<AsignaturaParalelo> oferta) {
-        List<ActividadNoLectiva> suyas =
-                actividades.stream().filter(una -> una.docente().equals(docente)).toList();
+        return sumar(
+                propuestas.stream().filter(una -> una.docente().equals(docente)).toList(),
+                actividades.stream().filter(una -> una.docente().equals(docente)).toList(),
+                oferta);
+    }
+
+    /**
+     * Suma unas asignaciones, sean de quien sean. Una propuesta de un paralelo retirado no cuenta.
+     * Es una función pura.
+     *
+     * @param propuestas las que se suman
+     * @param actividades las que se suman
+     * @param oferta las asignaturas-paralelo del periodo
+     * @return los totales
+     */
+    public static CargaHoraria sumar(
+            List<Propuesta> propuestas,
+            List<ActividadNoLectiva> actividades,
+            List<AsignaturaParalelo> oferta) {
         BigDecimal clase =
                 propuestas.stream()
-                        .filter(una -> una.docente().equals(docente))
                         .map(una -> HorasDelPeriodo.horasDe(una, oferta))
                         .flatMap(Optional::stream)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
         return new CargaHoraria(
                 clase,
-                suma(suyas, Componente.OTRAS_DOCENCIA),
-                suma(suyas, Componente.INVESTIGACION),
-                suma(suyas, Componente.VINCULACION),
-                suma(suyas, Componente.GESTION));
+                suma(actividades, Componente.OTRAS_DOCENCIA),
+                suma(actividades, Componente.INVESTIGACION),
+                suma(actividades, Componente.VINCULACION),
+                suma(actividades, Componente.GESTION));
     }
 
     /** Todas sus horas: la suma de los cinco componentes. */

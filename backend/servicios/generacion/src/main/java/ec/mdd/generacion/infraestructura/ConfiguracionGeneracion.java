@@ -1,47 +1,58 @@
 package ec.mdd.generacion.infraestructura;
 
+import ec.mdd.generacion.adaptadores.salida.AlmacenEnDisco;
 import ec.mdd.generacion.adaptadores.salida.DatosDesdeProcesoDatos;
 import ec.mdd.generacion.adaptadores.salida.PublicadorDeEventosSpring;
 import ec.mdd.generacion.adaptadores.salida.RegistroDeCambiosJdbc;
+import ec.mdd.generacion.adaptadores.salida.RepositorioConsolidacionJdbc;
 import ec.mdd.generacion.adaptadores.salida.RepositorioDistributivosJdbc;
 import ec.mdd.generacion.adaptadores.salida.RepositorioEventosDePruebaJdbc;
 import ec.mdd.generacion.adaptadores.salida.RepositorioJustificacionesJdbc;
 import ec.mdd.generacion.adaptadores.salida.TransaccionSpring;
 import ec.mdd.generacion.aplicacion.AsignarActividadServicio;
+import ec.mdd.generacion.aplicacion.ConsolidarServicio;
 import ec.mdd.generacion.aplicacion.ConsultarActividadesPosiblesServicio;
 import ec.mdd.generacion.aplicacion.ConsultarActividadesServicio;
 import ec.mdd.generacion.aplicacion.ConsultarAfinidadServicio;
 import ec.mdd.generacion.aplicacion.ConsultarCargaHorariaServicio;
+import ec.mdd.generacion.aplicacion.ConsultarConsolidadoServicio;
 import ec.mdd.generacion.aplicacion.ConsultarPanelServicio;
 import ec.mdd.generacion.aplicacion.ConsultarParcialesServicio;
 import ec.mdd.generacion.aplicacion.ConsultarSugerenciaServicio;
 import ec.mdd.generacion.aplicacion.CrearDistributivoServicio;
+import ec.mdd.generacion.aplicacion.InformeSustentadoServicio;
 import ec.mdd.generacion.aplicacion.JustificarInconsistenciaServicio;
 import ec.mdd.generacion.aplicacion.ProponerDocenteServicio;
 import ec.mdd.generacion.aplicacion.PublicarEventoDePruebaServicio;
 import ec.mdd.generacion.puertos.entrada.AsignarActividad;
+import ec.mdd.generacion.puertos.entrada.Consolidar;
 import ec.mdd.generacion.puertos.entrada.ConsultarActividades;
 import ec.mdd.generacion.puertos.entrada.ConsultarActividadesPosibles;
 import ec.mdd.generacion.puertos.entrada.ConsultarAfinidad;
 import ec.mdd.generacion.puertos.entrada.ConsultarCargaHoraria;
+import ec.mdd.generacion.puertos.entrada.ConsultarConsolidado;
 import ec.mdd.generacion.puertos.entrada.ConsultarPanel;
 import ec.mdd.generacion.puertos.entrada.ConsultarParciales;
 import ec.mdd.generacion.puertos.entrada.ConsultarSugerencia;
+import ec.mdd.generacion.puertos.entrada.GestionarInforme;
 import ec.mdd.generacion.puertos.entrada.JustificarInconsistencia;
 import ec.mdd.generacion.puertos.entrada.ProponerDocente;
 import ec.mdd.generacion.puertos.entrada.PublicarEventoDePrueba;
+import ec.mdd.generacion.puertos.salida.AlmacenDeArchivos;
 import ec.mdd.generacion.puertos.salida.DatosParaActividades;
 import ec.mdd.generacion.puertos.salida.DatosParaAfinidad;
 import ec.mdd.generacion.puertos.salida.DatosParaElPanel;
 import ec.mdd.generacion.puertos.salida.DatosParaSugerencia;
 import ec.mdd.generacion.puertos.salida.PublicadorDeEventos;
 import ec.mdd.generacion.puertos.salida.RegistroDeCambios;
+import ec.mdd.generacion.puertos.salida.RepositorioConsolidacion;
 import ec.mdd.generacion.puertos.salida.RepositorioDistributivos;
 import ec.mdd.generacion.puertos.salida.RepositorioEventosDePrueba;
 import ec.mdd.generacion.puertos.salida.RepositorioJustificaciones;
 import ec.mdd.generacion.puertos.salida.Transaccion;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
 import java.net.URI;
+import java.nio.file.Path;
 import java.time.Clock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
@@ -175,6 +186,51 @@ public class ConfiguracionGeneracion {
             Transaccion transaccion) {
         return new JustificarInconsistenciaServicio(
                 panel, justificaciones, registro, transaccion, Clock.systemUTC());
+    }
+
+    /** Los archivos del negocio, en el volumen (D-88). */
+    @Bean
+    public AlmacenDeArchivos almacenDeArchivos(@Value("${mdd.archivos.raiz}") Path raiz) {
+        return new AlmacenEnDisco(raiz);
+    }
+
+    /** Las consolidaciones y los informes (RF-32). */
+    @Bean
+    public RepositorioConsolidacion repositorioConsolidacion(JdbcClient jdbc) {
+        return new RepositorioConsolidacionJdbc(jdbc);
+    }
+
+    /** El consolidado de un periodo (RF-32). */
+    @Bean
+    public ConsultarConsolidado consultarConsolidado(
+            ConsultarPanel panel,
+            DatosParaSugerencia datos,
+            RepositorioDistributivos distributivos,
+            RepositorioConsolidacion consolidacion) {
+        return new ConsultarConsolidadoServicio(panel, datos, distributivos, consolidacion);
+    }
+
+    /** Consolidar la versión vigente (RF-32). */
+    @Bean
+    public Consolidar consolidar(
+            ConsultarConsolidado consultar,
+            RepositorioConsolidacion consolidacion,
+            RegistroDeCambios registro,
+            Transaccion transaccion) {
+        return new ConsolidarServicio(
+                consultar, consolidacion, registro, transaccion, Clock.systemUTC());
+    }
+
+    /** Adjuntar y descargar el informe sustentado (RF-32). */
+    @Bean
+    public GestionarInforme gestionarInforme(
+            ConsultarConsolidado consultar,
+            AlmacenDeArchivos almacen,
+            RepositorioConsolidacion consolidacion,
+            RegistroDeCambios registro,
+            Transaccion transaccion) {
+        return new InformeSustentadoServicio(
+                consultar, almacen, consolidacion, registro, transaccion, Clock.systemUTC());
     }
 
     /** La carga horaria de un docente (RF-27, D-82). */

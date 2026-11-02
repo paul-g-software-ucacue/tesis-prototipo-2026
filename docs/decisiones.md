@@ -85,6 +85,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-85 | 2026-11-01 | La proporción 60/40 se justifica al consolidar, no al asignar | Aceptada | RN-05, F07-H01, F07-H03 |
 | D-86 | 2026-11-02 | El margen de 60/40 es un dato de la normativa, y RN-05 revisa la planificación y la evaluación | Aceptada | RN-05, D-85 |
 | D-87 | 2026-11-02 | RN-18 se mide por paralelo en el panel, y la matriz D-16 no cambia | Aceptada | RN-18, F03-H03, D-16 |
+| D-88 | 2026-11-02 | Los archivos del negocio van en un volumen, detrás de un puerto de Generación | Aceptada | RNF-POR-01, F10-H02 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1586,3 +1587,20 @@ Las 19 excepciones de `cloudflared` no cambian: su imagen no corre con el túnel
 **Consecuencias.** RN-18 solo se dispara si la asignatura se corrige después de ofertarla, y el panel lo avisa.
 
 **Documentos que hay que poner al día.** Ninguno.
+
+---
+
+## D-88. Los archivos del negocio van en un volumen, detrás de un puerto de Generación
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-02 · **Decidido por:** autor de la tesis
+- **Origen:** especificación y plan de F10-H02
+
+**Decisión.** El informe sustentado se guarda en un volumen con nombre, `archivos`, montado solo en `distributivo`, detrás del puerto `AlmacenDeArchivos`. El sistema genera la clave de cada archivo, y la base guarda la huella SHA-256. El nombre recibido solo se muestra. Si el puerto sube a la plataforma se decide cuando llegue Firma.
+
+**Por qué.** RNF-POR-01 pide guardar los archivos separados de la base, y este es el primero que el sistema conserva. Un volumen con nombre sobrevive a las actualizaciones y no toca carpetas del usuario.
+
+**Alternativas.** En la base: contradice RNF-POR-01 y la hace crecer. Un servicio de objetos: agrega un contenedor a un equipo de 4 GB. Subir el puerto a la plataforma ahora: diseña para un uso que no existe.
+
+**Consecuencias.** `java.Dockerfile` crea la carpeta con dueño 10001, y `nginx.conf` y el formulario de `distributivo` admiten 11 MB, para que un PDF de 10 MB pase con su envoltura. Las copias de seguridad, si las hay, deben incluir el volumen.
+
+**Documentos que hay que poner al día.** `deploy/equipo/README.md`.

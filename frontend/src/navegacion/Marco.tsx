@@ -58,6 +58,7 @@ const ENTRADAS: Entrada[] = [
   { ruta: '/plantillas', texto: 'Plantillas de carga', permiso: DESCARGA_DE_PLANTILLAS },
   { ruta: '/preparacion', texto: 'Preparación del periodo', permiso: PREPARACION_DEL_PERIODO },
   { ruta: '/inconsistencias', texto: 'Panel de inconsistencias', permiso: LECTURA_DEL_PANEL },
+  { ruta: '/consolidado', texto: 'Consolidado del periodo', permiso: LECTURA_DEL_PANEL },
 ];
 
 export function Marco() {
