@@ -281,7 +281,9 @@ export function Inconsistencias() {
 
   return (
     <>
-      <Typography variant="h1">Panel de inconsistencias</Typography>
+      <Typography component="h1" variant="h4" gutterBottom>
+        Panel de inconsistencias
+      </Typography>
       {periodos.error && <AvisoDeError mensaje={traducirError(periodos.error)} />}
       {panel.error && <AvisoDeError mensaje={traducirError(panel.error)} />}
       {periodos.data && (
@@ -314,7 +316,7 @@ export function Inconsistencias() {
             </Alert>
           ) : (
             <>
-              <Typography variant="h2" sx={{ mt: 2 }}>
+              <Typography component="h2" variant="h5" sx={{ mt: 2 }}>
                 {totales(datos.abiertas.duras, datos.abiertas.blandas)}
               </Typography>
               <Tabla titulo="Inconsistencias abiertas" filas={abiertas} {...tabla} />
@@ -322,7 +324,7 @@ export function Inconsistencias() {
           )}
           {justificadas.length > 0 && (
             <>
-              <Typography variant="h2" sx={{ mt: 2 }}>
+              <Typography component="h2" variant="h5" sx={{ mt: 2 }}>
                 Justificadas
               </Typography>
               <Tabla titulo="Inconsistencias justificadas" filas={justificadas} {...tabla} />
