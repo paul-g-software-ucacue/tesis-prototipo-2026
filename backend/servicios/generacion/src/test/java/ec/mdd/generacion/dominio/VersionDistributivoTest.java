@@ -37,6 +37,65 @@ class VersionDistributivoTest {
         assertThat(version.actividadDe("TDS", "0109990020", "140-b", null)).isEmpty();
     }
 
+    @Test
+    void dadaUnaPropuestaNueva_cuandoSeAplica_entoncesSeAgrega() {
+        Propuesta otra = propuesta("BD-301", "B");
+        Propuesta nueva = propuesta("BD-301", "A");
+        VersionDistributivo version = conAsignaciones(List.of(otra), List.of());
+
+        assertThat(version.conPropuesta(nueva).propuestas()).containsExactly(otra, nueva);
+        assertThat(version.propuestas()).containsExactly(otra);
+    }
+
+    @Test
+    void dadaOtraPropuestaDelParalelo_cuandoSeAplica_entoncesLaReemplaza() {
+        Propuesta anterior = propuesta("BD-301", "A");
+        Propuesta otra = propuesta("BD-301", "B");
+        Propuesta nueva = propuesta("BD-301", "A");
+        VersionDistributivo version = conAsignaciones(List.of(anterior, otra), List.of());
+
+        assertThat(version.conPropuesta(nueva).propuestas()).containsExactly(otra, nueva);
+    }
+
+    @Test
+    void dadaUnaActividadNueva_cuandoSeAplica_entoncesSeAgrega() {
+        ActividadNoLectiva otra = actividad("140-g", null);
+        ActividadNoLectiva nueva = actividad("140-b", null);
+        VersionDistributivo version = conAsignaciones(List.of(), List.of(otra));
+
+        assertThat(version.conActividad(nueva).actividades()).containsExactly(otra, nueva);
+    }
+
+    @Test
+    void dadaLaMismaActividad_cuandoSeAplica_entoncesLaReemplaza() {
+        ActividadNoLectiva anterior = actividad("140-b", null);
+        ActividadNoLectiva otra = actividad("141-a", "INV-2025-01");
+        ActividadNoLectiva nueva = actividad("140-b", null);
+        VersionDistributivo version = conAsignaciones(List.of(), List.of(anterior, otra));
+
+        assertThat(version.conActividad(nueva).actividades()).containsExactly(otra, nueva);
+    }
+
+    @Test
+    void dadoOtroProyecto_cuandoSeAplicaLaActividad_entoncesNoReemplaza() {
+        ActividadNoLectiva anterior = actividad("141-a", "INV-2025-01");
+        ActividadNoLectiva nueva = actividad("141-a", "INV-2025-02");
+        VersionDistributivo version = conAsignaciones(List.of(), List.of(anterior));
+
+        assertThat(version.conActividad(nueva).actividades()).containsExactly(anterior, nueva);
+    }
+
+    private static VersionDistributivo conAsignaciones(
+            List<Propuesta> propuestas, List<ActividadNoLectiva> actividades) {
+        return new VersionDistributivo(
+                ID,
+                1,
+                EstadoDeVersion.EDITABLE,
+                List.of(ParcialCarrera.nuevo("TDS")),
+                propuestas,
+                actividades);
+    }
+
     private static ActividadNoLectiva actividad(String codigo, String proyecto) {
         return new ActividadNoLectiva(
                 "TDS",

@@ -4,12 +4,11 @@ import ec.mdd.generacion.dominio.ActividadNoLectiva;
 import java.util.Objects;
 
 /**
- * Una actividad guardada, con el aviso de las horas (D-78).
+ * Una actividad guardada.
  *
  * @param actividad la actividad
- * @param horasSuficientes si al docente le alcanzan las horas
  */
-public record ActividadGuardada(ActividadNoLectiva actividad, boolean horasSuficientes) {
+public record ActividadGuardada(ActividadNoLectiva actividad) {
 
     /** Exige la actividad. */
     public ActividadGuardada {

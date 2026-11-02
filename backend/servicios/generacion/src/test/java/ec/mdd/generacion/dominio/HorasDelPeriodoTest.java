@@ -166,31 +166,6 @@ class HorasDelPeriodoTest {
                 .isEqualByComparingTo("4");
     }
 
-    @Test
-    void dadaLaActividadQueSeReemplaza_cuandoSeCalcula_entoncesSusHorasAnterioresNoCuentan() {
-        Map<String, HorasDelDocente> horas =
-                HorasDelPeriodo.sinLaActividad(
-                        List.of(propuesta(DE_TDS, DOCENTE)),
-                        List.of(actividad("TDS", "140-b", "4"), actividad("TDS", "140-g", "3")),
-                        List.of(MIRADO, DE_TDS),
-                        actividad("TDS", "140-b", "6"));
-
-        assertThat(horas.get(DOCENTE).asignadas()).isEqualByComparingTo("5.5");
-    }
-
-    @Test
-    void dadaOtraCarreraConLaMismaActividad_cuandoSeCalcula_entoncesSiCuenta() {
-        Map<String, HorasDelDocente> horas =
-                HorasDelPeriodo.sinLaActividad(
-                        List.of(),
-                        List.of(actividad("AGRO", "140-b", "4")),
-                        List.of(),
-                        actividad("TDS", "140-b", "6"));
-
-        assertThat(horas.get(DOCENTE).asignadas()).isEqualByComparingTo("4");
-        assertThat(horas.get(DOCENTE).enOtrasCarreras()).isEqualByComparingTo("4");
-    }
-
     private static Map<String, HorasDelDocente> calcular(
             List<Propuesta> propuestas,
             List<AsignaturaParalelo> oferta,

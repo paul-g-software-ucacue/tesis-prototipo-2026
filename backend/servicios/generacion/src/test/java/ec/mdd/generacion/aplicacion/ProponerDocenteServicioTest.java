@@ -26,10 +26,14 @@ import ec.mdd.generacion.dominio.ParcialNoEditable;
 import ec.mdd.generacion.dominio.PesosAfinidad;
 import ec.mdd.generacion.dominio.PesosDelPeriodo;
 import ec.mdd.generacion.dominio.Propuesta;
+import ec.mdd.generacion.dominio.ProyectoDelDocente;
+import ec.mdd.generacion.dominio.ProyectosYCargosDelDocente;
+import ec.mdd.generacion.dominio.ReglasDelPeriodo;
 import ec.mdd.generacion.dominio.TipoDeJustificacion;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
 import ec.mdd.generacion.dominio.VersionDistributivo;
 import ec.mdd.generacion.puertos.entrada.DocenteNoActivo;
+import ec.mdd.generacion.puertos.entrada.HorasExcedidas;
 import ec.mdd.generacion.puertos.entrada.OtraCarrera;
 import ec.mdd.generacion.puertos.entrada.ParaleloNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.ParaleloRetirado;
@@ -39,7 +43,9 @@ import ec.mdd.generacion.puertos.entrada.PropuestaNoEncontrada;
 import ec.mdd.generacion.puertos.entrada.PropuestaVista;
 import ec.mdd.generacion.puertos.entrada.SinDistributivo;
 import ec.mdd.generacion.puertos.entrada.SolicitudDePropuesta;
+import ec.mdd.generacion.puertos.entrada.TopeDeClase;
 import ec.mdd.generacion.puertos.salida.CambioDeDistributivo;
+import ec.mdd.generacion.puertos.salida.DatosParaActividades;
 import ec.mdd.generacion.puertos.salida.DatosParaAfinidad;
 import ec.mdd.generacion.puertos.salida.DatosParaSugerencia;
 import ec.mdd.generacion.puertos.salida.RegistroDeCambios;
@@ -93,6 +99,7 @@ class ProponerDocenteServicioTest {
 
     private final DatosParaSugerencia datos = mock(DatosParaSugerencia.class);
     private final DatosParaAfinidad afinidad = mock(DatosParaAfinidad.class);
+    private final DatosParaActividades actividades = mock(DatosParaActividades.class);
     private final RepositorioDistributivos distributivos = mock(RepositorioDistributivos.class);
     private final RegistroDeCambios registro = mock(RegistroDeCambios.class);
     private final Transaccion transaccion =
@@ -106,6 +113,7 @@ class ProponerDocenteServicioTest {
             new ProponerDocenteServicio(
                     datos,
                     afinidad,
+                    actividades,
                     distributivos,
                     registro,
                     transaccion,
@@ -179,41 +187,72 @@ class ProponerDocenteServicioTest {
     }
 
     @Test
-    void dadoUnDocenteSinHorasSuficientes_cuandoSePropone_entoncesGuardaConElAviso() {
+    void dadoUnDocenteSinHorasSuficientes_cuandoSePropone_entoncesNoGuardaYDiceLasQueQuedan() {
         DocenteActivo sinHoras = docente("0109990030", 2, "061");
         conTodo(version());
         when(datos.docentesActivos()).thenReturn(List.of(sinHoras));
 
-        PropuestaVista vista = servicio.proponer(solicitud(sinHoras, null));
-
-        assertThat(guardada().docente()).isEqualTo(sinHoras.identificacion());
-        assertThat(vista.horasSuficientes()).isFalse();
+        assertThatThrownBy(() -> servicio.proponer(solicitud(sinHoras, null)))
+                .isInstanceOfSatisfying(
+                        HorasExcedidas.class,
+                        error -> assertThat(error.horasQueQuedan()).isEqualByComparingTo("2"));
+        assertNoGuardoNada();
     }
 
     @Test
-    void dadasLasHorasDeOtraPropuesta_cuandoSePropone_entoncesCuentanParaElAviso() {
-        AsignaturaParalelo otro =
-                new AsignaturaParalelo(
-                        new AsignaturaOfertada("BD-301", "Bases de datos", "06", "061"),
-                        "A",
-                        "AGRO",
-                        new BigDecimal("37.5"),
-                        false,
-                        false);
-        Propuesta enOtra =
-                new Propuesta(
-                        "BD-301",
-                        "A",
-                        "AGRO",
-                        AFIN.identificacion(),
-                        AFIN.nombre(),
-                        new Justificacion(TipoDeJustificacion.AFINIDAD, null),
-                        AHORA,
-                        QUIEN);
-        conTodo(version(enOtra));
+    void dadasHorasEnOtraCarrera_cuandoSePropone_entoncesCuentanYNoGuarda() {
+        AsignaturaParalelo otro = enOtraCarrera("37.5");
+        conTodo(version(propuestaEn(otro)));
         when(datos.ofertaDelPeriodo(PERIODO)).thenReturn(Optional.of(List.of(PARALELO, otro)));
 
-        assertThat(servicio.proponer(solicitud(AFIN, null)).horasSuficientes()).isFalse();
+        assertThatThrownBy(() -> servicio.proponer(solicitud(AFIN, null)))
+                .isInstanceOf(HorasExcedidas.class);
+        assertNoGuardoNada();
+    }
+
+    @Test
+    void justoEnElLimite_cuandoSePropone_entoncesGuarda() {
+        AsignaturaParalelo otro = enOtraCarrera("36");
+        conTodo(version(propuestaEn(otro)));
+        when(datos.ofertaDelPeriodo(PERIODO)).thenReturn(Optional.of(List.of(PARALELO, otro)));
+
+        servicio.proponer(solicitud(AFIN, null));
+
+        assertThat(guardada().docente()).isEqualTo(AFIN.identificacion());
+    }
+
+    @Test
+    void enUnaCarreraSinParcial_cuandoSeRechaza_entoncesNoCreaElParcial() {
+        DocenteActivo sinHoras = docente("0109990030", 2, "061");
+        conTodo(
+                new VersionDistributivo(
+                        VERSION, 1, EstadoDeVersion.EDITABLE, List.of(), List.of()));
+        when(datos.docentesActivos()).thenReturn(List.of(sinHoras));
+
+        assertThatThrownBy(() -> servicio.proponer(solicitud(sinHoras, null)))
+                .isInstanceOf(HorasExcedidas.class);
+        assertNoGuardoNada();
+    }
+
+    @Test
+    void sinLasReglasDelPeriodo_cuandoSePropone_entoncesNoGuarda() {
+        conTodo(version());
+        when(actividades.reglas(PERIODO)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> servicio.proponer(solicitud(AFIN, null)))
+                .isInstanceOf(PeriodoSinAbrir.class);
+        assertNoGuardoNada();
+    }
+
+    @Test
+    void sinLosProyectosDelDocente_cuandoSePropone_entoncesNoGuarda() {
+        conTodo(version());
+        when(actividades.proyectosYCargos(AFIN.identificacion(), PERIODO))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> servicio.proponer(solicitud(AFIN, null)))
+                .isInstanceOf(DocenteNoActivo.class);
+        assertNoGuardoNada();
     }
 
     @Test
@@ -464,30 +503,157 @@ class ProponerDocenteServicioTest {
     }
 
     @Test
-    void dadasActividadesDelDocente_cuandoSePropone_entoncesCuentanParaElAviso() {
-        ActividadNoLectiva gestion =
-                new ActividadNoLectiva(
-                        "AGRO",
-                        AFIN.identificacion(),
-                        AFIN.nombre(),
-                        "143-k",
-                        "Eventos",
-                        Componente.GESTION,
-                        null,
-                        null,
-                        new BigDecimal("37.5"),
-                        AHORA,
-                        QUIEN);
+    void dadasActividadesDelDocente_cuandoSePropone_entoncesCuentanYNoGuarda() {
+        conTodo(conActividades(gestion("37.5")));
+
+        assertThatThrownBy(() -> servicio.proponer(solicitud(AFIN, null)))
+                .isInstanceOf(HorasExcedidas.class);
+        assertNoGuardoNada();
+    }
+
+    @Test
+    void conUnProyectoDeInvestigacionYElTope_cuandoSePropone_entoncesNoGuarda() {
+        AsignaturaParalelo otro = enOtraCarrera("14");
+        conTodo(version(propuestaEn(otro)));
+        when(datos.ofertaDelPeriodo(PERIODO)).thenReturn(Optional.of(List.of(PARALELO, otro)));
+        conProyecto("INVESTIGACION");
+
+        assertThatThrownBy(() -> servicio.proponer(solicitud(AFIN, null)))
+                .isInstanceOfSatisfying(
+                        TopeDeClase.class,
+                        error -> assertThat(error.horasQueQuedan()).isEqualByComparingTo("2"));
+        assertNoGuardoNada();
+    }
+
+    @Test
+    void conUnProyectoDeVinculacionYElTope_cuandoSePropone_entoncesNoGuarda() {
+        AsignaturaParalelo otro = enOtraCarrera("14");
+        conTodo(version(propuestaEn(otro)));
+        when(datos.ofertaDelPeriodo(PERIODO)).thenReturn(Optional.of(List.of(PARALELO, otro)));
+        conProyecto("VINCULACION");
+
+        assertThatThrownBy(() -> servicio.proponer(solicitud(AFIN, null)))
+                .isInstanceOf(TopeDeClase.class);
+    }
+
+    @Test
+    void conUnProyectoDePracticas_cuandoPasaDeDieciseisDeClase_entoncesGuarda() {
+        AsignaturaParalelo otro = enOtraCarrera("14");
+        conTodo(version(propuestaEn(otro)));
+        when(datos.ofertaDelPeriodo(PERIODO)).thenReturn(Optional.of(List.of(PARALELO, otro)));
+        conProyecto("PRACTICAS_PREPROFESIONALES");
+
+        servicio.proponer(solicitud(AFIN, null));
+
+        assertThat(guardada().docente()).isEqualTo(AFIN.identificacion());
+    }
+
+    @Test
+    void conOtraCifraEnLaNormativa_cuandoSePropone_entoncesLaUsa() {
+        conTodo(version());
+        conProyecto("INVESTIGACION");
+        when(actividades.reglas(PERIODO))
+                .thenReturn(
+                        Optional.of(
+                                new ReglasDelPeriodo(new BigDecimal("40"), new BigDecimal("3"))));
+
+        assertThatThrownBy(() -> servicio.proponer(solicitud(AFIN, null)))
+                .isInstanceOf(TopeDeClase.class);
+    }
+
+    @Test
+    void unDocenteExcedido_cuandoSeVuelveAProponerIgual_entoncesGuarda() {
         conTodo(
                 new VersionDistributivo(
                         VERSION,
                         1,
                         EstadoDeVersion.EDITABLE,
                         List.of(ParcialCarrera.nuevo("TDS")),
-                        List.of(),
-                        List.of(gestion)));
+                        List.of(propuestaDe(AFIN.identificacion())),
+                        List.of(gestion("38"))));
 
-        assertThat(servicio.proponer(solicitud(AFIN, null)).horasSuficientes()).isFalse();
+        PropuestaVista vista = servicio.proponer(solicitud(AFIN, null));
+
+        assertThat(guardada().docente()).isEqualTo(AFIN.identificacion());
+        assertThat(vista.horasSuficientes()).isFalse();
+    }
+
+    @Test
+    void unDocenteExcedido_cuandoSeLeAgregaOtraClase_entoncesNoGuarda() {
+        conTodo(conActividades(gestion("30"), gestion("11")));
+
+        assertThatThrownBy(() -> servicio.proponer(solicitud(AFIN, null)))
+                .isInstanceOf(HorasExcedidas.class);
+        assertNoGuardoNada();
+    }
+
+    @Test
+    void cuandoSeGuarda_entoncesEvaluaConLaVersionReleidaDentroDeLaTransaccion() {
+        conTodo(version());
+        AsignaturaParalelo otro = enOtraCarrera("37.5");
+        when(datos.ofertaDelPeriodo(PERIODO)).thenReturn(Optional.of(List.of(PARALELO, otro)));
+        when(distributivos.bloquearVigente(PERIODO))
+                .thenReturn(Optional.of(version(propuestaEn(otro))));
+
+        assertThatThrownBy(() -> servicio.proponer(solicitud(AFIN, null)))
+                .isInstanceOf(HorasExcedidas.class);
+        assertNoGuardoNada();
+    }
+
+    private void conProyecto(String tipo) {
+        when(actividades.proyectosYCargos(AFIN.identificacion(), PERIODO))
+                .thenReturn(
+                        Optional.of(
+                                new ProyectosYCargosDelDocente(
+                                        List.of(new ProyectoDelDocente("P-1", "Un proyecto", tipo)),
+                                        List.of())));
+    }
+
+    private static AsignaturaParalelo enOtraCarrera(String horas) {
+        return new AsignaturaParalelo(
+                new AsignaturaOfertada("BD-301", "Bases de datos", "06", "061"),
+                "A",
+                "AGRO",
+                new BigDecimal(horas),
+                false,
+                false);
+    }
+
+    private static Propuesta propuestaEn(AsignaturaParalelo paralelo) {
+        return new Propuesta(
+                paralelo.asignatura().codigo(),
+                paralelo.paralelo(),
+                paralelo.carrera(),
+                AFIN.identificacion(),
+                AFIN.nombre(),
+                new Justificacion(TipoDeJustificacion.AFINIDAD, null),
+                AHORA,
+                QUIEN);
+    }
+
+    private static ActividadNoLectiva gestion(String horas) {
+        return new ActividadNoLectiva(
+                "AGRO",
+                AFIN.identificacion(),
+                AFIN.nombre(),
+                "143-k",
+                "Eventos",
+                Componente.GESTION,
+                null,
+                null,
+                new BigDecimal(horas),
+                AHORA,
+                QUIEN);
+    }
+
+    private static VersionDistributivo conActividades(ActividadNoLectiva... actividades) {
+        return new VersionDistributivo(
+                VERSION,
+                1,
+                EstadoDeVersion.EDITABLE,
+                List.of(ParcialCarrera.nuevo("TDS")),
+                List.of(),
+                List.of(actividades));
     }
 
     private void conTodo(VersionDistributivo version) {
@@ -496,6 +662,13 @@ class ProponerDocenteServicioTest {
         when(datos.ofertaDelPeriodo(PERIODO)).thenReturn(Optional.of(List.of(PARALELO)));
         when(afinidad.pesos(PERIODO)).thenReturn(Optional.of(PESOS));
         when(distributivos.vigenteDe(PERIODO)).thenReturn(Optional.of(version));
+        when(distributivos.bloquearVigente(PERIODO)).thenReturn(Optional.of(version));
+        when(actividades.reglas(PERIODO))
+                .thenReturn(
+                        Optional.of(
+                                new ReglasDelPeriodo(new BigDecimal("40"), new BigDecimal("16"))));
+        when(actividades.proyectosYCargos(any(), eq(PERIODO)))
+                .thenReturn(Optional.of(new ProyectosYCargosDelDocente(List.of(), List.of())));
     }
 
     private Propuesta guardada() {

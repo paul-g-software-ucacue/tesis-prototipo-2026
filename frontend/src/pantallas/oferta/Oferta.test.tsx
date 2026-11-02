@@ -590,6 +590,68 @@ describe('Oferta del periodo', () => {
       ).length;
     }
 
+    it('sin horas no se puede proponer, y dice por qué', async () => {
+      const [primero, ...resto] = SUGERENCIA.candidatos;
+      conSugerencia({
+        candidatos: [
+          { ...primero, horasSuficientes: false, motivoParaNoProponer: 'HORAS' },
+          ...resto,
+        ],
+      });
+      const dialogo = await abrirComoCoordinador();
+
+      expect(
+        await within(dialogo).findByText('No se le puede proponer: no le alcanzan las horas.'),
+      ).toBeVisible();
+      expect(
+        within(dialogo).queryByRole('button', { name: 'Proponer a PERALTA MALDONADO JUAN ANDRES' }),
+      ).not.toBeInTheDocument();
+      expect(
+        within(dialogo).getByRole('button', { name: 'Proponer a SALINAS VEGA ANA MARIA' }),
+      ).toBeEnabled();
+    });
+
+    it('con el tope de clase no se puede proponer, y dice por qué', async () => {
+      const [primero, ...resto] = SUGERENCIA.candidatos;
+      conSugerencia({
+        candidatos: [{ ...primero, motivoParaNoProponer: 'TOPE_DE_CLASE' }, ...resto],
+      });
+      const dialogo = await abrirComoCoordinador();
+
+      expect(
+        await within(dialogo).findByText(
+          'No se le puede proponer: su proyecto limita sus horas de clase.',
+        ),
+      ).toBeVisible();
+      expect(
+        within(dialogo).queryByRole('button', { name: 'Proponer a PERALTA MALDONADO JUAN ANDRES' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('si otro coordinador se adelantó, dice las horas que quedan', async () => {
+      conSugerencia();
+      simulada.responder(
+        'PUT',
+        RUTA_PROPUESTA,
+        json(409, {
+          titulo: 'Horas laborales excedidas',
+          descripcion: 'Esta asignación pasa las horas del docente, sumando todas sus carreras.',
+          codigo: 'GENERACION_HORAS_EXCEDIDAS',
+          detalles: [{ campo: 'horas', descripcion: 'Le quedan 2 h.' }],
+        }),
+      );
+      const dialogo = await abrirComoCoordinador();
+
+      await userEvent.click(
+        await within(dialogo).findByRole('button', {
+          name: 'Proponer a PERALTA MALDONADO JUAN ANDRES',
+        }),
+      );
+
+      expect(await within(dialogo).findByText('Le quedan 2 h.')).toBeVisible();
+      expect(within(dialogo).getByRole('alert')).toHaveTextContent('Horas laborales excedidas');
+    });
+
     it('al desplegar un candidato ve su panel, y los demás no se piden', async () => {
       conSugerencia();
       simulada.responder('GET', RUTA_CARGA, json(200, CARGA));

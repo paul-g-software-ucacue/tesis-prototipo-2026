@@ -4,7 +4,7 @@
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { AvisoDeError } from '../../errores/AvisoDeError';
 import { traducirError } from '../../errores/traducir';
 import { Avisos, Marco } from '../comun/Formulario';
@@ -58,8 +58,8 @@ export function DialogoAsignar({
   periodo: string;
   carrera: string;
   alCerrar: () => void;
-  /** Se llama con lo guardado: recarga y cierra. Recibe el aviso de horas, si hace falta. */
-  alGuardar: (aviso: string | null, docente: string) => Promise<void>;
+  /** Se llama con lo guardado: recarga y cierra. */
+  alGuardar: (docente: string) => Promise<void>;
 }) {
   const [docente, setDocente] = useState('');
   const [codigo, setCodigo] = useState('');
@@ -69,18 +69,13 @@ export function DialogoAsignar({
   const [malasHoras, setMalasHoras] = useState(false);
   const docentes = useDocentes({ texto: '', carrera: '', estado: 'ACTIVO' });
   const posibles = useActividadesPosibles(periodo, docente);
-  // Una referencia, no un estado: se lee justo después de guardar, antes de volver a pintar.
-  const avisoDeHoras = useRef<string | null>(null);
-  const envio = useEnvio(() => alGuardar(avisoDeHoras.current, docente));
+  const envio = useEnvio(() => alGuardar(docente));
   const actividades = posibles.data?.actividades ?? [];
   const ordenadas = COMPONENTES.flatMap((componente) =>
     actividades.filter((una) => una.componente === componente),
   );
   const elegida: ActividadPosible | undefined = actividades.find((una) => una.actividad === codigo);
   const proyectoElegido = elegida?.proyectos.find((uno) => uno.codigo === proyecto);
-  const nombreDelDocente = docentes.data?.find(
-    (uno) => uno.identificacion === docente,
-  )?.nombreCompleto;
 
   const elegirDocente = (valor: string) => {
     setDocente(valor);
@@ -101,15 +96,12 @@ export function DialogoAsignar({
     if (pendiente || valor === undefined || !elegida) {
       return;
     }
-    envio.enviar(async () => {
-      const guardada = await asignarActividad(
+    envio.enviar(() =>
+      asignarActividad(
         { periodo, carrera, docente, actividad: elegida.actividad },
         { horas: valor, ...(pide && { proyecto }) },
-      );
-      avisoDeHoras.current = guardada.horasSuficientes
-        ? null
-        : `Se guardó, pero a ${nombreDelDocente ?? docente} no le alcanzan las horas.`;
-    });
+      ),
+    );
   };
 
   return (

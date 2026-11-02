@@ -21,6 +21,7 @@ import ec.mdd.generacion.dominio.MetaDeProporcion;
 import ec.mdd.generacion.dominio.ParcialCarrera;
 import ec.mdd.generacion.dominio.Proporcion;
 import ec.mdd.generacion.dominio.Propuesta;
+import ec.mdd.generacion.dominio.ReglasDelPeriodo;
 import ec.mdd.generacion.dominio.TipoDeJustificacion;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
 import ec.mdd.generacion.dominio.VersionDistributivo;
@@ -60,6 +61,10 @@ class ConsultarCargaHorariaServicioTest {
         when(datos.docentesActivos()).thenReturn(List.of(activo()));
         when(datos.ofertaDelPeriodo(PERIODO)).thenReturn(Optional.of(List.of(DE_TDS)));
         when(normativa.meta(PERIODO)).thenReturn(Optional.of(META));
+        when(normativa.reglas(PERIODO))
+                .thenReturn(
+                        Optional.of(
+                                new ReglasDelPeriodo(new BigDecimal("40"), new BigDecimal("16"))));
     }
 
     @Test
@@ -75,6 +80,17 @@ class ConsultarCargaHorariaServicioTest {
         assertThat(carga.carga().otrasDocencia()).isEqualByComparingTo("4");
         assertThat(carga.carga().proporcion()).contains(new Proporcion(67, 33));
         assertThat(carga.meta()).isEqualTo(META);
+    }
+
+    @Test
+    void conUnTopeMenorQueLasContratadas_cuandoSeConsulta_entoncesElLimiteLoRespeta() {
+        con(new ParcialCarrera[] {ParcialCarrera.nuevo("TDS")});
+        when(normativa.reglas(PERIODO))
+                .thenReturn(
+                        Optional.of(
+                                new ReglasDelPeriodo(new BigDecimal("18"), new BigDecimal("16"))));
+
+        assertThat(servicio.carga(PERIODO, DOCENTE).limite()).isEqualByComparingTo("18");
     }
 
     @Test

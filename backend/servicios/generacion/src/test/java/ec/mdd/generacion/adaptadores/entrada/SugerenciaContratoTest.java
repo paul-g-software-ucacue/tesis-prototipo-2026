@@ -14,6 +14,7 @@ import ec.mdd.generacion.dominio.HorasDelDocente;
 import ec.mdd.generacion.dominio.Justificacion;
 import ec.mdd.generacion.dominio.Propuesta;
 import ec.mdd.generacion.dominio.PuntajeAfinidad;
+import ec.mdd.generacion.dominio.ReglaDeAsignacion;
 import ec.mdd.generacion.dominio.Sugerencia;
 import ec.mdd.generacion.dominio.TipoDeAporte;
 import ec.mdd.generacion.dominio.TipoDeJustificacion;
@@ -92,6 +93,17 @@ class SugerenciaContratoTest {
                                 + "\"topeAplicado\":false,\"desglose\":[]}}],"
                                 + "\"distributivoCreado\":false}")
                 .doesNotContain("correo", "telefono");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadosCandidatosQueNoSePuedenProponer_cuandoConsulta_entoncesDiceElMotivo()
+            throws Exception {
+        MvcResult resultado = pedir("CON-MOTIVOS", "POO-204", "A");
+
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("\"motivoParaNoProponer\":\"HORAS\"")
+                .contains("\"motivoParaNoProponer\":\"TOPE_DE_CLASE\"");
         contrato.validar(resultado);
     }
 
@@ -296,6 +308,18 @@ class SugerenciaContratoTest {
                         new PuntajeAfinidad(
                                 "POO-204", "Programación", BigDecimal.ZERO, false, List.of()));
 
+        private static Candidato conMotivo(ReglaDeAsignacion motivo) {
+            return new Candidato(
+                    "0109990030",
+                    "ORTIZ RAUL",
+                    Dedicacion.TC,
+                    40,
+                    HorasDelDocente.NINGUNA,
+                    PUNTAJE,
+                    new BigDecimal("40"),
+                    motivo);
+        }
+
         @Bean
         ConsultarSugerencia consultarSugerencia() {
             return (periodo, asignatura, paralelo, carrera) -> {
@@ -313,17 +337,22 @@ class SugerenciaContratoTest {
                     }
                 }
                 List<Candidato> candidatos =
-                        "VACIO".equals(periodo)
-                                ? List.of()
-                                : List.of(
-                                        new Candidato(
-                                                "0109990010",
-                                                "PEREZ LUIS",
-                                                Dedicacion.TC,
-                                                40,
-                                                new HorasDelDocente(
-                                                        new BigDecimal("9.5"), new BigDecimal("6")),
-                                                PUNTAJE));
+                        "CON-MOTIVOS".equals(periodo)
+                                ? List.of(
+                                        conMotivo(ReglaDeAsignacion.RN_02),
+                                        conMotivo(ReglaDeAsignacion.RN_13))
+                                : "VACIO".equals(periodo)
+                                        ? List.of()
+                                        : List.of(
+                                                new Candidato(
+                                                        "0109990010",
+                                                        "PEREZ LUIS",
+                                                        Dedicacion.TC,
+                                                        40,
+                                                        new HorasDelDocente(
+                                                                new BigDecimal("9.5"),
+                                                                new BigDecimal("6")),
+                                                        PUNTAJE));
                 Sugerencia sugerencia =
                         new Sugerencia(
                                 periodo,

@@ -149,6 +149,39 @@ paths:
           $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
         '500':
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+  /interno/docentes/con-proyecto:
+    parameters:
+      - name: periodo
+        in: query
+        required: true
+        description: Código de un periodo de Académico.
+        schema:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        example: 2026-I
+    get:
+      tags: [Interno]
+      operationId: consultarDocentesConProyecto
+      summary: Devuelve los docentes con proyectos asignables en el periodo y los tipos de esos proyectos.
+      description: >-
+        Solo entre procesos, con el token de proceso: lo usa Generación para la sugerencia, sin pedir
+        a cada candidato (RN-13, ADR-023). No lleva datos de contacto ni de contrato (principio IX).
+      responses:
+        '200':
+          description: Los docentes y los tipos de sus proyectos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DocenteConProyecto'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
   /interno/docentes/{identificacion}/formacion:
     parameters:
       - $ref: '#/components/parameters/Identificacion'
@@ -780,6 +813,17 @@ components:
           exclusiveMinimum: true
           maximum: 60
           example: 3
+    DocenteConProyecto:
+      type: object
+      required: [docente, tipos]
+      properties:
+        docente:
+          type: string
+        tipos:
+          description: Los tipos de sus proyectos asignables en el periodo.
+          type: array
+          items:
+            type: string
     ProyectosYCargosDelDocente:
       description: Lo que Generación necesita para asignar una actividad (RN-25, principio IX).
       type: object

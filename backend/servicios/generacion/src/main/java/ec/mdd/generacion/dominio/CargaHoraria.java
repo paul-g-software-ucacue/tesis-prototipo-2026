@@ -9,7 +9,7 @@ import java.util.stream.Stream;
  * Los totales de un docente por componente, en todas las carreras y unidades de la versión (RF-27,
  * D-01), y su proporción (RN-05). Se calcula: no se guarda.
  *
- * <p>Hasta F07-H02 puede superar las horas contratadas, con un aviso (D-78).
+ * <p>Puede superar el límite por datos anteriores a F07-H02 o por un cambio en la oferta.
  *
  * @param clase las horas actuales de sus propuestas
  * @param otrasDocencia las de otras actividades de docencia
@@ -60,14 +60,20 @@ public record CargaHoraria(
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    /** Sus horas contratadas menos las asignadas, nunca menos de 0 (D-75). */
-    public BigDecimal disponibles(int horasContratadas) {
-        return BigDecimal.valueOf(horasContratadas).subtract(asignadas()).max(BigDecimal.ZERO);
+    /** La misma carga con más horas de clase. */
+    public CargaHoraria conMasClase(BigDecimal horas) {
+        return new CargaHoraria(
+                clase.add(horas), otrasDocencia, investigacion, vinculacion, gestion);
     }
 
-    /** Lo que pasa de sus horas contratadas; 0 si no se pasa (D-78). */
-    public BigDecimal exceso(int horasContratadas) {
-        return asignadas().subtract(BigDecimal.valueOf(horasContratadas)).max(BigDecimal.ZERO);
+    /** Su límite menos las horas asignadas, nunca menos de 0 (D-75). */
+    public BigDecimal disponibles(BigDecimal limite) {
+        return limite.subtract(asignadas()).max(BigDecimal.ZERO);
+    }
+
+    /** Lo que pasa de su límite; 0 si no se pasa. */
+    public BigDecimal exceso(BigDecimal limite) {
+        return asignadas().subtract(limite).max(BigDecimal.ZERO);
     }
 
     /** Su proporción de clase y otras actividades de docencia; vacía si no tiene ninguna. */

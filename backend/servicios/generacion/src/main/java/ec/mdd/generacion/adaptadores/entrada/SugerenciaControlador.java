@@ -4,6 +4,7 @@ import ec.mdd.generacion.adaptadores.entrada.api.Candidato;
 import ec.mdd.generacion.adaptadores.entrada.api.Dedicacion;
 import ec.mdd.generacion.adaptadores.entrada.api.Sugerencia;
 import ec.mdd.generacion.adaptadores.entrada.api.SugerenciaApi;
+import ec.mdd.generacion.dominio.ReglaDeAsignacion;
 import ec.mdd.generacion.puertos.entrada.ConsultarSugerencia;
 import ec.mdd.generacion.puertos.entrada.OtraCarrera;
 import ec.mdd.generacion.puertos.entrada.SugerenciaDelParalelo;
@@ -75,14 +76,22 @@ class SugerenciaControlador implements SugerenciaApi {
 
     private static Candidato candidato(
             ec.mdd.generacion.dominio.Candidato candidato, BigDecimal horasDelParalelo) {
-        return new Candidato(
-                candidato.identificacion(),
-                candidato.nombre(),
-                Dedicacion.fromValue(candidato.dedicacion().name()),
-                candidato.horasContratadas(),
-                candidato.horasDisponibles(),
-                candidato.horas().enOtrasCarreras(),
-                candidato.tieneHorasPara(horasDelParalelo),
-                AfinidadControlador.puntaje(candidato.puntaje()));
+        Candidato respuesta =
+                new Candidato(
+                        candidato.identificacion(),
+                        candidato.nombre(),
+                        Dedicacion.fromValue(candidato.dedicacion().name()),
+                        candidato.horasContratadas(),
+                        candidato.horasDisponibles(),
+                        candidato.horas().enOtrasCarreras(),
+                        candidato.tieneHorasPara(horasDelParalelo),
+                        AfinidadControlador.puntaje(candidato.puntaje()));
+        if (!candidato.sePuedeProponer()) {
+            respuesta.setMotivoParaNoProponer(
+                    candidato.motivo() == ReglaDeAsignacion.RN_02
+                            ? Candidato.MotivoParaNoProponerEnum.HORAS
+                            : Candidato.MotivoParaNoProponerEnum.TOPE_DE_CLASE);
+        }
+        return respuesta;
     }
 }

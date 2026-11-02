@@ -1,10 +1,12 @@
 package ec.mdd.generacion.dominio;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -41,13 +43,16 @@ class SugerenciaTest {
 
     // Puntaje 3: tercer nivel solo en el campo amplio.
     private static final FormacionDelDocente DE_3 = formacion("062");
+    private static final ReglasDelPeriodo REGLAS =
+            new ReglasDelPeriodo(new BigDecimal("40"), new BigDecimal("16"));
+
     // Puntaje 0: nada coincide.
     private static final FormacionDelDocente DE_0 = formacion("091");
 
     @Test
     void dadosDocentesBajoElMinimo_cuandoSeArma_entoncesVanAparteYEnElMismoOrden() {
         Sugerencia sugerencia =
-                Sugerencia.armar(
+                armar(
                         PERIODO,
                         DE_4_HORAS,
                         new PesosDelPeriodo(2, PESOS, new BigDecimal("5")),
@@ -78,7 +83,7 @@ class SugerenciaTest {
     @Test
     void dadoTroncoComun_cuandoSeArma_entoncesNadieQuedaBajoElMinimo() {
         Sugerencia sugerencia =
-                Sugerencia.armar(
+                armar(
                         PERIODO,
                         paralelo(new BigDecimal("4"), true),
                         CON_MINIMO_3,
@@ -135,7 +140,7 @@ class SugerenciaTest {
                         new BigDecimal("3"));
 
         Sugerencia sugerencia =
-                Sugerencia.armar(
+                armar(
                         PERIODO,
                         DE_4_HORAS,
                         pesos,
@@ -168,7 +173,7 @@ class SugerenciaTest {
         DocenteActivo corto = docente("CORTO", 5, DE_7);
 
         Sugerencia sugerencia =
-                Sugerencia.armar(
+                armar(
                         PERIODO,
                         paralelo,
                         CON_MINIMO_3,
@@ -188,7 +193,7 @@ class SugerenciaTest {
 
         assertThat(
                         nombres(
-                                Sugerencia.armar(
+                                armar(
                                         PERIODO,
                                         paralelo(new BigDecimal("2"), false),
                                         CON_MINIMO_3,
@@ -197,7 +202,7 @@ class SugerenciaTest {
                 .containsExactly("A", "B");
         assertThat(
                         nombres(
-                                Sugerencia.armar(
+                                armar(
                                         PERIODO,
                                         paralelo(new BigDecimal("4"), false),
                                         CON_MINIMO_3,
@@ -243,7 +248,7 @@ class SugerenciaTest {
     @Test
     void dadoUnMinimoConOtraEscala_cuandoSeArma_entoncesElPuntajeIgualAparece() {
         Sugerencia sugerencia =
-                Sugerencia.armar(
+                armar(
                         PERIODO,
                         DE_4_HORAS,
                         new PesosDelPeriodo(2, PESOS, new BigDecimal("3.00")),
@@ -256,7 +261,7 @@ class SugerenciaTest {
     @Test
     void dadoTroncoComun_cuandoSeArma_entoncesAparecenTodosTambienConCeroPuntos() {
         Sugerencia sugerencia =
-                Sugerencia.armar(
+                armar(
                         PERIODO,
                         paralelo(new BigDecimal("4"), true),
                         CON_MINIMO_3,
@@ -289,7 +294,7 @@ class SugerenciaTest {
 
         assertThat(
                         nombres(
-                                Sugerencia.armar(
+                                armar(
                                         PERIODO,
                                         DE_4_HORAS,
                                         new PesosDelPeriodo(2, PESOS, new BigDecimal("6")),
@@ -305,7 +310,7 @@ class SugerenciaTest {
         DocenteActivo docente = docente("A", 40, DE_7);
 
         Candidato candidato =
-                Sugerencia.armar(
+                armar(
                                 PERIODO,
                                 DE_4_HORAS,
                                 CON_MINIMO_3,
@@ -331,7 +336,7 @@ class SugerenciaTest {
         DocenteActivo ocupado = docente("A", 40, DE_7);
 
         Sugerencia sugerencia =
-                Sugerencia.armar(
+                armar(
                         PERIODO,
                         DE_4_HORAS,
                         CON_MINIMO_3,
@@ -342,7 +347,7 @@ class SugerenciaTest {
     }
 
     private static Sugerencia armar(DocenteActivo... docentes) {
-        return Sugerencia.armar(PERIODO, DE_4_HORAS, CON_MINIMO_3, List.of(docentes), Map.of());
+        return armar(PERIODO, DE_4_HORAS, CON_MINIMO_3, List.of(docentes), Map.of());
     }
 
     private static List<String> nombres(Sugerencia sugerencia) {
@@ -371,5 +376,51 @@ class SugerenciaTest {
                         .toList(),
                 List.of(),
                 List.of());
+    }
+
+    @Test
+    void dadoUnMotivo_cuandoSeArma_entoncesElCandidatoLoLleva() {
+        Sugerencia sugerencia =
+                Sugerencia.armar(
+                        PERIODO,
+                        DE_4_HORAS,
+                        new PesosDelPeriodo(2, PESOS, BigDecimal.ZERO),
+                        List.of(docente("A", 40, DE_5), docente("B", 40, DE_3)),
+                        Map.of(),
+                        REGLAS,
+                        docente ->
+                                docente.identificacion().equals("ID-A")
+                                        ? Optional.of(ReglaDeAsignacion.RN_13)
+                                        : Optional.empty());
+
+        assertThat(sugerencia.candidatos())
+                .extracting(Candidato::identificacion, Candidato::motivo)
+                .containsExactly(tuple("ID-B", null), tuple("ID-A", ReglaDeAsignacion.RN_13));
+    }
+
+    @Test
+    void conUnTopeMenorQueLasContratadas_cuandoSeArma_entoncesLasDisponiblesLoRespetan() {
+        Sugerencia sugerencia =
+                Sugerencia.armar(
+                        PERIODO,
+                        DE_4_HORAS,
+                        new PesosDelPeriodo(2, PESOS, BigDecimal.ZERO),
+                        List.of(docente("A", 40, DE_5)),
+                        Map.of(),
+                        new ReglasDelPeriodo(new BigDecimal("38"), new BigDecimal("16")),
+                        docente -> Optional.empty());
+
+        assertThat(sugerencia.candidatos().getFirst().horasDisponibles())
+                .isEqualByComparingTo("38");
+    }
+
+    private static Sugerencia armar(
+            String periodo,
+            AsignaturaParalelo paralelo,
+            PesosDelPeriodo pesos,
+            List<DocenteActivo> docentes,
+            Map<String, HorasDelDocente> horas) {
+        return Sugerencia.armar(
+                periodo, paralelo, pesos, docentes, horas, REGLAS, docente -> Optional.empty());
     }
 }

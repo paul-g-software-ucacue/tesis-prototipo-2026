@@ -156,6 +156,7 @@ class CargaHorariaContratoTest {
                     "0109990010",
                     "PEREZ LUIS",
                     20,
+                    new BigDecimal("20"),
                     new CargaHoraria(
                             new BigDecimal(clase),
                             new BigDecimal(otras),

@@ -12,6 +12,7 @@ import ec.mdd.generacion.dominio.PeriodoListo;
 import ec.mdd.generacion.dominio.PesosAfinidad;
 import ec.mdd.generacion.dominio.PesosDelPeriodo;
 import ec.mdd.generacion.dominio.ProyectosYCargosDelDocente;
+import ec.mdd.generacion.dominio.ReglasDelPeriodo;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
 import ec.mdd.generacion.puertos.salida.DatosParaActividades;
 import ec.mdd.generacion.puertos.salida.DatosParaAfinidad;
@@ -21,7 +22,9 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /**
@@ -112,6 +115,28 @@ public final class DatosDesdeProcesoDatos
     }
 
     @Override
+    public Optional<ReglasDelPeriodo> reglas(String periodo) {
+        return consultas.obtener(
+                ruta("normativa", "periodos", periodo, "reglas-de-asignacion"),
+                ReglasDelPeriodo.class);
+    }
+
+    @Override
+    public Map<String, List<String>> docentesConProyecto(String periodo) {
+        URI conProyecto =
+                UriComponentsBuilder.fromUri(ruta("docentes", "con-proyecto"))
+                        .queryParam("periodo", periodo)
+                        .build(true)
+                        .toUri();
+        return consultas
+                .obtener(conProyecto, ConProyecto[].class)
+                .map(List::of)
+                .orElse(List.of())
+                .stream()
+                .collect(Collectors.toMap(ConProyecto::docente, ConProyecto::tipos));
+    }
+
+    @Override
     public Optional<MetaDeProporcion> meta(String periodo) {
         return consultas.obtener(
                 ruta("normativa", "periodos", periodo, "proporcion"), MetaDeProporcion.class);
@@ -174,6 +199,8 @@ public final class DatosDesdeProcesoDatos
                     identificacion, nombre, dedicacion, horasContratadas, formacion.delDocente());
         }
     }
+
+    private record ConProyecto(String docente, List<String> tipos) {}
 
     private record Pesos(int version, ValoresDePesos pesos, BigDecimal minimoAfinidad) {
 

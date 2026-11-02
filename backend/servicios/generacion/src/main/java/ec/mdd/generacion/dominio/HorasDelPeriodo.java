@@ -42,35 +42,6 @@ public final class HorasDelPeriodo {
         return horas;
     }
 
-    /**
-     * Las horas de cada docente sin la actividad que se está guardando: al reemplazarla, sus horas
-     * anteriores no cuentan.
-     *
-     * @param propuestas las de la versión
-     * @param actividades las de la versión
-     * @param oferta las asignaturas-paralelo del periodo
-     * @param nueva la actividad que se guarda
-     * @return por número de identificación
-     */
-    public static Map<String, HorasDelDocente> sinLaActividad(
-            List<Propuesta> propuestas,
-            List<ActividadNoLectiva> actividades,
-            List<AsignaturaParalelo> oferta,
-            ActividadNoLectiva nueva) {
-        Map<String, HorasDelDocente> horas = new HashMap<>();
-        propuestas.forEach(una -> sumarPropuesta(horas, una, oferta, nueva.carrera()));
-        actividades.stream()
-                .filter(
-                        una ->
-                                !una.esDe(
-                                        nueva.carrera(),
-                                        nueva.docente(),
-                                        nueva.actividad(),
-                                        nueva.proyecto()))
-                .forEach(una -> sumarActividad(horas, una, nueva.carrera()));
-        return horas;
-    }
-
     private static void sumarPropuesta(
             Map<String, HorasDelDocente> horas,
             Propuesta propuesta,

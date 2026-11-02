@@ -68,7 +68,6 @@ export function Actividades() {
   const [elegido, setElegido] = useState<string | null>(null);
   const [abierto, setAbierto] = useState<Abierto>(null);
   const [fallo, setFallo] = useState<MensajeDeError | null>(null);
-  const [avisoDeHoras, setAvisoDeHoras] = useState<string | null>(null);
   const [aLaVista, setALaVista] = useState<DocenteALaVista | null>(null);
   // Por omisión, el más reciente en Planificación; si no hay, el más reciente.
   const porOmision =
@@ -92,7 +91,6 @@ export function Actividades() {
     actividad: ActividadAsignada,
   ) => {
     setFallo(null);
-    setAvisoDeHoras(null);
     setAbierto(null);
     try {
       await quitarActividad(
@@ -122,11 +120,6 @@ export function Actividades() {
       {periodos.error && <AvisoDeError mensaje={traducirError(periodos.error)} />}
       {actividades.error && <AvisoDeError mensaje={traducirError(actividades.error)} />}
       {fallo && <AvisoDeError mensaje={fallo} />}
-      {avisoDeHoras && (
-        <Alert severity="warning" role="status" sx={{ my: 1 }}>
-          {avisoDeHoras}
-        </Alert>
-      )}
       {periodos.data && (
         <TextField
           select
@@ -134,7 +127,6 @@ export function Actividades() {
           value={periodo ?? ''}
           onChange={(evento) => {
             setFallo(null);
-            setAvisoDeHoras(null);
             setElegido(evento.target.value);
           }}
           slotProps={SELECCION}
@@ -177,9 +169,8 @@ export function Actividades() {
           periodo={periodo}
           carrera={abierto.carrera}
           alCerrar={() => setAbierto(null)}
-          alGuardar={async (aviso, docente) => {
+          alGuardar={async (docente) => {
             setFallo(null);
-            setAvisoDeHoras(aviso);
             setALaVista({ periodo, docente, guardada: true });
             await recargar();
             setAbierto(null);

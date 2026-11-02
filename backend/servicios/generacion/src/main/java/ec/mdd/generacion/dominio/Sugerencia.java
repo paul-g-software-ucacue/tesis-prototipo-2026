@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * Los candidatos de una asignatura-paralelo en un periodo (RF-25, RN-19, MD-02). Se calcula en cada
@@ -44,13 +46,15 @@ public record Sugerencia(
 
     /**
      * Arma la sugerencia. Primero aplica el mínimo, salvo en tronco común; después ordena: quienes
-     * tienen horas para el paralelo van antes que los demás.
+     * se pueden proponer van antes que los demás (RF-28).
      *
      * @param periodo el código del periodo
      * @param paralelo la asignatura-paralelo
      * @param pesos los pesos y el mínimo de la versión que rige el periodo
      * @param docentes los docentes activos
      * @param horas las horas asignadas por identificación; quien no está tiene 0 h
+     * @param reglas las cifras de la normativa
+     * @param motivos por qué no se le puede proponer a cada docente; vacío si se puede
      * @return la sugerencia
      */
     public static Sugerencia armar(
@@ -58,7 +62,9 @@ public record Sugerencia(
             AsignaturaParalelo paralelo,
             PesosDelPeriodo pesos,
             List<DocenteActivo> docentes,
-            Map<String, HorasDelDocente> horas) {
+            Map<String, HorasDelDocente> horas,
+            ReglasDelPeriodo reglas,
+            Function<DocenteActivo, Optional<ReglaDeAsignacion>> motivos) {
         CalculadoraAfinidad calculadora = new CalculadoraAfinidad();
         List<Candidato> todos =
                 docentes.stream()
@@ -75,7 +81,9 @@ public record Sugerencia(
                                                 calculadora.calcular(
                                                         docente.formacion(),
                                                         paralelo.asignatura(),
-                                                        pesos.pesos())))
+                                                        pesos.pesos()),
+                                                reglas.limite(docente.horasContratadas()),
+                                                motivos.apply(docente).orElse(null)))
                         .toList();
         Comparator<Candidato> orden = orden(paralelo.horasSemanales());
         return new Sugerencia(
@@ -103,11 +111,13 @@ public record Sugerencia(
         return candidato.puntaje().total().compareTo(minimo) >= 0;
     }
 
-    /** Primero, quienes tienen horas; en cada grupo, puntaje, horas disponibles y nombre. */
+    /** Primero, quienes se pueden proponer; en cada grupo, puntaje, disponibles y nombre. */
     private static Comparator<Candidato> orden(BigDecimal horasDelParalelo) {
         Collator nombres = Collator.getInstance(Locale.of("es"));
         return Comparator.comparing(
-                        (Candidato candidato) -> !candidato.tieneHorasPara(horasDelParalelo))
+                        (Candidato candidato) ->
+                                !candidato.sePuedeProponer()
+                                        || !candidato.tieneHorasPara(horasDelParalelo))
                 .thenComparing(candidato -> candidato.puntaje().total(), Comparator.reverseOrder())
                 .thenComparing(Candidato::horasDisponibles, Comparator.reverseOrder())
                 .thenComparing(Candidato::nombre, nombres);

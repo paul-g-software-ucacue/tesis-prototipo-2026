@@ -102,7 +102,16 @@ public final class RepositorioDistributivosJdbc implements RepositorioDistributi
 
     @Override
     public Optional<VersionDistributivo> vigenteDe(String periodo) {
-        return jdbc.sql(VIGENTE)
+        return leer(VIGENTE, periodo);
+    }
+
+    @Override
+    public Optional<VersionDistributivo> bloquearVigente(String periodo) {
+        return leer(VIGENTE + " FOR UPDATE OF v", periodo);
+    }
+
+    private Optional<VersionDistributivo> leer(String consulta, String periodo) {
+        return jdbc.sql(consulta)
                 .param("periodo", periodo)
                 .query(
                         (fila, numero) ->

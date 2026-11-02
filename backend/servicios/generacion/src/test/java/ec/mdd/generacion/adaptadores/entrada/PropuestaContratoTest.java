@@ -167,6 +167,8 @@ class PropuestaContratoTest {
         "SIN,409,GENERACION_SIN_DISTRIBUTIVO",
         "NO-ACTIVO,409,GENERACION_DOCENTE_NO_ACTIVO",
         "ENVIADO,409,GENERACION_PARCIAL_NO_EDITABLE",
+        "EXCEDIDAS,409,GENERACION_HORAS_EXCEDIDAS",
+        "TOPE,409,GENERACION_TOPE_DE_CLASE",
         "FALLA,502,COMUN_PROCESO_CON_ERROR",
         "LENTO,504,COMUN_PROCESO_SIN_RESPUESTA"
     })
@@ -180,6 +182,16 @@ class PropuestaContratoTest {
         MvcResult resultado = quitar("2026-I", "TDS");
 
         assertThat(resultado.getResponse().getStatus()).isEqualTo(204);
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoElTopeDeClase_cuandoPropone_entoncesDiceLasQueQuedan() throws Exception {
+        MvcResult resultado = proponer("TOPE", CUERPO, "TDS", ESCRIBE);
+
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("\"titulo\":\"Tope de horas de clase\"")
+                .contains("Le quedan 2 h de clase.");
         contrato.validar(resultado);
     }
 

@@ -34,6 +34,11 @@ COPY --from=extraccion /app/extraido/dependencies/ ./
 COPY --from=extraccion /app/extraido/spring-boot-loader/ ./
 COPY --from=extraccion /app/extraido/snapshot-dependencies/ ./
 COPY --from=extraccion /app/extraido/application/ ./
+# Java recuerda 10 s que un nombre no resolvía (D-84). Sin esto, un proceso que se reinicia sigue
+# dando 502 unos segundos después de estar sano, porque Docker deja de resolver su nombre mientras
+# está detenido.
+COPY deploy/docker/red.security ./red.security
+ENV JDK_JAVA_OPTIONS=-Djava.security.properties=/app/red.security
 USER 10001
 # El límite de memoria de cada JVM se pasa en JAVA_TOOL_OPTIONS desde el compose (ADR-008, R-19).
 ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]

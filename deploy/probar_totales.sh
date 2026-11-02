@@ -408,9 +408,15 @@ reemplazar_y_quitar() {
 }
 
 el_exceso() {
+    local version
     iniciar "$COORDINADOR_A"
-    asignar "$carrera_a" "$libre" 143-l 40
-    [[ $estado == 200 ]] || return 1
+    # Por la API ya no se puede pasar del límite (F07-H02): se crea directo en la base.
+    version=$(consultar_base "select v.id from generacion.version_distributivo v
+        join generacion.distributivo d on d.id = v.distributivo_id where d.periodo = '$PERIODO'")
+    consultar_base "insert into generacion.actividad_no_lectiva (id, version_id, carrera, docente, nombre_docente,
+        actividad, nombre_actividad, componente, horas, asignada_en, asignada_por)
+        values (gen_random_uuid(), '$version', '$carrera_a', '$libre', 'PRUEBA', '143-l', 'Una actividad',
+        'GESTION', 40.00, now(), 'prueba')" >/dev/null
     carga "$libre"
     echo "       con 40 h más: exceso $(jq -r '.exceso' <<<"$cuerpo") h de $(jq -r '.horasContratadas' <<<"$cuerpo") contratadas"
     coincide "$horas_a" 8.25 0 0 42 || return 1

@@ -77,24 +77,24 @@ class CargaHorariaTest {
     void conMasHorasQueLasContratadas_cuandoSeCalcula_entoncesDiceElExceso() {
         CargaHoraria carga = conGestion("33");
 
-        assertThat(carga.disponibles(20)).isEqualByComparingTo("0");
-        assertThat(carga.exceso(20)).isEqualByComparingTo("13");
+        assertThat(carga.disponibles(new BigDecimal("20"))).isEqualByComparingTo("0");
+        assertThat(carga.exceso(new BigDecimal("20"))).isEqualByComparingTo("13");
     }
 
     @Test
     void conMenosHorasQueLasContratadas_cuandoSeCalcula_entoncesNoHayExceso() {
         CargaHoraria carga = conGestion("7.5");
 
-        assertThat(carga.disponibles(20)).isEqualByComparingTo("12.5");
-        assertThat(carga.exceso(20)).isEqualByComparingTo("0");
+        assertThat(carga.disponibles(new BigDecimal("20"))).isEqualByComparingTo("12.5");
+        assertThat(carga.exceso(new BigDecimal("20"))).isEqualByComparingTo("0");
     }
 
     @Test
     void conCeroHorasContratadas_cuandoSeCalcula_entoncesLoAsignadoEsExceso() {
         CargaHoraria carga = conGestion("4");
 
-        assertThat(carga.disponibles(0)).isEqualByComparingTo("0");
-        assertThat(carga.exceso(0)).isEqualByComparingTo("4");
+        assertThat(carga.disponibles(new BigDecimal("0"))).isEqualByComparingTo("0");
+        assertThat(carga.exceso(new BigDecimal("0"))).isEqualByComparingTo("4");
     }
 
     @Test
@@ -116,6 +116,14 @@ class CargaHorariaTest {
     @Test
     void soloConGestion_cuandoSePideLaProporcion_entoncesNoHay() {
         assertThat(conGestion("4").proporcion()).isEmpty();
+    }
+
+    @Test
+    void dadasMasHorasDeClase_cuandoSeSuman_entoncesSoloCambiaLaClase() {
+        CargaHoraria carga = conGestion("4").conMasClase(new BigDecimal("2.5"));
+
+        assertThat(carga.clase()).isEqualByComparingTo("2.5");
+        assertThat(carga.gestion()).isEqualByComparingTo("4");
     }
 
     @Test

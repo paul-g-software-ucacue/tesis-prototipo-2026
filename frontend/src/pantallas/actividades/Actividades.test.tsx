@@ -36,7 +36,6 @@ const RUTA_ACTIVIDAD = (actividad: string) =>
   `/api/generacion/periodos/2026-2/parciales/${CARRERA}/docentes/${DOCENTE}/actividades/${actividad}`;
 const GUARDADA = {
   actividad: { actividad: '140-b', nombre: 'Planificar', componente: 'OTRAS_DOCENCIA', horas: 4 },
-  horasSuficientes: true,
 };
 
 function sesionCon(simulada: ApiSimulada, permisos: string[]) {
@@ -316,11 +315,16 @@ describe('Actividades no lectivas', () => {
     expect(simulada.peticiones.some((peticion) => peticion.method === 'PUT')).toBe(false);
   });
 
-  it('avisa si al docente no le alcanzan las horas', async () => {
+  it('si no caben las horas lo dice, con las que quedan, y sigue abierto', async () => {
     simulada.responder(
       'PUT',
       RUTA_ACTIVIDAD('140-b'),
-      json(200, { ...GUARDADA, horasSuficientes: false }),
+      json(409, {
+        titulo: 'Horas laborales excedidas',
+        descripcion: 'Esta asignación pasa las horas del docente, sumando todas sus carreras.',
+        codigo: 'GENERACION_HORAS_EXCEDIDAS',
+        detalles: [{ campo: 'horas', descripcion: 'Le quedan 2 h.' }],
+      }),
     );
     const dialogo = await abrirFormulario();
 
@@ -328,7 +332,23 @@ describe('Actividades no lectivas', () => {
     await userEvent.type(within(dialogo).getByLabelText('Horas semanales'), '4');
     await userEvent.click(within(dialogo).getByRole('button', { name: 'Asignar' }));
 
-    expect(await screen.findByText(/no le alcanzan las horas/)).toBeVisible();
+    expect(await within(dialogo).findByRole('alert')).toHaveTextContent(
+      'Horas laborales excedidas',
+    );
+    expect(within(dialogo).getByText(/Le quedan 2 h\./)).toBeVisible();
+    expect(within(dialogo).getByLabelText('Horas semanales')).toHaveValue('4');
+  });
+
+  it('al guardar ya no hay aviso de horas', async () => {
+    simulada.responder('PUT', RUTA_ACTIVIDAD('140-b'), json(200, GUARDADA));
+    const dialogo = await abrirFormulario();
+
+    await elegir(dialogo, '140-b');
+    await userEvent.type(within(dialogo).getByLabelText('Horas semanales'), '4');
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Asignar' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(screen.queryByText(/no le alcanzan/)).not.toBeInTheDocument();
   });
 
   it('un error del catálogo no cierra el diálogo', async () => {
