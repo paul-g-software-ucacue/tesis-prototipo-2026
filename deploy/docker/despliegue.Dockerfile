@@ -4,7 +4,7 @@
 # El equipo lo extrae con «docker create» y «docker cp <id>:/paquete»; nunca se ejecuta.
 # Ejemplo: docker build -f deploy/docker/despliegue.Dockerfile --build-arg REVISION=$(git rev-parse HEAD) .
 
-FROM busybox:1.37@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e AS version
+FROM busybox:1.38@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4 AS version
 ARG REVISION
 RUN test -n "${REVISION}" && printf '%s\n' "${REVISION}" > /VERSION
 
