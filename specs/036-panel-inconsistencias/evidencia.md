@@ -72,6 +72,28 @@ Registro de las comprobaciones de la historia (issue #53): el panel de inconsist
 - **Accesibilidad.** axe encontró poco contraste en el chip «Blanda», que pasó a estilo neutro.
 - **Script.** `probar_panel.sh` tuvo dos correcciones: el paso 7 no podía subir el paralelo a 30 h, porque la base lo impide, y una variable sin usar.
 
-## La comprobación del autor
+## Equipo de demostración
 
-Pendiente, después del despliegue (SC-004, con cronómetro).
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| Despliegue | `demostracion` exitoso, «Sano en 56 s», 8 contenedores sanos; 401 sin credenciales | GitHub y `docker ps`, `420c082f30cc` | 2026-11-02 |
+| Migración | `margen_puntos` 5 en las 2 versiones, y la tabla de justificaciones creada | Consulta de solo lectura | 2026-11-02 |
+| El panel | 3 duras y 3 blandas abiertas, y la excepción de RN-19 justificada; el paralelo retirado no sale | Comprobación del autor | 2026-11-02 |
+| Justificar | RN-05 y RN-10 pasan a «Justificadas», con el texto, `consolidacion.demo` y la hora; las abiertas bajan a 2 y a 1 blanda | Comprobación del autor y consulta de solo lectura | 2026-11-02 |
+| Justificar sin ayuda (SC-004) | 50 s (meta: menos de 1 minuto) | Medido por el autor, con cronómetro | 2026-11-02 |
+| Dura | Sin «Justificar», con el enlace a su pantalla | Comprobación del autor | 2026-11-02 |
+| Enlace | Lleva a «Oferta del periodo», de solo lectura para Consolidación | Comprobación del autor | 2026-11-02 |
+| Texto obligatorio | Con el campo vacío pide de 10 a 500 caracteres, sin guardar | Comprobación del autor | 2026-11-02 |
+| Vicerrectorado | El mismo panel, sin «Justificar» ni «Cambiar justificación» | Comprobación del autor | 2026-11-02 |
+| Coordinador | El panel no está en su menú | Comprobación del autor | 2026-11-02 |
+
+Lo que se observó en la demo:
+
+- **RN-12.** Salió porque el único coordinador vigente tiene el cargo en otra carrera, aunque `coordinacion.demo` tenga SOCIALES indicada. Es lo que dice la especificación: RN-12 mira el cargo. La previsión previa al autor, de 2 duras, estaba mal.
+- **Los títulos.** El autor vio que eran demasiado grandes. Se corrigió en un PR aparte (#187).
+
+Lo que no se vio en la demo, y queda cubierto por las pruebas:
+
+- **RN-18 y la sobrecarga.** Con estos datos no aparecen: `probar_panel.sh`, paso 7.
+- **El texto de largo inválido.** El autor probó el campo vacío. Un texto de 1 a 9 caracteres pasa por la misma regla: `Inconsistencias.test.tsx`.
+- **Corregir hasta que desaparezca una inconsistencia.** `probar_panel.sh`, pasos 3 y 7.
