@@ -69,6 +69,34 @@ JaCoCo cuenta solo las pruebas unitarias, así que `AlmacenEnDisco` y `Repositor
 - **El botón de adjuntar.** Primero fue una etiqueta, que no sirve con teclado. Se cambió por el patrón de «Plantillas de carga» antes de cerrar.
 - **Estado de los parciales.** Hoy todos están en elaboración, porque enviarlos llega con F12-H02.
 
-## La comprobación del autor
+## Equipo de demostración
 
-Pendiente, después del despliegue (SC-004, con cronómetro).
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| Despliegue | `demostracion` exitoso, «Sano en 60 s», 8 contenedores sanos; 401 sin credenciales | GitHub y `docker ps`, `f798b6386fd1` | 2026-11-02 |
+| Volumen | `mdd_archivos`, montado solo en `distributivo`, con dueño 10001 y escribible en su primer despliegue real | `docker inspect` y `docker exec`, sin escribir | 2026-11-02 |
+| Consolidado | SOCIALES, 2 de 4 paralelos, 8 h de clase y 11 h de otras, 3 duras y 1 blanda, y la nota de las unidades | Comprobación del autor | 2026-11-02 |
+| Consolidar | Con quién y cuándo; repetido una vez, 2 filas y 2 entradas en el registro | Comprobación del autor y consulta de solo lectura | 2026-11-02 |
+| Adjuntar y reemplazar | 2 informes, con nombre, tamaño, usuario y hora; el anterior se conserva | Comprobación del autor y consulta de solo lectura | 2026-11-02 |
+| Integridad | Los 2 archivos del volumen coinciden con su huella | `sha256sum` en el contenedor, sin escribir | 2026-11-02 |
+| Descargar | Las descargas funcionaron, también la del reemplazo | Comprobación del autor | 2026-11-02 |
+| No es un PDF | No se pudieron subir | Comprobación del autor | 2026-11-02 |
+| Desactualizado | Sale al cambiar actividades, y desaparece al repetir | Comprobación del autor | 2026-11-02 |
+| Vicerrectorado | Lee y descarga, sin consolidar ni reemplazar | Comprobación del autor | 2026-11-02 |
+| Coordinador | El consolidado no está en su menú | Comprobación del autor | 2026-11-02 |
+| Consolidar y adjuntar (SC-004) | 31 s entre consolidar y adjuntar (meta: menos de 2 minutos) | Horas guardadas en la base | 2026-11-02 |
+| Todo el flujo | 5 minutos para los 9 pasos de la comprobación, con los dos perfiles | Medido por el autor | 2026-11-02 |
+
+SC-004 no se midió con cronómetro por separado, como pedía T025. Los 31 s salen de las horas guardadas, entre pulsar «Consolidar» y que el informe quedara adjunto. Los 5 minutos del autor incluyen revisar, cambiar de usuario y las actividades, así que no se comparan con la meta.
+
+Lo que se observó en la demo:
+
+- **Las 0 blandas.** El autor agregó 140 g) y quitó 140 c), y el docente quedó en 53/47. Sigue fuera del margen, pero esa inconsistencia ya estaba justificada desde F10-H01.
+- **Los archivos de prueba.** El autor adjuntó dos PDF. Sus nombres no se copian aquí (repositorio público). Quedan en el volumen del equipo, porque reemplazar conserva el anterior.
+- **No es un PDF.** El selector de archivos filtra por PDF, y el autor no distinguió si lo paró el navegador o el servidor. El rechazo del servidor queda cubierto por `probar_consolidado.sh`, paso 7.
+
+Lo que no se vio en la demo, y queda cubierto por las pruebas:
+
+- **Un archivo dañado o que falta:** `probar_consolidado.sh`, paso 9.
+- **Un PDF de 10 MB:** `probar_consolidado.sh`, paso 6.
+- **Varias carreras:** solo SOCIALES tiene oferta en la demo; con las 7 carreras: `probar_consolidado.sh`, paso 2.
