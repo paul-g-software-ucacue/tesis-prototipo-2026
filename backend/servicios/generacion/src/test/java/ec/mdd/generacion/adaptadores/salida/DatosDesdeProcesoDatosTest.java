@@ -16,6 +16,7 @@ import ec.mdd.generacion.dominio.PeriodoListo;
 import ec.mdd.generacion.dominio.PesosDelPeriodo;
 import ec.mdd.generacion.dominio.ProyectoDelDocente;
 import ec.mdd.generacion.dominio.ProyectosYCargosDelDocente;
+import ec.mdd.generacion.dominio.ReglasDelPeriodo;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
 import ec.mdd.plataforma.eventos.ProveedorDeTokenDeProceso;
@@ -100,6 +101,36 @@ class DatosDesdeProcesoDatosTest {
     @Test
     void dadoUnPeriodoQueAcademicoNoTiene_cuandoSePide_entoncesVacio() {
         assertThat(datos.asignaturasOfertadas(PERIODO, Optional.empty())).isEmpty();
+    }
+
+    @Test
+    void dadasLasReglas_cuandoSePiden_entoncesTraeLosDosTopes() {
+        receptor.responderConsulta(
+                "/interno/normativa/periodos/2026-I/reglas-de-asignacion",
+                200,
+                "{\"periodo\":\"2026-I\",\"version\":2,\"horasMaximasDocente\":40,"
+                        + "\"horasClaseConProyecto\":16}");
+
+        ReglasDelPeriodo reglas = datos.reglas(PERIODO).orElseThrow();
+
+        assertThat(reglas.horasMaximasDocente()).isEqualByComparingTo("40");
+        assertThat(reglas.horasClaseConProyecto()).isEqualByComparingTo("16");
+    }
+
+    @Test
+    void dadoUnPeriodoSinVersion_cuandoSePidenLasReglas_entoncesVacio() {
+        assertThat(datos.reglas(PERIODO)).isEmpty();
+    }
+
+    @Test
+    void dadosDocentesConProyecto_cuandoSePiden_entoncesTraeSusTipos() {
+        receptor.responderConsulta(
+                "/interno/docentes/con-proyecto",
+                200,
+                "[{\"docente\":\"0109990010\",\"tipos\":[\"INVESTIGACION\"]}]");
+
+        assertThat(datos.docentesConProyecto(PERIODO))
+                .containsEntry("0109990010", List.of("INVESTIGACION"));
     }
 
     @Test

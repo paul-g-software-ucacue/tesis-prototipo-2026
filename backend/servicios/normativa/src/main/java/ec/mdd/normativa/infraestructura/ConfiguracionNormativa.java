@@ -9,6 +9,7 @@ import ec.mdd.normativa.aplicacion.ConsultarActividadesDelPeriodoServicio;
 import ec.mdd.normativa.aplicacion.ConsultarNormativaServicio;
 import ec.mdd.normativa.aplicacion.ConsultarPesosDelPeriodoServicio;
 import ec.mdd.normativa.aplicacion.ConsultarProporcionDelPeriodoServicio;
+import ec.mdd.normativa.aplicacion.ConsultarReglasDeAsignacionServicio;
 import ec.mdd.normativa.aplicacion.CrearVersionServicio;
 import ec.mdd.normativa.aplicacion.EditarVersionServicio;
 import ec.mdd.normativa.aplicacion.cargas.CargasDeNormativa;
@@ -17,6 +18,7 @@ import ec.mdd.normativa.puertos.entrada.ConsultarActividadesDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarNormativa;
 import ec.mdd.normativa.puertos.entrada.ConsultarPesosDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarProporcionDelPeriodo;
+import ec.mdd.normativa.puertos.entrada.ConsultarReglasDeAsignacion;
 import ec.mdd.normativa.puertos.entrada.CrearVersion;
 import ec.mdd.normativa.puertos.entrada.EditarVersion;
 import ec.mdd.normativa.puertos.salida.RegistroDeCambios;
@@ -59,6 +61,13 @@ public class ConfiguracionNormativa {
     @Bean
     public ConsultarNormativa consultarNormativa(RepositorioVersiones repositorio) {
         return new ConsultarNormativaServicio(repositorio);
+    }
+
+    /** Las cifras de las reglas duras de un periodo (RN-02, RN-13). */
+    @Bean
+    public ConsultarReglasDeAsignacion consultarReglasDeAsignacion(
+            RepositorioVersiones repositorio) {
+        return new ConsultarReglasDeAsignacionServicio(repositorio);
     }
 
     /** La meta de la proporción de un periodo (RN-05). */

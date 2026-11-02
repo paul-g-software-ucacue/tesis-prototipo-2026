@@ -9,6 +9,7 @@ import ec.mdd.generacion.puertos.entrada.DistributivoNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.DistributivoRepetido;
 import ec.mdd.generacion.puertos.entrada.DocenteNoActivo;
 import ec.mdd.generacion.puertos.entrada.DocenteNoEncontrado;
+import ec.mdd.generacion.puertos.entrada.HorasExcedidas;
 import ec.mdd.generacion.puertos.entrada.ParaleloNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.ParaleloRetirado;
 import ec.mdd.generacion.puertos.entrada.PeriodoCerrado;
@@ -17,8 +18,12 @@ import ec.mdd.generacion.puertos.entrada.PeriodoNoListo;
 import ec.mdd.generacion.puertos.entrada.PeriodoSinAbrir;
 import ec.mdd.generacion.puertos.entrada.PropuestaNoEncontrada;
 import ec.mdd.generacion.puertos.entrada.SinDistributivo;
+import ec.mdd.generacion.puertos.entrada.TopeDeClase;
 import ec.mdd.plataforma.errores.nucleo.CatalogoDeErrores;
+import ec.mdd.plataforma.errores.nucleo.DefinicionDeCodigo;
+import ec.mdd.plataforma.errores.nucleo.DetalleRespuesta;
 import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
+import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
@@ -137,6 +142,36 @@ class ErroresGeneracion implements CatalogoDeErrores {
                         404,
                         "Sin actividad",
                         "Ese docente no tiene esa actividad en este parcial."),
+                EntradaCatalogo.conDetalles(
+                        HorasExcedidas.class,
+                        new DefinicionDeCodigo(
+                                "GENERACION_HORAS_EXCEDIDAS",
+                                409,
+                                "Horas laborales excedidas",
+                                "Esta asignación pasa las horas del docente, sumando todas sus"
+                                        + " carreras. Elige a otro docente o baja sus horas."),
+                        error ->
+                                List.of(
+                                        new DetalleRespuesta(
+                                                "horas",
+                                                "Le quedan "
+                                                        + formato(error.horasQueQuedan())
+                                                        + " h."))),
+                EntradaCatalogo.conDetalles(
+                        TopeDeClase.class,
+                        new DefinicionDeCodigo(
+                                "GENERACION_TOPE_DE_CLASE",
+                                409,
+                                "Tope de horas de clase",
+                                "Este docente tiene un proyecto de investigación o vinculación, y"
+                                        + " su tope de clase no alcanza. Elige a otro docente."),
+                        error ->
+                                List.of(
+                                        new DetalleRespuesta(
+                                                "horas",
+                                                "Le quedan "
+                                                        + formato(error.horasQueQuedan())
+                                                        + " h de clase."))),
                 EntradaCatalogo.de(
                         DocenteNoEncontrado.class,
                         "GENERACION_DOCENTE_NO_ENCONTRADO",
@@ -144,5 +179,9 @@ class ErroresGeneracion implements CatalogoDeErrores {
                         "Docente no encontrado",
                         "No hay un docente con esa identificación. Revísala y vuelve a"
                                 + " intentarlo."));
+    }
+
+    private static String formato(BigDecimal horas) {
+        return horas.stripTrailingZeros().toPlainString().replace('.', ',');
     }
 }

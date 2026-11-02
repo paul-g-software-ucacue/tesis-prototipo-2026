@@ -80,6 +80,8 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-80 | 2026-11-01 | PostgreSQL y Caddy se publican como imágenes propias, derivadas de las oficiales | Aceptada | D-54, D-58 |
 | D-81 | 2026-11-01 | `cloudflared` sube a una versión con menos de dos semanas, como excepción | Aceptada | D-55, D-80 |
 | D-82 | 2026-11-01 | La carga horaria de un docente se lee sin filtro de carrera, solo con sumas | Aceptada | D-01, D-64, F07-H01 |
+| D-83 | 2026-11-01 | El agregado de MD-01 se protege bloqueando la versión al guardar | Aceptada | MD-01, D-78, F07-H02 |
+| D-84 | 2026-11-01 | La JVM no recuerda los nombres que no resolvieron | Aceptada | F07-H02 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1493,5 +1495,37 @@ Las 19 excepciones de `cloudflared` no cambian: su imagen no corre con el túnel
 **Alternativas.** Limitarla a los docentes del parcial propio: el coordinador solo vería a un docente después de asignarle algo.
 
 **Consecuencias.** Con esos permisos ven los totales el Administrador, el Coordinador de carrera, el Responsable de consolidación, el Vicerrector, el Rector, el OCS y la Secretaría General. Un coordinador sigue sin ver en qué asignaturas o actividades está un docente en otra carrera. RF-30 sigue fuera del prototipo.
+
+**Documentos que hay que poner al día.** Ninguno.
+
+## D-83. El agregado de MD-01 se protege bloqueando la versión al guardar
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-01 · **Decidido por:** autor de la tesis
+- **Origen:** plan de F07-H02
+- **Precisa a:** MD-01, que pide bloqueo optimista
+- **Cierra:** el aviso de D-78: desde esta historia ya no se puede guardar sin horas
+
+**Decisión.** Al guardar una propuesta o una actividad, la transacción bloquea la fila de la versión del distributivo, vuelve a leer sus asignaciones y recién ahí evalúa las reglas. Lo que viene de otros procesos se consulta antes, sin la transacción abierta. El agregado se mantiene: cambia cómo se protege.
+
+**Por qué.** Con dos coordinadores a la vez, el segundo debe recibir el error de horas (issue #51). Con un bloqueo optimista recibiría un conflicto, y habría que reintentar para llegar a ese error.
+
+**Alternativas.** Bloqueo optimista con reintentos: más código y una columna nueva. Un candado por docente: más preciso, con un concepto nuevo para un caso que no lo necesita.
+
+**Consecuencias.** Dos guardados del mismo periodo van uno detrás del otro, también con docentes distintos. La espera son milisegundos y los dos se guardan. Quitar no bloquea, porque solo baja horas.
+
+**Documentos que hay que poner al día.** Ninguno.
+
+## D-84. La JVM no recuerda los nombres que no resolvieron
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-01 · **Decidido por:** propuesta del agente, que el autor aprueba al fusionar el PR
+- **Origen:** el fallo intermitente de `perfil-consolidado` en el PR #180
+
+**Decisión.** Las imágenes de Java fijan `networkaddress.cache.negative.ttl=0` en `deploy/docker/red.security`.
+
+**Por qué.** Mientras un contenedor está detenido, Docker no resuelve su nombre, y Java recuerda ese fallo 10 s. Si el proceso vuelve antes, los demás siguen sin encontrarlo y responden 502 aunque ya esté sano. Se midió: sin el cambio, unos 2 s de 502 después de quedar sano en todos los intentos; con el cambio, ninguno en 3 de 3.
+
+**Alternativas.** Reintentar en cada script: oculta el problema, que también pasa en un despliegue. `-Dsun.net.inetaddr.negative.ttl`: Java la ignora porque `java.security` ya define el valor.
+
+**Consecuencias.** Un nombre que no resuelve se vuelve a consultar cada vez. Solo pasa con un proceso caído, y no cambia la caché de los nombres que sí resuelven.
 
 **Documentos que hay que poner al día.** Ninguno.

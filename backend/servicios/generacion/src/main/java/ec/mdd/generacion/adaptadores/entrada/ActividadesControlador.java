@@ -100,9 +100,7 @@ class ActividadesControlador implements ActividadesApi {
                                     nueva.getProyecto(),
                                     DistributivoControlador.carreraDeQuienEscribe(),
                                     DistributivoControlador.autenticacion().getName()));
-            return ResponseEntity.ok(
-                    new ActividadGuardada(
-                            asignada(guardada.actividad()), guardada.horasSuficientes()));
+            return ResponseEntity.ok(new ActividadGuardada(asignada(guardada.actividad())));
         } catch (OtraCarrera error) {
             throw new AccessDeniedException(OTRA_CARRERA, error);
         } catch (HorasNoValidas error) {

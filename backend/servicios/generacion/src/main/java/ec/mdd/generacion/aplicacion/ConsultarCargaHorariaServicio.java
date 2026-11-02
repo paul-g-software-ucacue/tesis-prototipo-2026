@@ -2,6 +2,7 @@ package ec.mdd.generacion.aplicacion;
 
 import ec.mdd.generacion.dominio.CargaHoraria;
 import ec.mdd.generacion.dominio.DocenteActivo;
+import ec.mdd.generacion.dominio.ReglasDelPeriodo;
 import ec.mdd.generacion.dominio.VersionDistributivo;
 import ec.mdd.generacion.puertos.entrada.CargaDelDocente;
 import ec.mdd.generacion.puertos.entrada.ConsultarCargaHoraria;
@@ -42,10 +43,12 @@ public final class ConsultarCargaHorariaServicio implements ConsultarCargaHorari
                         .orElseThrow(DocenteNoActivo::new);
         VersionDistributivo version =
                 distributivos.vigenteDe(periodo).orElseThrow(SinDistributivo::new);
+        ReglasDelPeriodo reglas = normativa.reglas(periodo).orElseThrow(PeriodoSinAbrir::new);
         return new CargaDelDocente(
                 docente,
                 activo.nombre(),
                 activo.horasContratadas(),
+                reglas.limite(activo.horasContratadas()),
                 CargaHoraria.calcular(
                         docente,
                         version.propuestas(),

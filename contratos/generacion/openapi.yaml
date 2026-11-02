@@ -11,6 +11,7 @@
 # Desde F06-H04: las actividades no lectivas, con el mismo permiso de proponer (RF-26, RN-22, RN-25).
 # Desde F07-H01: la carga horaria de un docente, con sus totales y su proporción (RF-27, RN-05, D-01).
 # La leen quienes leen la oferta, sin filtro de carrera, porque solo trae sumas (D-82).
+# Desde F07-H02: proponer y asignar se rechazan si violan una regla dura (RF-28, RN-02, RN-13, D-83).
 openapi: 3.0.3
 info:
   title: MDD · generacion
@@ -350,8 +351,8 @@ paths:
       description: >-
         La justificación la decide el servidor con el puntaje que calcula al guardar: afinidad si
         alcanza el mínimo; disponibilidad si no lo alcanza en tronco común; excepción si no lo
-        alcanza fuera de tronco común, y entonces exige el texto, de 10 a 500 caracteres. Sin horas
-        suficientes se guarda igual, con horasSuficientes en falso, hasta F07-H02 (D-78).
+        alcanza fuera de tronco común, y entonces exige el texto, de 10 a 500 caracteres. Una
+        justificación no levanta una regla dura: sin horas o sobre el tope de clase no se guarda.
       x-mdd-permiso: OFERTA:ESCRITURA
       requestBody:
         required: true
@@ -382,8 +383,9 @@ paths:
           description: >-
             Retirada (GENERACION_PARALELO_RETIRADO), periodo cerrado (GENERACION_PERIODO_CERRADO), sin
             distributivo (GENERACION_SIN_DISTRIBUTIVO), docente no activo
-            (GENERACION_DOCENTE_NO_ACTIVO) o parcial que ya no admite cambios
-            (GENERACION_PARCIAL_NO_EDITABLE).
+            (GENERACION_DOCENTE_NO_ACTIVO), parcial que ya no admite cambios
+            (GENERACION_PARCIAL_NO_EDITABLE), horas excedidas (GENERACION_HORAS_EXCEDIDAS) o tope de
+            clase (GENERACION_TOPE_DE_CLASE); los dos últimos, con las horas que quedan en detalles.
           content:
             application/json:
               schema:
@@ -621,8 +623,7 @@ paths:
       operationId: asignarActividad
       summary: Asigna una actividad al docente en el parcial; reemplaza las horas si ya la tiene.
       description: >-
-        El tope de 40 h es de validación: las reglas de horas llegan con F07-H02. Sin horas
-        suficientes se guarda igual, con horasSuficientes en falso (D-78).
+        El tope de 40 h es de validación. Si el total del docente no cabe, no se guarda.
       x-mdd-permiso: OFERTA:ESCRITURA
       requestBody:
         required: true
@@ -652,7 +653,7 @@ paths:
                 $ref: '../comun/errores.yaml#/components/schemas/Error'
         '409':
           description: >-
-            Periodo cerrado (GENERACION_PERIODO_CERRADO), sin abrir (GENERACION_PERIODO_SIN_ABRIR), sin distributivo (GENERACION_SIN_DISTRIBUTIVO), docente no activo (GENERACION_DOCENTE_NO_ACTIVO), parcial que no admite cambios (GENERACION_PARCIAL_NO_EDITABLE), proyecto no válido (GENERACION_PROYECTO_NO_VALIDO) o cargo no vigente (GENERACION_CARGO_NO_VIGENTE).
+            Periodo cerrado (GENERACION_PERIODO_CERRADO), sin abrir (GENERACION_PERIODO_SIN_ABRIR), sin distributivo (GENERACION_SIN_DISTRIBUTIVO), docente no activo (GENERACION_DOCENTE_NO_ACTIVO), parcial que no admite cambios (GENERACION_PARCIAL_NO_EDITABLE), proyecto no válido (GENERACION_PROYECTO_NO_VALIDO) o cargo no vigente (GENERACION_CARGO_NO_VIGENTE) o reglas duras (GENERACION_HORAS_EXCEDIDAS, GENERACION_TOPE_DE_CLASE), con las horas que quedan en detalles.
           content:
             application/json:
               schema:
@@ -1018,13 +1019,10 @@ components:
           type: string
     ActividadGuardada:
       type: object
-      required: [actividad, horasSuficientes]
+      required: [actividad]
       properties:
         actividad:
           $ref: '#/components/schemas/ActividadAsignada'
-        horasSuficientes:
-          description: Si al docente le alcanzan las horas (D-78).
-          type: boolean
     ActividadNueva:
       type: object
       required: [horas]
@@ -1115,6 +1113,10 @@ components:
         horasSuficientes:
           description: Si sus horas disponibles alcanzan para las del paralelo.
           type: boolean
+        motivoParaNoProponer:
+          description: Por qué no se le puede proponer; si no viene, se puede (RF-28).
+          type: string
+          enum: [HORAS, TOPE_DE_CLASE]
         puntaje:
           $ref: '#/components/schemas/PuntajeAfinidad'
     Dedicacion:

@@ -15,6 +15,7 @@ import ec.mdd.docentes.dominio.Docente;
 import ec.mdd.docentes.dominio.FichaAcademica;
 import ec.mdd.docentes.dominio.Proyecto;
 import ec.mdd.docentes.puertos.entrada.ConsultarDocentesActivos;
+import ec.mdd.docentes.puertos.entrada.ConsultarDocentesConProyecto;
 import ec.mdd.docentes.puertos.entrada.ConsultarFormacion;
 import ec.mdd.docentes.puertos.entrada.ConsultarProyectosYCargos;
 import ec.mdd.docentes.puertos.entrada.DocenteNoEncontrado;
@@ -36,14 +37,17 @@ class InternoDocentesControlador implements InternoApi {
     private final ConsultarFormacion consultar;
     private final ConsultarDocentesActivos activos;
     private final ConsultarProyectosYCargos proyectosYCargos;
+    private final ConsultarDocentesConProyecto conProyecto;
 
     InternoDocentesControlador(
             ConsultarFormacion consultar,
             ConsultarDocentesActivos activos,
-            ConsultarProyectosYCargos proyectosYCargos) {
+            ConsultarProyectosYCargos proyectosYCargos,
+            ConsultarDocentesConProyecto conProyecto) {
         this.consultar = consultar;
         this.activos = activos;
         this.proyectosYCargos = proyectosYCargos;
+        this.conProyecto = conProyecto;
     }
 
     @Override
@@ -53,6 +57,23 @@ class InternoDocentesControlador implements InternoApi {
         } catch (DocenteNoEncontrado error) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
+    }
+
+    @Override
+    public ResponseEntity<List<ec.mdd.docentes.adaptadores.entrada.api.DocenteConProyecto>>
+            consultarDocentesConProyecto(String periodo) {
+        return ResponseEntity.ok(
+                conProyecto.delPeriodo(periodo).stream()
+                        .map(
+                                uno ->
+                                        new ec.mdd.docentes.adaptadores.entrada.api
+                                                .DocenteConProyecto(
+                                                uno.docente(),
+                                                uno.tipos().stream()
+                                                        .map(Enum::name)
+                                                        .sorted()
+                                                        .toList()))
+                        .toList());
     }
 
     @Override

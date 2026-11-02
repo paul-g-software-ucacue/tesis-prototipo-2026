@@ -27,6 +27,7 @@ import ec.mdd.generacion.puertos.entrada.AsignarActividad;
 import ec.mdd.generacion.puertos.entrada.ConsultarActividades;
 import ec.mdd.generacion.puertos.entrada.ConsultarActividadesPosibles;
 import ec.mdd.generacion.puertos.entrada.DocenteNoActivo;
+import ec.mdd.generacion.puertos.entrada.HorasExcedidas;
 import ec.mdd.generacion.puertos.entrada.OtraCarrera;
 import ec.mdd.generacion.puertos.entrada.PeriodoCerrado;
 import ec.mdd.generacion.puertos.entrada.PeriodoNoEncontrado;
@@ -89,8 +90,7 @@ class ActividadesContratoTest {
         assertThat(resultado.getResponse().getContentAsString())
                 .isEqualTo(
                         "{\"actividad\":{\"actividad\":\"140-b\",\"nombre\":\"Planificar\","
-                                + "\"componente\":\"OTRAS_DOCENCIA\",\"horas\":4.25},"
-                                + "\"horasSuficientes\":false}");
+                                + "\"componente\":\"OTRAS_DOCENCIA\",\"horas\":4.25}}");
         contrato.validar(resultado);
     }
 
@@ -215,12 +215,24 @@ class ActividadesContratoTest {
         "ENVIADO,409,GENERACION_PARCIAL_NO_EDITABLE",
         "PROYECTO,409,GENERACION_PROYECTO_NO_VALIDO",
         "CARGO,409,GENERACION_CARGO_NO_VIGENTE",
+        "EXCEDIDAS,409,GENERACION_HORAS_EXCEDIDAS",
         "FALLA,502,COMUN_PROCESO_CON_ERROR",
         "LENTO,504,COMUN_PROCESO_SIN_RESPUESTA"
     })
     void dadoUnFallo_cuandoAsigna_entoncesResponde(String periodo, int estado, String codigo)
             throws Exception {
         assertError(asignar(periodo, "TDS", "140-b", CUERPO, "TDS", ESCRIBE), estado, codigo);
+    }
+
+    @Test
+    void dadasHorasExcedidas_cuandoAsigna_entoncesDiceLasQueQuedan() throws Exception {
+        MvcResult resultado = asignar("EXCEDIDAS", "TDS", "140-b", CUERPO, "TDS", ESCRIBE);
+
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("\"titulo\":\"Horas laborales excedidas\"")
+                .contains("\"campo\":\"horas\"")
+                .contains("Le quedan 2,5 h.");
+        contrato.validar(resultado);
     }
 
     @Test
@@ -397,6 +409,7 @@ class ActividadesContratoTest {
                 case "ENVIADO" -> throw new ParcialNoEditable();
                 case "PROYECTO" -> throw new ProyectoNoValido();
                 case "CARGO" -> throw new CargoNoVigente();
+                case "EXCEDIDAS" -> throw new HorasExcedidas(new BigDecimal("2.5"));
                 case "MALAS-HORAS" -> throw new HorasNoValidas();
                 case "SIN-ACTIVIDAD" -> throw new ActividadNoEncontrada();
                 case "FALLA" -> throw new ProcesoConError("motivo-interno");
@@ -439,8 +452,7 @@ class ActividadesContratoTest {
                             actividad(
                                     solicitud.carrera(),
                                     solicitud.horas().toPlainString(),
-                                    solicitud.proyecto()),
-                            false);
+                                    solicitud.proyecto()));
                 }
 
                 @Override

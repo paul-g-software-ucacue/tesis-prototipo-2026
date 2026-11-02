@@ -11,6 +11,8 @@ import static org.mockito.Mockito.when;
 
 import ec.mdd.generacion.dominio.ActividadDelCatalogo;
 import ec.mdd.generacion.dominio.ActividadNoLectiva;
+import ec.mdd.generacion.dominio.AsignaturaOfertada;
+import ec.mdd.generacion.dominio.AsignaturaParalelo;
 import ec.mdd.generacion.dominio.CargoNoVigente;
 import ec.mdd.generacion.dominio.Componente;
 import ec.mdd.generacion.dominio.Dedicacion;
@@ -19,12 +21,16 @@ import ec.mdd.generacion.dominio.EstadoDeVersion;
 import ec.mdd.generacion.dominio.EstadoDelParcial;
 import ec.mdd.generacion.dominio.FormacionDelDocente;
 import ec.mdd.generacion.dominio.HorasNoValidas;
+import ec.mdd.generacion.dominio.Justificacion;
 import ec.mdd.generacion.dominio.ParcialCarrera;
 import ec.mdd.generacion.dominio.ParcialNoEditable;
 import ec.mdd.generacion.dominio.PeriodoListo;
+import ec.mdd.generacion.dominio.Propuesta;
 import ec.mdd.generacion.dominio.ProyectoDelDocente;
 import ec.mdd.generacion.dominio.ProyectoNoValido;
 import ec.mdd.generacion.dominio.ProyectosYCargosDelDocente;
+import ec.mdd.generacion.dominio.ReglasDelPeriodo;
+import ec.mdd.generacion.dominio.TipoDeJustificacion;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
 import ec.mdd.generacion.dominio.VersionDistributivo;
 import ec.mdd.generacion.puertos.entrada.ActividadFueraDelCatalogo;
@@ -32,6 +38,7 @@ import ec.mdd.generacion.puertos.entrada.ActividadGuardada;
 import ec.mdd.generacion.puertos.entrada.ActividadNoEncontrada;
 import ec.mdd.generacion.puertos.entrada.ActividadQuitada;
 import ec.mdd.generacion.puertos.entrada.DocenteNoActivo;
+import ec.mdd.generacion.puertos.entrada.HorasExcedidas;
 import ec.mdd.generacion.puertos.entrada.OtraCarrera;
 import ec.mdd.generacion.puertos.entrada.PeriodoCerrado;
 import ec.mdd.generacion.puertos.entrada.PeriodoNoEncontrado;
@@ -136,7 +143,6 @@ class AsignarActividadServicioTest {
         assertThat(actividad.proyecto()).isNull();
         assertThat(actividad.asignadaEn()).isEqualTo(AHORA);
         assertThat(actividad.asignadaPor()).isEqualTo(QUIEN);
-        assertThat(guardada.horasSuficientes()).isTrue();
     }
 
     @Test
@@ -189,21 +195,157 @@ class AsignarActividadServicioTest {
     }
 
     @Test
-    void dadoUnDocenteSinHoras_cuandoSeAsigna_entoncesGuardaConElAviso() {
+    void dadoUnDocenteSinHoras_cuandoSeAsigna_entoncesNoGuardaYDiceLasQueQuedan() {
         conTodo(version(actividad("140-g", "38", null)), NADA);
 
-        ActividadGuardada guardada = servicio.asignar(solicitud("140-b", "4", null));
-
-        assertThat(guardada().horas()).isEqualByComparingTo("4");
-        assertThat(guardada.horasSuficientes()).isFalse();
+        assertThatThrownBy(() -> servicio.asignar(solicitud("140-b", "4", null)))
+                .isInstanceOfSatisfying(
+                        HorasExcedidas.class,
+                        error -> assertThat(error.horasQueQuedan()).isEqualByComparingTo("2"));
+        assertNoGuardoNada();
     }
 
     @Test
-    void dadoQueSeReemplaza_cuandoSeCalculaElAviso_entoncesNoCuentaLasHorasAnteriores() {
+    void dadasHorasEnOtraCarrera_cuandoSeAsigna_entoncesCuentan() {
+        conTodo(version(enOtraCarrera("30")), NADA);
+
+        assertThatThrownBy(() -> servicio.asignar(solicitud("140-b", "12", null)))
+                .isInstanceOf(HorasExcedidas.class);
+        assertNoGuardoNada();
+    }
+
+    @Test
+    void justoEnElLimite_cuandoSeAsigna_entoncesGuarda() {
+        conTodo(version(actividad("140-g", "36", null)), NADA);
+
+        servicio.asignar(solicitud("140-b", "4", null));
+
+        assertThat(guardada().horas()).isEqualByComparingTo("4");
+    }
+
+    @Test
+    void dadoQueSeReemplaza_cuandoSeEvalua_entoncesNoCuentaLasHorasAnteriores() {
         // Un docente de 40 h con 36 h, de las que 4 h son de esta actividad, admite pasarla a 8 h.
         conTodo(version(actividad("140-b", "4", null), actividad("140-g", "32", null)), NADA);
 
-        assertThat(servicio.asignar(solicitud("140-b", "8", null)).horasSuficientes()).isTrue();
+        servicio.asignar(solicitud("140-b", "8", null));
+
+        assertThat(guardada().horas()).isEqualByComparingTo("8");
+    }
+
+    @Test
+    void conProyectoYElTopeDeClase_cuandoSeAsignanOtrasDeDocencia_entoncesGuarda() {
+        conTodo(version(), conProyecto());
+        when(datos.ofertaDelPeriodo(PERIODO)).thenReturn(Optional.of(List.of(claseDe16())));
+        when(distributivos.bloquearVigente(PERIODO)).thenReturn(Optional.of(conClase()));
+
+        servicio.asignar(solicitud("140-b", "8", null));
+
+        assertThat(guardada().horas()).isEqualByComparingTo("8");
+    }
+
+    @Test
+    void unDocenteExcedido_cuandoSeReduce_entoncesGuardaAunqueSigaExcedido() {
+        conTodo(version(actividad("140-b", "30", null), actividad("140-g", "20", null)), NADA);
+
+        servicio.asignar(solicitud("140-b", "25", null));
+
+        assertThat(guardada().horas()).isEqualByComparingTo("25");
+    }
+
+    @Test
+    void unDocenteExcedido_cuandoSeAumenta_entoncesNoGuarda() {
+        conTodo(version(actividad("140-b", "30", null), actividad("140-g", "20", null)), NADA);
+
+        assertThatThrownBy(() -> servicio.asignar(solicitud("140-b", "31", null)))
+                .isInstanceOf(HorasExcedidas.class);
+        assertNoGuardoNada();
+    }
+
+    @Test
+    void unDocenteExcedido_cuandoSeAgregaOtra_entoncesNoGuarda() {
+        conTodo(version(actividad("140-g", "30", null), actividad("140-e", "11", null)), NADA);
+
+        assertThatThrownBy(() -> servicio.asignar(solicitud("140-b", "1", null)))
+                .isInstanceOf(HorasExcedidas.class);
+        assertNoGuardoNada();
+    }
+
+    @Test
+    void unDocenteExcedido_cuandoSeQuita_entoncesSePuede() {
+        conTodo(version(actividad("140-g", "30", null), actividad("140-e", "11", null)), NADA);
+        when(distributivos.quitarActividad(eq(VERSION), any(), any(), any(), any()))
+                .thenReturn(true);
+
+        servicio.quitar(quitada("140-g", null, TODAS));
+
+        verify(distributivos)
+                .quitarActividad(eq(VERSION), eq(CARRERA), eq(DOCENTE), eq("140-g"), any());
+    }
+
+    @Test
+    void sinLasReglasDelPeriodo_cuandoSeAsigna_entoncesNoGuarda() {
+        conTodo(version(), NADA);
+        when(actividades.reglas(PERIODO)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> servicio.asignar(solicitud("140-b", "4", null)))
+                .isInstanceOf(PeriodoSinAbrir.class);
+        assertNoGuardoNada();
+    }
+
+    @Test
+    void cuandoSeGuarda_entoncesEvaluaConLaVersionReleidaDentroDeLaTransaccion() {
+        conTodo(version(), NADA);
+        when(distributivos.bloquearVigente(PERIODO))
+                .thenReturn(Optional.of(version(enOtraCarrera("38"))));
+
+        assertThatThrownBy(() -> servicio.asignar(solicitud("140-b", "4", null)))
+                .isInstanceOf(HorasExcedidas.class);
+        assertNoGuardoNada();
+    }
+
+    private static ActividadNoLectiva enOtraCarrera(String horas) {
+        return new ActividadNoLectiva(
+                "AGRO",
+                DOCENTE,
+                "PEREZ LUIS",
+                "143-k",
+                "Eventos",
+                Componente.GESTION,
+                null,
+                null,
+                new BigDecimal(horas),
+                AHORA,
+                QUIEN);
+    }
+
+    private static AsignaturaParalelo claseDe16() {
+        return new AsignaturaParalelo(
+                new AsignaturaOfertada("BD-301", "Bases de datos", "06", "061"),
+                "A",
+                CARRERA,
+                new BigDecimal("16"),
+                false,
+                false);
+    }
+
+    private static VersionDistributivo conClase() {
+        return new VersionDistributivo(
+                VERSION,
+                1,
+                EstadoDeVersion.EDITABLE,
+                List.of(ParcialCarrera.nuevo(CARRERA)),
+                List.of(
+                        new Propuesta(
+                                "BD-301",
+                                "A",
+                                CARRERA,
+                                DOCENTE,
+                                "PEREZ LUIS",
+                                new Justificacion(TipoDeJustificacion.AFINIDAD, null),
+                                AHORA,
+                                QUIEN)),
+                List.of());
     }
 
     @Test
@@ -533,6 +675,11 @@ class AsignarActividadServicioTest {
         when(datos.ofertaDelPeriodo(PERIODO)).thenReturn(Optional.of(List.of()));
         when(datos.docentesActivos()).thenReturn(List.of(docente()));
         when(distributivos.vigenteDe(PERIODO)).thenReturn(Optional.of(version));
+        when(distributivos.bloquearVigente(PERIODO)).thenReturn(Optional.of(version));
+        when(actividades.reglas(PERIODO))
+                .thenReturn(
+                        Optional.of(
+                                new ReglasDelPeriodo(new BigDecimal("40"), new BigDecimal("16"))));
         when(actividades.catalogo(PERIODO))
                 .thenReturn(
                         Optional.of(

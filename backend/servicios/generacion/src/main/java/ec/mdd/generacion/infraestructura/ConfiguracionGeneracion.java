@@ -89,8 +89,9 @@ public class ConfiguracionGeneracion {
     public ConsultarSugerencia consultarSugerencia(
             DatosParaSugerencia datos,
             DatosParaAfinidad afinidad,
+            DatosParaActividades actividades,
             RepositorioDistributivos distributivos) {
-        return new ConsultarSugerenciaServicio(datos, afinidad, distributivos);
+        return new ConsultarSugerenciaServicio(datos, afinidad, actividades, distributivos);
     }
 
     /** Crear el distributivo y consultarlo (RF-56). */
@@ -109,11 +110,18 @@ public class ConfiguracionGeneracion {
     public ProponerDocente proponerDocente(
             DatosParaSugerencia datos,
             DatosParaAfinidad afinidad,
+            DatosParaActividades actividades,
             RepositorioDistributivos distributivos,
             RegistroDeCambios registro,
             Transaccion transaccion) {
         return new ProponerDocenteServicio(
-                datos, afinidad, distributivos, registro, transaccion, Clock.systemUTC());
+                datos,
+                afinidad,
+                actividades,
+                distributivos,
+                registro,
+                transaccion,
+                Clock.systemUTC());
     }
 
     /** Asignar y quitar actividades no lectivas (RF-26). */

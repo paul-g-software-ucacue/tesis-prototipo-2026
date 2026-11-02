@@ -3,7 +3,9 @@ package ec.mdd.generacion.puertos.salida;
 import ec.mdd.generacion.dominio.ActividadDelCatalogo;
 import ec.mdd.generacion.dominio.MetaDeProporcion;
 import ec.mdd.generacion.dominio.ProyectosYCargosDelDocente;
+import ec.mdd.generacion.dominio.ReglasDelPeriodo;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /** Lo que otros servicios saben y hace falta para asignar actividades (RF-26, ADR-023). */
@@ -29,4 +31,18 @@ public interface DatosParaActividades {
      * @return vacío si el periodo no tiene versión
      */
     Optional<MetaDeProporcion> meta(String periodo);
+
+    /**
+     * Las cifras de las reglas duras en la versión que rige el periodo.
+     *
+     * @return vacío si el periodo no tiene versión
+     */
+    Optional<ReglasDelPeriodo> reglas(String periodo);
+
+    /**
+     * Quiénes participan en proyectos asignables del periodo, con los tipos de esos proyectos.
+     *
+     * @return por identificación; quien no está no tiene proyectos
+     */
+    Map<String, List<String>> docentesConProyecto(String periodo);
 }

@@ -13,8 +13,10 @@ import ec.mdd.docentes.dominio.RolDeParticipante;
 import ec.mdd.docentes.dominio.TipoDeCargo;
 import ec.mdd.docentes.dominio.TipoDeProyecto;
 import ec.mdd.docentes.puertos.entrada.ConsultarDocentesActivos;
+import ec.mdd.docentes.puertos.entrada.ConsultarDocentesConProyecto;
 import ec.mdd.docentes.puertos.entrada.ConsultarFormacion;
 import ec.mdd.docentes.puertos.entrada.ConsultarProyectosYCargos;
+import ec.mdd.docentes.puertos.entrada.DocenteConProyecto;
 import ec.mdd.docentes.puertos.entrada.DocenteNoEncontrado;
 import ec.mdd.docentes.puertos.entrada.ProyectosYCargos;
 import ec.mdd.plataforma.errores.ErroresAutoConfiguracion;
@@ -23,6 +25,7 @@ import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -182,6 +185,36 @@ class InternoDocentesContratoTest {
         contrato.validar(resultado);
     }
 
+    @Test
+    void dadoUnProceso_cuandoConsultaLosConProyecto_entonces200SoloConLoNecesario()
+            throws Exception {
+        MvcResult resultado = pedirConProyecto(deProceso());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString())
+                .isEqualTo(
+                        "[{\"docente\":\""
+                                + DocentesDePrueba.CEDULA
+                                + "\",\"tipos\":[\"INVESTIGACION\",\"VINCULACION\"]}]");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnTokenDeUsuario_cuandoConsultaLosConProyecto_entonces403() throws Exception {
+        MvcResult resultado = pedirConProyecto(jwt());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(403);
+        contrato.validar(resultado);
+    }
+
+    private MvcResult pedirConProyecto(JwtRequestPostProcessor token) throws Exception {
+        return mvc.perform(
+                        get("/interno/docentes/con-proyecto")
+                                .param("periodo", "2026-I")
+                                .with(token))
+                .andReturn();
+    }
+
     private MvcResult pedirProyectosYCargos(
             String docente, String periodo, JwtRequestPostProcessor token) throws Exception {
         return mvc.perform(
@@ -193,6 +226,17 @@ class InternoDocentesContratoTest {
 
     @TestConfiguration(proxyBeanMethods = false)
     static class Dobles {
+
+        @Bean
+        ConsultarDocentesConProyecto consultarDocentesConProyecto() {
+            return periodo ->
+                    List.of(
+                            new DocenteConProyecto(
+                                    DocentesDePrueba.CEDULA,
+                                    Set.of(
+                                            TipoDeProyecto.VINCULACION,
+                                            TipoDeProyecto.INVESTIGACION)));
+        }
 
         @Bean
         ConsultarProyectosYCargos consultarProyectosYCargos() {

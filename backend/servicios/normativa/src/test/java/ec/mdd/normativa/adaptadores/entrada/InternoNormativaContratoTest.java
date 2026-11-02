@@ -12,9 +12,11 @@ import ec.mdd.normativa.puertos.entrada.ActividadesDeLaVersion;
 import ec.mdd.normativa.puertos.entrada.ConsultarActividadesDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarPesosDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarProporcionDelPeriodo;
+import ec.mdd.normativa.puertos.entrada.ConsultarReglasDeAsignacion;
 import ec.mdd.normativa.puertos.entrada.PeriodoSinVersion;
 import ec.mdd.normativa.puertos.entrada.PesosDeLaVersion;
 import ec.mdd.normativa.puertos.entrada.ProporcionDeLaVersion;
+import ec.mdd.normativa.puertos.entrada.ReglasDeLaVersion;
 import ec.mdd.plataforma.errores.ErroresAutoConfiguracion;
 import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
 import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
@@ -145,6 +147,42 @@ class InternoNormativaContratoTest {
         contrato.validar(resultado);
     }
 
+    @Test
+    void dadoUnProceso_cuandoConsultaLasReglas_entonces200ConLosTopes() throws Exception {
+        MvcResult resultado = pedirReglas("2026-I", deProceso());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString())
+                .isEqualTo(
+                        "{\"periodo\":\"2026-I\",\"version\":2,\"horasMaximasDocente\":40,"
+                                + "\"horasClaseConProyecto\":16}");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnPeriodoSinVersion_cuandoConsultaLasReglas_entonces404() throws Exception {
+        MvcResult resultado = pedirReglas("2099-I", deProceso());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(404);
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnTokenDeUsuario_cuandoConsultaLasReglas_entonces403() throws Exception {
+        MvcResult resultado = pedirReglas("2026-I", jwt());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(403);
+        contrato.validar(resultado);
+    }
+
+    private MvcResult pedirReglas(String periodo, JwtRequestPostProcessor token) throws Exception {
+        return mvc.perform(
+                        get("/interno/normativa/periodos/%s/reglas-de-asignacion"
+                                        .formatted(periodo))
+                                .with(token))
+                .andReturn();
+    }
+
     private MvcResult pedirProporcion(String periodo, JwtRequestPostProcessor token)
             throws Exception {
         return mvc.perform(get(RUTA_PROPORCION.formatted(periodo)).with(token)).andReturn();
@@ -166,6 +204,16 @@ class InternoNormativaContratoTest {
 
     @TestConfiguration(proxyBeanMethods = false)
     static class Dobles {
+
+        @Bean
+        ConsultarReglasDeAsignacion consultarReglasDeAsignacion() {
+            return periodo -> {
+                if (!"2026-I".equals(periodo)) {
+                    throw new PeriodoSinVersion(periodo);
+                }
+                return new ReglasDeLaVersion(2, new BigDecimal("40"), new BigDecimal("16"));
+            };
+        }
 
         @Bean
         ConsultarProporcionDelPeriodo consultarProporcionDelPeriodo() {

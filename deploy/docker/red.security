@@ -1,0 +1,2 @@
+# Propiedades de seguridad de Java para los contenedores (D-84).
+networkaddress.cache.negative.ttl=0

@@ -9,6 +9,7 @@
 !frontend/
 !deploy/Caddyfile
 !deploy/docker/caddy/
+!deploy/docker/red.security
 !deploy/desplegar.sh
 !deploy/equipo/compose.demo.yml
 !deploy/equipo/probar_humo.sh

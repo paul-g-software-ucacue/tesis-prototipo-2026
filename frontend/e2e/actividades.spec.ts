@@ -166,7 +166,7 @@ async function abrir(pagina: Page) {
       ...(proyecto && { proyecto, nombreProyecto: 'Monitoreo de hatos' }),
     };
     guardadas.push(guardada);
-    await ruta.fulfill({ json: { actividad: guardada, horasSuficientes: true } });
+    await ruta.fulfill({ json: { actividad: guardada } });
   });
   await pagina.goto('/iniciar-sesion');
   await ingresar(pagina, 'coordinacion.demo');

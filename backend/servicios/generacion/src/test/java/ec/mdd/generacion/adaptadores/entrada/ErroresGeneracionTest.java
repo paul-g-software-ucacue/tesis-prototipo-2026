@@ -12,6 +12,7 @@ import ec.mdd.generacion.puertos.entrada.DistributivoNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.DistributivoRepetido;
 import ec.mdd.generacion.puertos.entrada.DocenteNoActivo;
 import ec.mdd.generacion.puertos.entrada.DocenteNoEncontrado;
+import ec.mdd.generacion.puertos.entrada.HorasExcedidas;
 import ec.mdd.generacion.puertos.entrada.ParaleloNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.ParaleloRetirado;
 import ec.mdd.generacion.puertos.entrada.PeriodoCerrado;
@@ -20,6 +21,7 @@ import ec.mdd.generacion.puertos.entrada.PeriodoNoListo;
 import ec.mdd.generacion.puertos.entrada.PeriodoSinAbrir;
 import ec.mdd.generacion.puertos.entrada.PropuestaNoEncontrada;
 import ec.mdd.generacion.puertos.entrada.SinDistributivo;
+import ec.mdd.generacion.puertos.entrada.TopeDeClase;
 import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
 import ec.mdd.plataforma.pruebas.VerificadorDeCatalogo;
 import org.junit.jupiter.api.Test;
@@ -68,6 +70,8 @@ class ErroresGeneracionTest {
                                 ActividadNoEncontrada.class,
                                 "GENERACION_ACTIVIDAD_NO_ENCONTRADA",
                                 404),
+                        tuple(HorasExcedidas.class, "GENERACION_HORAS_EXCEDIDAS", 409),
+                        tuple(TopeDeClase.class, "GENERACION_TOPE_DE_CLASE", 409),
                         tuple(DocenteNoEncontrado.class, "GENERACION_DOCENTE_NO_ENCONTRADO", 404));
     }
 }

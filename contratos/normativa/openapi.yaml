@@ -154,6 +154,40 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /interno/normativa/periodos/{periodo}/reglas-de-asignacion:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        example: 2025-1
+    get:
+      tags: [Interno]
+      operationId: consultarReglasDeAsignacion
+      summary: Devuelve las cifras de las reglas duras de una asignación en el periodo.
+      description: >-
+        Solo entre procesos, con el token de proceso: lo usa Generación para validar cada asignación
+        (RF-28, ADR-023). El tope de horas de RN-02 y el de clase de RN-13, de la versión que rige el
+        periodo. Un periodo sin versión responde 404.
+      responses:
+        '200':
+          description: La versión y sus dos topes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReglasDeAsignacion'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrada'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
   /interno/normativa/periodos/{periodo}/proporcion:
     parameters:
       - name: periodo
@@ -612,6 +646,21 @@ components:
           type: integer
           minimum: 1
           example: 1
+    ReglasDeAsignacion:
+      type: object
+      required: [periodo, version, horasMaximasDocente, horasClaseConProyecto]
+      properties:
+        periodo:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        version:
+          type: integer
+          minimum: 1
+        horasMaximasDocente:
+          description: El tope de horas de un docente (RN-02).
+          type: number
+        horasClaseConProyecto:
+          description: El tope de horas de clase de un docente con proyecto (RN-13).
+          type: number
     ProporcionDelPeriodo:
       type: object
       required: [periodo, version, clase, otrasDocencia]

@@ -16,6 +16,14 @@ public interface RepositorioDistributivos {
     Optional<VersionDistributivo> vigenteDe(String periodo);
 
     /**
+     * La versión vigente, bloqueada hasta que termine la transacción (D-83). Quien llega después
+     * espera y lee lo que guardó el primero. Se llama dentro de una transacción.
+     *
+     * @return vacío si el periodo no tiene distributivo
+     */
+    Optional<VersionDistributivo> bloquearVigente(String periodo);
+
+    /**
      * Guarda un distributivo nuevo con su versión y sus parciales.
      *
      * @throws DistributivoRepetido si el periodo ya tiene uno

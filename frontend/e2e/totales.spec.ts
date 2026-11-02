@@ -101,7 +101,6 @@ async function abrir(pagina: Page, exceso = 0) {
           componente: 'OTRAS_DOCENCIA',
           horas: 4,
         },
-        horasSuficientes: true,
       },
     }),
   );

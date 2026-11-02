@@ -7,6 +7,7 @@ import ec.mdd.generacion.adaptadores.entrada.api.MetaDeProporcion;
 import ec.mdd.generacion.adaptadores.entrada.api.Proporcion;
 import ec.mdd.generacion.puertos.entrada.CargaDelDocente;
 import ec.mdd.generacion.puertos.entrada.ConsultarCargaHoraria;
+import java.math.BigDecimal;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
@@ -46,16 +47,16 @@ class CargaHorariaControlador implements CargaHorariaApi {
 
     private static CargaHoraria respuesta(CargaDelDocente delDocente) {
         ec.mdd.generacion.dominio.CargaHoraria carga = delDocente.carga();
-        int contratadas = delDocente.horasContratadas();
+        BigDecimal limite = delDocente.limite();
         CargaHoraria respuesta =
                 new CargaHoraria(
                         delDocente.docente(),
                         delDocente.nombreDocente(),
-                        contratadas,
+                        delDocente.horasContratadas(),
                         totales(carga),
                         carga.asignadas(),
-                        carga.disponibles(contratadas),
-                        carga.exceso(contratadas),
+                        carga.disponibles(limite),
+                        carga.exceso(limite),
                         new MetaDeProporcion(
                                 delDocente.meta().clase(), delDocente.meta().otrasDocencia()));
         carga.proporcion()

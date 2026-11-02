@@ -67,7 +67,7 @@ components:
           example: SEGURIDAD_NO_AUTENTICADO
         detalles:
           type: array
-          description: Campos que no pasaron la validación; solo en errores de entrada.
+          description: Campos que no pasaron la validación, o datos para corregir una regla, como las horas que quedan.
           items:
             $ref: '#/components/schemas/DetalleError'
         idIncidente:

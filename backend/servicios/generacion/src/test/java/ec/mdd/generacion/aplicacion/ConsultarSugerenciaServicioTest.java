@@ -23,6 +23,8 @@ import ec.mdd.generacion.dominio.ParcialCarrera;
 import ec.mdd.generacion.dominio.PesosAfinidad;
 import ec.mdd.generacion.dominio.PesosDelPeriodo;
 import ec.mdd.generacion.dominio.Propuesta;
+import ec.mdd.generacion.dominio.ReglaDeAsignacion;
+import ec.mdd.generacion.dominio.ReglasDelPeriodo;
 import ec.mdd.generacion.dominio.Sugerencia;
 import ec.mdd.generacion.dominio.TipoDeJustificacion;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
@@ -33,6 +35,7 @@ import ec.mdd.generacion.puertos.entrada.ParaleloRetirado;
 import ec.mdd.generacion.puertos.entrada.PeriodoSinAbrir;
 import ec.mdd.generacion.puertos.entrada.PropuestaVista;
 import ec.mdd.generacion.puertos.entrada.SugerenciaDelParalelo;
+import ec.mdd.generacion.puertos.salida.DatosParaActividades;
 import ec.mdd.generacion.puertos.salida.DatosParaAfinidad;
 import ec.mdd.generacion.puertos.salida.DatosParaSugerencia;
 import ec.mdd.generacion.puertos.salida.RepositorioDistributivos;
@@ -40,6 +43,7 @@ import ec.mdd.plataforma.eventos.ProcesoConError;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -101,9 +105,10 @@ class ConsultarSugerenciaServicioTest {
 
     private final DatosParaSugerencia datos = mock(DatosParaSugerencia.class);
     private final DatosParaAfinidad afinidad = mock(DatosParaAfinidad.class);
+    private final DatosParaActividades actividades = mock(DatosParaActividades.class);
     private final RepositorioDistributivos distributivos = mock(RepositorioDistributivos.class);
     private final ConsultarSugerenciaServicio servicio =
-            new ConsultarSugerenciaServicio(datos, afinidad, distributivos);
+            new ConsultarSugerenciaServicio(datos, afinidad, actividades, distributivos);
 
     @Test
     void dadasPropuestasEnElPeriodo_cuandoSeConsulta_entoncesLasHorasSonLasReales() {
@@ -212,6 +217,88 @@ class ConsultarSugerenciaServicioTest {
     }
 
     @Test
+    void conUnCandidatoSinHoras_cuandoSeConsulta_entoncesDiceElMotivo() {
+        conLosDatos();
+        when(distributivos.vigenteDe(PERIODO))
+                .thenReturn(Optional.of(conClaseYGestion(null, null, "38")));
+
+        assertThat(servicio.sugerencia(PERIODO, "POO-204", "A", TODAS).sugerencia().candidatos())
+                .extracting(Candidato::motivo)
+                .containsExactly(ReglaDeAsignacion.RN_02);
+    }
+
+    @Test
+    void conUnCandidatoConHoras_cuandoSeConsulta_entoncesSeLePuedeProponer() {
+        conLosDatos();
+
+        assertThat(servicio.sugerencia(PERIODO, "POO-204", "A", TODAS).sugerencia().candidatos())
+                .extracting(Candidato::motivo)
+                .containsOnlyNulls();
+    }
+
+    @Test
+    void conProyectoYElTopeDeClase_cuandoSeConsulta_entoncesDiceElMotivo() {
+        conLosDatos();
+        AsignaturaParalelo otra = otraClase("14");
+        when(datos.ofertaDelPeriodo(PERIODO)).thenReturn(Optional.of(List.of(OFERTADO, otra)));
+        when(distributivos.vigenteDe(PERIODO))
+                .thenReturn(Optional.of(conClaseYGestion("14", otra, null)));
+        when(actividades.docentesConProyecto(PERIODO))
+                .thenReturn(Map.of(DOCENTE.identificacion(), List.of("VINCULACION")));
+
+        assertThat(servicio.sugerencia(PERIODO, "POO-204", "A", TODAS).sugerencia().candidatos())
+                .extracting(Candidato::motivo)
+                .containsExactly(ReglaDeAsignacion.RN_13);
+    }
+
+    @Test
+    void conUnProyectoDePracticas_cuandoSeConsulta_entoncesNoHayTopeDeClase() {
+        conLosDatos();
+        AsignaturaParalelo otra = otraClase("14");
+        when(datos.ofertaDelPeriodo(PERIODO)).thenReturn(Optional.of(List.of(OFERTADO, otra)));
+        when(distributivos.vigenteDe(PERIODO))
+                .thenReturn(Optional.of(conClaseYGestion("14", otra, null)));
+        when(actividades.docentesConProyecto(PERIODO))
+                .thenReturn(
+                        Map.of(DOCENTE.identificacion(), List.of("PRACTICAS_PREPROFESIONALES")));
+
+        assertThat(servicio.sugerencia(PERIODO, "POO-204", "A", TODAS).sugerencia().candidatos())
+                .extracting(Candidato::motivo)
+                .containsOnlyNulls();
+    }
+
+    @Test
+    void dadoElYaPropuestoEnElParalelo_cuandoSeConsulta_entoncesNoSeCuentaDosVeces() {
+        conLosDatos();
+        when(distributivos.vigenteDe(PERIODO))
+                .thenReturn(Optional.of(conClaseYGestion("4", OFERTADO, "34")));
+
+        assertThat(servicio.sugerencia(PERIODO, "POO-204", "A", TODAS).sugerencia().candidatos())
+                .extracting(Candidato::motivo)
+                .containsOnlyNulls();
+    }
+
+    @Test
+    void unExcedidoYaPropuestoEnElParalelo_cuandoSeConsulta_entoncesNoSaleConMotivo() {
+        conLosDatos();
+        when(distributivos.vigenteDe(PERIODO))
+                .thenReturn(Optional.of(conClaseYGestion("4", OFERTADO, "39")));
+
+        assertThat(servicio.sugerencia(PERIODO, "POO-204", "A", TODAS).sugerencia().candidatos())
+                .extracting(Candidato::motivo)
+                .containsOnlyNulls();
+    }
+
+    @Test
+    void sinLasReglasDelPeriodo_cuandoSeConsulta_entoncesPeriodoSinAbrir() {
+        conLosDatos();
+        when(actividades.reglas(PERIODO)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> servicio.sugerencia(PERIODO, "POO-204", "A", TODAS))
+                .isInstanceOf(PeriodoSinAbrir.class);
+    }
+
+    @Test
     void dadoUnParaleloQueNoExiste_cuandoSeConsulta_entoncesNoPideNadaMas() {
         when(datos.paralelo(PERIODO, "POO-204", "A")).thenReturn(Optional.empty());
 
@@ -234,6 +321,7 @@ class ConsultarSugerenciaServicioTest {
 
     @Test
     void dadoUnParaleloDeSuCarrera_cuandoSeConsulta_entoncesResponde() {
+        conLosDatos();
         when(datos.paralelo(PERIODO, "POO-204", "A")).thenReturn(Optional.of(OFERTADO));
         when(afinidad.pesos(PERIODO)).thenReturn(Optional.of(PESOS));
         when(datos.docentesActivos()).thenReturn(List.of(DOCENTE));
@@ -317,6 +405,41 @@ class ConsultarSugerenciaServicioTest {
         when(afinidad.pesos(PERIODO)).thenReturn(Optional.of(PESOS));
         when(datos.docentesActivos()).thenReturn(List.of(DOCENTE));
         when(distributivos.vigenteDe(PERIODO)).thenReturn(Optional.empty());
+        when(datos.ofertaDelPeriodo(PERIODO)).thenReturn(Optional.of(List.of(OFERTADO)));
+        when(actividades.reglas(PERIODO))
+                .thenReturn(
+                        Optional.of(
+                                new ReglasDelPeriodo(new BigDecimal("40"), new BigDecimal("16"))));
+        when(actividades.docentesConProyecto(PERIODO)).thenReturn(Map.of());
+    }
+
+    private static VersionDistributivo conClaseYGestion(
+            String horasDeClase, AsignaturaParalelo clase, String gestion) {
+        return new VersionDistributivo(
+                UUID.randomUUID(),
+                1,
+                EstadoDeVersion.EDITABLE,
+                List.of(ParcialCarrera.nuevo("TDS")),
+                horasDeClase == null ? List.of() : List.of(propuesta(clase)),
+                gestion == null
+                        ? List.of()
+                        : List.of(
+                                new ActividadNoLectiva(
+                                        "AGRO",
+                                        DOCENTE.identificacion(),
+                                        DOCENTE.nombre(),
+                                        "143-k",
+                                        "Eventos",
+                                        Componente.GESTION,
+                                        null,
+                                        null,
+                                        new BigDecimal(gestion),
+                                        Instant.parse("2026-11-01T15:00:00Z"),
+                                        "coordinacion.demo")));
+    }
+
+    private static AsignaturaParalelo otraClase(String horas) {
+        return new AsignaturaParalelo(BD, "B", "AGRO", new BigDecimal(horas), false, false);
     }
 
     private static VersionDistributivo version(Propuesta... propuestas) {

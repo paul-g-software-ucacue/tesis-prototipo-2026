@@ -2,9 +2,8 @@ package ec.mdd.generacion.aplicacion;
 
 import ec.mdd.generacion.dominio.AsignaturaParalelo;
 import ec.mdd.generacion.dominio.CalculadoraAfinidad;
+import ec.mdd.generacion.dominio.CargaHoraria;
 import ec.mdd.generacion.dominio.DocenteActivo;
-import ec.mdd.generacion.dominio.HorasDelDocente;
-import ec.mdd.generacion.dominio.HorasDelPeriodo;
 import ec.mdd.generacion.dominio.Justificacion;
 import ec.mdd.generacion.dominio.ParcialCarrera;
 import ec.mdd.generacion.dominio.PesosDelPeriodo;
@@ -22,6 +21,7 @@ import ec.mdd.generacion.puertos.entrada.PropuestaVista;
 import ec.mdd.generacion.puertos.entrada.SinDistributivo;
 import ec.mdd.generacion.puertos.entrada.SolicitudDePropuesta;
 import ec.mdd.generacion.puertos.salida.CambioDeDistributivo;
+import ec.mdd.generacion.puertos.salida.DatosParaActividades;
 import ec.mdd.generacion.puertos.salida.DatosParaAfinidad;
 import ec.mdd.generacion.puertos.salida.DatosParaSugerencia;
 import ec.mdd.generacion.puertos.salida.RegistroDeCambios;
@@ -37,14 +37,15 @@ import java.util.Optional;
 
 /**
  * Propone y quita docentes. El puntaje se recalcula aquí: la justificación no depende de lo que
- * diga la pantalla. Sin horas suficientes se guarda igual, con un aviso, hasta F07-H02 (D-78).
- * Primero consulta y después guarda, para no abrir una transacción durante una llamada a otro
- * proceso.
+ * diga la pantalla. Una regla dura no se levanta con una justificación (RF-28). Primero consulta y
+ * después, ya en la transacción, bloquea la versión, evalúa y guarda (D-83): así dos coordinadores
+ * no se pasan de las horas, y no hay una transacción abierta durante una llamada a otro proceso.
  */
 public final class ProponerDocenteServicio implements ProponerDocente {
 
     private final DatosParaSugerencia datos;
     private final DatosParaAfinidad afinidad;
+    private final DatosParaActividades actividades;
     private final RepositorioDistributivos distributivos;
     private final RegistroDeCambios registro;
     private final Transaccion transaccion;
@@ -55,12 +56,14 @@ public final class ProponerDocenteServicio implements ProponerDocente {
     public ProponerDocenteServicio(
             DatosParaSugerencia datos,
             DatosParaAfinidad afinidad,
+            DatosParaActividades actividades,
             RepositorioDistributivos distributivos,
             RegistroDeCambios registro,
             Transaccion transaccion,
             Clock reloj) {
         this.datos = datos;
         this.afinidad = afinidad;
+        this.actividades = actividades;
         this.distributivos = distributivos;
         this.registro = registro;
         this.transaccion = transaccion;
@@ -93,10 +96,14 @@ public final class ProponerDocenteServicio implements ProponerDocente {
         Justificacion justificacion =
                 Justificacion.para(
                         puntaje, pesos.minimoAfinidad(), uno.troncoComun(), solicitud.texto());
-        List<AsignaturaParalelo> oferta = datos.ofertaDelPeriodo(periodo).orElse(List.of());
-        HorasDelDocente horas =
-                HorasDelPeriodo.calcular(version.propuestas(), version.actividades(), oferta, uno)
-                        .getOrDefault(docente.identificacion(), HorasDelDocente.NINGUNA);
+        ReglasDeLaAsignacion reglas =
+                new ReglasDeLaAsignacion(
+                        docente,
+                        actividades
+                                .proyectosYCargos(docente.identificacion(), periodo)
+                                .orElseThrow(DocenteNoActivo::new),
+                        datos.ofertaDelPeriodo(periodo).orElse(List.of()),
+                        actividades.reglas(periodo).orElseThrow(PeriodoSinAbrir::new));
         Instant ahora = reloj.instant();
         Propuesta propuesta =
                 new Propuesta(
@@ -108,23 +115,25 @@ public final class ProponerDocenteServicio implements ProponerDocente {
                         justificacion,
                         ahora,
                         solicitud.quien());
-        Optional<Propuesta> anterior =
-                version.propuestaDe(propuesta.asignatura(), propuesta.paralelo());
-        transaccion.ejecutar(
+        return transaccion.ejecutar(
                 () -> {
-                    if (version.parcialDe(uno.carrera()).isEmpty()) {
+                    VersionDistributivo actual =
+                            distributivos
+                                    .bloquearVigente(periodo)
+                                    .orElseThrow(SinDistributivo::new);
+                    actual.exigirEditable(uno.carrera());
+                    CargaHoraria carga = reglas.exigir(actual, actual.conPropuesta(propuesta));
+                    if (actual.parcialDe(uno.carrera()).isEmpty()) {
                         distributivos.agregarParcial(
-                                version.id(), ParcialCarrera.nuevo(uno.carrera()));
+                                actual.id(), ParcialCarrera.nuevo(uno.carrera()));
                     }
-                    distributivos.guardarPropuesta(version.id(), propuesta);
+                    Optional<Propuesta> anterior =
+                            actual.propuestaDe(propuesta.asignatura(), propuesta.paralelo());
+                    distributivos.guardarPropuesta(actual.id(), propuesta);
                     registro.registrar(
                             cambioGuardado(periodo, propuesta, anterior, solicitud.quien(), ahora));
-                    return propuesta;
+                    return new PropuestaVista(propuesta, false, reglas.sinExceso(carga));
                 });
-        return new PropuestaVista(
-                propuesta,
-                false,
-                horas.disponibles(docente.horasContratadas()).compareTo(uno.horasSemanales()) >= 0);
     }
 
     @Override

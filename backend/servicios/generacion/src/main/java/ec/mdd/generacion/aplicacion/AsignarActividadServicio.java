@@ -3,8 +3,6 @@ package ec.mdd.generacion.aplicacion;
 import ec.mdd.generacion.dominio.ActividadDelCatalogo;
 import ec.mdd.generacion.dominio.ActividadNoLectiva;
 import ec.mdd.generacion.dominio.DocenteActivo;
-import ec.mdd.generacion.dominio.HorasDelDocente;
-import ec.mdd.generacion.dominio.HorasDelPeriodo;
 import ec.mdd.generacion.dominio.ParcialCarrera;
 import ec.mdd.generacion.dominio.ProyectoDelDocente;
 import ec.mdd.generacion.dominio.ProyectosYCargosDelDocente;
@@ -104,30 +102,33 @@ public final class AsignarActividadServicio implements AsignarActividad {
                         solicitud.horas(),
                         ahora,
                         solicitud.quien());
-        BigDecimal disponibles =
-                HorasDelPeriodo.sinLaActividad(
-                                version.propuestas(),
-                                version.actividades(),
-                                datos.ofertaDelPeriodo(periodo).orElse(List.of()),
-                                actividad)
-                        .getOrDefault(docente.identificacion(), HorasDelDocente.NINGUNA)
-                        .disponibles(docente.horasContratadas());
-        Optional<ActividadNoLectiva> anterior =
-                version.actividadDe(
-                        carrera,
-                        docente.identificacion(),
-                        delCatalogo.codigo(),
-                        actividad.proyecto());
-        transaccion.ejecutar(
+        ReglasDeLaAsignacion reglas =
+                new ReglasDeLaAsignacion(
+                        docente,
+                        delDocente,
+                        datos.ofertaDelPeriodo(periodo).orElse(List.of()),
+                        actividades.reglas(periodo).orElseThrow(PeriodoSinAbrir::new));
+        return transaccion.ejecutar(
                 () -> {
-                    if (version.parcialDe(carrera).isEmpty()) {
-                        distributivos.agregarParcial(version.id(), ParcialCarrera.nuevo(carrera));
+                    VersionDistributivo actual =
+                            distributivos
+                                    .bloquearVigente(periodo)
+                                    .orElseThrow(SinDistributivo::new);
+                    actual.exigirEditable(carrera);
+                    reglas.exigir(actual, actual.conActividad(actividad));
+                    if (actual.parcialDe(carrera).isEmpty()) {
+                        distributivos.agregarParcial(actual.id(), ParcialCarrera.nuevo(carrera));
                     }
-                    distributivos.guardarActividad(version.id(), actividad);
+                    Optional<ActividadNoLectiva> anterior =
+                            actual.actividadDe(
+                                    carrera,
+                                    docente.identificacion(),
+                                    delCatalogo.codigo(),
+                                    actividad.proyecto());
+                    distributivos.guardarActividad(actual.id(), actividad);
                     registro.registrar(cambioGuardado(periodo, actividad, anterior));
-                    return actividad;
+                    return new ActividadGuardada(actividad);
                 });
-        return new ActividadGuardada(actividad, disponibles.compareTo(actividad.horas()) >= 0);
     }
 
     @Override

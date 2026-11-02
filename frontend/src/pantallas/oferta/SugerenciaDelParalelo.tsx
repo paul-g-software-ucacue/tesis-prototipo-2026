@@ -38,6 +38,14 @@ const LARGO_MINIMO = 10;
 const LARGO_MAXIMO = 500;
 const TEXTO_OBLIGATORIO = 'Escribe por qué propones a este docente, en 10 a 500 caracteres.';
 
+const POR_QUE_NO_SE_PROPONE: Record<
+  NonNullable<DatosDelCandidato['motivoParaNoProponer']>,
+  string
+> = {
+  HORAS: 'No se le puede proponer: no le alcanzan las horas.',
+  TOPE_DE_CLASE: 'No se le puede proponer: su proyecto limita sus horas de clase.',
+};
+
 function textoDeLasHoras(candidato: DatosDelCandidato) {
   return [
     NOMBRE_DE_LA_DEDICACION[candidato.dedicacion],
@@ -186,6 +194,13 @@ function Candidatos({
   const accion = (candidato: DatosDelCandidato, conTexto: boolean) => {
     if (propuesta?.docente === candidato.identificacion) {
       return <Typography variant="body2">Propuesto</Typography>;
+    }
+    if (propone && candidato.motivoParaNoProponer) {
+      return (
+        <Typography variant="body2" sx={{ maxWidth: 200 }}>
+          {POR_QUE_NO_SE_PROPONE[candidato.motivoParaNoProponer]}
+        </Typography>
+      );
     }
     return propone ? (
       <Button

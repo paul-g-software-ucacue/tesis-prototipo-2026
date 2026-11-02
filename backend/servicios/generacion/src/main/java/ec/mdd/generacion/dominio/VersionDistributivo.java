@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 /**
  * Una versión del distributivo: sus parciales y todas sus propuestas forman un solo agregado
@@ -51,6 +52,38 @@ public record VersionDistributivo(
                 EstadoDeVersion.EDITABLE,
                 carreras.stream().distinct().sorted().map(ParcialCarrera::nuevo).toList(),
                 List.of());
+    }
+
+    /** La versión con esa propuesta, que reemplaza a la de su paralelo. No cambia esta versión. */
+    public VersionDistributivo conPropuesta(Propuesta propuesta) {
+        List<Propuesta> nuevas =
+                Stream.concat(
+                                propuestas.stream()
+                                        .filter(
+                                                una ->
+                                                        !una.esDe(
+                                                                propuesta.asignatura(),
+                                                                propuesta.paralelo())),
+                                Stream.of(propuesta))
+                        .toList();
+        return new VersionDistributivo(id, numero, estado, parciales, nuevas, actividades);
+    }
+
+    /** La versión con esa actividad, que reemplaza a la misma. No cambia esta versión. */
+    public VersionDistributivo conActividad(ActividadNoLectiva actividad) {
+        List<ActividadNoLectiva> nuevas =
+                Stream.concat(
+                                actividades.stream()
+                                        .filter(
+                                                una ->
+                                                        !una.esDe(
+                                                                actividad.carrera(),
+                                                                actividad.docente(),
+                                                                actividad.actividad(),
+                                                                actividad.proyecto())),
+                                Stream.of(actividad))
+                        .toList();
+        return new VersionDistributivo(id, numero, estado, parciales, propuestas, nuevas);
     }
 
     /** El parcial de esa carrera, si ya existe. */
