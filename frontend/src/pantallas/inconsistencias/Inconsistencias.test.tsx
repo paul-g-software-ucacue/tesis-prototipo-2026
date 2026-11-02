@@ -69,6 +69,18 @@ describe('Panel de inconsistencias', () => {
     ).toBeVisible();
   });
 
+  it('sus títulos tienen el tamaño de las demás pantallas', async () => {
+    await abrir();
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveClass('MuiTypography-h4');
+    expect(screen.getByRole('heading', { level: 2, name: /abiertas/ })).toHaveClass(
+      'MuiTypography-h5',
+    );
+    expect(screen.getByRole('heading', { level: 2, name: 'Justificadas' })).toHaveClass(
+      'MuiTypography-h5',
+    );
+  });
+
   it('pone primero las duras, en el orden que dice el servidor', async () => {
     const tabla = await abrir();
 
