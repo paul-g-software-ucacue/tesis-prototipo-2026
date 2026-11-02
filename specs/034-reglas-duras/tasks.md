@@ -170,7 +170,7 @@ Plan aprobado por el autor el 2026-11-01.
   - los criterios de terminado de la constitución (§6).
 
   Commit, push, PR en borrador con `Refs #51`, y marcarlo listo cuando sus comprobaciones pasen, sin empujar a la vez.
-- [ ] T032 Fusionar solo con la aprobación del autor y con todas las comprobaciones en verde. Verificar el despliegue en el equipo de demostración con evidencia (GitHub `demostracion` y los 8 contenedores sanos con la versión nueva). Antes de la comprobación, indicarle al autor qué probar. Después: la comprobación del autor, con SC-004, y el PR de evidencia con `Closes #51`, que dice qué no se vio en la demo.
+- [X] T032 Fusionar solo con la aprobación del autor y con todas las comprobaciones en verde. Verificar el despliegue en el equipo de demostración con evidencia (GitHub `demostracion` y los 8 contenedores sanos con la versión nueva). Antes de la comprobación, indicarle al autor qué probar. Después: la comprobación del autor, con SC-004, y el PR de evidencia con `Closes #51`, que dice qué no se vio en la demo.
 
 ---
 
