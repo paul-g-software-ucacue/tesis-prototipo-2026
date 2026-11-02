@@ -70,6 +70,7 @@ Registro de las comprobaciones de la historia (issue #51): las reglas duras al g
 | Horas excedidas | Con 14 de 20 h, 7 h más: «Horas laborales excedidas» y «Le quedan 6 h», con el formulario abierto y lo escrito | Comprobación del autor | 2026-11-01 |
 | Justo al límite | 6 h se guardan: 20 de 20 h y 0 disponibles | Comprobación del autor | 2026-11-01 |
 | Sin espacio | 0,5 h: rechazada con «Le quedan 0 h» | Comprobación del autor | 2026-11-01 |
+| Mensaje claro (SC-004) | 30 s en entender qué pasó y qué hacer (meta: menos de 1 minuto) | Medido por el autor | 2026-11-01 |
 | Reducir y repetir | 140 c) de 5 h a 0,5 h, y 140 b) otra vez con 6 h: se guardan, con las horas anteriores en el registro | Registro de cambios | 2026-11-01 |
 | Sugerencia | Sin «Proponer» y con «No se le puede proponer: no le alcanzan las horas.» | Comprobación del autor | 2026-11-01 |
 
@@ -78,7 +79,6 @@ Lo que no se vio en la demo, y queda cubierto por las pruebas:
 - **El tope de 16 h:** el único proyecto de la demo es de prácticas y está suspendido (`probar_reglas_duras.sh`, paso 3).
 - **Dos coordinadores a la vez y horas en otra carrera:** la demo tiene un solo coordinador (pasos 2, 4 y 5).
 - **Un docente excedido:** no hay ninguno, y por la pantalla ya no se puede crear (paso 7).
-- **SC-004:** el autor no tomó el tiempo, así que queda sin medir en la demo.
 
 ## Notas
 
