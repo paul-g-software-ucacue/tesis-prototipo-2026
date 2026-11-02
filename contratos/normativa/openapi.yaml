@@ -188,6 +188,40 @@ paths:
           $ref: '#/components/responses/NoEncontrada'
         '500':
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+  /interno/normativa/periodos/{periodo}/reglas-del-panel:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        example: 2025-1
+    get:
+      tags: [Interno]
+      operationId: consultarReglasDelPanel
+      summary: Devuelve las severidades y las cifras de las reglas del panel en el periodo.
+      description: >-
+        Solo entre procesos, con el token de proceso: lo usa Generación para el panel de
+        inconsistencias (RF-29, D-86, ADR-023). Todo sale de la versión que rige el periodo, y el
+        rango de RN-10 es el del Tipo 2, fijo en el prototipo. Un periodo sin versión responde 404.
+      responses:
+        '200':
+          description: La versión, sus severidades y sus cifras.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReglasDelPanel'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrada'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
   /interno/normativa/periodos/{periodo}/proporcion:
     parameters:
       - name: periodo
@@ -665,6 +699,45 @@ components:
           description: La severidad de RN-19 en la versión.
           type: string
           enum: [DURA, BLANDA]
+    ReglasDelPanel:
+      type: object
+      required: [periodo, version, severidades, horasMaximasDocente, metaClase, metaOtrasDocencia,
+        margenPuntos, gestoresMinimo, gestoresMaximo, actividadesObligatorias]
+      properties:
+        periodo:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        version:
+          type: integer
+          minimum: 1
+        severidades:
+          description: La severidad de cada regla del panel, por su identificador.
+          type: object
+          additionalProperties:
+            type: string
+            enum: [DURA, BLANDA]
+        horasMaximasDocente:
+          description: El tope de horas de un docente (RN-02).
+          type: number
+        metaClase:
+          description: El porcentaje de clase de RN-05.
+          type: number
+        metaOtrasDocencia:
+          description: El porcentaje de otras actividades de docencia de RN-05.
+          type: number
+        margenPuntos:
+          description: Los puntos que un docente puede apartarse de la meta (D-86).
+          type: number
+        gestoresMinimo:
+          description: El mínimo de docentes con cargo de gestión (RN-10).
+          type: integer
+        gestoresMaximo:
+          description: El máximo de docentes con cargo de gestión (RN-10).
+          type: integer
+        actividadesObligatorias:
+          description: Los códigos de las actividades que tienen que constar (RN-05).
+          type: array
+          items:
+            type: string
     ProporcionDelPeriodo:
       type: object
       required: [periodo, version, clase, otrasDocencia]

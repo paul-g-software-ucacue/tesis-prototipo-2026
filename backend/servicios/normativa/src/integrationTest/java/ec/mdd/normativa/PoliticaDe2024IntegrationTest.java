@@ -131,7 +131,7 @@ class PoliticaDe2024IntegrationTest {
                         Map.entry("RN-22", "DURA"),
                         Map.entry("RN-24", "—"),
                         Map.entry("RN-25", "DURA"));
-        assertThat(parametros).hasSize(37);
+        assertThat(parametros).hasSize(38);
         // F04-H03: los pesos de RN-24 y el mínimo de RN-19 (escenario «Valores por defecto»).
         assertThat(parametros)
                 .containsEntry("RN-24.cuarto_nivel_campo_especifico", new BigDecimal("3.00"))
@@ -146,6 +146,7 @@ class PoliticaDe2024IntegrationTest {
                 .containsEntry("RN-01.dedicacion_tiempo_parcial_maxima", new BigDecimal("19.00"))
                 .containsEntry("RN-02.horas_maximas_docente", new BigDecimal("40.00"))
                 .containsEntry("RN-05.porcentaje_clase", new BigDecimal("60.00"))
+                .containsEntry("RN-05.margen_puntos", new BigDecimal("5.00"))
                 .containsEntry("RN-06.t2_hasta", new BigDecimal("600.00"))
                 .containsEntry("RN-09.estudiantes_minimos", new BigDecimal("500.00"))
                 .containsEntry("RN-10.t2_maximo", new BigDecimal("11.00"))
@@ -176,7 +177,8 @@ class PoliticaDe2024IntegrationTest {
                                         + " jsonb_array_length(detalle -> 'cambios') as cambios"
                                         + " from normativa.registro_cambio"
                                         + " where accion = 'VERSION_EDITADA'"
-                                        + " and detalle::text not like '%actividades%'")
+                                        + " and detalle::text not like '%actividades%'"
+                                        + " and detalle::text not like '%margen_puntos%'")
                         .query()
                         .singleRow();
         List<Map<String, Object>> severidades =

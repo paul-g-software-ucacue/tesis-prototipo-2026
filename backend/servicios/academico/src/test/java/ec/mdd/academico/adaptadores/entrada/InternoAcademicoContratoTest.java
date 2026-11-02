@@ -123,6 +123,7 @@ class InternoAcademicoContratoTest {
                                 + "\"carrera\":\"TDS\",\"paralelo\":\"A_NOCTURNA\","
                                 + "\"campoAmplio\":\"06\",\"campoEspecifico\":\"061\","
                                 + "\"troncoComun\":true,\"horasSemanales\":2.5,"
+                                + "\"horasDeLaAsignatura\":4,"
                                 + "\"estado\":\"OFERTADA\",\"periodoCerrado\":false}")
                 .doesNotContain("palabrasClave", "estudiantes", "sede");
         contrato.validar(resultado);
@@ -282,6 +283,7 @@ class InternoAcademicoContratoTest {
                     "061",
                     true,
                     new BigDecimal("2.5"),
+                    new BigDecimal("4"),
                     estado,
                     false);
         }

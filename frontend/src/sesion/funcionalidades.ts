@@ -76,6 +76,17 @@ export const ESCRITURA_DE_LA_PROPUESTA: readonly {
   tipo: TipoDePermiso;
 }[] = [{ funcionalidad: 'OFERTA', tipo: 'ESCRITURA' }];
 
+/** Quién abre el panel de inconsistencias (D-87). Lo comparten la ruta y la entrada del menú. */
+export const LECTURA_DEL_PANEL: readonly { funcionalidad: string; tipo: TipoDePermiso }[] = [
+  { funcionalidad: 'CONSOLIDACION', tipo: 'LECTURA' },
+  { funcionalidad: 'DISTRIBUTIVO', tipo: 'ESCRITURA' },
+];
+
+/** Quién justifica en el panel: Consolidación, no quien solo lo lee (D-87). */
+export const ESCRITURA_DEL_PANEL: readonly { funcionalidad: string; tipo: TipoDePermiso }[] = [
+  { funcionalidad: 'CONSOLIDACION', tipo: 'ESCRITURA' },
+];
+
 /**
  * Quién lee los docentes con su ficha académica: quien lee los docentes, el distributivo o los
  * catálogos (D-70, F03-H04). Lo comparten la ruta y la entrada del menú. También leen así los

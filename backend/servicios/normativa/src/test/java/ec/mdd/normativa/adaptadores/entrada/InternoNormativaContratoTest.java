@@ -14,15 +14,18 @@ import ec.mdd.normativa.puertos.entrada.ConsultarActividadesDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarPesosDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarProporcionDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarReglasDeAsignacion;
+import ec.mdd.normativa.puertos.entrada.ConsultarReglasDelPanel;
 import ec.mdd.normativa.puertos.entrada.PeriodoSinVersion;
 import ec.mdd.normativa.puertos.entrada.PesosDeLaVersion;
 import ec.mdd.normativa.puertos.entrada.ProporcionDeLaVersion;
 import ec.mdd.normativa.puertos.entrada.ReglasDeLaVersion;
+import ec.mdd.normativa.puertos.entrada.ReglasDelPanelDeLaVersion;
 import ec.mdd.plataforma.errores.ErroresAutoConfiguracion;
 import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
 import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -149,6 +152,35 @@ class InternoNormativaContratoTest {
     }
 
     @Test
+    void dadoUnProceso_cuandoConsultaLasReglasDelPanel_entonces200ConTodo() throws Exception {
+        MvcResult resultado =
+                mvc.perform(
+                                get("/interno/normativa/periodos/2026-I/reglas-del-panel")
+                                        .with(deProceso()))
+                        .andReturn();
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("\"version\":2")
+                .contains("\"severidades\":{\"RN-05\":\"BLANDA\"}")
+                .contains("\"margenPuntos\":5")
+                .contains("\"gestoresMinimo\":8")
+                .contains("\"actividadesObligatorias\":[\"140-b\",\"140-g\"]");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnPeriodoSinVersion_cuandoConsultaLasReglasDelPanel_entonces404() throws Exception {
+        MvcResult resultado =
+                mvc.perform(
+                                get("/interno/normativa/periodos/SIN/reglas-del-panel")
+                                        .with(deProceso()))
+                        .andReturn();
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(404);
+    }
+
+    @Test
     void dadoUnProceso_cuandoConsultaLasReglas_entonces200ConLosTopes() throws Exception {
         MvcResult resultado = pedirReglas("2026-I", deProceso());
 
@@ -207,6 +239,25 @@ class InternoNormativaContratoTest {
     static class Dobles {
 
         @Bean
+        ConsultarReglasDelPanel consultarReglasDelPanel() {
+            return periodo -> {
+                if (!"2026-I".equals(periodo)) {
+                    throw new PeriodoSinVersion(periodo);
+                }
+                return new ReglasDelPanelDeLaVersion(
+                        2,
+                        Map.of("RN-05", Severidad.BLANDA),
+                        new BigDecimal("40"),
+                        new BigDecimal("60"),
+                        new BigDecimal("40"),
+                        new BigDecimal("5"),
+                        8,
+                        11,
+                        List.of("140-b", "140-g"));
+            };
+        }
+
+        @Bean
         ConsultarReglasDeAsignacion consultarReglasDeAsignacion() {
             return periodo -> {
                 if (!"2026-I".equals(periodo)) {
@@ -241,19 +292,22 @@ class InternoNormativaContratoTest {
                                         "Planificar",
                                         Componente.OTRAS_DOCENCIA,
                                         List.of(),
-                                        List.of()),
+                                        List.of(),
+                                        false),
                                 new ActividadDelCatalogo(
                                         "141-a",
                                         "Investigar",
                                         Componente.INVESTIGACION,
                                         List.of("INVESTIGACION"),
-                                        List.of()),
+                                        List.of(),
+                                        false),
                                 new ActividadDelCatalogo(
                                         "143-d",
                                         "Coordinar",
                                         Componente.GESTION,
                                         List.of(),
-                                        List.of("COORDINADOR_CARRERA"))));
+                                        List.of("COORDINADOR_CARRERA"),
+                                        false)));
             };
         }
 

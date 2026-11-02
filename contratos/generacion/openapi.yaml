@@ -13,6 +13,8 @@
 # La leen quienes leen la oferta, sin filtro de carrera, porque solo trae sumas (D-82).
 # Desde F07-H02: proponer y asignar se rechazan si violan una regla dura (RF-28, RN-02, RN-13, D-83).
 # Desde F07-H03: RN-19 sin justificar responde con una advertencia, sin guardar (RF-28, MD-07).
+# Desde F10-H01: el panel de inconsistencias del periodo y la justificación de las blandas (RF-29,
+# MD-07, D-85 a D-87). Lo leen Consolidación y el Vicerrectorado; justifica Consolidación.
 openapi: 3.0.3
 info:
   title: MDD · generacion
@@ -36,6 +38,8 @@ tags:
     description: Las actividades no lectivas de cada parcial (RF-26, RN-22, RN-25).
   - name: CargaHoraria
     description: Los totales de un docente y su proporción (RF-27, RN-05, D-01, D-82).
+  - name: Panel
+    description: El panel de inconsistencias del periodo (RF-29, MD-07).
 paths:
   /api/generacion/sesion:
     get:
@@ -531,6 +535,116 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
         '504':
           $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/generacion/periodos/{periodo}/inconsistencias:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2026-I
+    get:
+      tags: [Panel]
+      operationId: consultarPanelDeInconsistencias
+      summary: Devuelve las inconsistencias globales de la versión vigente del periodo.
+      description: >-
+        Se calcula al abrirlo, sin guardar una foto. Es solo lectura. Un periodo sin distributivo
+        responde 200 con creado en false, porque no es un error. Las severidades y las cifras salen
+        de la versión de normativa del periodo (principio VI).
+      x-mdd-permiso: [CONSOLIDACION:LECTURA, DISTRIBUTIVO:ESCRITURA]
+      responses:
+        '200':
+          description: El panel del periodo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PanelDeInconsistencias'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: El periodo no existe (GENERACION_PERIODO_NO_ENCONTRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '409':
+          description: >-
+            Sin versión de normativa (GENERACION_PERIODO_SIN_ABRIR). No debería ocurrir, porque un
+            distributivo nace de un periodo abierto: queda como protección.
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/generacion/periodos/{periodo}/inconsistencias/justificacion:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2026-I
+    put:
+      tags: [Panel]
+      operationId: justificarInconsistencia
+      summary: Guarda o cambia la justificación de una inconsistencia blanda abierta.
+      description: >-
+        Vuelve a evaluar el panel antes de guardar. Cambiar una justificación no borra la anterior.
+        Queda en el registro, sin el texto. RN-19 se justifica en su propuesta, no aquí.
+      x-mdd-permiso: CONSOLIDACION:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JustificacionNueva'
+      responses:
+        '200':
+          description: La inconsistencia justificada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InconsistenciaDelPanel'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: El periodo no existe (GENERACION_PERIODO_NO_ENCONTRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '409':
+          description: >-
+            Ya no existe (GENERACION_INCONSISTENCIA_NO_ENCONTRADA), es dura
+            (GENERACION_INCONSISTENCIA_DURA), periodo cerrado (GENERACION_PERIODO_CERRADO), sin
+            distributivo (GENERACION_SIN_DISTRIBUTIVO) o sin versión (GENERACION_PERIODO_SIN_ABRIR).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
   /api/generacion/periodos/{periodo}/docentes/{docente}/carga-horaria:
     parameters:
       - name: periodo
@@ -930,6 +1044,114 @@ components:
     TipoDeJustificacion:
       type: string
       enum: [AFINIDAD, DISPONIBILIDAD, EXCEPCION]
+    PanelDeInconsistencias:
+      description: Las inconsistencias globales de la versión vigente, abiertas y justificadas.
+      type: object
+      required: [periodo, creado, modificable, abiertas, inconsistencias, sinEvaluar]
+      properties:
+        periodo:
+          type: string
+        creado:
+          description: Si el periodo tiene distributivo.
+          type: boolean
+        modificable:
+          description: Si admite justificaciones; un periodo cerrado se lee, pero no se justifica.
+          type: boolean
+        version:
+          description: El número de la versión del distributivo; solo si está creado.
+          type: integer
+          minimum: 1
+        abiertas:
+          $ref: '#/components/schemas/TotalesDelPanel'
+        inconsistencias:
+          description: Primero las abiertas, y entre ellas las duras.
+          type: array
+          items:
+            $ref: '#/components/schemas/InconsistenciaDelPanel'
+        sinEvaluar:
+          description: Las reglas globales que el panel todavía no evalúa.
+          type: array
+          items:
+            type: string
+    TotalesDelPanel:
+      type: object
+      required: [duras, blandas]
+      properties:
+        duras:
+          type: integer
+          minimum: 0
+        blandas:
+          type: integer
+          minimum: 0
+    InconsistenciaDelPanel:
+      type: object
+      required: [tipo, regla, severidad, estado, objeto, detalle, indicacion, pantalla]
+      properties:
+        tipo:
+          $ref: '#/components/schemas/TipoDeInconsistencia'
+        regla:
+          type: string
+        severidad:
+          type: string
+          enum: [DURA, BLANDA]
+        estado:
+          type: string
+          enum: [ABIERTA, JUSTIFICADA]
+        objeto:
+          $ref: '#/components/schemas/ObjetoAfectado'
+        detalle:
+          description: Qué se incumple, para quien lo lee.
+          type: string
+        indicacion:
+          description: Qué hacer y quién debe hacerlo.
+          type: string
+        pantalla:
+          description: La pantalla donde se corrige.
+          type: string
+          enum: [OFERTA, ACTIVIDADES, CARGOS]
+        justificacion:
+          $ref: '#/components/schemas/JustificacionDelPanel'
+    TipoDeInconsistencia:
+      type: string
+      enum: [DOCENTE_SIN_CLASE, PARALELO_SIN_PROPUESTA, COORDINADORES_DE_LA_CARRERA, GESTORES_FUERA_DE_RANGO, HORAS_SOBRE_LA_MALLA, SOBRECARGA, PROPORCION, ACTIVIDADES_OBLIGATORIAS, EXCEPCION_DE_AFINIDAD]
+    ObjetoAfectado:
+      type: object
+      required: [clase, clave, nombre]
+      properties:
+        clase:
+          type: string
+          enum: [DOCENTE, PARALELO, CARRERA, PERIODO]
+        clave:
+          type: string
+        nombre:
+          description: Lo que se muestra.
+          type: string
+    JustificacionDelPanel:
+      type: object
+      required: [texto, por, en]
+      properties:
+        texto:
+          type: string
+        por:
+          description: Quién la escribió.
+          type: string
+        en:
+          type: string
+          format: date-time
+    JustificacionNueva:
+      type: object
+      required: [tipo, objeto, texto]
+      properties:
+        tipo:
+          $ref: '#/components/schemas/TipoDeInconsistencia'
+        objeto:
+          description: La clave del objeto afectado.
+          type: string
+          pattern: '^[0-9A-Za-z._/-]{1,60}$'
+        texto:
+          description: Entre 10 y 500 caracteres, sin contar los espacios de los extremos.
+          type: string
+          maxLength: 500
     ActividadesDelPeriodo:
       type: object
       required: [creado, carreras]

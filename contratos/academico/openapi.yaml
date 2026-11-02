@@ -1221,7 +1221,7 @@ components:
     ParaleloDeLaOferta:
       description: Lo que Generación necesita de una asignatura-paralelo (principio IX).
       type: object
-      required: [asignatura, nombre, carrera, paralelo, campoAmplio, campoEspecifico, troncoComun, horasSemanales, estado, periodoCerrado]
+      required: [asignatura, nombre, carrera, paralelo, campoAmplio, campoEspecifico, troncoComun, horasSemanales, horasDeLaAsignatura, estado, periodoCerrado]
       properties:
         asignatura:
           $ref: '#/components/schemas/CodigoDeAsignatura'
@@ -1239,6 +1239,9 @@ components:
           type: boolean
         horasSemanales:
           description: Las horas efectivas del paralelo; admiten decimales.
+          type: number
+        horasDeLaAsignatura:
+          description: Las horas de clase actuales de la asignatura en la malla (RN-18).
           type: number
         estado:
           $ref: '#/components/schemas/EstadoDeAsignaturaParalelo'

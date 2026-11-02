@@ -216,7 +216,11 @@ class CatalogoDeActividadesIntegrationTest {
                                         + " talleres, entre otros",
                                 Componente.OTRAS_DOCENCIA,
                                 List.of(),
-                                List.of()));
+                                List.of(),
+                                true));
+        assertThat(actividades.stream().filter(ActividadDelCatalogo::obligatoria))
+                .extracting(ActividadDelCatalogo::codigo)
+                .containsExactly("140-b", "140-g");
         assertThat(actividades.get(4).tiposDeProyecto())
                 .containsExactly("PRACTICAS_PREPROFESIONALES", "SERVICIO_COMUNITARIO");
         assertThat(actividades.get(32).cargos()).containsExactly("RECTOR", "VICERRECTOR");
@@ -243,5 +247,9 @@ class CatalogoDeActividadesIntegrationTest {
                         });
 
         assertThat(catalogo(copia.numero())).isEqualTo(catalogo(1));
+        assertThat(new RepositorioActividadesJdbc(jdbc).deLaVersion(copia.numero()))
+                .filteredOn(ActividadDelCatalogo::obligatoria)
+                .extracting(ActividadDelCatalogo::codigo)
+                .containsExactly("140-b", "140-g");
     }
 }

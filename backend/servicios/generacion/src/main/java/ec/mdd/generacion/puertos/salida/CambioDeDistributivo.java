@@ -34,6 +34,8 @@ public record CambioDeDistributivo(
         /** Actividad no lectiva guardada o reemplazada. */
         ACTIVIDAD_GUARDADA,
         /** Actividad no lectiva quitada. */
-        ACTIVIDAD_QUITADA
+        ACTIVIDAD_QUITADA,
+        /** Inconsistencia global justificada, o justificación cambiada. */
+        INCONSISTENCIA_JUSTIFICADA
     }
 }

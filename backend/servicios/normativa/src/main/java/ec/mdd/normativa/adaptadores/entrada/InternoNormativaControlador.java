@@ -6,6 +6,7 @@ import ec.mdd.normativa.adaptadores.entrada.api.PesosDeAfinidad;
 import ec.mdd.normativa.adaptadores.entrada.api.PesosDelPeriodo;
 import ec.mdd.normativa.adaptadores.entrada.api.ProporcionDelPeriodo;
 import ec.mdd.normativa.adaptadores.entrada.api.ReglasDeAsignacion;
+import ec.mdd.normativa.adaptadores.entrada.api.ReglasDelPanel;
 import ec.mdd.normativa.dominio.ActividadDelCatalogo;
 import ec.mdd.normativa.dominio.PesosAfinidad;
 import ec.mdd.normativa.puertos.entrada.ActividadesDeLaVersion;
@@ -13,10 +14,14 @@ import ec.mdd.normativa.puertos.entrada.ConsultarActividadesDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarPesosDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarProporcionDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarReglasDeAsignacion;
+import ec.mdd.normativa.puertos.entrada.ConsultarReglasDelPanel;
 import ec.mdd.normativa.puertos.entrada.PeriodoSinVersion;
 import ec.mdd.normativa.puertos.entrada.PesosDeLaVersion;
 import ec.mdd.normativa.puertos.entrada.ProporcionDeLaVersion;
 import ec.mdd.normativa.puertos.entrada.ReglasDeLaVersion;
+import ec.mdd.normativa.puertos.entrada.ReglasDelPanelDeLaVersion;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,16 +38,19 @@ class InternoNormativaControlador implements InternoApi {
     private final ConsultarActividadesDelPeriodo actividades;
     private final ConsultarProporcionDelPeriodo proporcion;
     private final ConsultarReglasDeAsignacion reglas;
+    private final ConsultarReglasDelPanel panel;
 
     InternoNormativaControlador(
             ConsultarPesosDelPeriodo consultar,
             ConsultarActividadesDelPeriodo actividades,
             ConsultarProporcionDelPeriodo proporcion,
-            ConsultarReglasDeAsignacion reglas) {
+            ConsultarReglasDeAsignacion reglas,
+            ConsultarReglasDelPanel panel) {
         this.consultar = consultar;
         this.actividades = actividades;
         this.proporcion = proporcion;
         this.reglas = reglas;
+        this.panel = panel;
     }
 
     @Override
@@ -100,6 +108,35 @@ class InternoNormativaControlador implements InternoApi {
                             deLaVersion.horasClaseConProyecto(),
                             ReglasDeAsignacion.SeveridadAfinidadEnum.fromValue(
                                     deLaVersion.severidadAfinidad().name())));
+        } catch (PeriodoSinVersion error) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @Override
+    public ResponseEntity<ReglasDelPanel> consultarReglasDelPanel(String periodo) {
+        try {
+            ReglasDelPanelDeLaVersion deLaVersion = panel.reglas(periodo);
+            Map<String, ReglasDelPanel.InnerEnum> severidades = new LinkedHashMap<>();
+            deLaVersion
+                    .severidades()
+                    .forEach(
+                            (regla, severidad) ->
+                                    severidades.put(
+                                            regla,
+                                            ReglasDelPanel.InnerEnum.fromValue(severidad.name())));
+            return ResponseEntity.ok(
+                    new ReglasDelPanel(
+                            periodo,
+                            deLaVersion.version(),
+                            severidades,
+                            deLaVersion.horasMaximasDocente(),
+                            deLaVersion.metaClase(),
+                            deLaVersion.metaOtrasDocencia(),
+                            deLaVersion.margenPuntos(),
+                            deLaVersion.gestoresMinimo(),
+                            deLaVersion.gestoresMaximo(),
+                            deLaVersion.actividadesObligatorias()));
         } catch (PeriodoSinVersion error) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }

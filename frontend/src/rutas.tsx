@@ -12,6 +12,7 @@ import { Cargos } from './pantallas/cargos/Cargos';
 import { Docentes } from './pantallas/docentes/Docentes';
 import { Proyectos } from './pantallas/proyectos/Proyectos';
 import { Actividades } from './pantallas/actividades/Actividades';
+import { Inconsistencias } from './pantallas/inconsistencias/Inconsistencias';
 import { Oferta } from './pantallas/oferta/Oferta';
 import { Plantillas } from './pantallas/plantillas/Plantillas';
 import { Preparacion } from './pantallas/preparacion/Preparacion';
@@ -25,6 +26,7 @@ import {
   LECTURA_DE_LA_ESTRUCTURA,
   LECTURA_DE_LA_OFERTA,
   LECTURA_DE_LOS_DOCENTES,
+  LECTURA_DEL_PANEL,
 } from './sesion/funcionalidades';
 
 export const rutasDeLaSpa: RouteObject[] = [
@@ -74,6 +76,14 @@ export const rutasDeLaSpa: RouteObject[] = [
         element: (
           <RutaConPermiso cualquieraDe={LECTURA_DE_LA_ESTRUCTURA}>
             <Carreras />
+          </RutaConPermiso>
+        ),
+      },
+      {
+        path: 'inconsistencias',
+        element: (
+          <RutaConPermiso cualquieraDe={LECTURA_DEL_PANEL}>
+            <Inconsistencias />
           </RutaConPermiso>
         ),
       },

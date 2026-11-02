@@ -5,15 +5,18 @@ import ec.mdd.generacion.adaptadores.salida.PublicadorDeEventosSpring;
 import ec.mdd.generacion.adaptadores.salida.RegistroDeCambiosJdbc;
 import ec.mdd.generacion.adaptadores.salida.RepositorioDistributivosJdbc;
 import ec.mdd.generacion.adaptadores.salida.RepositorioEventosDePruebaJdbc;
+import ec.mdd.generacion.adaptadores.salida.RepositorioJustificacionesJdbc;
 import ec.mdd.generacion.adaptadores.salida.TransaccionSpring;
 import ec.mdd.generacion.aplicacion.AsignarActividadServicio;
 import ec.mdd.generacion.aplicacion.ConsultarActividadesPosiblesServicio;
 import ec.mdd.generacion.aplicacion.ConsultarActividadesServicio;
 import ec.mdd.generacion.aplicacion.ConsultarAfinidadServicio;
 import ec.mdd.generacion.aplicacion.ConsultarCargaHorariaServicio;
+import ec.mdd.generacion.aplicacion.ConsultarPanelServicio;
 import ec.mdd.generacion.aplicacion.ConsultarParcialesServicio;
 import ec.mdd.generacion.aplicacion.ConsultarSugerenciaServicio;
 import ec.mdd.generacion.aplicacion.CrearDistributivoServicio;
+import ec.mdd.generacion.aplicacion.JustificarInconsistenciaServicio;
 import ec.mdd.generacion.aplicacion.ProponerDocenteServicio;
 import ec.mdd.generacion.aplicacion.PublicarEventoDePruebaServicio;
 import ec.mdd.generacion.puertos.entrada.AsignarActividad;
@@ -21,17 +24,21 @@ import ec.mdd.generacion.puertos.entrada.ConsultarActividades;
 import ec.mdd.generacion.puertos.entrada.ConsultarActividadesPosibles;
 import ec.mdd.generacion.puertos.entrada.ConsultarAfinidad;
 import ec.mdd.generacion.puertos.entrada.ConsultarCargaHoraria;
+import ec.mdd.generacion.puertos.entrada.ConsultarPanel;
 import ec.mdd.generacion.puertos.entrada.ConsultarParciales;
 import ec.mdd.generacion.puertos.entrada.ConsultarSugerencia;
+import ec.mdd.generacion.puertos.entrada.JustificarInconsistencia;
 import ec.mdd.generacion.puertos.entrada.ProponerDocente;
 import ec.mdd.generacion.puertos.entrada.PublicarEventoDePrueba;
 import ec.mdd.generacion.puertos.salida.DatosParaActividades;
 import ec.mdd.generacion.puertos.salida.DatosParaAfinidad;
+import ec.mdd.generacion.puertos.salida.DatosParaElPanel;
 import ec.mdd.generacion.puertos.salida.DatosParaSugerencia;
 import ec.mdd.generacion.puertos.salida.PublicadorDeEventos;
 import ec.mdd.generacion.puertos.salida.RegistroDeCambios;
 import ec.mdd.generacion.puertos.salida.RepositorioDistributivos;
 import ec.mdd.generacion.puertos.salida.RepositorioEventosDePrueba;
+import ec.mdd.generacion.puertos.salida.RepositorioJustificaciones;
 import ec.mdd.generacion.puertos.salida.Transaccion;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
 import java.net.URI;
@@ -141,6 +148,33 @@ public class ConfiguracionGeneracion {
     public ConsultarActividadesPosibles consultarActividadesPosibles(
             DatosParaSugerencia datos, DatosParaActividades actividades) {
         return new ConsultarActividadesPosiblesServicio(datos, actividades);
+    }
+
+    /** Las justificaciones de las inconsistencias globales (MD-07). */
+    @Bean
+    public RepositorioJustificaciones repositorioJustificaciones(JdbcClient jdbc) {
+        return new RepositorioJustificacionesJdbc(jdbc);
+    }
+
+    /** El panel de inconsistencias de un periodo (RF-29). */
+    @Bean
+    public ConsultarPanel consultarPanel(
+            DatosParaSugerencia datos,
+            DatosParaElPanel normativa,
+            RepositorioDistributivos distributivos,
+            RepositorioJustificaciones justificaciones) {
+        return new ConsultarPanelServicio(datos, normativa, distributivos, justificaciones);
+    }
+
+    /** Justificar una inconsistencia global blanda (MD-07). */
+    @Bean
+    public JustificarInconsistencia justificarInconsistencia(
+            ConsultarPanel panel,
+            RepositorioJustificaciones justificaciones,
+            RegistroDeCambios registro,
+            Transaccion transaccion) {
+        return new JustificarInconsistenciaServicio(
+                panel, justificaciones, registro, transaccion, Clock.systemUTC());
     }
 
     /** La carga horaria de un docente (RF-27, D-82). */

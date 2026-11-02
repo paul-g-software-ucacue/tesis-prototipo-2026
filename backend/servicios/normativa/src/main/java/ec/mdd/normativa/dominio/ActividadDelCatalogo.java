@@ -11,6 +11,7 @@ import java.util.Objects;
  * @param nombre el texto del literal
  * @param componente dónde cuentan sus horas
  * @param tiposDeProyecto los tipos que sirven; vacía si no exige un proyecto
+ * @param obligatoria si tiene que constar en la carga de quien da clases (RN-05)
  * @param cargos los cargos que sirven; vacía si no exige un cargo
  */
 public record ActividadDelCatalogo(
@@ -18,7 +19,8 @@ public record ActividadDelCatalogo(
         String nombre,
         Componente componente,
         List<String> tiposDeProyecto,
-        List<String> cargos) {
+        List<String> cargos,
+        boolean obligatoria) {
 
     /** Exige los datos y copia las listas. */
     public ActividadDelCatalogo {

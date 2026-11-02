@@ -11,6 +11,8 @@ import ec.mdd.generacion.puertos.entrada.DistributivoRepetido;
 import ec.mdd.generacion.puertos.entrada.DocenteNoActivo;
 import ec.mdd.generacion.puertos.entrada.DocenteNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.HorasExcedidas;
+import ec.mdd.generacion.puertos.entrada.InconsistenciaNoEncontrada;
+import ec.mdd.generacion.puertos.entrada.InconsistenciaNoJustificable;
 import ec.mdd.generacion.puertos.entrada.ParaleloNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.ParaleloRetirado;
 import ec.mdd.generacion.puertos.entrada.PeriodoCerrado;
@@ -173,6 +175,20 @@ class ErroresGeneracion implements CatalogoDeErrores {
                                                 "Le quedan "
                                                         + formato(error.horasQueQuedan())
                                                         + " h de clase."))),
+                EntradaCatalogo.de(
+                        InconsistenciaNoEncontrada.class,
+                        "GENERACION_INCONSISTENCIA_NO_ENCONTRADA",
+                        409,
+                        "Inconsistencia resuelta",
+                        "Esta inconsistencia ya no existe, quizá porque alguien la corrigió."
+                                + " Actualiza el panel."),
+                EntradaCatalogo.de(
+                        InconsistenciaNoJustificable.class,
+                        "GENERACION_INCONSISTENCIA_DURA",
+                        409,
+                        "No se puede justificar",
+                        "La normativa del periodo no admite excepciones para esta regla. Corrígela"
+                                + " en su pantalla."),
                 EntradaCatalogo.de(
                         AfinidadInsuficiente.class,
                         "GENERACION_AFINIDAD_INSUFICIENTE",

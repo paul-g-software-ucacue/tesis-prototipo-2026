@@ -47,6 +47,7 @@ class ConsultarParaleloDeLaOfertaServicioTest {
                                 "061",
                                 true,
                                 new BigDecimal("2.5"),
+                                new BigDecimal("4"),
                                 EstadoDeAsignaturaParalelo.OFERTADA,
                                 false));
     }

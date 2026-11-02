@@ -11,6 +11,7 @@ import java.util.Objects;
  * @param paralelo su paralelo
  * @param carrera el código de su carrera: define qué son «otras carreras»
  * @param horasSemanales sus horas efectivas; admiten decimales
+ * @param horasDeLaAsignatura las horas actuales de su asignatura en la malla (RN-18)
  * @param troncoComun si su asignatura es de tronco común: queda exenta del mínimo
  * @param retirada si salió de la oferta
  * @param periodoCerrado si el periodo está cerrado
@@ -20,6 +21,7 @@ public record AsignaturaParalelo(
         String paralelo,
         String carrera,
         BigDecimal horasSemanales,
+        BigDecimal horasDeLaAsignatura,
         boolean troncoComun,
         boolean retirada,
         boolean periodoCerrado) {
@@ -30,6 +32,27 @@ public record AsignaturaParalelo(
         Objects.requireNonNull(paralelo, "paralelo");
         Objects.requireNonNull(carrera, "carrera");
         Objects.requireNonNull(horasSemanales, "horasSemanales");
+        Objects.requireNonNull(horasDeLaAsignatura, "horasDeLaAsignatura");
+    }
+
+    /** Una asignatura-paralelo con las horas de su asignatura, sin pasarlas. */
+    public AsignaturaParalelo(
+            AsignaturaOfertada asignatura,
+            String paralelo,
+            String carrera,
+            BigDecimal horasSemanales,
+            boolean troncoComun,
+            boolean retirada,
+            boolean periodoCerrado) {
+        this(
+                asignatura,
+                paralelo,
+                carrera,
+                horasSemanales,
+                horasSemanales,
+                troncoComun,
+                retirada,
+                periodoCerrado);
     }
 
     /** Una asignatura-paralelo de un periodo que no está cerrado. */

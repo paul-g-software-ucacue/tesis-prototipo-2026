@@ -149,6 +149,30 @@ paths:
           $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
         '500':
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+  /interno/docentes/cargos-vigentes:
+    get:
+      tags: [Interno]
+      operationId: consultarCargosVigentes
+      summary: Devuelve los cargos vigentes de todos los docentes.
+      description: >-
+        Solo entre procesos, con el token de proceso: lo usa Generación para el panel de
+        inconsistencias (RN-10, RN-12, ADR-023). No lleva datos de contacto ni de contrato
+        (principio IX).
+      responses:
+        '200':
+          description: Los cargos vigentes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CargoVigente'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
   /interno/docentes/con-proyecto:
     parameters:
       - name: periodo
@@ -813,6 +837,18 @@ components:
           exclusiveMinimum: true
           maximum: 60
           example: 3
+    CargoVigente:
+      type: object
+      required: [docente, tipo]
+      properties:
+        docente:
+          type: string
+        tipo:
+          description: El tipo de cargo.
+          type: string
+        carrera:
+          description: La carrera, en los cargos que la tienen.
+          type: string
     DocenteConProyecto:
       type: object
       required: [docente, tipos]
