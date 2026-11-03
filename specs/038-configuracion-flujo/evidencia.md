@@ -58,7 +58,28 @@ Registro de las comprobaciones de la historia (issue #56): cargar la configuraci
 | shellcheck | 0 hallazgos en `probar_flujo.sh`, con una copia nueva en el scratchpad | 2026-11-02 |
 | Gitleaks | Sin hallazgos en modo `git`, sobre un clon con `.gitleaks.toml`: 88 commits | 2026-11-02 |
 
-## Por completar
+## Equipo de demostración
 
-- Las comprobaciones del PR.
-- El despliegue y la comprobación del autor (SC-004), en el PR de evidencia.
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| Despliegue | `demostracion` exitoso, «Sano en 61 s», 8 contenedores sanos; 401 sin credenciales | GitHub y `docker ps`, `e8cf831d0cd2` | 2026-11-02 |
+| Comprobaciones del PR #191 | 12 de 12, con `probar_flujo.sh` en `perfil-consolidado` | GitHub | 2026-11-02 |
+| Qué rige | El periodo 003 sin archivo: el aviso de la configuración por defecto, 9 etapas y 3 firmas | Comprobación del autor | 2026-11-02 |
+| Sin Responsable | La plantilla sin cambios se rechaza: «Falta designar al Responsable de consolidación del periodo.», y sigue la de por defecto | Comprobación del autor | 2026-11-02 |
+| Cargar | Designado `docente.demo`, un plazo cambiado de 15 a 20 días queda vigente: «Versión 1 · cargada por admin.demo» | Comprobación del autor | 2026-11-02 |
+| Un archivo malo | Con otro nombre en lugar de EN_OCS se rechaza, diciendo los 2 problemas, y sigue la versión 1 con sus 20 días | Comprobación del autor y consulta de solo lectura | 2026-11-02 |
+| Una fila | El periodo tiene 1 carga: los 2 rechazos no guardaron nada | Consulta de solo lectura | 2026-11-02 |
+| Periodo en curso | El 002, vigente, se ve con su aviso, y no sale cargar | Comprobación del autor | 2026-11-02 |
+| Rector | «Flujo y firmas» no está en su menú | Comprobación del autor | 2026-11-02 |
+| Cargar con un plazo cambiado (SC-004) | 1 min 59 s como máximo (meta: menos de 3 minutos) | Horas guardadas en la base | 2026-11-02 |
+| Todo el flujo | 5 minutos | Medido por el autor | 2026-11-02 |
+
+SC-004 no se midió con cronómetro por separado, como pedía T027. El tiempo sale de las horas guardadas, entre designar al Responsable (20:00:35) y la carga (20:02:34). Es un máximo: incluye cambiar de sesión, además de descargar la plantilla, cambiar el plazo y cargarla. Los 5 minutos del autor no son solo ese paso, porque ese intervalo fue de 2 minutos, y no se suman al criterio.
+
+Lo que no se vio en la demo, y queda cubierto por las pruebas:
+
+- **Archivos peligrosos.** Anclas, alias y tipos: `LectorYamlTest`, `probar_flujo.sh`, paso 8.
+- **Más de 1 MB.** `Flujo.test.tsx`, `probar_flujo.sh`, paso 8.
+- **Un rol firmante sin usuario.** La demo tiene usuarios en todos los roles firmantes: `probar_flujo.sh`, paso 6.
+- **Un proceso detenido.** `probar_flujo.sh`, pasos 12 y 13.
+- **Salir de Planificación.** El paso 14 de `probar_flujo.sh` cambia el estado del periodo en la base; el avance real lo cubre `probar_periodos.sh`.
