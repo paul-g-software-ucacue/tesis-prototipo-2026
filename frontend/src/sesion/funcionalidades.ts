@@ -77,6 +77,14 @@ export const ESCRITURA_DE_LA_PROPUESTA: readonly {
 }[] = [{ funcionalidad: 'OFERTA', tipo: 'ESCRITURA' }];
 
 /** Quién abre el panel de inconsistencias (D-87). Lo comparten la ruta y la entrada del menú. */
+/** Quién ve y quién carga la configuración del flujo (F12-H01). */
+export const LECTURA_DEL_FLUJO: readonly { funcionalidad: string; tipo: TipoDePermiso }[] = [
+  { funcionalidad: 'FLUJO_FIRMAS', tipo: 'LECTURA' },
+];
+export const ESCRITURA_DEL_FLUJO: readonly { funcionalidad: string; tipo: TipoDePermiso }[] = [
+  { funcionalidad: 'FLUJO_FIRMAS', tipo: 'ESCRITURA' },
+];
+
 export const LECTURA_DEL_PANEL: readonly { funcionalidad: string; tipo: TipoDePermiso }[] = [
   { funcionalidad: 'CONSOLIDACION', tipo: 'LECTURA' },
   { funcionalidad: 'DISTRIBUTIVO', tipo: 'ESCRITURA' },

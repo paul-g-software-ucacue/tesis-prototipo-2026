@@ -1,0 +1,224 @@
+# Contrato de validacionocs. Desde F12-H01: la configuración del flujo y del árbol de firmas de cada
+# periodo (RF-34, RF-58, ADR-007, D-89). La carga y la lee quien tiene FLUJO_FIRMAS.
+openapi: 3.0.3
+info:
+  title: MDD · validacionocs
+  version: 1.0.0
+servers:
+  - url: /
+security:
+  - bearer: []
+tags:
+  - name: Flujo
+    description: La configuración del flujo y del árbol de firmas (RF-34, RF-58).
+paths:
+  /api/validacionocs/plantilla-flujo:
+    get:
+      tags: [Flujo]
+      operationId: descargarPlantillaDelFlujo
+      summary: Descarga la plantilla, que es la configuración por defecto, comentada en español.
+      x-mdd-permiso: FLUJO_FIRMAS:LECTURA
+      responses:
+        '200':
+          description: El archivo YAML.
+          content:
+            text/yaml:
+              schema:
+                type: string
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+  /api/validacionocs/periodos/{periodo}/configuracion-flujo:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2026-I
+    get:
+      tags: [Flujo]
+      operationId: consultarConfiguracionDelFlujo
+      summary: Devuelve la configuración que rige en el periodo.
+      description: >-
+        La última cargada o, si no hay, la configuración por defecto (D-89). Es solo lectura.
+      x-mdd-permiso: FLUJO_FIRMAS:LECTURA
+      responses:
+        '200':
+          description: La configuración que rige.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfiguracionDelFlujo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: >-
+            El periodo no existe (VALIDACIONOCS_PERIODO_NO_ENCONTRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+    put:
+      tags: [Flujo]
+      operationId: cargarConfiguracionDelFlujo
+      summary: Carga una configuración nueva para un periodo en Planificación.
+      description: >-
+        Valida el esqueleto, las firmas y los firmantes, y responde todos los problemas. Un archivo
+        rechazado no cambia lo que rige. Cada carga crea una versión nueva, y las anteriores se
+        conservan (ADR-007).
+      x-mdd-permiso: FLUJO_FIRMAS:ESCRITURA
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [archivo]
+              properties:
+                archivo:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: La configuración vigente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfiguracionDelFlujo'
+        '400':
+          description: >-
+            Tiene problemas, uno por detalle (VALIDACIONOCS_CONFIGURACION_INVALIDA), o no se puede
+            leer (VALIDACIONOCS_ARCHIVO_ILEGIBLE).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: >-
+            El periodo no existe (VALIDACIONOCS_PERIODO_NO_ENCONTRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '409':
+          description: >-
+            El periodo ya no está en Planificación (VALIDACIONOCS_PERIODO_SIN_PLANIFICACION).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '413':
+          description: >-
+            Pasa de 1 MB (VALIDACIONOCS_ARCHIVO_DEMASIADO_GRANDE).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+components:
+  securitySchemes:
+    bearer:
+      $ref: '../comun/seguridad.yaml#/components/securitySchemes/bearer'
+  schemas:
+    ConfiguracionDelFlujo:
+      type: object
+      required: [periodo, porDefecto, modificable, etapas, firmas]
+      properties:
+        periodo:
+          type: string
+        porDefecto:
+          description: Si rige la configuración por defecto, porque no se cargó otra.
+          type: boolean
+        version:
+          description: El número de la carga; ausente si rige la de por defecto.
+          type: integer
+          minimum: 1
+        cargada:
+          $ref: '#/components/schemas/CargaDelFlujo'
+        modificable:
+          description: Si admite otra carga; solo en Planificación.
+          type: boolean
+        etapas:
+          type: array
+          items:
+            $ref: '#/components/schemas/EtapaDelFlujo'
+        firmas:
+          type: array
+          items:
+            $ref: '#/components/schemas/PasoDeFirma'
+    CargaDelFlujo:
+      type: object
+      required: [por, en]
+      properties:
+        por:
+          description: Quién la cargó.
+          type: string
+        en:
+          type: string
+          format: date-time
+    TipoDeEtapa:
+      type: string
+      enum: [BORRADOR_CARRERA, BORRADOR_UNIDADES, EN_CONSOLIDACION, EN_REVISION_VRA, CONGELADO_EN_FIRMA, EN_OCS, REMITIDO_ZONAL, APROBADO, PUBLICADO]
+    EtapaDelFlujo:
+      type: object
+      required: [tipo, esqueleto, activa, nombre, rol, admiteDevolucion]
+      properties:
+        tipo:
+          $ref: '#/components/schemas/TipoDeEtapa'
+        esqueleto:
+          description: Si es del esqueleto fijo, que ninguna configuración quita.
+          type: boolean
+        activa:
+          type: boolean
+        nombre:
+          type: string
+        rol:
+          description: El rol responsable.
+          type: string
+        plazoDias:
+          description: Días corridos desde que el distributivo llega a la etapa.
+          type: integer
+          minimum: 1
+        admiteDevolucion:
+          type: boolean
+    PasoDeFirma:
+      type: object
+      required: [orden, etiqueta, rol, etapa, documento]
+      properties:
+        orden:
+          type: integer
+          minimum: 1
+        etiqueta:
+          type: string
+        rol:
+          type: string
+        etapa:
+          $ref: '#/components/schemas/TipoDeEtapa'
+        documento:
+          type: string
+          enum: [CONSOLIDADO, PARCIAL_CARRERA, RESOLUCION_OCS]

@@ -2,10 +2,13 @@ package ec.mdd.academico.adaptadores.entrada;
 
 import ec.mdd.academico.adaptadores.entrada.api.AsignaturaOfertada;
 import ec.mdd.academico.adaptadores.entrada.api.EstadoDeAsignaturaParalelo;
+import ec.mdd.academico.adaptadores.entrada.api.EstadoDelPeriodo;
+import ec.mdd.academico.adaptadores.entrada.api.EstadoPeriodo;
 import ec.mdd.academico.adaptadores.entrada.api.InternoApi;
 import ec.mdd.academico.adaptadores.entrada.api.ParaleloDeLaOferta;
 import ec.mdd.academico.puertos.entrada.ConsultarAsignaturasOfertadas;
 import ec.mdd.academico.puertos.entrada.ConsultarParaleloDeLaOferta;
+import ec.mdd.academico.puertos.entrada.ConsultarPeriodos;
 import ec.mdd.academico.puertos.entrada.ParaleloConCampos;
 import ec.mdd.academico.puertos.entrada.PeriodoNoEncontrado;
 import java.util.List;
@@ -24,11 +27,28 @@ class InternoAcademicoControlador implements InternoApi {
 
     private final ConsultarAsignaturasOfertadas consultar;
     private final ConsultarParaleloDeLaOferta paralelos;
+    private final ConsultarPeriodos periodos;
 
     InternoAcademicoControlador(
-            ConsultarAsignaturasOfertadas consultar, ConsultarParaleloDeLaOferta paralelos) {
+            ConsultarAsignaturasOfertadas consultar,
+            ConsultarParaleloDeLaOferta paralelos,
+            ConsultarPeriodos periodos) {
         this.consultar = consultar;
         this.paralelos = paralelos;
+        this.periodos = periodos;
+    }
+
+    @Override
+    public ResponseEntity<EstadoDelPeriodo> consultarEstadoDelPeriodo(String codigo) {
+        try {
+            return ResponseEntity.ok(
+                    new EstadoDelPeriodo(
+                            codigo,
+                            EstadoPeriodo.valueOf(
+                                    periodos.porCodigo(codigo).periodo().estado().name())));
+        } catch (PeriodoNoEncontrado error) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
     }
 
     @Override

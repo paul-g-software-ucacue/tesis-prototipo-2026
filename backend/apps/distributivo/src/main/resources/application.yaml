@@ -32,8 +32,9 @@ spring.servlet.multipart.max-file-size: 11MB
 spring.servlet.multipart.max-request-size: 11MB
 # Los archivos del negocio, en el volumen archivos (D-88). La carpeta se crea al guardar.
 mdd.archivos.raiz: ${MDD_ARCHIVOS_RAIZ:/var/mdd/archivos}
-# Las consultas al proceso datos, por sus rutas internas (ADR-023).
+# Las consultas a los procesos datos e identidad, por sus rutas internas (ADR-023).
 mdd.procesos.datos: ${MDD_URI_DATOS:http://datos:8080}
+mdd.procesos.identidad: ${MDD_URI_IDENTIDAD:http://identidad:8080}
 # Clave del proceso (D-49); vacía, el proceso arranca y las entregas fallan hasta configurarla.
 mdd.eventos.clave: ${MDD_CLAVE_PROCESO_DISTRIBUTIVO:}
 # Evento de prueba de Generación, apagado por defecto; solo en local y en la CI (D-48).

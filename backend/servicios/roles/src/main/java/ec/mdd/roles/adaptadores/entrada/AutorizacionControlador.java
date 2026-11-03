@@ -2,7 +2,9 @@ package ec.mdd.roles.adaptadores.entrada;
 
 import ec.mdd.roles.adaptadores.entrada.api.Autorizacion;
 import ec.mdd.roles.adaptadores.entrada.api.AutorizacionApi;
+import ec.mdd.roles.adaptadores.entrada.api.Firmantes;
 import ec.mdd.roles.puertos.entrada.ConsultarAutorizacion;
+import ec.mdd.roles.puertos.entrada.ConsultarFirmantes;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -15,9 +17,18 @@ import org.springframework.web.bind.annotation.RestController;
 class AutorizacionControlador implements AutorizacionApi {
 
     private final ConsultarAutorizacion consultar;
+    private final ConsultarFirmantes firmantes;
 
-    AutorizacionControlador(ConsultarAutorizacion consultar) {
+    AutorizacionControlador(ConsultarAutorizacion consultar, ConsultarFirmantes firmantes) {
         this.consultar = consultar;
+        this.firmantes = firmantes;
+    }
+
+    @Override
+    public ResponseEntity<Firmantes> consultarFirmantes(String periodo) {
+        ec.mdd.roles.puertos.entrada.Firmantes delPeriodo = firmantes.firmantes(periodo);
+        return ResponseEntity.ok(
+                new Firmantes(delPeriodo.rolesConUsuario(), delPeriodo.responsableDesignado()));
     }
 
     @Override

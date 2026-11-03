@@ -86,6 +86,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-86 | 2026-11-02 | El margen de 60/40 es un dato de la normativa, y RN-05 revisa la planificación y la evaluación | Aceptada | RN-05, D-85 |
 | D-87 | 2026-11-02 | RN-18 se mide por paralelo en el panel, y la matriz D-16 no cambia | Aceptada | RN-18, F03-H03, D-16 |
 | D-88 | 2026-11-02 | Los archivos del negocio van en un volumen, detrás de un puerto de Generación | Aceptada | RNF-POR-01, F10-H02 |
+| D-89 | 2026-11-02 | La configuración del flujo es un YAML: el mismo archivo es plantilla y configuración por defecto | Aceptada | ADR-007, RF-34, RF-58 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1604,3 +1605,26 @@ Las 19 excepciones de `cloudflared` no cambian: su imagen no corre con el túnel
 **Consecuencias.** `java.Dockerfile` crea la carpeta con dueño 10001, y `nginx.conf` y el formulario de `distributivo` admiten 11 MB, para que un PDF de 10 MB pase con su envoltura. Las copias de seguridad, si las hay, deben incluir el volumen.
 
 **Documentos que hay que poner al día.** `deploy/equipo/README.md`.
+
+---
+
+## D-89. La configuración del flujo es un YAML: el mismo archivo es plantilla y configuración por defecto
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-02 · **Decidido por:** autor de la tesis
+- **Origen:** especificación y plan de F12-H01
+- **Completa a:** ADR-007, que pedía un archivo versionado sin definir su formato
+
+**Decisión.**
+
+1. La configuración del flujo y del árbol de firmas es un YAML. Se lee sin anclas, alias ni etiquetas.
+2. `flujo-por-defecto.yaml`, un recurso de `validacionocs`, es la plantilla que se descarga y la configuración que rige si no se cargó otra.
+3. Se guarda el texto subido, una fila por carga, solo por inserción. La vigente es la última.
+4. El plazo son días corridos desde que el distributivo llega a la etapa.
+
+**Por qué.** El administrador edita el archivo a mano, y YAML admite comentarios. Un solo archivo no se puede desincronizar. Guardar el texto conserva esos comentarios y evita tablas que repetirían lo mismo.
+
+**Alternativas.** JSON: sin comentarios. CSV: las etapas y las firmas son dos estructuras. Fechas fijas: un archivo nuevo por periodo.
+
+**Consecuencias.** `BORRADOR_UNIDADES` queda desactivada por defecto, porque las unidades no tienen parcial, aunque la ERS la lista. Los plazos por defecto son valores iniciales, porque la ERS no los fija.
+
+**Documentos que hay que poner al día.** Ninguno.

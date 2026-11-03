@@ -19,6 +19,7 @@ import {
   LECTURA_DE_LA_ESTRUCTURA,
   LECTURA_DE_LA_OFERTA,
   LECTURA_DE_LOS_DOCENTES,
+  LECTURA_DEL_FLUJO,
   LECTURA_DEL_PANEL,
   PREPARACION_DEL_PERIODO,
 } from '../sesion/funcionalidades';
@@ -59,6 +60,7 @@ const ENTRADAS: Entrada[] = [
   { ruta: '/preparacion', texto: 'Preparación del periodo', permiso: PREPARACION_DEL_PERIODO },
   { ruta: '/inconsistencias', texto: 'Panel de inconsistencias', permiso: LECTURA_DEL_PANEL },
   { ruta: '/consolidado', texto: 'Consolidado del periodo', permiso: LECTURA_DEL_PANEL },
+  { ruta: '/flujo', texto: 'Flujo y firmas', permiso: LECTURA_DEL_FLUJO },
 ];
 
 export function Marco() {
