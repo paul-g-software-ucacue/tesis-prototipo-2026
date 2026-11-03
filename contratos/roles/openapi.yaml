@@ -436,6 +436,38 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /interno/roles/firmantes:
+    parameters:
+      - name: periodo
+        in: query
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2026-I
+    get:
+      tags: [Autorizacion]
+      operationId: consultarFirmantes
+      summary: Devuelve los roles con al menos un usuario y si el periodo tiene Responsable.
+      description: >-
+        Solo entre procesos, con un token de proceso: lo usa Aprobación al cargar la configuración
+        del flujo (RF-58, ADR-023). No dice qué usuarios tiene cada rol (principio IX).
+      responses:
+        '200':
+          description: Los firmantes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Firmantes'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
   /interno/roles/autorizaciones/{usuario}:
     parameters:
       - $ref: '#/components/parameters/Usuario'
@@ -644,6 +676,18 @@ components:
           example: [AUDITOR_DE_CARGAS, DOCENTE]
         carrera:
           $ref: '#/components/schemas/CodigoDeCarrera'
+    Firmantes:
+      type: object
+      required: [rolesConUsuario, responsableDesignado]
+      properties:
+        rolesConUsuario:
+          description: Los roles con al menos un usuario.
+          type: array
+          items:
+            type: string
+        responsableDesignado:
+          description: Si el periodo tiene Responsable de consolidación designado.
+          type: boolean
     Autorizacion:
       type: object
       required: [usuario, roles, permisos]

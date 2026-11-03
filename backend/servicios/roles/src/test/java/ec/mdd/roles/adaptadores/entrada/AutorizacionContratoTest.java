@@ -9,6 +9,8 @@ import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
 import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
 import ec.mdd.roles.puertos.entrada.Autorizacion;
 import ec.mdd.roles.puertos.entrada.ConsultarAutorizacion;
+import ec.mdd.roles.puertos.entrada.ConsultarFirmantes;
+import ec.mdd.roles.puertos.entrada.Firmantes;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +39,33 @@ class AutorizacionContratoTest {
     private final ValidadorDeContrato contrato = ValidadorDeContrato.para("roles");
 
     @Autowired private MockMvc mvc;
+
+    @Test
+    void dadoUnTokenDeProceso_cuandoConsultaLosFirmantes_entonces200SinUsuarios() throws Exception {
+        MvcResult resultado =
+                mvc.perform(
+                                get("/interno/roles/firmantes?periodo=2026-I")
+                                        .with(
+                                                jwt().authorities(
+                                                                new SimpleGrantedAuthority(
+                                                                        "ROLE_PROCESO"))))
+                        .andReturn();
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString())
+                .isEqualTo(
+                        "{\"rolesConUsuario\":[\"RECTOR\",\"VICERRECTOR\"],"
+                                + "\"responsableDesignado\":true}");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnTokenDeUsuario_cuandoConsultaLosFirmantes_entonces403() throws Exception {
+        MvcResult resultado =
+                mvc.perform(get("/interno/roles/firmantes?periodo=2026-I").with(jwt())).andReturn();
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(403);
+    }
 
     @Test
     void dadoUnTokenDeProceso_cuandoConsultaLaAutorizacion_entonces200SegunElContrato()
@@ -79,6 +108,11 @@ class AutorizacionContratoTest {
 
     @TestConfiguration
     static class Dobles {
+
+        @Bean
+        ConsultarFirmantes consultarFirmantes() {
+            return periodo -> new Firmantes(List.of("RECTOR", "VICERRECTOR"), true);
+        }
 
         @Bean
         ConsultarAutorizacion consultarAutorizacion() {

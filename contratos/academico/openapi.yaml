@@ -878,6 +878,33 @@ paths:
           $ref: '#/components/responses/NoEncontrado'
         '500':
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+  /interno/academico/periodos/{codigo}/estado:
+    parameters:
+      - $ref: '#/components/parameters/Codigo'
+    get:
+      tags: [Interno]
+      operationId: consultarEstadoDelPeriodo
+      summary: Devuelve el estado de un periodo.
+      description: >-
+        Solo entre procesos, con el token de proceso: lo usa Aprobación, porque la configuración
+        del flujo solo cambia en Planificación (RF-34, ADR-023).
+      responses:
+        '200':
+          description: El estado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoDelPeriodo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
   /interno/academico/periodos/{codigo}/oferta:
     parameters:
       - $ref: '#/components/parameters/Codigo'
@@ -1218,6 +1245,15 @@ components:
           schema:
             $ref: '../comun/errores.yaml#/components/schemas/Error'
   schemas:
+    EstadoDelPeriodo:
+      description: Lo que otro proceso necesita saber del estado de un periodo (principio IX).
+      type: object
+      required: [periodo, estado]
+      properties:
+        periodo:
+          type: string
+        estado:
+          $ref: '#/components/schemas/EstadoPeriodo'
     ParaleloDeLaOferta:
       description: Lo que Generación necesita de una asignatura-paralelo (principio IX).
       type: object

@@ -12,6 +12,7 @@ import ec.mdd.roles.aplicacion.AsignarCarreraServicio;
 import ec.mdd.roles.aplicacion.AsignarRolesInicialesServicio;
 import ec.mdd.roles.aplicacion.AsignarRolesServicio;
 import ec.mdd.roles.aplicacion.ConsultarAutorizacionServicio;
+import ec.mdd.roles.aplicacion.ConsultarFirmantesServicio;
 import ec.mdd.roles.aplicacion.DesignarResponsableServicio;
 import ec.mdd.roles.aplicacion.GestionarRolesServicio;
 import ec.mdd.roles.aplicacion.RecibirEventosServicio;
@@ -19,6 +20,7 @@ import ec.mdd.roles.puertos.entrada.AsignarCarrera;
 import ec.mdd.roles.puertos.entrada.AsignarRoles;
 import ec.mdd.roles.puertos.entrada.AsignarRolesIniciales;
 import ec.mdd.roles.puertos.entrada.ConsultarAutorizacion;
+import ec.mdd.roles.puertos.entrada.ConsultarFirmantes;
 import ec.mdd.roles.puertos.entrada.GestionarRoles;
 import ec.mdd.roles.puertos.entrada.RecibirEventos;
 import ec.mdd.roles.puertos.salida.RegistroDeCambios;
@@ -111,6 +113,13 @@ public class ConfiguracionRoles {
             RepositorioPeriodosConocidos periodos,
             Transaccion transaccionRoles) {
         return new RecibirEventosServicio(eventos, periodos, transaccionRoles, Clock.systemUTC());
+    }
+
+    /** Quién puede firmar en un periodo (RF-58). */
+    @Bean
+    public ConsultarFirmantes consultarFirmantes(
+            RepositorioAsignacionesDeRol asignaciones, RepositorioDesignaciones designaciones) {
+        return new ConsultarFirmantesServicio(asignaciones, designaciones);
     }
 
     /** Roles y permisos efectivos, para el token de sesión (ADR-021). */

@@ -5,17 +5,23 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import ec.mdd.academico.dominio.EstadoDeAsignaturaParalelo;
+import ec.mdd.academico.dominio.EstadoPeriodo;
+import ec.mdd.academico.dominio.PeriodoAcademico;
 import ec.mdd.academico.puertos.entrada.AsignaturaConCampos;
 import ec.mdd.academico.puertos.entrada.ConsultarAsignaturasOfertadas;
 import ec.mdd.academico.puertos.entrada.ConsultarParaleloDeLaOferta;
+import ec.mdd.academico.puertos.entrada.ConsultarPeriodos;
 import ec.mdd.academico.puertos.entrada.ParaleloConCampos;
+import ec.mdd.academico.puertos.entrada.PeriodoConsultado;
 import ec.mdd.academico.puertos.entrada.PeriodoNoEncontrado;
 import ec.mdd.plataforma.errores.ErroresAutoConfiguracion;
 import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
 import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -45,6 +51,36 @@ class InternoAcademicoContratoTest {
     private final ValidadorDeContrato contrato = ValidadorDeContrato.para("academico");
 
     @Autowired private MockMvc mvc;
+
+    @Test
+    void dadoUnProceso_cuandoConsultaElEstado_entonces200SoloConEso() throws Exception {
+        MvcResult resultado =
+                mvc.perform(get("/interno/academico/periodos/2026-I/estado").with(deProceso()))
+                        .andReturn();
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString())
+                .isEqualTo("{\"periodo\":\"2026-I\",\"estado\":\"PLANIFICACION\"}");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnPeriodoQueNoExiste_cuandoConsultaElEstado_entonces404() throws Exception {
+        MvcResult resultado =
+                mvc.perform(get("/interno/academico/periodos/NADA/estado").with(deProceso()))
+                        .andReturn();
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(404);
+    }
+
+    @Test
+    void dadoUnTokenDeUsuario_cuandoConsultaElEstado_entonces403() throws Exception {
+        MvcResult resultado =
+                mvc.perform(get("/interno/academico/periodos/2026-I/estado").with(jwt()))
+                        .andReturn();
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(403);
+    }
 
     @Test
     void dadoUnProceso_cuandoConsulta_entonces200SoloConLoQueNecesitaLaAfinidad() throws Exception {
@@ -226,6 +262,31 @@ class InternoAcademicoContratoTest {
 
     @TestConfiguration(proxyBeanMethods = false)
     static class Dobles {
+
+        @Bean
+        ConsultarPeriodos consultarPeriodos() {
+            return new ConsultarPeriodos() {
+                @Override
+                public List<PeriodoConsultado> todos() {
+                    return List.of();
+                }
+
+                @Override
+                public PeriodoConsultado porCodigo(String codigo) {
+                    if (!"2026-I".equals(codigo)) {
+                        throw new PeriodoNoEncontrado(codigo);
+                    }
+                    return new PeriodoConsultado(
+                            new PeriodoAcademico(
+                                    "2026-I",
+                                    "Periodo 2026-I",
+                                    LocalDate.of(2026, 4, 1),
+                                    LocalDate.of(2026, 8, 31),
+                                    EstadoPeriodo.PLANIFICACION),
+                            OptionalInt.empty());
+                }
+            };
+        }
 
         @Bean
         ConsultarAsignaturasOfertadas consultarAsignaturasOfertadas() {

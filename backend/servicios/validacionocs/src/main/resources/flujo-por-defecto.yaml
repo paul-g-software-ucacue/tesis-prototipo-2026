@@ -1,0 +1,98 @@
+# Configuración del flujo y del árbol de firmas (RF-34, RF-58, sección 9.1 de la ERS).
+#
+# Este archivo es a la vez la plantilla y la configuración por defecto: rige en un periodo mientras
+# no se cargue otra. Cámbialo y cárgalo en la pantalla «Flujo y firmas», con el periodo en
+# Planificación. Solo se aceptan las claves de este archivo, sin anclas (&), alias (*) ni etiquetas
+# (!). Hasta 1 MB.
+
+# Las 9 etapas, todas. Cada una lleva:
+#   activa             true o false. BORRADOR_CARRERA, CONGELADO_EN_FIRMA, EN_OCS, APROBADO y
+#                      PUBLICADO son el esqueleto fijo: no se pueden desactivar.
+#   nombre             lo que ve el usuario, hasta 80 caracteres.
+#   rol                el rol responsable.
+#   plazo_dias         días corridos desde que el distributivo llega a la etapa: un número entero
+#                      mayor que 0. Lo exige una etapa activa, salvo PUBLICADO.
+#   admite_devolucion  true o false: si desde esta etapa se puede devolver.
+#
+# Los roles son ADMINISTRADOR, COORDINADOR_CARRERA, DOCENTE, GESTOR_UNIDAD, MIEMBRO_OCS,
+# OPERADOR_DATOS, RECTOR, RESPONSABLE_CONSOLIDACION, SECRETARIA_GENERAL y VICERRECTOR.
+etapas:
+  BORRADOR_CARRERA:
+    activa: true
+    nombre: Propuesta de carrera
+    rol: COORDINADOR_CARRERA
+    plazo_dias: 15
+    admite_devolucion: false
+  # Desactivada: las unidades no tienen parcial propio.
+  BORRADOR_UNIDADES:
+    activa: false
+    nombre: Planificación de investigación y vinculación
+    rol: GESTOR_UNIDAD
+    plazo_dias: 10
+    admite_devolucion: false
+  EN_CONSOLIDACION:
+    activa: true
+    nombre: Consolidación
+    rol: RESPONSABLE_CONSOLIDACION
+    plazo_dias: 5
+    admite_devolucion: true
+  EN_REVISION_VRA:
+    activa: true
+    nombre: Revisión del Vicerrectorado
+    rol: VICERRECTOR
+    plazo_dias: 5
+    admite_devolucion: true
+  CONGELADO_EN_FIRMA:
+    activa: true
+    nombre: En firma
+    rol: RESPONSABLE_CONSOLIDACION
+    plazo_dias: 5
+    admite_devolucion: true
+  EN_OCS:
+    activa: true
+    nombre: Resolución del OCS
+    rol: SECRETARIA_GENERAL
+    plazo_dias: 10
+    admite_devolucion: true
+  # Desactivada: el prototipo no remite a la instancia zonal.
+  REMITIDO_ZONAL:
+    activa: false
+    nombre: Remitido a la instancia zonal
+    rol: VICERRECTOR
+    plazo_dias: 10
+    admite_devolucion: false
+  APROBADO:
+    activa: true
+    nombre: Aprobado
+    rol: SECRETARIA_GENERAL
+    plazo_dias: 3
+    admite_devolucion: false
+  PUBLICADO:
+    activa: true
+    nombre: Publicado
+    rol: SECRETARIA_GENERAL
+    admite_devolucion: false
+
+# El árbol de firmas, por orden desde 1 y sin huecos. Cada firma lleva:
+#   orden      su lugar.
+#   etiqueta   Elaborado, Revisado o Aprobado, hasta 40 caracteres.
+#   rol        quién firma. Al cargar, cada rol necesita un usuario, y el Responsable de
+#              consolidación tiene que estar designado en el periodo.
+#   etapa      en qué etapa, que debe estar activa.
+#   documento  CONSOLIDADO, PARCIAL_CARRERA o RESOLUCION_OCS.
+firmas:
+  - orden: 1
+    etiqueta: Elaborado
+    rol: RESPONSABLE_CONSOLIDACION
+    etapa: CONGELADO_EN_FIRMA
+    documento: CONSOLIDADO
+  - orden: 2
+    etiqueta: Revisado
+    rol: VICERRECTOR
+    etapa: CONGELADO_EN_FIRMA
+    documento: CONSOLIDADO
+  - orden: 3
+    etiqueta: Aprobado
+    rol: RECTOR
+    etapa: CONGELADO_EN_FIRMA
+    documento: CONSOLIDADO

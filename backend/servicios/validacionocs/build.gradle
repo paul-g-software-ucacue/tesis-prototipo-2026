@@ -3,4 +3,17 @@
 // SpotBugs. Vale para todos los servicios, centrales o no.
 plugins {
     id 'mdd.servicio'
+    id 'mdd.contrato'
+}
+
+dependencies {
+    // Leer el archivo de configuración del flujo (D-89). La versión la fija Spring Boot.
+    implementation 'org.yaml:snakeyaml'
+    // Las consultas a Académico y a Roles por sus rutas internas (ADR-023).
+    implementation project(':plataforma:eventos')
+    // La tabla de las configuraciones cargadas (F12-H01).
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    // El permiso de cada operación y quién la hace, en el token.
+    implementation 'org.springframework.security:spring-security-oauth2-resource-server'
+    implementation 'org.springframework.security:spring-security-oauth2-jose'
 }

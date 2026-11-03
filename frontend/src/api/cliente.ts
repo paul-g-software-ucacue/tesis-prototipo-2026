@@ -12,6 +12,7 @@ import type { paths as rutasDeGeneracion } from './generado/generacion';
 import type { paths as rutasDeNormativa } from './generado/normativa';
 import type { paths as rutasDeRoles } from './generado/roles';
 import type { paths } from './generado/usuarios';
+import type { paths as rutasDeValidacionocs } from './generado/validacionocs';
 
 /**
  * Encabezado interno de las peticiones que no inicia el usuario, como la renovación del token: no
@@ -102,3 +103,10 @@ export const apiGeneracion = createClient<rutasDeGeneracion>({
   fetch: (peticion) => globalThis.fetch(peticion),
 });
 apiGeneracion.use(conToken);
+
+/** El cliente de Validación OCS (F12-H01), con el mismo token y la misma actividad. */
+export const apiValidacionocs = createClient<rutasDeValidacionocs>({
+  baseUrl: globalThis.location?.origin ?? '',
+  fetch: (peticion) => globalThis.fetch(peticion),
+});
+apiValidacionocs.use(conToken);
