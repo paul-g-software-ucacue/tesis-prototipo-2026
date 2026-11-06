@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -23,18 +24,24 @@ import ec.mdd.validacionocs.puertos.entrada.ConfiguracionInvalida;
 import ec.mdd.validacionocs.puertos.entrada.ConfiguracionVigente;
 import ec.mdd.validacionocs.puertos.entrada.PeriodoNoEncontrado;
 import ec.mdd.validacionocs.puertos.entrada.PeriodoSinPlanificacion;
+import ec.mdd.validacionocs.puertos.salida.CambioDeFlujo;
 import ec.mdd.validacionocs.puertos.salida.DatosDelPeriodo;
+import ec.mdd.validacionocs.puertos.salida.RegistroDeCambios;
 import ec.mdd.validacionocs.puertos.salida.RepositorioConfiguracion;
+import ec.mdd.validacionocs.puertos.salida.Transaccion;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 
 /**
  * Cargar valida todo antes de guardar, y un rechazo no cambia lo que rige (FR-016 a FR-019). Usa el
@@ -50,9 +57,28 @@ class CargarConfiguracionServicioTest {
 
     private final DatosDelPeriodo datos = mock(DatosDelPeriodo.class);
     private final RepositorioConfiguracion repositorio = mock(RepositorioConfiguracion.class);
+    private final RegistroDeCambios registro = mock(RegistroDeCambios.class);
+    private boolean dentro;
+    private final Transaccion transaccion =
+            new Transaccion() {
+                @Override
+                public <T> T ejecutar(Supplier<T> trabajo) {
+                    dentro = true;
+                    try {
+                        return trabajo.get();
+                    } finally {
+                        dentro = false;
+                    }
+                }
+            };
     private final CargarConfiguracionServicio servicio =
             new CargarConfiguracionServicio(
-                    datos, new LectorYaml(), repositorio, Clock.fixed(AHORA, ZoneOffset.UTC));
+                    datos,
+                    new LectorYaml(),
+                    repositorio,
+                    registro,
+                    transaccion,
+                    Clock.fixed(AHORA, ZoneOffset.UTC));
 
     @BeforeEach
     void preparar() {
@@ -85,6 +111,53 @@ class CargarConfiguracionServicioTest {
         assertThat(vigente.carga().orElseThrow().numero()).isEqualTo(1);
         assertThat(vigente.configuracion().etapas()).hasSize(9);
         assertThat(vigente.configuracion().firmas()).hasSize(3);
+    }
+
+    @Test
+    void laPrimeraCargaDelPeriodo_cuandoSeGuarda_entoncesLaBitacoraSoloLlevaLaVersionNueva() {
+        when(repositorio.vigente(PERIODO))
+                .thenReturn(
+                        Optional.empty(),
+                        Optional.of(new CargaGuardada(1, PLANTILLA, QUIEN, AHORA)));
+        doAnswer(invocacion -> assertThat(dentro).as("en la transacción").isTrue())
+                .when(registro)
+                .registrar(any());
+
+        cargar(PLANTILLA);
+
+        ArgumentCaptor<CambioDeFlujo> cambio = ArgumentCaptor.forClass(CambioDeFlujo.class);
+        verify(registro).registrar(cambio.capture());
+        assertThat(cambio.getValue().accion())
+                .isEqualTo(CambioDeFlujo.Accion.CONFIGURACION_FLUJO_CARGADA);
+        assertThat(cambio.getValue().usuario()).isEqualTo(QUIEN);
+        assertThat(cambio.getValue().momento()).isEqualTo(AHORA);
+        assertThat(cambio.getValue().detalle()).isEqualTo(Map.of("periodo", PERIODO));
+        assertThat(cambio.getValue().anterior()).isEmpty();
+        assertThat(cambio.getValue().nuevo()).isEqualTo(Map.of("version", 1));
+    }
+
+    @Test
+    void otraCargaDelPeriodo_cuandoSeGuarda_entoncesLaBitacoraLlevaLaVersionAnteriorYLaNueva() {
+        when(repositorio.vigente(PERIODO))
+                .thenReturn(
+                        Optional.of(new CargaGuardada(1, PLANTILLA, "otro.demo", AHORA)),
+                        Optional.of(new CargaGuardada(2, PLANTILLA, QUIEN, AHORA)));
+
+        ConfiguracionVigente vigente = cargar(PLANTILLA);
+
+        assertThat(vigente.carga().orElseThrow().numero()).isEqualTo(2);
+        ArgumentCaptor<CambioDeFlujo> cambio = ArgumentCaptor.forClass(CambioDeFlujo.class);
+        verify(registro).registrar(cambio.capture());
+        assertThat(cambio.getValue().anterior()).isEqualTo(Map.of("version", 1));
+        assertThat(cambio.getValue().nuevo()).isEqualTo(Map.of("version", 2));
+    }
+
+    @Test
+    void unArchivoRechazado_cuandoSeCarga_entoncesNoLlegaALaBitacora() {
+        assertThatThrownBy(() -> cargar("etapas: [")).isInstanceOf(RuntimeException.class);
+
+        verifyNoInteractions(registro);
+        assertNoGuardo();
     }
 
     @Test

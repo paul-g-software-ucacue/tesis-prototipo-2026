@@ -50,7 +50,7 @@ Inventario de clases (lo completa la tarea de cada servicio):
 | Roles | `CREAR_ROL`, `INICIALIZAR` | `EDITAR_ROL`, `ASIGNAR_ROL`, `QUITAR_ROL`, `INDICAR_CARRERA`*, `DESIGNAR_RESPONSABLE`* | `BORRAR_ROL`, `QUITAR_CARRERA` |
 | Validación OCS | — | `CONFIGURACION_FLUJO_CARGADA`* | — |
 
-\* Crea la primera vez y cambia después: decide al registrar.
+\* Crea la primera vez y cambia después: decide al registrar. `VERSION_ASOCIADA` lleva `anterior` solo si el periodo tenía versión, y hoy nunca llega a registrarse así: un periodo con versión devuelve la suya o la rechaza (T016).
 
 **De dónde sale `periodo`** (lo aplica el adaptador de cada servicio; si la acción no está en la tabla, el cambio no pertenece a un periodo y `periodo` falta):
 
@@ -66,7 +66,7 @@ Inventario de clases (lo completa la tarea de cada servicio):
 
 Si al implementar una acción la clave no existe con ese nombre, la tarea del servicio la ajusta y actualiza esta tabla.
 
-**Datos personales (D-91, FR-014):** en las acciones de Docentes, los campos `primerNombre`, `segundoNombre`, `primerApellido`, `segundoApellido`, `correoInstitucional`, `telefono` y `condicionEspecial` llegan a la bitácora con su nombre en `objeto.camposPersonales` y sin valores en `anterior` ni `nuevo`. La identificación se conserva: dice a quién se refiere el cambio. Lo aplica el adaptador de Docentes al armar la entrada; el registro local no cambia. Que la condición especial cambió sigue en la bitácora, porque afecta las horas que admite la política.
+**Datos personales (D-91, FR-014):** en las acciones de Docentes, los campos `primerNombre`, `segundoNombre`, `primerApellido`, `segundoApellido`, `correoInstitucional`, `telefono` y `condicionEspecial` llegan a la bitácora con su nombre en `objeto.camposPersonales` y sin valores en `anterior` ni `nuevo`. La identificación se conserva: dice a quién se refiere el cambio. Lo aplica el adaptador de Docentes al armar la entrada; el registro local no cambia. Que la condición especial cambió sigue en la bitácora, porque afecta las horas que admite la política. Si un cambio solo tocó datos personales, `anterior` y `nuevo` llegan como objetos vacíos: el cambio existió, y la entrada lo dice en `objeto.camposPersonales` (T015).
 
 **Contenido como mapa:** los emisores arman el contenido como un mapa y no con un DTO generado del contrato de Usuarios, igual que hoy Académico con `PeriodoActualizado`. El esquema `EntradaBitacora` se verifica en el receptor, con `ValidadorDeContrato` y con el dominio.
 
