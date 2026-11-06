@@ -59,7 +59,8 @@ class AplicadorNormativaIntegrationTest {
             new NormativaFlywayConfig().flywayNormativa(dataSource).migrate();
             JdbcClient jdbc = JdbcClient.create(dataSource);
             RepositorioVersionesJdbc repositorio = new RepositorioVersionesJdbc(jdbc);
-            RegistroDeCambiosJdbc registro = new RegistroDeCambiosJdbc(jdbc);
+            RegistroDeCambiosJdbc registro =
+                    new RegistroDeCambiosJdbc(jdbc, evento -> {}, java.time.Clock.systemUTC());
             TransaccionSpring transaccion =
                     new TransaccionSpring(
                             new TransactionTemplate(new DataSourceTransactionManager(dataSource)));

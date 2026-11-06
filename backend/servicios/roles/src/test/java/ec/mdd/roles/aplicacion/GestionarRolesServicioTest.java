@@ -67,9 +67,10 @@ class GestionarRolesServicioTest {
     private final RepositorioAsignacionesDeRol asignaciones =
             mock(RepositorioAsignacionesDeRol.class);
     private final RegistroDeCambios registro = mock(RegistroDeCambios.class);
+    private final TransaccionDePrueba transaccion = new TransaccionDePrueba();
     private final GestionarRolesServicio servicio =
             new GestionarRolesServicio(
-                    roles, asignaciones, registro, Clock.fixed(AHORA, ZoneOffset.UTC));
+                    roles, asignaciones, registro, transaccion, Clock.fixed(AHORA, ZoneOffset.UTC));
 
     @BeforeEach
     void preparar() {
@@ -125,6 +126,13 @@ class GestionarRolesServicioTest {
         assertThat(cambio.detalle())
                 .containsEntry("identificador", "REVISOR")
                 .containsEntry("permisos", List.of("DOCENTES:LECTURA"));
+        assertThat(cambio.anterior()).isEmpty();
+        assertThat(cambio.nuevo())
+                .isEqualTo(
+                        Map.of(
+                                "nombre", "Revisor",
+                                "descripcion", "Revisa docentes.",
+                                "permisos", List.of("DOCENTES:LECTURA")));
     }
 
     @Test
@@ -164,7 +172,14 @@ class GestionarRolesServicioTest {
         assertThat(editado.rol().identificador()).isEqualTo("AUDITOR_DE_CARGAS");
         assertThat(editado.rol().permisos()).containsExactly(LEER_DOCENTES);
         verify(roles).guardar(editado.rol(), AHORA);
-        assertThat(registrado().accion()).isEqualTo(CambioDeRoles.Accion.EDITAR_ROL);
+        CambioDeRoles cambio = registrado();
+        assertThat(cambio.accion()).isEqualTo(CambioDeRoles.Accion.EDITAR_ROL);
+        assertThat(cambio.anterior())
+                .containsEntry("descripcion", "Revisa cargas.")
+                .containsEntry("permisos", List.of("CARGAS:LECTURA"));
+        assertThat(cambio.nuevo())
+                .containsEntry("descripcion", "Ahora docentes.")
+                .containsEntry("permisos", List.of("DOCENTES:LECTURA"));
     }
 
     @Test
@@ -200,7 +215,31 @@ class GestionarRolesServicioTest {
         servicio.borrar("AUDITOR_DE_CARGAS", "admin.demo");
 
         verify(roles).borrar("AUDITOR_DE_CARGAS");
-        assertThat(registrado().accion()).isEqualTo(CambioDeRoles.Accion.BORRAR_ROL);
+        CambioDeRoles cambio = registrado();
+        assertThat(cambio.accion()).isEqualTo(CambioDeRoles.Accion.BORRAR_ROL);
+        assertThat(cambio.anterior()).containsEntry("nombre", "Auditor de cargas");
+        assertThat(cambio.nuevo()).isEmpty();
+    }
+
+    /** Sin transacción, la entrada de la bitácora no se publica (F17-H01, ADR-018). */
+    @Test
+    void crearEditarYBorrar_cuandoGuardan_entoncesGuardanYRegistranDentroDeUnaTransaccion() {
+        List<Boolean> dentro = new java.util.ArrayList<>();
+        org.mockito.Mockito.doAnswer(invocacion -> dentro.add(transaccion.dentro()))
+                .when(registro)
+                .registrar(any());
+        org.mockito.Mockito.doAnswer(invocacion -> dentro.add(transaccion.dentro()))
+                .when(roles)
+                .guardar(any(), any());
+
+        servicio.crear(new DatosDeRol("Revisor", "Revisa.", List.of(LEER_DOCENTES)), "admin.demo");
+        servicio.editar(
+                "AUDITOR_DE_CARGAS",
+                new DatosDeRol("Auditor de cargas", "Otra.", List.of(LEER_DOCENTES)),
+                "admin.demo");
+        servicio.borrar("AUDITOR_DE_CARGAS", "admin.demo");
+
+        assertThat(dentro).hasSize(5).containsOnly(true);
     }
 
     @Test

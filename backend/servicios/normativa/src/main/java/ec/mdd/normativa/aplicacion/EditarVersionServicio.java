@@ -15,6 +15,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Editar una versión. La versión se bloquea antes de comprobar si está en uso, así que una edición
@@ -63,13 +64,19 @@ public final class EditarVersionServicio implements EditarVersion {
                                     ahora,
                                     quien,
                                     CambioDeNormativa.Accion.VERSION_EDITADA,
-                                    Map.of(
-                                            "numero",
-                                            numero,
-                                            "cambios",
-                                            detalle(edicion.cambios()))));
+                                    Map.of("numero", numero, "cambios", detalle(edicion.cambios())),
+                                    valores(edicion.cambios(), CambioDeValor::anterior),
+                                    valores(edicion.cambios(), CambioDeValor::nuevo)));
                     return edicion.version();
                 });
+    }
+
+    // Cada campo que cambió con su valor de antes o de después; null si no había (F17-H01).
+    private static Map<String, Object> valores(
+            List<CambioDeValor> cambios, Function<CambioDeValor, String> valor) {
+        Map<String, Object> valores = new LinkedHashMap<>();
+        cambios.forEach(cambio -> valores.put(cambio.campo(), valor.apply(cambio)));
+        return valores;
     }
 
     // Un mapa por cambio, con null cuando no había o ya no hay valor.

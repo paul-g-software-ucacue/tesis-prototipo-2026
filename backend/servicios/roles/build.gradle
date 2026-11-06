@@ -7,6 +7,9 @@ plugins {
 }
 
 dependencies {
+    // Cada cambio también como un evento hacia la bitácora de Usuarios, en la misma transacción;
+    // dentro de identidad se entrega sin HTTP (F17-H01, ADR-024).
+    implementation project(':plataforma:eventos')
     // Roles, permisos y asignaciones de rol en el esquema roles, con JdbcClient (research §11).
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     // El detalle de cada cambio en jsonb (FR-011).

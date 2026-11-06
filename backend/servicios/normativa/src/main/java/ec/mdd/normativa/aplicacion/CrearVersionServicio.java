@@ -52,18 +52,22 @@ public final class CrearVersionServicio implements CrearVersion {
                     VersionNormativa.Copia copia =
                             VersionNormativa.copiaDe(origen, numero, datos, ahora);
                     repositorio.guardar(copia.version(), quien, ahora);
+                    Map<String, Object> creada =
+                            Map.of(
+                                    "numero",
+                                    copia.evento().numero(),
+                                    "codigo",
+                                    copia.evento().codigo(),
+                                    "copiadaDe",
+                                    copia.evento().copiadaDe());
                     registro.registrar(
                             new CambioDeNormativa(
                                     ahora,
                                     quien,
                                     CambioDeNormativa.Accion.VERSION_CREADA,
-                                    Map.of(
-                                            "numero",
-                                            copia.evento().numero(),
-                                            "codigo",
-                                            copia.evento().codigo(),
-                                            "copiadaDe",
-                                            copia.evento().copiadaDe())));
+                                    creada,
+                                    Map.of(),
+                                    creada));
                     return copia.version();
                 });
     }

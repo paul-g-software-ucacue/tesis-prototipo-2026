@@ -90,6 +90,8 @@ class MantenerCargosServicioTest {
                 .containsEntry("tipo", "COORDINADOR_CARRERA")
                 .containsEntry("carrera", CARRERA)
                 .doesNotContainKey("unidad");
+        assertThat(cambio.getValue().anterior()).isEmpty();
+        assertThat(cambio.getValue().nuevo()).isEqualTo(cambio.getValue().detalle());
     }
 
     @Test
@@ -179,6 +181,10 @@ class MantenerCargosServicioTest {
         verify(registro).registrar(cambio.capture());
         assertThat(cambio.getValue().accion()).isEqualTo(CambioRegistrado.Accion.CARGO_CORREGIDO);
         assertThat(cambio.getValue().detalle()).containsKey("cambios");
+        assertThat(cambio.getValue().anterior()).containsEntry("estado", "VIGENTE");
+        assertThat(cambio.getValue().nuevo()).containsEntry("estado", "FINALIZADO");
+        assertThat(cambio.getValue().anterior())
+                .containsOnlyKeys(cambio.getValue().nuevo().keySet());
     }
 
     @Test

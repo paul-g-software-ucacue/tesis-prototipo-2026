@@ -15,6 +15,9 @@ dependencies {
     // El lenguaje publicado de las cargas (ADR-022): Docentes es dueño de las cargas 06, 08 y 09 y
     // las aplica completas o nada (F01-H04, MD-13).
     implementation project(':plataforma:lenguaje-cargas')
+    // Cada cambio también como un evento hacia la bitácora de Usuarios, en la misma transacción
+    // (F17-H01, ADR-018).
+    implementation project(':plataforma:eventos')
     // Los docentes en el esquema docentes, con JdbcClient, como Académico.
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     // La ficha académica y el detalle de cada cambio en jsonb (FR-002, FR-010).

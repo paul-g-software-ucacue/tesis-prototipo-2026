@@ -8,6 +8,7 @@ import ec.mdd.roles.puertos.salida.CambioDeRoles;
 import ec.mdd.roles.puertos.salida.RegistroDeCambios;
 import ec.mdd.roles.puertos.salida.RepositorioAsignacionesDeRol;
 import ec.mdd.roles.puertos.salida.RepositorioRoles;
+import ec.mdd.roles.puertos.salida.Transaccion;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Collection;
@@ -25,6 +26,7 @@ public final class AsignarRolesInicialesServicio implements AsignarRolesIniciale
     private final RepositorioRoles roles;
     private final RepositorioAsignacionesDeRol asignaciones;
     private final RegistroDeCambios registro;
+    private final Transaccion transaccion;
     private final Clock reloj;
 
     /** Recibe los puertos de salida y el reloj. */
@@ -32,10 +34,12 @@ public final class AsignarRolesInicialesServicio implements AsignarRolesIniciale
             RepositorioRoles roles,
             RepositorioAsignacionesDeRol asignaciones,
             RegistroDeCambios registro,
+            Transaccion transaccion,
             Clock reloj) {
         this.roles = roles;
         this.asignaciones = asignaciones;
         this.registro = registro;
+        this.transaccion = transaccion;
         this.reloj = reloj;
     }
 
@@ -51,15 +55,20 @@ public final class AsignarRolesInicialesServicio implements AsignarRolesIniciale
         String nombre = NombreDeUsuario.normalizar(usuario);
         List<String> ordenados = iniciales.stream().sorted().distinct().toList();
         Instant ahora = reloj.instant();
-        if (!asignaciones.inicializar(nombre, ordenados, ahora)) {
-            return false;
-        }
-        registro.registrar(
-                new CambioDeRoles(
-                        ahora,
-                        SISTEMA,
-                        CambioDeRoles.Accion.INICIALIZAR,
-                        Map.of("usuario", nombre, "roles", ordenados)));
-        return true;
+        return transaccion.ejecutar(
+                () -> {
+                    if (!asignaciones.inicializar(nombre, ordenados, ahora)) {
+                        return false;
+                    }
+                    registro.registrar(
+                            new CambioDeRoles(
+                                    ahora,
+                                    SISTEMA,
+                                    CambioDeRoles.Accion.INICIALIZAR,
+                                    Map.of("usuario", nombre, "roles", ordenados),
+                                    Map.of(),
+                                    Map.of("roles", ordenados)));
+                    return true;
+                });
     }
 }

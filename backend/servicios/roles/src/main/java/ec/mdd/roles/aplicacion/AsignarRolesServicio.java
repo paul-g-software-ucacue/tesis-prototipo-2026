@@ -17,6 +17,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -77,20 +78,29 @@ public final class AsignarRolesServicio implements AsignarRoles {
                             quien,
                             CambioDeRoles.Accion.ASIGNAR_ROL,
                             nombre,
-                            diferencia(ordenados, antes));
+                            diferencia(ordenados, antes),
+                            antes,
+                            ordenados);
                     registrar(
                             ahora,
                             quien,
                             CambioDeRoles.Accion.QUITAR_ROL,
                             nombre,
-                            diferencia(antes, ordenados));
-                    if (!ordenados.contains(AsignarCarrera.ROL) && carreras.quitar(nombre)) {
-                        registro.registrar(
-                                new CambioDeRoles(
-                                        ahora,
-                                        quien,
-                                        CambioDeRoles.Accion.QUITAR_CARRERA,
-                                        Map.of("usuario", nombre)));
+                            diferencia(antes, ordenados),
+                            antes,
+                            ordenados);
+                    if (!ordenados.contains(AsignarCarrera.ROL)) {
+                        Optional<String> previa = carreras.de(nombre);
+                        if (previa.isPresent() && carreras.quitar(nombre)) {
+                            registro.registrar(
+                                    new CambioDeRoles(
+                                            ahora,
+                                            quien,
+                                            CambioDeRoles.Accion.QUITAR_CARRERA,
+                                            Map.of("usuario", nombre),
+                                            Map.of("carrera", previa.get()),
+                                            Map.of()));
+                        }
                     }
                     return ordenados;
                 });
@@ -101,11 +111,18 @@ public final class AsignarRolesServicio implements AsignarRoles {
             String quien,
             CambioDeRoles.Accion accion,
             String usuario,
-            List<String> cambiados) {
+            List<String> cambiados,
+            List<String> antes,
+            List<String> despues) {
         if (!cambiados.isEmpty()) {
             registro.registrar(
                     new CambioDeRoles(
-                            ahora, quien, accion, Map.of("usuario", usuario, "roles", cambiados)));
+                            ahora,
+                            quien,
+                            accion,
+                            Map.of("usuario", usuario, "roles", cambiados),
+                            Map.of("roles", antes),
+                            Map.of("roles", despues)));
         }
     }
 

@@ -63,7 +63,7 @@ class VersionEnUsoIntegrationTest {
         new NormativaFlywayConfig().flywayNormativa(dataSource).migrate();
         jdbc = JdbcClient.create(dataSource);
         repositorio = new RepositorioVersionesJdbc(jdbc);
-        registro = new RegistroDeCambiosJdbc(jdbc);
+        registro = new RegistroDeCambiosJdbc(jdbc, evento -> {}, java.time.Clock.systemUTC());
         transaccion =
                 new TransaccionSpring(
                         new TransactionTemplate(new DataSourceTransactionManager(dataSource)));

@@ -29,6 +29,7 @@ import ec.mdd.normativa.puertos.salida.RepositorioVersiones;
 import ec.mdd.normativa.puertos.salida.Transaccion;
 import ec.mdd.plataforma.cargas.AplicadorDeCargas;
 import java.time.Clock;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
@@ -50,8 +51,9 @@ public class ConfiguracionNormativa {
     }
 
     @Bean
-    public RegistroDeCambios registroDeCambiosNormativa(JdbcClient jdbc) {
-        return new RegistroDeCambiosJdbc(jdbc);
+    public RegistroDeCambios registroDeCambiosNormativa(
+            JdbcClient jdbc, ApplicationEventPublisher eventos) {
+        return new RegistroDeCambiosJdbc(jdbc, eventos, Clock.systemUTC());
     }
 
     @Bean

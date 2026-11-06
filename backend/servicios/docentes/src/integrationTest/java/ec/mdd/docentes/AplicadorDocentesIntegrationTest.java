@@ -22,6 +22,7 @@ import ec.mdd.plataforma.cargas.LoteDeCarga;
 import ec.mdd.plataforma.cargas.RechazoDelLote;
 import ec.mdd.plataforma.cargas.ResultadoDelLote;
 import ec.mdd.plataforma.cargas.TipoDeRegistro;
+import ec.mdd.plataforma.eventos.EventoEntreProcesos;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -54,6 +55,7 @@ class AplicadorDocentesIntegrationTest {
 
     private static JdbcClient jdbc;
     private static AplicadorDeCargas aplicador;
+    private static final List<EventoEntreProcesos> entradas = new ArrayList<>();
 
     @BeforeAll
     static void migrar() {
@@ -69,7 +71,11 @@ class AplicadorDocentesIntegrationTest {
         RepositorioDocentesJdbc docentes = new RepositorioDocentesJdbc(jdbc);
         RepositorioCargosJdbc cargos = new RepositorioCargosJdbc(jdbc);
         RepositorioProyectosJdbc proyectos = new RepositorioProyectosJdbc(jdbc);
-        RegistroDeCambiosJdbc registro = new RegistroDeCambiosJdbc(jdbc);
+        RegistroDeCambiosJdbc registro =
+                new RegistroDeCambiosJdbc(
+                        jdbc,
+                        evento -> entradas.add((EventoEntreProcesos) evento),
+                        Clock.systemUTC());
         Referencias referencias = referencias();
         aplicador =
                 CargasDeDocentes.aplicador(
@@ -114,6 +120,7 @@ class AplicadorDocentesIntegrationTest {
                         "TRUNCATE docentes.proyecto, docentes.cargo, docentes.docente,"
                                 + " docentes.registro_cambio")
                 .update();
+        entradas.clear();
     }
 
     /** Las referencias de Académico que existirían con las cargas 01 a 04 de prueba aplicadas. */
@@ -180,6 +187,20 @@ class AplicadorDocentesIntegrationTest {
         assertThat(lotes.stream().map(lote -> confirmar(lote).nuevos()).toList())
                 .containsExactly(47, 21, 11);
         assertThat(filas("docente")).isEqualTo(47);
+        // Cada fila llega a la bitácora con quien confirmó, sin datos personales (F17-H01, D-91).
+        assertThat(entradas)
+                .hasSize((int) filas("registro_cambio"))
+                .allSatisfy(
+                        entrada -> {
+                            assertThat(entrada.tipo()).isEqualTo("docentes.EntradaBitacora");
+                            assertThat(entrada.contenido()).containsEntry("usuario", "datos.demo");
+                        });
+        String todas = entradas.stream().map(EventoEntreProcesos::contenido).toList().toString();
+        for (FilaDelLote fila : lotes.getFirst().filas()) {
+            assertThat(todas)
+                    .doesNotContain(fila.valor("correo_institucional"))
+                    .doesNotContain("=" + fila.valor("telefono"));
+        }
         for (LoteDeCarga lote : lotes) {
             assertThat(aplicador.previsualizar(lote).cuantos(TipoDeRegistro.IGUAL))
                     .as(lote.carga())

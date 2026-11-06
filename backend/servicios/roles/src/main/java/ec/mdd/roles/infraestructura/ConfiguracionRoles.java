@@ -32,6 +32,7 @@ import ec.mdd.roles.puertos.salida.RepositorioPeriodosConocidos;
 import ec.mdd.roles.puertos.salida.RepositorioRoles;
 import ec.mdd.roles.puertos.salida.Transaccion;
 import java.time.Clock;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
@@ -62,8 +63,8 @@ public class ConfiguracionRoles {
     }
 
     @Bean
-    public RegistroDeCambios registroDeCambios(JdbcClient jdbc) {
-        return new RegistroDeCambiosJdbc(jdbc);
+    public RegistroDeCambios registroDeCambios(JdbcClient jdbc, ApplicationEventPublisher eventos) {
+        return new RegistroDeCambiosJdbc(jdbc, eventos, Clock.systemUTC());
     }
 
     @Bean
@@ -137,8 +138,10 @@ public class ConfiguracionRoles {
     public GestionarRoles gestionarRoles(
             RepositorioRoles roles,
             RepositorioAsignacionesDeRol asignaciones,
-            RegistroDeCambios registro) {
-        return new GestionarRolesServicio(roles, asignaciones, registro, Clock.systemUTC());
+            RegistroDeCambios registro,
+            Transaccion transaccionRoles) {
+        return new GestionarRolesServicio(
+                roles, asignaciones, registro, transaccionRoles, Clock.systemUTC());
     }
 
     /** Las asignaciones de rol a usuarios (RF-03). */
@@ -175,7 +178,9 @@ public class ConfiguracionRoles {
     public AsignarRolesIniciales asignarRolesIniciales(
             RepositorioRoles roles,
             RepositorioAsignacionesDeRol asignaciones,
-            RegistroDeCambios registro) {
-        return new AsignarRolesInicialesServicio(roles, asignaciones, registro, Clock.systemUTC());
+            RegistroDeCambios registro,
+            Transaccion transaccionRoles) {
+        return new AsignarRolesInicialesServicio(
+                roles, asignaciones, registro, transaccionRoles, Clock.systemUTC());
     }
 }

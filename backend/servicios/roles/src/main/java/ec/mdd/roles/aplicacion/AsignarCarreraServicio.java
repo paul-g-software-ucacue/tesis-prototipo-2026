@@ -53,13 +53,19 @@ public final class AsignarCarreraServicio implements AsignarCarrera {
         Instant ahora = reloj.instant();
         transaccion.ejecutar(
                 () -> {
+                    Map<String, Object> anterior =
+                            carreras.de(nombre)
+                                    .<Map<String, Object>>map(previa -> Map.of("carrera", previa))
+                                    .orElse(Map.of());
                     carreras.guardar(nombre, carrera, quien, ahora);
                     registro.registrar(
                             new CambioDeRoles(
                                     ahora,
                                     quien,
                                     CambioDeRoles.Accion.INDICAR_CARRERA,
-                                    Map.of("usuario", nombre, "carrera", carrera)));
+                                    Map.of("usuario", nombre, "carrera", carrera),
+                                    anterior,
+                                    Map.of("carrera", carrera)));
                     return carrera;
                 });
     }
@@ -70,6 +76,7 @@ public final class AsignarCarreraServicio implements AsignarCarrera {
         Instant ahora = reloj.instant();
         transaccion.ejecutar(
                 () -> {
+                    String previa = carreras.de(nombre).orElseThrow(UsuarioSinCarrera::new);
                     if (!carreras.quitar(nombre)) {
                         throw new UsuarioSinCarrera();
                     }
@@ -78,7 +85,9 @@ public final class AsignarCarreraServicio implements AsignarCarrera {
                                     ahora,
                                     quien,
                                     CambioDeRoles.Accion.QUITAR_CARRERA,
-                                    Map.of("usuario", nombre)));
+                                    Map.of("usuario", nombre),
+                                    Map.of("carrera", previa),
+                                    Map.of()));
                     return nombre;
                 });
     }

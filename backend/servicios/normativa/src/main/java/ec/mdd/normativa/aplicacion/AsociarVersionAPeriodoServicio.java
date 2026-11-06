@@ -61,7 +61,11 @@ public final class AsociarVersionAPeriodoServicio implements AsociarVersionAPeri
                                     ahora,
                                     quien,
                                     CambioDeNormativa.Accion.VERSION_ASOCIADA,
-                                    Map.of("numero", version, "periodo", periodo)));
+                                    Map.of("numero", version, "periodo", periodo),
+                                    // Un periodo con versión no llega aquí: devuelve la suya o
+                                    // la rechaza. El anterior queda vacío.
+                                    Map.of(),
+                                    Map.of("version", version)));
                     return new AsignacionDelPeriodo(periodo, version, ahora);
                 });
     }

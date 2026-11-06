@@ -41,6 +41,7 @@ import ec.mdd.docentes.puertos.salida.Transaccion;
 import ec.mdd.plataforma.cargas.AplicadorDeCargas;
 import java.time.Clock;
 import java.time.ZoneId;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
@@ -63,8 +64,9 @@ public class ConfiguracionDocentes {
     }
 
     @Bean
-    public RegistroDeCambios registroDeCambiosDocentes(JdbcClient jdbc) {
-        return new RegistroDeCambiosJdbc(jdbc);
+    public RegistroDeCambios registroDeCambiosDocentes(
+            JdbcClient jdbc, ApplicationEventPublisher eventos) {
+        return new RegistroDeCambiosJdbc(jdbc, eventos, Clock.systemUTC());
     }
 
     @Bean

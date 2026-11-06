@@ -84,6 +84,8 @@ class MantenerDocentesServicioTest {
                 .containsEntry("identificacion", DocentesDePrueba.CEDULA)
                 .containsEntry("carreraBase", "C1")
                 .containsEntry("dedicacion", "TC");
+        assertThat(cambio.anterior()).isEmpty();
+        assertThat(cambio.nuevo()).isEqualTo(cambio.detalle());
     }
 
     @Test
@@ -140,6 +142,9 @@ class MantenerDocentesServicioTest {
         verify(repositorio).existeCorreo(medioTiempo.correo(), DocentesDePrueba.CEDULA);
         CambioRegistrado cambio = registrado();
         assertThat(cambio.accion()).isEqualTo(Accion.DOCENTE_CORREGIDO);
+        assertThat(cambio.anterior())
+                .isEqualTo(Map.of("dedicacion", "TC", "horasContratadas", "40"));
+        assertThat(cambio.nuevo()).isEqualTo(Map.of("dedicacion", "MT", "horasContratadas", "20"));
         assertThat(cambio.detalle().get("cambios"))
                 .isEqualTo(
                         List.of(
@@ -206,6 +211,8 @@ class MantenerDocentesServicioTest {
         assertThat(cambio.detalle())
                 .containsEntry("anterior", "ACTIVO")
                 .containsEntry("nuevo", "LICENCIA");
+        assertThat(cambio.anterior()).isEqualTo(Map.of("estado", "ACTIVO"));
+        assertThat(cambio.nuevo()).isEqualTo(Map.of("estado", "LICENCIA"));
     }
 
     @Test

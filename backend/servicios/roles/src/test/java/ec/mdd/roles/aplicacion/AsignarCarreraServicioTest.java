@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -62,6 +63,18 @@ class AsignarCarreraServicioTest {
         assertThat(cambio.usuario()).isEqualTo("admin.demo");
         assertThat(cambio.detalle())
                 .isEqualTo(Map.of("usuario", "coordinacion.demo", "carrera", "DS-01"));
+        assertThat(cambio.anterior()).isEmpty();
+        assertThat(cambio.nuevo()).isEqualTo(Map.of("carrera", "DS-01"));
+    }
+
+    @Test
+    void dadoUnCoordinadorConOtraCarrera_cuandoSeIndica_entoncesRegistraLaAnterior() {
+        when(asignaciones.rolesDe("coordinacion.demo")).thenReturn(List.of("COORDINADOR_CARRERA"));
+        when(carreras.de("coordinacion.demo")).thenReturn(Optional.of("DS-00"));
+
+        servicio.indicar("coordinacion.demo", "DS-01", "admin.demo");
+
+        assertThat(registrado().anterior()).isEqualTo(Map.of("carrera", "DS-00"));
     }
 
     @Test
@@ -85,11 +98,15 @@ class AsignarCarreraServicioTest {
 
     @Test
     void dadoUnCoordinadorConCarrera_cuandoSeQuita_entoncesSeBorraYSeRegistra() {
+        when(carreras.de("coordinacion.demo")).thenReturn(Optional.of("DS-01"));
         when(carreras.quitar("coordinacion.demo")).thenReturn(true);
 
         servicio.quitar("coordinacion.demo", "admin.demo");
 
-        assertThat(registrado().accion()).isEqualTo(CambioDeRoles.Accion.QUITAR_CARRERA);
+        CambioDeRoles cambio = registrado();
+        assertThat(cambio.accion()).isEqualTo(CambioDeRoles.Accion.QUITAR_CARRERA);
+        assertThat(cambio.anterior()).isEqualTo(Map.of("carrera", "DS-01"));
+        assertThat(cambio.nuevo()).isEmpty();
     }
 
     @Test
