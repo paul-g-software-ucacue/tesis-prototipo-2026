@@ -153,6 +153,10 @@ class MantenerOfertaServicioTest {
                 .containsEntry("periodo", PERIODO)
                 .containsEntry("asignatura", "A1")
                 .containsEntry("paralelo", "A_NOCTURNA");
+        assertThat(cambio.anterior()).isEmpty();
+        assertThat(cambio.nuevo())
+                .containsEntry("jornada", "NOCTURNA")
+                .containsEntry("estudiantes", 28);
         assertThat(transaccion.dentro()).isFalse();
     }
 
@@ -197,6 +201,12 @@ class MantenerOfertaServicioTest {
         CambioRegistrado cambio = registrado();
         assertThat(cambio.accion()).isEqualTo(Accion.ASIGNATURA_PARALELO_CORREGIDA);
         assertThat(cambio.detalle()).containsEntry("paralelo", "A_NOCTURNA").containsKey("cambios");
+        assertThat(cambio.anterior())
+                .containsExactlyInAnyOrderEntriesOf(
+                        Map.of("modalidad", "PRESENCIAL", "estudiantes", "28"));
+        assertThat(cambio.nuevo())
+                .containsExactlyInAnyOrderEntriesOf(
+                        Map.of("modalidad", "DUAL", "estudiantes", "30"));
         oferta.set(0, corregida);
         servicio.corregir(PERIODO, "A1", "A_NOCTURNA", datos, QUIEN);
         verify(registro, times(1)).registrar(any());
@@ -229,6 +239,12 @@ class MantenerOfertaServicioTest {
         assertThat(cambios.getAllValues().getFirst().detalle())
                 .isEqualTo(
                         Map.of("periodo", PERIODO, "asignatura", "A1", "paralelo", "A_NOCTURNA"));
+        assertThat(cambios.getAllValues().getFirst().anterior())
+                .isEqualTo(Map.of("estado", "OFERTADA"));
+        assertThat(cambios.getAllValues().getFirst().nuevo())
+                .isEqualTo(Map.of("estado", "RETIRADA"));
+        assertThat(cambios.getAllValues().getLast().nuevo())
+                .isEqualTo(Map.of("estado", "OFERTADA"));
     }
 
     @Test

@@ -64,7 +64,9 @@ public final class CorregirPeriodoServicio implements CorregirPeriodo {
                                                         "cambios",
                                                         correccion.cambios().stream()
                                                                 .map(Detalles::de)
-                                                                .toList())));
+                                                                .toList()),
+                                                Detalles.anteriores(correccion.cambios()),
+                                                Detalles.nuevos(correccion.cambios())));
                             }
                             return correccion.periodo();
                         });

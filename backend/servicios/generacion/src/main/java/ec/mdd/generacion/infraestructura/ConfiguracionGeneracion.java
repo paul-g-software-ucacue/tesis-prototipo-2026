@@ -92,8 +92,9 @@ public class ConfiguracionGeneracion {
 
     /** La bitácora de los cambios del distributivo (F06-H03). */
     @Bean
-    public RegistroDeCambios registroDeCambiosGeneracion(JdbcClient jdbc) {
-        return new RegistroDeCambiosJdbc(jdbc);
+    public RegistroDeCambios registroDeCambiosGeneracion(
+            JdbcClient jdbc, ApplicationEventPublisher eventos) {
+        return new RegistroDeCambiosJdbc(jdbc, eventos, Clock.systemUTC());
     }
 
     /** Las transacciones del distributivo (F06-H03). */

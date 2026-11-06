@@ -72,7 +72,9 @@ public final class AbrirPeriodoServicio implements AbrirPeriodo {
                                     reloj.instant(),
                                     quien,
                                     Accion.PERIODO_ABIERTO,
-                                    Map.of("codigo", codigo, "version", version)));
+                                    Map.of("codigo", codigo, "version", version),
+                                    Detalles.valor("version", null),
+                                    Map.of("version", version)));
                     return null;
                 });
         return new PeriodoConsultado(periodo, OptionalInt.of(version));

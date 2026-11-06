@@ -24,6 +24,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -75,6 +76,33 @@ class ConsolidarServicioTest {
         assertThat(cambio.getValue().accion())
                 .isEqualTo(CambioDeDistributivo.Accion.DISTRIBUTIVO_CONSOLIDADO);
         assertThat(cambio.getValue().detalle()).containsEntry("periodo", PERIODO);
+        assertThat(cambio.getValue().anterior()).isEmpty();
+        assertThat(cambio.getValue().nuevo())
+                .containsExactlyInAnyOrderEntriesOf(
+                        Map.of("consolidadoPor", QUIEN, "consolidadoEn", AHORA.toString()));
+    }
+
+    @Test
+    void dadaUnaVersionYaConsolidada_cuandoSeConsolidaOtraVez_entoncesRegistraLaAnterior() {
+        Instant antes = AHORA.minusSeconds(3600);
+        when(consultar.consolidado(PERIODO))
+                .thenReturn(
+                        consolidado(
+                                true, 0, Optional.of(new Consolidacion("otra.persona", antes))));
+
+        servicio.consolidar(PERIODO, QUIEN);
+
+        ArgumentCaptor<CambioDeDistributivo> cambio =
+                ArgumentCaptor.forClass(CambioDeDistributivo.class);
+        verify(registro).registrar(cambio.capture());
+        assertThat(cambio.getValue().anterior())
+                .containsExactlyInAnyOrderEntriesOf(
+                        Map.of(
+                                "consolidadoPor",
+                                "otra.persona",
+                                "consolidadoEn",
+                                antes.toString()));
+        assertThat(cambio.getValue().nuevo()).containsEntry("consolidadoPor", QUIEN);
     }
 
     @Test
@@ -132,12 +160,17 @@ class ConsolidarServicioTest {
     }
 
     private static ConsolidadoDelPeriodo consolidado(boolean modificable, long duras) {
+        return consolidado(modificable, duras, Optional.empty());
+    }
+
+    private static ConsolidadoDelPeriodo consolidado(
+            boolean modificable, long duras, Optional<Consolidacion> anterior) {
         return new ConsolidadoDelPeriodo(
                 PERIODO,
                 modificable,
                 Optional.of(VERSION),
                 1,
-                Optional.empty(),
+                anterior,
                 false,
                 List.of(),
                 new CargaHoraria(

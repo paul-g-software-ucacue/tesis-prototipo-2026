@@ -76,7 +76,9 @@ public final class CambiarEstadoPeriodoServicio implements CambiarEstadoPeriodo 
                                             Map.of(
                                                     "codigo", codigo,
                                                     "anterior", actual.estado().name(),
-                                                    "nuevo", nuevo.estado().name())));
+                                                    "nuevo", nuevo.estado().name()),
+                                            Map.of("estado", actual.estado().name()),
+                                            Map.of("estado", nuevo.estado().name())));
                             avisos.actualizado(nuevo);
                             return nuevo;
                         });

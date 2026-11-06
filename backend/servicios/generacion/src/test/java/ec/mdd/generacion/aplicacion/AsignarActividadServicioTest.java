@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import ec.mdd.generacion.dominio.ActividadDelCatalogo;
@@ -58,6 +59,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -163,6 +165,8 @@ class AsignarActividadServicioTest {
                 .containsEntry("actividad", "140-b")
                 .containsEntry("horas", "4")
                 .doesNotContainKey("horasAnteriores");
+        assertThat(cambio.anterior()).isEmpty();
+        assertThat(cambio.nuevo()).containsExactlyEntriesOf(Map.of("horas", "4"));
     }
 
     @Test
@@ -172,7 +176,11 @@ class AsignarActividadServicioTest {
         servicio.asignar(solicitud("140-b", "6", null));
 
         assertThat(guardada().horas()).isEqualByComparingTo("6");
-        assertThat(cambio().detalle()).containsEntry("horasAnteriores", "4");
+        CambioDeDistributivo cambio = cambio();
+        assertThat(cambio.detalle()).containsEntry("horasAnteriores", "4");
+        // El escenario del issue #69: de 4 a 6 horas.
+        assertThat(cambio.anterior()).containsExactlyEntriesOf(Map.of("horas", "4"));
+        assertThat(cambio.nuevo()).containsExactlyEntriesOf(Map.of("horas", "6"));
     }
 
     @Test
@@ -252,6 +260,20 @@ class AsignarActividadServicioTest {
         servicio.asignar(solicitud("140-b", "25", null));
 
         assertThat(guardada().horas()).isEqualByComparingTo("25");
+    }
+
+    /**
+     * FR-004 y US1-4 de F17-H01: una actividad rechazada por una regla dura no llega a la bitácora,
+     * que solo se publica dentro de {@code RegistroDeCambios.registrar}.
+     */
+    @Test
+    void unaActividadRechazadaPorUnaReglaDura_cuandoSeAsigna_entoncesNoLlegaALaBitacora() {
+        conTodo(version(actividad("140-g", "38", null)), NADA);
+
+        assertThatThrownBy(() -> servicio.asignar(solicitud("140-b", "4", null)))
+                .isInstanceOf(HorasExcedidas.class);
+
+        verifyNoInteractions(registro);
     }
 
     @Test
@@ -593,6 +615,20 @@ class AsignarActividadServicioTest {
                 .containsEntry("docente", DOCENTE)
                 .containsEntry("actividad", "140-b")
                 .containsEntry("horasAnteriores", "4");
+        assertThat(cambio.anterior()).containsExactlyEntriesOf(Map.of("horas", "4"));
+        assertThat(cambio.nuevo()).isEmpty();
+    }
+
+    @Test
+    void dadaUnaActividadQueOtroYaQuito_cuandoSeQuita_entoncesActividadNoEncontrada() {
+        conTodo(version(actividad("140-b", "4", null)), NADA);
+        when(distributivos.quitarActividad(VERSION, CARRERA, DOCENTE, "140-b", null))
+                .thenReturn(false);
+
+        assertThatThrownBy(() -> servicio.quitar(quitada("140-b", null, TODAS)))
+                .isInstanceOf(ActividadNoEncontrada.class);
+
+        verify(registro, never()).registrar(any());
     }
 
     @Test

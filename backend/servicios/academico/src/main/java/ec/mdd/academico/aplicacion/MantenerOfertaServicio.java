@@ -74,7 +74,13 @@ public final class MantenerOfertaServicio implements MantenerOferta {
                                 "horasSemanales",
                                 nueva.horasIndicadas().stripTrailingZeros().toPlainString());
                     }
-                    registrar(ahora, quien, Accion.ASIGNATURA_PARALELO_REGISTRADA, detalle);
+                    registrar(
+                            ahora,
+                            quien,
+                            Accion.ASIGNATURA_PARALELO_REGISTRADA,
+                            detalle,
+                            Map.of(),
+                            detalle);
                     return nueva;
                 });
     }
@@ -108,7 +114,9 @@ public final class MantenerOfertaServicio implements MantenerOferta {
                                 reloj.instant(),
                                 quien,
                                 Accion.ASIGNATURA_PARALELO_CORREGIDA,
-                                detalle);
+                                detalle,
+                                Detalles.anteriores(correccion.cambios()),
+                                Detalles.nuevos(correccion.cambios()));
                     }
                     return correccion.asignaturaParalelo();
                 });
@@ -139,7 +147,9 @@ public final class MantenerOfertaServicio implements MantenerOferta {
                             estado == EstadoDeAsignaturaParalelo.RETIRADA
                                     ? Accion.ASIGNATURA_PARALELO_RETIRADA
                                     : Accion.ASIGNATURA_PARALELO_REOFERTADA,
-                            clave(actual));
+                            clave(actual),
+                            Map.of("estado", actual.estado().name()),
+                            Map.of("estado", cambiada.estado().name()));
                     return cambiada;
                 });
     }
@@ -174,7 +184,12 @@ public final class MantenerOfertaServicio implements MantenerOferta {
     }
 
     private void registrar(
-            Instant momento, String quien, Accion accion, Map<String, Object> detalle) {
-        registro.registrar(new CambioRegistrado(momento, quien, accion, detalle));
+            Instant momento,
+            String quien,
+            Accion accion,
+            Map<String, Object> detalle,
+            Map<String, Object> anterior,
+            Map<String, Object> nuevo) {
+        registro.registrar(new CambioRegistrado(momento, quien, accion, detalle, anterior, nuevo));
     }
 }

@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import ec.mdd.generacion.dominio.ActividadNoLectiva;
@@ -62,6 +63,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -159,6 +161,11 @@ class ProponerDocenteServicioTest {
                 .containsEntry("justificacion", "EXCEPCION")
                 .doesNotContainKey("docenteAnterior");
         assertThat(cambio.detalle().toString()).doesNotContain(TEXTO);
+        assertThat(cambio.anterior()).isEmpty();
+        assertThat(cambio.nuevo())
+                .containsExactlyInAnyOrderEntriesOf(
+                        Map.of("docente", AJENO.identificacion(), "justificacion", "EXCEPCION"));
+        assertThat(cambio.nuevo().toString()).doesNotContain(TEXTO);
     }
 
     @Test
@@ -168,7 +175,10 @@ class ProponerDocenteServicioTest {
         servicio.proponer(solicitud(AFIN, null));
 
         assertThat(guardada().docente()).isEqualTo(AFIN.identificacion());
-        assertThat(cambio().detalle()).containsEntry("docenteAnterior", AJENO.identificacion());
+        CambioDeDistributivo cambio = cambio();
+        assertThat(cambio.detalle()).containsEntry("docenteAnterior", AJENO.identificacion());
+        assertThat(cambio.anterior()).containsEntry("docente", AJENO.identificacion());
+        assertThat(cambio.nuevo()).containsEntry("docente", AFIN.identificacion());
     }
 
     @Test
@@ -342,6 +352,27 @@ class ProponerDocenteServicioTest {
         assertThatThrownBy(() -> servicio.proponer(solicitud(AJENO, TEXTO)))
                 .isInstanceOf(AfinidadInsuficiente.class);
         assertNoGuardoNada();
+    }
+
+    /**
+     * FR-004 y US1-4 de F17-H01: un rechazo no llega a la bitácora. La entrada solo se publica
+     * dentro de {@code RegistroDeCambios.registrar} (RegistroDeCambiosJdbcTest), así que basta con
+     * que el registro no se toque.
+     */
+    @Test
+    void unaPropuestaRechazadaPorUnaReglaDura_cuandoSePropone_entoncesNoLlegaALaBitacora() {
+        DocenteActivo sinHoras = docente("0109990030", 2, "061");
+        conTodo(version());
+        when(datos.docentesActivos()).thenReturn(List.of(sinHoras));
+        assertThatThrownBy(() -> servicio.proponer(solicitud(sinHoras, null)))
+                .isInstanceOf(HorasExcedidas.class);
+
+        conRn19Dura();
+        when(datos.docentesActivos()).thenReturn(List.of(AJENO));
+        assertThatThrownBy(() -> servicio.proponer(solicitud(AJENO, TEXTO)))
+                .isInstanceOf(AfinidadInsuficiente.class);
+
+        verifyNoInteractions(registro);
     }
 
     @Test
@@ -518,6 +549,19 @@ class ProponerDocenteServicioTest {
                 .containsEntry("periodo", PERIODO)
                 .containsEntry("asignatura", ASIGNATURA)
                 .containsEntry("paralelo", "A");
+        assertThat(cambio.anterior()).containsEntry("docente", AFIN.identificacion());
+        assertThat(cambio.nuevo()).isEmpty();
+    }
+
+    @Test
+    void dadaUnaPropuestaQueOtroYaQuito_cuandoSeQuita_entoncesPropuestaNoEncontrada() {
+        conTodo(version(propuestaDe(AFIN.identificacion())));
+        when(distributivos.quitarPropuesta(VERSION, ASIGNATURA, "A")).thenReturn(false);
+
+        assertThatThrownBy(() -> servicio.quitar(PERIODO, ASIGNATURA, "A", TODAS, QUIEN))
+                .isInstanceOf(PropuestaNoEncontrada.class);
+
+        verify(registro, never()).registrar(any());
     }
 
     @Test

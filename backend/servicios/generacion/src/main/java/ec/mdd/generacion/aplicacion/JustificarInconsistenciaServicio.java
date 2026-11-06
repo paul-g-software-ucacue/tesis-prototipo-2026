@@ -85,9 +85,21 @@ public final class JustificarInconsistenciaServicio implements JustificarInconsi
                                             "periodo", solicitud.periodo(),
                                             "version", actual.numero(),
                                             "tipo", solicitud.tipo().name(),
-                                            "objeto", solicitud.objeto())));
+                                            "objeto", solicitud.objeto()),
+                                    entrada.justificacion()
+                                            .map(JustificarInconsistenciaServicio::valores)
+                                            .orElse(Map.of()),
+                                    valores(justificacion)));
                     return version;
                 });
         return new EntradaDelPanel(entrada.inconsistencia(), Optional.of(justificacion));
+    }
+
+    /** Si estaba justificada y por quién; nunca el texto. */
+    private static Map<String, Object> valores(JustificacionDeInconsistencia justificacion) {
+        return Map.of(
+                "justificada", true,
+                "justificadaPor", justificacion.por(),
+                "justificadaEn", justificacion.en().toString());
     }
 }

@@ -42,6 +42,7 @@ import ec.mdd.academico.puertos.salida.RepositorioEstructura;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -101,6 +102,8 @@ class MantenerCarrerasServicioTest {
         CambioRegistrado cambio = registrado();
         assertThat(cambio.accion()).isEqualTo(Accion.CARRERA_REGISTRADA);
         assertThat(cambio.detalle()).containsEntry("codigo", "C1").containsEntry("siglas", "DS");
+        assertThat(cambio.anterior()).isEmpty();
+        assertThat(cambio.nuevo()).isEqualTo(cambio.detalle());
         assertThat(transaccion.dentro()).isFalse();
     }
 
@@ -125,7 +128,13 @@ class MantenerCarrerasServicioTest {
 
         assertThat(corregida.nombre()).isEqualTo("SOFTWARE");
         verify(repositorio).guardar(corregida);
-        assertThat(registrado().accion()).isEqualTo(Accion.CARRERA_CORREGIDA);
+        CambioRegistrado cambio = registrado();
+        assertThat(cambio.accion()).isEqualTo(Accion.CARRERA_CORREGIDA);
+        assertThat(cambio.anterior())
+                .containsKey("nombre")
+                .doesNotContainEntry("nombre", "SOFTWARE");
+        assertThat(cambio.nuevo()).containsEntry("nombre", "SOFTWARE");
+        assertThat(cambio.anterior()).containsOnlyKeys(cambio.nuevo().keySet());
         assertThatThrownBy(() -> servicio.corregirCarrera("C1", datos("X", "CO", 5), QUIEN))
                 .isInstanceOf(SiglasRepetidas.class);
         assertThatThrownBy(() -> servicio.corregirCarrera("C9", datos("X", "X", 5), QUIEN))
@@ -145,6 +154,8 @@ class MantenerCarrerasServicioTest {
         assertThat(cambio.detalle())
                 .containsEntry("anterior", "VIGENTE")
                 .containsEntry("nuevo", "EN_CIERRE");
+        assertThat(cambio.anterior()).isEqualTo(Map.of("estado", "VIGENTE"));
+        assertThat(cambio.nuevo()).isEqualTo(Map.of("estado", "EN_CIERRE"));
     }
 
     @Test
@@ -156,6 +167,7 @@ class MantenerCarrerasServicioTest {
         assertThat(malla.estado()).isEqualTo(EstadoDeMalla.VIGENTE);
         verify(repositorio).registrar(malla, QUIEN, DatosDePrueba.AHORA);
         assertThat(registrado().accion()).isEqualTo(Accion.MALLA_REGISTRADA);
+        assertThat(registrado().nuevo()).isEqualTo(Map.of("codigo", "DS-2019", "carrera", "C1"));
         mallas.add(malla);
         assertThatThrownBy(() -> servicio.registrarMalla("C1", "DS-2019", QUIEN))
                 .isInstanceOf(MallaRepetida.class);
@@ -171,6 +183,8 @@ class MantenerCarrerasServicioTest {
         assertThat(servicio.cambiarEstadoMalla("DS-2019", EstadoDeMalla.DEROGADA, QUIEN).estado())
                 .isEqualTo(EstadoDeMalla.DEROGADA);
         assertThat(registrado().accion()).isEqualTo(Accion.MALLA_ESTADO_CAMBIADO);
+        assertThat(registrado().anterior()).isEqualTo(Map.of("estado", "VIGENTE"));
+        assertThat(registrado().nuevo()).isEqualTo(Map.of("estado", "DEROGADA"));
         assertThatThrownBy(() -> servicio.cambiarEstadoMalla("XX", EstadoDeMalla.DEROGADA, QUIEN))
                 .isInstanceOf(MallaNoEncontrada.class);
     }
@@ -184,6 +198,7 @@ class MantenerCarrerasServicioTest {
 
         verify(repositorio).registrar(nueva, QUIEN, DatosDePrueba.AHORA);
         assertThat(registrado().accion()).isEqualTo(Accion.ASIGNATURA_REGISTRADA);
+        assertThat(registrado().nuevo()).containsEntry("codigo", "A1").containsEntry("ciclo", 1);
         asignaturas.add(nueva);
         assertThatThrownBy(() -> servicio.registrarAsignatura(asignatura("A1", 2), QUIEN))
                 .isInstanceOf(AsignaturaRepetida.class);
@@ -226,6 +241,10 @@ class MantenerCarrerasServicioTest {
                         Accion.ASIGNATURA_CORREGIDA,
                         Accion.ASIGNATURA_INACTIVADA,
                         Accion.ASIGNATURA_REACTIVADA);
+        assertThat(cambios.getAllValues().get(0).nuevo()).containsEntry("ciclo", "2");
+        assertThat(cambios.getAllValues().get(1).anterior()).isEqualTo(Map.of("activa", true));
+        assertThat(cambios.getAllValues().get(1).nuevo()).isEqualTo(Map.of("activa", false));
+        assertThat(cambios.getAllValues().get(2).nuevo()).isEqualTo(Map.of("activa", true));
         assertThatThrownBy(() -> servicio.cambiarEstadoAsignatura("XX", true, QUIEN))
                 .isInstanceOf(AsignaturaNoEncontrada.class);
     }

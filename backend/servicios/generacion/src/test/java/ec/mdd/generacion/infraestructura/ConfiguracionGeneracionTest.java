@@ -50,7 +50,7 @@ class ConfiguracionGeneracionTest {
     @Test
     void dadosLosPuertos_cuandoSePidenLosCasosDeUso_entoncesLosArma() {
         assertThat(configuracion.repositorioDistributivos(null)).isNotNull();
-        assertThat(configuracion.registroDeCambiosGeneracion(null)).isNotNull();
+        assertThat(configuracion.registroDeCambiosGeneracion(null, null)).isNotNull();
         assertThat(configuracion.crearDistributivo(null, null, null, null)).isNotNull();
         assertThat(configuracion.proponerDocente(null, null, null, null, null, null)).isNotNull();
         assertThat(configuracion.consultarParciales(null, null)).isNotNull();

@@ -10,6 +10,7 @@ import ec.mdd.academico.puertos.salida.Transaccion;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -43,7 +44,12 @@ public final class MantenerMatriculasServicio implements MantenerMatriculas {
                     repositorio.registrar(matricula, quien, ahora);
                     registro.registrar(
                             new CambioRegistrado(
-                                    ahora, quien, Accion.MATRICULA_REGISTRADA, detalle(matricula)));
+                                    ahora,
+                                    quien,
+                                    Accion.MATRICULA_REGISTRADA,
+                                    detalle(matricula),
+                                    Map.of(),
+                                    valores(matricula)));
                     return null;
                 });
     }
@@ -52,15 +58,39 @@ public final class MantenerMatriculasServicio implements MantenerMatriculas {
     public void corregir(Matricula matricula, String quien) {
         transaccion.ejecutar(
                 () -> {
+                    Matricula anterior = anterior(matricula);
                     repositorio.guardar(matricula);
                     registro.registrar(
                             new CambioRegistrado(
                                     reloj.instant(),
                                     quien,
                                     Accion.MATRICULA_CORREGIDA,
-                                    detalle(matricula)));
+                                    detalle(matricula),
+                                    valores(anterior),
+                                    valores(matricula)));
                     return null;
                 });
+    }
+
+    // Solo se corrige lo que existe: la carga 10 decide corregir porque la encontró.
+    private Matricula anterior(Matricula matricula) {
+        return repositorio.deLosPeriodos(List.of(matricula.periodo())).stream()
+                .filter(una -> una.carrera().equals(matricula.carrera()))
+                .findFirst()
+                .orElseThrow(
+                        () ->
+                                new IllegalStateException(
+                                        "No hay matriculados que corregir en esa carrera y"
+                                                + " periodo."));
+    }
+
+    /** Lo que se corrige: el total, la fecha de corte y la fuente, que puede faltar. */
+    private static Map<String, Object> valores(Matricula matricula) {
+        Map<String, Object> valores = new LinkedHashMap<>();
+        valores.put("total", matricula.total());
+        valores.put("fechaCorte", matricula.fechaCorte().toString());
+        valores.put("fuente", matricula.fuente());
+        return valores;
     }
 
     private static Map<String, Object> detalle(Matricula matricula) {

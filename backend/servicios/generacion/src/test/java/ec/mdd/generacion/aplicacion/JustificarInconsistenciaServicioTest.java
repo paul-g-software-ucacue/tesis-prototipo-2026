@@ -106,6 +106,40 @@ class JustificarInconsistenciaServicioTest {
                 .containsEntry("tipo", "PROPORCION")
                 .containsEntry("objeto", DOCENTE)
                 .doesNotContainValue(TEXTO);
+        assertThat(cambio.getValue().anterior()).isEmpty();
+        assertThat(cambio.getValue().nuevo())
+                .containsEntry("justificada", true)
+                .containsEntry("justificadaPor", QUIEN)
+                .doesNotContainValue(TEXTO);
+    }
+
+    @Test
+    void dadaUnaBlandaYaJustificada_cuandoSeCambia_entoncesRegistraQuienLaJustificoAntes() {
+        Instant antes = AHORA.minusSeconds(3600);
+        when(panel.panel(PERIODO))
+                .thenReturn(
+                        panelCon(
+                                true,
+                                new EntradaDelPanel(
+                                        blanda(),
+                                        java.util.Optional.of(
+                                                new JustificacionDeInconsistencia(
+                                                        TipoDeInconsistencia.PROPORCION,
+                                                        DOCENTE,
+                                                        "Otro motivo de antes",
+                                                        "otra.persona",
+                                                        antes)))));
+
+        servicio.justificar(solicitud(TipoDeInconsistencia.PROPORCION));
+
+        ArgumentCaptor<CambioDeDistributivo> cambio =
+                ArgumentCaptor.forClass(CambioDeDistributivo.class);
+        verify(registro).registrar(cambio.capture());
+        assertThat(cambio.getValue().anterior())
+                .containsEntry("justificadaPor", "otra.persona")
+                .containsEntry("justificadaEn", antes.toString())
+                .doesNotContainValue("Otro motivo de antes");
+        assertThat(cambio.getValue().nuevo()).containsEntry("justificadaPor", QUIEN);
     }
 
     @Test

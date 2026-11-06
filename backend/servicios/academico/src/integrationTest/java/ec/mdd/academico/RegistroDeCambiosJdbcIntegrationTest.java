@@ -42,7 +42,8 @@ class RegistroDeCambiosJdbcIntegrationTest {
 
     @Test
     void dadoLasCuatroAcciones_cuandoSeRegistran_entoncesQuedanConUsuarioMomentoYDetalle() {
-        RegistroDeCambiosJdbc registro = new RegistroDeCambiosJdbc(jdbc);
+        RegistroDeCambiosJdbc registro =
+                new RegistroDeCambiosJdbc(jdbc, evento -> {}, java.time.Clock.systemUTC());
         Instant momento = Instant.parse("2026-10-21T15:00:00Z");
 
         registro.registrar(
@@ -50,7 +51,9 @@ class RegistroDeCambiosJdbcIntegrationTest {
                         momento,
                         "vicerrectorado.demo",
                         Accion.PERIODO_REGISTRADO,
-                        Map.of("codigo", "2026-2", "nombre", "Periodo 2026-2")));
+                        Map.of("codigo", "2026-2", "nombre", "Periodo 2026-2"),
+                        Map.of(),
+                        Map.of("nombre", "Periodo 2026-2")));
         registro.registrar(
                 new CambioRegistrado(
                         momento,
@@ -64,13 +67,17 @@ class RegistroDeCambiosJdbcIntegrationTest {
                                         Map.of(
                                                 "campo", "fin",
                                                 "anterior", "2027-02-28",
-                                                "nuevo", "2027-03-15")))));
+                                                "nuevo", "2027-03-15"))),
+                        Map.of("fin", "2027-02-28"),
+                        Map.of("fin", "2027-03-15")));
         registro.registrar(
                 new CambioRegistrado(
                         momento,
                         "vicerrectorado.demo",
                         Accion.PERIODO_ABIERTO,
-                        Map.of("codigo", "2026-2", "version", 2)));
+                        Map.of("codigo", "2026-2", "version", 2),
+                        java.util.Collections.singletonMap("version", null),
+                        Map.of("version", 2)));
         registro.registrar(
                 new CambioRegistrado(
                         momento,
@@ -79,7 +86,9 @@ class RegistroDeCambiosJdbcIntegrationTest {
                         Map.of(
                                 "codigo", "2026-2",
                                 "anterior", "PLANIFICACION",
-                                "nuevo", "EN_APROBACION")));
+                                "nuevo", "EN_APROBACION"),
+                        Map.of("estado", "PLANIFICACION"),
+                        Map.of("estado", "EN_APROBACION")));
 
         List<String> filas =
                 jdbc.sql(

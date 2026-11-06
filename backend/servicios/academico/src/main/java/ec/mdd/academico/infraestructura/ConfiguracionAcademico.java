@@ -78,8 +78,9 @@ public class ConfiguracionAcademico {
     }
 
     @Bean
-    public RegistroDeCambios registroDeCambiosAcademico(JdbcClient jdbc) {
-        return new RegistroDeCambiosJdbc(jdbc);
+    public RegistroDeCambios registroDeCambiosAcademico(
+            JdbcClient jdbc, ApplicationEventPublisher eventos) {
+        return new RegistroDeCambiosJdbc(jdbc, eventos, Clock.systemUTC());
     }
 
     @Bean

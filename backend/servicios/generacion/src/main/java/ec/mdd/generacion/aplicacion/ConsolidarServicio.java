@@ -57,9 +57,19 @@ public final class ConsolidarServicio implements Consolidar {
                                     ahora,
                                     quien,
                                     CambioDeDistributivo.Accion.DISTRIBUTIVO_CONSOLIDADO,
-                                    Map.of("periodo", periodo, "version", actual.numero())));
+                                    Map.of("periodo", periodo, "version", actual.numero()),
+                                    actual.consolidacion()
+                                            .map(ConsolidarServicio::valores)
+                                            .orElse(Map.of()),
+                                    valores(new Consolidacion(quien, ahora))));
                     return version;
                 });
         return consultar.consolidado(periodo);
+    }
+
+    private static Map<String, Object> valores(Consolidacion consolidacion) {
+        return Map.of(
+                "consolidadoPor", consolidacion.por(),
+                "consolidadoEn", consolidacion.en().toString());
     }
 }

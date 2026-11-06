@@ -29,6 +29,7 @@ import ec.mdd.academico.puertos.salida.NormativaDelPeriodo;
 import ec.mdd.academico.puertos.salida.RegistroDeCambios;
 import ec.mdd.academico.puertos.salida.RepositorioPeriodos;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -87,7 +88,10 @@ class AbrirPeriodoServicioTest {
                                 AHORA,
                                 QUIEN,
                                 Accion.PERIODO_ABIERTO,
-                                Map.of("codigo", CODIGO, "version", 2)));
+                                Map.of("codigo", CODIGO, "version", 2),
+                                // Antes de abrirlo, el periodo no tenía versión.
+                                Collections.singletonMap("version", null),
+                                Map.of("version", 2)));
     }
 
     @Test

@@ -27,6 +27,7 @@ import ec.mdd.plataforma.cargas.RechazoDelLote;
 import ec.mdd.plataforma.cargas.ResultadoDelLote;
 import ec.mdd.plataforma.cargas.TipoDeRegistro;
 import ec.mdd.plataforma.cargas.VistaPreviaDelLote;
+import ec.mdd.plataforma.eventos.EventoEntreProcesos;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,6 +54,7 @@ class AplicadorAcademicoIntegrationTest {
             new PostgreSQLContainer("postgres:18.6-alpine");
 
     private static final List<String> avisos = new ArrayList<>();
+    private static final List<EventoEntreProcesos> entradas = new ArrayList<>();
 
     private static JdbcClient jdbc;
     private static AplicadorDeCargas aplicador;
@@ -70,7 +72,11 @@ class AplicadorAcademicoIntegrationTest {
                         new TransactionTemplate(new DataSourceTransactionManager(dataSource)));
         RepositorioEstructuraJdbc estructura = new RepositorioEstructuraJdbc(jdbc);
         RepositorioCarrerasJdbc carreras = new RepositorioCarrerasJdbc(jdbc);
-        RegistroDeCambiosJdbc registro = new RegistroDeCambiosJdbc(jdbc);
+        RegistroDeCambiosJdbc registro =
+                new RegistroDeCambiosJdbc(
+                        jdbc,
+                        evento -> entradas.add((EventoEntreProcesos) evento),
+                        Clock.systemUTC());
         RepositorioPeriodosJdbc periodos = new RepositorioPeriodosJdbc(jdbc);
         RepositorioOfertaJdbc oferta = new RepositorioOfertaJdbc(jdbc);
         RepositorioMatriculasJdbc matriculas = new RepositorioMatriculasJdbc(jdbc);
@@ -133,6 +139,7 @@ class AplicadorAcademicoIntegrationTest {
                                 + " academico.registro_cambio")
                 .update();
         avisos.clear();
+        entradas.clear();
     }
 
     private static ResultadoDelLote confirmar(LoteDeCarga lote) {
@@ -161,6 +168,14 @@ class AplicadorAcademicoIntegrationTest {
                                 .query(String.class)
                                 .list())
                 .containsExactly("datos.demo");
+        // Cada fila aplicada llega a la bitácora con quien confirmó la carga (F17-H01, FR-002).
+        assertThat(entradas)
+                .hasSize((int) filas("registro_cambio"))
+                .allSatisfy(
+                        entrada -> {
+                            assertThat(entrada.tipo()).isEqualTo("academico.EntradaBitacora");
+                            assertThat(entrada.contenido()).containsEntry("usuario", "datos.demo");
+                        });
         assertThat(aplicador.previsualizar(estructura).cuantos(TipoDeRegistro.IGUAL))
                 .as("subirla otra vez: todo igual")
                 .isEqualTo(24);
