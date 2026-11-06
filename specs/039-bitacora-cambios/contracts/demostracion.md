@@ -11,9 +11,9 @@ Reemplaza a `deploy/probar_eventos.sh` (B00-H05) y ocupa su paso en el workflow 
 | 5 | Hace un cambio en cada servicio: corrige un periodo (Académico), un docente (Docentes), una versión de normativa (Normativa), designa al Responsable (Roles) y carga la configuración del flujo (Validación OCS) | Una entrada por cada uno, con su servicio | FR-002, SC-001 |
 | 6 | Confirma una carga de archivo pequeña | Una entrada por cada fila aplicada, con el usuario que confirmó | FR-002 |
 | 7 | Detiene `identidad`, hace 10 cambios y lo vuelve a levantar | Los 10 cambios se guardaron sin error para el usuario; después de 2 ciclos de reenvío, las 10 entradas, una vez cada una | US3, SC-002, FR-008 |
-| 8 | Reenvía a mano un evento ya registrado (con el token de proceso) | 204 y la misma cantidad de entradas | US3-2, FR-007 |
-| 9 | Intenta `UPDATE`, `DELETE` y `TRUNCATE` sobre la bitácora con el rol `identidad` | Los tres fallan | US2-2, FR-010, SC-005 |
+| 8 | Vuelve a marcar `FAILED` una publicación ya entregada, como si se hubiera perdido la respuesta del receptor: el reenvío la entrega otra vez, con el token de proceso | La publicación vuelve a `COMPLETED` y la misma cantidad de entradas | US3-2, FR-007 |
+| 9 | Intenta `UPDATE`, `DELETE` y `TRUNCATE` sobre la bitácora con el rol `identidad` y con el superusuario | Los seis fallan y la bitácora no cambia | US2-2, FR-010, SC-005 |
 | 10 | Busca en todas las entradas claves o valores de contraseñas y tokens, incluida la clave del usuario de prueba | Ninguno | US4, SC-004 |
 | 11 | Mide un cambio con `identidad` arriba y abajo | La diferencia es menor de 0,5 s | SC-003 |
 
-El paso 1 usa los datos de prueba de `cargas/datos_prueba/` (D-06), como los demás scripts de `deploy/`.
+El paso 1 usa los datos de prueba de `backend/servicios/cargas/src/test/resources/cargas/datos-de-prueba/` (D-06), como los demás scripts de `deploy/`. Al terminar borra lo que creó, salvo las entradas de la bitácora, que no se pueden borrar: cada paso cuenta solo las que llegaron desde que empezó el script. El paso 8 no arma el evento a mano porque `/interno/**` no se alcanza desde fuera del perfil (lo comprueba la prueba de contrato del receptor); el reenvío de la plataforma usa el mismo receptor con el token de proceso.

@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
  *
  * @param idEvento identificador único (UUID v4); no cambia en los reenvíos y es la clave de
  *     idempotencia del receptor
- * @param tipo {@code <servicio>.<NombreDelEvento>}, por ejemplo {@code generacion.EventoDePrueba}
+ * @param tipo {@code <servicio>.<NombreDelEvento>}, por ejemplo {@code generacion.EntradaBitacora}
  * @param origen el servicio que lo publica
  * @param destino el servicio receptor; elige la URL de {@code mdd.eventos.destinos}
  * @param momento instante de la publicación

@@ -41,7 +41,9 @@ class GeneracionEsquemaIntegrationTest {
 
             List<String> tablas = tablasDeUsuario(dataSource);
             assertThat(tablas)
-                    .contains("generacion.flyway_schema_history", "generacion.evento_prueba");
+                    .contains("generacion.flyway_schema_history", "generacion.registro_cambio")
+                    // V7 retira la tabla del evento de prueba de B00-H05 (F17-H01).
+                    .doesNotContain("generacion.evento_prueba");
             assertThat(tablas).allMatch(tabla -> tabla.startsWith("generacion."));
         }
     }

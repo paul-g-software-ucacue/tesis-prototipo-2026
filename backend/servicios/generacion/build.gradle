@@ -10,9 +10,10 @@ dependencies {
     // Lectura del JWT ya validado en la sesión actual (D-39).
     implementation 'org.springframework.security:spring-security-oauth2-resource-server'
     implementation 'org.springframework.security:spring-security-oauth2-jose'
-    // El sobre de los eventos entre procesos, para el evento de prueba (D-48, ADR-018).
+    // El sobre de los eventos entre procesos: cada cambio también va a la bitácora de Usuarios, en
+    // la misma transacción (F17-H01, ADR-018), y las consultas a otros procesos (ADR-023).
     implementation project(':plataforma:eventos')
-    // La fila del evento de prueba en generacion.evento_prueba, en la transacción que publica.
+    // El distributivo en el esquema generacion, con JdbcClient.
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     // El detalle de cada cambio en jsonb, en generacion.registro_cambio (F06-H03).
     implementation 'tools.jackson.core:jackson-databind'
