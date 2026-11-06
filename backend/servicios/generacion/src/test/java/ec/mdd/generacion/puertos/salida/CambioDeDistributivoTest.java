@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ec.mdd.generacion.puertos.salida.CambioDeDistributivo.Accion;
 import ec.mdd.generacion.puertos.salida.CambioDeDistributivo.Clase;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -110,5 +111,33 @@ class CambioDeDistributivoTest {
         assertThat(cambio.nuevo()).containsEntry("horas", "6");
         assertThatThrownBy(() -> cambio.nuevo().put("horas", "8"))
                 .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    /** FR-011 y T025 de F17-H01: ninguna acción registra una clave que parece un secreto. */
+    @ParameterizedTest
+    @EnumSource(Accion.class)
+    void cadaAccion_cuandoUnaClaveParecesUnSecreto_entoncesSeRechaza(Accion accion) {
+        Map<String, Object> anidado =
+                Map.of("cambios", List.of(Map.of("campo", "x", "token", "y")));
+
+        assertThatThrownBy(
+                        () ->
+                                new CambioDeDistributivo(
+                                        MOMENTO, QUIEN, accion, anidado, Map.of(), Map.of()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("secreto")
+                .message()
+                .doesNotContain("y\"");
+        assertThatThrownBy(
+                        () ->
+                                new CambioDeDistributivo(
+                                        MOMENTO,
+                                        QUIEN,
+                                        accion,
+                                        Map.of("x", "y"),
+                                        Map.of("password", "y"),
+                                        Map.of("claveDeAcceso", "y")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("secreto");
     }
 }

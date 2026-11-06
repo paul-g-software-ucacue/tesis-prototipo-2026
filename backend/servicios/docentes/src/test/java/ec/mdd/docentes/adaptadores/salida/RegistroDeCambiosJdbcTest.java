@@ -19,6 +19,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
@@ -169,5 +171,44 @@ class RegistroDeCambiosJdbcTest {
                 .containsEntry("objeto", datos)
                 .containsEntry("nuevo", datos)
                 .doesNotContainKey("anterior");
+    }
+
+    /** FR-014 y T025: ningún dato personal de D-91 llega con su valor, en ninguna acción. */
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "primerNombre",
+                "segundoNombre",
+                "primerApellido",
+                "segundoApellido",
+                "correoInstitucional",
+                "telefono",
+                "condicionEspecial"
+            })
+    void unDatoPersonal_cuandoCambia_entoncesLaEntradaLoNombraSinSuValor(String campo) {
+        registro.registrar(
+                new CambioRegistrado(
+                        MOMENTO,
+                        QUIEN,
+                        Accion.DOCENTE_CORREGIDO,
+                        Map.of(
+                                "identificacion",
+                                CEDULA,
+                                "cambios",
+                                List.of(cambio(campo, "valor-anterior", "valor-nuevo"))),
+                        Map.of(campo, "valor-anterior"),
+                        Map.of(campo, "valor-nuevo")));
+
+        Map<String, Object> contenido = publicado().contenido();
+        assertThat(contenido.toString()).doesNotContain("valor-anterior", "valor-nuevo");
+        assertThat(contenido.get("objeto"))
+                .isEqualTo(
+                        Map.of(
+                                "identificacion",
+                                CEDULA,
+                                "cambios",
+                                List.of(),
+                                "camposPersonales",
+                                List.of(campo)));
     }
 }

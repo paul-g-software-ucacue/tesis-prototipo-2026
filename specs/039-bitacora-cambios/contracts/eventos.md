@@ -54,7 +54,10 @@ EntradaBitacora:
       description: Los valores después del cambio; falta al quitar.
 ```
 
-Regla que el esquema no expresa y valida el receptor: `anterior` y `nuevo` no faltan los dos.
+Reglas que el esquema no expresa y valida el receptor:
+
+- `anterior` y `nuevo` no faltan los dos;
+- ninguna clave de `objeto`, `anterior` ni `nuevo`, a cualquier profundidad, contiene `clave`, `contrasena`, `password`, `token`, `secreto` ni `jwt`, salvo `palabrasClave` (D-92).
 
 ## Ejemplo: el escenario del issue
 

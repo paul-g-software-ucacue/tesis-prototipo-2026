@@ -1,10 +1,14 @@
 package ec.mdd.normativa.puertos.salida;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Un cambio de la normativa, con quién lo hizo y cuándo, para la bitácora (FR-009, principio VII).
@@ -37,6 +41,9 @@ public record CambioDeNormativa(
         detalle = Map.copyOf(detalle);
         anterior = copia(anterior);
         nuevo = copia(nuevo);
+        sinSecretos(detalle);
+        sinSecretos(anterior);
+        sinSecretos(nuevo);
         boolean cumple =
                 switch (accion.clase()) {
                     case CREA -> anterior.isEmpty() && !nuevo.isEmpty();
@@ -52,6 +59,32 @@ public record CambioDeNormativa(
     // Admite valores nulos, que Map.copyOf no admite: «antes no tenía ese parámetro».
     private static Map<String, Object> copia(Map<String, Object> valores) {
         return Collections.unmodifiableMap(new LinkedHashMap<>(valores));
+    }
+
+    private static final List<String> PARECEN_SECRETOS =
+            List.of("clave", "contrasena", "contraseña", "password", "token", "secreto", "jwt");
+
+    /** Las claves que parecen un secreto y no lo son, escritas tal cual (D-92). */
+    private static final Set<String> NO_SON_SECRETOS = Set.of("palabrasClave");
+
+    // FR-011: ninguna clave, a cualquier profundidad, parece un secreto. El mensaje nombra la
+    // clave, nunca su valor.
+    private static void sinSecretos(Object valor) {
+        if (valor instanceof Map<?, ?> mapa) {
+            mapa.forEach(
+                    (clave, adentro) -> {
+                        String texto = String.valueOf(clave);
+                        String minusculas = texto.toLowerCase(Locale.ROOT);
+                        if (!NO_SON_SECRETOS.contains(texto)
+                                && PARECEN_SECRETOS.stream().anyMatch(minusculas::contains)) {
+                            throw new IllegalArgumentException(
+                                    "Una clave del cambio parece un secreto: " + texto);
+                        }
+                        sinSecretos(adentro);
+                    });
+        } else if (valor instanceof Collection<?> lista) {
+            lista.forEach(CambioDeNormativa::sinSecretos);
+        }
     }
 
     /** Qué valores lleva un cambio según su acción (research §2). Una versión no se borra. */

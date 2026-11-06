@@ -19,7 +19,7 @@ Un hecho que ya ocurrió en otro servicio. Se crea una vez y no cambia nunca.
 
 **Invariantes** (se validan al construirla; si fallan, `USUARIOS_ENTRADA_BITACORA_INVALIDA`):
 - `anterior` y `nuevo` no faltan los dos.
-- Ninguna clave de `objeto`, `anterior` ni `nuevo`, a cualquier profundidad, contiene `clave`, `contrasena`, `password`, `token`, `secreto` ni `jwt`, sin importar mayúsculas (FR-011).
+- Ninguna clave de `objeto`, `anterior` ni `nuevo`, a cualquier profundidad, contiene `clave`, `contrasena`, `password`, `token`, `secreto` ni `jwt`, sin importar mayúsculas (FR-011). Se exceptúan las claves de una lista cerrada, escritas tal cual: hoy solo `palabrasClave`, de las asignaturas de Académico (D-92).
 - El tamaño del contenido no pasa de 64 KB: una entrada describe un cambio, no un archivo.
 - Una entrada de `docentes` no lleva en `anterior` ni en `nuevo` las claves `primerNombre`, `segundoNombre`, `primerApellido`, `segundoApellido`, `correoInstitucional`, `telefono` ni `condicionEspecial` (FR-014, D-91); esos campos solo se nombran en `objeto.camposPersonales`.
 

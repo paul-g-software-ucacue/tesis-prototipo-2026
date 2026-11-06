@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
  *       {@code periodo} es opcional; no hay otros campos;
  *   <li>{@code anterior} y {@code nuevo} no faltan los dos;
  *   <li>ninguna clave de {@code objeto}, {@code anterior} ni {@code nuevo}, a cualquier
- *       profundidad, parece un secreto (FR-011);
+ *       profundidad, parece un secreto (FR-011), salvo las de {@link #NO_SON_SECRETOS} (D-92);
  *   <li>una entrada de {@code docentes} no lleva en {@code anterior} ni en {@code nuevo} el valor
  *       de un dato personal (FR-014, D-91);
  *   <li>el contenido no pasa de {@link #TAMANO_MAXIMO} bytes, medido con {@link #tamanoDe}.
@@ -48,6 +48,12 @@ public final class EntradaBitacora {
     private static final int USUARIO_MAXIMO = 64;
     private static final List<String> PARECEN_SECRETOS =
             List.of("clave", "contrasena", "contraseña", "password", "token", "secreto", "jwt");
+
+    /**
+     * Las claves que parecen un secreto y no lo son, escritas tal cual (D-92): las palabras clave
+     * de una asignatura de Académico.
+     */
+    public static final Set<String> NO_SON_SECRETOS = Set.of("palabrasClave");
 
     /** Los datos personales de un docente que no llegan con su valor (D-91). */
     public static final Set<String> DATOS_PERSONALES_DE_DOCENTE =
@@ -268,9 +274,10 @@ public final class EntradaBitacora {
     private static void sinSecretos(Object valor) {
         if (valor instanceof Map<?, ?> mapa) {
             for (Map.Entry<?, ?> entrada : mapa.entrySet()) {
-                String clave = String.valueOf(entrada.getKey()).toLowerCase(Locale.ROOT);
+                String original = String.valueOf(entrada.getKey());
+                String clave = original.toLowerCase(Locale.ROOT);
                 for (String secreto : PARECEN_SECRETOS) {
-                    if (clave.contains(secreto)) {
+                    if (clave.contains(secreto) && !NO_SON_SECRETOS.contains(original)) {
                         throw new EntradaBitacoraInvalida(
                                 "Una clave del contenido parece un secreto: " + secreto);
                     }

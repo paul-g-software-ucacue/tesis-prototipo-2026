@@ -243,6 +243,27 @@ class EntradaBitacoraTest {
                 .isInstanceOf(EntradaBitacoraInvalida.class);
     }
 
+    /** D-92: las palabras clave de una asignatura no son un secreto. */
+    @Test
+    void dadasLasPalabrasClaveDeUnaAsignatura_cuandoSeConstruye_entoncesSeAcepta() {
+        Map<String, Object> contenido = valida();
+        contenido.put("anterior", Map.of("palabrasClave", "redes"));
+        contenido.put("nuevo", Map.of("palabrasClave", "redes; seguridad"));
+
+        assertThat(EntradaBitacora.de(ID, "academico", contenido).nuevo())
+                .hasValue(Map.of("palabrasClave", "redes; seguridad"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"palabrasClaveDelUsuario", "PALABRASCLAVE", "palabras_clave"})
+    void dadaOtraClaveParecidaALasPalabrasClave_cuandoSeConstruye_entoncesSeRechaza(String clave) {
+        Map<String, Object> contenido = valida();
+        contenido.put("nuevo", Map.of(clave, "x"));
+
+        assertThatThrownBy(() -> EntradaBitacora.de(ID, "academico", contenido))
+                .isInstanceOf(EntradaBitacoraInvalida.class);
+    }
+
     @Test
     void dadoUnSecretoComoValorYNoComoClave_cuandoSeConstruye_entoncesSeAcepta() {
         Map<String, Object> contenido = valida();

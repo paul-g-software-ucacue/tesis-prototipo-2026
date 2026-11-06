@@ -76,6 +76,52 @@ class BitacoraDesdeGeneracionIntegrationTest {
         assertThat(publicaciones(usuario)).isZero();
     }
 
+    /**
+     * FR-008 y US3: con {@code identidad} caída (aquí no existe), el cambio se confirma, el caso de
+     * uso no ve ningún error y la entrada queda pendiente en {@code eventos_distributivo}, para el
+     * reenvío.
+     */
+    @Test
+    void conIdentidadCaida_cuandoSeConfirmaUnCambio_entoncesQuedaPendienteSinError()
+            throws InterruptedException {
+        String usuario = usuario();
+
+        String confirmado =
+                transaccion.ejecutar(
+                        () -> {
+                            registro.registrar(cambio(usuario));
+                            return usuario;
+                        });
+
+        assertThat(confirmado).isEqualTo(usuario);
+        assertThat(filasLocales(usuario)).isOne();
+        Instant limite = Instant.now().plusSeconds(15);
+        while (!"FAILED".equals(estado(usuario)) && Instant.now().isBefore(limite)) {
+            Thread.sleep(200);
+        }
+        assertThat(estado(usuario)).isEqualTo("FAILED");
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT count(*) FROM eventos_distributivo.event_publication"
+                                        + " WHERE serialized_event LIKE ?"
+                                        + " AND completion_date IS NULL",
+                                Integer.class,
+                                "%" + usuario + "%"))
+                .isOne();
+    }
+
+    private String estado(String usuario) {
+        return jdbc
+                .queryForList(
+                        "SELECT status FROM eventos_distributivo.event_publication"
+                                + " WHERE serialized_event LIKE ?",
+                        String.class,
+                        "%" + usuario + "%")
+                .stream()
+                .findFirst()
+                .orElse("SIN_PUBLICACION");
+    }
+
     private int filasLocales(String usuario) {
         return jdbc.queryForObject(
                 "SELECT count(*) FROM generacion.registro_cambio WHERE usuario = ?",

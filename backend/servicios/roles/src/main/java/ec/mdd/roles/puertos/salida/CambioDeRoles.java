@@ -1,8 +1,12 @@
 package ec.mdd.roles.puertos.salida;
 
 import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Un cambio de roles o de asignaciones, con quién lo hizo y cuándo (FR-011).
@@ -34,6 +38,9 @@ public record CambioDeRoles(
         detalle = Map.copyOf(detalle);
         anterior = Map.copyOf(anterior);
         nuevo = Map.copyOf(nuevo);
+        sinSecretos(detalle);
+        sinSecretos(anterior);
+        sinSecretos(nuevo);
         boolean conAnterior = !anterior.isEmpty();
         boolean conNuevo = !nuevo.isEmpty();
         boolean cumple =
@@ -46,6 +53,32 @@ public record CambioDeRoles(
         if (!cumple) {
             throw new IllegalArgumentException(
                     "El cambio " + accion + " no cumple su clase " + accion.clase() + ".");
+        }
+    }
+
+    private static final List<String> PARECEN_SECRETOS =
+            List.of("clave", "contrasena", "contraseña", "password", "token", "secreto", "jwt");
+
+    /** Las claves que parecen un secreto y no lo son, escritas tal cual (D-92). */
+    private static final Set<String> NO_SON_SECRETOS = Set.of("palabrasClave");
+
+    // FR-011: ninguna clave, a cualquier profundidad, parece un secreto. El mensaje nombra la
+    // clave, nunca su valor.
+    private static void sinSecretos(Object valor) {
+        if (valor instanceof Map<?, ?> mapa) {
+            mapa.forEach(
+                    (clave, adentro) -> {
+                        String texto = String.valueOf(clave);
+                        String minusculas = texto.toLowerCase(Locale.ROOT);
+                        if (!NO_SON_SECRETOS.contains(texto)
+                                && PARECEN_SECRETOS.stream().anyMatch(minusculas::contains)) {
+                            throw new IllegalArgumentException(
+                                    "Una clave del cambio parece un secreto: " + texto);
+                        }
+                        sinSecretos(adentro);
+                    });
+        } else if (valor instanceof Collection<?> lista) {
+            lista.forEach(CambioDeRoles::sinSecretos);
         }
     }
 

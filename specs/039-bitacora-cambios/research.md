@@ -108,7 +108,7 @@ Justificaciones: el `objeto` y los valores nunca llevan el texto de una justific
   - el prefijo del tipo coincide con el `origen`;
   - `usuario`, `accion` y `periodo` cumplen sus patrones (contracts/eventos.md);
   - la clase se respeta: sin `anterior` y `nuevo` a la vez vacíos;
-  - ninguna clave de `objeto`, `anterior` o `nuevo`, a cualquier profundidad, se parece a un secreto: `clave`, `contrasena`, `password`, `token`, `secreto`, `jwt` (FR-011).
+  - ninguna clave de `objeto`, `anterior` o `nuevo`, a cualquier profundidad, se parece a un secreto: `clave`, `contrasena`, `password`, `token`, `secreto`, `jwt` (FR-011), salvo `palabrasClave`, de las asignaturas (D-92). Cada servicio emisor aplica la misma regla en su registro de cambio (T025).
 - **Errores:**
   - un tipo u origen no admitido sigue siendo `COMUN_EVENTO_NO_RECONOCIDO` (400);
   - un contenido que no cumple la validación es **`USUARIOS_ENTRADA_BITACORA_INVALIDA`** (400), código nuevo.

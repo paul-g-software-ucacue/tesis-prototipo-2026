@@ -105,7 +105,7 @@ Cada servicio sigue el mismo patrón, en este orden:
 **Independent Test**: un `DELETE` con el rol `identidad` falla.
 
 - [X] T021 [US2] Agregar a `USU/integrationTest/.../RepositorioBitacoraIntegrationTest.java`, y verlo fallar contra una copia de `V5` sin los disparadores ni el `REVOKE`: `UPDATE`, `DELETE` y `TRUNCATE` con el rol del proceso fallan con el mensaje del disparador; también con el dueño; la entrada sigue igual (SC-005).
-- [ ] T022 [US2] Crear `USU/test/.../adaptadores/entrada/BitacoraSinBorradoContratoTest.java`, que recorre todos los `contratos/*/openapi.yaml` y falla si alguna operación `PUT`, `PATCH` o `DELETE` toca la bitácora, o si `recibirEvento` deja de ser la única escritura (FR-009).
+- [X] T022 [US2] Crear `USU/test/.../adaptadores/entrada/BitacoraSinBorradoContratoTest.java`, que recorre todos los `contratos/*/openapi.yaml` y falla si alguna operación `PUT`, `PATCH` o `DELETE` toca la bitácora, o si `recibirEvento` deja de ser la única escritura (FR-009).
 
 **Checkpoint**: la bitácora solo crece.
 
@@ -117,8 +117,8 @@ Cada servicio sigue el mismo patrón, en este orden:
 
 **Independent Test**: detener `identidad`, hacer cambios y verlos llegar.
 
-- [ ] T023 [US3] Agregar a `EVT/integrationTest/` una prueba con un `ReceptorLocal` que falla y después acepta: la publicación queda `FAILED` y el reenvío la completa, sin duplicar.
-- [ ] T024 [US3] Agregar a `GEN/integrationTest/` una prueba con el receptor HTTP caído: el cambio se confirma igual, su evento queda pendiente en `eventos_distributivo` y el caso de uso no ve ningún error (FR-008).
+- [X] T023 [US3] Agregar a `EVT/integrationTest/` una prueba con un `ReceptorLocal` que falla y después acepta: la publicación queda `FAILED` y el reenvío la completa, sin duplicar.
+- [X] T024 [US3] Agregar a `GEN/integrationTest/` una prueba con el receptor HTTP caído: el cambio se confirma igual, su evento queda pendiente en `eventos_distributivo` y el caso de uso no ve ningún error (FR-008). **Hecho en `apps/distributivo/src/integrationTest` (`BitacoraDesdeGeneracionIntegrationTest`):** el registro de publicaciones necesita el contexto del proceso, que la prueba de integración del servicio no levanta.
 
 **Checkpoint**: la caída de `identidad` no pierde ni repite entradas.
 
@@ -130,8 +130,8 @@ Cada servicio sigue el mismo patrón, en este orden:
 
 **Independent Test**: revisar todas las entradas de las pruebas.
 
-- [ ] T025 [P] [US4] Agregar a las pruebas del registro de cambio de cada servicio de T012 a T018 un caso que recorre todas sus acciones y afirma que ninguna clave de `detalle`, `anterior` ni `nuevo` parece un secreto, con la misma lista de T006. En Docentes, afirmar además que ninguna entrada lleva el valor de los siete campos personales de D-91 (FR-014), tampoco al aplicar una carga 4.
-- [ ] T026 [US4] Agregar a `RegistrarEventoRecibidoServicioTest` un evento con una clave `token` anidada en `nuevo`: se rechaza con `EntradaBitacoraInvalida` y no se registra.
+- [X] T025 [P] [US4] Agregar a las pruebas del registro de cambio de cada servicio de T012 a T018 un caso que recorre todas sus acciones y afirma que ninguna clave de `detalle`, `anterior` ni `nuevo` parece un secreto, con la misma lista de T006. En Docentes, afirmar además que ninguna entrada lleva el valor de los siete campos personales de D-91 (FR-014), tampoco al aplicar una carga 4. **Resultado:** cada registro de cambio rechaza una clave que parece un secreto, con la excepción de `palabrasClave` (D-92, decidida por el autor el 2026-11-06). La carga de docentes es la 06 (`AplicadorDocentesIntegrationTest`).
+- [X] T026 [US4] Agregar a `RegistrarEventoRecibidoServicioTest` un evento con una clave `token` anidada en `nuevo`: se rechaza con `EntradaBitacoraInvalida` y no se registra.
 
 **Checkpoint**: la historia está completa.
 

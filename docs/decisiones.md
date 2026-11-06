@@ -90,6 +90,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-89 | 2026-11-02 | La configuración del flujo es un YAML: el mismo archivo es plantilla y configuración por defecto | Aceptada | ADR-007, RF-34, RF-58 |
 | D-90 | 2026-11-05 | La bitácora de F17-H01 recibe todos los cambios que ya registra cada servicio | Aceptada | Alcance del issue #69 (F17-H01) |
 | D-91 | 2026-11-05 | La bitácora no guarda los valores de los datos personales de un docente | Aceptada | Alcance del issue #69 (F17-H01), RF-44 |
+| D-92 | 2026-11-06 | Las palabras clave de una asignatura no se tratan como un secreto en la bitácora | Aceptada | FR-011 de F17-H01 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1711,3 +1712,23 @@ Las 19 excepciones de `cloudflared` no cambian: su imagen no corre con el túnel
 - El registro local (`docentes.registro_cambio`) ya guarda esos valores desde F03-H04. Revisarlo queda fuera de esta historia; si se decide minimizarlo, se registra otra decisión.
 
 **Documentos que hay que poner al día.** Ninguno.
+
+---
+
+## D-92. Las palabras clave de una asignatura no se tratan como un secreto en la bitácora
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-06 · **Decidido por:** autor de la tesis
+- **Origen:** implementación de F17-H01 (T025)
+- **Modifica a:** la invariante de FR-011 en `specs/039-bitacora-cambios/data-model.md` («ninguna clave contiene `clave`…»)
+
+**Decisión.** La regla de FR-011 sigue igual: una clave de `objeto`, `anterior` o `nuevo` que contiene `clave`, `contrasena`, `password`, `token`, `secreto` o `jwt`, sin importar mayúsculas, se rechaza. Se exceptúa una lista cerrada de claves escritas tal cual, que hoy tiene una sola: `palabrasClave`, el campo de la asignatura de Académico. La excepción vale en el receptor de Usuarios y en el registro de cambio de cada servicio emisor.
+
+**Por qué.** Corregir las palabras clave de una asignatura publica `ASIGNATURA_CORREGIDA` con `palabrasClave` en `anterior` y `nuevo`. Con la regla sin excepción, el receptor la rechazaba con `USUARIOS_ENTRADA_BITACORA_INVALIDA` y la publicación quedaba pendiente para siempre; y con la misma regla en el emisor, la corrección misma fallaba. Las palabras clave no son un secreto.
+
+**Alternativas.** Comparar palabras enteras (`palabras`, `clave`): `clave` sigue siendo una palabra y no lo resuelve. Cambiar el nombre del campo en la entrada (por ejemplo, `palabrasDeBusqueda`): la bitácora dejaría de usar el nombre del dominio (principio III).
+
+**Consecuencias.**
+- `EntradaBitacora.NO_SON_SECRETOS` en Usuarios y `NO_SON_SECRETOS` en cada registro de cambio, con sus pruebas.
+- Un campo nuevo que parezca un secreto sin serlo se agrega a la lista con otra decisión; la regla no se afloja.
+
+**Documentos que hay que poner al día.** `data-model.md`, `contracts/eventos.md` y `research.md` §5 de F17-H01, y la causa de `USUARIOS_ENTRADA_BITACORA_INVALIDA` en `contratos/comun/errores.md`. Hechos el 2026-11-06.

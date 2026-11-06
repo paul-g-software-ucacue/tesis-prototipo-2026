@@ -7,8 +7,11 @@ import ec.mdd.normativa.puertos.salida.CambioDeNormativa.Accion;
 import ec.mdd.normativa.puertos.salida.CambioDeNormativa.Clase;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 /** Cada acción declara su clase, y el cambio la cumple (research §2, F17-H01). */
 class CambioDeNormativaTest {
@@ -70,5 +73,33 @@ class CambioDeNormativaTest {
                 .containsEntry("version", 1);
         assertThatThrownBy(() -> cambio(Accion.VERSION_ASOCIADA, Map.of("version", 1), Map.of()))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    /** FR-011 y T025 de F17-H01: ninguna acción registra una clave que parece un secreto. */
+    @ParameterizedTest
+    @EnumSource(Accion.class)
+    void cadaAccion_cuandoUnaClaveParecesUnSecreto_entoncesSeRechaza(Accion accion) {
+        Map<String, Object> anidado =
+                Map.of("cambios", List.of(Map.of("campo", "x", "token", "y")));
+
+        assertThatThrownBy(
+                        () ->
+                                new CambioDeNormativa(
+                                        MOMENTO, QUIEN, accion, anidado, Map.of(), Map.of()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("secreto")
+                .message()
+                .doesNotContain("y\"");
+        assertThatThrownBy(
+                        () ->
+                                new CambioDeNormativa(
+                                        MOMENTO,
+                                        QUIEN,
+                                        accion,
+                                        Map.of("x", "y"),
+                                        Map.of("password", "y"),
+                                        Map.of("claveDeAcceso", "y")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("secreto");
     }
 }
