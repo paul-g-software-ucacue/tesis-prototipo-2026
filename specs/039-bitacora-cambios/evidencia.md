@@ -57,3 +57,51 @@ Las pruebas de integración de los aplicadores lo comprueban: `AplicadorAcademic
 ### Todo registro corre en una transacción
 
 `@ApplicationModuleListener` es un oyente transaccional: un evento publicado fuera de una transacción no se guarda en el registro de publicaciones, y se perdería sin error. Al revisar cada llamada a `registrar` se encontraron cuatro sin transacción, todas en Roles: `crear`, `editar` y `borrar` un rol (`GestionarRolesServicio`) y los roles iniciales (`AsignarRolesInicialesServicio`). Desde T017 corren en `Transaccion`, con su prueba (`crearEditarYBorrar_cuandoGuardan_entoncesGuardanYRegistranDentroDeUnaTransaccion`). Validación OCS no tenía transacción y suma la suya (T018). Las demás llamadas ya corrían dentro de `transaccion.ejecutar`.
+
+## Pruebas y comprobaciones (T030)
+
+Todas el 2026-11-06, sobre la rama `039-bitacora-cambios`.
+
+| Comprobación | Resultado | Cómo |
+|---|---|---|
+| Pruebas unitarias del backend | 2 563 pruebas, 0 fallas | `./gradlew test --rerun` |
+| Cobertura por módulo (60 % de líneas, D-32) | Pasa en todos. La más baja, Roles: 76,7 %. Generación 90,6 %, Académico 84,6 %, Docentes 82,1 %, Normativa 79,6 %, Validación OCS 92,9 %, Usuarios 89,0 %, `:plataforma:eventos` 96,0 % | `jacocoTestReport jacocoTestCoverageVerification`, JaCoCo regenerado |
+| `integrationTest` completo | 240 pruebas, 0 fallas | `./gradlew integrationTest --rerun`, como el job de la CI |
+| Spotless y SpotBugs | En verde | `spotlessCheck spotbugsMain` |
+| Los 28 scripts de `perfil-consolidado` | Los 28 pasan, en el orden del workflow, sobre un perfil nuevo (`down -v` y `up --wait`) | `probar_bitacora.sh` en el lugar de `probar_eventos.sh`; después, `probar_actividades.sh` y otra vez `probar_bitacora.sh`, para comprobar que deja la base lista |
+| `deploy/equipo/probar_equipo.sh` | Todos sus pasos pasan (0 a 12) | Con el perfil abajo, como en la CI |
+| shellcheck | 0 hallazgos en los 43 scripts de `deploy/` | v0.11.0, con una copia nueva en el scratchpad |
+| Gitleaks | Sin fugas en 98 commits | v8.30.1 en modo `git`, sobre un clon, con `.gitleaks.toml` |
+
+### `probar_bitacora.sh` (contracts/demostracion.md)
+
+| Paso | Resultado |
+|---|---|
+| 1. Cargas, periodo abierto y distributivo | OK |
+| 2. Actividad de 4 a 6 horas (US1-1) | OK: una entrada con el usuario, el periodo, `anterior.horas = 4` y `nuevo.horas = 6` |
+| 3. Agregar y quitar (US1-2, US1-3) | OK |
+| 4. Regla dura (US1-4) | OK: 409 `GENERACION_HORAS_EXCEDIDAS` y ninguna entrada |
+| 5. Un cambio en cada servicio (SC-001) | OK: Académico, Docentes, Normativa, Roles y Validación OCS |
+| 6. Cargas (FR-002) | OK: 600 filas aplicadas por `datos.demo`, 600 entradas |
+| 7. Identidad detenido (SC-002, FR-008) | OK: 10 cambios sin error y 10 publicaciones pendientes; las 10 entradas llegan una vez antes de 75 s |
+| 8. Entrega repetida (FR-007) | OK |
+| 9. Modificar la bitácora (SC-005) | OK: `UPDATE`, `DELETE` y `TRUNCATE` fallan con `identidad` y con el superusuario |
+| 10. Secretos y datos personales (SC-004, FR-014) | OK: 0 claves, 0 valores secretos, 0 teléfonos |
+| 11. Demora (SC-003) | OK: 0,112 s con identidad y 0,109 s sin ella |
+
+### La carga de casi 5 MB (SC-004 de F01-H04)
+
+Cada fila de una carga publica ahora su entrada en la misma transacción. `ConfirmarLasDiezCargasIntegrationTest` confirma 10 568 docentes en **13,0 s** sola (la medición de `specs/025-confirmar-carga` fue 15,5 s) y en **32,9 s** dentro de `integrationTest` completo, con los módulos en paralelo; el límite es 60 s. Una corrida que juntó `check` e `integrationTest` en un solo Gradle llegó a 76,9 s por la carga de la máquina: la CI los corre en jobs separados.
+
+### Criterios de terminado (constitución §6)
+
+| Criterio | Dónde |
+|---|---|
+| Escenarios de aceptación | `probar_bitacora.sh`, arriba, y las pruebas de US1 a US4 |
+| Contrato publicado y verificado | `EntradaBitacora` y el receptor en `contratos/usuarios/openapi.yaml`, con `EventosContratoTest` y `BitacoraSinBorradoContratoTest`; Generación sin `eventos-prueba` |
+| Prueba de arquitectura | ArchUnit y Spring Modulith de cada módulo y de las tres aplicaciones, en verde |
+| Errores en el catálogo | `USUARIOS_ENTRADA_BITACORA_INVALIDA` con sus 8 columnas, cubierto por la prueba de contrato del receptor |
+| Validaciones de entrada (principio XIV) | El contenido del evento en el contrato y en `EntradaBitacora`, con casos válidos e inválidos. No hay formularios nuevos |
+| JavaDoc | `ReceptorLocal`, `EntradaBitacora`, `RepositorioBitacora`, los registros de cambio y los puertos `RegistroDeCambios` (T029) |
+| Seguridad | SpotBugs y Gitleaks en verde; Grype en el pull request |
+| Glosario | Sin términos nuevos (T001); D-92 no agrega ninguno |
