@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-80 · ADR-024.
+- **Siguiente número libre:** D-92 · ADR-025.
 
 ## Índice
 
@@ -72,6 +72,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | ADR-022 | 2026-10-26 | El lenguaje publicado de las cargas y el motor del lote, en `:plataforma:lenguaje-cargas` | Aceptada | MD-13 y ADR-009 (cómo llega el lote al dueño) |
 | D-74 | 2026-10-26 | Los mensajes al usuario lo tratan de «tú» | Aceptada | Principio XIII (mensajes consistentes); motivos y pantalla de F01-H03 |
 | ADR-023 | 2026-10-30 | Consultas entre procesos por rutas internas con token de proceso | Aceptada | ADR-018 (extiende las rutas internas a las consultas), ADR-010 (precisa cómo se pide la ficha), ADR-009 (fija los errores 502 y 504) |
+| ADR-024 | 2026-11-05 | Entrega local de eventos dentro de un proceso | Aceptada | ADR-018 |
 | D-75 | 2026-10-31 | Las horas disponibles de un docente salen de sus horas contratadas | Aceptada | Glosario «Horas disponibles», RF-25 |
 | D-76 | 2026-10-31 | Roles no consulta a Académico al guardar la carrera del coordinador | Aceptada | D-64, F06-H05 |
 | D-77 | 2026-10-31 | Las horas semanales admiten hasta dos decimales | Aceptada | RN-18, F03-H03, modelo táctico |
@@ -87,6 +88,8 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-87 | 2026-11-02 | RN-18 se mide por paralelo en el panel, y la matriz D-16 no cambia | Aceptada | RN-18, F03-H03, D-16 |
 | D-88 | 2026-11-02 | Los archivos del negocio van en un volumen, detrás de un puerto de Generación | Aceptada | RNF-POR-01, F10-H02 |
 | D-89 | 2026-11-02 | La configuración del flujo es un YAML: el mismo archivo es plantilla y configuración por defecto | Aceptada | ADR-007, RF-34, RF-58 |
+| D-90 | 2026-11-05 | La bitácora de F17-H01 recibe todos los cambios que ya registra cada servicio | Aceptada | Alcance del issue #69 (F17-H01) |
+| D-91 | 2026-11-05 | La bitácora no guarda los valores de los datos personales de un docente | Aceptada | Alcance del issue #69 (F17-H01), RF-44 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1626,5 +1629,85 @@ Las 19 excepciones de `cloudflared` no cambian: su imagen no corre con el túnel
 **Alternativas.** JSON: sin comentarios. CSV: las etapas y las firmas son dos estructuras. Fechas fijas: un archivo nuevo por periodo.
 
 **Consecuencias.** `BORRADOR_UNIDADES` queda desactivada por defecto, porque las unidades no tienen parcial, aunque la ERS la lista. Los plazos por defecto son valores iniciales, porque la ERS no los fija.
+
+**Documentos que hay que poner al día.** Ninguno.
+
+---
+
+## D-90. La bitácora de F17-H01 recibe todos los cambios que ya registra cada servicio
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-05 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q1 de la especificación de F17-H01, revisada al planificar
+- **Modifica a:** alcance del issue #69 (F17-H01)
+
+**Decisión.** F17-H01 lleva a la bitácora todos los cambios que cada servicio ya guarda en su propio registro de cambios (Generación, Académico, Docentes, Normativa y Roles), también los que aplica una carga confirmada, más la carga de la configuración del flujo de Validación OCS. Cada entrada lleva el valor anterior y el nuevo.
+
+**Por qué.** El issue pide «cada cambio» y RF-44, «toda acción relevante». Los cinco servicios ya registran cada cambio por un solo puerto, en la misma transacción, así que la bitácora se alimenta desde ese puerto y no operación por operación. Registrar solo una parte costaría casi lo mismo y obligaría a filtrar.
+
+**Alternativas.** Solo el distributivo y lo prometido «para la bitácora» en las especificaciones 011, 012, 013, 016 y 038: fue la primera respuesta, con la premisa equivocada de que el distributivo no tenía registro y de que había que tocar cada operación. Solo el distributivo: deja fuera esas promesas.
+
+**Consecuencias.**
+- Cada historia que agregue una acción (F12-H02, F13, F14, F15 y F18) publica su entrada por el mismo camino.
+- Hay que completar el valor anterior en las acciones que hoy no lo guardan.
+- El historial de archivos de carga (validados, rechazados o repetidos) no entra: subir un archivo no cambia datos.
+- Los registros locales se conservan; los cambios anteriores a esta historia no se copian a la bitácora.
+
+**Documentos que hay que poner al día.** Ninguno.
+
+---
+
+## ADR-024. Entrega local de eventos dentro de un proceso
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-05 · **Decidido por:** autor de la tesis
+- **Origen:** plan de F17-H01 (`specs/039-bitacora-cambios/research.md` §4)
+- **Modifica a:** ADR-018, que solo entrega por HTTP entre procesos
+- **Relacionadas:** D-90; principios V y X
+
+**Contexto.**
+- La bitácora vive en Usuarios, en el proceso `identidad`. Roles, en el mismo proceso, también registra cambios que deben llegar a ella.
+- El principio V dice que dentro de un proceso los servicios se llaman por la interfaz de aplicación, y que cada transacción queda dentro de un servicio.
+- `identidad` no incluía `:plataforma:eventos`: hasta ahora solo recibía eventos.
+
+**Decisión.**
+1. `identidad` incluye `:plataforma:eventos`, con su registro de publicaciones en `eventos_identidad`.
+2. `:plataforma:eventos` define `ReceptorLocal`, con su `destino()` y `recibir(EventoEntreProcesos)`.
+3. `ClienteDeEventos` entrega a un `ReceptorLocal` del destino si lo hay; si no, por HTTP, como en ADR-018. Una excepción del receptor local es una `EntregaFallida` y se reintenta igual.
+4. Usuarios publica su receptor como `ReceptorLocal` de `usuarios`. Roles publica sus cambios como cualquier otro servicio.
+5. Un proceso que solo entrega localmente no necesita clave ni token de proceso.
+
+**Por qué.**
+- Respeta el principio V: sin HTTP dentro del proceso y con una transacción por servicio.
+- Reutiliza el registro, el oyente y el reenvío: un cambio de Roles no se pierde si Usuarios falla.
+- Es una bifurcación en un solo punto, sin un mecanismo nuevo (principio X).
+
+**Alternativas.**
+- Roles escribe en la tabla de Usuarios: rompe el principio V.
+- Roles llama a Usuarios dentro de su transacción: una transacción entre dos servicios.
+- HTTP hacia el mismo proceso: contradice el principio V y pide un token de proceso a sí mismo.
+- Un oyente de Spring propio en Usuarios para los eventos de Roles: un segundo camino para lo mismo.
+
+**Consecuencias.**
+- `identidad` crea su registro de publicaciones al arrancar.
+- Si Roles y Usuarios se separan algún día en procesos distintos, basta con configurar el destino HTTP y quitar el receptor local.
+
+**Documentos que hay que poner al día.** Ninguno.
+
+---
+
+## D-91. La bitácora no guarda los valores de los datos personales de un docente
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-05 · **Decidido por:** autor de la tesis
+- **Origen:** análisis de F17-H01 (hallazgo M3 de `/speckit-analyze`)
+- **Modifica a:** RF-44 («valor anterior y valor nuevo»), solo para estos campos; alcance del issue #69
+
+**Decisión.** Cuando cambian el `primerNombre`, `segundoNombre`, `primerApellido`, `segundoApellido`, `correoInstitucional`, `telefono` o la `condicionEspecial` de un docente, la entrada de la bitácora dice qué campos cambiaron, sin sus valores anterior y nuevo. La identificación del docente sí se guarda, porque dice a quién se refiere el cambio. Los demás campos (dedicación, horas, ficha académica, cargos, proyectos) se guardan con sus valores.
+
+**Por qué.** RNF-SEG-06 pide minimizar los datos personales (LOPDP). La condición especial (maternidad o lactancia, cuidador sustituto) es un dato sensible. Copiar esos valores a una bitácora que no se puede borrar los dejaría para siempre fuera del servicio dueño, sin que la auditoría los necesite: basta con saber quién cambió qué campo y cuándo.
+
+**Alternativas.** Guardar todos los valores: cumple RF-44 al pie de la letra, pero los datos sensibles no se podrían borrar nunca. Guardar un hash de cada valor: permite comparar, pero un dato con pocos valores posibles, como la condición especial, se revierte por fuerza bruta.
+
+**Consecuencias.**
+- El adaptador de Docentes arma la entrada sin esos valores; el registro local de Docentes no cambia en esta historia.
+- El registro local (`docentes.registro_cambio`) ya guarda esos valores desde F03-H04. Revisarlo queda fuera de esta historia; si se decide minimizarlo, se registra otra decisión.
 
 **Documentos que hay que poner al día.** Ninguno.
