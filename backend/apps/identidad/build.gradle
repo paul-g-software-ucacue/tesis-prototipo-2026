@@ -12,6 +12,9 @@ dependencies {
     implementation project(':plataforma:seguridad')
     // Un solo @RestControllerAdvice por proceso y la página /error (ADR-016).
     implementation project(':plataforma:errores')
+    // Registro de publicaciones y entrega de eventos: Roles registra sus cambios en la bitácora de
+    // Usuarios, en este mismo proceso, con el receptor local (F17-H01, ADR-024).
+    implementation project(':plataforma:eventos')
 
     // Servicios que ensambla este proceso (ADR-006).
     implementation project(':servicios:usuarios')

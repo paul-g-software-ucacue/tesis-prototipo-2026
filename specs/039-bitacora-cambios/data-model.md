@@ -9,7 +9,7 @@ Un hecho que ya ocurrió en otro servicio. Se crea una vez y no cambia nunca.
 | `idEvento` | UUID | El del evento que la trajo. Identifica la entrada y hace la idempotencia (FR-007). |
 | `servicio` | texto | Uno de `generacion`, `academico`, `docentes`, `normativa`, `roles`, `validacionocs`. Igual al `origen` del evento y al prefijo de su tipo. |
 | `accion` | texto | `^[A-Z][A-Z_]{2,39}$`, el nombre de la acción del servicio (por ejemplo, `ACTIVIDAD_GUARDADA`). |
-| `usuario` | texto | El nombre de usuario que inició el cambio, o `sistema`. De 1 a 64 caracteres (el largo de las columnas `usuario` de los registros locales), sin espacios ni caracteres de control: `^[A-Za-z0-9._-]{1,64}$`. El contrato de Usuarios no fija el patrón del nombre de usuario; la tarea del receptor lo confirma contra la definición de Usuarios antes de implementarlo (principio XIV). |
+| `usuario` | texto | El nombre de usuario que inició el cambio, o `sistema`. De 1 a 64 caracteres, sin otro formato: es la definición de Usuarios (`nombre_usuario varchar(64)`) y del parámetro `Usuario` de Roles (`minLength: 1`, `maxLength: 64`), confirmada en T002 (principio XIV). |
 | `momento` | instante | Cuándo ocurrió el cambio en su servicio, no cuándo llegó. |
 | `periodo` | texto, opcional | `^[A-Za-z0-9._-]{1,20}$`, el código del periodo, si el cambio pertenece a uno. |
 | `objeto` | objeto | Sobre qué se hizo: los identificadores del elemento y su contexto, como los guarda el servicio. |

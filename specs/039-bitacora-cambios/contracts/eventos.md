@@ -25,8 +25,9 @@ EntradaBitacora:
   properties:
     usuario:
       type: string
-      pattern: '^[A-Za-z0-9._-]{1,64}$'
-      description: Quién inició el cambio, o «sistema».
+      minLength: 1
+      maxLength: 64
+      description: Quién inició el cambio, o «sistema». Sin otro formato, como el nombre de usuario de Usuarios.
     accion:
       type: string
       pattern: '^[A-Z][A-Z_]{2,39}$'

@@ -57,7 +57,9 @@ class ConfiguracionUsuariosTest {
                 .isNotNull();
         assertThat(configuracion.proveedorDeAutorizacion(null, null)).isNotNull();
         assertThat(configuracion.repositorioEventosRecibidos(null)).isNotNull();
-        assertThat(configuracion.registrarEventoRecibido(null)).isNotNull();
+        assertThat(configuracion.repositorioBitacora(null)).isNotNull();
+        assertThat(configuracion.registrarEventoRecibido(null, null)).isNotNull();
+        assertThat(configuracion.receptorLocalDeUsuarios(null).destino()).isEqualTo("usuarios");
         assertThat(propiedades.usuarioPrueba().toString()).doesNotContain("clave=");
     }
 

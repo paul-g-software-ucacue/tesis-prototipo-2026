@@ -5,70 +5,151 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ec.mdd.usuarios.dominio.EntradaBitacora;
+import ec.mdd.usuarios.dominio.EntradaBitacoraInvalida;
 import ec.mdd.usuarios.puertos.entrada.EventoRecibido;
+import ec.mdd.usuarios.puertos.salida.RepositorioBitacora;
 import ec.mdd.usuarios.puertos.salida.RepositorioEventosRecibidos;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 
-/** El receptor de eventos con el repositorio simulado (principio VIII: Mockito solo aquí). */
+/**
+ * El receptor de la bitácora con los repositorios simulados (principio VIII: Mockito solo aquí).
+ */
 class RegistrarEventoRecibidoServicioTest {
 
-    private final RepositorioEventosRecibidos repositorio = mock(RepositorioEventosRecibidos.class);
-    private final List<EventoRecibido> aplicados = new ArrayList<>();
+    private final RepositorioEventosRecibidos eventos = mock(RepositorioEventosRecibidos.class);
+    private final RepositorioBitacora bitacora = mock(RepositorioBitacora.class);
     private final RegistrarEventoRecibidoServicio servicio =
-            new RegistrarEventoRecibidoServicio(
-                    repositorio, Map.of("generacion.EventoDePrueba", aplicados::add));
+            new RegistrarEventoRecibidoServicio(eventos, bitacora);
 
-    @Test
-    void dadoUnEventoNuevoDeUnTipoAdmitido_cuandoSeRegistra_entoncesSeGuardaYAplicaSuManejador() {
-        EventoRecibido evento = evento("generacion.EventoDePrueba");
-        when(repositorio.registrarSiEsNuevo(evento)).thenReturn(true);
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "generacion",
+                "academico",
+                "docentes",
+                "normativa",
+                "roles",
+                "validacionocs"
+            })
+    void dadoUnaEntradaNuevaDeCadaServicio_cuandoSeRegistra_entoncesQuedaEnLaBitacora(
+            String servicioDeOrigen) {
+        EventoRecibido evento = evento(servicioDeOrigen + ".EntradaBitacora", servicioDeOrigen);
+        when(eventos.registrarSiEsNuevo(evento)).thenReturn(true);
 
         servicio.registrar(evento);
 
-        verify(repositorio).registrarSiEsNuevo(evento);
-        assertThat(aplicados).containsExactly(evento);
+        ArgumentCaptor<EntradaBitacora> registrada = ArgumentCaptor.forClass(EntradaBitacora.class);
+        verify(bitacora).registrar(registrada.capture());
+        assertThat(registrada.getValue().idEvento()).isEqualTo(evento.idEvento());
+        assertThat(registrada.getValue().servicio()).isEqualTo(servicioDeOrigen);
+        assertThat(registrada.getValue().anterior()).contains(Map.of("horas", "4"));
+        assertThat(registrada.getValue().nuevo()).contains(Map.of("horas", "6"));
     }
 
     @Test
-    void dadoUnEventoYaRegistrado_cuandoLlegaOtraVez_entoncesNoVuelveAAplicarSuManejador() {
-        EventoRecibido evento = evento("generacion.EventoDePrueba");
-        when(repositorio.registrarSiEsNuevo(evento)).thenReturn(true, false);
+    void dadoUnaEntradaYaRegistrada_cuandoLlegaOtraVez_entoncesNoSeRegistraDosVeces() {
+        EventoRecibido evento = evento("generacion.EntradaBitacora", "generacion");
+        when(eventos.registrarSiEsNuevo(evento)).thenReturn(true, false);
 
         servicio.registrar(evento);
         servicio.registrar(evento);
 
-        assertThat(aplicados).containsExactly(evento);
+        verify(eventos, times(2)).registrarSiEsNuevo(evento);
+        verify(bitacora, times(1)).registrar(any());
     }
 
     @Test
-    void dadoUnTipoSinManejador_cuandoSeRegistra_entoncesEventoNoReconocidoSinGuardarNada() {
-        assertThatThrownBy(() -> servicio.registrar(evento("generacion.OtroEvento")))
+    void dadoUnTipoQueNoEsDeLaBitacora_cuandoSeRegistra_entoncesEventoNoReconocidoSinGuardarNada() {
+        assertThatThrownBy(
+                        () -> servicio.registrar(evento("generacion.EventoDePrueba", "generacion")))
                 .isInstanceOf(EventoNoReconocido.class)
-                .hasMessageNotContaining("nota");
-        verify(repositorio, never()).registrarSiEsNuevo(any());
-        assertThat(aplicados).isEmpty();
+                .hasMessageNotContaining("TUTORIAS");
+        verify(eventos, never()).registrarSiEsNuevo(any());
+        verify(bitacora, never()).registrar(any());
     }
 
     @Test
-    void dadoElReceptorDePrueba_cuandoSeArma_entoncesSoloAdmiteElEventoDePrueba() {
-        assertThat(RegistrarEventoRecibidoServicio.manejadoresDePrueba())
-                .containsOnlyKeys("generacion.EventoDePrueba");
+    void dadoUnServicioQueNoRegistraEnLaBitacora_cuandoSeRegistra_entoncesEventoNoReconocido() {
+        assertThatThrownBy(() -> servicio.registrar(evento("cargas.EntradaBitacora", "cargas")))
+                .isInstanceOf(EventoNoReconocido.class);
+        verify(eventos, never()).registrarSiEsNuevo(any());
     }
 
-    private static EventoRecibido evento(String tipo) {
+    @Test
+    void dadoUnPrefijoDistintoDelOrigen_cuandoSeRegistra_entoncesEventoNoReconocido() {
+        assertThatThrownBy(() -> servicio.registrar(evento("roles.EntradaBitacora", "generacion")))
+                .isInstanceOf(EventoNoReconocido.class);
+        verify(eventos, never()).registrarSiEsNuevo(any());
+        verify(bitacora, never()).registrar(any());
+    }
+
+    @Test
+    void dadoUnContenidoInvalido_cuandoSeRegistra_entoncesEntradaInvalidaSinGuardarNada() {
+        Map<String, Object> contenido = contenido();
+        contenido.remove("anterior");
+        contenido.remove("nuevo");
+        EventoRecibido evento =
+                new EventoRecibido(
+                        UUID.randomUUID(),
+                        "generacion.EntradaBitacora",
+                        "generacion",
+                        Instant.parse("2026-11-06T15:00:01Z"),
+                        contenido);
+
+        assertThatThrownBy(() -> servicio.registrar(evento))
+                .isInstanceOf(EntradaBitacoraInvalida.class);
+        verify(eventos, never()).registrarSiEsNuevo(any());
+        verify(bitacora, never()).registrar(any());
+    }
+
+    @Test
+    void dadoUnTokenAnidadoEnElValorNuevo_cuandoSeRegistra_entoncesSeRechazaSinGuardarNada() {
+        Map<String, Object> contenido = contenido();
+        contenido.put("nuevo", Map.of("horas", "6", "sesion", Map.of("token", "abc")));
+        EventoRecibido evento =
+                new EventoRecibido(
+                        UUID.randomUUID(),
+                        "roles.EntradaBitacora",
+                        "roles",
+                        Instant.parse("2026-11-06T15:00:01Z"),
+                        contenido);
+
+        assertThatThrownBy(() -> servicio.registrar(evento))
+                .isInstanceOf(EntradaBitacoraInvalida.class)
+                .hasMessageNotContaining("abc");
+        verify(bitacora, never()).registrar(any());
+    }
+
+    private static EventoRecibido evento(String tipo, String origen) {
         return new EventoRecibido(
                 UUID.randomUUID(),
                 tipo,
-                "generacion",
-                Instant.parse("2026-10-14T15:04:05Z"),
-                Map.of("nota", "evento de prueba B00-H05"));
+                origen,
+                Instant.parse("2026-11-06T15:00:01Z"),
+                contenido());
+    }
+
+    private static Map<String, Object> contenido() {
+        Map<String, Object> contenido = new HashMap<>();
+        contenido.put("usuario", "coordinacion.demo");
+        contenido.put("accion", "ACTIVIDAD_GUARDADA");
+        contenido.put("momento", "2026-11-06T15:00:00Z");
+        contenido.put("periodo", "2026-I");
+        contenido.put("objeto", Map.of("actividad", "TUTORIAS"));
+        contenido.put("anterior", Map.of("horas", "4"));
+        contenido.put("nuevo", Map.of("horas", "6"));
+        return contenido;
     }
 }

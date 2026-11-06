@@ -7,11 +7,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import ec.mdd.plataforma.errores.ErroresAutoConfiguracion;
 import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
 import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
-import ec.mdd.usuarios.aplicacion.EventoNoReconocido;
+import ec.mdd.usuarios.aplicacion.RegistrarEventoRecibidoServicio;
+import ec.mdd.usuarios.dominio.EntradaBitacora;
 import ec.mdd.usuarios.puertos.entrada.EventoRecibido;
 import ec.mdd.usuarios.puertos.entrada.RegistrarEventoRecibido;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,8 +32,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 /**
- * {@code POST /interno/usuarios/eventos} cumple el contrato de Usuarios (D-47, ADR-018), con la
- * seguridad de los procesos y un doble del caso de uso escrito a mano.
+ * {@code POST /interno/usuarios/eventos} cumple el contrato de Usuarios (F17-H01, ADR-018), con la
+ * seguridad de los procesos, el receptor real de la bitácora y sus repositorios en memoria.
  */
 @WebMvcTest(EventosControlador.class)
 @ImportAutoConfiguration({SeguridadProcesoAutoConfiguracion.class, ErroresAutoConfiguracion.class})
@@ -40,22 +43,27 @@ import org.springframework.test.web.servlet.MvcResult;
                 "spring.security.oauth2.resourceserver.jwt.jwk-set-uri=http://127.0.0.1:9/jwks")
 class EventosContratoTest {
 
-    private static final List<EventoRecibido> REGISTRADOS = new CopyOnWriteArrayList<>();
+    private static final List<EntradaBitacora> REGISTRADOS = new CopyOnWriteArrayList<>();
+    private static final Set<UUID> RECIBIDOS = ConcurrentHashMap.newKeySet();
 
     private final ValidadorDeContrato contrato = ValidadorDeContrato.para("usuarios");
+
+    private static final String TIPO = "generacion.EntradaBitacora";
 
     @Autowired private MockMvc mvc;
 
     @BeforeEach
     void limpiar() {
         REGISTRADOS.clear();
+        RECIBIDOS.clear();
     }
 
     @Test
-    void dadoUnTokenDeProceso_cuandoEntregaUnEvento_entonces204YLoRegistra() throws Exception {
+    void dadoUnTokenDeProceso_cuandoEntregaUnaEntrada_entonces204YQuedaEnLaBitacora()
+            throws Exception {
         UUID id = UUID.randomUUID();
 
-        MvcResult resultado = entregar(cuerpo(id, "generacion.EventoDePrueba"), deProceso());
+        MvcResult resultado = entregar(cuerpo(id, TIPO), deProceso());
 
         assertThat(resultado.getResponse().getStatus()).isEqualTo(204);
         contrato.validar(resultado);
@@ -64,33 +72,73 @@ class EventosContratoTest {
                 .satisfies(
                         evento -> {
                             assertThat(evento.idEvento()).isEqualTo(id);
-                            assertThat(evento.tipo()).isEqualTo("generacion.EventoDePrueba");
-                            assertThat(evento.origen()).isEqualTo("generacion");
-                            assertThat(evento.contenido())
-                                    .containsEntry("nota", "evento de prueba B00-H05");
+                            assertThat(evento.servicio()).isEqualTo("generacion");
+                            assertThat(evento.accion()).isEqualTo("ACTIVIDAD_GUARDADA");
+                            assertThat(evento.anterior()).contains(java.util.Map.of("horas", "4"));
+                            assertThat(evento.nuevo()).contains(java.util.Map.of("horas", "6"));
                         });
     }
 
     @Test
-    void dadoUnEventoRepetido_cuandoLlegaOtraVez_entoncesTambien204() throws Exception {
+    void dadoUnaEntradaRepetida_cuandoLlegaOtraVez_entoncesTambien204SinDuplicarla()
+            throws Exception {
         UUID id = UUID.randomUUID();
-        entregar(cuerpo(id, "generacion.EventoDePrueba"), deProceso());
+        entregar(cuerpo(id, TIPO), deProceso());
 
-        MvcResult resultado = entregar(cuerpo(id, "generacion.EventoDePrueba"), deProceso());
+        MvcResult resultado = entregar(cuerpo(id, TIPO), deProceso());
 
         assertThat(resultado.getResponse().getStatus()).isEqualTo(204);
         contrato.validar(resultado);
+        assertThat(REGISTRADOS).hasSize(1);
     }
 
     @Test
-    void dadoUnTipoSinManejador_cuandoSeEntrega_entonces400EventoNoReconocido() throws Exception {
-        MvcResult resultado =
-                entregar(cuerpo(UUID.randomUUID(), "generacion.OtroEvento"), deProceso());
+    void dadoUnTipoQueNoEsDeLaBitacora_cuandoSeEntrega_entonces400EventoNoReconocido()
+            throws Exception {
+        MvcResult otroTipo =
+                entregar(cuerpo(UUID.randomUUID(), "generacion.EventoDePrueba"), deProceso());
+        MvcResult otroOrigen =
+                entregar(cuerpo(UUID.randomUUID(), "roles.EntradaBitacora"), deProceso());
 
-        assertThat(resultado.getResponse().getStatus()).isEqualTo(400);
-        assertThat(resultado.getResponse().getContentAsString())
-                .contains("\"codigo\":\"COMUN_EVENTO_NO_RECONOCIDO\"");
-        contrato.validar(resultado);
+        for (MvcResult resultado : List.of(otroTipo, otroOrigen)) {
+            assertThat(resultado.getResponse().getStatus()).isEqualTo(400);
+            assertThat(resultado.getResponse().getContentAsString())
+                    .contains("\"codigo\":\"COMUN_EVENTO_NO_RECONOCIDO\"");
+            contrato.validar(resultado);
+        }
+        assertThat(REGISTRADOS).isEmpty();
+    }
+
+    @Test
+    void dadoUnContenidoQueNoEsUnaEntradaValida_cuandoSeEntrega_entonces400EntradaInvalida()
+            throws Exception {
+        MvcResult sinValores =
+                entregar(
+                        cuerpo(
+                                UUID.randomUUID(),
+                                TIPO,
+                                "{\"usuario\":\"coordinacion.demo\",\"accion\":\"ACTIVIDAD_GUARDADA\","
+                                        + "\"momento\":\"2026-11-06T15:00:00Z\",\"objeto\":{}}"),
+                        deProceso());
+        MvcResult conToken =
+                entregar(
+                        cuerpo(
+                                UUID.randomUUID(),
+                                TIPO,
+                                "{\"usuario\":\"coordinacion.demo\",\"accion\":\"ACTIVIDAD_GUARDADA\","
+                                        + "\"momento\":\"2026-11-06T15:00:00Z\",\"objeto\":{},"
+                                        + "\"nuevo\":{\"token\":\"secreto-123\"}}"),
+                        deProceso());
+
+        for (MvcResult resultado : List.of(sinValores, conToken)) {
+            assertThat(resultado.getResponse().getStatus()).isEqualTo(400);
+            assertThat(resultado.getResponse().getContentAsString())
+                    .contains("\"codigo\":\"USUARIOS_ENTRADA_BITACORA_INVALIDA\"")
+                    .doesNotContain("secreto-123");
+            contrato.validar(resultado);
+        }
+        assertThat(REGISTRADOS).isEmpty();
+        assertThat(RECIBIDOS).isEmpty();
     }
 
     @Test
@@ -126,10 +174,7 @@ class EventosContratoTest {
                 mvc.perform(
                                 post("/interno/usuarios/eventos")
                                         .contentType(MediaType.APPLICATION_JSON)
-                                        .content(
-                                                cuerpo(
-                                                        UUID.randomUUID(),
-                                                        "generacion.EventoDePrueba")))
+                                        .content(cuerpo(UUID.randomUUID(), TIPO)))
                         .andReturn();
 
         assertThat(resultado.getResponse().getStatus()).isEqualTo(401);
@@ -141,7 +186,7 @@ class EventosContratoTest {
     void dadoUnTokenDeUsuario_cuandoEntregaUnEvento_entonces403SinRegistrarlo() throws Exception {
         MvcResult resultado =
                 entregar(
-                        cuerpo(UUID.randomUUID(), "generacion.EventoDePrueba"),
+                        cuerpo(UUID.randomUUID(), TIPO),
                         jwt().authorities(new SimpleGrantedAuthority("ROLE_DOCENTE")));
 
         assertThat(resultado.getResponse().getStatus()).isEqualTo(403);
@@ -164,12 +209,24 @@ class EventosContratoTest {
     }
 
     private static String cuerpo(UUID id, String tipo) {
+        return cuerpo(
+                id,
+                tipo,
+                "{\"usuario\":\"coordinacion.demo\",\"accion\":\"ACTIVIDAD_GUARDADA\","
+                        + "\"momento\":\"2026-11-06T15:00:00Z\",\"periodo\":\"2026-I\","
+                        + "\"objeto\":{\"actividad\":\"TUTORIAS\"},"
+                        + "\"anterior\":{\"horas\":\"4\"},\"nuevo\":{\"horas\":\"6\"}}");
+    }
+
+    private static String cuerpo(UUID id, String tipo, String contenido) {
         return "{\"idEvento\":\""
                 + id
                 + "\",\"tipo\":\""
                 + tipo
-                + "\",\"origen\":\"generacion\",\"momento\":\"2026-10-14T15:04:05Z\","
-                + "\"contenido\":{\"nota\":\"evento de prueba B00-H05\"}}";
+                + "\",\"origen\":\"generacion\",\"momento\":\"2026-11-06T15:00:01Z\","
+                + "\"contenido\":"
+                + contenido
+                + "}";
     }
 
     @TestConfiguration(proxyBeanMethods = false)
@@ -177,12 +234,8 @@ class EventosContratoTest {
 
         @Bean
         RegistrarEventoRecibido registrarEventoRecibido() {
-            return evento -> {
-                if (!"generacion.EventoDePrueba".equals(evento.tipo())) {
-                    throw new EventoNoReconocido(evento.tipo());
-                }
-                REGISTRADOS.add(evento);
-            };
+            return new RegistrarEventoRecibidoServicio(
+                    (EventoRecibido evento) -> RECIBIDOS.add(evento.idEvento()), REGISTRADOS::add);
         }
     }
 }

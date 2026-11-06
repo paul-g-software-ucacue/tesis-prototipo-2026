@@ -3,11 +3,16 @@ package ec.mdd.plataforma.eventos;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.URI;
+import java.time.Clock;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import org.springframework.mock.env.MockEnvironment;
@@ -46,11 +51,49 @@ class EventosAutoConfiguracionTest {
                         "");
 
         ProveedorDeTokenDeProceso tokens = configuracion.proveedorDeTokenDeProceso(propiedades);
-        ClienteDeEventos cliente = configuracion.clienteDeEventos(propiedades, tokens);
+        ClienteDeEventos cliente =
+                configuracion.clienteDeEventos(propiedades, tokens, receptores(Map.of()));
 
         assertThat(configuracion.oyenteEntreProcesos(cliente)).isNotNull();
         assertThat(configuracion.reenvioDePublicaciones(sinFallidas)).isNotNull();
         assertThat(propiedades.toString()).doesNotContain("clave");
+    }
+
+    @Test
+    void dadoUnReceptorLocalEnElContexto_cuandoSeArmaElCliente_entoncesLeEntregaSinClave() {
+        PropiedadesEventos propiedades =
+                new PropiedadesEventos(
+                        Duration.ofSeconds(1),
+                        new PropiedadesEventos.Reenvio(Duration.ofSeconds(30)),
+                        Map.of(),
+                        null,
+                        "identidad",
+                        null);
+        List<EventoEntreProcesos> recibidos = new ArrayList<>();
+        ReceptorLocal usuarios =
+                new ReceptorLocal() {
+                    @Override
+                    public String destino() {
+                        return "usuarios";
+                    }
+
+                    @Override
+                    public void recibir(EventoEntreProcesos evento) {
+                        recibidos.add(evento);
+                    }
+                };
+        EventoEntreProcesos evento =
+                EventoEntreProcesos.nuevo(
+                        "roles.EntradaBitacora", "roles", "usuarios", Map.of(), Clock.systemUTC());
+
+        ClienteDeEventos cliente =
+                configuracion.clienteDeEventos(
+                        propiedades,
+                        configuracion.proveedorDeTokenDeProceso(propiedades),
+                        receptores(Map.of("usuarios", usuarios)));
+        cliente.entregar(evento);
+
+        assertThat(recibidos).containsExactly(evento);
     }
 
     @Test
@@ -74,5 +117,11 @@ class EventosAutoConfiguracionTest {
                                 .getFailure()
                                 .rootCause()
                                 .hasMessageContaining("spring.modulith.events.jdbc.schema"));
+    }
+
+    private static ObjectProvider<ReceptorLocal> receptores(Map<String, ReceptorLocal> porNombre) {
+        StaticListableBeanFactory fabrica = new StaticListableBeanFactory();
+        porNombre.forEach(fabrica::addBean);
+        return fabrica.getBeanProvider(ReceptorLocal.class);
     }
 }

@@ -8,6 +8,7 @@ import ec.mdd.usuarios.aplicacion.CredencialesInvalidas;
 import ec.mdd.usuarios.aplicacion.EventoNoReconocido;
 import ec.mdd.usuarios.aplicacion.InicioBloqueado;
 import ec.mdd.usuarios.aplicacion.SesionNoRenovable;
+import ec.mdd.usuarios.dominio.EntradaBitacoraInvalida;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Component;
@@ -43,6 +44,13 @@ class ErroresUsuarios implements CatalogoDeErrores {
                         error -> Map.of("WWW-Authenticate", "Bearer")),
                 // Código común del receptor de eventos (ADR-018), con su definición de la
                 // plataforma.
-                new EntradaCatalogo(EventoNoReconocido.class, CodigosComunes.EVENTO_NO_RECONOCIDO));
+                new EntradaCatalogo(EventoNoReconocido.class, CodigosComunes.EVENTO_NO_RECONOCIDO),
+                // Una entrada de la bitácora que no cumple su lenguaje publicado (F17-H01).
+                EntradaCatalogo.de(
+                        EntradaBitacoraInvalida.class,
+                        "USUARIOS_ENTRADA_BITACORA_INVALIDA",
+                        400,
+                        "Entrada de bitácora no válida",
+                        "La bitácora no admite este cambio tal como llegó."));
     }
 }
