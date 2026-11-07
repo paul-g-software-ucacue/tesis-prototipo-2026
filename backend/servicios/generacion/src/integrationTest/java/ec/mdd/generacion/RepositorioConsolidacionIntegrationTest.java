@@ -10,6 +10,7 @@ import ec.mdd.generacion.dominio.InformeSustentado;
 import ec.mdd.generacion.dominio.VersionDistributivo;
 import ec.mdd.generacion.infraestructura.GeneracionFlywayConfig;
 import ec.mdd.generacion.puertos.salida.CambioDeDistributivo;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +51,7 @@ class RepositorioConsolidacionIntegrationTest {
         jdbc = JdbcClient.create(dataSource);
         distributivos = new RepositorioDistributivosJdbc(jdbc);
         repositorio = new RepositorioConsolidacionJdbc(jdbc);
-        registro = new RegistroDeCambiosJdbc(jdbc);
+        registro = new RegistroDeCambiosJdbc(jdbc, evento -> {}, Clock.systemUTC());
     }
 
     @AfterAll
@@ -160,7 +161,17 @@ class RepositorioConsolidacionIntegrationTest {
     private static void registrar(
             String periodo, CambioDeDistributivo.Accion accion, Instant momento) {
         registro.registrar(
-                new CambioDeDistributivo(momento, QUIEN, accion, Map.of("periodo", periodo)));
+                new CambioDeDistributivo(
+                        momento,
+                        QUIEN,
+                        accion,
+                        Map.of("periodo", periodo),
+                        accion.clase() == CambioDeDistributivo.Clase.QUITA
+                                ? Map.of("horas", "4")
+                                : Map.of(),
+                        accion.clase() == CambioDeDistributivo.Clase.QUITA
+                                ? Map.of()
+                                : Map.of("horas", "4")));
     }
 
     private static long filas(String tabla, UUID version) {

@@ -16,6 +16,7 @@ import ec.mdd.generacion.infraestructura.GeneracionFlywayConfig;
 import ec.mdd.generacion.puertos.entrada.DistributivoRepetido;
 import ec.mdd.generacion.puertos.salida.CambioDeDistributivo;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -281,13 +282,15 @@ class RepositorioDistributivosIntegrationTest {
     void dadoElRegistro_cuandoSeGuardaUnaActividad_entoncesAdmiteSusAcciones() {
         String usuario = "registro-" + UUID.randomUUID().toString().substring(0, 8);
 
-        new RegistroDeCambiosJdbc(jdbc)
+        new RegistroDeCambiosJdbc(jdbc, evento -> {}, Clock.systemUTC())
                 .registrar(
                         new CambioDeDistributivo(
                                 MOMENTO,
                                 usuario,
                                 CambioDeDistributivo.Accion.ACTIVIDAD_GUARDADA,
-                                Map.of("actividad", "140-b")));
+                                Map.of("actividad", "140-b"),
+                                Map.of(),
+                                Map.of("horas", "4")));
 
         assertThat(
                         jdbc.sql(
@@ -317,13 +320,15 @@ class RepositorioDistributivosIntegrationTest {
     void dadoUnCambio_cuandoSeRegistra_entoncesQuedaConSuDetalleEnJson() {
         String usuario = "registro-" + UUID.randomUUID().toString().substring(0, 8);
 
-        new RegistroDeCambiosJdbc(jdbc)
+        new RegistroDeCambiosJdbc(jdbc, evento -> {}, Clock.systemUTC())
                 .registrar(
                         new CambioDeDistributivo(
                                 MOMENTO,
                                 usuario,
                                 CambioDeDistributivo.Accion.PROPUESTA_QUITADA,
-                                Map.of("paralelo", "A")));
+                                Map.of("paralelo", "A"),
+                                Map.of("docente", DOCENTE),
+                                Map.of()));
 
         assertThat(
                         jdbc.sql(

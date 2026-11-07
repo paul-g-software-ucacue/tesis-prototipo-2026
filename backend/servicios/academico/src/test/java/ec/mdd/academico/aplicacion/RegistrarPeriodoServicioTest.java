@@ -61,11 +61,17 @@ class RegistrarPeriodoServicioTest {
                                 AHORA,
                                 QUIEN,
                                 Accion.PERIODO_REGISTRADO,
-                                Map.of(
-                                        "codigo", CODIGO,
-                                        "nombre", "Periodo 2026-2",
-                                        "inicio", "2026-09-01",
-                                        "fin", "2027-02-28")));
+                                datos(),
+                                Map.of(),
+                                datos()));
+    }
+
+    private static Map<String, Object> datos() {
+        return Map.of(
+                "codigo", CODIGO,
+                "nombre", "Periodo 2026-2",
+                "inicio", "2026-09-01",
+                "fin", "2027-02-28");
     }
 
     @Test

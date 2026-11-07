@@ -2,11 +2,9 @@ package ec.mdd.generacion.infraestructura;
 
 import ec.mdd.generacion.adaptadores.salida.AlmacenEnDisco;
 import ec.mdd.generacion.adaptadores.salida.DatosDesdeProcesoDatos;
-import ec.mdd.generacion.adaptadores.salida.PublicadorDeEventosSpring;
 import ec.mdd.generacion.adaptadores.salida.RegistroDeCambiosJdbc;
 import ec.mdd.generacion.adaptadores.salida.RepositorioConsolidacionJdbc;
 import ec.mdd.generacion.adaptadores.salida.RepositorioDistributivosJdbc;
-import ec.mdd.generacion.adaptadores.salida.RepositorioEventosDePruebaJdbc;
 import ec.mdd.generacion.adaptadores.salida.RepositorioJustificacionesJdbc;
 import ec.mdd.generacion.adaptadores.salida.TransaccionSpring;
 import ec.mdd.generacion.aplicacion.AsignarActividadServicio;
@@ -23,7 +21,6 @@ import ec.mdd.generacion.aplicacion.CrearDistributivoServicio;
 import ec.mdd.generacion.aplicacion.InformeSustentadoServicio;
 import ec.mdd.generacion.aplicacion.JustificarInconsistenciaServicio;
 import ec.mdd.generacion.aplicacion.ProponerDocenteServicio;
-import ec.mdd.generacion.aplicacion.PublicarEventoDePruebaServicio;
 import ec.mdd.generacion.puertos.entrada.AsignarActividad;
 import ec.mdd.generacion.puertos.entrada.Consolidar;
 import ec.mdd.generacion.puertos.entrada.ConsultarActividades;
@@ -37,17 +34,14 @@ import ec.mdd.generacion.puertos.entrada.ConsultarSugerencia;
 import ec.mdd.generacion.puertos.entrada.GestionarInforme;
 import ec.mdd.generacion.puertos.entrada.JustificarInconsistencia;
 import ec.mdd.generacion.puertos.entrada.ProponerDocente;
-import ec.mdd.generacion.puertos.entrada.PublicarEventoDePrueba;
 import ec.mdd.generacion.puertos.salida.AlmacenDeArchivos;
 import ec.mdd.generacion.puertos.salida.DatosParaActividades;
 import ec.mdd.generacion.puertos.salida.DatosParaAfinidad;
 import ec.mdd.generacion.puertos.salida.DatosParaElPanel;
 import ec.mdd.generacion.puertos.salida.DatosParaSugerencia;
-import ec.mdd.generacion.puertos.salida.PublicadorDeEventos;
 import ec.mdd.generacion.puertos.salida.RegistroDeCambios;
 import ec.mdd.generacion.puertos.salida.RepositorioConsolidacion;
 import ec.mdd.generacion.puertos.salida.RepositorioDistributivos;
-import ec.mdd.generacion.puertos.salida.RepositorioEventosDePrueba;
 import ec.mdd.generacion.puertos.salida.RepositorioJustificaciones;
 import ec.mdd.generacion.puertos.salida.Transaccion;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
@@ -62,8 +56,8 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.transaction.support.TransactionOperations;
 
 /**
- * Ensambla el evento de prueba de generacion (D-48), la afinidad (F06-H01) y la sugerencia
- * (F06-H02).
+ * Ensambla Generación: la afinidad (F06-H01), la sugerencia (F06-H02), el distributivo y su
+ * registro de cambios, que también publica cada cambio para la bitácora (F17-H01).
  */
 @Configuration(proxyBeanMethods = false)
 public class ConfiguracionGeneracion {
@@ -92,8 +86,9 @@ public class ConfiguracionGeneracion {
 
     /** La bitácora de los cambios del distributivo (F06-H03). */
     @Bean
-    public RegistroDeCambios registroDeCambiosGeneracion(JdbcClient jdbc) {
-        return new RegistroDeCambiosJdbc(jdbc);
+    public RegistroDeCambios registroDeCambiosGeneracion(
+            JdbcClient jdbc, ApplicationEventPublisher eventos) {
+        return new RegistroDeCambiosJdbc(jdbc, eventos, Clock.systemUTC());
     }
 
     /** Las transacciones del distributivo (F06-H03). */
@@ -254,21 +249,5 @@ public class ConfiguracionGeneracion {
     public ConsultarParciales consultarParciales(
             DatosParaSugerencia datos, RepositorioDistributivos distributivos) {
         return new ConsultarParcialesServicio(datos, distributivos);
-    }
-
-    @Bean
-    public RepositorioEventosDePrueba repositorioEventosDePrueba(JdbcClient jdbc) {
-        return new RepositorioEventosDePruebaJdbc(jdbc);
-    }
-
-    @Bean
-    public PublicadorDeEventos publicadorDeEventos(ApplicationEventPublisher eventos) {
-        return new PublicadorDeEventosSpring(eventos);
-    }
-
-    @Bean
-    public PublicarEventoDePrueba publicarEventoDePrueba(
-            RepositorioEventosDePrueba repositorio, PublicadorDeEventos publicador) {
-        return new PublicarEventoDePruebaServicio(repositorio, publicador, Clock.systemUTC());
     }
 }

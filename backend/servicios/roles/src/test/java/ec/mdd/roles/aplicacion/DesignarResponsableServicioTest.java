@@ -82,7 +82,9 @@ class DesignarResponsableServicioTest {
                                 AHORA,
                                 QUIEN,
                                 CambioDeRoles.Accion.DESIGNAR_RESPONSABLE,
-                                Map.of("periodo", "2026-2", "nuevo", "docente.demo")));
+                                Map.of("periodo", "2026-2", "nuevo", "docente.demo"),
+                                Map.of(),
+                                Map.of("responsable", "docente.demo")));
     }
 
     @Test
@@ -102,7 +104,9 @@ class DesignarResponsableServicioTest {
                                 Map.of(
                                         "periodo", "2026-2",
                                         "anterior", "docente.coordinador.demo",
-                                        "nuevo", "docente.demo")));
+                                        "nuevo", "docente.demo"),
+                                Map.of("responsable", "docente.coordinador.demo"),
+                                Map.of("responsable", "docente.demo")));
     }
 
     @Test

@@ -2,11 +2,13 @@ package ec.mdd.plataforma.eventos;
 
 import ec.mdd.plataforma.errores.nucleo.CatalogoDeErrores;
 import java.time.Clock;
+import java.util.List;
 import java.util.concurrent.Executor;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -25,7 +27,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * de tareas: la usan la tarea de reenvío y el monitor de publicaciones atascadas.
  *
  * <p>Una clave de proceso vacía no impide arrancar: cada entrega falla con un aviso y la
- * publicación queda pendiente hasta que se configure.
+ * publicación queda pendiente hasta que se configure. Un proceso que solo entrega a sus {@link
+ * ReceptorLocal} no necesita clave ni token (ADR-024).
  */
 // Antes que la ejecución de tareas de Spring Boot: su AsyncConfigurer se retira si hay otro, y el
 // de esta configuración usa igual su ejecutor (applicationTaskExecutor).
@@ -63,11 +66,15 @@ public class EventosAutoConfiguracion {
                 Clock.systemUTC());
     }
 
+    /** Con los receptores del mismo proceso que haya en el contexto (ADR-024). */
     @Bean
     public ClienteDeEventos clienteDeEventos(
-            PropiedadesEventos propiedades, ProveedorDeTokenDeProceso tokens) {
+            PropiedadesEventos propiedades,
+            ProveedorDeTokenDeProceso tokens,
+            ObjectProvider<ReceptorLocal> locales) {
+        List<ReceptorLocal> receptores = locales.orderedStream().toList();
         return new ClienteDeEventos(
-                Clientes.http(propiedades.plazo()), propiedades.destinos(), tokens);
+                Clientes.http(propiedades.plazo()), propiedades.destinos(), tokens, receptores);
     }
 
     @Bean

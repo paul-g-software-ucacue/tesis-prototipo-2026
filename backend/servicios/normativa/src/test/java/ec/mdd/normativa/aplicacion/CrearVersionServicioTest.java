@@ -58,6 +58,8 @@ class CrearVersionServicioTest {
                                 AHORA,
                                 QUIEN,
                                 Accion.VERSION_CREADA,
+                                Map.of("numero", 2, "codigo", "SENESCYT-2025-01", "copiadaDe", 1),
+                                Map.of(),
                                 Map.of("numero", 2, "codigo", "SENESCYT-2025-01", "copiadaDe", 1)));
     }
 

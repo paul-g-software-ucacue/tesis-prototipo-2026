@@ -7,6 +7,9 @@ plugins {
 }
 
 dependencies {
+    // Cada cambio también como un evento hacia la bitácora de Usuarios, en la misma transacción
+    // (F17-H01, ADR-018).
+    implementation project(':plataforma:eventos')
     // Las versiones de normativa en el esquema normativa, con JdbcClient (F04-H01, research §2).
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     // El detalle de cada cambio en jsonb (F04-H02, FR-009).

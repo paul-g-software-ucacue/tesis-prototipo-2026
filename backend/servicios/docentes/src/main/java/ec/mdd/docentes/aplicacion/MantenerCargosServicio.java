@@ -77,7 +77,7 @@ public final class MantenerCargosServicio implements MantenerCargos {
                         detalle.put("carrera", cargo.carrera());
                     }
                     detalle.put("estado", cargo.estado().name());
-                    registrar(ahora, quien, Accion.CARGO_REGISTRADO, detalle);
+                    registrar(ahora, quien, Accion.CARGO_REGISTRADO, detalle, Map.of(), detalle);
                     return consultado(cargo, suDocente);
                 });
     }
@@ -111,7 +111,13 @@ public final class MantenerCargosServicio implements MantenerCargos {
                     Map<String, Object> detalle = clave(cargo);
                     detalle.put(
                             "cambios", correccion.cambios().stream().map(Detalles::de).toList());
-                    registrar(reloj.instant(), quien, Accion.CARGO_CORREGIDO, detalle);
+                    registrar(
+                            reloj.instant(),
+                            quien,
+                            Accion.CARGO_CORREGIDO,
+                            detalle,
+                            Detalles.anteriores(correccion.cambios()),
+                            Detalles.nuevos(correccion.cambios()));
                     return consultado(cargo, suDocente);
                 });
     }
@@ -144,7 +150,12 @@ public final class MantenerCargosServicio implements MantenerCargos {
     }
 
     private void registrar(
-            Instant momento, String quien, Accion accion, Map<String, Object> detalle) {
-        registro.registrar(new CambioRegistrado(momento, quien, accion, detalle));
+            Instant momento,
+            String quien,
+            Accion accion,
+            Map<String, Object> detalle,
+            Map<String, Object> anterior,
+            Map<String, Object> nuevo) {
+        registro.registrar(new CambioRegistrado(momento, quien, accion, detalle, anterior, nuevo));
     }
 }

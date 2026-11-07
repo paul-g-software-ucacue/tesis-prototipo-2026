@@ -52,7 +52,7 @@ class RepositoriosJdbcIntegrationTest {
                 new TransactionTemplate(new DataSourceTransactionManager(dataSource));
         roles = new RepositorioRolesJdbc(jdbc, transacciones);
         asignaciones = new RepositorioAsignacionesDeRolJdbc(jdbc, transacciones);
-        registro = new RegistroDeCambiosJdbc(jdbc);
+        registro = new RegistroDeCambiosJdbc(jdbc, evento -> {}, java.time.Clock.systemUTC());
     }
 
     @AfterAll
@@ -83,13 +83,17 @@ class RepositoriosJdbcIntegrationTest {
                         AHORA,
                         "admin.demo",
                         CambioDeRoles.Accion.INDICAR_CARRERA,
-                        java.util.Map.of("usuario", "coordinacion.demo", "carrera", "DS-01")));
+                        java.util.Map.of("usuario", "coordinacion.demo", "carrera", "DS-01"),
+                        java.util.Map.of(),
+                        java.util.Map.of("carrera", "DS-01")));
         registro.registrar(
                 new CambioDeRoles(
                         AHORA,
                         "admin.demo",
                         CambioDeRoles.Accion.QUITAR_CARRERA,
-                        java.util.Map.of("usuario", "coordinacion.demo")));
+                        java.util.Map.of("usuario", "coordinacion.demo"),
+                        java.util.Map.of("carrera", "DS-01"),
+                        java.util.Map.of()));
     }
 
     @Test
@@ -183,7 +187,9 @@ class RepositoriosJdbcIntegrationTest {
                         AHORA,
                         usuario,
                         CambioDeRoles.Accion.ASIGNAR_ROL,
-                        Map.of("usuario", "docente.demo", "roles", List.of("DOCENTE", "RECTOR"))));
+                        Map.of("usuario", "docente.demo", "roles", List.of("DOCENTE", "RECTOR")),
+                        Map.of("roles", List.of()),
+                        Map.of("roles", List.of("DOCENTE", "RECTOR"))));
 
         Map<String, Object> fila =
                 jdbc.sql(

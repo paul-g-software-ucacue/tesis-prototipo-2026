@@ -1,55 +1,72 @@
 package ec.mdd.usuarios.aplicacion;
 
+import ec.mdd.usuarios.dominio.EntradaBitacora;
 import ec.mdd.usuarios.puertos.entrada.EventoRecibido;
 import ec.mdd.usuarios.puertos.entrada.RegistrarEventoRecibido;
+import ec.mdd.usuarios.puertos.salida.RepositorioBitacora;
 import ec.mdd.usuarios.puertos.salida.RepositorioEventosRecibidos;
-import java.util.Map;
-import java.util.function.Consumer;
+import java.util.Set;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * El receptor de eventos de Usuarios (D-47, ADR-018).
+ * El receptor de la bitácora de Usuarios (F17-H01, ADR-018, ADR-024).
  *
- * <p>Registra el evento con su identificador y, solo si es nuevo, aplica el manejador de su tipo,
- * los dos en la misma transacción: si el efecto falla, el registro se revierte y el emisor lo
- * vuelve a enviar. Un evento repetido no se aplica dos veces. En B00-H05 solo admite el evento de
- * prueba, sin efecto; F17-H01 agrega los tipos de la bitácora.
+ * <p>Admite los eventos {@code <servicio>.EntradaBitacora} de los servicios que registran cambios
+ * (D-90), con el prefijo del tipo igual a su {@code origen}. Primero valida la entrada; después, en
+ * una sola transacción, registra el {@code idEvento} y, solo si es nuevo, la entrada: si algo
+ * falla, nada queda y el emisor lo vuelve a enviar. Una entrada repetida no se registra dos veces.
  *
  * <p>No es {@code final} porque la transacción la pone un proxy de Spring.
  */
 public class RegistrarEventoRecibidoServicio implements RegistrarEventoRecibido {
 
-    /** El tipo del evento de prueba de Generación (D-48). */
-    public static final String EVENTO_DE_PRUEBA = "generacion.EventoDePrueba";
+    /** El nombre del evento de la bitácora, después del prefijo del servicio. */
+    public static final String ENTRADA_BITACORA = "EntradaBitacora";
 
-    private final RepositorioEventosRecibidos repositorio;
-    private final Map<String, Consumer<EventoRecibido>> manejadores;
+    private static final Set<String> SERVICIOS =
+            Set.of("generacion", "academico", "docentes", "normativa", "roles", "validacionocs");
+
+    private final RepositorioEventosRecibidos eventos;
+    private final RepositorioBitacora bitacora;
 
     /**
-     * @param repositorio los eventos ya registrados
-     * @param manejadores el efecto de cada tipo admitido
+     * @param eventos los eventos ya registrados
+     * @param bitacora la bitácora
      */
     public RegistrarEventoRecibidoServicio(
-            RepositorioEventosRecibidos repositorio,
-            Map<String, Consumer<EventoRecibido>> manejadores) {
-        this.repositorio = repositorio;
-        this.manejadores = Map.copyOf(manejadores);
+            RepositorioEventosRecibidos eventos, RepositorioBitacora bitacora) {
+        this.eventos = eventos;
+        this.bitacora = bitacora;
     }
 
-    /** Los manejadores del receptor de prueba: solo el evento de prueba, sin efecto (D-47). */
-    public static Map<String, Consumer<EventoRecibido>> manejadoresDePrueba() {
-        return Map.of(EVENTO_DE_PRUEBA, evento -> {});
-    }
-
+    /**
+     * @throws EventoNoReconocido si el tipo no es de la bitácora o no coincide con el origen
+     * @throws ec.mdd.usuarios.dominio.EntradaBitacoraInvalida si el contenido no es una entrada
+     *     válida
+     */
     @Override
     @Transactional
     public void registrar(EventoRecibido evento) {
-        Consumer<EventoRecibido> manejador = manejadores.get(evento.tipo());
-        if (manejador == null) {
-            throw new EventoNoReconocido(evento.tipo());
+        String servicio = servicioDe(evento);
+        EntradaBitacora entrada =
+                EntradaBitacora.de(evento.idEvento(), servicio, evento.contenido());
+        if (eventos.registrarSiEsNuevo(evento)) {
+            bitacora.registrar(entrada);
         }
-        if (repositorio.registrarSiEsNuevo(evento)) {
-            manejador.accept(evento);
+    }
+
+    private static String servicioDe(EventoRecibido evento) {
+        String tipo = evento.tipo();
+        int punto = tipo == null ? -1 : tipo.indexOf('.');
+        if (punto < 0) {
+            throw new EventoNoReconocido(String.valueOf(tipo));
         }
+        String servicio = tipo.substring(0, punto);
+        if (!SERVICIOS.contains(servicio)
+                || !ENTRADA_BITACORA.equals(tipo.substring(punto + 1))
+                || !servicio.equals(evento.origen())) {
+            throw new EventoNoReconocido(tipo);
+        }
+        return servicio;
     }
 }

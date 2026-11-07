@@ -74,7 +74,9 @@ public final class CrearDistributivoServicio implements CrearDistributivo, Consu
                                     ahora,
                                     quien,
                                     CambioDeDistributivo.Accion.DISTRIBUTIVO_CREADO,
-                                    Map.of("periodo", periodo, "version", version.numero())));
+                                    Map.of("periodo", periodo, "version", version.numero()),
+                                    Map.of(),
+                                    Map.of("version", version.numero())));
                     return version;
                 });
         return delPeriodo(periodo, version);

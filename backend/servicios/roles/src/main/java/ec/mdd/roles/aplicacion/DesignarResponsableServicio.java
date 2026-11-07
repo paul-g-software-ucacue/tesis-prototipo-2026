@@ -83,7 +83,12 @@ public final class DesignarResponsableServicio
                                     ahora,
                                     quien,
                                     CambioDeRoles.Accion.DESIGNAR_RESPONSABLE,
-                                    detalle));
+                                    detalle,
+                                    anterior.<Map<String, Object>>map(
+                                                    previa ->
+                                                            Map.of("responsable", previa.usuario()))
+                                            .orElse(Map.of()),
+                                    Map.of("responsable", nueva.usuario())));
                     return nueva;
                 });
     }

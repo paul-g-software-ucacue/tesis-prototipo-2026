@@ -328,7 +328,7 @@ class VersionesNuevasJdbcIntegrationTest {
         EditarVersionServicio editar =
                 new EditarVersionServicio(
                         repositorio,
-                        new RegistroDeCambiosJdbc(jdbc),
+                        new RegistroDeCambiosJdbc(jdbc, evento -> {}, java.time.Clock.systemUTC()),
                         transaccion,
                         Clock.fixed(AHORA, ZoneOffset.UTC));
 

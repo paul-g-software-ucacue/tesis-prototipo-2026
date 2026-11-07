@@ -2,7 +2,9 @@
  * Eventos entre procesos (principio V, ADR-018): el sobre {@link
  * ec.mdd.plataforma.eventos.EventoEntreProcesos}, el oyente que lo entrega por HTTP con el token de
  * proceso y la tarea programada que reenvía lo que falló. Desde ADR-023, también las consultas
- * entre procesos: {@link ec.mdd.plataforma.eventos.ConsultasEntreProcesos}.
+ * entre procesos: {@link ec.mdd.plataforma.eventos.ConsultasEntreProcesos}. Desde ADR-024, la
+ * entrega a un receptor del mismo proceso, sin HTTP: {@link
+ * ec.mdd.plataforma.eventos.ReceptorLocal}.
  *
  * <p>Es la API que la plataforma publica a los servicios para publicar eventos hacia otros
  * procesos: Spring Modulith ve {@code ec.mdd.plataforma} como un módulo en cada proceso, y esta

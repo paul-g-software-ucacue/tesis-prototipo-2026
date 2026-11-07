@@ -37,5 +37,3 @@ mdd.procesos.datos: ${MDD_URI_DATOS:http://datos:8080}
 mdd.procesos.identidad: ${MDD_URI_IDENTIDAD:http://identidad:8080}
 # Clave del proceso (D-49); vacía, el proceso arranca y las entregas fallan hasta configurarla.
 mdd.eventos.clave: ${MDD_CLAVE_PROCESO_DISTRIBUTIVO:}
-# Evento de prueba de Generación, apagado por defecto; solo en local y en la CI (D-48).
-mdd.generacion.eventos-prueba.habilitado: ${MDD_EVENTOS_PRUEBA_HABILITADO:false}

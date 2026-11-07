@@ -88,6 +88,8 @@ class ProyectosServiciosTest {
         assertThat(cambio.getValue().accion())
                 .isEqualTo(CambioRegistrado.Accion.PROYECTO_REGISTRADO);
         assertThat(cambio.getValue().detalle()).containsEntry("codigo", "INV-2025-01");
+        assertThat(cambio.getValue().anterior()).isEmpty();
+        assertThat(cambio.getValue().nuevo()).isEqualTo(cambio.getValue().detalle());
     }
 
     @Test
@@ -125,6 +127,8 @@ class ProyectosServiciosTest {
         verify(registro).registrar(cambio.capture());
         assertThat(cambio.getValue().accion())
                 .isEqualTo(CambioRegistrado.Accion.PROYECTO_CORREGIDO);
+        assertThat(cambio.getValue().anterior()).containsValue(antes.estado().name());
+        assertThat(cambio.getValue().nuevo()).containsValue("SUSPENDIDO");
     }
 
     @Test

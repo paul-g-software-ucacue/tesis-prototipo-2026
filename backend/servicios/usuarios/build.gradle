@@ -19,6 +19,8 @@ dependencies {
     // Firma de los tokens RS256 y lectura del JWT en la sesión actual (ADR-014).
     implementation 'org.springframework.security:spring-security-oauth2-jose'
     implementation 'org.springframework.security:spring-security-oauth2-resource-server'
+    // Su receptor de la bitácora como receptor local del proceso identidad, para Roles (ADR-024).
+    implementation project(':plataforma:eventos')
 }
 
 testing {

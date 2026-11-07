@@ -63,7 +63,7 @@ public final class MantenerProyectosServicio implements MantenerProyectos {
                     Map<String, Object> detalle = clave(proyecto);
                     detalle.put("tipo", proyecto.tipo().name());
                     detalle.put("estado", proyecto.estado().name());
-                    registrar(ahora, quien, Accion.PROYECTO_REGISTRADO, detalle);
+                    registrar(ahora, quien, Accion.PROYECTO_REGISTRADO, detalle, Map.of(), detalle);
                     return consultado(proyecto);
                 });
     }
@@ -87,7 +87,13 @@ public final class MantenerProyectosServicio implements MantenerProyectos {
                     Map<String, Object> detalle = clave(proyecto);
                     detalle.put(
                             "cambios", correccion.cambios().stream().map(Detalles::de).toList());
-                    registrar(reloj.instant(), quien, Accion.PROYECTO_CORREGIDO, detalle);
+                    registrar(
+                            reloj.instant(),
+                            quien,
+                            Accion.PROYECTO_CORREGIDO,
+                            detalle,
+                            Detalles.anteriores(correccion.cambios()),
+                            Detalles.nuevos(correccion.cambios()));
                     return consultado(proyecto);
                 });
     }
@@ -104,7 +110,12 @@ public final class MantenerProyectosServicio implements MantenerProyectos {
     }
 
     private void registrar(
-            Instant momento, String quien, Accion accion, Map<String, Object> detalle) {
-        registro.registrar(new CambioRegistrado(momento, quien, accion, detalle));
+            Instant momento,
+            String quien,
+            Accion accion,
+            Map<String, Object> detalle,
+            Map<String, Object> anterior,
+            Map<String, Object> nuevo) {
+        registro.registrar(new CambioRegistrado(momento, quien, accion, detalle, anterior, nuevo));
     }
 }

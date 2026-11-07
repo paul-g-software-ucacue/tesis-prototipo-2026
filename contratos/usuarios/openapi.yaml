@@ -1,9 +1,10 @@
 # Contrato de Usuarios (servicio 01, proceso identidad). Inicio de sesión mínimo (D-37),
 # sesión actual (D-39) y llave pública para validar los tokens (ADR-014). Desde B00-H05, las
-# operaciones entre procesos en /interno/: el token de proceso (D-49) y el receptor de eventos de
-# prueba (D-47), que el API Gateway no expone (ADR-018). Desde F05-H01, el bloqueo por intentos
+# operaciones entre procesos en /interno/: el token de proceso (D-49) y el receptor de eventos,
+# que el API Gateway no expone (ADR-018). Desde F05-H01, el bloqueo por intentos
 # (429, D-60) y la renovación del token mientras hay actividad (ADR-020). Desde F05-H02, la lista de
-# usuarios para asignarles roles, protegida con x-mdd-permiso (ADR-021).
+# usuarios para asignarles roles, protegida con x-mdd-permiso (ADR-021). Desde F17-H01, el receptor
+# registra cada EntradaBitacora, el lenguaje publicado de la bitácora (RF-44, D-90, D-91).
 openapi: 3.0.3
 info:
   title: MDD · Usuarios
@@ -193,9 +194,11 @@ paths:
       operationId: recibirEvento
       summary: Registra un evento de otro proceso una sola vez por idEvento.
       description: >-
-        Receptor de prueba de B00-H05 (D-47): solo admite generacion.EventoDePrueba. Solo con un
+        Receptor de la bitácora (F17-H01): admite los tipos <servicio>.EntradaBitacora de
+        generacion, academico, docentes, normativa, roles y validacionocs, con un contenido
+        EntradaBitacora, y registra cada uno como una entrada que no se puede borrar. Solo con un
         token de proceso (rol PROCESO). Un evento ya registrado también responde 204, sin
-        registrarlo de nuevo.
+        registrarlo de nuevo. Dentro del proceso identidad, Roles entrega sin HTTP (ADR-024).
       requestBody:
         required: true
         content:
@@ -204,11 +207,13 @@ paths:
               $ref: '../comun/eventos.yaml#/components/schemas/EventoEntreProcesos'
       responses:
         '204':
-          description: Evento registrado, o ya registrado antes.
+          description: Entrada registrada, o ya registrada antes por el mismo idEvento.
         '400':
           description: >-
-            El cuerpo no cumple el contrato (COMUN_SOLICITUD_INVALIDA, con detalles) o el tipo no
-            tiene manejador (COMUN_EVENTO_NO_RECONOCIDO).
+            El cuerpo no cumple el contrato (COMUN_SOLICITUD_INVALIDA, con detalles), el tipo no es
+            uno de los seis o su prefijo no coincide con el origen (COMUN_EVENTO_NO_RECONOCIDO), o
+            el contenido no es una EntradaBitacora válida (USUARIOS_ENTRADA_BITACORA_INVALIDA). En
+            los tres casos no se registra nada y la publicación queda pendiente en el emisor.
           content:
             application/json:
               schema:
@@ -285,6 +290,49 @@ components:
           example: Docente (demo)
         activo:
           type: boolean
+    EntradaBitacora:
+      description: >-
+        Lenguaje publicado de la bitácora (modelo de dominio §4): quién, qué, cuándo, objeto, valor
+        anterior y valor nuevo de un cambio ya guardado en su servicio (RF-44). Es el contenido de
+        los eventos <servicio>.EntradaBitacora. Nunca lleva contraseñas, tokens, el texto de una
+        justificación ni los valores de los datos personales de un docente (D-91). Además del
+        esquema, anterior y nuevo no faltan los dos, y el contenido no pasa de 64 KB.
+      type: object
+      additionalProperties: false
+      required: [usuario, accion, momento, objeto]
+      properties:
+        usuario:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Quién inició el cambio, o «sistema». Sin otro formato, como el nombre de usuario.
+          example: coordinacion.demo
+        accion:
+          type: string
+          pattern: '^[A-Z][A-Z_]{2,39}$'
+          description: Qué se hizo, con el nombre de la acción en su servicio.
+          example: ACTIVIDAD_GUARDADA
+        momento:
+          type: string
+          format: date-time
+          description: Cuándo se guardó el cambio en su servicio (ISO 8601, UTC).
+        periodo:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+          description: El periodo al que pertenece el cambio; falta si no pertenece a uno.
+          example: 2026-I
+        objeto:
+          type: object
+          additionalProperties: true
+          description: Sobre qué se hizo, con la forma del registro de cambios de su servicio.
+        anterior:
+          type: object
+          additionalProperties: true
+          description: Los valores antes del cambio; falta al crear.
+        nuevo:
+          type: object
+          additionalProperties: true
+          description: Los valores después del cambio; falta al quitar.
     Jwks:
       type: object
       required: [keys]

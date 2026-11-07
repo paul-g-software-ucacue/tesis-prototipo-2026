@@ -101,12 +101,18 @@ class MantenerEstructuraServicioTest {
                                 AHORA,
                                 QUIEN,
                                 Accion.UNIDAD_REGISTRADA,
-                                Map.of(
-                                        "codigo", "G-INV",
-                                        "nombre", "Gestión de Investigación",
-                                        "tipo", "GESTION",
-                                        "padre", "RECT",
-                                        "gestionAutorizada", "G07")));
+                                gestion(),
+                                Map.of(),
+                                gestion()));
+    }
+
+    private static Map<String, Object> gestion() {
+        return Map.of(
+                "codigo", "G-INV",
+                "nombre", "Gestión de Investigación",
+                "tipo", "GESTION",
+                "padre", "RECT",
+                "gestionAutorizada", "G07");
     }
 
     @Test
@@ -126,12 +132,18 @@ class MantenerEstructuraServicioTest {
                                 AHORA,
                                 QUIEN,
                                 Accion.UNIDAD_REGISTRADA,
-                                Map.of(
-                                        "codigo", "COM-INV",
-                                        "nombre", "Comisión de Investigación",
-                                        "tipo", "COMISION",
-                                        "padre", "RECT",
-                                        "comisionPermanente", false)));
+                                comision(),
+                                Map.of(),
+                                comision()));
+    }
+
+    private static Map<String, Object> comision() {
+        return Map.of(
+                "codigo", "COM-INV",
+                "nombre", "Comisión de Investigación",
+                "tipo", "COMISION",
+                "padre", "RECT",
+                "comisionPermanente", false);
     }
 
     @Test
@@ -242,7 +254,11 @@ class MantenerEstructuraServicioTest {
                                                 Map.of(
                                                         "campo", "padre",
                                                         "anterior", "RECT",
-                                                        "nuevo", "MATRIZ")))));
+                                                        "nuevo", "MATRIZ"))),
+                                Map.of("nombre", "Comisión de Evaluación", "padre", "RECT"),
+                                Map.of(
+                                        "nombre", "Comisión de Evaluación Interna",
+                                        "padre", "MATRIZ")));
     }
 
     @Test
@@ -275,7 +291,9 @@ class MantenerEstructuraServicioTest {
                                 AHORA,
                                 QUIEN,
                                 Accion.UNIDAD_INACTIVADA,
-                                Map.of("codigo", "COM-EVAL")));
+                                Map.of("codigo", "COM-EVAL"),
+                                Map.of("activa", true),
+                                Map.of("activa", false)));
     }
 
     @Test
@@ -290,7 +308,9 @@ class MantenerEstructuraServicioTest {
                                 AHORA,
                                 QUIEN,
                                 Accion.UNIDAD_REACTIVADA,
-                                Map.of("codigo", "COM-EVAL")));
+                                Map.of("codigo", "COM-EVAL"),
+                                Map.of("activa", false),
+                                Map.of("activa", true)));
     }
 
     @Test

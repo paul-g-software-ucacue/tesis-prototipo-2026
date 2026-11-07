@@ -67,7 +67,12 @@ public final class MantenerEstructuraServicio implements MantenerEstructura {
                     }
                     registro.registrar(
                             new CambioRegistrado(
-                                    ahora, quien, Accion.UNIDAD_REGISTRADA, datos(nueva)));
+                                    ahora,
+                                    quien,
+                                    Accion.UNIDAD_REGISTRADA,
+                                    datos(nueva),
+                                    Map.of(),
+                                    datos(nueva)));
                     return nueva;
                 });
     }
@@ -103,7 +108,9 @@ public final class MantenerEstructuraServicio implements MantenerEstructura {
                                                 "cambios",
                                                 correccion.cambios().stream()
                                                         .map(Detalles::de)
-                                                        .toList())));
+                                                        .toList()),
+                                        Detalles.anteriores(correccion.cambios()),
+                                        Detalles.nuevos(correccion.cambios())));
                     }
                     return correccion.unidad();
                 });
@@ -125,7 +132,9 @@ public final class MantenerEstructuraServicio implements MantenerEstructura {
                                         activa
                                                 ? Accion.UNIDAD_REACTIVADA
                                                 : Accion.UNIDAD_INACTIVADA,
-                                        Map.of("codigo", codigo)));
+                                        Map.of("codigo", codigo),
+                                        Map.of("activa", actual.activa()),
+                                        Map.of("activa", nueva.activa())));
                     }
                     return nueva;
                 });

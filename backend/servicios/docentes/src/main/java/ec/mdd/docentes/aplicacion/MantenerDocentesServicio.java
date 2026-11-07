@@ -67,7 +67,7 @@ public final class MantenerDocentesServicio implements MantenerDocentes {
                     detalle.put("tipoPersonal", datos.tipoPersonal().name());
                     detalle.put("dedicacion", datos.dedicacion().name());
                     detalle.put("carreraBase", datos.carreraBase());
-                    registrar(ahora, quien, Accion.DOCENTE_REGISTRADO, detalle);
+                    registrar(ahora, quien, Accion.DOCENTE_REGISTRADO, detalle, Map.of(), detalle);
                     return nuevo;
                 });
     }
@@ -90,7 +90,13 @@ public final class MantenerDocentesServicio implements MantenerDocentes {
                     Map<String, Object> detalle = clave(actual);
                     detalle.put(
                             "cambios", correccion.cambios().stream().map(Detalles::de).toList());
-                    registrar(reloj.instant(), quien, Accion.DOCENTE_CORREGIDO, detalle);
+                    registrar(
+                            reloj.instant(),
+                            quien,
+                            Accion.DOCENTE_CORREGIDO,
+                            detalle,
+                            Detalles.anteriores(correccion.cambios()),
+                            Detalles.nuevos(correccion.cambios()));
                     return correccion.docente();
                 });
     }
@@ -109,7 +115,13 @@ public final class MantenerDocentesServicio implements MantenerDocentes {
                     Map<String, Object> detalle = clave(actual);
                     detalle.put("anterior", actual.estado().name());
                     detalle.put("nuevo", estado.name());
-                    registrar(reloj.instant(), quien, Accion.DOCENTE_ESTADO_CAMBIADO, detalle);
+                    registrar(
+                            reloj.instant(),
+                            quien,
+                            Accion.DOCENTE_ESTADO_CAMBIADO,
+                            detalle,
+                            Map.of("estado", actual.estado().name()),
+                            Map.of("estado", estado.name()));
                     return cambiado;
                 });
     }
@@ -125,7 +137,12 @@ public final class MantenerDocentesServicio implements MantenerDocentes {
     }
 
     private void registrar(
-            Instant momento, String quien, Accion accion, Map<String, Object> detalle) {
-        registro.registrar(new CambioRegistrado(momento, quien, accion, detalle));
+            Instant momento,
+            String quien,
+            Accion accion,
+            Map<String, Object> detalle,
+            Map<String, Object> anterior,
+            Map<String, Object> nuevo) {
+        registro.registrar(new CambioRegistrado(momento, quien, accion, detalle, anterior, nuevo));
     }
 }

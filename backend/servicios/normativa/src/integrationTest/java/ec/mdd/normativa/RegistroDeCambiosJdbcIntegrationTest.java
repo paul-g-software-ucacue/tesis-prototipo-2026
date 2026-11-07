@@ -43,7 +43,8 @@ class RegistroDeCambiosJdbcIntegrationTest {
 
     @Test
     void dadoLasTresAcciones_cuandoSeRegistran_entoncesQuedanConUsuarioMomentoYDetalle() {
-        RegistroDeCambiosJdbc registro = new RegistroDeCambiosJdbc(jdbc);
+        RegistroDeCambiosJdbc registro =
+                new RegistroDeCambiosJdbc(jdbc, evento -> {}, java.time.Clock.systemUTC());
         Instant momento = Instant.parse("2026-10-18T15:00:00Z");
         Map<String, Object> cambio = new LinkedHashMap<>();
         cambio.put("campo", "tablaCargaHoraria[DOCENTE_MT/TODOS].horasOtrasDocencia");
@@ -55,19 +56,26 @@ class RegistroDeCambiosJdbcIntegrationTest {
                         momento,
                         "vicerrectorado.demo",
                         Accion.VERSION_CREADA,
-                        Map.of("numero", 2, "codigo", "SENESCYT-2025-01", "copiadaDe", 1)));
+                        Map.of("numero", 2, "codigo", "SENESCYT-2025-01", "copiadaDe", 1),
+                        Map.of(),
+                        Map.of("numero", 2)));
         registro.registrar(
                 new CambioDeNormativa(
                         momento,
                         "vicerrectorado.demo",
                         Accion.VERSION_EDITADA,
-                        Map.of("numero", 2, "cambios", List.of(cambio))));
+                        Map.of("numero", 2, "cambios", List.of(cambio)),
+                        java.util.Collections.singletonMap(
+                                "tablaCargaHoraria[DOCENTE_MT/TODOS].horasOtrasDocencia", null),
+                        Map.of("tablaCargaHoraria[DOCENTE_MT/TODOS].horasOtrasDocencia", "8")));
         registro.registrar(
                 new CambioDeNormativa(
                         momento,
                         "vicerrectorado.demo",
                         Accion.VERSION_ASOCIADA,
-                        Map.of("numero", 2, "periodo", "2025-1")));
+                        Map.of("numero", 2, "periodo", "2025-1"),
+                        Map.of(),
+                        Map.of("version", 2)));
 
         List<String> filas =
                 jdbc.sql(

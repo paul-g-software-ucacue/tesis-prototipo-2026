@@ -75,7 +75,8 @@ class AutorizacionServiciosTest {
     private final ConsultarAutorizacionServicio consultar =
             new ConsultarAutorizacionServicio(roles, asignaciones, designaciones, carreras);
     private final AsignarRolesInicialesServicio iniciales =
-            new AsignarRolesInicialesServicio(roles, asignaciones, registro, reloj);
+            new AsignarRolesInicialesServicio(
+                    roles, asignaciones, registro, new TransaccionDePrueba(), reloj);
 
     @Test
     void
@@ -178,6 +179,8 @@ class AutorizacionServiciosTest {
         assertThat(cambio.getValue().momento()).isEqualTo(AHORA);
         assertThat(cambio.getValue().detalle())
                 .isEqualTo(Map.of("usuario", "docente.demo", "roles", List.of("DOCENTE")));
+        assertThat(cambio.getValue().anterior()).isEmpty();
+        assertThat(cambio.getValue().nuevo()).isEqualTo(Map.of("roles", List.of("DOCENTE")));
     }
 
     @Test

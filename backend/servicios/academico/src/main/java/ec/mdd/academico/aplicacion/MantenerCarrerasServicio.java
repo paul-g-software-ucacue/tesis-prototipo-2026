@@ -70,7 +70,7 @@ public final class MantenerCarrerasServicio implements MantenerCarreras {
                     datos.registrarCarrera(nueva);
                     Instant ahora = reloj.instant();
                     repositorio.registrar(nueva, quien, ahora);
-                    registrar(
+                    registrarNueva(
                             ahora,
                             quien,
                             Accion.CARRERA_REGISTRADA,
@@ -151,7 +151,7 @@ public final class MantenerCarrerasServicio implements MantenerCarreras {
                     datos.registrarMalla(nueva);
                     Instant ahora = reloj.instant();
                     repositorio.registrar(nueva, quien, ahora);
-                    registrar(
+                    registrarNueva(
                             ahora,
                             quien,
                             Accion.MALLA_REGISTRADA,
@@ -203,7 +203,7 @@ public final class MantenerCarrerasServicio implements MantenerCarreras {
                     detalle.put(
                             "horasSemanalesClase",
                             nueva.horasSemanalesClase().stripTrailingZeros().toPlainString());
-                    registrar(ahora, quien, Accion.ASIGNATURA_REGISTRADA, detalle);
+                    registrarNueva(ahora, quien, Accion.ASIGNATURA_REGISTRADA, detalle);
                     return nueva;
                 });
     }
@@ -254,7 +254,9 @@ public final class MantenerCarrerasServicio implements MantenerCarreras {
                                 activa
                                         ? Accion.ASIGNATURA_REACTIVADA
                                         : Accion.ASIGNATURA_INACTIVADA,
-                                Map.of("codigo", codigo));
+                                Map.of("codigo", codigo),
+                                Map.of("activa", actual.activa()),
+                                Map.of("activa", nueva.activa()));
                     }
                     return nueva;
                 });
@@ -288,7 +290,9 @@ public final class MantenerCarrerasServicio implements MantenerCarreras {
                 reloj.instant(),
                 quien,
                 accion,
-                Map.of("codigo", codigo, "cambios", cambios.stream().map(Detalles::de).toList()));
+                Map.of("codigo", codigo, "cambios", cambios.stream().map(Detalles::de).toList()),
+                Detalles.anteriores(cambios),
+                Detalles.nuevos(cambios));
     }
 
     private void registrarEstado(
@@ -297,11 +301,24 @@ public final class MantenerCarrerasServicio implements MantenerCarreras {
                 reloj.instant(),
                 quien,
                 accion,
-                Map.of("codigo", codigo, "anterior", anterior, "nuevo", nuevo));
+                Map.of("codigo", codigo, "anterior", anterior, "nuevo", nuevo),
+                Map.of("estado", anterior),
+                Map.of("estado", nuevo));
+    }
+
+    // Al registrar, todos sus datos son nuevos.
+    private void registrarNueva(
+            Instant momento, String quien, Accion accion, Map<String, Object> datos) {
+        registrar(momento, quien, accion, datos, Map.of(), datos);
     }
 
     private void registrar(
-            Instant momento, String quien, Accion accion, Map<String, Object> detalle) {
-        registro.registrar(new CambioRegistrado(momento, quien, accion, detalle));
+            Instant momento,
+            String quien,
+            Accion accion,
+            Map<String, Object> detalle,
+            Map<String, Object> anterior,
+            Map<String, Object> nuevo) {
+        registro.registrar(new CambioRegistrado(momento, quien, accion, detalle, anterior, nuevo));
     }
 }

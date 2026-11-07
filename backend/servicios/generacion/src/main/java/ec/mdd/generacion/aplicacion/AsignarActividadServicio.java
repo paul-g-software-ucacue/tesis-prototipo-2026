@@ -139,12 +139,13 @@ public final class AsignarActividadServicio implements AsignarActividad {
         VersionDistributivo version =
                 distributivos.vigenteDe(periodo).orElseThrow(ActividadNoEncontrada::new);
         version.exigirEditable(quitada.carrera());
-        Optional<ActividadNoLectiva> anterior =
+        ActividadNoLectiva anterior =
                 version.actividadDe(
-                        quitada.carrera(),
-                        quitada.docente(),
-                        quitada.actividad(),
-                        quitada.proyecto());
+                                quitada.carrera(),
+                                quitada.docente(),
+                                quitada.actividad(),
+                                quitada.proyecto())
+                        .orElseThrow(ActividadNoEncontrada::new);
         Instant ahora = reloj.instant();
         transaccion.ejecutar(
                 () -> {
@@ -188,11 +189,13 @@ public final class AsignarActividadServicio implements AsignarActividad {
                 actividad.asignadaEn(),
                 actividad.asignadaPor(),
                 CambioDeDistributivo.Accion.ACTIVIDAD_GUARDADA,
-                detalle);
+                detalle,
+                anterior.map(AsignarActividadServicio::valores).orElse(Map.of()),
+                valores(actividad));
     }
 
     private static CambioDeDistributivo cambioQuitado(
-            ActividadQuitada quitada, Optional<ActividadNoLectiva> anterior, Instant ahora) {
+            ActividadQuitada quitada, ActividadNoLectiva anterior, Instant ahora) {
         Map<String, Object> detalle =
                 detalle(
                         quitada.periodo(),
@@ -200,9 +203,19 @@ public final class AsignarActividadServicio implements AsignarActividad {
                         quitada.docente(),
                         quitada.actividad(),
                         quitada.proyecto());
-        anterior.ifPresent(una -> detalle.put("horasAnteriores", texto(una.horas())));
+        detalle.put("horasAnteriores", texto(anterior.horas()));
         return new CambioDeDistributivo(
-                ahora, quitada.quien(), CambioDeDistributivo.Accion.ACTIVIDAD_QUITADA, detalle);
+                ahora,
+                quitada.quien(),
+                CambioDeDistributivo.Accion.ACTIVIDAD_QUITADA,
+                detalle,
+                valores(anterior),
+                Map.of());
+    }
+
+    /** Lo que cambia de una actividad: sus horas (F17-H01). */
+    private static Map<String, Object> valores(ActividadNoLectiva actividad) {
+        return Map.of("horas", texto(actividad.horas()));
     }
 
     private static Map<String, Object> detalle(

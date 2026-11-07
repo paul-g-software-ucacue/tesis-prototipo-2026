@@ -60,7 +60,9 @@ class EditarVersionServicioTest {
                                 AHORA,
                                 QUIEN,
                                 Accion.VERSION_EDITADA,
-                                Map.of("numero", 2, "cambios", List.of(cambio))));
+                                Map.of("numero", 2, "cambios", List.of(cambio)),
+                                Map.of("tablaCargaHoraria[DOCENTE_MT/TODOS].horasClase", "12"),
+                                Map.of("tablaCargaHoraria[DOCENTE_MT/TODOS].horasClase", "10")));
         verify(repositorio, never()).buscar(2);
     }
 

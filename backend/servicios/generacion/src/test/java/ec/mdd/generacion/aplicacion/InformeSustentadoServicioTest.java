@@ -33,6 +33,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -104,6 +105,32 @@ class InformeSustentadoServicioTest {
                 .containsEntry("periodo", PERIODO)
                 .containsEntry("huella", INFORME.huella())
                 .doesNotContainKey("contenido");
+        assertThat(cambio.getValue().anterior()).isEmpty();
+        assertThat(cambio.getValue().nuevo())
+                .containsExactlyInAnyOrderEntriesOf(
+                        Map.of("huella", INFORME.huella(), "tamano", PDF.length));
+    }
+
+    @Test
+    void dadoUnInformeAnterior_cuandoSeReemplaza_entoncesRegistraSuHuella() {
+        InformeSustentado anterior =
+                new InformeSustentado("viejo.pdf", 10, "ab".repeat(32), CLAVE, QUIEN, AHORA);
+        when(consultar.consolidado(PERIODO))
+                .thenReturn(
+                        consolidado(
+                                true,
+                                Optional.of(new Consolidacion(QUIEN, AHORA)),
+                                Optional.of(anterior)));
+
+        servicio.adjuntar(PERIODO, "informe.pdf", PDF, QUIEN);
+
+        ArgumentCaptor<CambioDeDistributivo> cambio =
+                ArgumentCaptor.forClass(CambioDeDistributivo.class);
+        verify(registro).registrar(cambio.capture());
+        assertThat(cambio.getValue().anterior())
+                .containsExactlyInAnyOrderEntriesOf(
+                        Map.of("huella", anterior.huella(), "tamano", 10));
+        assertThat(cambio.getValue().nuevo()).containsEntry("huella", INFORME.huella());
     }
 
     @Test

@@ -200,6 +200,8 @@ public final class ProponerDocenteServicio implements ProponerDocente {
         VersionDistributivo version =
                 distributivos.vigenteDe(periodo).orElseThrow(PropuestaNoEncontrada::new);
         version.exigirEditable(uno.carrera());
+        Propuesta anterior =
+                version.propuestaDe(asignatura, paralelo).orElseThrow(PropuestaNoEncontrada::new);
         Instant ahora = reloj.instant();
         transaccion.ejecutar(
                 () -> {
@@ -214,7 +216,9 @@ public final class ProponerDocenteServicio implements ProponerDocente {
                                     Map.of(
                                             "periodo", periodo,
                                             "asignatura", asignatura,
-                                            "paralelo", paralelo)));
+                                            "paralelo", paralelo),
+                                    valores(anterior),
+                                    Map.of()));
                     return asignatura;
                 });
     }
@@ -244,6 +248,18 @@ public final class ProponerDocenteServicio implements ProponerDocente {
         detalle.put("justificacion", propuesta.justificacion().tipo().name());
         anterior.ifPresent(una -> detalle.put("docenteAnterior", una.docente()));
         return new CambioDeDistributivo(
-                ahora, quien, CambioDeDistributivo.Accion.PROPUESTA_GUARDADA, detalle);
+                ahora,
+                quien,
+                CambioDeDistributivo.Accion.PROPUESTA_GUARDADA,
+                detalle,
+                anterior.map(ProponerDocenteServicio::valores).orElse(Map.of()),
+                valores(propuesta));
+    }
+
+    /** Lo que cambia de una propuesta: el docente y el tipo de justificación, nunca su texto. */
+    private static Map<String, Object> valores(Propuesta propuesta) {
+        return Map.of(
+                "docente", propuesta.docente(),
+                "justificacion", propuesta.justificacion().tipo().name());
     }
 }

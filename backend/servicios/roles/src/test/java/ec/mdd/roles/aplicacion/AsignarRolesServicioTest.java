@@ -28,6 +28,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -137,17 +138,26 @@ class AsignarRolesServicioTest {
     @Test
     void dadoQuienPierdeElRolDeCoordinador_cuandoSeAsigna_entoncesSuCarreraSeBorraYSeRegistra() {
         when(asignaciones.rolesDe("docente.demo")).thenReturn(List.of("COORDINADOR_CARRERA"));
+        when(carreras.de("docente.demo")).thenReturn(Optional.of("DS-01"));
         when(carreras.quitar("docente.demo")).thenReturn(true);
 
         servicio.asignar("docente.demo", List.of("DOCENTE"), "admin.demo");
 
         assertThat(dentroDeLaTransaccion).isTrue();
-        assertThat(registrado(3))
+        List<CambioDeRoles> cambios = registrado(3);
+        assertThat(cambios)
                 .extracting(CambioDeRoles::accion)
                 .containsExactly(
                         CambioDeRoles.Accion.ASIGNAR_ROL,
                         CambioDeRoles.Accion.QUITAR_ROL,
                         CambioDeRoles.Accion.QUITAR_CARRERA);
+        // Los roles del usuario antes y después, en las dos (F17-H01).
+        assertThat(cambios.get(0).anterior())
+                .isEqualTo(Map.of("roles", List.of("COORDINADOR_CARRERA")));
+        assertThat(cambios.get(0).nuevo()).isEqualTo(Map.of("roles", List.of("DOCENTE")));
+        assertThat(cambios.get(1).nuevo()).isEqualTo(Map.of("roles", List.of("DOCENTE")));
+        assertThat(cambios.get(2).anterior()).isEqualTo(Map.of("carrera", "DS-01"));
+        assertThat(cambios.get(2).nuevo()).isEmpty();
     }
 
     @Test
@@ -161,6 +171,7 @@ class AsignarRolesServicioTest {
 
     @Test
     void dadoQueBorrarLaCarreraFalla_cuandoSeAsigna_entoncesElFalloLlegaALaTransaccion() {
+        when(carreras.de("docente.demo")).thenReturn(Optional.of("DS-01"));
         when(carreras.quitar("docente.demo")).thenThrow(new IllegalStateException("base caída"));
 
         assertThatThrownBy(() -> servicio.asignar("docente.demo", List.of(), "admin.demo"))

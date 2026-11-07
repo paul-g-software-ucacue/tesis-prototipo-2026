@@ -13,6 +13,7 @@ import ec.mdd.roles.puertos.salida.CambioDeRoles;
 import ec.mdd.roles.puertos.salida.RegistroDeCambios;
 import ec.mdd.roles.puertos.salida.RepositorioAsignacionesDeRol;
 import ec.mdd.roles.puertos.salida.RepositorioRoles;
+import ec.mdd.roles.puertos.salida.Transaccion;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -24,17 +25,23 @@ public final class GestionarRolesServicio implements GestionarRoles {
     private final RepositorioRoles roles;
     private final RepositorioAsignacionesDeRol asignaciones;
     private final RegistroDeCambios registro;
+    private final Transaccion transaccion;
     private final Clock reloj;
 
-    /** Recibe los puertos de salida y el reloj. */
+    /**
+     * Recibe los puertos de salida y el reloj. El rol y su registro van en una transacción: si no,
+     * la entrada de la bitácora no se publica (F17-H01).
+     */
     public GestionarRolesServicio(
             RepositorioRoles roles,
             RepositorioAsignacionesDeRol asignaciones,
             RegistroDeCambios registro,
+            Transaccion transaccion,
             Clock reloj) {
         this.roles = roles;
         this.asignaciones = asignaciones;
         this.registro = registro;
+        this.transaccion = transaccion;
         this.reloj = reloj;
     }
 
@@ -63,8 +70,12 @@ public final class GestionarRolesServicio implements GestionarRoles {
         ReglaDeAdministracion.nombreDisponible(datos.nombre(), null, roles.todos());
         Rol rol = Rol.nuevo(datos.nombre(), datos.descripcion(), datos.permisos());
         Instant ahora = reloj.instant();
-        roles.guardar(rol, ahora);
-        registrar(ahora, quien, CambioDeRoles.Accion.CREAR_ROL, rol);
+        transaccion.ejecutar(
+                () -> {
+                    roles.guardar(rol, ahora);
+                    registrar(ahora, quien, CambioDeRoles.Accion.CREAR_ROL, rol, Map.of());
+                    return rol;
+                });
         return new RolConUsuarios(rol, 0);
     }
 
@@ -83,8 +94,17 @@ public final class GestionarRolesServicio implements GestionarRoles {
         ReglaDeAdministracion.conservaAdministrador(
                 RolesDespues.de(asignaciones.todas(), conElCambio, null, List.of()), quien);
         Instant ahora = reloj.instant();
-        roles.guardar(editado, ahora);
-        registrar(ahora, quien, CambioDeRoles.Accion.EDITAR_ROL, editado);
+        transaccion.ejecutar(
+                () -> {
+                    roles.guardar(editado, ahora);
+                    registrar(
+                            ahora,
+                            quien,
+                            CambioDeRoles.Accion.EDITAR_ROL,
+                            editado,
+                            valores(actual));
+                    return editado;
+                });
         return conUsuarios(editado);
     }
 
@@ -93,13 +113,23 @@ public final class GestionarRolesServicio implements GestionarRoles {
         Rol actual = existente(identificador);
         ReglaDeAdministracion.borrar(
                 actual, asignaciones.usuariosPorRol().getOrDefault(identificador, 0));
-        roles.borrar(identificador);
-        registro.registrar(
-                new CambioDeRoles(
-                        reloj.instant(),
-                        quien,
-                        CambioDeRoles.Accion.BORRAR_ROL,
-                        Map.of("identificador", identificador, "nombre", actual.nombre())));
+        transaccion.ejecutar(
+                () -> {
+                    roles.borrar(identificador);
+                    registro.registrar(
+                            new CambioDeRoles(
+                                    reloj.instant(),
+                                    quien,
+                                    CambioDeRoles.Accion.BORRAR_ROL,
+                                    Map.of(
+                                            "identificador",
+                                            identificador,
+                                            "nombre",
+                                            actual.nombre()),
+                                    valores(actual),
+                                    Map.of()));
+                    return identificador;
+                });
     }
 
     private Rol existente(String identificador) {
@@ -111,7 +141,12 @@ public final class GestionarRolesServicio implements GestionarRoles {
                 rol, asignaciones.usuariosPorRol().getOrDefault(rol.identificador(), 0));
     }
 
-    private void registrar(Instant ahora, String quien, CambioDeRoles.Accion accion, Rol rol) {
+    private void registrar(
+            Instant ahora,
+            String quien,
+            CambioDeRoles.Accion accion,
+            Rol rol,
+            Map<String, Object> anterior) {
         registro.registrar(
                 new CambioDeRoles(
                         ahora,
@@ -123,6 +158,23 @@ public final class GestionarRolesServicio implements GestionarRoles {
                                 "nombre",
                                 rol.nombre(),
                                 "permisos",
-                                rol.permisos().stream().map(Permiso::texto).toList())));
+                                permisos(rol)),
+                        anterior,
+                        valores(rol)));
+    }
+
+    /** Lo que se edita de un rol: su nombre, su descripción y sus permisos. */
+    private static Map<String, Object> valores(Rol rol) {
+        return Map.of(
+                "nombre",
+                rol.nombre(),
+                "descripcion",
+                rol.descripcion(),
+                "permisos",
+                permisos(rol));
+    }
+
+    private static List<String> permisos(Rol rol) {
+        return rol.permisos().stream().map(Permiso::texto).toList();
     }
 }

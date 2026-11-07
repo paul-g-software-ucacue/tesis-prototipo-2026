@@ -55,16 +55,20 @@ public final class RegistrarPeriodoServicio implements RegistrarPeriodo {
                     if (!repositorio.registrar(periodo, quien, ahora)) {
                         throw new CodigoRepetido(codigo);
                     }
+                    Map<String, Object> datos =
+                            Map.of(
+                                    "codigo", periodo.codigo(),
+                                    "nombre", periodo.nombre(),
+                                    "inicio", periodo.inicio().toString(),
+                                    "fin", periodo.fin().toString());
                     registro.registrar(
                             new CambioRegistrado(
                                     ahora,
                                     quien,
                                     Accion.PERIODO_REGISTRADO,
-                                    Map.of(
-                                            "codigo", periodo.codigo(),
-                                            "nombre", periodo.nombre(),
-                                            "inicio", periodo.inicio().toString(),
-                                            "fin", periodo.fin().toString())));
+                                    datos,
+                                    Map.of(),
+                                    datos));
                     avisos.actualizado(periodo);
                     return null;
                 });

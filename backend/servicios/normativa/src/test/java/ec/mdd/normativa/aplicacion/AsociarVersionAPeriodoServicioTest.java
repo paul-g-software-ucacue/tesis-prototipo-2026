@@ -57,7 +57,9 @@ class AsociarVersionAPeriodoServicioTest {
                                 AHORA,
                                 QUIEN,
                                 Accion.VERSION_ASOCIADA,
-                                Map.of("numero", 1, "periodo", "2025-1")));
+                                Map.of("numero", 1, "periodo", "2025-1"),
+                                Map.of(),
+                                Map.of("version", 1)));
     }
 
     @Test

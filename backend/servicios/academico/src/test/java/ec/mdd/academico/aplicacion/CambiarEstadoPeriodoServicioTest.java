@@ -82,7 +82,9 @@ class CambiarEstadoPeriodoServicioTest {
                                 Map.of(
                                         "codigo", CODIGO,
                                         "anterior", "PLANIFICACION",
-                                        "nuevo", "EN_APROBACION")));
+                                        "nuevo", "EN_APROBACION"),
+                                Map.of("estado", "PLANIFICACION"),
+                                Map.of("estado", "EN_APROBACION")));
     }
 
     @Test

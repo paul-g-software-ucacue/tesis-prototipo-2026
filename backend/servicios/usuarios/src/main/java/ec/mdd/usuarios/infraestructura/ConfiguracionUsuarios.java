@@ -2,10 +2,13 @@ package ec.mdd.usuarios.infraestructura;
 
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
+import ec.mdd.plataforma.eventos.ReceptorLocal;
 import ec.mdd.roles.puertos.entrada.AsignarRolesIniciales;
 import ec.mdd.roles.puertos.entrada.ConsultarAutorizacion;
+import ec.mdd.usuarios.adaptadores.entrada.ReceptorLocalDeUsuarios;
 import ec.mdd.usuarios.adaptadores.salida.AutorizacionDesdeRoles;
 import ec.mdd.usuarios.adaptadores.salida.EmisorJwt;
+import ec.mdd.usuarios.adaptadores.salida.RepositorioBitacoraJdbc;
 import ec.mdd.usuarios.adaptadores.salida.RepositorioEventosRecibidosJdbc;
 import ec.mdd.usuarios.adaptadores.salida.RepositorioIntentosJdbc;
 import ec.mdd.usuarios.adaptadores.salida.RepositorioUsuariosJpa;
@@ -24,6 +27,7 @@ import ec.mdd.usuarios.puertos.entrada.RegistrarEventoRecibido;
 import ec.mdd.usuarios.puertos.entrada.RenovarSesion;
 import ec.mdd.usuarios.puertos.salida.EmisorDeTokens;
 import ec.mdd.usuarios.puertos.salida.ProveedorDeAutorizacion;
+import ec.mdd.usuarios.puertos.salida.RepositorioBitacora;
 import ec.mdd.usuarios.puertos.salida.RepositorioEventosRecibidos;
 import ec.mdd.usuarios.puertos.salida.RepositorioIntentos;
 import ec.mdd.usuarios.puertos.salida.RepositorioUsuarios;
@@ -150,12 +154,22 @@ public class ConfiguracionUsuarios {
         return new RepositorioEventosRecibidosJdbc(jdbc);
     }
 
-    /** Receptor de eventos de prueba: solo {@code generacion.EventoDePrueba} (D-47). */
+    @Bean
+    public RepositorioBitacora repositorioBitacora(JdbcClient jdbc) {
+        return new RepositorioBitacoraJdbc(jdbc);
+    }
+
+    /** El receptor de la bitácora (F17-H01): las entradas de los seis servicios que registran. */
     @Bean
     public RegistrarEventoRecibido registrarEventoRecibido(
-            RepositorioEventosRecibidos repositorio) {
-        return new RegistrarEventoRecibidoServicio(
-                repositorio, RegistrarEventoRecibidoServicio.manejadoresDePrueba());
+            RepositorioEventosRecibidos eventos, RepositorioBitacora bitacora) {
+        return new RegistrarEventoRecibidoServicio(eventos, bitacora);
+    }
+
+    /** El mismo receptor para Roles, en el mismo proceso, sin HTTP (ADR-024). */
+    @Bean
+    public ReceptorLocal receptorLocalDeUsuarios(RegistrarEventoRecibido registrar) {
+        return new ReceptorLocalDeUsuarios(registrar);
     }
 
     @Bean

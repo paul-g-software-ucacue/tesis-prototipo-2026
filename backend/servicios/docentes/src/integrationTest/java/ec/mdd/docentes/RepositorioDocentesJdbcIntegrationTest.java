@@ -190,13 +190,15 @@ class RepositorioDocentesJdbcIntegrationTest {
 
     @Test
     void dadoUnCambio_cuandoSeRegistra_entoncesQuedaConSuAccionYSuDetalle() {
-        new RegistroDeCambiosJdbc(jdbc)
+        new RegistroDeCambiosJdbc(jdbc, evento -> {}, java.time.Clock.systemUTC())
                 .registrar(
                         new CambioRegistrado(
                                 AHORA,
                                 "datos.demo",
                                 CambioRegistrado.Accion.DOCENTE_CORREGIDO,
-                                Map.of("identificacion", "0109990010", "cambios", List.of())));
+                                Map.of("identificacion", "0109990010", "cambios", List.of()),
+                                Map.of("dedicacion", "MT"),
+                                Map.of("dedicacion", "TC")));
 
         assertThat(
                         jdbc.sql(

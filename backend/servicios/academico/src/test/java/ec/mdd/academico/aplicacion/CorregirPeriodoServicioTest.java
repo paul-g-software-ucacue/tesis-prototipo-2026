@@ -87,7 +87,11 @@ class CorregirPeriodoServicioTest {
                                                 Map.of(
                                                         "campo", "fin",
                                                         "anterior", "2027-02-28",
-                                                        "nuevo", "2027-03-15")))));
+                                                        "nuevo", "2027-03-15"))),
+                                Map.of("nombre", "Periodo 2026-2", "fin", "2027-02-28"),
+                                Map.of(
+                                        "nombre", "Periodo académico 2026-2",
+                                        "fin", "2027-03-15")));
     }
 
     @Test

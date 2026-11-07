@@ -104,6 +104,8 @@ class CrearDistributivoServicioTest {
         assertThat(cambio.getValue().usuario()).isEqualTo(QUIEN);
         assertThat(cambio.getValue().momento()).isEqualTo(AHORA);
         assertThat(cambio.getValue().detalle()).containsEntry("periodo", PERIODO);
+        assertThat(cambio.getValue().anterior()).isEmpty();
+        assertThat(cambio.getValue().nuevo()).containsOnlyKeys("version");
     }
 
     @Test

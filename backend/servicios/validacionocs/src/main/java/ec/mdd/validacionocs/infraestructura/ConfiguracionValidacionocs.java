@@ -4,7 +4,9 @@ import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
 import ec.mdd.validacionocs.adaptadores.salida.DatosDesdeProcesos;
 import ec.mdd.validacionocs.adaptadores.salida.LectorYaml;
 import ec.mdd.validacionocs.adaptadores.salida.PlantillaEnRecursos;
+import ec.mdd.validacionocs.adaptadores.salida.PublicadorDeCambios;
 import ec.mdd.validacionocs.adaptadores.salida.RepositorioConfiguracionJdbc;
+import ec.mdd.validacionocs.adaptadores.salida.TransaccionSpring;
 import ec.mdd.validacionocs.aplicacion.CargarConfiguracionServicio;
 import ec.mdd.validacionocs.aplicacion.ConsultarConfiguracionServicio;
 import ec.mdd.validacionocs.puertos.entrada.CargarConfiguracion;
@@ -12,13 +14,17 @@ import ec.mdd.validacionocs.puertos.entrada.ConsultarConfiguracion;
 import ec.mdd.validacionocs.puertos.salida.DatosDelPeriodo;
 import ec.mdd.validacionocs.puertos.salida.LectorDeConfiguracion;
 import ec.mdd.validacionocs.puertos.salida.PlantillaDelFlujo;
+import ec.mdd.validacionocs.puertos.salida.RegistroDeCambios;
 import ec.mdd.validacionocs.puertos.salida.RepositorioConfiguracion;
+import ec.mdd.validacionocs.puertos.salida.Transaccion;
 import java.net.URI;
 import java.time.Clock;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.transaction.support.TransactionOperations;
 
 /** Ensambla la configuración del flujo (F12-H01). */
 @Configuration(proxyBeanMethods = false)
@@ -51,13 +57,33 @@ public class ConfiguracionValidacionocs {
         return new RepositorioConfiguracionJdbc(jdbc);
     }
 
+    /** Cada carga, como una entrada de la bitácora de Usuarios (F17-H01). */
+    @Bean
+    public RegistroDeCambios registroDeCambiosValidacionocs(ApplicationEventPublisher eventos) {
+        return new PublicadorDeCambios(eventos, Clock.systemUTC());
+    }
+
+    /** Las transacciones de Validación OCS (F17-H01). */
+    @Bean
+    public Transaccion transaccionValidacionocs(TransactionOperations transactionTemplate) {
+        return new TransaccionSpring(transactionTemplate);
+    }
+
     /** Cargar. */
     @Bean
     public CargarConfiguracion cargarConfiguracion(
             DatosDelPeriodo datos,
             LectorDeConfiguracion lector,
-            RepositorioConfiguracion repositorio) {
-        return new CargarConfiguracionServicio(datos, lector, repositorio, Clock.systemUTC());
+            RepositorioConfiguracion repositorio,
+            RegistroDeCambios registroDeCambiosValidacionocs,
+            Transaccion transaccionValidacionocs) {
+        return new CargarConfiguracionServicio(
+                datos,
+                lector,
+                repositorio,
+                registroDeCambiosValidacionocs,
+                transaccionValidacionocs,
+                Clock.systemUTC());
     }
 
     /** Consultar. */

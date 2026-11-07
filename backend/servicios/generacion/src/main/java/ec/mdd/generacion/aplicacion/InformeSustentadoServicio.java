@@ -80,7 +80,11 @@ public final class InformeSustentadoServicio implements GestionarInforme {
                                             "periodo", periodo,
                                             "version", actual.numero(),
                                             "huella", informe.huella(),
-                                            "tamano", informe.tamano())));
+                                            "tamano", informe.tamano()),
+                                    actual.informe()
+                                            .map(InformeSustentadoServicio::valores)
+                                            .orElse(Map.of()),
+                                    valores(informe)));
                     return informe;
                 });
     }
@@ -102,5 +106,9 @@ public final class InformeSustentadoServicio implements GestionarInforme {
         } catch (UncheckedIOException | IllegalArgumentException error) {
             throw new InformeIlegible();
         }
+    }
+
+    private static Map<String, Object> valores(InformeSustentado informe) {
+        return Map.of("huella", informe.huella(), "tamano", informe.tamano());
     }
 }
