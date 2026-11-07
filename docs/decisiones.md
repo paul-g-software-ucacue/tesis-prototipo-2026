@@ -1642,6 +1642,8 @@ Las 19 excepciones de `cloudflared` no cambian: su imagen no corre con el túnel
 
 **Alternativas.** Una excepción de Grype según D-54 hasta el 2026-11-10, cuando v0.62.0 cumple dos semanas: mantiene la regla, pero deja abierta una vulnerabilidad alta en el componente expuesto, y la subida habría que hacerla igual.
 
+Con la base de datos de Grype del 2026-11-07, la CI encontró además dos altas en paquetes del sistema, con corrección en los repositorios de la distribución. Se suben solo esos paquetes en la imagen final, como en B00-H08 y F05-H02: `apt` y `libapt-pkg7.0` 3.2.0 → 3.2.1ubuntu0.1 en las cinco imágenes Java (CVE-2026-109518), y `musl` y `musl-utils` 1.2.6-r2 → 1.2.6-r3 en la del frontend (CVE-2026-107891).
+
 **Consecuencias.** La imagen de Caddy queda sin vulnerabilidades altas ni críticas con corrección, y `.grype.yaml` sigue sin excepciones. Quedan dos medias que no bloquean: GO-2026-6809 en la biblioteca estándar de Go 1.26.9 y GHSA-j6qf-3m9c-vwj3 en `go-chi/chi`. El binario sigue siendo Caddy v2.11.7 y valida `deploy/Caddyfile`.
 
 **Documentos que hay que poner al día.** Ninguno.
