@@ -8,7 +8,8 @@
 # Levanta un registro local y una API de GitHub simulada, prepara un equipo en una carpeta temporal
 # y comprueba: sin versión publicada (0), despliegue sano (1 a 5), llave persistente (6), acceso por
 # el sitio del túnel (7), vuelta atrás con una versión rota (8), un primer despliegue roto (9) y las
-# contraseñas de los usuarios de la demo (11, F05-H01).
+# contraseñas de los usuarios de la demo (11, F05-H01) y el repositorio de Docker Hub que escribe
+# preparar.sh (13).
 # Usa el proyecto de Compose «mdd-prueba» y el puerto 8443: nunca toca el equipo real («mdd»).
 # Termina con 0 si todos los pasos pasan y con 1 si alguno falla. Nunca imprime un secreto.
 set -euo pipefail
@@ -235,6 +236,20 @@ verificar 11 "claves-demo: una contraseña por usuario de la demo, preparar.sh a
 verificar 11 ".env: preparar.sh agrega MDD_CLAVE_PROCESO_DATOS si falta y no cambia las demás líneas" \
     eval '[[ $(grep -c "^MDD_CLAVE_PROCESO_DATOS=." "$equipo/.env") == 1 ]] \
         && [[ $(grep -v "^MDD_CLAVE_PROCESO_DATOS=" "$equipo/.env") == "$antes_env" ]]'
+
+# 13. El repositorio de Docker Hub: sin REPOSITORIO, preparar.sh lo arma con DOCKERHUB_REPOSITORIO,
+# el mismo valor que la variable de GitHub; sin él o mal escrito, termina sin crear el .env.
+preparar_sin_repositorio() {  # preparar_sin_repositorio <carpeta> [usuario/nombre]
+    env -u REPOSITORIO ${2:+"DOCKERHUB_REPOSITORIO=$2"} DEMO_CLAVE="$(openssl rand -hex 16)" \
+        DOCKERHUB_USUARIO="" DOCKERHUB_TOKEN="" GITHUB_TOKEN="" \
+        deploy/equipo/preparar.sh --no-interactivo --raiz "$1" >/dev/null 2>&1
+}
+preparar_sin_repositorio "$TEMPORAL/repositorio-a" p980/ida_mdd || true
+verificar 13 "preparar.sh escribe REPOSITORIO desde DOCKERHUB_REPOSITORIO; sin él o mal escrito, no crea el .env" \
+    eval '[[ $(grep "^REPOSITORIO=" "$TEMPORAL/repositorio-a/.env") == REPOSITORIO=docker.io/p980/ida_mdd ]] \
+        && ! preparar_sin_repositorio "$TEMPORAL/repositorio-b" && [[ ! -e $TEMPORAL/repositorio-b/.env ]] \
+        && ! preparar_sin_repositorio "$TEMPORAL/repositorio-c" docker.io/p980/ida_mdd \
+        && [[ ! -e $TEMPORAL/repositorio-c/.env ]]'
 
 # --- Vuelta atrás ----------------------------------------------------------------------------------
 

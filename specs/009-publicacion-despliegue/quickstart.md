@@ -39,10 +39,11 @@ Requisitos: Docker con Compose, `curl`, `jq`, `openssl` y systemd. En Fedora ya 
 sudo deploy/equipo/preparar.sh
 ```
 
-Pide, sin mostrarlos:
-- la contraseña del acceso de la demo (elegir una larga y guardarla en el gestor);
-- el usuario de Docker Hub y el token `mdd-equipo`;
-- el token de GitHub de 1.3.
+Pide:
+- el repositorio de Docker Hub, el mismo valor de `DOCKERHUB_REPOSITORIO` en GitHub (`gh variable list --env publicacion`; en este proyecto, `p980/ida_mdd`);
+- la contraseña del acceso de la demo, sin mostrarla (elegir una larga y guardarla en el gestor);
+- el usuario de Docker Hub y, sin mostrarlo, el token `mdd-equipo`;
+- sin mostrarlo, el token de GitHub de 1.3.
 
 Genera las demás claves y la llave JWT, crea el usuario `mdd` y `/opt/mdd`, e instala y arranca `mdd-actualizar.timer`.
 
