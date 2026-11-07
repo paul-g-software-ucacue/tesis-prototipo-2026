@@ -12,7 +12,8 @@
 # y se vuelve a correr. La excepción es claves-demo: si el repositorio tiene usuarios de la demo
 # nuevos, les agrega su contraseña sin tocar las demás.
 # Variables de entrada, para no preguntar (y obligatorias con --no-interactivo): DEMO_CLAVE,
-# DOCKERHUB_USUARIO, DOCKERHUB_TOKEN, GITHUB_TOKEN. Opcionales: REPOSITORIO (docker.io/<usuario>/mdd),
+# DOCKERHUB_REPOSITORIO (usuario/nombre, el mismo valor que la variable de GitHub), DOCKERHUB_USUARIO,
+# DOCKERHUB_TOKEN, GITHUB_TOKEN. Opcionales: REPOSITORIO (completo, en lugar de DOCKERHUB_REPOSITORIO),
 # GITHUB_REPOSITORIO, AUTENTICACION (auth.docker.io), GITHUB_API, MDD_PROYECTO (mdd), PUERTO_HTTPS
 # (443), DIRECCION (mdd.localhost) y DEMO_USUARIO (demo).
 set -euo pipefail
@@ -41,8 +42,9 @@ for herramienta in docker openssl jq curl; do
     command -v "$herramienta" >/dev/null || { echo "Falta $herramienta." >&2; exit 1; }
 done
 
-# Pide un valor sin eco si no llegó por variable; en modo no interactivo, es obligatorio.
-pedir() {  # pedir <variable> <pregunta>
+# Pide un valor si no llegó por variable; en modo no interactivo, es obligatorio. Sin eco, salvo con
+# «visible» (lo que no es secreto, para ver lo que se escribe).
+pedir() {  # pedir <variable> <pregunta> [visible]
     local nombre=$1 pregunta=$2 valor_leido
     if [[ -n ${!nombre:-} ]]; then return 0; fi
     if [[ $interactivo == false ]]; then
@@ -50,8 +52,12 @@ pedir() {  # pedir <variable> <pregunta>
         echo "Falta $nombre." >&2
         exit 1
     fi
-    read -rsp "$pregunta: " valor_leido
-    echo
+    if [[ ${3:-} == visible ]]; then
+        read -rp "$pregunta: " valor_leido
+    else
+        read -rsp "$pregunta: " valor_leido
+        echo
+    fi
     printf -v "$nombre" '%s' "$valor_leido"
 }
 
@@ -64,6 +70,14 @@ umask 077
 
 # --- .env: secretos de la aplicación (Compose y la prueba de humo) ---------------------------------
 if [[ ! -e $raiz/.env ]]; then
+    # El repositorio de la publicación (vars.DOCKERHUB_REPOSITORIO en GitHub), antes de crear nada.
+    if [[ -z ${REPOSITORIO:-} ]]; then
+        pedir DOCKERHUB_REPOSITORIO \
+            "Repositorio de Docker Hub, el de la variable DOCKERHUB_REPOSITORIO de GitHub (usuario/nombre)" visible
+        [[ $DOCKERHUB_REPOSITORIO =~ ^[a-z0-9]+([._-][a-z0-9]+)*/[a-z0-9]+([._-][a-z0-9]+)*$ ]] \
+            || { echo "El repositorio va como usuario/nombre, por ejemplo p980/ida_mdd." >&2; exit 1; }
+        REPOSITORIO=docker.io/$DOCKERHUB_REPOSITORIO
+    fi
     pedir DEMO_CLAVE "Contraseña del acceso de la demo (no se muestra)"
     if [[ $interactivo == true ]]; then
         read -rsp "Repítela: " repetida
@@ -73,12 +87,11 @@ if [[ ! -e $raiz/.env ]]; then
     [[ ${#DEMO_CLAVE} -ge 12 ]] || { echo "La contraseña de la demo necesita al menos 12 caracteres." >&2; exit 1; }
     [[ $DEMO_CLAVE != *[\'\"\\]* && $DEMO_CLAVE != *$'\n'* ]] \
         || { echo "La contraseña de la demo no puede tener comillas, barras invertidas ni saltos de línea." >&2; exit 1; }
-    pedir DOCKERHUB_USUARIO "Usuario de Docker Hub"
     hash_demo=$(printf '%s\n' "$DEMO_CLAVE" | docker run --rm -i "$CADDY" caddy hash-password)
     {
         echo "# Equipo de demostración del MDD (preparar.sh, $(date -u +%F)). Solo para este equipo."
         echo "MDD_PROYECTO=${MDD_PROYECTO:-mdd}"
-        echo "REPOSITORIO=${REPOSITORIO:-docker.io/$DOCKERHUB_USUARIO/mdd}"
+        echo "REPOSITORIO=$REPOSITORIO"
         echo "DIRECCION=${DIRECCION:-mdd.localhost}"
         echo "PUERTO_HTTPS=${PUERTO_HTTPS:-443}"
         echo "MDD_SECRETOS=$raiz/secretos"
@@ -141,7 +154,7 @@ echo "Contraseñas de la demo: $agregadas nuevas en $claves_demo (verlas con «s
 
 # --- configuracion.env: credenciales de actualizar.sh ---------------------------------------------
 if [[ ! -e $raiz/configuracion.env ]]; then
-    pedir DOCKERHUB_USUARIO "Usuario de Docker Hub"
+    pedir DOCKERHUB_USUARIO "Usuario de Docker Hub" visible
     pedir DOCKERHUB_TOKEN "Token de Docker Hub de solo lectura (mdd-equipo; no se muestra)"
     pedir GITHUB_TOKEN "Token de GitHub para los deployments (no se muestra)"
     {
