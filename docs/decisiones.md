@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-80 · ADR-024.
+- **Siguiente número libre:** D-94 · ADR-025 (D-90 a D-92 y ADR-024 están en el PR #193).
 
 ## Índice
 
@@ -87,6 +87,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-87 | 2026-11-02 | RN-18 se mide por paralelo en el panel, y la matriz D-16 no cambia | Aceptada | RN-18, F03-H03, D-16 |
 | D-88 | 2026-11-02 | Los archivos del negocio van en un volumen, detrás de un puerto de Generación | Aceptada | RNF-POR-01, F10-H02 |
 | D-89 | 2026-11-02 | La configuración del flujo es un YAML: el mismo archivo es plantilla y configuración por defecto | Aceptada | ADR-007, RF-34, RF-58 |
+| D-93 | 2026-11-07 | `golang.org/x/net` de Caddy sube a una versión con menos de dos semanas, como excepción | Aceptada | D-54, D-80, D-81 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1626,5 +1627,21 @@ Las 19 excepciones de `cloudflared` no cambian: su imagen no corre con el túnel
 **Alternativas.** JSON: sin comentarios. CSV: las etapas y las firmas son dos estructuras. Fechas fijas: un archivo nuevo por periodo.
 
 **Consecuencias.** `BORRADOR_UNIDADES` queda desactivada por defecto, porque las unidades no tienen parcial, aunque la ERS la lista. Los plazos por defecto son valores iniciales, porque la ERS no los fija.
+
+**Documentos que hay que poner al día.** Ninguno.
+
+## D-93. `golang.org/x/net` de Caddy sube a una versión con menos de dos semanas, como excepción
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-07 · **Decidido por:** autor de la tesis
+- **Origen:** el check «5 · imágenes» del PR #193 falla por GO-2026-6860 (alta) en la imagen de Caddy
+- **Sigue a:** D-81, otra excepción puntual de la misma regla
+
+**Decisión.** En `deploy/docker/caddy/go.mod`, `golang.org/x/net` pasa de v0.60.0 a v0.62.0, publicada el 2026-10-27. Es una excepción puntual a la regla de usar versiones con al menos dos semanas, y la regla sigue vigente. Con `go mod tidy` también suben `x/crypto` v0.58.0, `x/sync` v0.24.0, `x/sys` v0.49.0, `x/term` v0.47.0 y `x/text` v0.43.0, todas con más de dos semanas. En la misma revisión, Grype encontró GO-2026-6865 (alta) en `github.com/klauspost/compress` v1.20.1, y esa dependencia sube a v1.20.2, publicada el 2026-10-12. Esa subida cumple la regla y no necesita excepción.
+
+**Por qué.** Caddy es el proxy que recibe todas las peticiones de la demo, y `x/net` es parte de su código HTTP. La regla protege de una versión recién salida que venga mala. Esta versión es una corrección de seguridad del equipo de Go, y mientras no se aplique bloquea «5 · imágenes» en `main` y en todos los PR que tocan el despliegue.
+
+**Alternativas.** Una excepción de Grype según D-54 hasta el 2026-11-10, cuando v0.62.0 cumple dos semanas: mantiene la regla, pero deja abierta una vulnerabilidad alta en el componente expuesto, y la subida habría que hacerla igual.
+
+**Consecuencias.** La imagen de Caddy queda sin vulnerabilidades altas ni críticas con corrección, y `.grype.yaml` sigue sin excepciones. Quedan dos medias que no bloquean: GO-2026-6809 en la biblioteca estándar de Go 1.26.9 y GHSA-j6qf-3m9c-vwj3 en `go-chi/chi`. El binario sigue siendo Caddy v2.11.7 y valida `deploy/Caddyfile`.
 
 **Documentos que hay que poner al día.** Ninguno.
