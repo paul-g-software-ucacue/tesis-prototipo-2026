@@ -109,3 +109,21 @@ Cada fila de una carga publica ahora su entrada en la misma transacción. `Confi
 ### Pull request (#193)
 
 La primera corrida en borrador falló en «5 · imágenes». Grype encontró GO-2026-6860, una vulnerabilidad alta en `golang.org/x/net` de la imagen de Caddy, y la falla no venía de esta historia. Se corrigió aparte en el #194 (D-93), que también subió `klauspost/compress` en Caddy, `apt` en las imágenes Java y `musl` en la del frontend. Con `main` traído a la rama (`c79f86d`), las 12 comprobaciones del #193 quedaron en verde. Eso incluye `test-integracion`, `sca`, «5 · imágenes» y `perfil-consolidado` (17 min), que corren con el PR ya listo.
+
+## Equipo de demostración
+
+El equipo se reinstaló con Fedora 45 el 2026-11-03 y perdió `/opt/mdd`, el temporizador y los volúmenes. Se volvió a preparar con `preparar.sh`, con tokens nuevos de Docker Hub y de GitHub. `REPOSITORIO` se corrigió a mano a `docker.io/p980/ida_mdd`, porque el valor por defecto del script (`<usuario>/mdd`) no es el repositorio de la publicación. La base quedó vacía, y `deploy/equipo/poblar_demo.sh` (#196) cargó los datos de prueba para la comprobación.
+
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| Comprobaciones del PR #193 | 12 de 12, con `probar_bitacora.sh` en `perfil-consolidado` | GitHub | 2026-11-07 |
+| Despliegue | `8f0c48a70b95`, «Sano en 73 s», con los 8 contenedores sanos y la prueba de humo en verde. Con el token de GitHub corregido, `demostracion` exitoso, «Sano en 4 s» | `journalctl`, `docker ps` y GitHub | 2026-11-07 |
+| Migraciones | `usuarios` en V5 («5 - bitacora») y `generacion` en V7 | Registro de `identidad` y de `distributivo` | 2026-11-07 |
+| Datos de prueba | `poblar_demo.sh`: 10 cargas, la política de 2026-I, la carrera de `coordinacion.demo`, el distributivo y 140-b con 4 horas | Salida del script | 2026-11-07 |
+| 1 y 2. De 4 a 6 horas | `ACTIVIDAD_GUARDADA` de `coordinacion.demo`, periodo 2026-I, `{"horas": "4"}` → `{"horas": "6"}`; llegó en 0,088 s | Comprobación del autor y consulta de solo lectura | 2026-11-07 |
+| 3. Responsable | `DESIGNAR_RESPONSABLE` de `vicerrectorado.demo`, `{"responsable": "docente.demo"}`, entregada dentro de `identidad` en 0,027 s; las 13 publicaciones de `eventos_identidad` completadas | Comprobación del autor y consulta de solo lectura | 2026-11-07 |
+| 4. Borrar | Con `identidad`: «permission denied for table bitacora». Con el superusuario: «La bitácora no se puede modificar ni borrar.». Siguen las 617 entradas | Comprobación del autor | 2026-11-07 |
+
+El quickstart decía `admin.demo` en el paso 3 y anunciaba el mensaje del disparador con el rol del proceso. Se corrigió en el #196: designa el Vicerrector, y con el rol del proceso corta antes el permiso.
+
+**Para revisar en F17-H02.** Guardar una actividad con las mismas horas también deja una entrada (`{"horas": "4"}` → `{"horas": "4"}`, a las 17:02:14 UTC). No viola ningún requisito, porque la acción es «guardada», pero es ruido en la pantalla de la bitácora.

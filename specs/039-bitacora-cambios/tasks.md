@@ -151,7 +151,7 @@ Cada servicio sigue el mismo patrón, en este orden:
   - los criterios de terminado de la constitución (§6), con el glosario de T001.
 
   Commit, push, PR en borrador con `Refs #69`, y marcarlo listo cuando sus comprobaciones pasen, sin empujar a la vez.
-- [ ] T031 Fusionar solo con la aprobación del autor y con todas las comprobaciones en verde. Verificar el despliegue en el equipo de demostración con evidencia (GitHub `demostracion` y los 8 contenedores sanos con la versión nueva, y la migración `V5` en el registro de `identidad`). Comprobación del autor con `quickstart.md`, «A mano, en la demo». PR de evidencia con `Closes #69`, y borrar las ramas.
+- [X] T031 Fusionar solo con la aprobación del autor y con todas las comprobaciones en verde. Verificar el despliegue en el equipo de demostración con evidencia (GitHub `demostracion` y los 8 contenedores sanos con la versión nueva, y la migración `V5` en el registro de `identidad`). Comprobación del autor con `quickstart.md`, «A mano, en la demo». PR de evidencia con `Closes #69`, y borrar las ramas.
 
 ---
 
