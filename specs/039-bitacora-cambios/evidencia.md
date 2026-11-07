@@ -105,3 +105,7 @@ Cada fila de una carga publica ahora su entrada en la misma transacción. `Confi
 | JavaDoc | `ReceptorLocal`, `EntradaBitacora`, `RepositorioBitacora`, los registros de cambio y los puertos `RegistroDeCambios` (T029) |
 | Seguridad | SpotBugs y Gitleaks en verde; Grype en el pull request |
 | Glosario | Sin términos nuevos (T001); D-92 no agrega ninguno |
+
+### Pull request (#193)
+
+La primera corrida en borrador falló en «5 · imágenes». Grype encontró GO-2026-6860, una vulnerabilidad alta en `golang.org/x/net` de la imagen de Caddy, y la falla no venía de esta historia. Se corrigió aparte en el #194 (D-93), que también subió `klauspost/compress` en Caddy, `apt` en las imágenes Java y `musl` en la del frontend. Con `main` traído a la rama (`c79f86d`), las 12 comprobaciones del #193 quedaron en verde. Eso incluye `test-integracion`, `sca`, «5 · imágenes» y `perfil-consolidado` (17 min), que corren con el PR ya listo.
