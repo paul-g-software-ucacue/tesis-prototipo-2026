@@ -29,6 +29,8 @@ Recorre los 11 pasos de [contracts/demostracion.md](contracts/demostracion.md): 
 
 No hay pantalla de la bitácora: llega con F17-H02. La comprobación del autor usa la SPA para los cambios y una consulta de solo lectura para verlos.
 
+Si la demo está vacía (por ejemplo, después de reinstalar el equipo), `sudo deploy/equipo/poblar_demo.sh` carga los datos de prueba y deja la actividad 140-b con 4 horas; al final dice qué carrera y qué docente usar.
+
 1. Entra con `coordinacion.demo` y cambia las horas de una actividad no lectiva de 4 a 6.
 2. Consulta las entradas recientes:
 
