@@ -29,7 +29,11 @@ FROM eclipse-temurin:25-jre
 # no usa; Grype encontró en él vulnerabilidades altas y críticas de Go (B00-H08). Se quita.
 # /var/mdd/archivos: un volumen nuevo copia dueño y permisos de la imagen, y el proceso corre como
 # 10001 (D-88). Solo distributivo monta ahí el volumen archivos.
-RUN groupadd --system --gid 10001 mdd && useradd --system --uid 10001 --gid mdd mdd \
+# apt y libapt-pkg7.0 3.2.0 → 3.2.1ubuntu0.1: vulnerabilidad alta ya corregida (CVE-2026-109518, D-93).
+RUN apt-get update \
+    && apt-get install -y --only-upgrade --no-install-recommends apt libapt-pkg7.0 \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system --gid 10001 mdd && useradd --system --uid 10001 --gid mdd mdd \
     && rm -f /usr/bin/pebble \
     && mkdir -p /var/mdd/archivos && chown -R 10001:10001 /var/mdd
 WORKDIR /app
