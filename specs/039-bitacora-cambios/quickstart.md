@@ -29,6 +29,8 @@ Recorre los 11 pasos de [contracts/demostracion.md](contracts/demostracion.md): 
 
 No hay pantalla de la bitácora: llega con F17-H02. La comprobación del autor usa la SPA para los cambios y una consulta de solo lectura para verlos.
 
+Si la demo está vacía (por ejemplo, después de reinstalar el equipo), `sudo deploy/equipo/poblar_demo.sh` carga los datos de prueba y deja la actividad 140-b con 4 horas; al final dice qué carrera y qué docente usar.
+
 1. Entra con `coordinacion.demo` y cambia las horas de una actividad no lectiva de 4 a 6.
 2. Consulta las entradas recientes:
 
@@ -38,14 +40,17 @@ No hay pantalla de la bitácora: llega con F17-H02. La comprobación del autor u
    ```
 
    Debe aparecer `ACTIVIDAD_GUARDADA` con `{"horas": "4"}` y `{"horas": "6"}`.
-3. Con `admin.demo`, designa al Responsable de consolidación del periodo y vuelve a consultar: aparece la entrada de `roles`.
-4. Intenta borrar una entrada con el rol del proceso:
+3. Con `vicerrectorado.demo`, en **Periodos**, designa al Responsable de consolidación del periodo y vuelve a consultar: aparece la entrada de `roles`.
+4. Intenta borrar una entrada, primero con el rol del proceso y después con el superusuario. Desde `docker exec -it mdd-postgres-1 psql -U postgres -d mdd`, una instrucción por línea:
 
    ```sql
-   DELETE FROM usuarios.bitacora WHERE id_evento = '<uno de los anteriores>';
+   SET ROLE identidad;
+   DELETE FROM usuarios.bitacora WHERE accion = 'ACTIVIDAD_GUARDADA' AND nuevo ->> 'horas' = '6';
+   RESET ROLE;
+   DELETE FROM usuarios.bitacora WHERE accion = 'ACTIVIDAD_GUARDADA' AND nuevo ->> 'horas' = '6';
    ```
 
-   Debe fallar con «La bitácora no se puede modificar ni borrar.»
+   Con el rol del proceso falla con «permission denied for table bitacora», porque no tiene el permiso. Con el superusuario falla con «La bitácora no se puede modificar ni borrar.», por el disparador.
 
 ## Evidencia
 
