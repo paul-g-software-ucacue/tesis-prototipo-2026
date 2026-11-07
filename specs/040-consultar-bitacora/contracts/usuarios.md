@@ -26,7 +26,7 @@ Dos operaciones nuevas, en la etiqueta `Bitacora`. Se escriben en el contrato an
 | Estado | Cuerpo | Cuándo |
 |---|---|---|
 | `200` | `PaginaDeBitacora` | También sin entradas: `entradas: []` y `total: 0`. |
-| `400` | `Error` · `COMUN_SOLICITUD_INVALIDA` con `detalles` | Un parámetro que no cumple su regla, `accion` sin `servicio`, `hasta` antes de `desde` o `corte` en el futuro. Un detalle por campo. |
+| `400` | `Error` · `COMUN_SOLICITUD_INVALIDA` con `detalles` | Un parámetro que no cumple su regla, `accion` sin `servicio`, `hasta` antes de `desde` o `corte` en el futuro. Un detalle por campo. Un `servicio` fuera del enumerado responde el mismo código sin detalle: la plataforma solo detalla los enumerados de un cuerpo (`ValorNoPermitido`), y la SPA lo elige de una lista. |
 | `401` | `NoAutenticado` (`comun/seguridad.yaml`) | Sin sesión. |
 | `403` | `AccesoNoAutorizado` · `SEGURIDAD_ACCESO_NO_AUTORIZADO` | Sin `BITACORA:LECTURA`. El mismo cuerpo para todos los roles. |
 | `500`, `503` | `ErrorInterno`, `ServicioNoDisponible` | Como las demás operaciones. |

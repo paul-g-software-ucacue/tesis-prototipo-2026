@@ -14,7 +14,7 @@ Por la nota de F17-H01 y D-94, seis acciones de Generación, Académico y Roles 
 
 **Language/Version**: Java 25 (Spring Boot 4.1.1) · TypeScript (React 19, Vite) · Bash · SQL (PostgreSQL)
 
-**Primary Dependencies**: las que ya hay. Backend: el generador de OpenAPI, `JdbcClient` y Spring Security de cada servicio. SPA: MUI 9, React Query, `openapi-fetch`, `react-hook-form` y `zod`. Ninguna librería nueva.
+**Primary Dependencies**: las que ya hay. Backend: el generador de OpenAPI, `JdbcClient` y Spring Security de cada servicio. SPA: MUI 9, React Query y `openapi-fetch`, con la validación y los campos comunes de `pantallas/comun/`. Ninguna librería nueva.
 
 **Storage**: `usuarios.bitacora` (V5), solo lectura. Sin migraciones; una `V6` con el índice `(usuario, momento)` solo si la medición de SC-003 lo pide (research §5).
 

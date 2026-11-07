@@ -165,6 +165,66 @@ class JustificarInconsistenciaServicioTest {
     }
 
     @Test
+    void dadaUnaYaJustificadaConElMismoTexto_cuandoSeJustifica_entoncesNoGuardaNiRegistra() {
+        // D-94: el mismo texto no es un cambio, aunque lo guarde otra persona más tarde.
+        JustificacionDeInconsistencia habia =
+                new JustificacionDeInconsistencia(
+                        TipoDeInconsistencia.PROPORCION,
+                        DOCENTE,
+                        TEXTO,
+                        "otra.persona",
+                        AHORA.minusSeconds(3600));
+        when(panel.panel(PERIODO))
+                .thenReturn(
+                        panelCon(
+                                true, new EntradaDelPanel(blanda(), java.util.Optional.of(habia))));
+
+        EntradaDelPanel entrada = servicio.justificar(solicitud(TipoDeInconsistencia.PROPORCION));
+
+        assertNoGuardoNada();
+        assertThat(entrada.justificacion()).contains(habia);
+    }
+
+    @Test
+    void dadaUnaYaJustificadaConOtroTexto_cuandoSeCambia_entoncesRegistraQueElTextoCambio() {
+        when(panel.panel(PERIODO))
+                .thenReturn(
+                        panelCon(
+                                true,
+                                new EntradaDelPanel(
+                                        blanda(),
+                                        java.util.Optional.of(
+                                                new JustificacionDeInconsistencia(
+                                                        TipoDeInconsistencia.PROPORCION,
+                                                        DOCENTE,
+                                                        "El texto de antes",
+                                                        QUIEN,
+                                                        AHORA.minusSeconds(60))))));
+
+        servicio.justificar(solicitud(TipoDeInconsistencia.PROPORCION));
+
+        ArgumentCaptor<CambioDeDistributivo> cambio =
+                ArgumentCaptor.forClass(CambioDeDistributivo.class);
+        verify(registro).registrar(cambio.capture());
+        assertThat(cambio.getValue().detalle()).containsEntry("textoCambiado", true);
+        assertThat(cambio.getValue().toString())
+                .doesNotContain("El texto de antes")
+                .doesNotContain(TEXTO);
+    }
+
+    @Test
+    void dadaUnaSinJustificar_cuandoSeJustifica_entoncesNoDiceQueElTextoCambio() {
+        conUnaBlandaYUnaDura();
+
+        servicio.justificar(solicitud(TipoDeInconsistencia.PROPORCION));
+
+        ArgumentCaptor<CambioDeDistributivo> cambio =
+                ArgumentCaptor.forClass(CambioDeDistributivo.class);
+        verify(registro).registrar(cambio.capture());
+        assertThat(cambio.getValue().detalle()).doesNotContainKey("textoCambiado");
+    }
+
+    @Test
     void dadaUnaDura_cuandoSeJustifica_entoncesLaRechazaSinGuardar() {
         assertThatThrownBy(() -> servicio.justificar(solicitud(TipoDeInconsistencia.SOBRECARGA)))
                 .isInstanceOf(InconsistenciaNoJustificable.class);

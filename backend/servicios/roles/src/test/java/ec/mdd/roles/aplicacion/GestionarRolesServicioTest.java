@@ -183,6 +183,36 @@ class GestionarRolesServicioTest {
     }
 
     @Test
+    void dadoUnRolPropioConLosMismosDatos_cuandoSeEdita_entoncesNoGuardaNiRegistra() {
+        // D-94: el mismo nombre, la misma descripción y los mismos permisos no son un cambio.
+        RolConUsuarios editado =
+                servicio.editar(
+                        "AUDITOR_DE_CARGAS",
+                        new DatosDeRol("Auditor de cargas", "Revisa cargas.", List.of(LEER_CARGAS)),
+                        "admin.demo");
+
+        assertThat(editado.rol()).isEqualTo(AUDITOR);
+        verify(roles, never()).guardar(any(), any());
+        verify(registro, never()).registrar(any());
+    }
+
+    @Test
+    void dadosLosMismosPermisosEnOtroOrden_cuandoSeEdita_entoncesTampocoEsUnCambio() {
+        Rol conDos =
+                Rol.nuevo(
+                        "Auditor de cargas", "Revisa cargas.", List.of(LEER_CARGAS, LEER_DOCENTES));
+        Rol enOtroOrden =
+                conDos.editado(
+                        "Auditor de cargas", "Revisa cargas.", List.of(LEER_DOCENTES, LEER_CARGAS));
+
+        assertThat(enOtroOrden.mismosDatosQue(conDos)).isTrue();
+        assertThat(
+                        conDos.editado("Otro nombre", "Revisa cargas.", conDos.permisos())
+                                .mismosDatosQue(conDos))
+                .isFalse();
+    }
+
+    @Test
     void dadoUnRolPredefinidoOInexistente_cuandoSeEdita_entoncesSeRechaza() {
         DatosDeRol datos = new DatosDeRol("Otro", "Otro.", List.of(LEER_CARGAS));
 

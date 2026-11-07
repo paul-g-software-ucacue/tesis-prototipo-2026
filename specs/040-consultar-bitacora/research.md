@@ -66,7 +66,7 @@ Inventario de las acciones que pueden cambiar algo (clases `CAMBIA` y `CREA_O_CA
 | Académico | `PERIODO_CORREGIDO`, `UNIDAD_CORREGIDA`, `CARRERA_CORREGIDA`, `ASIGNATURA_CORREGIDA`, `ASIGNATURA_PARALELO_CORREGIDA` | Sí (`correccion.cambios().isEmpty()`) | — |
 | Académico | `PERIODO_ESTADO_CAMBIADO`, `UNIDAD_*`, `CARRERA_ESTADO_CAMBIADO`, `MALLA_ESTADO_CAMBIADO`, `ASIGNATURA_INACTIVADA/REACTIVADA`, `ASIGNATURA_PARALELO_RETIRADA/REOFERTADA` | Sí (mismo estado) | — |
 | Académico | `PERIODO_ABIERTO` | Sí (el periodo con versión no vuelve a abrirse) | — |
-| Académico | `MATRICULA_CORREGIDA` | No: la carga 10 corrige aunque la fila sea igual | Los valores de la matrícula |
+| Académico | `MATRICULA_CORREGIDA` | No, en el caso de uso. En la práctica no llega igual: la carga 10 solo corrige las filas `CAMBIA` (`MotorDelLote`); la regla queda como resguardo de una llamada directa (corregido al implementar) | Los valores de la matrícula |
 | Docentes | `DOCENTE_CORREGIDO`, `DOCENTE_ESTADO_CAMBIADO`, `CARGO_CORREGIDO`, `PROYECTO_CORREGIDO` | Sí | — |
 | Normativa | `VERSION_EDITADA` | Sí (`edicion.cambios().isEmpty()`) | — |
 | Normativa | `VERSION_ASOCIADA` | Sí (la misma versión devuelve la suya) | — |
@@ -84,7 +84,7 @@ Faltan seis acciones en tres servicios. Además, un cambio solo en el texto de u
 
 ## 7. La pantalla
 
-**Decisión.** Una pantalla nueva `frontend/src/pantallas/bitacora/`, ruta `/bitacora`, en el menú como «Bitácora» con el permiso `{ funcionalidad: 'BITACORA', tipo: 'LECTURA' }` (D-70). Filtros con `react-hook-form` y `zod`, con las mismas reglas del contrato mientras se escribe y antes de enviar (principio XIV). La tabla muestra momento, usuario, servicio, acción, periodo y objeto; cada fila se expande para ver el objeto, el valor anterior y el nuevo como pares campo–valor, con «sin valor anterior (creación)» y «sin valor nuevo (eliminación)» cuando faltan. Los filtros viven en la URL, para volver a la misma consulta y compartirla.
+**Decisión.** Una pantalla nueva `frontend/src/pantallas/bitacora/`, ruta `/bitacora`, en el menú como «Bitácora» con el permiso `{ funcionalidad: 'BITACORA', tipo: 'LECTURA' }` (D-70). Filtros con la validación y los campos de `pantallas/comun/`, como los demás formularios de datos, con las mismas reglas del contrato mientras se escribe y antes de enviar (principio XIV). La tabla muestra momento, usuario, servicio, acción, periodo y objeto; cada fila se expande para ver el objeto, el valor anterior y el nuevo como pares campo–valor, con «sin valor anterior (creación)» y «sin valor nuevo (eliminación)» cuando faltan. Los filtros viven en la URL, para volver a la misma consulta y compartirla.
 
 **Por qué.** Es el patrón de las demás pantallas (`docentes`, `inconsistencias`): MUI, el cliente generado desde `contratos/` y React Query. El usuario se escribe, no se elige: la lista de usuarios exige `USUARIOS_ROLES:LECTURA`, que el Vicerrector no tiene, y la bitácora también tiene a `sistema`.
 

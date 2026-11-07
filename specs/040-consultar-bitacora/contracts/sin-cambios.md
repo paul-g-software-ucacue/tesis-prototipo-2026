@@ -7,7 +7,7 @@ Ningún contrato de API cambia: las seis operaciones responden lo mismo que hoy,
 | Guardar una propuesta (Generación) | La propuesta que había, sin advertencias nuevas | Nada | Nada |
 | Asignar una actividad no lectiva (Generación) | La actividad que había, con su `asignadaEn` y su `asignadaPor` | Nada | Nada |
 | Justificar una inconsistencia (Generación) | La entrada del panel con la justificación que había | Nada | Nada |
-| Corregir una matrícula (Académico, desde la carga 10) | La fila cuenta como aplicada en el informe de la carga | Nada | Nada |
+| Corregir una matrícula (Académico) | Sin respuesta, como hoy (la carga 10 no llega a corregir una fila igual: queda `IGUAL`) | Nada | Nada |
 | Editar un rol (Roles) | El rol con sus usuarios | Nada | Nada |
 | Indicar la carrera de un coordinador (Roles) | Sin cuerpo, como hoy | Nada | Nada |
 
@@ -18,5 +18,5 @@ Ningún contrato de API cambia: las seis operaciones responden lo mismo que hoy,
 ## Pruebas
 
 - **Aplicación (Mockito), por acción:** guardar con los mismos datos no llama a `guardar…` ni a `RegistroDeCambios.registrar`, y devuelve el elemento que había; con un dato distinto, los llama una vez. Para la propuesta y la inconsistencia, también el caso de solo el texto, con `textoCambiado`.
-- **Integración de la carga 10:** confirmar dos veces una matrícula con los mismos valores deja una sola entrada.
+- **Las cargas:** una fila igual queda `IGUAL` en la vista previa y no se aplica (`MotorDelLote` solo corrige las `CAMBIA`), así que una carga nunca corrige con los mismos valores; la regla del caso de uso es el resguardo de una llamada directa.
 - **Punta a punta:** `probar_consulta_bitacora.sh`, paso 6.

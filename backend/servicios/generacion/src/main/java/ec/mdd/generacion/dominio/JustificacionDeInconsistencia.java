@@ -29,6 +29,14 @@ public record JustificacionDeInconsistencia(
     }
 
     /**
+     * Si dice lo mismo que otra: el mismo texto. Guardarla de nuevo no cambia nada (D-94); quién la
+     * escribió y cuándo no cuentan.
+     */
+    public boolean mismoTextoQue(JustificacionDeInconsistencia otra) {
+        return texto.equals(otra.texto);
+    }
+
+    /**
      * Una justificación escrita ahora, con el texto sin los espacios de los extremos.
      *
      * @param tipo el tipo de la inconsistencia

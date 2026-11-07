@@ -4,7 +4,8 @@
 # que el API Gateway no expone (ADR-018). Desde F05-H01, el bloqueo por intentos
 # (429, D-60) y la renovación del token mientras hay actividad (ADR-020). Desde F05-H02, la lista de
 # usuarios para asignarles roles, protegida con x-mdd-permiso (ADR-021). Desde F17-H01, el receptor
-# registra cada EntradaBitacora, el lenguaje publicado de la bitácora (RF-44, D-90, D-91).
+# registra cada EntradaBitacora, el lenguaje publicado de la bitácora (RF-44, D-90, D-91). Desde
+# F17-H02, la consulta de la bitácora, solo de lectura, con BITACORA:LECTURA (D-16).
 openapi: 3.0.3
 info:
   title: MDD · Usuarios
@@ -24,6 +25,8 @@ tags:
     description: Receptor de eventos de otros procesos, idempotente por idEvento (ADR-018).
   - name: Usuarios
     description: Usuarios del MDD, para asignarles roles (F05-H02).
+  - name: Bitacora
+    description: Consulta de la bitácora de auditoría, solo de lectura (F17-H02, RF-44).
 paths:
   /api/usuarios/sesion:
     post:
@@ -226,6 +229,144 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/usuarios/bitacora:
+    get:
+      tags: [Bitacora]
+      operationId: consultarBitacora
+      summary: Consulta las entradas de la bitácora, de las más recientes a las más antiguas, por páginas.
+      description: >-
+        Solo lectura (F17-H02). Todos los filtros son opcionales y se combinan: una entrada aparece
+        si cumple todos. Las fechas son días completos en la hora de Ecuador continental
+        (America/Guayaquil). La primera respuesta trae un corte; las páginas siguientes lo envían
+        para que una entrada que llega tarde no repita ni salte entradas (research §2). Nunca
+        devuelve los valores de los datos personales de un docente (D-91).
+      x-mdd-permiso: BITACORA:LECTURA
+      parameters:
+        - name: desde
+          in: query
+          required: false
+          description: Fecha inicial, inclusiva, en hora de Ecuador continental.
+          schema:
+            type: string
+            format: date
+          example: '2026-11-07'
+        - name: hasta
+          in: query
+          required: false
+          description: Fecha final, inclusiva. No puede ser anterior a desde.
+          schema:
+            type: string
+            format: date
+          example: '2026-11-07'
+        - name: usuario
+          in: query
+          required: false
+          description: El nombre de usuario que hizo el cambio, exacto, o «sistema».
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 64
+          example: coordinacion.demo
+        - name: servicio
+          in: query
+          required: false
+          description: El servicio de origen del cambio.
+          schema:
+            $ref: '#/components/schemas/ServicioDeBitacora'
+        - name: accion
+          in: query
+          required: false
+          description: La acción, con su nombre en el servicio. Solo junto con servicio.
+          schema:
+            type: string
+            pattern: '^[A-Z][A-Z_]{2,39}$'
+          example: ACTIVIDAD_GUARDADA
+        - name: identificador
+          in: query
+          required: false
+          description: >-
+            El identificador de un elemento (la cédula de un docente, el código de una asignatura,
+            de una actividad o de un rol). Una entrada lo cumple si algún valor de su objeto, a
+            cualquier profundidad, es igual.
+          schema:
+            type: string
+            pattern: '^[0-9A-Za-z._/-]{1,64}$'
+          example: 140-b
+        - name: periodo
+          in: query
+          required: false
+          description: El código del periodo del cambio.
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9._-]{1,20}$'
+          example: 2026-I
+        - name: pagina
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            default: 1
+        - name: tamano
+          in: query
+          required: false
+          description: Entradas por página.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: corte
+          in: query
+          required: false
+          description: >-
+            El corte de la primera respuesta. Solo cuentan las entradas recibidas hasta ese
+            instante. No puede ser posterior al instante de la consulta.
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: La página de entradas; sin entradas, una lista vacía con total 0.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginaDeBitacora'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/usuarios/bitacora/acciones:
+    get:
+      tags: [Bitacora]
+      operationId: listarAccionesDeBitacora
+      summary: Las acciones distintas que hay en la bitácora, por servicio, para elegir el filtro.
+      x-mdd-permiso: BITACORA:LECTURA
+      responses:
+        '200':
+          description: Los pares servicio y acción, ordenados por servicio y acción.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AccionDeBitacora'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
 components:
   securitySchemes:
     bearer:
@@ -333,6 +474,91 @@ components:
           type: object
           additionalProperties: true
           description: Los valores después del cambio; falta al quitar.
+    ServicioDeBitacora:
+      type: string
+      description: Un servicio que registra cambios en la bitácora (D-90).
+      enum: [generacion, academico, docentes, normativa, roles, validacionocs]
+      example: generacion
+    PaginaDeBitacora:
+      type: object
+      additionalProperties: false
+      required: [entradas, total, pagina, tamano, corte]
+      properties:
+        entradas:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/EntradaConsultada'
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Las entradas que cumplen el filtro, recibidas hasta el corte.
+        pagina:
+          type: integer
+          format: int32
+          minimum: 1
+        tamano:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100
+        corte:
+          type: string
+          format: date-time
+          description: Se envía en las páginas siguientes para que no cambien.
+    EntradaConsultada:
+      description: >-
+        Una entrada de la bitácora tal como se registró (F17-H01): los campos de EntradaBitacora,
+        con las mismas reglas, más su identificador y su servicio. Sin datos personales de un
+        docente (D-91).
+      type: object
+      additionalProperties: false
+      required: [id, servicio, usuario, accion, momento, objeto]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: El idEvento que trajo la entrada.
+        servicio:
+          $ref: '#/components/schemas/ServicioDeBitacora'
+        usuario:
+          type: string
+          minLength: 1
+          maxLength: 64
+          example: coordinacion.demo
+        accion:
+          type: string
+          pattern: '^[A-Z][A-Z_]{2,39}$'
+          example: ACTIVIDAD_GUARDADA
+        momento:
+          type: string
+          format: date-time
+        periodo:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+          example: 2026-I
+        objeto:
+          type: object
+          additionalProperties: true
+        anterior:
+          type: object
+          additionalProperties: true
+          description: Falta al crear.
+        nuevo:
+          type: object
+          additionalProperties: true
+          description: Falta al quitar.
+    AccionDeBitacora:
+      type: object
+      additionalProperties: false
+      required: [servicio, accion]
+      properties:
+        servicio:
+          $ref: '#/components/schemas/ServicioDeBitacora'
+        accion:
+          type: string
+          pattern: '^[A-Z][A-Z_]{2,39}$'
     Jwks:
       type: object
       required: [keys]
