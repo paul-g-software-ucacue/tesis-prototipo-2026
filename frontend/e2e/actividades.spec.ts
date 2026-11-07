@@ -2,7 +2,7 @@
 // proyecto y la quita, y la accesibilidad de la pantalla y del diálogo con axe-core (WCAG 2.1 AA).
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { ingresar, simularApi } from './simulacion';
+import { ingresar, simularApi, elegirEscribiendo } from './simulacion';
 
 const COORDINADOR = {
   estado: 200,
@@ -200,7 +200,7 @@ async function abrirElDialogo(pagina: Page) {
   await pagina.getByRole('button', { name: 'Asignar actividad' }).click();
   const dialogo = pagina.getByRole('dialog', { name: 'Asignar actividad' });
   await expect(pagina.locator('.MuiDialog-container')).toHaveCSS('opacity', '1');
-  await dialogo.getByLabel('Docente').selectOption(DOCENTE);
+  await elegirEscribiendo(dialogo.getByRole('combobox', { name: 'Docente' }), DOCENTE);
   await expect(dialogo.getByRole('combobox', { name: 'Actividad' })).toBeEnabled();
   return dialogo;
 }

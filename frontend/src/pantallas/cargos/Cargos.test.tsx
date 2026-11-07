@@ -5,6 +5,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { instalarApiSimulada, json, type ApiSimulada } from '../../pruebas/apiSimulada';
+import { elegirEscribiendo } from '../../pruebas/elegirEscribiendo';
 import { montarSpa } from '../../pruebas/montarSpa';
 import { cerrarSesion, iniciarSesion } from '../../sesion/almacen';
 import { REFERENCIAS, RESUMENES } from '../docentes/datosDePrueba';
@@ -63,7 +64,11 @@ describe('Cargos', () => {
     expect(screen.getByText('2 cargos')).toBeInTheDocument();
 
     await usuario.selectOptions(screen.getByLabelText('Estado'), 'VIGENTE');
-    await usuario.selectOptions(screen.getByLabelText('Docente'), '0109990028');
+    await elegirEscribiendo(
+      usuario,
+      screen.getByRole('combobox', { name: 'Docente' }),
+      '0109990028',
+    );
     await waitFor(() =>
       expect(
         simulada.peticiones.some(
@@ -99,7 +104,11 @@ describe('Cargos', () => {
     expect(within(dialogo).getByText('Elige el docente.')).toBeInTheDocument();
     expect(simulada.peticiones.some((peticion) => peticion.method === 'POST')).toBe(false);
 
-    await usuario.selectOptions(within(dialogo).getByLabelText('Docente'), '0109990028');
+    await elegirEscribiendo(
+      usuario,
+      within(dialogo).getByRole('combobox', { name: 'Docente' }),
+      '0109990028',
+    );
     await usuario.selectOptions(
       within(dialogo).getByLabelText('Cargo'),
       'G07_GESTOR_INVESTIGACION',

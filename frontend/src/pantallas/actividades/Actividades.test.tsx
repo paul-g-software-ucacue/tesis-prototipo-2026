@@ -5,6 +5,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { instalarApiSimulada, json, type ApiSimulada } from '../../pruebas/apiSimulada';
+import { elegirEscribiendo } from '../../pruebas/elegirEscribiendo';
 import { montarSpa } from '../../pruebas/montarSpa';
 import { cerrarSesion, iniciarSesion } from '../../sesion/almacen';
 import { CARRERAS } from '../carreras/datosDePrueba';
@@ -79,8 +80,11 @@ describe('Actividades no lectivas', () => {
     montarSpa('/actividades');
     await userEvent.click(await screen.findByRole('button', { name: 'Asignar actividad' }));
     const dialogo = await screen.findByRole('dialog', { name: 'Asignar actividad' });
-    await within(dialogo).findByRole('option', { name: 'PERALTA MALDONADO JUAN ANDRES' });
-    await userEvent.selectOptions(within(dialogo).getByLabelText('Docente'), DOCENTE);
+    await elegirEscribiendo(
+      userEvent.setup(),
+      within(dialogo).getByRole('combobox', { name: 'Docente' }),
+      DOCENTE,
+    );
     await waitFor(() =>
       expect(within(dialogo).getByRole('combobox', { name: 'Actividad' })).toBeEnabled(),
     );

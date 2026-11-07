@@ -4,7 +4,7 @@
 // axe-core (WCAG 2.1 AA), también con los campos marcados en rojo.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { ingresar, simularApi } from './simulacion';
+import { ingresar, simularApi, elegirEscribiendo } from './simulacion';
 
 const TALENTO_HUMANO = {
   estado: 200,
@@ -119,7 +119,7 @@ async function abrir(pagina: Page, enlace: 'Cargos' | 'Proyectos') {
 async function registrarCoordinador(pagina: Page) {
   await pagina.getByRole('button', { name: 'Registrar cargo' }).click();
   const dialogo = pagina.getByRole('dialog', { name: 'Registrar cargo' });
-  await dialogo.getByLabel('Docente').selectOption('0109990028');
+  await elegirEscribiendo(dialogo.getByRole('combobox', { name: 'Docente' }), '0109990028');
   await dialogo.getByLabel('Cargo', { exact: true }).selectOption('COORDINADOR_CARRERA');
   await dialogo.getByLabel('Carrera que coordina').selectOption('550613A01-P-0301');
   await dialogo.getByLabel('Fecha de designación').fill('2025-04-01');
@@ -138,12 +138,12 @@ async function registrarProyecto(pagina: Page) {
   await dialogo.getByLabel('Fecha de la resolución').fill('2026-02-26');
   await dialogo.getByLabel('Inicio de la vigencia').fill('2026-04-06');
   await dialogo.getByLabel('Fin de la vigencia').fill('2026-08-14');
-  await dialogo.getByLabel('Director').selectOption('0109990028');
+  await elegirEscribiendo(dialogo.getByRole('combobox', { name: 'Director' }), '0109990028');
   await dialogo.getByLabel('Horas semanales aprobadas').fill('2');
   const carreras = dialogo.getByRole('group', { name: 'Carreras' });
   await carreras.getByLabel('Carrera', { exact: true }).selectOption('550613A01-P-0301');
   const participantes = dialogo.getByRole('group', { name: 'Participantes' });
-  await participantes.getByLabel('Docente', { exact: true }).selectOption('0109990028');
+  await elegirEscribiendo(participantes.getByRole('combobox', { name: 'Docente' }), '0109990028');
   await participantes.getByLabel('Rol', { exact: true }).selectOption('TUTOR_PRACTICAS');
   await participantes.getByLabel('Horas', { exact: true }).fill('2');
   await dialogo.getByRole('button', { name: 'Registrar' }).click();
