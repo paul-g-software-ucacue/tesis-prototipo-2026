@@ -40,14 +40,17 @@ Si la demo está vacía (por ejemplo, después de reinstalar el equipo), `sudo d
    ```
 
    Debe aparecer `ACTIVIDAD_GUARDADA` con `{"horas": "4"}` y `{"horas": "6"}`.
-3. Con `admin.demo`, designa al Responsable de consolidación del periodo y vuelve a consultar: aparece la entrada de `roles`.
-4. Intenta borrar una entrada con el rol del proceso:
+3. Con `vicerrectorado.demo`, en **Periodos**, designa al Responsable de consolidación del periodo y vuelve a consultar: aparece la entrada de `roles`.
+4. Intenta borrar una entrada, primero con el rol del proceso y después con el superusuario. Desde `docker exec -it mdd-postgres-1 psql -U postgres -d mdd`, una instrucción por línea:
 
    ```sql
-   DELETE FROM usuarios.bitacora WHERE id_evento = '<uno de los anteriores>';
+   SET ROLE identidad;
+   DELETE FROM usuarios.bitacora WHERE accion = 'ACTIVIDAD_GUARDADA' AND nuevo ->> 'horas' = '6';
+   RESET ROLE;
+   DELETE FROM usuarios.bitacora WHERE accion = 'ACTIVIDAD_GUARDADA' AND nuevo ->> 'horas' = '6';
    ```
 
-   Debe fallar con «La bitácora no se puede modificar ni borrar.»
+   Con el rol del proceso falla con «permission denied for table bitacora», porque no tiene el permiso. Con el superusuario falla con «La bitácora no se puede modificar ni borrar.», por el disparador.
 
 ## Evidencia
 
