@@ -11,4 +11,9 @@ public record EstadoDelPeriodo(String estado) {
     public boolean enPlanificacion() {
         return "PLANIFICACION".equals(estado);
     }
+
+    /** Un periodo cerrado: el distributivo ya no cambia de etapa (F12-H02). */
+    public boolean cerrado() {
+        return "CERRADO".equals(estado);
+    }
 }

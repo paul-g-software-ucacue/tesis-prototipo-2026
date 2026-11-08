@@ -6,9 +6,15 @@ import ec.mdd.plataforma.errores.nucleo.DetalleRespuesta;
 import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
 import ec.mdd.validacionocs.dominio.ArchivoDemasiadoGrande;
 import ec.mdd.validacionocs.dominio.ArchivoIlegible;
+import ec.mdd.validacionocs.dominio.EtapaConOperacionPropia;
+import ec.mdd.validacionocs.dominio.EtapaNoAdmiteEnvio;
+import ec.mdd.validacionocs.dominio.ParcialNoEncontrado;
+import ec.mdd.validacionocs.dominio.ParcialYaEnviado;
 import ec.mdd.validacionocs.puertos.entrada.ConfiguracionInvalida;
+import ec.mdd.validacionocs.puertos.entrada.PeriodoCerrado;
 import ec.mdd.validacionocs.puertos.entrada.PeriodoNoEncontrado;
 import ec.mdd.validacionocs.puertos.entrada.PeriodoSinPlanificacion;
+import ec.mdd.validacionocs.puertos.entrada.SinDistributivo;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
@@ -63,6 +69,45 @@ class ErroresValidacionocs implements CatalogoDeErrores {
                         "VALIDACIONOCS_PERIODO_NO_ENCONTRADO",
                         404,
                         "Periodo no encontrado",
-                        "El periodo no está en los ciclos académicos. Elige otro."));
+                        "El periodo no está en los ciclos académicos. Elige otro."),
+                // El flujo del distributivo (F12-H02).
+                EntradaCatalogo.de(
+                        SinDistributivo.class,
+                        "VALIDACIONOCS_SIN_DISTRIBUTIVO",
+                        404,
+                        "Sin distributivo",
+                        "El periodo todavía no tiene distributivo. Créalo en «Preparación del"
+                                + " periodo»."),
+                EntradaCatalogo.de(
+                        EtapaNoAdmiteEnvio.class,
+                        "VALIDACIONOCS_ETAPA_NO_ADMITE_ENVIO",
+                        409,
+                        "Etapa sin envíos",
+                        "El distributivo ya pasó de la propuesta de carrera: los parciales ya no"
+                                + " se envían."),
+                EntradaCatalogo.de(
+                        ParcialYaEnviado.class,
+                        "VALIDACIONOCS_PARCIAL_YA_ENVIADO",
+                        409,
+                        "Parcial ya enviado",
+                        "Este parcial ya se envió."),
+                EntradaCatalogo.de(
+                        EtapaConOperacionPropia.class,
+                        "VALIDACIONOCS_ETAPA_CON_OPERACION_PROPIA",
+                        409,
+                        "Etapa con su propia acción",
+                        "Esta etapa no se avanza así: tiene su propia acción."),
+                EntradaCatalogo.de(
+                        ParcialNoEncontrado.class,
+                        "VALIDACIONOCS_PARCIAL_NO_ENCONTRADO",
+                        404,
+                        "Parcial no encontrado",
+                        "Esa carrera no tiene parcial en el distributivo del periodo."),
+                EntradaCatalogo.de(
+                        PeriodoCerrado.class,
+                        "VALIDACIONOCS_PERIODO_CERRADO",
+                        409,
+                        "Periodo cerrado",
+                        "El periodo está cerrado: el distributivo ya no cambia de etapa."));
     }
 }

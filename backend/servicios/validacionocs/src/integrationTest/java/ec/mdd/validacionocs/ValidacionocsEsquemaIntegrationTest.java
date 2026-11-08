@@ -42,6 +42,12 @@ class ValidacionocsEsquemaIntegrationTest {
             List<String> tablas = tablasDeUsuario(dataSource);
             assertThat(tablas).contains("validacionocs.flyway_schema_history");
             assertThat(tablas).allMatch(tabla -> tabla.startsWith("validacionocs."));
+            // El proceso de aprobación de F12-H02 (data-model.md).
+            assertThat(tablas)
+                    .contains(
+                            "validacionocs.proceso_aprobacion",
+                            "validacionocs.parcial_del_proceso",
+                            "validacionocs.transicion");
         }
     }
 

@@ -57,6 +57,22 @@ class RepositorioConfiguracionIntegrationTest {
     }
 
     @Test
+    void dadasDosCargas_cuandoSePideLaVigenteEnUnInstante_entoncesEsLaUltimaAnterior() {
+        // F12-H02, research §5: la que regía cuando se creó el distributivo.
+        String periodo = periodo();
+        repositorio.guardar(periodo, "primera", QUIEN, MOMENTO);
+        repositorio.guardar(periodo, "segunda", QUIEN, MOMENTO.plusSeconds(3600));
+
+        assertThat(repositorio.vigenteEn(periodo, MOMENTO.minusSeconds(1))).isEmpty();
+        assertThat(repositorio.vigenteEn(periodo, MOMENTO.plusSeconds(60)))
+                .map(CargaGuardada::contenido)
+                .contains("primera");
+        assertThat(repositorio.vigenteEn(periodo, MOMENTO.plusSeconds(3600)))
+                .map(CargaGuardada::contenido)
+                .contains("segunda");
+    }
+
+    @Test
     void dadaUnaCarga_cuandoSeConsulta_entoncesEsLaUnoConSuTextoTalCual() {
         String periodo = periodo();
         String texto = "# con su comentario\netapas: {}\n";

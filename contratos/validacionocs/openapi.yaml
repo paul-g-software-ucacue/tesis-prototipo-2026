@@ -1,5 +1,7 @@
 # Contrato de validacionocs. Desde F12-H01: la configuración del flujo y del árbol de firmas de cada
-# periodo (RF-34, RF-58, ADR-007, D-89). La carga y la lee quien tiene FLUJO_FIRMAS.
+# periodo (RF-34, RF-58, ADR-007, D-89). La carga y la lee quien tiene FLUJO_FIRMAS. Desde F12-H02:
+# el flujo del distributivo, el envío del parcial de cada carrera y el avance por el rol de la etapa
+# (RF-34, RF-44, MD-04).
 openapi: 3.0.3
 info:
   title: MDD · validacionocs
@@ -11,6 +13,8 @@ security:
 tags:
   - name: Flujo
     description: La configuración del flujo y del árbol de firmas (RF-34, RF-58).
+  - name: Aprobacion
+    description: El flujo del distributivo, el envío de los parciales y el avance por etapas (F12-H02).
 paths:
   /api/validacionocs/plantilla-flujo:
     get:
@@ -140,6 +144,166 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
         '504':
           $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/validacionocs/periodos/{periodo}/flujo:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2026-I
+    get:
+      tags: [Aprobacion]
+      operationId: consultarFlujo
+      summary: El estado del flujo del distributivo del periodo y lo que puede hacer el usuario.
+      description: >-
+        La etapa actual, la versión, el envío de cada parcial, las transiciones y las acciones de
+        quien consulta (F12-H02, FR-014). Lo leen el Responsable y el Vicerrector, el Coordinador de
+        carrera y el Gestor de unidad.
+      x-mdd-permiso: [DISTRIBUTIVO:LECTURA, OFERTA:LECTURA, PROYECTOS:LECTURA]
+      responses:
+        '200':
+          description: El estado del flujo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoDelFlujo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: >-
+            El periodo no tiene distributivo (VALIDACIONOCS_SIN_DISTRIBUTIVO) o, al enviar, la
+            carrera no tiene parcial en él (VALIDACIONOCS_PARCIAL_NO_ENCONTRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/validacionocs/periodos/{periodo}/parciales/{carrera}/envio:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2026-I
+      - name: carrera
+        in: path
+        required: true
+        description: Código de la carrera del parcial.
+        schema:
+          type: string
+          pattern: '^[0-9A-Z_-]{1,20}$'
+        example: 550411C02-P-0301
+    post:
+      tags: [Aprobacion]
+      operationId: enviarParcial
+      summary: Envía el parcial de una carrera; con el último, el distributivo pasa de etapa.
+      description: >-
+        Solo el Coordinador de carrera, con el rol de BORRADOR_CARRERA en la configuración del
+        distributivo y solo su carrera (D-64). El parcial queda sin cambios y la transición va a la
+        bitácora con la versión y el hash de su contenido (RF-34, RF-44). Si es el último, el
+        distributivo pasa a la siguiente etapa activa en la misma respuesta.
+      x-mdd-permiso: OFERTA:APROBACION
+      responses:
+        '200':
+          description: Enviado; si era el último, ya en la siguiente etapa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoDelFlujo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '409':
+          description: >-
+            El distributivo ya no está en BORRADOR_CARRERA (VALIDACIONOCS_ETAPA_NO_ADMITE_ENVIO), el parcial ya se envió (VALIDACIONOCS_PARCIAL_YA_ENVIADO) o el periodo está cerrado (VALIDACIONOCS_PERIODO_CERRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: >-
+            El periodo no tiene distributivo (VALIDACIONOCS_SIN_DISTRIBUTIVO) o, al enviar, la
+            carrera no tiene parcial en él (VALIDACIONOCS_PARCIAL_NO_ENCONTRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/validacionocs/periodos/{periodo}/avance:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2026-I
+    post:
+      tags: [Aprobacion]
+      operationId: avanzarEtapa
+      summary: Avanza el distributivo a la siguiente etapa activa, si la etapa no tiene operación propia.
+      description: >-
+        Solo el rol de la etapa actual según la configuración del distributivo (RF-34). Vale para
+        las etapas opcionales sin historia propia: hoy, BORRADOR_UNIDADES. Las demás se avanzan con
+        su propia operación (VALIDACIONOCS_ETAPA_CON_OPERACION_PROPIA).
+      responses:
+        '200':
+          description: Avanzó a la siguiente etapa activa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoDelFlujo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '409':
+          description: >-
+            La etapa se avanza con su propia operación (VALIDACIONOCS_ETAPA_CON_OPERACION_PROPIA) o el periodo está cerrado (VALIDACIONOCS_PERIODO_CERRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: >-
+            El periodo no tiene distributivo (VALIDACIONOCS_SIN_DISTRIBUTIVO) o, al enviar, la
+            carrera no tiene parcial en él (VALIDACIONOCS_PARCIAL_NO_ENCONTRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
 components:
   securitySchemes:
     bearer:
@@ -179,6 +343,86 @@ components:
           description: Quién la cargó.
           type: string
         en:
+          type: string
+          format: date-time
+    EstadoDelFlujo:
+      type: object
+      additionalProperties: false
+      required: [periodo, etapa, nombreDeEtapa, version, parciales, acciones, transiciones]
+      properties:
+        periodo:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        etapa:
+          $ref: '#/components/schemas/TipoDeEtapa'
+        nombreDeEtapa:
+          type: string
+          description: El nombre de la etapa en la configuración del distributivo.
+        version:
+          type: integer
+          format: int32
+          minimum: 1
+        parciales:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParcialDelFlujo'
+        acciones:
+          type: array
+          description: Lo que puede hacer ahora quien consulta; vacía si nada.
+          items:
+            $ref: '#/components/schemas/AccionDelFlujo'
+        transiciones:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransicionDelFlujo'
+    ParcialDelFlujo:
+      type: object
+      additionalProperties: false
+      required: [carrera, enviado, pendienteDeConfirmar]
+      properties:
+        carrera:
+          type: string
+          pattern: '^[0-9A-Z_-]{1,20}$'
+        enviado:
+          type: boolean
+        pendienteDeConfirmar:
+          type: boolean
+          description: >-
+            Generación lo marcó como enviado y la transición no se registró; reenviarlo lo completa.
+        enviadoPor:
+          type: string
+        enviadoEn:
+          type: string
+          format: date-time
+    AccionDelFlujo:
+      type: string
+      enum: [ENVIAR_PARCIAL, AVANZAR]
+    TransicionDelFlujo:
+      type: object
+      additionalProperties: false
+      required: [tipo, desde, hacia, version, hash, quien, momento]
+      properties:
+        tipo:
+          type: string
+          enum: [ENVIO_PARCIAL, PASO_DE_ETAPA]
+        desde:
+          $ref: '#/components/schemas/TipoDeEtapa'
+        hacia:
+          $ref: '#/components/schemas/TipoDeEtapa'
+        carrera:
+          type: string
+          pattern: '^[0-9A-Z_-]{1,20}$'
+        version:
+          type: integer
+          format: int32
+          minimum: 1
+        hash:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+          description: SHA-256 del contenido aprobado en la transición (research §4).
+        quien:
+          type: string
+        momento:
           type: string
           format: date-time
     TipoDeEtapa:

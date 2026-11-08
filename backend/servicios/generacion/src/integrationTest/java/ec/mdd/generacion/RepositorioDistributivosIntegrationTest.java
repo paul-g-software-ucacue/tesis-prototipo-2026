@@ -7,6 +7,7 @@ import ec.mdd.generacion.adaptadores.salida.RegistroDeCambiosJdbc;
 import ec.mdd.generacion.adaptadores.salida.RepositorioDistributivosJdbc;
 import ec.mdd.generacion.dominio.ActividadNoLectiva;
 import ec.mdd.generacion.dominio.Componente;
+import ec.mdd.generacion.dominio.EstadoDelParcial;
 import ec.mdd.generacion.dominio.Justificacion;
 import ec.mdd.generacion.dominio.ParcialCarrera;
 import ec.mdd.generacion.dominio.Propuesta;
@@ -70,6 +71,31 @@ class RepositorioDistributivosIntegrationTest {
         assertThat(leida.estado()).isEqualTo(guardada.estado());
         assertThat(leida.parciales()).containsExactlyElementsOf(guardada.parciales());
         assertThat(leida.propuestas()).isEmpty();
+    }
+
+    @Test
+    void dadoUnDistributivo_cuandoSePideCuandoSeCreo_entoncesEsElMomentoDeCreacion() {
+        String periodo = periodo();
+        crear(periodo, "TDS");
+
+        assertThat(repositorio.creadoEn(periodo)).contains(MOMENTO);
+        assertThat(repositorio.creadoEn(periodo())).isEmpty();
+    }
+
+    @Test
+    void dadoUnParcial_cuandoAprobacionLoMarcaEnviado_entoncesQuedaEnviadoYLosDemasNo() {
+        String periodo = periodo();
+        VersionDistributivo version = crear(periodo, "AGRO", "TDS");
+
+        repositorio.marcarParcial(version.id(), "TDS", EstadoDelParcial.ENVIADO);
+
+        VersionDistributivo leida = repositorio.vigenteDe(periodo).orElseThrow();
+        assertThat(leida.parcialDe("TDS").orElseThrow().estado())
+                .isEqualTo(EstadoDelParcial.ENVIADO);
+        assertThat(leida.parcialDe("AGRO").orElseThrow().estado())
+                .isEqualTo(EstadoDelParcial.EN_ELABORACION);
+        assertThatThrownBy(() -> leida.exigirEditable("TDS"))
+                .isInstanceOf(ec.mdd.generacion.dominio.ParcialNoEditable.class);
     }
 
     @Test

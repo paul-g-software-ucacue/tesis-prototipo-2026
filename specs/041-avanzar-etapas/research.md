@@ -99,6 +99,7 @@ Una prueba de dominio fija el hash de un parcial de prueba, y otra comprueba que
 | `VALIDACIONOCS_ETAPA_NO_ADMITE_ENVIO` | 409 | El distributivo ya no está en BORRADOR_CARRERA |
 | `VALIDACIONOCS_PARCIAL_YA_ENVIADO` | 409 | El parcial ya tiene su transición de envío |
 | `VALIDACIONOCS_ETAPA_CON_OPERACION_PROPIA` | 409 | Avance genérico en una etapa con su historia |
+| `VALIDACIONOCS_PARCIAL_NO_ENCONTRADO` | 404 | La carrera no tiene parcial en el distributivo (sin oferta en el periodo); agregado al implementar |
 | `VALIDACIONOCS_PERIODO_CERRADO` | 409 | El periodo está cerrado |
 
 Cada uno con sus 8 columnas en `contratos/comun/errores.md` (principio XIII). Un parcial enviado que se intenta editar ya responde `GENERACION_PARCIAL_NO_EDITABLE`.

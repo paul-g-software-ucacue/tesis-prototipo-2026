@@ -1,6 +1,6 @@
 # Contrato: el flujo del distributivo (`contratos/validacionocs/openapi.yaml`)
 
-Tres operaciones nuevas, en la etiqueta `Flujo`. Se escriben en el contrato antes del código (principio IV).
+Tres operaciones nuevas, en la etiqueta `Aprobacion` (la etiqueta `Flujo` ya agrupa la configuración de F12-H01). Se escriben en el contrato antes del código (principio IV).
 
 ## `GET /api/validacionocs/periodos/{periodo}/flujo` · `consultarFlujo`
 
@@ -30,6 +30,7 @@ Errores: `401`, `403`, `404 VALIDACIONOCS_SIN_DISTRIBUTIVO` (y el 404 común si 
 | `403` `SEGURIDAD_ACCESO_NO_AUTORIZADO` | Sin el permiso, sin el rol de BORRADOR_CARRERA en la configuración del proceso, o de otra carrera (D-64). El mismo cuerpo en los tres casos |
 | `403` `COMUN_CARRERA_SIN_INDICAR` | Coordinador sin carrera indicada |
 | `404` `VALIDACIONOCS_SIN_DISTRIBUTIVO` | |
+| `404` `VALIDACIONOCS_PARCIAL_NO_ENCONTRADO` | La carrera no tiene parcial en el distributivo (sin oferta en el periodo); agregado al implementar |
 | `409` `VALIDACIONOCS_ETAPA_NO_ADMITE_ENVIO` | El distributivo ya no está en BORRADOR_CARRERA |
 | `409` `VALIDACIONOCS_PARCIAL_YA_ENVIADO` | |
 | `409` `VALIDACIONOCS_PERIODO_CERRADO` | |

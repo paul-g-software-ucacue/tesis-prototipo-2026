@@ -8,9 +8,15 @@ import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
 import ec.mdd.plataforma.pruebas.VerificadorDeCatalogo;
 import ec.mdd.validacionocs.dominio.ArchivoDemasiadoGrande;
 import ec.mdd.validacionocs.dominio.ArchivoIlegible;
+import ec.mdd.validacionocs.dominio.EtapaConOperacionPropia;
+import ec.mdd.validacionocs.dominio.EtapaNoAdmiteEnvio;
+import ec.mdd.validacionocs.dominio.ParcialNoEncontrado;
+import ec.mdd.validacionocs.dominio.ParcialYaEnviado;
 import ec.mdd.validacionocs.puertos.entrada.ConfiguracionInvalida;
+import ec.mdd.validacionocs.puertos.entrada.PeriodoCerrado;
 import ec.mdd.validacionocs.puertos.entrada.PeriodoNoEncontrado;
 import ec.mdd.validacionocs.puertos.entrada.PeriodoSinPlanificacion;
+import ec.mdd.validacionocs.puertos.entrada.SinDistributivo;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -46,7 +52,19 @@ class ErroresValidacionocsTest {
                         tuple(
                                 PeriodoNoEncontrado.class,
                                 "VALIDACIONOCS_PERIODO_NO_ENCONTRADO",
-                                404));
+                                404),
+                        tuple(SinDistributivo.class, "VALIDACIONOCS_SIN_DISTRIBUTIVO", 404),
+                        tuple(EtapaNoAdmiteEnvio.class, "VALIDACIONOCS_ETAPA_NO_ADMITE_ENVIO", 409),
+                        tuple(ParcialYaEnviado.class, "VALIDACIONOCS_PARCIAL_YA_ENVIADO", 409),
+                        tuple(
+                                EtapaConOperacionPropia.class,
+                                "VALIDACIONOCS_ETAPA_CON_OPERACION_PROPIA",
+                                409),
+                        tuple(
+                                ParcialNoEncontrado.class,
+                                "VALIDACIONOCS_PARCIAL_NO_ENCONTRADO",
+                                404),
+                        tuple(PeriodoCerrado.class, "VALIDACIONOCS_PERIODO_CERRADO", 409));
     }
 
     @Test

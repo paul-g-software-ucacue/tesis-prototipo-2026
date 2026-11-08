@@ -16,4 +16,9 @@ dependencies {
     // El permiso de cada operación y quién la hace, en el token.
     implementation 'org.springframework.security:spring-security-oauth2-resource-server'
     implementation 'org.springframework.security:spring-security-oauth2-jose'
+    // Aprobación le ordena a Generación marcar un parcial y calcular su hash (MD-04, F12-H02), por
+    // su interfaz publicada en el mismo proceso: solo ec.mdd.generacion.puertos.entrada.
+    implementation project(':servicios:generacion')
+    // La copia de las etapas del proceso, en jsonb (F12-H02). La versión la fija Spring Boot.
+    implementation 'tools.jackson.core:jackson-databind'
 }

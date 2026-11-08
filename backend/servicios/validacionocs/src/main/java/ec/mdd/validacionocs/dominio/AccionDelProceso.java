@@ -1,0 +1,9 @@
+package ec.mdd.validacionocs.dominio;
+
+/** Lo que un usuario puede hacer ahora con el distributivo (F12-H02, FR-014). */
+public enum AccionDelProceso {
+    /** Enviar el parcial de su carrera. */
+    ENVIAR_PARCIAL,
+    /** El avance genérico de una etapa opcional sin historia propia. */
+    AVANZAR
+}
