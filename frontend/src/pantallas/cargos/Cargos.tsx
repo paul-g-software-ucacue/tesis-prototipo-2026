@@ -3,6 +3,7 @@
 // los docentes; con «Docentes», «Catálogos y datos maestros» o «Distributivo del periodo» de
 // escritura se registran, se corrigen y se finalizan (D-70). Ninguno se borra.
 import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
@@ -21,6 +22,7 @@ import { useTitulo } from '../../navegacion/useTitulo';
 import { ESCRITURA_DE_LOS_DOCENTES } from '../../sesion/funcionalidades';
 import { tieneAlguno } from '../../sesion/permisos';
 import { useSesionActual } from '../../sesion/useSesionActual';
+import { EleccionBuscable } from '../comun/Campos';
 import { SELECCION } from '../comun/formulario';
 import { useDocentes, useReferenciasDeDocentes } from '../docentes/consultas';
 import { CLAVE_CARGOS, useCargos, type Cargo, type EstadoDeCargo } from './consultas';
@@ -83,21 +85,20 @@ export function Cargos() {
             </option>
           ))}
         </TextField>
-        <TextField
-          select
-          label="Docente"
-          value={docente}
-          onChange={(evento) => setDocente(evento.target.value)}
-          slotProps={SELECCION}
-          sx={{ minWidth: 280 }}
-        >
-          <option value="">Todos</option>
-          {(docentes.data ?? []).map((uno) => (
-            <option key={uno.identificacion} value={uno.identificacion}>
-              {uno.nombreCompleto}
-            </option>
-          ))}
-        </TextField>
+        <Box sx={{ minWidth: 320 }}>
+          <EleccionBuscable
+            etiqueta="Docente"
+            campo="docente"
+            valor={docente}
+            opciones={(docentes.data ?? []).map(
+              (uno) =>
+                [uno.identificacion, `${uno.nombreCompleto} · ${uno.identificacion}`] as const,
+            )}
+            aviso={null}
+            pista="Vacío, todos."
+            alCambiar={setDocente}
+          />
+        </Box>
       </Stack>
       {escritura && (
         <Button variant="outlined" sx={{ mb: 2 }} onClick={() => setAbierto({ que: 'registrar' })}>

@@ -1,6 +1,6 @@
 // La API simulada de las pruebas en navegador (research §8): page.route sobre las dos operaciones
 // de Usuarios que usa la SPA, con las respuestas de contracts/interfaz.md «Errores».
-import type { Page, Route } from '@playwright/test';
+import type { Locator, Page, Route } from '@playwright/test';
 
 export interface RespuestaSimulada {
   estado: number;
@@ -136,3 +136,13 @@ export const TEXTO_TECNICO = [
   /NetworkError/,
   /Bad Gateway/,
 ];
+
+/** Elige en una lista que se busca escribiendo: escribe el texto y pulsa la opción que lo contiene. */
+export async function elegirEscribiendo(campo: Locator, texto: string) {
+  await campo.fill(texto);
+  await campo
+    .page()
+    .getByRole('listbox')
+    .getByRole('option', { name: new RegExp(texto) })
+    .click();
+}

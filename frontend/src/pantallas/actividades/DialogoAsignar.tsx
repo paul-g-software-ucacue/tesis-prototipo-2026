@@ -7,8 +7,9 @@ import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 import { AvisoDeError } from '../../errores/AvisoDeError';
 import { traducirError } from '../../errores/traducir';
+import { EleccionBuscable } from '../comun/Campos';
 import { Avisos, Marco } from '../comun/Formulario';
-import { SELECCION, ayuda, detalleDe, queFalta } from '../comun/formulario';
+import { ayuda, detalleDe, queFalta } from '../comun/formulario';
 import { useEnvio } from '../comun/useEnvio';
 import { PanelDeCarga } from '../comun/PanelDeCarga';
 import { useDocentes } from '../docentes/consultas';
@@ -117,21 +118,17 @@ export function DialogoAsignar({
       {docentes.error && <AvisoDeError mensaje={traducirError(docentes.error)} />}
       {posibles.error && <AvisoDeError mensaje={traducirError(posibles.error)} />}
       {falta && <Typography color="error">{falta}</Typography>}
-      <TextField
-        select
-        label="Docente"
-        value={docente}
-        onChange={(evento) => elegirDocente(evento.target.value)}
-        helperText="Solo los docentes activos."
-        slotProps={SELECCION}
-      >
-        <option value="">Elige uno</option>
-        {(docentes.data ?? []).map((uno) => (
-          <option key={uno.identificacion} value={uno.identificacion}>
-            {uno.nombreCompleto}
-          </option>
-        ))}
-      </TextField>
+      <EleccionBuscable
+        etiqueta="Docente"
+        campo="docente"
+        valor={docente}
+        opciones={(docentes.data ?? []).map(
+          (uno) => [uno.identificacion, `${uno.nombreCompleto} · ${uno.identificacion}`] as const,
+        )}
+        aviso={envio.aviso}
+        pista="Solo los docentes activos. Escribe su nombre o su cédula."
+        alCambiar={elegirDocente}
+      />
       {docente && <PanelDeCarga periodo={periodo} docente={docente} />}
       <SelectorLargo
         etiqueta="Actividad"

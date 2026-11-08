@@ -5,6 +5,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { instalarApiSimulada, json, type ApiSimulada } from '../../pruebas/apiSimulada';
+import { elegirEscribiendo } from '../../pruebas/elegirEscribiendo';
 import { montarSpa } from '../../pruebas/montarSpa';
 import { cerrarSesion, iniciarSesion } from '../../sesion/almacen';
 import { REFERENCIAS, RESUMENES } from '../docentes/datosDePrueba';
@@ -105,12 +106,20 @@ describe('Proyectos', () => {
     await escribir(usuario, within(dialogo).getByLabelText('Fecha de la resolución'), '2025-03-20');
     await escribir(usuario, within(dialogo).getByLabelText('Inicio de la vigencia'), '2025-04-01');
     await escribir(usuario, within(dialogo).getByLabelText('Fin de la vigencia'), '2026-12-31');
-    await usuario.selectOptions(within(dialogo).getByLabelText('Director'), '0109990010');
+    await elegirEscribiendo(
+      usuario,
+      within(dialogo).getByRole('combobox', { name: 'Director' }),
+      '0109990010',
+    );
     await escribir(usuario, within(dialogo).getByLabelText('Horas semanales aprobadas'), '24');
     const carreras = within(dialogo).getByRole('group', { name: 'Carreras' });
     await usuario.selectOptions(within(carreras).getByLabelText('Carrera'), '550613A01-P-0301');
     const participantes = within(dialogo).getByRole('group', { name: 'Participantes' });
-    await usuario.selectOptions(within(participantes).getByLabelText('Docente'), '0109990010');
+    await elegirEscribiendo(
+      usuario,
+      within(participantes).getByRole('combobox', { name: 'Docente' }),
+      '0109990010',
+    );
     await usuario.selectOptions(within(participantes).getByLabelText('Rol'), 'DIRECTOR');
     await escribir(usuario, within(participantes).getByLabelText('Horas'), '24,5');
 

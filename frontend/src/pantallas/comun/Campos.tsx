@@ -1,6 +1,7 @@
 // Los campos comunes de los formularios de los datos maestros (F03-H04, F03-H05): cada uno con su
 // error y su pista, con lo que el formulario encontró mal antes de enviar (principio XIV) o, si no
 // hay, con lo que respondió el servidor. Las listas editables agregan y quitan filas.
+import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
@@ -137,6 +138,61 @@ export function Eleccion({
         </option>
       ))}
     </TextField>
+  );
+}
+
+/**
+ * Una lista larga que se puede buscar escribiendo, como la de los docentes: se acota con lo que se
+ * escribe en cualquier parte del texto, sin importar mayúsculas ni tildes, y al elegir queda el
+ * código de la opción. Con su error y su pista, como {@link Eleccion}.
+ */
+export function EleccionBuscable({
+  etiqueta,
+  campo,
+  valor,
+  opciones,
+  aviso,
+  pista,
+  deshabilitado,
+  alCambiar,
+}: {
+  etiqueta: string;
+  campo: string;
+  valor: string;
+  opciones: readonly (readonly [string, string])[];
+  aviso: Aviso;
+  pista?: string;
+  deshabilitado?: boolean;
+  alCambiar: (valor: string) => void;
+}) {
+  const marca = useMarca(aviso, campo, pista);
+  const elegida = opciones.find(([codigo]) => codigo === valor) ?? null;
+  return (
+    <Autocomplete
+      options={opciones}
+      value={elegida}
+      onChange={(_, nueva) => alCambiar(nueva?.[0] ?? '')}
+      getOptionKey={([codigo]) => codigo}
+      getOptionLabel={([, texto]) => texto}
+      isOptionEqualToValue={(una, otra) => una[0] === otra[0]}
+      disabled={deshabilitado ?? false}
+      noOptionsText="Ninguno coincide con lo que escribiste."
+      openText="Abrir la lista"
+      closeText="Cerrar la lista"
+      clearText="Borrar"
+      renderInput={(parametros) => (
+        <TextField
+          {...parametros}
+          label={etiqueta}
+          placeholder="Escribe para buscar o elige"
+          {...marca}
+          slotProps={{
+            ...parametros.slotProps,
+            inputLabel: { ...parametros.slotProps.inputLabel, shrink: true },
+          }}
+        />
+      )}
+    />
   );
 }
 

@@ -5,7 +5,7 @@
 // antes de enviar nada (principio XIV); el servidor valida todo y su respuesta va junto a su campo.
 import Typography from '@mui/material/Typography';
 import { useState } from 'react';
-import { Campo, ConErrores, Eleccion, Seccion } from '../comun/Campos';
+import { Campo, ConErrores, Eleccion, EleccionBuscable, Seccion } from '../comun/Campos';
 import { Avisos, Marco } from '../comun/Formulario';
 import { campos as cuantos, filtrar } from '../comun/validacion';
 import { useEnvio } from '../comun/useEnvio';
@@ -125,7 +125,7 @@ export function DialogoCargo({
         ancho="md"
       >
         <Seccion titulo="Designación">
-          <Eleccion
+          <EleccionBuscable
             etiqueta="Docente"
             campo="docente"
             valor={valores.docente}

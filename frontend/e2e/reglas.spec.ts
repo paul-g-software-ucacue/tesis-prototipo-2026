@@ -2,7 +2,7 @@
 // quedan, y el candidato que no se puede proponer, con accesibilidad con axe-core (WCAG 2.1 AA).
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { ingresar, simularApi } from './simulacion';
+import { ingresar, simularApi, elegirEscribiendo } from './simulacion';
 
 const COORDINADOR = {
   estado: 200,
@@ -116,7 +116,7 @@ test('si no caben las horas, lo dice en el formulario y sigue abierto', async ({
   await page.getByRole('button', { name: 'Asignar actividad' }).click();
   const dialogo = page.getByRole('dialog', { name: 'Asignar actividad' });
   await expect(page.locator('.MuiDialog-container')).toHaveCSS('opacity', '1');
-  await dialogo.getByLabel('Docente').selectOption(DOCENTE);
+  await elegirEscribiendo(dialogo.getByRole('combobox', { name: 'Docente' }), DOCENTE);
   await dialogo.getByRole('combobox', { name: 'Actividad' }).click();
   await page.getByRole('listbox', { name: 'Actividad' }).getByRole('option').first().click();
   await dialogo.getByLabel('Horas semanales').fill('4');

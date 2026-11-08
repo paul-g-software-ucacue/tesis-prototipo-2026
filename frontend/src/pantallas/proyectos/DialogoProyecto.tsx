@@ -6,7 +6,14 @@
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useState } from 'react';
-import { Campo, ConErrores, Eleccion, ListaEditable, Seccion } from '../comun/Campos';
+import {
+  Campo,
+  ConErrores,
+  Eleccion,
+  EleccionBuscable,
+  ListaEditable,
+  Seccion,
+} from '../comun/Campos';
 import { Avisos, Marco } from '../comun/Formulario';
 import { SELECCION, ayuda, detalleDe } from '../comun/formulario';
 import { campos as cuantos } from '../comun/validacion';
@@ -197,7 +204,7 @@ export function DialogoProyecto({
             aviso={aviso}
             alCambiar={(valor) => cambiar('vigenciaFin', valor)}
           />
-          <Eleccion
+          <EleccionBuscable
             etiqueta="Director"
             campo="director"
             valor={valores.director}
@@ -277,7 +284,7 @@ export function DialogoProyecto({
             const base = `participantes[${String(posicion)}]`;
             return (
               <>
-                <Eleccion
+                <EleccionBuscable
                   etiqueta="Docente"
                   campo={`${base}.docente`}
                   valor={uno.docente}
