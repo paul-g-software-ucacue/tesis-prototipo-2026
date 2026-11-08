@@ -9,5 +9,16 @@
 #    reason: "Por qué no se puede actualizar todavía"
 #    desde: 2026-10-15
 #    vence: 2026-11-14
-# Sin excepciones desde 2026-11-01 (D-80, D-81).
-ignore: []
+# Desde 2026-11-01 sin excepciones (D-80, D-81); desde 2026-11-08, las de zlib1g de cloudflared (D-96).
+ignore:
+  # cloudflared: zlib1g de Debian
+  - vulnerability: CVE-2026-76844
+    package: { name: zlib1g, version: "1:1.3.dfsg+really1.3.1-1+b1", type: deb }
+    reason: "La imagen oficial de cloudflared 2026.10.7, la última publicada, trae zlib1g 1:1.3.dfsg+really1.3.1-1+b1 de Debian; el arreglo (deb13u1) exige que Cloudflare la reconstruya. cloudflared es un binario de Go enlazado estáticamente que no carga la zlib del sistema, y el túnel sigue apagado (D-81)."
+    desde: 2026-11-08
+    vence: 2026-12-08
+  - vulnerability: CVE-2026-85091
+    package: { name: zlib1g, version: "1:1.3.dfsg+really1.3.1-1+b1", type: deb }
+    reason: "La imagen oficial de cloudflared 2026.10.7, la última publicada, trae zlib1g 1:1.3.dfsg+really1.3.1-1+b1 de Debian; el arreglo (deb13u1) exige que Cloudflare la reconstruya. cloudflared es un binario de Go enlazado estáticamente que no carga la zlib del sistema, y el túnel sigue apagado (D-81)."
+    desde: 2026-11-08
+    vence: 2026-12-08
