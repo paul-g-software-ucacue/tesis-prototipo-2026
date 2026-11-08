@@ -191,7 +191,7 @@ description: "Tareas de F10-H03: enviar a revisión con cero inconsistencias abi
   - los criterios de terminado de la constitución §6;
   - la limitación de research §10: el envío que pasa se prueba solo en integración;
   - SC-005 pendiente hasta F12-H05 (#211), con el motivo.
-- [ ] T019 Fusionar solo con la aprobación del autor y con todas las comprobaciones en verde. Verificar el despliegue en el equipo de demostración: GitHub `demostracion` y los 8 contenedores sanos con la versión nueva. Hacer la comprobación del autor con `quickstart.md` §4, que incluye ver lo que falta y el 409 con el número del panel. SC-005 no se cronometra: con los datos de la demo no hay un consolidado listo; queda pendiente en la evidencia y en un comentario de #211. Abrir el PR de evidencia con `Closes #55` y borrar las ramas.
+- [X] T019 Fusionar solo con la aprobación del autor y con todas las comprobaciones en verde. Verificar el despliegue en el equipo de demostración: GitHub `demostracion` y los 8 contenedores sanos con la versión nueva. Hacer la comprobación del autor con `quickstart.md` §4, que incluye ver lo que falta y el 409 con el número del panel. SC-005 no se cronometra: con los datos de la demo no hay un consolidado listo; queda pendiente en la evidencia y en un comentario de #211. Abrir el PR de evidencia con `Closes #55` y borrar las ramas.
 
 ---
 
