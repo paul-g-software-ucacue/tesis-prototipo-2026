@@ -38,6 +38,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -66,6 +67,8 @@ class FlujoContratoTest {
     private static final String ENVIO = "/api/validacionocs/periodos/%s/parciales/%s/envio";
     private static final String AVANCE = "/api/validacionocs/periodos/%s/avance";
     private static final String REVISION = "/api/validacionocs/periodos/%s/revision";
+    private static final String DEVOLUCION = "/api/validacionocs/periodos/%s/devolucion";
+    private static final String OBSERVACION = "Faltan docentes en primer nivel.";
     private static final String RESPONSABLE = "RESPONSABLE_CONSOLIDACION";
     private static final String HUELLA = "c".repeat(64);
     private static final JsonMapper JSON = JsonMapper.builder().build();
@@ -376,6 +379,103 @@ class FlujoContratoTest {
 
     private MvcResult revisar(String periodo, String rol) throws Exception {
         return pedir(post(REVISION.formatted(periodo)), rol, null);
+    }
+
+    // Devolver (F12-H05, contracts/validacionocs.md).
+
+    @Test
+    void dadoEnConsolidacion_cuandoElResponsableDevuelve_entonces200EnBorradorSegunElContrato()
+            throws Exception {
+        enConsolidacion(PERIODO);
+
+        MvcResult resultado = devolver(PERIODO, RESPONSABLE, DS, OBSERVACION);
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        JsonNode cuerpo = cuerpo(resultado);
+        assertThat(cuerpo.get("etapa").asString()).isEqualTo("BORRADOR_CARRERA");
+        JsonNode ds = parcial(cuerpo, DS);
+        assertThat(ds.get("enviado").asBoolean()).isFalse();
+        assertThat(ds.get("devolucion").get("por").asString())
+                .isEqualTo("responsable_consolidacion.demo");
+        assertThat(ds.get("devolucion").get("observacion").asString()).isEqualTo(OBSERVACION);
+        assertThat(parcial(cuerpo, TDS).has("devolucion")).isFalse();
+        JsonNode devolucion = cuerpo.get("transiciones").get(3);
+        assertThat(devolucion.get("tipo").asString()).isEqualTo("DEVOLUCION");
+        assertThat(devolucion.get("hacia").asString()).isEqualTo("BORRADOR_CARRERA");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadaUnaCarreraSinParcial_cuandoSeDevuelve_entonces404SinDevolverNinguna()
+            throws Exception {
+        enConsolidacion(PERIODO);
+
+        MvcResult resultado =
+                pedir(
+                        post(DEVOLUCION.formatted(PERIODO))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(solicitud(Map.of(DS, OBSERVACION, "OTRA", OBSERVACION))),
+                        RESPONSABLE,
+                        null);
+
+        assertCodigo(resultado, 404, "VALIDACIONOCS_PARCIAL_NO_ENCONTRADO");
+        assertThat(etapa(PERIODO)).isEqualTo("EN_CONSOLIDACION");
+    }
+
+    @Test
+    void dadoUnParcialPendienteEnConsolidacion_cuandoSeDevuelve_entonces409NoEnviado()
+            throws Exception {
+        enConsolidacion(PERIODO);
+        MEMORIA.agregarParcial(PERIODO, "550732E01-D-0301");
+
+        MvcResult resultado = devolver(PERIODO, RESPONSABLE, "550732E01-D-0301", OBSERVACION);
+
+        assertCodigo(resultado, 409, "VALIDACIONOCS_PARCIAL_NO_ENVIADO");
+        assertThat(cuerpo(resultado).get("detalles").get(0).get("descripcion").asString())
+                .contains("550732E01-D-0301");
+    }
+
+    @Test
+    void dadoUnPeriodoSinDistributivo_cuandoSeDevuelve_entonces404() throws Exception {
+        assertCodigo(
+                devolver(SIN_DISTRIBUTIVO, RESPONSABLE, DS, OBSERVACION),
+                404,
+                "VALIDACIONOCS_SIN_DISTRIBUTIVO");
+    }
+
+    private MvcResult devolver(String periodo, String rol, String carrera, String observacion)
+            throws Exception {
+        Map<String, String> una = new java.util.LinkedHashMap<>();
+        una.put(carrera, observacion);
+        return pedir(
+                post(DEVOLUCION.formatted(periodo))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(solicitud(una)),
+                rol,
+                null);
+    }
+
+    private static String solicitud(Map<String, String> devoluciones) {
+        List<Map<String, String>> lista = new ArrayList<>();
+        devoluciones.forEach(
+                (carrera, observacion) ->
+                        lista.add(Map.of("carrera", carrera, "observacion", observacion)));
+        return JSON.writeValueAsString(Map.of("devoluciones", lista));
+    }
+
+    private static JsonNode parcial(JsonNode flujo, String carrera) {
+        for (JsonNode uno : flujo.get("parciales")) {
+            if (uno.get("carrera").asString().equals(carrera)) {
+                return uno;
+            }
+        }
+        throw new AssertionError("Sin el parcial " + carrera);
+    }
+
+    private String etapa(String periodo) throws Exception {
+        return cuerpo(pedir(get(FLUJO.formatted(periodo)), RESPONSABLE, null))
+                .get("etapa")
+                .asString();
     }
 
     // SC-002 y T016: los 9 roles que no son el de la etapa reciben 403, en las dos operaciones.

@@ -4,17 +4,20 @@ import ec.mdd.plataforma.errores.nucleo.AlcanceDeCarrera;
 import ec.mdd.plataforma.errores.nucleo.CarreraSinIndicar;
 import ec.mdd.validacionocs.adaptadores.entrada.api.AccionDelFlujo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.AprobacionApi;
+import ec.mdd.validacionocs.adaptadores.entrada.api.DevolucionDelParcial;
 import ec.mdd.validacionocs.adaptadores.entrada.api.EstadoDelFlujo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.ParcialDelFlujo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.SolicitudDeDevolucion;
 import ec.mdd.validacionocs.adaptadores.entrada.api.TipoDeEtapa;
 import ec.mdd.validacionocs.adaptadores.entrada.api.TransicionDelFlujo;
+import ec.mdd.validacionocs.dominio.DevolucionDeParcial;
 import ec.mdd.validacionocs.dominio.ParcialDeOtraCarrera;
 import ec.mdd.validacionocs.dominio.RolDeOtraEtapa;
 import ec.mdd.validacionocs.dominio.Solicitante;
 import ec.mdd.validacionocs.dominio.Transicion;
 import ec.mdd.validacionocs.puertos.entrada.AvanzarEtapa;
 import ec.mdd.validacionocs.puertos.entrada.ConsultarFlujo;
+import ec.mdd.validacionocs.puertos.entrada.DevolverParciales;
 import ec.mdd.validacionocs.puertos.entrada.EnviarARevision;
 import ec.mdd.validacionocs.puertos.entrada.EnviarParcial;
 import ec.mdd.validacionocs.puertos.entrada.FlujoDelDistributivo;
@@ -34,9 +37,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * El flujo del distributivo ({@code contratos/validacionocs/openapi.yaml}, etiqueta {@code
- * Aprobacion}, F12-H02 y F10-H03). El permiso de cada operación lo exige su {@code x-mdd-permiso}
- * (ADR-021); el rol de la etapa y la carrera los exige el dominio con los roles y la carrera del
- * token. Si no corresponden, el mismo 403 común que sin permiso, sin decir qué falta.
+ * Aprobacion}, F12-H02, F10-H03 y F12-H05). El permiso de cada operación lo exige su {@code
+ * x-mdd-permiso} (ADR-021); el rol de la etapa y la carrera los exige el dominio con los roles y la
+ * carrera del token. Si no corresponden, el mismo 403 común que sin permiso, sin decir qué falta.
  */
 @RestController
 class FlujoControlador implements AprobacionApi {
@@ -48,16 +51,19 @@ class FlujoControlador implements AprobacionApi {
     private final EnviarParcial enviar;
     private final AvanzarEtapa avanzar;
     private final EnviarARevision revisar;
+    private final DevolverParciales devolver;
 
     FlujoControlador(
             ConsultarFlujo consultar,
             EnviarParcial enviar,
             AvanzarEtapa avanzar,
-            EnviarARevision revisar) {
+            EnviarARevision revisar,
+            DevolverParciales devolver) {
         this.consultar = consultar;
         this.enviar = enviar;
         this.avanzar = avanzar;
         this.revisar = revisar;
+        this.devolver = devolver;
     }
 
     @Override
@@ -92,12 +98,19 @@ class FlujoControlador implements AprobacionApi {
                 respuesta(sinPermiso(() -> revisar.enviarARevision(periodo, quien))));
     }
 
-    // F12-H05: esqueleto hasta T009.
+    // F12-H05: el permiso de la matriz D-16 (aprobación incluye devolver) y, en el dominio, el rol
+    // de EN_CONSOLIDACION. La observación se valida al armar cada devolución (research §10).
     @Override
     @PreAuthorize("hasAuthority('PERMISO_CONSOLIDACION:APROBACION')")
     public ResponseEntity<EstadoDelFlujo> devolverParciales(
             String periodo, SolicitudDeDevolucion solicitud) {
-        throw new UnsupportedOperationException("F12-H05");
+        Solicitante quien = solicitante(true);
+        List<DevolucionDeParcial> devoluciones =
+                solicitud.getDevoluciones().stream()
+                        .map(una -> DevolucionDeParcial.de(una.getCarrera(), una.getObservacion()))
+                        .toList();
+        return ResponseEntity.ok(
+                respuesta(sinPermiso(() -> devolver.devolver(periodo, devoluciones, quien))));
     }
 
     private static FlujoDelDistributivo sinPermiso(Supplier<FlujoDelDistributivo> caso) {
@@ -151,6 +164,14 @@ class FlujoControlador implements AprobacionApi {
                         parcial.carrera(), parcial.enviado(), parcial.pendienteDeConfirmar());
         parcial.enviadoPor().ifPresent(respuesta::enviadoPor);
         parcial.enviadoEn().ifPresent(en -> respuesta.enviadoEn(en.atOffset(ZoneOffset.UTC)));
+        parcial.devolucion()
+                .ifPresent(
+                        una ->
+                                respuesta.devolucion(
+                                        new DevolucionDelParcial(
+                                                una.por(),
+                                                una.en().atOffset(ZoneOffset.UTC),
+                                                una.observacion())));
         return respuesta;
     }
 

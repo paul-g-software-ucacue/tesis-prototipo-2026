@@ -3,6 +3,7 @@ package ec.mdd.validacionocs.aplicacion;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -15,9 +16,12 @@ import ec.mdd.validacionocs.adaptadores.salida.PlantillaEnRecursos;
 import ec.mdd.validacionocs.dominio.AccionDelProceso;
 import ec.mdd.validacionocs.dominio.CargaGuardada;
 import ec.mdd.validacionocs.dominio.CondicionesDeRevision;
+import ec.mdd.validacionocs.dominio.DevolucionDeParcial;
 import ec.mdd.validacionocs.dominio.EstadoDelPeriodo;
 import ec.mdd.validacionocs.dominio.EtapaConOperacionPropia;
+import ec.mdd.validacionocs.dominio.EtapaNoAdmiteDevolucion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteRevision;
+import ec.mdd.validacionocs.dominio.ParcialNoEncontrado;
 import ec.mdd.validacionocs.dominio.ParcialYaEnviado;
 import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
 import ec.mdd.validacionocs.dominio.RolDeOtraEtapa;
@@ -393,6 +397,115 @@ class FlujoDelDistributivoServicioTest {
         servicio.enviarARevision(PERIODO, RESPONSABLE);
 
         verify(distributivo, org.mockito.Mockito.times(1)).condicionesDeRevision(PERIODO);
+    }
+
+    // Devolver (F12-H05, research §2, contracts/bitacora.md).
+
+    private static final List<DevolucionDeParcial> DEVOLVER_DS_Y_TDS =
+            List.of(
+                    DevolucionDeParcial.de("DS", "Faltan docentes en primer nivel."),
+                    DevolucionDeParcial.de("TDS", "Un docente sin clase en segundo nivel."));
+
+    private void marcarDevueltosEnGeneracion() {
+        when(distributivo.marcarDevueltos(anyString(), anyList()))
+                .thenAnswer(
+                        uso -> {
+                            eventos.add("marcar devueltos");
+                            List<String> carreras = uso.getArgument(1);
+                            carreras.forEach(carrera -> enviadosEnGeneracion.put(carrera, false));
+                            return 1;
+                        });
+    }
+
+    @Test
+    void dadoElDistributivoEnConsolidacion_cuandoDevuelvo_entoncesVuelveABorradorConUnaEntrada() {
+        enConsolidacion();
+        marcarDevueltosEnGeneracion();
+
+        FlujoDelDistributivo flujo = servicio.devolver(PERIODO, DEVOLVER_DS_Y_TDS, RESPONSABLE);
+
+        assertThat(flujo.etapa()).isEqualTo(TipoDeEtapa.BORRADOR_CARRERA);
+        // Primero Generación, después la transacción de Aprobación (research §2).
+        assertThat(eventos.subList(eventos.size() - 2, eventos.size()))
+                .containsExactly("marcar devueltos", "transaccion");
+        verify(distributivo).marcarDevueltos(PERIODO, List.of("DS", "TDS"));
+        assertThat(registrado()).hasSize(1);
+        CambioDeFlujo devolucion = registrado().getFirst();
+        assertThat(devolucion.accion()).isEqualTo(CambioDeFlujo.Accion.DISTRIBUTIVO_DEVUELTO);
+        assertThat(devolucion.usuario()).isEqualTo("consolidacion.demo");
+        assertThat(devolucion.detalle())
+                .isEqualTo(
+                        Map.of(
+                                "periodo",
+                                PERIODO,
+                                "version",
+                                1,
+                                "hash",
+                                HASH_TODO,
+                                "devueltos",
+                                Map.of(
+                                        "DS", "Faltan docentes en primer nivel.",
+                                        "TDS", "Un docente sin clase en segundo nivel.")));
+        assertThat(devolucion.anterior()).isEqualTo(Map.of("estado", "EN_CONSOLIDACION"));
+        assertThat(devolucion.nuevo()).isEqualTo(Map.of("estado", "BORRADOR_CARRERA"));
+    }
+
+    @Test
+    void dadaUnaDevolucion_cuandoSeConsulta_entoncesCadaParcialDevueltoDiceQuienCuandoYPorQue() {
+        enConsolidacion();
+        marcarDevueltosEnGeneracion();
+        servicio.devolver(PERIODO, DEVOLVER_DS_Y_TDS.subList(0, 1), RESPONSABLE);
+
+        FlujoDelDistributivo flujo = servicio.flujo(PERIODO, COORDINADOR_DS);
+
+        FlujoDelDistributivo.Parcial ds = parcial(flujo, "DS");
+        assertThat(ds.enviado()).isFalse();
+        assertThat(ds.pendienteDeConfirmar()).isFalse();
+        assertThat(ds.devolucion())
+                .contains(
+                        new FlujoDelDistributivo.Devolucion(
+                                "consolidacion.demo", AHORA, "Faltan docentes en primer nivel."));
+        assertThat(parcial(flujo, "TDS").devolucion()).isEmpty();
+        assertThat(parcial(flujo, "TDS").enviado()).isTrue();
+    }
+
+    @Test
+    void dadaUnaDevolucionQueNoCabe_cuandoSeIntenta_entoncesNoTocaGeneracionNiRegistra() {
+        assertThatThrownBy(() -> servicio.devolver(PERIODO, DEVOLVER_DS_Y_TDS, RESPONSABLE))
+                .isInstanceOf(EtapaNoAdmiteDevolucion.class);
+        verify(distributivo, never()).marcarDevueltos(anyString(), anyList());
+        assertThat(registrado()).isEmpty();
+    }
+
+    @Test
+    void dadoUnPeriodoCerrado_cuandoDevuelvo_entoncesPeriodoCerradoSinTocarGeneracion() {
+        enConsolidacion();
+        when(datos.estado(PERIODO)).thenReturn(Optional.of(new EstadoDelPeriodo("CERRADO")));
+
+        assertThatThrownBy(() -> servicio.devolver(PERIODO, DEVOLVER_DS_Y_TDS, RESPONSABLE))
+                .isInstanceOf(PeriodoCerrado.class);
+        verify(distributivo, never()).marcarDevueltos(anyString(), anyList());
+    }
+
+    @Test
+    void dadoQueGeneracionNoEncuentraUnParcial_cuandoDevuelvo_entoncesNoRegistraNada() {
+        enConsolidacion();
+        when(distributivo.marcarDevueltos(anyString(), anyList()))
+                .thenThrow(new ParcialNoEncontrado());
+
+        assertThatThrownBy(() -> servicio.devolver(PERIODO, DEVOLVER_DS_Y_TDS, RESPONSABLE))
+                .isInstanceOf(ParcialNoEncontrado.class);
+        assertThat(registrado()).isEmpty();
+        assertThat(procesos.de(PERIODO).orElseThrow().estado())
+                .isEqualTo(TipoDeEtapa.EN_CONSOLIDACION);
+    }
+
+    private static FlujoDelDistributivo.Parcial parcial(
+            FlujoDelDistributivo flujo, String carrera) {
+        return flujo.parciales().stream()
+                .filter(uno -> uno.carrera().equals(carrera))
+                .findFirst()
+                .orElseThrow();
     }
 
     private List<CambioDeFlujo> registrado() {

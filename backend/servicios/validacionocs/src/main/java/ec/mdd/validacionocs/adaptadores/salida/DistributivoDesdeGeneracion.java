@@ -9,6 +9,7 @@ import ec.mdd.validacionocs.dominio.ParcialNoEncontrado;
 import ec.mdd.validacionocs.puertos.entrada.SinDistributivo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -45,6 +46,17 @@ public final class DistributivoDesdeGeneracion implements Distributivo {
         try {
             ParcialMarcado marcado = parciales.marcarParcialEnviado(periodo, carrera);
             return new ParcialEnviadoEnGeneracion(marcado.version(), marcado.hash());
+        } catch (DistributivoNoEncontrado sinDistributivo) {
+            throw new SinDistributivo();
+        } catch (ec.mdd.generacion.puertos.entrada.ParcialNoEncontrado sinParcial) {
+            throw new ParcialNoEncontrado();
+        }
+    }
+
+    @Override
+    public int marcarDevueltos(String periodo, List<String> carreras) {
+        try {
+            return parciales.marcarParcialesDevueltos(periodo, carreras);
         } catch (DistributivoNoEncontrado sinDistributivo) {
             throw new SinDistributivo();
         } catch (ec.mdd.generacion.puertos.entrada.ParcialNoEncontrado sinParcial) {

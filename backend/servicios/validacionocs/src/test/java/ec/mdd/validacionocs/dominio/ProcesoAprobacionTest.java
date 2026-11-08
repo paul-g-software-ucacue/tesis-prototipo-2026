@@ -533,6 +533,138 @@ class ProcesoAprobacionTest {
         assertThat(nuevo(false, "DS").acciones(RESPONSABLE)).isEmpty();
     }
 
+    // Devolver (F12-H05, data-model.md, D-98).
+
+    private static final DevolucionDeParcial DEVOLVER_DS =
+            DevolucionDeParcial.de("DS", "Faltan docentes en primer nivel.");
+    private static final DevolucionDeParcial DEVOLVER_TDS =
+            DevolucionDeParcial.de("TDS", "Un docente sin clase en segundo nivel.");
+
+    @Test
+    void dadoElDistributivoEnConsolidacion_cuandoDevuelvoDosCarreras_entoncesVuelveABorrador() {
+        ProcesoAprobacion proceso = enConsolidacionCon("DS", "TDS", "EL");
+
+        List<Transicion> nuevas = devolver(proceso, DEVOLVER_DS, DEVOLVER_TDS);
+
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.BORRADOR_CARRERA);
+        assertThat(proceso.parciales())
+                .isEqualTo(
+                        Map.of(
+                                "DS", EstadoDeEnvio.DEVUELTO,
+                                "TDS", EstadoDeEnvio.DEVUELTO,
+                                "EL", EstadoDeEnvio.ENVIADO));
+        assertThat(nuevas)
+                .containsExactly(
+                        new Transicion(
+                                TipoDeTransicion.DEVOLUCION,
+                                TipoDeEtapa.EN_CONSOLIDACION,
+                                TipoDeEtapa.BORRADOR_CARRERA,
+                                Optional.empty(),
+                                2,
+                                HASH_DISTRIBUTIVO,
+                                "consolidacion.demo",
+                                AHORA,
+                                Map.of(
+                                        "DS", DEVOLVER_DS.observacion(),
+                                        "TDS", DEVOLVER_TDS.observacion())));
+        assertThat(proceso.transiciones()).containsExactlyElementsOf(nuevas);
+    }
+
+    @Test
+    void dadaUnaDevolucion_cuandoSeRegistra_entoncesLlevaLaVersionVigenteSinCrearOtra() {
+        ProcesoAprobacion proceso = enConsolidacionCon("DS", "TDS");
+
+        Transicion devolucion = devolver(proceso, DEVOLVER_DS).getFirst();
+
+        // FR-014: la versión es la que llega, la vigente; devolver no la cambia.
+        assertThat(devolucion.version()).isEqualTo(2);
+    }
+
+    @Test
+    void dadasTodasLasCarreras_cuandoLasDevuelvo_entoncesSePermite() {
+        ProcesoAprobacion proceso = enConsolidacionCon("DS", "TDS");
+
+        devolver(proceso, DEVOLVER_DS, DEVOLVER_TDS);
+
+        assertThat(proceso.parciales().values()).containsOnly(EstadoDeEnvio.DEVUELTO);
+    }
+
+    @Test
+    void dadaUnaCarreraSinParcial_cuandoDevuelvo_entoncesNoSeDevuelveNinguna() {
+        ProcesoAprobacion proceso = enConsolidacionCon("DS", "TDS");
+
+        assertThatThrownBy(
+                        () ->
+                                devolver(
+                                        proceso,
+                                        DEVOLVER_DS,
+                                        DevolucionDeParcial.de("OTRA", "Una carrera que no está.")))
+                .isInstanceOf(ParcialNoEncontrado.class);
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_CONSOLIDACION);
+        assertThat(proceso.parciales().values()).containsOnly(EstadoDeEnvio.ENVIADO);
+        assertThat(proceso.transiciones()).isEmpty();
+    }
+
+    @Test
+    void dadoUnParcialPendiente_cuandoLoDevuelvo_entoncesParcialNoEnviadoConSuCarrera() {
+        ProcesoAprobacion proceso =
+                ProcesoAprobacion.de(
+                        "2026-I",
+                        etapas(false),
+                        TipoDeEtapa.EN_CONSOLIDACION,
+                        CREADO,
+                        Map.of("DS", EstadoDeEnvio.ENVIADO, "TDS", EstadoDeEnvio.PENDIENTE),
+                        List.of());
+
+        assertThatThrownBy(() -> devolver(proceso, DEVOLVER_DS, DEVOLVER_TDS))
+                .isInstanceOf(ParcialNoEnviado.class)
+                .extracting(error -> ((ParcialNoEnviado) error).carrera())
+                .isEqualTo("TDS");
+        assertThat(proceso.parciales()).containsEntry("DS", EstadoDeEnvio.ENVIADO);
+        assertThat(proceso.transiciones()).isEmpty();
+    }
+
+    @Test
+    void dadaUnaCarreraRepetida_cuandoDevuelvo_entoncesCarreraRepetida() {
+        ProcesoAprobacion proceso = enConsolidacionCon("DS", "TDS");
+
+        assertThatThrownBy(
+                        () ->
+                                devolver(
+                                        proceso,
+                                        DEVOLVER_DS,
+                                        DevolucionDeParcial.de("DS", "Otra observación igual.")))
+                .isInstanceOf(CarreraRepetida.class)
+                .extracting(error -> ((CarreraRepetida) error).carrera())
+                .isEqualTo("DS");
+        assertThat(proceso.transiciones()).isEmpty();
+    }
+
+    @Test
+    void dadaUnaDevolucionQueCabe_cuandoSoloSeValida_entoncesNoCambiaNada() {
+        ProcesoAprobacion proceso = enConsolidacionCon("DS", "TDS");
+
+        proceso.validarDevolucion(RESPONSABLE, List.of(DEVOLVER_DS));
+
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_CONSOLIDACION);
+        assertThat(proceso.parciales().values()).containsOnly(EstadoDeEnvio.ENVIADO);
+        assertThat(proceso.transiciones()).isEmpty();
+    }
+
+    private static List<Transicion> devolver(
+            ProcesoAprobacion proceso, DevolucionDeParcial... devoluciones) {
+        return proceso.devolver(RESPONSABLE, List.of(devoluciones), 2, HASH_DISTRIBUTIVO, AHORA);
+    }
+
+    private static ProcesoAprobacion enConsolidacionCon(String... carreras) {
+        Map<String, EstadoDeEnvio> enviados = new java.util.TreeMap<>();
+        for (String carrera : carreras) {
+            enviados.put(carrera, EstadoDeEnvio.ENVIADO);
+        }
+        return ProcesoAprobacion.de(
+                "2026-I", etapas(false), TipoDeEtapa.EN_CONSOLIDACION, CREADO, enviados, List.of());
+    }
+
     private static CondicionesDeRevision abiertas(long duras, long blandas) {
         return new CondicionesDeRevision(true, false, Optional.of("c".repeat(64)), duras, blandas);
     }

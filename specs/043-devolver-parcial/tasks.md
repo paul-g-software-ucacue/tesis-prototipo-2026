@@ -88,7 +88,7 @@ description: "Tareas de F12-H05: devolver un parcial a su carrera con una observ
 
 **Independent Test**: en la prueba de integración, desde EN_CONSOLIDACION, devolver dos carreras deja el proceso en BORRADOR_CARRERA, las dos DEVUELTO, la transición `DEVOLUCION` con sus observaciones guardadas y una entrada `DISTRIBUTIVO_DEVUELTO`.
 
-- [ ] T007 [US1] En el dominio de Validación OCS, sumar `EstadoDeEnvio.DEVUELTO`, `TipoDeTransicion.DEVOLUCION` y `Transicion.observaciones` (mapa ordenado, solo en `DEVOLUCION`; vacío en los demás tipos, que el constructor exige). Agregar a `VAL/test/.../dominio/ProcesoAprobacionTest.java` y ver fallar:
+- [X] T007 [US1] En el dominio de Validación OCS, sumar `EstadoDeEnvio.DEVUELTO`, `TipoDeTransicion.DEVOLUCION` y `Transicion.observaciones` (mapa ordenado, solo en `DEVOLUCION`; vacío en los demás tipos, que el constructor exige). Agregar a `VAL/test/.../dominio/ProcesoAprobacionTest.java` y ver fallar:
   - `devolver` con dos carreras deja los dos parciales DEVUELTO, los demás ENVIADO, el estado en BORRADOR_CARRERA y una `DEVOLUCION` de EN_CONSOLIDACION a BORRADOR_CARRERA, con la versión, el hash, quién, cuándo y las dos observaciones;
   - devolver todas las carreras se permite (Edge Cases);
   - la `DEVOLUCION` lleva la versión vigente, y la versión no cambia: no se crea una nueva (FR-014);
@@ -97,7 +97,7 @@ description: "Tareas de F12-H05: devolver un parcial a su carrera con una observ
   - `validarDevolucion` no cambia nada.
 
   Después, en un comando aparte, `validarDevolucion` y `devolver` en `ProcesoAprobacion`.
-- [ ] T008 [US1] Crear `VAL/main/.../puertos/entrada/DevolverParciales.java` y agregar `marcarDevueltos(periodo, carreras)` a `VAL/main/.../puertos/salida/Distributivo.java`. Agregar a `VAL/test/.../aplicacion/FlujoDelDistributivoServicioTest.java` y ver fallar:
+- [X] T008 [US1] Crear `VAL/main/.../puertos/entrada/DevolverParciales.java` y agregar `marcarDevueltos(periodo, carreras)` a `VAL/main/.../puertos/salida/Distributivo.java`. Agregar a `VAL/test/.../aplicacion/FlujoDelDistributivoServicioTest.java` y ver fallar:
   - el orden de research §2: periodo abierto, `validarDevolucion`, `marcarDevueltos` y, en la transacción con el proceso bloqueado, `devolver` y el guardado;
   - una sola entrada en `RegistroDeCambios`, con la acción `DISTRIBUTIVO_DEVUELTO`; en el detalle, `periodo`, `version`, `hash` y `devueltos` (carrera → observación); en `anterior` y `nuevo`, el estado (`contracts/bitacora.md`);
   - si `validarDevolucion` rechaza, no llama a Generación;
@@ -111,7 +111,7 @@ description: "Tareas de F12-H05: devolver un parcial a su carrera con una observ
   - la acción `DISTRIBUTIVO_DEVUELTO` en `CambioDeFlujo`, que `cambio()` elige para una `DEVOLUCION`;
   - el método en `VAL/main/.../adaptadores/salida/DistributivoDesdeGeneracion.java`;
   - `RepositorioProcesoJdbc` guarda y lee `DEVUELTO`, `DEVOLUCION` y las filas de `observacion_de_devolucion`.
-- [ ] T009 [US1] Agregar a `VAL/test/.../adaptadores/entrada/FlujoContratoTest.java` y ver fallar:
+- [X] T009 [US1] Agregar a `VAL/test/.../adaptadores/entrada/FlujoContratoTest.java` y ver fallar:
   - el 200 de `devolverParciales` cumple `EstadoDelFlujo`, con BORRADOR_CARRERA y `devolucion` en los parciales devueltos;
   - el 404 `VALIDACIONOCS_PARCIAL_NO_ENCONTRADO` y el 409 `VALIDACIONOCS_PARCIAL_NO_ENVIADO`;
   - el 404 sin distributivo.
@@ -122,13 +122,13 @@ description: "Tareas de F12-H05: devolver un parcial a su carrera con una observ
   - mapea `devolucion` en `ParcialDelFlujo`.
 
   Conectar el caso de uso en `VAL/main/.../infraestructura/ConfiguracionValidacionocs.java`. Sumar `devolverParciales` a `PermisosValidacionocsTest` y actualizar `FlujoEnMemoria`.
-- [ ] T010 [US1] Crear `VAL/integrationTest/.../DevolucionIntegrationTest.java` con PostgreSQL real, como `EnvioARevisionIntegrationTest`: el servicio, `RepositorioProcesoJdbc` y la transacción reales, y un `Distributivo` falso. Comprueba:
+- [X] T010 [US1] Crear `VAL/integrationTest/.../DevolucionIntegrationTest.java` con PostgreSQL real, como `EnvioARevisionIntegrationTest`: el servicio, `RepositorioProcesoJdbc` y la transacción reales, y un `Distributivo` falso. Comprueba:
   - devolver dos carreras desde EN_CONSOLIDACION deja el proceso en BORRADOR_CARRERA, las dos DEVUELTO y la `DEVOLUCION` con sus dos filas en `validacionocs.observacion_de_devolucion`;
   - un `RegistroDeCambios` falso recibe una sola entrada;
   - con dos hilos que devuelven a la vez, una sola `DEVOLUCION`; el otro recibe `EtapaNoAdmiteDevolucion` (SC-004);
   - una devolución y un envío a revisión a la vez: pasa solo uno;
   - dos devoluciones a la vez con carreras **distintas**: pasa una; las carreras de la otra quedan DEVUELTO en Generación y ENVIADO en Aprobación; volver a devolverlas pasa y deja todo coherente (research §11).
-- [ ] T011 [P] [US1] Agregar a `GEN/integrationTest/` una prueba con PostgreSQL real de `marcarParcialesDevueltos`:
+- [X] T011 [P] [US1] Agregar a `GEN/integrationTest/` una prueba con PostgreSQL real de `marcarParcialesDevueltos`:
   - dos carreras quedan DEVUELTO;
   - con una carrera inexistente, ninguna cambia.
 

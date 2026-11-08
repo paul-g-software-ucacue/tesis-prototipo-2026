@@ -8,6 +8,7 @@ import ec.mdd.validacionocs.dominio.CargaGuardada;
 import ec.mdd.validacionocs.dominio.CondicionesDeRevision;
 import ec.mdd.validacionocs.dominio.EstadoDelPeriodo;
 import ec.mdd.validacionocs.dominio.Firmantes;
+import ec.mdd.validacionocs.dominio.ParcialNoEncontrado;
 import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
 import ec.mdd.validacionocs.dominio.Transicion;
 import ec.mdd.validacionocs.puertos.entrada.SinDistributivo;
@@ -120,6 +121,19 @@ final class FlujoEnMemoria {
                 }
                 carreras.put(carrera, true);
                 return new ParcialEnviadoEnGeneracion(1, "a".repeat(64));
+            }
+
+            @Override
+            public int marcarDevueltos(String periodo, List<String> carreras) {
+                Map<String, Boolean> todas = enviados.get(periodo);
+                if (todas == null) {
+                    throw new SinDistributivo();
+                }
+                if (!todas.keySet().containsAll(carreras)) {
+                    throw new ParcialNoEncontrado();
+                }
+                carreras.forEach(carrera -> todas.put(carrera, false));
+                return 1;
             }
 
             @Override
