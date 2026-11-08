@@ -103,6 +103,7 @@ public final class ProcesoAprobacion {
                 periodo, etapas, estado, distributivoCreadoEn, parciales, transiciones);
     }
 
+    /** El periodo del distributivo que acompaña. */
     public String periodo() {
         return periodo;
     }
