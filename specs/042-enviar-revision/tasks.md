@@ -170,7 +170,7 @@ description: "Tareas de F10-H03: enviar a revisión con cero inconsistencias abi
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T015 [P] En la SPA, según `contracts/spa.md`, escribir primero las pruebas.
+- [X] T015 [P] En la SPA, según `contracts/spa.md`, escribir primero las pruebas.
   - **`SPA/pantallas/comun/EstadoDelFlujo.test.tsx`:**
     - el botón «Enviar a revisión» solo con `ENVIAR_A_REVISION`;
     - con `faltan`, el botón deshabilitado y la lista con `aria-describedby`;
@@ -179,6 +179,8 @@ description: "Tareas de F10-H03: enviar a revisión con cero inconsistencias abi
   - **`SPA/pantallas/consolidado/Consolidado.test.tsx`:** cada condición da su texto, también «Hay parciales sin enviar» con el flujo, la de las inconsistencias con el enlace al panel; con todo cumplido, el botón habilitado; al enviar, se invalidan el flujo y el consolidado.
 
   Después, el código de `EstadoDelFlujo.tsx` y `Consolidado.tsx`. Agregar a `frontend/e2e/consolidado.spec.ts` lo que falta y el envío exitoso con la API simulada, con axe-core.
+
+  **Resultado:** «Hay parciales sin enviar» sale del estado de cada carrera en el consolidado, que es el mismo dato que da el flujo, y así la pantalla no necesita otra consulta. En Playwright, el caso pasa a «listo» con «Volver a consolidar», porque recargar la página pierde la sesión.
 - [ ] T016 Crear `deploy/probar_revision.sh` con los 7 pasos de `contracts/demostracion.md`, sobre los datos de prueba y con la base limpia al terminar, sin imprimir claves ni tokens. Agregar su paso a `.github/workflows/perfil-consolidado.yml` después de «Avance por etapas». Pasar shellcheck. Correr `probar_avance.sh` y `probar_revision.sh` en su orden sobre un perfil nuevo.
 - [ ] T017 Revisar el JavaDoc de `validarRevision`, `enviarARevision`, `CondicionesDeRevision` (en los dos servicios), `ParcialesDelDistributivo.condicionesDeRevision` y `FlujoDelDistributivoServicio.enviarARevision` (principio XII). El de `enviarARevision` dice que no notifica (D-97).
 - [ ] T018 Crear `specs/042-enviar-revision/evidencia.md`, como `specs/041-avanzar-etapas/evidencia.md`:

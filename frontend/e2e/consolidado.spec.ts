@@ -1,5 +1,5 @@
 // F10-H02 en un navegador, con la API simulada: consolidar, adjuntar el informe y su accesibilidad
-// con axe-core (WCAG 2.1 AA).
+// con axe-core (WCAG 2.1 AA). F10-H03: lo que falta para enviar a revisión, y el envío.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { ingresar, simularApi } from './simulacion';
@@ -32,10 +32,11 @@ async function sinFallas(pagina: Page) {
   expect(fallas, fallas.join('\n')).toEqual([]);
 }
 
-async function abrirConsolidado(pagina: Page) {
+// propia: otra respuesta del consolidado, para el envío a revisión (F10-H03).
+async function abrirConsolidado(pagina: Page, propia?: () => object) {
   let consolidado = false;
   let informe = false;
-  const respuesta = () => ({
+  const comun = () => ({
     periodo: '2026-2',
     creado: true,
     modificable: true,
@@ -68,6 +69,7 @@ async function abrirConsolidado(pagina: Page) {
         }
       : {}),
   });
+  const respuesta = (): { informe?: unknown } => propia?.() ?? comun();
   await simularApi(pagina, { sesion: CONSOLIDACION });
   await pagina.route('**/api/academico/periodos', (ruta) =>
     ruta.fulfill({
@@ -117,5 +119,87 @@ test('consolida, adjunta el informe y es accesible en cada estado', async ({ pag
     buffer: Buffer.from('%PDF-1.7\n%%EOF'),
   });
   await expect(page.getByRole('button', { name: 'Descargar el informe' })).toBeVisible();
+  await sinFallas(page);
+});
+
+test('dice lo que falta para enviar a revisión, envía cuando está listo y es accesible', async ({
+  page,
+}) => {
+  let etapa = 'EN_CONSOLIDACION';
+  let listo = false;
+  await page.route('**/api/validacionocs/periodos/*/flujo', (ruta) =>
+    ruta.fulfill({
+      json: {
+        periodo: '2026-2',
+        etapa,
+        nombreDeEtapa:
+          etapa === 'EN_CONSOLIDACION' ? 'Consolidación' : 'Revisión del Vicerrectorado',
+        version: 1,
+        parciales: [{ carrera: 'TDS', enviado: true, pendienteDeConfirmar: false }],
+        acciones: etapa === 'EN_CONSOLIDACION' ? ['ENVIAR_A_REVISION'] : [],
+        transiciones: [],
+      },
+    }),
+  );
+  await page.route('**/api/validacionocs/periodos/*/revision', async (ruta) => {
+    etapa = 'EN_REVISION_VRA';
+    await ruta.fulfill({
+      json: {
+        periodo: '2026-2',
+        etapa,
+        nombreDeEtapa: 'Revisión del Vicerrectorado',
+        version: 1,
+        parciales: [],
+        acciones: [],
+        transiciones: [],
+      },
+    });
+  });
+  await abrirConsolidado(page, () => ({
+    periodo: '2026-2',
+    creado: true,
+    modificable: true,
+    version: 1,
+    desactualizado: false,
+    carreras: [
+      {
+        carrera: 'TDS',
+        estado: listo ? 'ENVIADO' : 'EN_ELABORACION',
+        paralelos: 3,
+        propuestos: 3,
+        completo: true,
+        horas: HORAS,
+      },
+    ],
+    totales: HORAS,
+    abiertas: listo ? { duras: 0, blandas: 0 } : { duras: 1, blandas: 1 },
+    consolidacion: { por: 'consolidacion.demo', en: '2026-11-02T15:00:00Z' },
+    ...(listo
+      ? {
+          informe: {
+            nombre: 'informe.pdf',
+            tamano: 2048,
+            huella: 'a'.repeat(64),
+            por: 'consolidacion.demo',
+            en: '2026-11-02T15:10:00Z',
+          },
+        }
+      : {}),
+  }));
+
+  const falta = page.getByRole('list', { name: 'Falta para enviar a revisión' });
+  await expect(falta).toContainText('Adjunta el informe sustentado.');
+  await expect(falta).toContainText('Quedan 2 inconsistencias abiertas');
+  await expect(page.getByRole('button', { name: 'Enviar a revisión' })).toBeDisabled();
+  await sinFallas(page);
+
+  // Volver a consolidar recarga el consolidado, que ya está listo.
+  listo = true;
+  await page.getByRole('button', { name: 'Volver a consolidar' }).click();
+  await expect(falta).toHaveCount(0);
+  await page.getByRole('button', { name: 'Enviar a revisión' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Enviar' }).click();
+  await expect(page.getByText('Revisión del Vicerrectorado · versión 1')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Enviar a revisión' })).toHaveCount(0);
   await sinFallas(page);
 });

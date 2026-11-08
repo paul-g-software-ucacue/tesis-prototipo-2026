@@ -1,20 +1,22 @@
 // El estado del flujo del distributivo (F12-H02, RF-34, contracts/spa.md): la etapa actual con su
 // versión, el envío de cada parcial y un botón por cada acción que la API dice que el usuario puede
 // hacer. Lo usan «Oferta del periodo» (el coordinador envía su parcial), «Consolidado del periodo»
-// (el Responsable y el Vicerrector ven la etapa) y «Proyectos» (el Gestor de unidad avanza
-// BORRADOR_UNIDADES). El servidor valida el permiso, el rol de la etapa y la carrera.
+// (el Responsable y el Vicerrector ven la etapa; desde F10-H03, el Responsable envía a revisión y ve
+// lo que falta) y «Proyectos» (el Gestor de unidad avanza BORRADOR_UNIDADES). El servidor valida el
+// permiso, el rol de la etapa, la carrera y las condiciones.
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { AvisoDeError } from '../../errores/AvisoDeError';
 import { FalloDeApi, traducirError, type MensajeDeError } from '../../errores/traducir';
 import { DialogoConfirmar } from '../carreras/DialogosDeCarrera';
 import {
   CLAVE_FLUJO,
   avanzarEtapa,
+  enviarARevision,
   enviarParcial,
   useFlujo,
   type EstadoDelFlujo,
@@ -38,7 +40,7 @@ function estadoDe(parcial: ParcialDelFlujo) {
     : `${parcial.carrera}: pendiente`;
 }
 
-type Confirmar = 'enviar' | 'avanzar' | null;
+type Confirmar = 'enviar' | 'avanzar' | 'revisar' | null;
 
 /**
  * El estado del flujo del periodo. Sin distributivo no muestra nada: las pantallas ya dicen cómo
@@ -46,24 +48,29 @@ type Confirmar = 'enviar' | 'avanzar' | null;
  *
  * @param carrera la carrera cuyo parcial envía el usuario; solo la usa la acción de enviar
  * @param alCambiar se llama después de enviar o avanzar, para recargar la pantalla
+ * @param faltan lo que le falta al consolidado para enviarlo a revisión; con algo, el botón queda
+ *   deshabilitado y lo lista
  */
 export function EstadoDelFlujoDelPeriodo({
   periodo,
   carrera,
   alCambiar,
   soloEn,
+  faltan = [],
 }: {
   periodo: string | undefined;
   carrera?: string | undefined;
   alCambiar?: () => void;
   /** Si llega, solo se muestra en esas etapas (en Proyectos, BORRADOR_UNIDADES). */
   soloEn?: readonly EstadoDelFlujo['etapa'][];
+  faltan?: readonly string[] | undefined;
 }) {
   const flujo = useFlujo(periodo);
   const consultas = useQueryClient();
   const [confirmar, setConfirmar] = useState<Confirmar>(null);
   const [aviso, setAviso] = useState<MensajeDeError | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const idFaltan = useId();
 
   if (flujo.error) {
     // Sin distributivo, nada que mostrar; otro fallo, el aviso común.
@@ -81,6 +88,7 @@ export function EstadoDelFlujoDelPeriodo({
   const propio = parciales.find((uno) => uno.carrera === carrera);
   const puedeEnviar = acciones.includes('ENVIAR_PARCIAL') && Boolean(carrera);
   const puedeAvanzar = acciones.includes('AVANZAR');
+  const puedeRevisar = acciones.includes('ENVIAR_A_REVISION');
 
   const ejecutar = async (accion: () => Promise<unknown>) => {
     setConfirmar(null);
@@ -117,7 +125,15 @@ export function EstadoDelFlujoDelPeriodo({
           </Typography>
         ))}
       </Box>
-      {aviso && <AvisoDeError mensaje={aviso} />}
+      {aviso && (
+        <AvisoDeError mensaje={aviso}>
+          {aviso.detalles.map((detalle) => (
+            <Typography variant="body2" key={detalle.campo + detalle.descripcion}>
+              {detalle.descripcion}
+            </Typography>
+          ))}
+        </AvisoDeError>
+      )}
       <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
         {puedeEnviar && (
           <Button variant="contained" disabled={enviando} onClick={() => setConfirmar('enviar')}>
@@ -129,7 +145,31 @@ export function EstadoDelFlujoDelPeriodo({
             Avanzar a la siguiente etapa
           </Button>
         )}
+        {puedeRevisar && (
+          <Button
+            variant="contained"
+            disabled={enviando || faltan.length > 0}
+            aria-describedby={faltan.length > 0 ? idFaltan : undefined}
+            onClick={() => setConfirmar('revisar')}
+          >
+            Enviar a revisión
+          </Button>
+        )}
       </Stack>
+      {puedeRevisar && faltan.length > 0 && (
+        <Box
+          component="ul"
+          id={idFaltan}
+          aria-label="Falta para enviar a revisión"
+          sx={{ mt: 1, mb: 0, pl: 3 }}
+        >
+          {faltan.map((falta) => (
+            <Typography component="li" variant="body2" key={falta}>
+              {falta}
+            </Typography>
+          ))}
+        </Box>
+      )}
       {confirmar === 'enviar' && carrera && (
         <DialogoConfirmar
           titulo={`Enviar el parcial de ${carrera}`}
@@ -137,6 +177,15 @@ export function EstadoDelFlujoDelPeriodo({
           accion="Enviar"
           alCerrar={() => setConfirmar(null)}
           alConfirmar={() => void ejecutar(() => enviarParcial(periodo, carrera))}
+        />
+      )}
+      {confirmar === 'revisar' && (
+        <DialogoConfirmar
+          titulo="Enviar a revisión"
+          texto="El distributivo pasa a revisión del Vicerrectorado. Ya no se podrá consolidar ni justificar en esta etapa."
+          accion="Enviar"
+          alCerrar={() => setConfirmar(null)}
+          alConfirmar={() => void ejecutar(() => enviarARevision(periodo))}
         />
       )}
       {confirmar === 'avanzar' && (

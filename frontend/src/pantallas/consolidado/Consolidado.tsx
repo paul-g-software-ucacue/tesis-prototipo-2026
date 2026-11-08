@@ -1,6 +1,7 @@
 // La pantalla «Consolidado del periodo» (F10-H02, RF-32): todas las carreras con su estado, los
 // totales institucionales, si sigue al día y el informe sustentado. Consolidar marca y no bloquea:
 // las carreras siguen editando. La leen Consolidación y el Vicerrectorado; escribe Consolidación.
+// Desde F10-H03, el Responsable la envía a revisión y ve lo que le falta (D-97).
 import Alert from '@mui/material/Alert';
 import AlertTitle from '@mui/material/AlertTitle';
 import Button from '@mui/material/Button';
@@ -50,6 +51,32 @@ const ESTADO_DEL_PARCIAL: Record<CarreraConsolidada['estado'], string> = {
 };
 
 const UN_MB = 1024 * 1024;
+
+/**
+ * Lo que le falta al consolidado para enviarlo a revisión, en el orden de D-97 (F10-H03). El
+ * servidor lo vuelve a comprobar al enviar.
+ */
+function faltanParaRevision(consolidado: ConsolidadoDelPeriodo): string[] {
+  const faltan: string[] = [];
+  if (consolidado.carreras.some((carrera) => carrera.estado !== 'ENVIADO')) {
+    faltan.push('Hay parciales sin enviar: su carrera tiene que enviarlos.');
+  }
+  if (!consolidado.consolidacion) {
+    faltan.push('Consolida el periodo.');
+  } else if (consolidado.desactualizado) {
+    faltan.push('Consolida otra vez: algo cambió después de consolidar.');
+  }
+  if (!consolidado.informe) {
+    faltan.push('Adjunta el informe sustentado.');
+  }
+  const abiertas = consolidado.abiertas.duras + consolidado.abiertas.blandas;
+  if (abiertas > 0) {
+    faltan.push(
+      `${abiertas === 1 ? 'Queda 1 inconsistencia abierta' : `Quedan ${String(abiertas)} inconsistencias abiertas`}: corrige las duras y justifica las blandas en el panel.`,
+    );
+  }
+  return faltan;
+}
 
 function fecha(iso: string) {
   return new Date(iso).toLocaleString('es-EC');
@@ -259,7 +286,13 @@ export function Consolidado() {
           Este periodo todavía no tiene distributivo: no hay nada que consolidar.
         </Alert>
       )}
-      {datos?.creado && periodo && <EstadoDelFlujoDelPeriodo periodo={periodo} />}
+      {datos?.creado && periodo && (
+        <EstadoDelFlujoDelPeriodo
+          periodo={periodo}
+          faltan={faltanParaRevision(datos)}
+          alCambiar={() => void recargar()}
+        />
+      )}
       {datos?.creado && periodo && (
         <>
           <Typography sx={{ mt: 1 }}>

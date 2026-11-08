@@ -41,3 +41,15 @@ export function avanzarEtapa(periodo: string) {
     }),
   );
 }
+
+/**
+ * Envía el consolidado a revisión (F10-H03, D-97). El servidor comprueba las condiciones al
+ * enviar: lo que vio la pantalla puede haber cambiado.
+ */
+export function enviarARevision(periodo: string) {
+  return llamar(
+    apiValidacionocs.POST('/api/validacionocs/periodos/{periodo}/revision', {
+      params: { path: { periodo } },
+    }),
+  );
+}
