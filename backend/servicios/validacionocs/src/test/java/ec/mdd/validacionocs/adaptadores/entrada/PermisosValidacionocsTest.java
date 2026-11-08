@@ -52,11 +52,13 @@ class PermisosValidacionocsTest {
     void dadoElContrato_cuandoSeVerificaCadaOperacion_entoncesExigeSuPermiso() {
         assertThat(verificador.operaciones())
                 .extracting(VerificadorDePermisos.OperacionProtegida::toString)
-                .hasSize(5)
+                .hasSize(6)
                 .anySatisfy(operacion -> assertThat(operacion).contains("FLUJO_FIRMAS:LECTURA"))
                 .anySatisfy(operacion -> assertThat(operacion).contains("FLUJO_FIRMAS:ESCRITURA"))
                 .anySatisfy(operacion -> assertThat(operacion).contains("PROYECTOS:LECTURA"))
-                .anySatisfy(operacion -> assertThat(operacion).contains("OFERTA:APROBACION"));
+                .anySatisfy(operacion -> assertThat(operacion).contains("OFERTA:APROBACION"))
+                .anySatisfy(
+                        operacion -> assertThat(operacion).contains("CONSOLIDACION:APROBACION"));
 
         verificador.verificar(mvc, conversor);
     }
@@ -83,6 +85,7 @@ class PermisosValidacionocsTest {
             when(servicio.flujo(anyString(), any())).thenReturn(fijo);
             when(servicio.enviar(anyString(), anyString(), any())).thenReturn(fijo);
             when(servicio.avanzar(anyString(), any())).thenReturn(fijo);
+            when(servicio.enviarARevision(anyString(), any())).thenReturn(fijo);
             return servicio;
         }
     }

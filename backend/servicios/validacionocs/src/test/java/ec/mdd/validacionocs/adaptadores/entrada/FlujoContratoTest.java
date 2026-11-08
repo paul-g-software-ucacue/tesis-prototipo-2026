@@ -16,6 +16,7 @@ import ec.mdd.plataforma.eventos.ErroresEntreProcesos;
 import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
 import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
 import ec.mdd.validacionocs.aplicacion.FlujoDelDistributivoServicio;
+import ec.mdd.validacionocs.dominio.CondicionesDeRevision;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -23,6 +24,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -63,6 +65,9 @@ class FlujoContratoTest {
     private static final String FLUJO = "/api/validacionocs/periodos/%s/flujo";
     private static final String ENVIO = "/api/validacionocs/periodos/%s/parciales/%s/envio";
     private static final String AVANCE = "/api/validacionocs/periodos/%s/avance";
+    private static final String REVISION = "/api/validacionocs/periodos/%s/revision";
+    private static final String RESPONSABLE = "RESPONSABLE_CONSOLIDACION";
+    private static final String HUELLA = "c".repeat(64);
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final Map<String, List<String>> MATRIZ = matrizD16();
     private static final FlujoEnMemoria MEMORIA = new FlujoEnMemoria();
@@ -222,6 +227,155 @@ class FlujoContratoTest {
         assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
         assertThat(cuerpo(resultado).get("etapa").asString()).isEqualTo("EN_CONSOLIDACION");
         contrato.validar(resultado);
+    }
+
+    // Enviar a revisión (F10-H03, contracts/validacionocs.md).
+
+    @Test
+    void dadoUnConsolidadoListo_cuandoElResponsableLoEnvia_entonces200EnRevisionSegunElContrato()
+            throws Exception {
+        enConsolidacion(PERIODO);
+
+        MvcResult resultado = revisar(PERIODO, RESPONSABLE);
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        JsonNode cuerpo = cuerpo(resultado);
+        assertThat(cuerpo.get("etapa").asString()).isEqualTo("EN_REVISION_VRA");
+        JsonNode paso = cuerpo.get("transiciones").get(3);
+        assertThat(paso.get("desde").asString()).isEqualTo("EN_CONSOLIDACION");
+        assertThat(paso.get("hacia").asString()).isEqualTo("EN_REVISION_VRA");
+        assertThat(paso.get("quien").asString()).isEqualTo("responsable_consolidacion.demo");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnPeriodoInvalido_cuandoSeEnviaARevision_entonces400ConSuDetalle() throws Exception {
+        MvcResult resultado = revisar("2026 I!", RESPONSABLE);
+
+        assertCodigo(resultado, 400, "COMUN_SOLICITUD_INVALIDA");
+        assertThat(cuerpo(resultado).get("detalles")).isNotEmpty();
+    }
+
+    @Test
+    void dadoUnPeriodoSinDistributivo_cuandoSeEnviaARevision_entonces404() throws Exception {
+        assertCodigo(revisar(SIN_DISTRIBUTIVO, RESPONSABLE), 404, "VALIDACIONOCS_SIN_DISTRIBUTIVO");
+    }
+
+    // US2 (T010): el número de abiertas en el detalle.
+    @Test
+    void dadasInconsistenciasAbiertas_cuandoSeEnviaARevision_entonces409ConCuantasQuedan()
+            throws Exception {
+        enConsolidacion(PERIODO);
+        MEMORIA.condiciones(new CondicionesDeRevision(true, false, Optional.of(HUELLA), 2, 1));
+
+        MvcResult resultado = revisar(PERIODO, RESPONSABLE);
+
+        assertCodigo(resultado, 409, "VALIDACIONOCS_INCONSISTENCIAS_ABIERTAS");
+        JsonNode detalle = cuerpo(resultado).get("detalles").get(0);
+        assertThat(detalle.get("campo").asString()).isEqualTo("inconsistencias");
+        assertThat(detalle.get("descripcion").asString())
+                .isEqualTo("Quedan 3: 2 duras y 1 blanda sin justificar.");
+        contrato.validar(resultado);
+
+        MEMORIA.condiciones(new CondicionesDeRevision(true, false, Optional.of(HUELLA), 1, 0));
+        assertThat(
+                        cuerpo(revisar(PERIODO, RESPONSABLE))
+                                .get("detalles")
+                                .get(0)
+                                .get("descripcion")
+                                .asString())
+                .isEqualTo("Queda 1: 1 dura y 0 blandas sin justificar.");
+    }
+
+    // US3 (T012): cada falta con su código.
+    @Test
+    void dadaCadaFalta_cuandoSeEnviaARevision_entonces409ConSuCodigo() throws Exception {
+        enConsolidacion(PERIODO);
+        MEMORIA.condiciones(new CondicionesDeRevision(false, false, Optional.empty(), 0, 0));
+        assertCodigo(revisar(PERIODO, RESPONSABLE), 409, "VALIDACIONOCS_SIN_CONSOLIDAR");
+        MEMORIA.condiciones(new CondicionesDeRevision(true, true, Optional.of(HUELLA), 0, 0));
+        assertCodigo(
+                revisar(PERIODO, RESPONSABLE), 409, "VALIDACIONOCS_CONSOLIDADO_DESACTUALIZADO");
+        MEMORIA.condiciones(new CondicionesDeRevision(true, false, Optional.empty(), 0, 0));
+        assertCodigo(revisar(PERIODO, RESPONSABLE), 409, "VALIDACIONOCS_SIN_INFORME");
+        assertThat(
+                        cuerpo(pedir(get(FLUJO.formatted(PERIODO)), RESPONSABLE, null))
+                                .get("etapa")
+                                .asString())
+                .isEqualTo("EN_CONSOLIDACION");
+    }
+
+    @Test
+    void dadoElDistributivoFueraDeConsolidacion_cuandoSeEnviaARevision_entonces409Etapa()
+            throws Exception {
+        assertCodigo(revisar(PERIODO, RESPONSABLE), 409, "VALIDACIONOCS_ETAPA_NO_ADMITE_REVISION");
+        enConsolidacion(PERIODO);
+        revisar(PERIODO, RESPONSABLE);
+        assertCodigo(revisar(PERIODO, RESPONSABLE), 409, "VALIDACIONOCS_ETAPA_NO_ADMITE_REVISION");
+    }
+
+    @Test
+    void dadoUnParcialPendienteEnConsolidacion_cuandoSeEnviaARevision_entonces409Pendientes()
+            throws Exception {
+        enConsolidacion(PERIODO);
+        MEMORIA.agregarParcial(PERIODO, "550732E01-D-0301");
+
+        assertCodigo(revisar(PERIODO, RESPONSABLE), 409, "VALIDACIONOCS_PARCIALES_PENDIENTES");
+    }
+
+    @Test
+    void dadoUnPeriodoCerrado_cuandoSeEnviaARevision_entonces409PeriodoCerrado() throws Exception {
+        assertCodigo(revisar(CERRADO, RESPONSABLE), 409, "VALIDACIONOCS_PERIODO_CERRADO");
+    }
+
+    // US4 (T014): los 9 roles que no son el Responsable reciben 403; él, 200; y la acción.
+    @Test
+    void dadosLosRolesQueNoSonElDeConsolidacion_cuandoEnvianARevision_entonces403YElSuyo200()
+            throws Exception {
+        List<String> fallas = new ArrayList<>();
+        String cuerpoDel403 = null;
+        for (String rol : MATRIZ.keySet()) {
+            MEMORIA.reiniciar();
+            enConsolidacion(PERIODO);
+            MvcResult resultado = revisar(PERIODO, rol);
+            int esperado = rol.equals(RESPONSABLE) ? 200 : 403;
+            if (resultado.getResponse().getStatus() != esperado) {
+                fallas.add(rol + ": " + resultado.getResponse().getStatus());
+            } else if (esperado == 403) {
+                String cuerpo = resultado.getResponse().getContentAsString(StandardCharsets.UTF_8);
+                assertThat(cuerpo).doesNotContain("RESPONSABLE_CONSOLIDACION");
+                assertThat(cuerpo(resultado).get("codigo").asString())
+                        .isEqualTo("SEGURIDAD_ACCESO_NO_AUTORIZADO");
+                if (cuerpoDel403 == null) {
+                    cuerpoDel403 = cuerpo;
+                }
+                assertThat(cuerpo).isEqualTo(cuerpoDel403);
+            }
+        }
+        assertThat(fallas).isEmpty();
+    }
+
+    @Test
+    void dadoEnConsolidacion_cuandoConsultan_entoncesSoloElResponsableVeEnviarARevision()
+            throws Exception {
+        enConsolidacion(PERIODO);
+
+        assertThat(cuerpo(pedir(get(FLUJO.formatted(PERIODO)), RESPONSABLE, null)).get("acciones"))
+                .extracting(JsonNode::asString)
+                .containsExactly("ENVIAR_A_REVISION");
+        assertThat(
+                        cuerpo(pedir(get(FLUJO.formatted(PERIODO)), "VICERRECTOR", null))
+                                .get("acciones"))
+                .isEmpty();
+    }
+
+    private void enConsolidacion(String periodo) throws Exception {
+        enviar(periodo, DS, DS);
+        enviar(periodo, TDS, TDS);
+    }
+
+    private MvcResult revisar(String periodo, String rol) throws Exception {
+        return pedir(post(REVISION.formatted(periodo)), rol, null);
     }
 
     // SC-002 y T016: los 9 roles que no son el de la etapa reciben 403, en las dos operaciones.

@@ -28,6 +28,8 @@ import java.util.TreeMap;
  *   <li>el avance genérico vale solo para las etapas opcionales sin historia propia, hoy
  *       BORRADOR_UNIDADES; las demás se avanzan con su propia operación ({@link
  *       EtapaConOperacionPropia});
+ *   <li>desde EN_CONSOLIDACION, solo su rol envía a revisión, con las condiciones de D-97 en su
+ *       orden (F10-H03);
  *   <li>un intento rechazado no cambia nada ni deja transición (FR-013).
  * </ul>
  */
@@ -246,6 +248,70 @@ public final class ProcesoAprobacion {
         return List.of(paso);
     }
 
+    /**
+     * Comprueba que {@code quien} puede enviar el distributivo a revisión, sin cambiar nada
+     * (F10-H03, D-97). El caso de uso lo llama antes de pedirle a Generación las condiciones del
+     * consolidado, para que un intento que no cabe no la llame (FR-012).
+     *
+     * @param quien quien envía
+     * @throws RolDeOtraEtapa si no tiene el rol de EN_CONSOLIDACION en la copia de la configuración
+     * @throws EtapaNoAdmiteRevision si el distributivo no está en EN_CONSOLIDACION
+     * @throws ParcialesPendientes si algún parcial no está enviado
+     */
+    public void validarRevision(Solicitante quien) {
+        exigirRol(quien, TipoDeEtapa.EN_CONSOLIDACION);
+        if (estado != TipoDeEtapa.EN_CONSOLIDACION) {
+            throw new EtapaNoAdmiteRevision();
+        }
+        if (parciales.containsValue(EstadoDeEnvio.PENDIENTE)) {
+            throw new ParcialesPendientes();
+        }
+    }
+
+    /**
+     * Envía el distributivo a revisión: pasa de EN_CONSOLIDACION a la siguiente etapa activa (por
+     * defecto, EN_REVISION_VRA). No notifica a nadie: eso es de F16-H01 (D-97).
+     *
+     * @param quien quien envía
+     * @param condiciones lo que Generación dice del consolidado, calculado al enviar
+     * @param version la versión vigente del distributivo
+     * @param hashDelDistributivo el hash de todos los parciales
+     * @param ahora cuándo
+     * @return la transición nueva, un paso de etapa
+     * @throws RolDeOtraEtapa si no tiene el rol de EN_CONSOLIDACION
+     * @throws EtapaNoAdmiteRevision si el distributivo no está en EN_CONSOLIDACION
+     * @throws ParcialesPendientes si algún parcial no está enviado
+     * @throws SinConsolidar si la versión vigente no se consolidó
+     * @throws ConsolidadoDesactualizado si algo cambió después de consolidar
+     * @throws SinInforme si no tiene informe sustentado
+     * @throws InconsistenciasAbiertas si quedan duras o blandas sin justificar (MD-07)
+     */
+    public List<Transicion> enviarARevision(
+            Solicitante quien,
+            CondicionesDeRevision condiciones,
+            int version,
+            String hashDelDistributivo,
+            Instant ahora) {
+        validarRevision(quien);
+        // El orden de D-97: de lo que se arregla antes a lo que se arregla después.
+        if (!condiciones.consolidado()) {
+            throw new SinConsolidar();
+        }
+        if (condiciones.desactualizado()) {
+            throw new ConsolidadoDesactualizado();
+        }
+        if (condiciones.informe().isEmpty()) {
+            throw new SinInforme();
+        }
+        if (condiciones.duras() + condiciones.blandas() > 0) {
+            throw new InconsistenciasAbiertas(
+                    Math.toIntExact(condiciones.duras()), Math.toIntExact(condiciones.blandas()));
+        }
+        Transicion paso = paso(quien, version, hashDelDistributivo, ahora);
+        transiciones.add(paso);
+        return List.of(paso);
+    }
+
     /** Lo que {@code quien} puede hacer ahora (FR-014). */
     public List<AccionDelProceso> acciones(Solicitante quien) {
         if (estado == TipoDeEtapa.BORRADOR_CARRERA
@@ -257,6 +323,11 @@ public final class ProcesoAprobacion {
         }
         if (CON_AVANCE_GENERICO.contains(estado) && tieneRol(quien, estado)) {
             return List.of(AccionDelProceso.AVANZAR);
+        }
+        // Aunque falten condiciones: la pantalla dice cuáles (F10-H03, FR-013).
+        if (estado == TipoDeEtapa.EN_CONSOLIDACION
+                && tieneRol(quien, TipoDeEtapa.EN_CONSOLIDACION)) {
+            return List.of(AccionDelProceso.ENVIAR_A_REVISION);
         }
         return List.of();
     }

@@ -86,11 +86,17 @@ public class ConfiguracionGeneracion {
         return new RepositorioDistributivosJdbc(jdbc);
     }
 
-    /** Los parciales para Aprobación, en el mismo proceso (F12-H02, MD-04). Sin registro (D-95). */
+    /**
+     * Los parciales para Aprobación, en el mismo proceso (F12-H02, MD-04). Sin registro (D-95). Las
+     * condiciones para enviar a revisión salen del consolidado (F10-H03).
+     */
     @Bean
     public ParcialesDelDistributivo parcialesDelDistributivo(
-            RepositorioDistributivos distributivos, Transaccion transaccion) {
-        return new ParcialesDelDistributivoServicio(distributivos, transaccion);
+            RepositorioDistributivos distributivos,
+            Transaccion transaccion,
+            ConsultarConsolidado consultarConsolidado) {
+        return new ParcialesDelDistributivoServicio(
+                distributivos, transaccion, consultarConsolidado);
     }
 
     /** La bitácora de los cambios del distributivo (F06-H03). */

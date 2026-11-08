@@ -8,10 +8,16 @@ import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
 import ec.mdd.plataforma.pruebas.VerificadorDeCatalogo;
 import ec.mdd.validacionocs.dominio.ArchivoDemasiadoGrande;
 import ec.mdd.validacionocs.dominio.ArchivoIlegible;
+import ec.mdd.validacionocs.dominio.ConsolidadoDesactualizado;
 import ec.mdd.validacionocs.dominio.EtapaConOperacionPropia;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteEnvio;
+import ec.mdd.validacionocs.dominio.EtapaNoAdmiteRevision;
+import ec.mdd.validacionocs.dominio.InconsistenciasAbiertas;
 import ec.mdd.validacionocs.dominio.ParcialNoEncontrado;
 import ec.mdd.validacionocs.dominio.ParcialYaEnviado;
+import ec.mdd.validacionocs.dominio.ParcialesPendientes;
+import ec.mdd.validacionocs.dominio.SinConsolidar;
+import ec.mdd.validacionocs.dominio.SinInforme;
 import ec.mdd.validacionocs.puertos.entrada.ConfiguracionInvalida;
 import ec.mdd.validacionocs.puertos.entrada.PeriodoCerrado;
 import ec.mdd.validacionocs.puertos.entrada.PeriodoNoEncontrado;
@@ -64,7 +70,22 @@ class ErroresValidacionocsTest {
                                 ParcialNoEncontrado.class,
                                 "VALIDACIONOCS_PARCIAL_NO_ENCONTRADO",
                                 404),
-                        tuple(PeriodoCerrado.class, "VALIDACIONOCS_PERIODO_CERRADO", 409));
+                        tuple(PeriodoCerrado.class, "VALIDACIONOCS_PERIODO_CERRADO", 409),
+                        tuple(
+                                EtapaNoAdmiteRevision.class,
+                                "VALIDACIONOCS_ETAPA_NO_ADMITE_REVISION",
+                                409),
+                        tuple(ParcialesPendientes.class, "VALIDACIONOCS_PARCIALES_PENDIENTES", 409),
+                        tuple(SinConsolidar.class, "VALIDACIONOCS_SIN_CONSOLIDAR", 409),
+                        tuple(
+                                ConsolidadoDesactualizado.class,
+                                "VALIDACIONOCS_CONSOLIDADO_DESACTUALIZADO",
+                                409),
+                        tuple(SinInforme.class, "VALIDACIONOCS_SIN_INFORME", 409),
+                        tuple(
+                                InconsistenciasAbiertas.class,
+                                "VALIDACIONOCS_INCONSISTENCIAS_ABIERTAS",
+                                409));
     }
 
     @Test
@@ -94,5 +115,26 @@ class ErroresValidacionocsTest {
         assertThat(entrada.detalles().apply(new ConfiguracionInvalida(List.of("Uno.", "Dos."))))
                 .extracting(DetalleRespuesta::campo, DetalleRespuesta::descripcion)
                 .containsExactly(tuple("archivo", "Uno."), tuple("archivo", "Dos."));
+    }
+
+    @Test
+    void dadasInconsistenciasAbiertas_cuandoSeResponde_entoncesDiceCuantasQuedan() {
+        EntradaCatalogo entrada =
+                new ErroresValidacionocs()
+                        .entradas().stream()
+                                .filter(una -> una.excepcion() == InconsistenciasAbiertas.class)
+                                .findFirst()
+                                .orElseThrow();
+
+        assertThat(entrada.detalles().apply(new InconsistenciasAbiertas(2, 1)))
+                .extracting(DetalleRespuesta::campo, DetalleRespuesta::descripcion)
+                .containsExactly(
+                        tuple("inconsistencias", "Quedan 3: 2 duras y 1 blanda sin justificar."));
+        assertThat(entrada.detalles().apply(new InconsistenciasAbiertas(1, 0)))
+                .extracting(DetalleRespuesta::descripcion)
+                .containsExactly("Queda 1: 1 dura y 0 blandas sin justificar.");
+        assertThat(entrada.detalles().apply(new InconsistenciasAbiertas(0, 2)))
+                .extracting(DetalleRespuesta::descripcion)
+                .containsExactly("Quedan 2: 0 duras y 2 blandas sin justificar.");
     }
 }

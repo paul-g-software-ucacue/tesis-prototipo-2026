@@ -38,4 +38,16 @@ public interface ParcialesDelDistributivo {
      * @throws DistributivoNoEncontrado si el periodo no tiene distributivo
      */
     String hashDelDistributivo(String periodo);
+
+    /**
+     * Las condiciones del consolidado para enviarlo a revisión (F10-H03, D-97): si se consolidó, si
+     * quedó desactualizado, el informe vigente y las inconsistencias abiertas. Se calculan al
+     * pedirlas, con el mismo panel que ve la pantalla; no guarda nada. Las reglas que el panel
+     * todavía no evalúa no cuentan.
+     *
+     * @param periodo el código del periodo
+     * @return las condiciones
+     * @throws DistributivoNoEncontrado si el periodo no tiene distributivo
+     */
+    CondicionesDeRevision condicionesDeRevision(String periodo);
 }

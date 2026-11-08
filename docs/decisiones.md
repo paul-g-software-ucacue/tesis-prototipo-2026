@@ -95,6 +95,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-94 | 2026-11-07 | Un guardado que no cambia nada no deja entrada en el registro de cambios ni en la bitácora | Aceptada | Supuesto «Mismo valor» de F17-H01 |
 | D-95 | 2026-11-07 | Una transición del flujo la registra Aprobación; Generación no duplica el cambio de estado del parcial | Aceptada | D-90, MD-04 |
 | D-96 | 2026-11-08 | `zlib1g` de `cloudflared` espera con una excepción de Grype hasta que Cloudflare reconstruya la imagen | Aceptada | D-54, D-81 |
+| D-97 | 2026-11-08 | Enviar a revisión exige el consolidado al día, su informe y cero inconsistencias abiertas; no notifica todavía | Aceptada | RF-29, RF-32, MD-07, D-95 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1827,3 +1828,36 @@ Con la base de datos de Grype del 2026-11-07, la CI encontró además dos altas 
 
 **Documentos que hay que poner al día.** Ninguno.
 
+---
+
+## D-97. Enviar a revisión exige el consolidado al día, su informe y cero inconsistencias abiertas; no notifica todavía
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-08 · **Decidido por:** autor de la tesis
+- **Origen:** aclaraciones de F10-H03 (`specs/042-enviar-revision/spec.md`) y su plan (`research.md` §4, §7 y §8)
+- **Precisa a:** MD-07 (enviar a revisión exige 0 duras y 0 blandas sin justificar)
+- **Relacionadas:** RF-29, RF-32, RF-34, D-47, D-95; F10-H02 dejó para esta historia exigir el informe
+
+**Decisión.**
+- El Responsable de consolidación envía el distributivo de EN_CONSOLIDACION a la siguiente etapa activa (EN_REVISION_VRA por defecto) solo si se cumplen, en este orden:
+  1. todos los parciales están enviados;
+  2. la versión vigente está consolidada;
+  3. el consolidado no está desactualizado;
+  4. tiene informe sustentado;
+  5. no quedan inconsistencias abiertas.
+- Cada falta tiene su 409. El de las inconsistencias dice cuántas quedan, duras y blandas.
+- La transición la registra Aprobación con la acción `CONSOLIDADO_ENVIADO_A_REVISION` (D-95).
+- Esta historia no notifica al Vicerrector: lo hará F16-H01, a partir de las transiciones.
+- Corregir una inconsistencia dura en EN_CONSOLIDACION exige devolver el parcial a su carrera, que es de F12-H05 (#211).
+
+**Por qué.** RF-32 pide el consolidado con su informe sustentado. Enviar un consolidado viejo o sin sustento le daría al Vicerrector algo distinto de lo que se consolidó. Notificar ahora adelantaría parte de F16-H01 sin su bandeja. Como en D-47, no se inventa un requisito que tiene historia propia.
+
+**Alternativas.**
+- Exigir solo cero inconsistencias, como dice el issue: el informe y la consolidación quedarían opcionales.
+- Una notificación mínima en esta historia: se rehace con F16-H01.
+- Permitir que el Responsable edite en EN_CONSOLIDACION: choca con el parcial enviado sin cambios (F12-H02).
+
+**Consecuencias.**
+- Con los datos de prueba, el distributivo no puede pasar a revisión, porque tiene inconsistencias duras. El envío que pasa lo prueban las pruebas de integración hasta que llegue #211.
+- El tercer «Entonces» del issue #55, que el Vicerrector recibe una notificación, se cumple con F16-H01.
+
+**Documentos que hay que poner al día.** Ninguno.

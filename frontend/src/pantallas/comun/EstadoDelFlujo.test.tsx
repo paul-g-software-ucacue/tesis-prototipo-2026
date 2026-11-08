@@ -11,6 +11,7 @@ import type { EstadoDelFlujo } from './flujo';
 const RUTA = '/api/validacionocs/periodos/2026-I/flujo';
 const ENVIO = '/api/validacionocs/periodos/2026-I/parciales/DS/envio';
 const AVANCE = '/api/validacionocs/periodos/2026-I/avance';
+const REVISION = '/api/validacionocs/periodos/2026-I/revision';
 
 function flujo(cambios: Partial<EstadoDelFlujo> = {}): EstadoDelFlujo {
   return {
@@ -34,12 +35,17 @@ function flujo(cambios: Partial<EstadoDelFlujo> = {}): EstadoDelFlujo {
   };
 }
 
-function montar(carrera?: string) {
+function montar(carrera?: string, faltan?: string[]) {
   const consultas = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const alCambiar = vi.fn();
   render(
     <QueryClientProvider client={consultas}>
-      <EstadoDelFlujoDelPeriodo periodo="2026-I" carrera={carrera} alCambiar={alCambiar} />
+      <EstadoDelFlujoDelPeriodo
+        periodo="2026-I"
+        carrera={carrera}
+        alCambiar={alCambiar}
+        faltan={faltan}
+      />
     </QueryClientProvider>,
   );
   return { alCambiar };
@@ -152,6 +158,89 @@ describe('EstadoDelFlujo', () => {
     await usuario.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Enviar' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Parcial ya enviado');
+  });
+
+  describe('enviar a revisión (F10-H03)', () => {
+    const enConsolidacion = flujo({
+      etapa: 'EN_CONSOLIDACION',
+      nombreDeEtapa: 'Consolidación',
+      acciones: ['ENVIAR_A_REVISION'],
+    });
+
+    it('el Responsable envía a revisión con una confirmación', async () => {
+      simulada.responder('GET', RUTA, json(200, enConsolidacion));
+      simulada.responder('POST', REVISION, json(200, flujo({ etapa: 'EN_REVISION_VRA' })));
+      const { alCambiar } = montar(undefined, []);
+      const usuario = userEvent.setup();
+
+      await usuario.click(await screen.findByRole('button', { name: 'Enviar a revisión' }));
+      const confirmar = screen.getByRole('dialog', { name: 'Enviar a revisión' });
+      expect(confirmar).toHaveTextContent(
+        'El distributivo pasa a revisión del Vicerrectorado. Ya no se podrá consolidar ni justificar en esta etapa.',
+      );
+      await usuario.click(within(confirmar).getByRole('button', { name: 'Enviar' }));
+
+      await waitFor(() =>
+        expect(simulada.peticiones.some((una) => new URL(una.url).pathname === REVISION)).toBe(
+          true,
+        ),
+      );
+      await waitFor(() => expect(alCambiar).toHaveBeenCalled());
+    });
+
+    it('si falta algo, el botón queda deshabilitado y dice qué falta', async () => {
+      simulada.responder('GET', RUTA, json(200, enConsolidacion));
+      montar(undefined, ['Consolida el periodo.', 'Adjunta el informe sustentado.']);
+
+      const boton = await screen.findByRole('button', { name: 'Enviar a revisión' });
+      expect(boton).toBeDisabled();
+      const lista = screen.getByRole('list', { name: 'Falta para enviar a revisión' });
+      expect(
+        within(lista)
+          .getAllByRole('listitem')
+          .map((uno) => uno.textContent),
+      ).toEqual(['Consolida el periodo.', 'Adjunta el informe sustentado.']);
+      expect(boton).toHaveAttribute('aria-describedby', lista.id);
+    });
+
+    it('sin la acción no hay botón', async () => {
+      simulada.responder('GET', RUTA, json(200, flujo({ etapa: 'EN_CONSOLIDACION' })));
+      montar(undefined, []);
+
+      await screen.findByRole('region', { name: 'Estado del distributivo' });
+      expect(screen.queryByRole('button', { name: 'Enviar a revisión' })).not.toBeInTheDocument();
+    });
+
+    it('el 409 de inconsistencias abiertas dice cuántas quedan', async () => {
+      simulada.responder('GET', RUTA, json(200, enConsolidacion));
+      simulada.responder(
+        'POST',
+        REVISION,
+        json(409, {
+          titulo: 'Inconsistencias abiertas',
+          descripcion:
+            'Quedan inconsistencias abiertas. Corrige las duras y justifica las blandas en el panel de inconsistencias.',
+          codigo: 'VALIDACIONOCS_INCONSISTENCIAS_ABIERTAS',
+          detalles: [
+            {
+              campo: 'inconsistencias',
+              descripcion: 'Quedan 3: 2 duras y 1 blanda sin justificar.',
+            },
+          ],
+        }),
+      );
+      montar(undefined, []);
+      const usuario = userEvent.setup();
+
+      await usuario.click(await screen.findByRole('button', { name: 'Enviar a revisión' }));
+      await usuario.click(
+        within(screen.getByRole('dialog')).getByRole('button', { name: 'Enviar' }),
+      );
+
+      const aviso = await screen.findByRole('alert');
+      expect(aviso).toHaveTextContent('Inconsistencias abiertas');
+      expect(aviso).toHaveTextContent('Quedan 3: 2 duras y 1 blanda sin justificar.');
+    });
   });
 
   it('sin distributivo no muestra nada', async () => {

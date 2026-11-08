@@ -14,6 +14,7 @@ import ec.mdd.validacionocs.dominio.Solicitante;
 import ec.mdd.validacionocs.dominio.Transicion;
 import ec.mdd.validacionocs.puertos.entrada.AvanzarEtapa;
 import ec.mdd.validacionocs.puertos.entrada.ConsultarFlujo;
+import ec.mdd.validacionocs.puertos.entrada.EnviarARevision;
 import ec.mdd.validacionocs.puertos.entrada.EnviarParcial;
 import ec.mdd.validacionocs.puertos.entrada.FlujoDelDistributivo;
 import java.time.ZoneOffset;
@@ -32,9 +33,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * El flujo del distributivo ({@code contratos/validacionocs/openapi.yaml}, etiqueta {@code
- * Aprobacion}, F12-H02). El permiso de cada operación lo exige su {@code x-mdd-permiso} (ADR-021);
- * el rol de la etapa y la carrera los exige el dominio con los roles y la carrera del token. Si no
- * corresponden, el mismo 403 común que sin permiso, sin decir qué falta.
+ * Aprobacion}, F12-H02 y F10-H03). El permiso de cada operación lo exige su {@code x-mdd-permiso}
+ * (ADR-021); el rol de la etapa y la carrera los exige el dominio con los roles y la carrera del
+ * token. Si no corresponden, el mismo 403 común que sin permiso, sin decir qué falta.
  */
 @RestController
 class FlujoControlador implements AprobacionApi {
@@ -45,11 +46,17 @@ class FlujoControlador implements AprobacionApi {
     private final ConsultarFlujo consultar;
     private final EnviarParcial enviar;
     private final AvanzarEtapa avanzar;
+    private final EnviarARevision revisar;
 
-    FlujoControlador(ConsultarFlujo consultar, EnviarParcial enviar, AvanzarEtapa avanzar) {
+    FlujoControlador(
+            ConsultarFlujo consultar,
+            EnviarParcial enviar,
+            AvanzarEtapa avanzar,
+            EnviarARevision revisar) {
         this.consultar = consultar;
         this.enviar = enviar;
         this.avanzar = avanzar;
+        this.revisar = revisar;
     }
 
     @Override
@@ -73,6 +80,15 @@ class FlujoControlador implements AprobacionApi {
     public ResponseEntity<EstadoDelFlujo> avanzarEtapa(String periodo) {
         Solicitante quien = solicitante(true);
         return ResponseEntity.ok(respuesta(sinPermiso(() -> avanzar.avanzar(periodo, quien))));
+    }
+
+    // F10-H03: el permiso de la matriz D-16 y, en el dominio, el rol de EN_CONSOLIDACION.
+    @Override
+    @PreAuthorize("hasAuthority('PERMISO_CONSOLIDACION:APROBACION')")
+    public ResponseEntity<EstadoDelFlujo> enviarARevision(String periodo) {
+        Solicitante quien = solicitante(true);
+        return ResponseEntity.ok(
+                respuesta(sinPermiso(() -> revisar.enviarARevision(periodo, quien))));
     }
 
     private static FlujoDelDistributivo sinPermiso(Supplier<FlujoDelDistributivo> caso) {

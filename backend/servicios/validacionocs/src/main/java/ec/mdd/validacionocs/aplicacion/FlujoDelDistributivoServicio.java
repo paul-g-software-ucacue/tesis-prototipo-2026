@@ -1,13 +1,16 @@
 package ec.mdd.validacionocs.aplicacion;
 
+import ec.mdd.validacionocs.dominio.CondicionesDeRevision;
 import ec.mdd.validacionocs.dominio.EstadoDeEnvio;
 import ec.mdd.validacionocs.dominio.EstadoDelPeriodo;
 import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
 import ec.mdd.validacionocs.dominio.Solicitante;
+import ec.mdd.validacionocs.dominio.TipoDeEtapa;
 import ec.mdd.validacionocs.dominio.TipoDeTransicion;
 import ec.mdd.validacionocs.dominio.Transicion;
 import ec.mdd.validacionocs.puertos.entrada.AvanzarEtapa;
 import ec.mdd.validacionocs.puertos.entrada.ConsultarFlujo;
+import ec.mdd.validacionocs.puertos.entrada.EnviarARevision;
 import ec.mdd.validacionocs.puertos.entrada.EnviarParcial;
 import ec.mdd.validacionocs.puertos.entrada.FlujoDelDistributivo;
 import ec.mdd.validacionocs.puertos.entrada.PeriodoCerrado;
@@ -30,8 +33,8 @@ import java.util.Optional;
 
 /**
  * El flujo del distributivo (F12-H02): consultarlo, enviar el parcial de una carrera y el avance
- * genérico. Las reglas son de {@link ProcesoAprobacion}; este servicio coordina con Generación y
- * con la bitácora.
+ * genérico; desde F10-H03, enviar el consolidado a revisión, sin notificar (D-97). Las reglas son
+ * de {@link ProcesoAprobacion}; este servicio coordina con Generación y con la bitácora.
  *
  * <p>Enviar son dos transacciones, una por servicio (principio V, research §2): primero Generación
  * marca el parcial y calcula su hash, en la suya; después se registra la transición y, si era el
@@ -40,7 +43,7 @@ import java.util.Optional;
  * Generación, {@link ProcesoAprobacion#validarEnvio} rechaza lo que no cabe (FR-013).
  */
 public final class FlujoDelDistributivoServicio
-        implements ConsultarFlujo, EnviarParcial, AvanzarEtapa {
+        implements ConsultarFlujo, EnviarParcial, AvanzarEtapa, EnviarARevision {
 
     private final Distributivo distributivo;
     private final RepositorioProceso procesos;
@@ -97,7 +100,10 @@ public final class FlujoDelDistributivoServicio
                                             hashDelDistributivo,
                                             ahora);
                             procesos.guardar(bloqueado, nuevas);
-                            nuevas.forEach(una -> registro.registrar(cambio(periodo, una)));
+                            nuevas.forEach(
+                                    una ->
+                                            registro.registrar(
+                                                    cambio(periodo, una, Optional.empty())));
                             return bloqueado;
                         });
         return vista(proceso, despues, quien);
@@ -117,7 +123,42 @@ public final class FlujoDelDistributivoServicio
                                     bloqueado.avanzar(
                                             quien, actual.version(), hashDelDistributivo, ahora);
                             procesos.guardar(bloqueado, nuevas);
-                            nuevas.forEach(una -> registro.registrar(cambio(periodo, una)));
+                            nuevas.forEach(
+                                    una ->
+                                            registro.registrar(
+                                                    cambio(periodo, una, Optional.empty())));
+                            return bloqueado;
+                        });
+        return vista(proceso, actual, quien);
+    }
+
+    // F10-H03, research §2: primero lo que no necesita a Generación; después las condiciones, fuera
+    // de una transacción porque el panel llama a Datos (D-83), y en cada envío (FR-008); al final,
+    // con el proceso bloqueado, el agregado vuelve a comprobar y registra.
+    @Override
+    public FlujoDelDistributivo enviarARevision(String periodo, Solicitante quien) {
+        exigirAbierto(periodo);
+        DistributivoActual actual = actual(periodo);
+        transaccion.ejecutar(() -> proceso(periodo, actual, false)).validarRevision(quien);
+        CondicionesDeRevision condiciones = distributivo.condicionesDeRevision(periodo);
+        String hashDelDistributivo = distributivo.hash(periodo);
+        Instant ahora = reloj.instant();
+        ProcesoAprobacion proceso =
+                transaccion.ejecutar(
+                        () -> {
+                            ProcesoAprobacion bloqueado = proceso(periodo, actual, true);
+                            List<Transicion> nuevas =
+                                    bloqueado.enviarARevision(
+                                            quien,
+                                            condiciones,
+                                            actual.version(),
+                                            hashDelDistributivo,
+                                            ahora);
+                            procesos.guardar(bloqueado, nuevas);
+                            nuevas.forEach(
+                                    una ->
+                                            registro.registrar(
+                                                    cambio(periodo, una, condiciones.informe())));
                             return bloqueado;
                         });
         return vista(proceso, actual, quien);
@@ -158,12 +199,17 @@ public final class FlujoDelDistributivoServicio
         return proceso;
     }
 
-    private static CambioDeFlujo cambio(String periodo, Transicion transicion) {
+    // Una entrada por transición (D-95). Un paso desde EN_CONSOLIDACION solo viene del envío a
+    // revisión, porque el avance genérico rechaza esa etapa: lleva su propia acción y la huella del
+    // informe (F10-H03, research §5).
+    private static CambioDeFlujo cambio(
+            String periodo, Transicion transicion, Optional<String> informe) {
         Map<String, Object> detalle = new LinkedHashMap<>();
         detalle.put("periodo", periodo);
         transicion.carrera().ifPresent(carrera -> detalle.put("carrera", carrera));
         detalle.put("version", transicion.version());
         detalle.put("hash", transicion.hash());
+        informe.ifPresent(huella -> detalle.put("informe", huella));
         if (transicion.tipo() == TipoDeTransicion.ENVIO_PARCIAL) {
             return new CambioDeFlujo(
                     transicion.momento(),
@@ -176,7 +222,9 @@ public final class FlujoDelDistributivoServicio
         return new CambioDeFlujo(
                 transicion.momento(),
                 transicion.quien(),
-                CambioDeFlujo.Accion.ETAPA_AVANZADA,
+                transicion.desde() == TipoDeEtapa.EN_CONSOLIDACION
+                        ? CambioDeFlujo.Accion.CONSOLIDADO_ENVIADO_A_REVISION
+                        : CambioDeFlujo.Accion.ETAPA_AVANZADA,
                 detalle,
                 Map.of("estado", transicion.desde().name()),
                 Map.of("estado", transicion.hacia().name()));

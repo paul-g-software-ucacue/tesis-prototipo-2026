@@ -1,9 +1,13 @@
 package ec.mdd.generacion.aplicacion;
 
+import ec.mdd.generacion.dominio.ConsolidadoDelPeriodo;
 import ec.mdd.generacion.dominio.ContenidoDelParcial;
 import ec.mdd.generacion.dominio.EstadoDelParcial;
+import ec.mdd.generacion.dominio.InformeSustentado;
 import ec.mdd.generacion.dominio.ParcialCarrera;
 import ec.mdd.generacion.dominio.VersionDistributivo;
+import ec.mdd.generacion.puertos.entrada.CondicionesDeRevision;
+import ec.mdd.generacion.puertos.entrada.ConsultarConsolidado;
 import ec.mdd.generacion.puertos.entrada.DistributivoNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.EstadoDelDistributivo;
 import ec.mdd.generacion.puertos.entrada.EstadoDelDistributivo.ParcialYSuEstado;
@@ -18,21 +22,27 @@ import java.util.TreeMap;
 /**
  * Los parciales del distributivo para Aprobación (F12-H02, MD-04). Marcar un parcial cambia su
  * estado por orden de Aprobación y no se registra en Generación: la transición la registra
- * Aprobación (D-95). Por eso este servicio no recibe el registro de cambios.
+ * Aprobación (D-95). Por eso este servicio no recibe el registro de cambios. Las condiciones para
+ * enviar a revisión salen del consolidado, que ya arma el panel (F10-H03): no se evalúan dos veces.
  */
 public final class ParcialesDelDistributivoServicio implements ParcialesDelDistributivo {
 
     private final RepositorioDistributivos distributivos;
     private final Transaccion transaccion;
+    private final ConsultarConsolidado consolidado;
 
     /**
      * @param distributivos las versiones del distributivo
      * @param transaccion la transacción de Generación
+     * @param consolidado el consolidado, con su panel (F10-H03)
      */
     public ParcialesDelDistributivoServicio(
-            RepositorioDistributivos distributivos, Transaccion transaccion) {
+            RepositorioDistributivos distributivos,
+            Transaccion transaccion,
+            ConsultarConsolidado consolidado) {
         this.distributivos = distributivos;
         this.transaccion = transaccion;
+        this.consolidado = consolidado;
     }
 
     @Override
@@ -87,5 +97,22 @@ public final class ParcialesDelDistributivoServicio implements ParcialesDelDistr
                                         ContenidoDelParcial.de(periodo, parcial.carrera(), version)
                                                 .hash()));
         return ContenidoDelParcial.hashDelDistributivo(periodo, version.numero(), hashes);
+    }
+
+    // Solo lee: el consolidado se calcula al pedirlo, con el panel (F10-H03, research §1). Las
+    // reglas sin evaluar no están en las abiertas, así que no bloquean.
+    @Override
+    public CondicionesDeRevision condicionesDeRevision(String periodo) {
+        ConsolidadoDelPeriodo actual = consolidado.consolidado(periodo);
+        if (!actual.creado()) {
+            throw new DistributivoNoEncontrado();
+        }
+        return new CondicionesDeRevision(
+                actual.numero(),
+                actual.consolidacion().isPresent(),
+                actual.desactualizado(),
+                actual.informe().map(InformeSustentado::huella),
+                actual.duras(),
+                actual.blandas());
     }
 }

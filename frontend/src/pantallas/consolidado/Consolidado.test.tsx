@@ -181,6 +181,106 @@ describe('Consolidado del periodo', () => {
     });
   });
 
+  describe('enviar a revisión (F10-H03)', () => {
+    const FLUJO = '/api/validacionocs/periodos/2026-2/flujo';
+    const REVISION = '/api/validacionocs/periodos/2026-2/revision';
+    const EN_CONSOLIDACION = {
+      periodo: '2026-2',
+      etapa: 'EN_CONSOLIDACION',
+      nombreDeEtapa: 'Consolidación',
+      version: 1,
+      parciales: [],
+      acciones: ['ENVIAR_A_REVISION'],
+      transiciones: [],
+    };
+    const LISTO = {
+      ...CON_INFORME,
+      carreras: CON_INFORME.carreras.map((carrera) => ({
+        ...carrera,
+        estado: 'ENVIADO' as const,
+      })),
+      abiertas: { duras: 0, blandas: 0 },
+    };
+
+    async function faltan() {
+      const lista = await screen.findByRole('list', { name: 'Falta para enviar a revisión' });
+      return within(lista)
+        .getAllByRole('listitem')
+        .map((uno) => uno.textContent);
+    }
+
+    beforeEach(() => {
+      simulada.responder('GET', FLUJO, json(200, EN_CONSOLIDACION));
+    });
+
+    it('dice cada condición que falta y deja el botón deshabilitado', async () => {
+      await abrir();
+
+      expect(await faltan()).toEqual([
+        'Hay parciales sin enviar: su carrera tiene que enviarlos.',
+        'Adjunta el informe sustentado.',
+        'Quedan 4 inconsistencias abiertas: corrige las duras y justifica las blandas en el panel.',
+      ]);
+      expect(screen.getByRole('button', { name: 'Enviar a revisión' })).toBeDisabled();
+    });
+
+    it('sin consolidar pide consolidar', async () => {
+      simulada.responder('GET', RUTA, json(200, { ...LISTO, consolidacion: undefined }));
+      await abrir();
+
+      expect(await faltan()).toEqual(['Consolida el periodo.']);
+    });
+
+    it('desactualizado pide consolidar otra vez', async () => {
+      simulada.responder('GET', RUTA, json(200, { ...LISTO, desactualizado: true }));
+      await abrir();
+
+      expect(await faltan()).toEqual(['Consolida otra vez: algo cambió después de consolidar.']);
+    });
+
+    it('una sola abierta lo dice en singular', async () => {
+      simulada.responder('GET', RUTA, json(200, { ...LISTO, abiertas: { duras: 0, blandas: 1 } }));
+      await abrir();
+
+      expect(await faltan()).toEqual([
+        'Queda 1 inconsistencia abierta: corrige las duras y justifica las blandas en el panel.',
+      ]);
+    });
+
+    it('con todo cumplido envía y recarga el consolidado', async () => {
+      simulada.responder('GET', RUTA, json(200, LISTO));
+      simulada.responder(
+        'POST',
+        REVISION,
+        json(200, { ...EN_CONSOLIDACION, etapa: 'EN_REVISION_VRA', acciones: [] }),
+      );
+      await abrir();
+      const usuario = userEvent.setup();
+
+      const boton = await screen.findByRole('button', { name: 'Enviar a revisión' });
+      expect(boton).toBeEnabled();
+      expect(
+        screen.queryByRole('list', { name: 'Falta para enviar a revisión' }),
+      ).not.toBeInTheDocument();
+      const antes = simulada.peticiones.filter((una) => new URL(una.url).pathname === RUTA).length;
+      await usuario.click(boton);
+      await usuario.click(
+        within(screen.getByRole('dialog')).getByRole('button', { name: 'Enviar' }),
+      );
+
+      await waitFor(() =>
+        expect(
+          simulada.peticiones.filter((una) => new URL(una.url).pathname === RUTA).length,
+        ).toBeGreaterThan(antes),
+      );
+      expect(
+        simulada.peticiones.some(
+          (una) => una.method === 'POST' && new URL(una.url).pathname === REVISION,
+        ),
+      ).toBe(true);
+    });
+  });
+
   describe('el informe', () => {
     it('sin consolidar no se puede adjuntar, y lo dice', async () => {
       simulada.responder('GET', RUTA, json(200, SIN_CONSOLIDAR));
