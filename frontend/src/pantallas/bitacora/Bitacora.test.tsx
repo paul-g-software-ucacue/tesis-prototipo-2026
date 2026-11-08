@@ -72,6 +72,21 @@ describe('Bitácora', () => {
     ).toBeVisible();
   });
 
+  it('dice «Quién» en la columna y resume el objeto en una línea, con el texto completo al pasar', async () => {
+    await abrir();
+    const tabla = screen.getByRole('table', { name: 'Entradas de la bitácora' });
+
+    expect(within(tabla).getByRole('columnheader', { name: 'Quién' })).toBeVisible();
+    const resumen = within(tabla).getByText(
+      'periodo: 2026-I · docente: 0102030405 · actividad: 140-b',
+    );
+    expect(resumen).toHaveAttribute(
+      'title',
+      'periodo: 2026-I · docente: 0102030405 · actividad: 140-b',
+    );
+    expect(resumen).toHaveStyle({ whiteSpace: 'nowrap', textOverflow: 'ellipsis' });
+  });
+
   it('al expandir una entrada muestra el objeto, el valor anterior y el nuevo', async () => {
     await abrir();
     const usuario = userEvent.setup();

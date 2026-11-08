@@ -241,7 +241,7 @@ function TablaDeEntradas({ lista }: { lista: EntradaConsultada[] }) {
         <TableHead>
           <TableRow>
             <TableCell>Momento</TableCell>
-            <TableCell>Usuario</TableCell>
+            <TableCell>Quién</TableCell>
             <TableCell>Servicio</TableCell>
             <TableCell>Acción</TableCell>
             <TableCell>Periodo</TableCell>
@@ -265,7 +265,22 @@ function TablaDeEntradas({ lista }: { lista: EntradaConsultada[] }) {
                   <TableCell>{NOMBRE_DEL_SERVICIO[entrada.servicio]}</TableCell>
                   <TableCell>{entrada.accion}</TableCell>
                   <TableCell>{entrada.periodo ?? '—'}</TableCell>
-                  <TableCell>{resumen(entrada.objeto)}</TableCell>
+                  <TableCell>
+                    {/* Una línea con «…»: el detalle completo está en «Ver valores». */}
+                    <Box
+                      component="span"
+                      title={resumen(entrada.objeto)}
+                      sx={{
+                        display: 'block',
+                        maxWidth: { xs: 160, md: 360 },
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {resumen(entrada.objeto)}
+                    </Box>
+                  </TableCell>
                   <TableCell>
                     <Button
                       size="small"

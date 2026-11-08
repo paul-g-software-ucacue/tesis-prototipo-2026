@@ -25,7 +25,7 @@
 ## Resultado
 
 - Encabezado: «N entradas» con el `total`, y el paginador (50 por página por defecto; 25, 50 o 100). Al cambiar de página se envía el `corte` de la primera respuesta.
-- Tabla, de la más reciente a la más antigua: Momento (`es-EC`, `timeZone: 'America/Guayaquil'`, 24 horas), Usuario, Servicio (con su nombre), Acción, Periodo y Objeto (los pares clave–valor del objeto en una línea).
+- Tabla, de la más reciente a la más antigua: Momento (`es-EC`, `timeZone: 'America/Guayaquil'`, 24 horas), Quién, Servicio (con su nombre), Acción, Periodo y Objeto (los pares clave–valor del objeto en una sola línea, cortada con «…» y completa al pasar el puntero; el detalle está en «Ver valores»).
 - Cada fila se expande y muestra el objeto, el valor anterior y el nuevo como pares campo–valor. Si falta el anterior: «Sin valor anterior (se creó)». Si falta el nuevo: «Sin valor nuevo (se quitó)». Un valor `null`: «sin valor». Una lista o un objeto anidado se muestran con sangría, nunca como JSON crudo.
 - Sin entradas: «No hay entradas con estos filtros.», sin error (US1-5).
 - La pantalla no tiene ningún botón que cambie una entrada (FR-006).

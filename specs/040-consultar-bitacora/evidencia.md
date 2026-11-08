@@ -105,6 +105,8 @@ El 2026-11-07, sobre el perfil consolidado construido desde la rama (`http://loc
 
 **Ajuste de usabilidad que salió de la prueba.** En el filtro «Usuario» se escribió el nombre de una docente, que la bitácora no guarda (D-91). Con la aprobación del autor, el campo pasó a «Quién hizo el cambio», y las pistas de ese campo y de «Identificador» dicen qué va en cada uno (`contracts/spa.md`). Vitest suma una prueba de los dos textos.
 
+**La tabla en una ventana angosta.** El resumen del objeto se partía en muchas líneas y empujaba «Ver valores» fuera de la vista. Con la aprobación del autor, ahora va en una sola línea con «…» (el texto completo, al pasar el puntero; el detalle, en «Ver valores»), y la columna «Usuario» pasó a «Quién». Vitest suma una prueba: 509 en total.
+
 **Fuera de esta historia.** En «Asignar actividad», el docente se elige de una lista nativa sin búsqueda, igual que en Cargos y Proyectos. El autor pidió poder escribir y filtrar por nombre: va en un pull request aparte, porque esas pantallas son de otras historias.
 
 ## Pendiente
