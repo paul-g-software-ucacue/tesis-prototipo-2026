@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-95 · ADR-025.
+- **Siguiente número libre:** D-96 · ADR-025.
 
 ## Índice
 
@@ -93,6 +93,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-92 | 2026-11-06 | Las palabras clave de una asignatura no se tratan como un secreto en la bitácora | Aceptada | FR-011 de F17-H01 |
 | D-93 | 2026-11-07 | `golang.org/x/net` de Caddy sube a una versión con menos de dos semanas, como excepción | Aceptada | D-54, D-80, D-81 |
 | D-94 | 2026-11-07 | Un guardado que no cambia nada no deja entrada en el registro de cambios ni en la bitácora | Aceptada | Supuesto «Mismo valor» de F17-H01 |
+| D-95 | 2026-11-07 | Una transición del flujo la registra Aprobación; Generación no duplica el cambio de estado del parcial | Aceptada | D-90, MD-04 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1779,3 +1780,24 @@ Con la base de datos de Grype del 2026-11-07, la CI encontró además dos altas 
 - Las entradas sin cambio que ya están en la bitácora se quedan: no se pueden borrar.
 
 **Documentos que hay que poner al día.** El supuesto «Mismo valor» de `specs/039-bitacora-cambios/spec.md`, con una nota que remite a esta decisión.
+
+---
+
+## D-95. Una transición del flujo la registra Aprobación; Generación no duplica el cambio de estado del parcial
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-07 · **Decidido por:** autor de la tesis
+- **Origen:** plan de F12-H02 (`specs/041-avanzar-etapas/research.md` §3)
+- **Precisa a:** D-90 (la bitácora recibe todos los cambios que registra cada servicio)
+- **Relacionadas:** MD-04, D-94
+
+**Decisión.** Cuando un coordinador envía su parcial, la bitácora recibe **una** entrada: la transición que registra Aprobación (servicio Validación OCS), con quién, cuándo, desde qué estado, hacia cuál, la versión y el hash (RF-34, RF-44). Generación cambia el estado del parcial a enviado porque Aprobación se lo ordena (MD-04), pero no registra ese cambio aparte. Lo mismo vale para los cambios de estado que ordenen las historias siguientes (devolver, congelar, crear una versión nueva).
+
+**Por qué.** Es un solo hecho del negocio. Dos entradas por el mismo envío, una de cada servicio, harían que la bitácora diga dos veces lo mismo con datos distintos y romperían «exactamente una entrada por transición» (SC-001 de F12-H02). El estado del parcial es consecuencia de la transición, no una decisión de Generación.
+
+**Alternativas.** Que Generación registre el cambio del parcial y Aprobación no registre la transición: Generación no conoce las etapas ni el rol que la mueve. Las dos entradas: duplicado.
+
+**Consecuencias.**
+- La operación de Generación que marca el parcial no llama a su `RegistroDeCambios`. Su JavaDoc lo dice y una prueba lo comprueba.
+- Las propuestas, las actividades y las justificaciones siguen registrándose en Generación como hasta ahora.
+
+**Documentos que hay que poner al día.** Ninguno.
