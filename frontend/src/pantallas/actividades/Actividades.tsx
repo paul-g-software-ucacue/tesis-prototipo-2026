@@ -19,6 +19,7 @@ import { useState } from 'react';
 import { AvisoDeError } from '../../errores/AvisoDeError';
 import { traducirError, type MensajeDeError } from '../../errores/traducir';
 import { useTitulo } from '../../navegacion/useTitulo';
+import { useFlujo } from '../comun/flujo';
 import { ESCRITURA_DE_LA_PROPUESTA } from '../../sesion/funcionalidades';
 import { tieneAlguno } from '../../sesion/permisos';
 import { useSesionActual } from '../../sesion/useSesionActual';
@@ -76,6 +77,10 @@ export function Actividades() {
   const periodo = elegido ?? porOmision;
   const estado = periodos.data?.find((uno) => uno.codigo === periodo)?.estado;
   const actividades = useActividades(periodo);
+  const flujo = useFlujo(periodo);
+  const enviadas = new Set(
+    (flujo.data?.parciales ?? []).filter((uno) => uno.enviado).map((uno) => uno.carrera),
+  );
   const puedeEscribir =
     tieneAlguno(sesion.data?.permisos, ESCRITURA_DE_LA_PROPUESTA) && estado !== 'CERRADO';
 
@@ -160,7 +165,8 @@ export function Actividades() {
             key={carrera.carrera}
             carrera={carrera}
             nombre={nombreDe(carrera.carrera)}
-            puedeEscribir={puedeEscribir}
+            // Un parcial enviado ya no admite actividades (F12-H02, FR-005).
+            puedeEscribir={puedeEscribir && !enviadas.has(carrera.carrera)}
             alAbrir={setAbierto}
           />
         ))}

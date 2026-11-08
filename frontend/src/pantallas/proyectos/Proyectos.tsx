@@ -18,6 +18,7 @@ import { useState } from 'react';
 import { AvisoDeError } from '../../errores/AvisoDeError';
 import { traducirError } from '../../errores/traducir';
 import { useTitulo } from '../../navegacion/useTitulo';
+import { EstadoDelFlujoDelPeriodo } from '../comun/EstadoDelFlujo';
 import { ESCRITURA_DE_LOS_DOCENTES } from '../../sesion/funcionalidades';
 import { tieneAlguno } from '../../sesion/permisos';
 import { useSesionActual } from '../../sesion/useSesionActual';
@@ -105,6 +106,8 @@ export function Proyectos() {
           ))}
         </TextField>
       </Stack>
+      {/* El Gestor de unidad avanza BORRADOR_UNIDADES, si está activa (F12-H02, US3). */}
+      <EstadoDelFlujoDelPeriodo periodo={periodo || undefined} soloEn={['BORRADOR_UNIDADES']} />
       {escritura && (
         <Button variant="outlined" sx={{ mb: 2 }} onClick={() => setAbierto({ que: 'registrar' })}>
           Registrar proyecto

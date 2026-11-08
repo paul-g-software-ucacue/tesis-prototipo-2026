@@ -590,6 +590,23 @@ describe('Oferta del periodo', () => {
       ).length;
     }
 
+    it('con el parcial de su carrera enviado, ya no propone (F12-H02, FR-005)', async () => {
+      conSugerencia();
+      simulada.responder(
+        'GET',
+        RUTA_PARCIALES,
+        json(200, {
+          ...PARCIALES,
+          parciales: PARCIALES.parciales.map((uno) => ({ ...uno, estado: 'ENVIADO' })),
+        }),
+      );
+
+      const dialogo = await abrirComoCoordinador();
+
+      expect(await within(dialogo).findByText(/PERALTA MALDONADO JUAN ANDRES/)).toBeVisible();
+      expect(within(dialogo).queryByRole('button', { name: /^Proponer/ })).not.toBeInTheDocument();
+    });
+
     it('si falta la justificación, avisa sin error y abre el campo', async () => {
       conSugerencia();
       simulada.responder(
