@@ -63,7 +63,23 @@ En la primera corrida, `probar_avance.sh` terminó con 1 sin imprimir nada: la l
 | Bitácora (D-90, D-95) | Una entrada por transición, la registra Aprobación, con la versión y el hash |
 | Decisión registrada | D-95, antes de implementar |
 
+## Comprobación del autor en el perfil local (T021, `quickstart.md` §3)
+
+El 2026-11-08, en http://localhost:8081, con el perfil construido desde la rama y los datos de prueba cargados (2026-I abierto, distributivo creado, `coordinacion.demo` en 550732E01-D-0301).
+
+| Paso | Resultado |
+|---|---|
+| 1. `coordinacion.demo` envía su parcial desde «Oferta del periodo» | OK: «enviado por coordinacion.demo el 8/11/26, 06:53» |
+| 3. La bitácora como `vicerrectorado.demo` | OK: una entrada `PARCIAL_ENVIADO`, de `PENDIENTE` a `ENVIADO`, con la carrera, la versión 1 y el hash de 64 caracteres; la etapa sigue en `BORRADOR_CARRERA` |
+| 4. «Consolidado del periodo» como `vicerrectorado.demo` | OK: «Propuesta de carrera · versión 1», una carrera enviada de 7, sin botón para enviar |
+| 5. Otro rol (`docente.demo`) | OK: no tiene «Oferta del periodo» en el menú |
+| 6. Los 6 parciales que faltan, cambiando la carrera del coordinador en «Roles» | OK: al enviar el último (07:36) el estado dice «Consolidación · versión 1», etapa `EN_CONSOLIDACION`. En la base: 7 `PARCIAL_ENVIADO` y una sola `ETAPA_AVANZADA`, de `BORRADOR_CARRERA` a `EN_CONSOLIDACION`, con la versión 1 y el hash |
+
+**SC-005 (enviar el parcial en menos de 30 s): no se da por cumplido todavía.** La primera vez tomó 3 minutos. En el paso 6 hubo cerca de 1 minuto entre un envío y el siguiente, contando el cambio de carrera como administrador y volver a iniciar sesión, sin un cronómetro solo del envío. Queda por medirlo en el equipo de demostración.
+
+**Un hallazgo de la comprobación, ya corregido.** Con el parcial enviado, la oferta seguía diciendo «No cambias la oferta, pero propones sus docentes.», aunque ya no se podía proponer. Ahora, si todas las carreras que se ven están enviadas, dice «Ya se envió el parcial: sus propuestas quedan en solo lectura.». Lo comprueban una prueba nueva en `Oferta.test.tsx` y el caso del envío en `e2e/oferta.spec.ts` (Vitest de la oferta: 68 pruebas; Playwright de la oferta: 10 casos con axe; tipos, ESLint y Prettier en verde).
+
 ## Pendiente (T021)
 
-- La comprobación del autor con `quickstart.md` §4, con el cronómetro de SC-005 (enviar el parcial en menos de 30 s).
+- El cronómetro de SC-005 en el equipo de demostración.
 - El pull request, su fusión con la aprobación del autor, el despliegue en el equipo de demostración (con la migración `V3` en `validacionocs`) y el PR de evidencia con `Closes #57`.

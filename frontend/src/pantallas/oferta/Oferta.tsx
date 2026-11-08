@@ -97,6 +97,10 @@ export function Oferta() {
   // Un parcial enviado ya no admite propuestas (F12-H02, FR-005).
   const enviado = (carrera: string) =>
     parciales.data?.parciales.find((uno) => uno.carrera === carrera)?.estado === 'ENVIADO';
+  // Con todo lo que se ve ya enviado, el aviso no dice que se propone.
+  const todoEnviado =
+    Boolean(oferta.data?.carreras.length) &&
+    Boolean(oferta.data?.carreras.every((carrera) => enviado(carrera.carrera)));
 
   const terminar = async () => {
     await consultas.invalidateQueries({ queryKey: CLAVE_OFERTA });
@@ -189,9 +193,11 @@ export function Oferta() {
           )}
           {oferta.data.modificable && !escritura && (
             <Alert severity="info" sx={{ my: 1 }}>
-              {puedeProponer
-                ? 'No cambias la oferta, pero propones sus docentes.'
-                : 'Solo lectura: tu rol no cambia la oferta.'}
+              {!puedeProponer
+                ? 'Solo lectura: tu rol no cambia la oferta.'
+                : todoEnviado
+                  ? 'Ya se envió el parcial: sus propuestas quedan en solo lectura.'
+                  : 'No cambias la oferta, pero propones sus docentes.'}
             </Alert>
           )}
           {puedeCambiar && (

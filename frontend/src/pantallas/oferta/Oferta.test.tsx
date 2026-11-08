@@ -1222,6 +1222,26 @@ describe('Oferta del periodo', () => {
     expect(screen.queryByText('Solo lectura: tu rol no cambia la oferta.')).not.toBeInTheDocument();
   });
 
+  it('con el parcial enviado, el aviso ya no dice que propone (F12-H02, FR-005)', async () => {
+    simulada.responder(
+      'GET',
+      RUTA_PARCIALES,
+      json(200, {
+        ...PARCIALES,
+        parciales: PARCIALES.parciales.map((uno) => ({ ...uno, estado: 'ENVIADO' })),
+      }),
+    );
+    sesionCon(simulada, 'coordinacion.demo', COORDINADOR);
+    montarSpa('/oferta');
+
+    expect(
+      await screen.findByText('Ya se envió el parcial: sus propuestas quedan en solo lectura.'),
+    ).toBeVisible();
+    expect(
+      screen.queryByText('No cambias la oferta, pero propones sus docentes.'),
+    ).not.toBeInTheDocument();
+  });
+
   it('muestra las horas con hasta dos decimales', async () => {
     simulada.responder('GET', RUTA, json(200, { ...OFERTA_EN_PLANIFICACION, horasACubrir: 12.25 }));
     sesionCon(simulada, 'consolidacion.demo', CONSOLIDACION);

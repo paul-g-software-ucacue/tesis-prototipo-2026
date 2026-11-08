@@ -568,6 +568,10 @@ test('el coordinador envía el parcial de su carrera y ya no propone', async ({ 
 
   await expect(estado).toContainText(`${DS.codigo}: enviado por coordinacion.demo`);
   await expect(estado.getByRole('button', { name: 'Enviar parcial' })).toHaveCount(0);
+  await expect(
+    page.getByText('Ya se envió el parcial: sus propuestas quedan en solo lectura.'),
+  ).toBeVisible();
+  await expect(page.getByText('No cambias la oferta, pero propones sus docentes.')).toHaveCount(0);
   await page.reload();
   await ingresar(page, COORDINADOR.cuerpo.usuario);
   await page.getByRole('link', { name: 'Oferta del periodo' }).click();
