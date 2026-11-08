@@ -139,7 +139,7 @@ En cada tarea: la comparación va después de todas las validaciones (una solici
   - el caso borde del rol perdido durante la sesión: lo cubren D-62 y su prueba existente de la renovación, citada por su nombre;
   - Gitleaks y shellcheck;
   - los criterios de terminado de la constitución §6 (escenarios, contrato, arquitectura, errores, validaciones, JavaDoc, seguridad y glosario).
-- [ ] T029 Fusionar solo con la aprobación del autor y con todas las comprobaciones en verde. Verificar el despliegue en el equipo de demostración con evidencia (GitHub `demostracion` y los 8 contenedores sanos con la versión nueva). Comprobación del autor con `quickstart.md` §4, con los datos de `deploy/equipo/poblar_demo.sh`. PR de evidencia con `Closes #70`, y borrar las ramas.
+- [X] T029 Fusionar solo con la aprobación del autor y con todas las comprobaciones en verde. Verificar el despliegue en el equipo de demostración con evidencia (GitHub `demostracion` y los 8 contenedores sanos con la versión nueva). Comprobación del autor con `quickstart.md` §4, con los datos de `deploy/equipo/poblar_demo.sh`. PR de evidencia con `Closes #70`, y borrar las ramas. **Resultado:** #199 fusionado (`4ac135b`) y desplegado «Sano en 93 s»; comprobación del autor y SC-004 (30 s) en `evidencia.md` §«Equipo de demostración».
 
 ---
 

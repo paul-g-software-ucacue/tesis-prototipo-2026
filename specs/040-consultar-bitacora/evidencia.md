@@ -109,8 +109,20 @@ El 2026-11-07, sobre el perfil consolidado construido desde la rama (`http://loc
 
 **Fuera de esta historia.** En «Asignar actividad», el docente se elige de una lista nativa sin búsqueda, igual que en Cargos y Proyectos. El autor pidió poder escribir y filtrar por nombre: va en un pull request aparte, porque esas pantallas son de otras historias.
 
+## Equipo de demostración
+
+| Comprobación | Resultado | Evidencia | Fecha |
+|---|---|---|---|
+| Comprobaciones del PR #199 | 12 de 12, con `probar_consulta_bitacora.sh` en `perfil-consolidado` | GitHub | 2026-11-07 |
+| Despliegue de F17-H02 | `4ac135b982b7`, «Sano en 93 s», con los 8 contenedores sanos y la prueba de humo en verde (pasos 1 a 5); `demostracion` exitoso | `journalctl`, `docker ps` y GitHub | 2026-11-07 |
+| Despliegue del #200 (selector de docentes) | `69f7377848c0`, «Sano en 87 s», con los 8 contenedores sanos y la prueba de humo en verde; `demostracion` exitoso | `journalctl`, `docker ps` y GitHub | 2026-11-07 |
+| A y B. Consulta y permisos | El autor consulta la bitácora como Vicerrector, y `coordinacion.demo` no la ve | Comprobación del autor | 2026-11-07 |
+| C. Sin cambios (D-94) | La 140-b, en 6 horas, guardada con 6: ninguna entrada. De 6 a 5: `ACTIVIDAD_GUARDADA` de `coordinacion.demo`, `{"horas": "6"}` → `{"horas": "5"}`, llegó en 0,124 s. La entrada de 4 a 4 de F17-H01 (12:02:14) se queda: la bitácora no se borra (FR-014). La bitácora pasó de 617 a 618 entradas | Comprobación del autor y consulta de solo lectura | 2026-11-07 |
+| SC-004 | **30 segundos** para encontrar quién cambió la 140-b, ya conociendo la pantalla (límite: 1 minuto) | Comprobación del autor | 2026-11-07 |
+| Selector de docentes (#200) | En «Asignar actividad», como `coordinacion.demo`, la lista se acota al escribir | Comprobación del autor | 2026-11-07 |
+
+Para probar el selector, el autor entró primero como Vicerrector y no vio «Asignar actividad»: es lo esperado, porque solo el Coordinador de carrera escribe la oferta y la propuesta de su carrera (D-16).
+
 ## Pendiente
 
 - **Rol perdido durante la sesión.** Lo cubren la D-62 y la prueba de la renovación del token: el permiso deja el token en la próxima renovación.
-- **SC-004.** Volver a medir en el equipo de demostración, ya conociendo la pantalla (en el perfil local fueron 2 minutos la primera vez, con el aprendizaje).
-- **El equipo de demostración.** Despliegue y comprobación del autor con `quickstart.md` §4, después de la fusión (T029).
