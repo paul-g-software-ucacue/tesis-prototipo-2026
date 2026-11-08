@@ -48,7 +48,7 @@ description: "Tareas de F12-H05: devolver un parcial a su carrera con una observ
 
 - [ ] T002 Agregar a `contratos/validacionocs/openapi.yaml`, según `contracts/validacionocs.md`:
   - la operación `devolverParciales` (`POST /api/validacionocs/periodos/{periodo}/devolucion`), en la etiqueta `Aprobacion`, con `x-mdd-permiso: CONSOLIDACION:APROBACION`;
-  - el cuerpo `SolicitudDeDevolucion` (`additionalProperties: false`): `devoluciones`, de 1 a 50 elementos, cada uno con `carrera` (`^[0-9A-Z_-]{1,20}$`) y `observacion` (`minLength: 10`, `maxLength: 500`, `pattern: '\S'`);
+  - el cuerpo `SolicitudDeDevolucion` (`additionalProperties: false`): `devoluciones`, de 1 a 50 elementos, cada uno con `carrera` (`^[0-9A-Z_-]{1,20}$`) y `observacion` (`minLength: 10`, `maxLength: 500`, `pattern: '^[\s\S]*\S[\s\S]*$'`, que cubre el texto entero: con `'\S'` el `@Pattern` generado solo aceptaría un carácter);
   - sus respuestas 200 `EstadoDelFlujo`, 400, 401, 403, 404, 409 y 500, con los códigos de `contracts/validacionocs.md`;
   - `DevolucionDelParcial` (`por`, `en` `date-time`, `observacion`, todos obligatorios) como `devolucion` opcional de `ParcialDelFlujo`;
   - `DEVOLVER_PARCIALES` en `AccionDelFlujo` y `DEVOLUCION` en `TransicionDelFlujo.tipo`.
@@ -91,6 +91,7 @@ description: "Tareas de F12-H05: devolver un parcial a su carrera con una observ
 - [ ] T007 [US1] En el dominio de Validación OCS, sumar `EstadoDeEnvio.DEVUELTO`, `TipoDeTransicion.DEVOLUCION` y `Transicion.observaciones` (mapa ordenado, solo en `DEVOLUCION`; vacío en los demás tipos, que el constructor exige). Agregar a `VAL/test/.../dominio/ProcesoAprobacionTest.java` y ver fallar:
   - `devolver` con dos carreras deja los dos parciales DEVUELTO, los demás ENVIADO, el estado en BORRADOR_CARRERA y una `DEVOLUCION` de EN_CONSOLIDACION a BORRADOR_CARRERA, con la versión, el hash, quién, cuándo y las dos observaciones;
   - devolver todas las carreras se permite (Edge Cases);
+  - la `DEVOLUCION` lleva la versión vigente, y la versión no cambia: no se crea una nueva (FR-014);
   - una carrera sin parcial en el proceso (`ParcialNoEncontrado`) o con el parcial PENDIENTE (`ParcialNoEnviado`) rechaza todo, sin cambiar nada (FR-005);
   - una carrera repetida lanza `CarreraRepetida`;
   - `validarDevolucion` no cambia nada.
@@ -125,7 +126,8 @@ description: "Tareas de F12-H05: devolver un parcial a su carrera con una observ
   - devolver dos carreras desde EN_CONSOLIDACION deja el proceso en BORRADOR_CARRERA, las dos DEVUELTO y la `DEVOLUCION` con sus dos filas en `validacionocs.observacion_de_devolucion`;
   - un `RegistroDeCambios` falso recibe una sola entrada;
   - con dos hilos que devuelven a la vez, una sola `DEVOLUCION`; el otro recibe `EtapaNoAdmiteDevolucion` (SC-004);
-  - una devolución y un envío a revisión a la vez: pasa solo uno.
+  - una devolución y un envío a revisión a la vez: pasa solo uno;
+  - dos devoluciones a la vez con carreras **distintas**: pasa una; las carreras de la otra quedan DEVUELTO en Generación y ENVIADO en Aprobación; volver a devolverlas pasa y deja todo coherente (research §11).
 - [ ] T011 [P] [US1] Agregar a `GEN/integrationTest/` una prueba con PostgreSQL real de `marcarParcialesDevueltos`:
   - dos carreras quedan DEVUELTO;
   - con una carrera inexistente, ninguna cambia.
@@ -166,6 +168,7 @@ description: "Tareas de F12-H05: devolver un parcial a su carrera con una observ
   - el 400 `COMUN_SOLICITUD_INVALIDA` con `devoluciones` vacía, una observación de 9 y de 501 caracteres, una solo de espacios y una carrera fuera del patrón, cada uno con su campo;
   - el 400 `VALIDACIONOCS_OBSERVACION_INVALIDA`, con una observación de 10 caracteres que tiene espacios en los extremos y la carrera en el detalle;
   - el 400 `VALIDACIONOCS_CARRERA_REPETIDA`;
+  - una observación normal de 10 caracteres y una de 500, con saltos de línea, pasan el contrato (el patrón de A1 del análisis);
   - una devolución de tres carreras con una observación inválida no devuelve ninguna (US3-2).
 
 **Checkpoint**: RF-36 se cumple en la API.
@@ -236,7 +239,7 @@ description: "Tareas de F12-H05: devolver un parcial a su carrera con una observ
 - **Setup:** T001 antes del código.
 - **Fundacional:**
   - T002 y T003 antes del código;
-  - T004 depende de T002, porque usa el contrato al compilar;
+  - T004 después de T002, para que `:servicios:validacionocs` compile;
   - T005 depende de T003;
   - T006 no depende de las anteriores.
 - **US1:**

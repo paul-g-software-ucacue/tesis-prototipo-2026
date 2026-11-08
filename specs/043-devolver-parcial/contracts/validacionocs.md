@@ -11,7 +11,7 @@ Una operación nueva en la etiqueta `Aprobacion`, y cambios compatibles en `Esta
 ```yaml
 devoluciones:            # de 1 a 50
   - carrera: 550411C02-P-0301      # ^[0-9A-Z_-]{1,20}$
-    observacion: "Faltan docentes en 12 paralelos de primer nivel."   # 10 a 500, pattern '\S'
+    observacion: "Faltan docentes en 12 paralelos de primer nivel."   # 10 a 500, pattern '^[\s\S]*\S[\s\S]*$'
 ```
 
 | Estado | Cuándo |

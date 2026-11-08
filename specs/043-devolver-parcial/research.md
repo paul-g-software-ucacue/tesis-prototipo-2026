@@ -67,6 +67,8 @@ Fase 0 del plan de F12-H05. La especificación no dejó marcas por aclarar; aqu�
 - Guardar la observación en `parcial_del_proceso`: se perdería al devolver otra vez (la segunda devolución de una carrera, Edge Cases).
 - Una entrada por carrera devuelta: D-95 pide una por transición.
 
+**La observación en la bitácora.** Va completa. Es texto libre del Responsable y puede nombrar a un docente, pero no es uno de los campos de datos personales del docente que D-91 deja fuera; RF-36 pide que la vea quien debe corregir, y RF-44 que la transición quede auditada con lo que se decidió.
+
 ## 7. El consolidado
 
 **Decisión.** Devolver no marca el consolidado desactualizado. Lo marca, como siempre, cualquier propuesta, asignación o quita posterior a consolidar (F10-H02: `ultimoCambioDeAsignaciones`). Se ajustó FR-006 de la especificación.
@@ -97,7 +99,7 @@ Fase 0 del plan de F12-H05. La especificación no dejó marcas por aclarar; aqu�
 - **El contrato:**
   - `devoluciones`: de 1 a 50 elementos;
   - `carrera`: el patrón de `ParcialDelFlujo.carrera`, `^[0-9A-Z_-]{1,20}$`;
-  - `observacion`: de 10 a 500 caracteres, con al menos un carácter que no sea espacio (`pattern: '\S'`).
+  - `observacion`: de 10 a 500 caracteres, con al menos un carácter que no sea espacio (`pattern: '^[\s\S]*\S[\s\S]*$'`). El patrón cubre el texto entero porque la validación generada en Java compara la cadena completa (`@Pattern`); `'\S'` solo aceptaría un carácter.
 
   Lo que no cumple responde 400 `COMUN_SOLICITUD_INVALIDA` con el campo, como en los demás contratos (principio XIV).
 - **El dominio:**
@@ -125,7 +127,12 @@ Orden de las comprobaciones: el permiso (403) y el contrato (400); la observaci�
 
 ## 11. Dos operaciones a la vez (SC-004)
 
-**Decisión.** El bloqueo de la fila del proceso de F12-H02. La segunda devolución, o un envío a revisión que llega después, encuentra el distributivo en BORRADOR_CARRERA y recibe su 409, sin transición. Generación ya habrá marcado sus parciales (idempotente), lo que no cambia nada si eran los mismos. Si eran otros, quedan DEVUELTO en Generación y ENVIADO en Aprobación: el coordinador podría editarlos y el envío a revisión los atrapa (§2). La prueba de integración lo cubre con las mismas carreras.
+**Decisión.** El bloqueo de la fila del proceso de F12-H02. La segunda devolución, o un envío a revisión que llega después, encuentra el distributivo en BORRADOR_CARRERA y recibe su 409, sin transición. Generación ya habrá marcado sus parciales (idempotente), lo que no cambia nada si eran los mismos. Si eran otros, quedan DEVUELTO en Generación y ENVIADO en Aprobación:
+- el coordinador podría editarlos, pero no reenviarlos: Aprobación responde `ParcialYaEnviado`;
+- cuando las carreras de la primera devolución reenvían, el distributivo vuelve a EN_CONSOLIDACION, y el envío a revisión se rechaza con `ParcialesPendientes`, porque Generación no los tiene enviados (§2);
+- la salida es que el Responsable vuelva a devolver esas carreras: Aprobación las tiene ENVIADO, así que la devolución pasa, y después su coordinador las reenvía.
+
+La prueba de integración cubre las dos variantes: con las mismas carreras y con carreras distintas, incluida esa salida.
 
 ## 12. Cómo se prueba, y SC-005 de F10-H03 (SC-007)
 
