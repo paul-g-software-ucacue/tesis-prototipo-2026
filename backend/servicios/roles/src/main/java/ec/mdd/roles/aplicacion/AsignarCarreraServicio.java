@@ -12,6 +12,7 @@ import ec.mdd.roles.puertos.salida.Transaccion;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * La carrera de cada coordinador, con su registro. El código no se comprueba en Académico, que está
@@ -53,9 +54,13 @@ public final class AsignarCarreraServicio implements AsignarCarrera {
         Instant ahora = reloj.instant();
         transaccion.ejecutar(
                 () -> {
+                    Optional<String> previa = carreras.de(nombre);
+                    // La misma carrera no cambia nada: no se guarda ni se registra (D-94).
+                    if (previa.filter(carrera::equals).isPresent()) {
+                        return carrera;
+                    }
                     Map<String, Object> anterior =
-                            carreras.de(nombre)
-                                    .<Map<String, Object>>map(previa -> Map.of("carrera", previa))
+                            previa.<Map<String, Object>>map(una -> Map.of("carrera", una))
                                     .orElse(Map.of());
                     carreras.guardar(nombre, carrera, quien, ahora);
                     registro.registrar(

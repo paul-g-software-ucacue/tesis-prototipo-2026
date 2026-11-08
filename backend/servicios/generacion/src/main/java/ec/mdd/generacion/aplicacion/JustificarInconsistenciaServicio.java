@@ -18,6 +18,7 @@ import ec.mdd.generacion.puertos.salida.RepositorioJustificaciones;
 import ec.mdd.generacion.puertos.salida.Transaccion;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -73,6 +74,19 @@ public final class JustificarInconsistenciaServicio implements JustificarInconsi
                         solicitud.texto(),
                         solicitud.quien(),
                         ahora);
+        // El mismo texto no cambia nada: no se guarda ni se registra (D-94).
+        if (entrada.justificacion().filter(justificacion::mismoTextoQue).isPresent()) {
+            return entrada;
+        }
+        Map<String, Object> detalle = new LinkedHashMap<>();
+        detalle.put("periodo", solicitud.periodo());
+        detalle.put("version", actual.numero());
+        detalle.put("tipo", solicitud.tipo().name());
+        detalle.put("objeto", solicitud.objeto());
+        // El texto no va a la bitácora: solo que cambió (D-94).
+        if (entrada.justificacion().isPresent()) {
+            detalle.put("textoCambiado", true);
+        }
         transaccion.ejecutar(
                 () -> {
                     justificaciones.guardar(version, justificacion);
@@ -81,11 +95,7 @@ public final class JustificarInconsistenciaServicio implements JustificarInconsi
                                     ahora,
                                     solicitud.quien(),
                                     CambioDeDistributivo.Accion.INCONSISTENCIA_JUSTIFICADA,
-                                    Map.of(
-                                            "periodo", solicitud.periodo(),
-                                            "version", actual.numero(),
-                                            "tipo", solicitud.tipo().name(),
-                                            "objeto", solicitud.objeto()),
+                                    detalle,
                                     entrada.justificacion()
                                             .map(JustificarInconsistenciaServicio::valores)
                                             .orElse(Map.of()),

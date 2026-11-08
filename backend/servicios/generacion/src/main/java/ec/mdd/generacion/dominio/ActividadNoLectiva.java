@@ -54,6 +54,14 @@ public record ActividadNoLectiva(
         }
     }
 
+    /**
+     * Si tiene las mismas horas que otra con su misma llave ({@link #esDe}): guardarla no cambia
+     * nada (D-94). Quién la asignó y cuándo no cuentan, y 4 y 4.00 son las mismas horas.
+     */
+    public boolean mismasHorasQue(ActividadNoLectiva otra) {
+        return horas.compareTo(otra.horas) == 0;
+    }
+
     /** Si es esta misma actividad del parcial: la llave incluye el proyecto. */
     public boolean esDe(String otraCarrera, String otroDocente, String otra, String otroProyecto) {
         return carrera.equals(otraCarrera)

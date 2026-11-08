@@ -36,7 +36,8 @@ import java.util.Optional;
 /**
  * Asigna y quita actividades no lectivas. Lo que exige cada una lo decide el dominio, con los datos
  * de sus dueños. Sin horas suficientes se guarda igual, con un aviso, hasta F07-H02 (D-78). Primero
- * consulta y después guarda, para no abrir una transacción durante una llamada a otro proceso.
+ * consulta y después guarda, para no abrir una transacción durante una llamada a otro proceso. Con
+ * las mismas horas no guarda ni registra (D-94).
  */
 public final class AsignarActividadServicio implements AsignarActividad {
 
@@ -125,6 +126,10 @@ public final class AsignarActividadServicio implements AsignarActividad {
                                     docente.identificacion(),
                                     delCatalogo.codigo(),
                                     actividad.proyecto());
+                    // Con las mismas horas nada cambia: no se guarda ni se registra (D-94).
+                    if (anterior.filter(actividad::mismasHorasQue).isPresent()) {
+                        return new ActividadGuardada(anterior.get());
+                    }
                     distributivos.guardarActividad(actual.id(), actividad);
                     registro.registrar(cambioGuardado(periodo, actividad, anterior));
                     return new ActividadGuardada(actividad);

@@ -36,6 +36,28 @@ class ActividadNoLectivaTest {
         assertThat(una.esDe("CONT", "0109990010", "141-a", "INV-2025-01")).isFalse();
     }
 
+    @Test
+    void dadasLasMismasHorasEscritasDistinto_cuandoSeCompara_entoncesNoEsUnCambio() {
+        // D-94: quién y cuándo no cuentan; 4 y 4.00 son las mismas horas.
+        ActividadNoLectiva habia = actividad("4", null);
+        ActividadNoLectiva nueva =
+                new ActividadNoLectiva(
+                        "TDS",
+                        "0109990010",
+                        "PEREZ LUIS",
+                        "141-a",
+                        "Investigar",
+                        Componente.INVESTIGACION,
+                        null,
+                        null,
+                        new BigDecimal("4.00"),
+                        Instant.parse("2026-11-07T15:00:00Z"),
+                        "otra.coordinacion");
+
+        assertThat(nueva.mismasHorasQue(habia)).isTrue();
+        assertThat(actividad("6", null).mismasHorasQue(habia)).isFalse();
+    }
+
     private static ActividadNoLectiva actividad(String horas, String proyecto) {
         return new ActividadNoLectiva(
                 "TDS",

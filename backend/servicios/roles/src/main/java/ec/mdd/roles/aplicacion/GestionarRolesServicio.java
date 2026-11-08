@@ -93,6 +93,10 @@ public final class GestionarRolesServicio implements GestionarRoles {
                         .toList();
         ReglaDeAdministracion.conservaAdministrador(
                 RolesDespues.de(asignaciones.todas(), conElCambio, null, List.of()), quien);
+        // Los mismos datos no cambian nada: no se guarda ni se registra (D-94).
+        if (editado.mismosDatosQue(actual)) {
+            return conUsuarios(actual);
+        }
         Instant ahora = reloj.instant();
         transaccion.ejecutar(
                 () -> {

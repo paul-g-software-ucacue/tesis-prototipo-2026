@@ -61,6 +61,7 @@ const ENTRADAS: Entrada[] = [
   { ruta: '/inconsistencias', texto: 'Panel de inconsistencias', permiso: LECTURA_DEL_PANEL },
   { ruta: '/consolidado', texto: 'Consolidado del periodo', permiso: LECTURA_DEL_PANEL },
   { ruta: '/flujo', texto: 'Flujo y firmas', permiso: LECTURA_DEL_FLUJO },
+  { ruta: '/bitacora', texto: 'Bitácora', permiso: { funcionalidad: 'BITACORA', tipo: 'LECTURA' } },
 ];
 
 export function Marco() {

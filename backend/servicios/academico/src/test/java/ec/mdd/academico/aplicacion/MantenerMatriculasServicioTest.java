@@ -79,6 +79,30 @@ class MantenerMatriculasServicioTest {
     }
 
     @Test
+    void unosMatriculadosConLosMismosValores_cuandoSeCorrigen_entoncesNoGuardaNiRegistra() {
+        // D-94: la carga 10 corrige una fila que no cambió; no es un cambio.
+        Matricula habia = new Matricula(PERIODO, "C1", 100, CORTE, "SIGA");
+        when(repositorio.deLosPeriodos(List.of(PERIODO))).thenReturn(List.of(habia));
+
+        servicio.corregir(new Matricula(PERIODO, "C1", 100, CORTE, "SIGA"), QUIEN);
+
+        verify(repositorio, never()).guardar(any());
+        verify(registro, never()).registrar(any());
+    }
+
+    @Test
+    void unosMatriculadosConOtraFuente_cuandoSeCorrigen_entoncesEsUnCambio() {
+        when(repositorio.deLosPeriodos(List.of(PERIODO)))
+                .thenReturn(List.of(new Matricula(PERIODO, "C1", 100, CORTE, "SIGA")));
+        Matricula otraFuente = new Matricula(PERIODO, "C1", 100, CORTE, "Otra fuente");
+
+        servicio.corregir(otraFuente, QUIEN);
+
+        verify(repositorio).guardar(otraFuente);
+        verify(registro).registrar(any());
+    }
+
+    @Test
     void unosMatriculadosQueNoExisten_cuandoSeCorrigen_entoncesNoGuardaNiRegistra() {
         when(repositorio.deLosPeriodos(List.of(PERIODO))).thenReturn(List.of());
 

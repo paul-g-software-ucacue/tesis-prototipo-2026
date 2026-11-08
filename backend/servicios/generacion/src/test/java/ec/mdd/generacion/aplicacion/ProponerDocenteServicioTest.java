@@ -182,6 +182,63 @@ class ProponerDocenteServicioTest {
     }
 
     @Test
+    void
+            dadaLaMismaPropuesta_cuandoSeGuardaOtraVez_entoncesNoGuardaNiRegistraYDevuelveLaQueHabia() {
+        // D-94: el mismo docente con la misma justificación no es un cambio; quién y cuándo no
+        // cuentan.
+        Propuesta habia =
+                new Propuesta(
+                        ASIGNATURA,
+                        "A",
+                        "TDS",
+                        AFIN.identificacion(),
+                        AFIN.nombre(),
+                        new Justificacion(TipoDeJustificacion.AFINIDAD, null),
+                        AHORA.minusSeconds(3600),
+                        "otra.coordinacion");
+        conTodo(version(habia));
+
+        PropuestaVista vista = servicio.proponer(solicitud(AFIN, null)).propuesta().orElseThrow();
+
+        verify(distributivos, never()).guardarPropuesta(any(), any());
+        verify(registro, never()).registrar(any());
+        assertThat(vista.propuesta()).isEqualTo(habia);
+    }
+
+    @Test
+    void dadaUnaExcepcionConElMismoTexto_cuandoSeGuardaOtraVez_entoncesNoGuardaNiRegistra() {
+        conTodo(version(excepcionDe(AJENO.identificacion(), TEXTO)));
+
+        servicio.proponer(solicitud(AJENO, TEXTO));
+
+        verify(distributivos, never()).guardarPropuesta(any(), any());
+        verify(registro, never()).registrar(any());
+    }
+
+    @Test
+    void dadaUnaExcepcionConOtroTexto_cuandoSeGuarda_entoncesRegistraQueElTextoCambioSinElTexto() {
+        String anterior = "Un texto anterior, distinto del nuevo.";
+        conTodo(version(excepcionDe(AJENO.identificacion(), anterior)));
+
+        servicio.proponer(solicitud(AJENO, TEXTO));
+
+        assertThat(guardada().justificacion().texto()).isEqualTo(TEXTO);
+        CambioDeDistributivo cambio = cambio();
+        assertThat(cambio.detalle()).containsEntry("textoCambiado", true);
+        assertThat(cambio.anterior()).isEqualTo(cambio.nuevo());
+        assertThat(cambio.toString()).doesNotContain(TEXTO).doesNotContain(anterior);
+    }
+
+    @Test
+    void dadoOtroDocenteConLaMismaJustificacion_cuandoSeReemplaza_entoncesNoDiceQueElTextoCambio() {
+        conTodo(version(propuestaDe(AJENO.identificacion())));
+
+        servicio.proponer(solicitud(AFIN, null));
+
+        assertThat(cambio().detalle()).doesNotContainKey("textoCambiado");
+    }
+
+    @Test
     void dadaUnaCarreraSinParcial_cuandoSePropone_entoncesLoCreaConLaPrimeraPropuesta() {
         conTodo(
                 new VersionDistributivo(
@@ -692,7 +749,7 @@ class ProponerDocenteServicioTest {
     }
 
     @Test
-    void unDocenteExcedido_cuandoSeVuelveAProponerIgual_entoncesGuarda() {
+    void unDocenteExcedido_cuandoSeVuelveAProponerIgual_entoncesSeAceptaSinGuardarNada() {
         conTodo(
                 new VersionDistributivo(
                         VERSION,
@@ -704,8 +761,11 @@ class ProponerDocenteServicioTest {
 
         PropuestaVista vista = servicio.proponer(solicitud(AFIN, null)).propuesta().orElseThrow();
 
-        assertThat(guardada().docente()).isEqualTo(AFIN.identificacion());
+        // No se rechaza, pero tampoco cambia nada: no se guarda ni se registra (D-94).
+        assertThat(vista.propuesta().docente()).isEqualTo(AFIN.identificacion());
         assertThat(vista.horasSuficientes()).isFalse();
+        verify(distributivos, never()).guardarPropuesta(any(), any());
+        verify(registro, never()).registrar(any());
     }
 
     @Test
@@ -844,6 +904,18 @@ class ProponerDocenteServicioTest {
                 EstadoDeVersion.EDITABLE,
                 List.of(new ParcialCarrera("TDS", EstadoDelParcial.ENVIADO)),
                 List.of());
+    }
+
+    private static Propuesta excepcionDe(String docente, String texto) {
+        return new Propuesta(
+                ASIGNATURA,
+                "A",
+                "TDS",
+                docente,
+                "ANTERIOR",
+                new Justificacion(TipoDeJustificacion.EXCEPCION, texto),
+                AHORA,
+                QUIEN);
     }
 
     private static Propuesta propuestaDe(String docente) {

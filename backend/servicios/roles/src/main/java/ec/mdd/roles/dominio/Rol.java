@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -58,6 +59,16 @@ public record Rol(
     /** Un rol nuevo del administrador, con el identificador derivado del nombre. */
     public static Rol nuevo(String nombre, String descripcion, Collection<Permiso> permisos) {
         return new Rol(identificadorDe(nombre), nombre, descripcion, false, List.copyOf(permisos));
+    }
+
+    /**
+     * Si tiene los mismos datos que otro: el mismo nombre, la misma descripción y los mismos
+     * permisos, en cualquier orden. Guardarlo no cambia nada (D-94).
+     */
+    public boolean mismosDatosQue(Rol otro) {
+        return nombre.equals(otro.nombre)
+                && Objects.equals(descripcion, otro.descripcion)
+                && Set.copyOf(permisos).equals(Set.copyOf(otro.permisos));
     }
 
     /**

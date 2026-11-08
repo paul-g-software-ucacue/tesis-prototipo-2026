@@ -64,6 +64,12 @@ jobs:
         shell: bash
         run: deploy/probar_bitacora.sh
 
+      # F17-H02: la consulta de la bitácora con sus filtros y su permiso (D-16), y que guardar sin
+      # cambios no deja entrada (D-94); carga los datos de prueba y los borra al terminar.
+      - name: Consulta de la bitácora
+        shell: bash
+        run: deploy/probar_consulta_bitacora.sh
+
       # B00-H06: la SPA detrás de Nginx, con /api hacia el API Gateway en el mismo origen (D-52).
       - name: SPA de punta a punta
         shell: bash

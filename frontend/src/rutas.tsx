@@ -12,6 +12,7 @@ import { Cargos } from './pantallas/cargos/Cargos';
 import { Docentes } from './pantallas/docentes/Docentes';
 import { Proyectos } from './pantallas/proyectos/Proyectos';
 import { Actividades } from './pantallas/actividades/Actividades';
+import { Bitacora } from './pantallas/bitacora/Bitacora';
 import { Consolidado } from './pantallas/consolidado/Consolidado';
 import { Flujo } from './pantallas/flujo/Flujo';
 import { Inconsistencias } from './pantallas/inconsistencias/Inconsistencias';
@@ -151,6 +152,14 @@ export const rutasDeLaSpa: RouteObject[] = [
         element: (
           <RutaConPermiso cualquieraDe={DESCARGA_DE_PLANTILLAS}>
             <Plantillas />
+          </RutaConPermiso>
+        ),
+      },
+      {
+        path: 'bitacora',
+        element: (
+          <RutaConPermiso funcionalidad="BITACORA" tipo="LECTURA">
+            <Bitacora />
           </RutaConPermiso>
         ),
       },

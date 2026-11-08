@@ -41,4 +41,48 @@ describe('Marco', () => {
     expect(enrutador.state.location.search).toBe('');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
+
+  describe('la opción «Bitácora» (F17-H02, FR-009)', () => {
+    // Los permisos de lectura de cada rol de la matriz D-16 (V2__matriz_d16.sql).
+    const CON_BITACORA = {
+      ADMINISTRADOR: ['USUARIOS_ROLES:LECTURA', 'PARAMETROS:LECTURA', 'BITACORA:LECTURA'],
+      VICERRECTOR: ['DISTRIBUTIVO:LECTURA', 'REPORTES:LECTURA', 'BITACORA:LECTURA'],
+    };
+    const SIN_BITACORA = {
+      OPERADOR_DATOS: ['CARGAS:LECTURA', 'DOCENTES:LECTURA'],
+      COORDINADOR_CARRERA: ['OFERTA:LECTURA', 'DISTRIBUTIVO:LECTURA', 'DOCENTES:LECTURA'],
+      GESTOR_UNIDAD: ['PROYECTOS:LECTURA'],
+      RESPONSABLE_CONSOLIDACION: ['DISTRIBUTIVO:LECTURA', 'CONSOLIDACION:LECTURA'],
+      RECTOR: ['DISTRIBUTIVO:LECTURA', 'REPORTES:LECTURA'],
+      MIEMBRO_OCS: ['DISTRIBUTIVO:LECTURA', 'REPORTES:LECTURA'],
+      SECRETARIA_GENERAL: ['DISTRIBUTIVO:LECTURA', 'RESOLUCION_OCS:LECTURA'],
+      DOCENTE: ['MI_DISTRIBUTIVO:LECTURA'],
+    };
+
+    function sesionCon(permisos: string[]) {
+      instalarApiSimulada().responder(
+        'GET',
+        '/api/usuarios/sesion',
+        json(200, { usuario: 'demo', roles: [], permisos }),
+      );
+    }
+
+    it.each(Object.entries(CON_BITACORA))('aparece para %s', async (_, permisos) => {
+      sesionCon(permisos);
+      montarSpa('/');
+
+      expect(await screen.findByRole('link', { name: 'Bitácora' })).toHaveAttribute(
+        'href',
+        '/bitacora',
+      );
+    });
+
+    it.each(Object.entries(SIN_BITACORA))('no aparece para %s', async (_, permisos) => {
+      sesionCon(permisos);
+      montarSpa('/');
+
+      await screen.findByText('demo', { selector: '[data-usuario]' });
+      expect(screen.queryByRole('link', { name: 'Bitácora' })).not.toBeInTheDocument();
+    });
+  });
 });

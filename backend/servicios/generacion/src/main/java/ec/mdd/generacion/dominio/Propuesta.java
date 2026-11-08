@@ -45,6 +45,20 @@ public record Propuesta(
         return asignatura.equals(otraAsignatura) && paralelo.equals(otroParalelo);
     }
 
+    /**
+     * Si es la misma propuesta que otra de su asignatura-paralelo: el mismo docente con la misma
+     * justificación, también su texto. Guardarla no cambia nada (D-94); quién la propuso y cuándo
+     * no cuentan.
+     */
+    public boolean mismosDatosQue(Propuesta otra) {
+        return docente.equals(otra.docente) && justificacion.equals(otra.justificacion);
+    }
+
+    /** Si el texto de su justificación es otro que el de {@code otra} (D-94, sin decir cuál). */
+    public boolean otroTextoQue(Propuesta otra) {
+        return !Objects.equals(justificacion.texto(), otra.justificacion.texto());
+    }
+
     /** La regla blanda que incumple, ya justificada: una excepción (MD-07). */
     public Optional<ReglaDeAsignacion> inconsistenciaJustificada() {
         return justificacion.tipo() == TipoDeJustificacion.EXCEPCION
