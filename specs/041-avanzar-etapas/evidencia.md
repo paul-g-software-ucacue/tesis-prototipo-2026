@@ -75,11 +75,26 @@ El 2026-11-08, en http://localhost:8081, con el perfil construido desde la rama 
 | 5. Otro rol (`docente.demo`) | OK: no tiene «Oferta del periodo» en el menú |
 | 6. Los 6 parciales que faltan, cambiando la carrera del coordinador en «Roles» | OK: al enviar el último (07:36) el estado dice «Consolidación · versión 1», etapa `EN_CONSOLIDACION`. En la base: 7 `PARCIAL_ENVIADO` y una sola `ETAPA_AVANZADA`, de `BORRADOR_CARRERA` a `EN_CONSOLIDACION`, con la versión 1 y el hash |
 
-**SC-005 (enviar el parcial en menos de 30 s): no se da por cumplido todavía.** La primera vez tomó 3 minutos. En el paso 6 hubo cerca de 1 minuto entre un envío y el siguiente, contando el cambio de carrera como administrador y volver a iniciar sesión, sin un cronómetro solo del envío. Queda por medirlo en el equipo de demostración.
+**SC-005 en el perfil local: sin cronómetro.** La primera vez tomó 3 minutos. En el paso 6 hubo cerca de 1 minuto entre un envío y el siguiente, contando el cambio de carrera como administrador y volver a iniciar sesión. Se midió en el equipo de demostración (abajo).
 
 **Un hallazgo de la comprobación, ya corregido.** Con el parcial enviado, la oferta seguía diciendo «No cambias la oferta, pero propones sus docentes.», aunque ya no se podía proponer. Ahora, si todas las carreras que se ven están enviadas, dice «Ya se envió el parcial: sus propuestas quedan en solo lectura.». Lo comprueban una prueba nueva en `Oferta.test.tsx` y el caso del envío en `e2e/oferta.spec.ts` (Vitest de la oferta: 68 pruebas; Playwright de la oferta: 10 casos con axe; tipos, ESLint y Prettier en verde).
 
-## Pendiente (T021)
+## El equipo de demostración (T021)
 
-- El cronómetro de SC-005 en el equipo de demostración.
-- El pull request, su fusión con la aprobación del autor, el despliegue en el equipo de demostración (con la migración `V3` en `validacionocs`) y el PR de evidencia con `Closes #57`.
+| Qué | Resultado | Fuente | Fecha |
+|---|---|---|---|
+| Despliegue de F12-H02 (#202) | `48aef88f8497`, «Sano en 88 s» a las 10:32, con los 8 contenedores sanos y la prueba de humo en verde (pasos 1 a 5); `demostracion` exitoso | `journalctl`, `docker ps` y GitHub | 2026-11-08 |
+| Despliegue de la excepción de `cloudflared` (#203, D-96) | `3f093a7a09f0`, sano a las 10:14; `demostracion` exitoso | `journalctl` y GitHub | 2026-11-08 |
+| La migración `V3` en `validacionocs` | «proceso aprobacion», exitosa | `flyway_schema_history` | 2026-11-08 |
+
+Comprobación del autor con `quickstart.md` §3, con el distributivo de 2026-I y `coordinacion.demo` en 550732E01-D-0301:
+
+| Paso | Resultado |
+|---|---|
+| 1. `coordinacion.demo` envía su parcial desde «Oferta del periodo» | OK: «550732E01-D-0301: enviado por coordinacion.demo el 8/11/26, 11:52»; las otras 6 carreras, pendientes; la etapa sigue en `BORRADOR_CARRERA` |
+| 2. El aviso de la oferta | OK: «Ya se envió el parcial: sus propuestas quedan en solo lectura.» |
+| 3. La bitácora como `vicerrectorado.demo` | OK: `PARCIAL_ENVIADO` de `coordinacion.demo`, Validación OCS, 2026-I, a las 11:52:06; en la base, de `PENDIENTE` a `ENVIADO` con la carrera, la versión 1 y el hash de 64 caracteres |
+
+**SC-005 (enviar el parcial en menos de 30 s): cumplido, 15 s**, desde entrar a «Oferta del periodo» con la sesión iniciada hasta ver «enviado».
+
+Con el parcial enviado, la carrera 550732E01-D-0301 queda en solo lectura en 2026-I en el equipo de demostración.
