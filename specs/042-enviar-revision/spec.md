@@ -44,7 +44,7 @@ Como Responsable de consolidación, quiero enviar el consolidado a revisión del
 
 **Why this priority**: es el segundo escenario del issue y lo único que hoy saca al distributivo de EN_CONSOLIDACION.
 
-**Independent Test**: con un distributivo en EN_CONSOLIDACION, consolidado, con su informe y el panel sin abiertas, enviarlo a revisión como `consolidacion.demo`; comprobar que queda en EN_REVISION_VRA y que la bitácora tiene la transición con quién, cuándo, desde qué estado, hacia cuál, la versión y el hash.
+**Independent Test**: con un distributivo en EN_CONSOLIDACION, consolidado, con su informe y el panel sin abiertas (en las pruebas automáticas, research §10), enviarlo a revisión con el rol de Responsable de consolidación; comprobar que queda en EN_REVISION_VRA y que la bitácora tiene la transición con quién, cuándo, desde qué estado, hacia cuál, la versión y el hash.
 
 **Acceptance Scenarios**:
 
@@ -171,7 +171,7 @@ Como institución, quiero que solo el rol de EN_CONSOLIDACION pueda enviar a rev
 - **El hash:** el del distributivo completo, en la forma fija de F12-H02. El PDF del consolidado, con su propio hash, llega con F13-H02.
 - **El informe:** cualquier informe vigente adjuntado a la versión; esta historia no revisa su contenido.
 - **Las condiciones que mira:** solo las inconsistencias que el panel calcula hoy; una regla que el panel no evalúa todavía no bloquea.
-- **Correcciones en EN_CONSOLIDACION:** devolver un parcial a su carrera (RF-36) es de #211 (F12-H05). Mientras no exista, la prueba de punta a punta usa un distributivo sin inconsistencias duras, y las blandas se justifican.
+- **Correcciones en EN_CONSOLIDACION:** devolver un parcial a su carrera (RF-36) es de #211 (F12-H05). Mientras no exista, los datos de prueba no llegan al panel vacío (tienen duras): el envío que pasa se prueba con un distributivo sin inconsistencias duras en las pruebas automáticas, y la demostración muestra los rechazos con el número real del panel (research §10).
 
 ## Out of Scope
 
