@@ -214,8 +214,8 @@ paths:
       summary: Envía el parcial de una carrera; con el último, el distributivo pasa de etapa.
       description: >-
         Solo el Coordinador de carrera, con el rol de BORRADOR_CARRERA en la configuración del
-        distributivo y solo su carrera (D-64). El parcial queda sin cambios y la transición va a la
-        bitácora con la versión y el hash de su contenido (RF-34, RF-44). Si es el último, el
+        distributivo y solo su carrera (D-64). El parcial queda sin cambios y la transición se
+        registra con la versión y el hash de su contenido (RF-34, RF-44, D-95). Si es el último, el
         distributivo pasa a la siguiente etapa activa en la misma respuesta.
       x-mdd-permiso: OFERTA:APROBACION
       responses:
