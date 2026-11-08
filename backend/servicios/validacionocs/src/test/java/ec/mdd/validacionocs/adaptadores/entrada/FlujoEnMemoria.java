@@ -58,6 +58,11 @@ final class FlujoEnMemoria {
         return new CondicionesDeRevision(true, false, Optional.of("c".repeat(64)), 0, 0);
     }
 
+    /** Una carrera que recibe su primer parcial después (research §4 de F10-H03). */
+    void agregarParcial(String periodo, String carrera) {
+        enviados.get(periodo).put(carrera, false);
+    }
+
     /** Lo que Generación dirá del consolidado en el próximo envío a revisión. */
     void condiciones(CondicionesDeRevision nuevas) {
         condiciones = nuevas;

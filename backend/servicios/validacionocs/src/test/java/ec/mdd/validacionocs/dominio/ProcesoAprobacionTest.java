@@ -373,6 +373,168 @@ class ProcesoAprobacionTest {
         assertThat(proceso.transiciones()).isEmpty();
     }
 
+    // US2: las inconsistencias abiertas (MD-07).
+
+    @Test
+    void dadaUnaDuraAbierta_cuandoLoEnvioARevision_entoncesInconsistenciasAbiertasConUna() {
+        ProcesoAprobacion proceso = enConsolidacion(etapas(false));
+
+        assertThatThrownBy(() -> revisar(proceso, abiertas(1, 0)))
+                .isInstanceOfSatisfying(
+                        InconsistenciasAbiertas.class,
+                        error -> {
+                            assertThat(error.duras()).isEqualTo(1);
+                            assertThat(error.blandas()).isZero();
+                        });
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_CONSOLIDACION);
+        assertThat(proceso.transiciones()).isEmpty();
+    }
+
+    @Test
+    void dadasDosDurasYUnaBlanda_cuandoLoEnvioARevision_entoncesDiceLasTres() {
+        ProcesoAprobacion proceso = enConsolidacion(etapas(false));
+
+        assertThatThrownBy(() -> revisar(proceso, abiertas(2, 1)))
+                .isInstanceOfSatisfying(
+                        InconsistenciasAbiertas.class,
+                        error -> assertThat(error.total()).isEqualTo(3));
+        assertThat(proceso.transiciones()).isEmpty();
+    }
+
+    @Test
+    void dadasSoloBlandasJustificadas_cuandoLoEnvioARevision_entoncesPasa() {
+        // Las justificadas no están en las abiertas: el panel ya las descuenta (MD-07).
+        ProcesoAprobacion proceso = enConsolidacion(etapas(false));
+
+        revisar(proceso, abiertas(0, 0));
+
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_REVISION_VRA);
+    }
+
+    // US3: el consolidado al día y con su informe, en el orden de research §8.
+
+    @Test
+    void dadoUnDistributivoSinConsolidar_cuandoLoEnvioARevision_entoncesSinConsolidar() {
+        ProcesoAprobacion proceso = enConsolidacion(etapas(false));
+
+        assertThatThrownBy(
+                        () ->
+                                revisar(
+                                        proceso,
+                                        new CondicionesDeRevision(
+                                                false, false, Optional.of("c".repeat(64)), 0, 0)))
+                .isInstanceOf(SinConsolidar.class);
+        assertThat(proceso.transiciones()).isEmpty();
+    }
+
+    @Test
+    void
+            dadoUnConsolidadoDesactualizado_cuandoLoEnvioARevision_entoncesConsolidadoDesactualizado() {
+        ProcesoAprobacion proceso = enConsolidacion(etapas(false));
+
+        assertThatThrownBy(
+                        () ->
+                                revisar(
+                                        proceso,
+                                        new CondicionesDeRevision(
+                                                true, true, Optional.of("c".repeat(64)), 0, 0)))
+                .isInstanceOf(ConsolidadoDesactualizado.class);
+        assertThat(proceso.transiciones()).isEmpty();
+    }
+
+    @Test
+    void dadoUnConsolidadoSinInforme_cuandoLoEnvioARevision_entoncesSinInforme() {
+        ProcesoAprobacion proceso = enConsolidacion(etapas(false));
+
+        assertThatThrownBy(
+                        () ->
+                                revisar(
+                                        proceso,
+                                        new CondicionesDeRevision(
+                                                true, false, Optional.empty(), 0, 0)))
+                .isInstanceOf(SinInforme.class);
+        assertThat(proceso.transiciones()).isEmpty();
+    }
+
+    @Test
+    void dadoQueFaltaTodo_cuandoLoEnvioARevision_entoncesRespondeElPrimeroDelOrden() {
+        CondicionesDeRevision nada = new CondicionesDeRevision(false, true, Optional.empty(), 2, 1);
+        ProcesoAprobacion conPendiente = enConsolidacion(etapas(false));
+        conPendiente.sumarParciales(List.of("NUEVA"));
+
+        assertThatThrownBy(() -> revisar(conPendiente, nada))
+                .isInstanceOf(ParcialesPendientes.class);
+        assertThatThrownBy(() -> revisar(enConsolidacion(etapas(false)), nada))
+                .isInstanceOf(SinConsolidar.class);
+        assertThatThrownBy(
+                        () ->
+                                revisar(
+                                        enConsolidacion(etapas(false)),
+                                        new CondicionesDeRevision(
+                                                true, true, Optional.empty(), 2, 1)))
+                .isInstanceOf(ConsolidadoDesactualizado.class);
+        assertThatThrownBy(
+                        () ->
+                                revisar(
+                                        enConsolidacion(etapas(false)),
+                                        new CondicionesDeRevision(
+                                                true, false, Optional.empty(), 2, 1)))
+                .isInstanceOf(SinInforme.class);
+    }
+
+    // US4: solo el rol de EN_CONSOLIDACION (FR-003, FR-013).
+
+    @Test
+    void dadoOtroRol_cuandoEnviaARevision_entoncesRolDeOtraEtapaSinCambiarNada() {
+        ProcesoAprobacion proceso = enConsolidacion(etapas(false));
+
+        assertThatThrownBy(() -> proceso.validarRevision(VICERRECTOR))
+                .isInstanceOf(RolDeOtraEtapa.class);
+        assertThatThrownBy(
+                        () ->
+                                proceso.enviarARevision(
+                                        VICERRECTOR, LISTO, 2, HASH_DISTRIBUTIVO, AHORA))
+                .isInstanceOf(RolDeOtraEtapa.class);
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_CONSOLIDACION);
+        assertThat(proceso.transiciones()).isEmpty();
+    }
+
+    @Test
+    void dadoOtroRolConfiguradoParaConsolidacion_cuandoEnvia_entoncesValeElDeLaConfiguracion() {
+        List<EtapaDelProceso> conVicerrector =
+                etapas(false).stream()
+                        .map(
+                                etapa ->
+                                        etapa.tipo() == TipoDeEtapa.EN_CONSOLIDACION
+                                                ? new EtapaDelProceso(
+                                                        etapa.tipo(),
+                                                        true,
+                                                        etapa.nombre(),
+                                                        "VICERRECTOR")
+                                                : etapa)
+                        .toList();
+
+        assertThatThrownBy(() -> revisar(enConsolidacion(conVicerrector), LISTO))
+                .isInstanceOf(RolDeOtraEtapa.class);
+        ProcesoAprobacion proceso = enConsolidacion(conVicerrector);
+        proceso.enviarARevision(VICERRECTOR, LISTO, 2, HASH_DISTRIBUTIVO, AHORA);
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_REVISION_VRA);
+    }
+
+    @Test
+    void dadoElResponsableEnConsolidacion_cuandoConsulta_entoncesVeEnviarARevisionYOtroNo() {
+        ProcesoAprobacion proceso = enConsolidacion(etapas(false));
+
+        assertThat(proceso.acciones(RESPONSABLE))
+                .containsExactly(AccionDelProceso.ENVIAR_A_REVISION);
+        assertThat(proceso.acciones(VICERRECTOR)).isEmpty();
+        assertThat(nuevo(false, "DS").acciones(RESPONSABLE)).isEmpty();
+    }
+
+    private static CondicionesDeRevision abiertas(long duras, long blandas) {
+        return new CondicionesDeRevision(true, false, Optional.of("c".repeat(64)), duras, blandas);
+    }
+
     private static List<Transicion> revisar(
             ProcesoAprobacion proceso, CondicionesDeRevision condiciones) {
         return proceso.enviarARevision(RESPONSABLE, condiciones, 2, HASH_DISTRIBUTIVO, AHORA);

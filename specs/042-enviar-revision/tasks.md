@@ -119,14 +119,14 @@ description: "Tareas de F10-H03: enviar a revisión con cero inconsistencias abi
 
 **Independent Test**: con el panel de los datos de prueba, el 409 dice el mismo número que `abiertas` del panel; al justificar una blanda, baja en uno (`probar_revision.sh`, pasos 5 y 6).
 
-- [ ] T009 [US2] Agregar a `ProcesoAprobacionTest` y ver fallar:
+- [X] T009 [US2] Agregar a `ProcesoAprobacionTest` y ver fallar:
   - una dura abierta lanza `InconsistenciasAbiertas(1, 0)`;
   - 2 duras y 1 blanda, `InconsistenciasAbiertas(2, 1)`;
   - 0 duras y 0 blandas, con blandas ya justificadas (que no cuentan, MD-07), pasa;
   - un rechazo no cambia el estado ni agrega transiciones.
 
   Después, en un comando aparte, completar `enviarARevision`.
-- [ ] T010 [US2] Agregar a `FlujoContratoTest` el 409 `VALIDACIONOCS_INCONSISTENCIAS_ABIERTAS`, con el detalle `inconsistencias` y su texto en singular y en plural.
+- [X] T010 [US2] Agregar a `FlujoContratoTest` el 409 `VALIDACIONOCS_INCONSISTENCIAS_ABIERTAS`, con el detalle `inconsistencias` y su texto en singular y en plural.
 
 **Checkpoint**: los dos escenarios del issue funcionan por la API.
 
@@ -138,14 +138,14 @@ description: "Tareas de F10-H03: enviar a revisión con cero inconsistencias abi
 
 **Independent Test**: sin consolidar, 409 `SIN_CONSOLIDAR`; al consolidar, 409 `SIN_INFORME`; al adjuntar el informe, solo quedan las inconsistencias (`probar_revision.sh`, pasos 3 a 5).
 
-- [ ] T011 [US3] Agregar a `ProcesoAprobacionTest` y ver fallar, una por condición, con las demás cumplidas:
+- [X] T011 [US3] Agregar a `ProcesoAprobacionTest` y ver fallar, una por condición, con las demás cumplidas:
   - `SinConsolidar`;
   - `ConsolidadoDesactualizado`;
   - `SinInforme`;
   - con todas fallando, el error es `ParcialesPendientes` si hay un parcial pendiente, y si no, `SinConsolidar` (el orden de research §8).
 
   Después, en un comando aparte, completar `enviarARevision`.
-- [ ] T012 [US3] Agregar a `FlujoContratoTest` los 409 `VALIDACIONOCS_PARCIALES_PENDIENTES`, `SIN_CONSOLIDAR`, `CONSOLIDADO_DESACTUALIZADO`, `SIN_INFORME`, `ETAPA_NO_ADMITE_REVISION` y `PERIODO_CERRADO`, cada uno con su código y su estado.
+- [X] T012 [US3] Agregar a `FlujoContratoTest` los 409 `VALIDACIONOCS_PARCIALES_PENDIENTES`, `SIN_CONSOLIDAR`, `CONSOLIDADO_DESACTUALIZADO`, `SIN_INFORME`, `ETAPA_NO_ADMITE_REVISION` y `PERIODO_CERRADO`, cada uno con su código y su estado.
 
 **Checkpoint**: todas las condiciones de D-97 se comprueban.
 
@@ -157,12 +157,12 @@ description: "Tareas de F10-H03: enviar a revisión con cero inconsistencias abi
 
 **Independent Test**: los 9 roles que no son el de EN_CONSOLIDACION reciben 403 con el mismo cuerpo; `consultarFlujo` muestra `ENVIAR_A_REVISION` solo al Responsable.
 
-- [ ] T013 [US4] Agregar a `ProcesoAprobacionTest` y ver fallar:
+- [X] T013 [US4] Agregar a `ProcesoAprobacionTest` y ver fallar:
   - `validarRevision` y `enviarARevision` exigen el rol de EN_CONSOLIDACION de la copia de la configuración (`RolDeOtraEtapa`), también con otro rol configurado para esa etapa;
   - `acciones` incluye `ENVIAR_A_REVISION` en EN_CONSOLIDACION con su rol, aunque falten condiciones, y no la incluye con otro rol ni en otra etapa (FR-013).
 
   Después, en un comando aparte, `AccionDelProceso.ENVIAR_A_REVISION` y `acciones`.
-- [ ] T014 [US4] Agregar a la tabla de rol, operación y resultado de `FlujoContratoTest` la operación `enviarARevision`, en la etapa EN_CONSOLIDACION. Comprueba el 403 de cada uno de los 9 roles de la matriz D-16 que no son el Responsable de consolidación, con los permisos de `V2__matriz_d16.sql`, el mismo cuerpo en todos y sin decir qué falta, y el 200 del Responsable (SC-003).
+- [X] T014 [US4] **Resultado:** T010, T012 y T014 pasaron a la primera: prueban la traducción del catálogo (T003) y el agregado (T009, T011, T013), que ya estaban. `FlujoEnMemoria` suma `agregarParcial` para el 409 de parciales pendientes. Agregar a la tabla de rol, operación y resultado de `FlujoContratoTest` la operación `enviarARevision`, en la etapa EN_CONSOLIDACION. Comprueba el 403 de cada uno de los 9 roles de la matriz D-16 que no son el Responsable de consolidación, con los permisos de `V2__matriz_d16.sql`, el mismo cuerpo en todos y sin decir qué falta, y el 200 del Responsable (SC-003).
 
 **Checkpoint**: las cuatro historias funcionan por la API.
 
