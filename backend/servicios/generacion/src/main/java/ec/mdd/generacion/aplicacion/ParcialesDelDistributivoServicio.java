@@ -16,6 +16,7 @@ import ec.mdd.generacion.puertos.entrada.ParcialNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.ParcialesDelDistributivo;
 import ec.mdd.generacion.puertos.salida.RepositorioDistributivos;
 import ec.mdd.generacion.puertos.salida.Transaccion;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -81,6 +82,34 @@ public final class ParcialesDelDistributivoServicio implements ParcialesDelDistr
                     return new ParcialMarcado(
                             version.numero(),
                             ContenidoDelParcial.de(periodo, carrera, version).hash());
+                });
+    }
+
+    @Override
+    public int marcarParcialesDevueltos(String periodo, List<String> carreras) {
+        return transaccion.ejecutar(
+                () -> {
+                    VersionDistributivo version =
+                            distributivos
+                                    .bloquearVigente(periodo)
+                                    .orElseThrow(DistributivoNoEncontrado::new);
+                    // Todo o nada (FR-005): primero se comprueban todas, después se marcan.
+                    List<ParcialCarrera> parciales =
+                            carreras.stream()
+                                    .map(
+                                            carrera ->
+                                                    version.parcialDe(carrera)
+                                                            .orElseThrow(ParcialNoEncontrado::new))
+                                    .toList();
+                    parciales.stream()
+                            .filter(parcial -> parcial.estado() != EstadoDelParcial.DEVUELTO)
+                            .forEach(
+                                    parcial ->
+                                            distributivos.marcarParcial(
+                                                    version.id(),
+                                                    parcial.carrera(),
+                                                    EstadoDelParcial.DEVUELTO));
+                    return version.numero();
                 });
     }
 

@@ -125,6 +125,50 @@ class ParcialesDelDistributivoServicioTest {
         verify(distributivos, never()).marcarParcial(any(), anyString(), any());
     }
 
+    // Devolver (F12-H05, contracts/generacion.md).
+
+    @Test
+    void dadasDosCarreras_cuandoSeDevuelven_entoncesBloqueaYMarcaLasDosDevueltas() {
+        when(distributivos.bloquearVigente(PERIODO))
+                .thenReturn(Optional.of(version(EstadoDelParcial.ENVIADO)));
+
+        int numero = servicio.marcarParcialesDevueltos(PERIODO, List.of("DS", "TDS"));
+
+        assertThat(numero).isEqualTo(1);
+        verify(distributivos).marcarParcial(VERSION, "DS", EstadoDelParcial.DEVUELTO);
+        verify(distributivos).marcarParcial(VERSION, "TDS", EstadoDelParcial.DEVUELTO);
+        assertThat(transacciones).hasValue(1);
+        verify(registro, never()).registrar(any());
+    }
+
+    @Test
+    void dadaUnaCarreraSinParcial_cuandoSeDevuelve_entoncesNoMarcaNinguna() {
+        when(distributivos.bloquearVigente(PERIODO))
+                .thenReturn(Optional.of(version(EstadoDelParcial.ENVIADO)));
+
+        assertThatThrownBy(() -> servicio.marcarParcialesDevueltos(PERIODO, List.of("DS", "OTRA")))
+                .isInstanceOf(ParcialNoEncontrado.class);
+        verify(distributivos, never()).marcarParcial(any(), anyString(), any());
+    }
+
+    @Test
+    void dadoUnParcialYaDevuelto_cuandoSeDevuelveOtraVez_entoncesNoLoToca() {
+        when(distributivos.bloquearVigente(PERIODO))
+                .thenReturn(Optional.of(version(EstadoDelParcial.DEVUELTO)));
+
+        servicio.marcarParcialesDevueltos(PERIODO, List.of("DS"));
+
+        verify(distributivos, never()).marcarParcial(any(), anyString(), any());
+    }
+
+    @Test
+    void dadoUnPeriodoSinDistributivo_cuandoSeDevuelve_entoncesDistributivoNoEncontrado() {
+        when(distributivos.bloquearVigente(PERIODO)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> servicio.marcarParcialesDevueltos(PERIODO, List.of("DS")))
+                .isInstanceOf(DistributivoNoEncontrado.class);
+    }
+
     @Test
     void dadoElDistributivo_cuandoSePideSuHash_entoncesEsElDeLosHashesDeSusParciales() {
         VersionDistributivo version = version(EstadoDelParcial.ENVIADO);

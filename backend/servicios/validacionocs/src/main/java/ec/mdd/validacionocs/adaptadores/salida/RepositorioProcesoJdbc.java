@@ -180,17 +180,26 @@ public final class RepositorioProcesoJdbc implements RepositorioProceso {
                 .map(
                         una ->
                                 new EtapaGuardada(
-                                        una.tipo().name(), una.activa(), una.nombre(), una.rol()))
+                                        una.tipo().name(),
+                                        una.activa(),
+                                        una.nombre(),
+                                        una.rol(),
+                                        una.admiteDevolucion()))
                 .toList();
     }
 
     private record Cabecera(TipoDeEtapa estado, String etapas, Instant distributivoCreadoEn) {}
 
-    /** Una etapa de la copia, tal como va en el jsonb. */
-    record EtapaGuardada(String tipo, boolean activa, String nombre, String rol) {
+    /**
+     * Una etapa de la copia, tal como va en el jsonb. {@code admiteDevolucion} llegó con F12-H05;
+     * la migración V4 lo completó en los procesos anteriores.
+     */
+    record EtapaGuardada(
+            String tipo, boolean activa, String nombre, String rol, boolean admiteDevolucion) {
 
         EtapaDelProceso etapa() {
-            return new EtapaDelProceso(TipoDeEtapa.valueOf(tipo), activa, nombre, rol);
+            return new EtapaDelProceso(
+                    TipoDeEtapa.valueOf(tipo), activa, nombre, rol, admiteDevolucion);
         }
     }
 }

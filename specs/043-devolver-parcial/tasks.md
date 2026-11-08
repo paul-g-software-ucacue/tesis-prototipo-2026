@@ -38,7 +38,7 @@ description: "Tareas de F12-H05: devolver un parcial a su carrera con una observ
 
 ## Phase 1: Setup
 
-- [ ] T001 Revisar el glosario (`~/Downloads/MDD_artefactos_desarrollo/requerimientos_mdd/sdd/modelo_dominio.md` §6 y §7): «Devolución», «observación», `ParcialCarrera` con DEVUELTO y `DistributivoDevuelto`. Confirmar si `DevolucionDeParcial` nombra un concepto nuevo del negocio. Si lo es, proponerlo al autor. Anotar el resultado aquí.
+- [X] T001 Revisar el glosario (`~/Downloads/MDD_artefactos_desarrollo/requerimientos_mdd/sdd/modelo_dominio.md` §6 y §7): «Devolución», «observación», `ParcialCarrera` con DEVUELTO y `DistributivoDevuelto`. Confirmar si `DevolucionDeParcial` nombra un concepto nuevo del negocio. Si lo es, proponerlo al autor. Anotar el resultado aquí. **Resultado (2026-11-08):** «Devolución», `DistributivoDevuelto` y `Observacion` (objeto de valor, §5 y §7) ya están. El texto se modela como `Observacion`, del glosario. `DevolucionDeParcial` solo junta una carrera con su `Observacion` en la solicitud, no es un concepto nuevo; en el contrato se llama `ParcialADevolver`.
 
 ---
 
@@ -46,7 +46,7 @@ description: "Tareas de F12-H05: devolver un parcial a su carrera con una observ
 
 **⚠️ CRITICAL**: ninguna historia empieza antes de T006.
 
-- [ ] T002 Agregar a `contratos/validacionocs/openapi.yaml`, según `contracts/validacionocs.md`:
+- [X] T002 Agregar a `contratos/validacionocs/openapi.yaml`, según `contracts/validacionocs.md`:
   - la operación `devolverParciales` (`POST /api/validacionocs/periodos/{periodo}/devolucion`), en la etiqueta `Aprobacion`, con `x-mdd-permiso: CONSOLIDACION:APROBACION`;
   - el cuerpo `SolicitudDeDevolucion` (`additionalProperties: false`): `devoluciones`, de 1 a 50 elementos, cada uno con `carrera` (`^[0-9A-Z_-]{1,20}$`) y `observacion` (`minLength: 10`, `maxLength: 500`, `pattern: '^[\s\S]*\S[\s\S]*$'`, que cubre el texto entero: con `'\S'` el `@Pattern` generado solo aceptaría un carácter);
   - sus respuestas 200 `EstadoDelFlujo`, 400, 401, 403, 404, 409 y 500, con los códigos de `contracts/validacionocs.md`;
@@ -54,12 +54,12 @@ description: "Tareas de F12-H05: devolver un parcial a su carrera con una observ
   - `DEVOLVER_PARCIALES` en `AccionDelFlujo` y `DEVOLUCION` en `TransicionDelFlujo.tipo`.
 
   Regenerar `SPA/api/generado/validacionocs.d.ts` y compilar `:servicios:validacionocs`; si el controlador deja de compilar, un esqueleto que lance `UnsupportedOperationException`. La descripción de `devolverParciales` no nombra la bitácora. Después correr `./gradlew :servicios:usuarios:test --rerun` (`BitacoraSinBorradoContratoTest`).
-- [ ] T003 Agregar a `contratos/comun/errores.md`, con sus 8 columnas (research §10):
+- [X] T003 Agregar a `contratos/comun/errores.md`, con sus 8 columnas (research §10):
   - 409 `VALIDACIONOCS_ETAPA_NO_ADMITE_DEVOLUCION`, `VALIDACIONOCS_DEVOLUCION_DESACTIVADA` y `VALIDACIONOCS_PARCIAL_NO_ENVIADO`;
   - 400 `VALIDACIONOCS_CARRERA_REPETIDA` y `VALIDACIONOCS_OBSERVACION_INVALIDA`.
 
   Crear sus excepciones en `VAL/main/.../dominio/`. `ObservacionInvalida` y `CarreraRepetida` llevan la carrera, y `ParcialNoEnviado` también. Agregar sus entradas a `VAL/main/.../adaptadores/entrada/ErroresValidacionocs.java`; las que llevan carrera, con `EntradaCatalogo.conDetalles` y el campo `carrera`. Escribir primero su prueba en `ErroresValidacionocsTest`.
-- [ ] T004 Crear `VAL/main/resources/db/migration/validacionocs/V4__devolucion.sql` (data-model.md):
+- [X] T004 Crear `VAL/main/resources/db/migration/validacionocs/V4__devolucion.sql` (data-model.md):
   - el `check` de `parcial_del_proceso.estado` admite `'DEVUELTO'`;
   - el `check` de `transicion.tipo` admite `'DEVOLUCION'`;
   - la tabla `observacion_de_devolucion (transicion_id uuid not null references transicion (id) on delete cascade, carrera varchar(20) not null, texto varchar(500) not null check (length(btrim(texto)) between 10 and 500), primary key (transicion_id, carrera))`;
@@ -68,8 +68,8 @@ description: "Tareas de F12-H05: devolver un parcial a su carrera con una observ
   Buscar en la base los nombres reales de los `check` antes de soltarlos. Sumar `admiteDevolucion` a `EtapaDelProceso` (y a `EtapaDelProceso.de(Etapa)`) y a `EtapaGuardada` de `VAL/main/.../adaptadores/salida/RepositorioProcesoJdbc.java`. Ver fallar primero `VAL/integrationTest/.../RepositorioProcesoIntegrationTest.java`:
   - un proceso guardado sin `admiteDevolucion`, como lo guarda F12-H02, queda con los valores de la plantilla después de `V4`;
   - un proceso nuevo guarda y lee `admiteDevolucion` de su configuración.
-- [ ] T005 [P] Crear `VAL/main/.../dominio/DevolucionDeParcial.java` (`carrera`, `observacion`). Quita los espacios de los extremos y exige de 10 a 500 caracteres (`ObservacionInvalida` con la carrera). Ver fallar primero `DevolucionDeParcialTest`: 9 y 10 caracteres, 500 y 501, solo espacios, y espacios en los extremos que no cuentan.
-- [ ] T006 [P] En Generación, agregar a `GEN/main/.../puertos/entrada/ParcialesDelDistributivo.java` el método `marcarParcialesDevueltos(periodo, carreras)`, que devuelve la versión (`contracts/generacion.md`). Ver fallar primero `GEN/test/.../aplicacion/ParcialesDelDistributivoServicioTest.java` (Mockito):
+- [X] T005 [P] Crear `VAL/main/.../dominio/DevolucionDeParcial.java` (`carrera`, `observacion`). Quita los espacios de los extremos y exige de 10 a 500 caracteres (`ObservacionInvalida` con la carrera). Ver fallar primero `DevolucionDeParcialTest`: 9 y 10 caracteres, 500 y 501, solo espacios, y espacios en los extremos que no cuentan.
+- [X] T006 [P] En Generación, agregar a `GEN/main/.../puertos/entrada/ParcialesDelDistributivo.java` el método `marcarParcialesDevueltos(periodo, carreras)`, que devuelve la versión (`contracts/generacion.md`). Ver fallar primero `GEN/test/.../aplicacion/ParcialesDelDistributivoServicioTest.java` (Mockito):
   - marca DEVUELTO todas las carreras, en una transacción con la versión bloqueada;
   - si una carrera no tiene parcial, `ParcialNoEncontrado` y no marca ninguna;
   - un parcial ya DEVUELTO queda igual;

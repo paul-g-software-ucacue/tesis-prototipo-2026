@@ -6,6 +6,7 @@ import ec.mdd.validacionocs.adaptadores.entrada.api.AccionDelFlujo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.AprobacionApi;
 import ec.mdd.validacionocs.adaptadores.entrada.api.EstadoDelFlujo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.ParcialDelFlujo;
+import ec.mdd.validacionocs.adaptadores.entrada.api.SolicitudDeDevolucion;
 import ec.mdd.validacionocs.adaptadores.entrada.api.TipoDeEtapa;
 import ec.mdd.validacionocs.adaptadores.entrada.api.TransicionDelFlujo;
 import ec.mdd.validacionocs.dominio.ParcialDeOtraCarrera;
@@ -89,6 +90,14 @@ class FlujoControlador implements AprobacionApi {
         Solicitante quien = solicitante(true);
         return ResponseEntity.ok(
                 respuesta(sinPermiso(() -> revisar.enviarARevision(periodo, quien))));
+    }
+
+    // F12-H05: esqueleto hasta T009.
+    @Override
+    @PreAuthorize("hasAuthority('PERMISO_CONSOLIDACION:APROBACION')")
+    public ResponseEntity<EstadoDelFlujo> devolverParciales(
+            String periodo, SolicitudDeDevolucion solicitud) {
+        throw new UnsupportedOperationException("F12-H05");
     }
 
     private static FlujoDelDistributivo sinPermiso(Supplier<FlujoDelDistributivo> caso) {

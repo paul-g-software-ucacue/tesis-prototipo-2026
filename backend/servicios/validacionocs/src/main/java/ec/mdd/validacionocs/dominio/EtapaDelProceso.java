@@ -9,8 +9,10 @@ import java.util.Objects;
  * @param activa si el distributivo pasa por ella
  * @param nombre el nombre que ve el usuario
  * @param rol el rol que la mueve
+ * @param admiteDevolucion si desde ella se puede devolver (F12-H05)
  */
-public record EtapaDelProceso(TipoDeEtapa tipo, boolean activa, String nombre, String rol) {
+public record EtapaDelProceso(
+        TipoDeEtapa tipo, boolean activa, String nombre, String rol, boolean admiteDevolucion) {
 
     /** Exige los datos. */
     public EtapaDelProceso {
@@ -21,6 +23,11 @@ public record EtapaDelProceso(TipoDeEtapa tipo, boolean activa, String nombre, S
 
     /** La etapa tal como está en la configuración del periodo. */
     public static EtapaDelProceso de(Etapa etapa) {
-        return new EtapaDelProceso(etapa.tipo(), etapa.activa(), etapa.nombre(), etapa.rol());
+        return new EtapaDelProceso(
+                etapa.tipo(),
+                etapa.activa(),
+                etapa.nombre(),
+                etapa.rol(),
+                etapa.admiteDevolucion());
     }
 }

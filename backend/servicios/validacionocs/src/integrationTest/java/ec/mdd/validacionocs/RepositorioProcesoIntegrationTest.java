@@ -220,7 +220,9 @@ class RepositorioProcesoIntegrationTest {
                                         "Nombre de " + tipo,
                                         tipo == TipoDeEtapa.BORRADOR_CARRERA
                                                 ? "COORDINADOR_CARRERA"
-                                                : "VICERRECTOR"))
+                                                : "VICERRECTOR",
+                                        // Distinto por etapa, para ver que se guarda (F12-H05).
+                                        tipo == TipoDeEtapa.EN_CONSOLIDACION))
                 .toList();
     }
 

@@ -8,12 +8,17 @@ import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
 import ec.mdd.plataforma.pruebas.VerificadorDeCatalogo;
 import ec.mdd.validacionocs.dominio.ArchivoDemasiadoGrande;
 import ec.mdd.validacionocs.dominio.ArchivoIlegible;
+import ec.mdd.validacionocs.dominio.CarreraRepetida;
 import ec.mdd.validacionocs.dominio.ConsolidadoDesactualizado;
+import ec.mdd.validacionocs.dominio.DevolucionDesactivada;
 import ec.mdd.validacionocs.dominio.EtapaConOperacionPropia;
+import ec.mdd.validacionocs.dominio.EtapaNoAdmiteDevolucion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteEnvio;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteRevision;
 import ec.mdd.validacionocs.dominio.InconsistenciasAbiertas;
+import ec.mdd.validacionocs.dominio.ObservacionInvalida;
 import ec.mdd.validacionocs.dominio.ParcialNoEncontrado;
+import ec.mdd.validacionocs.dominio.ParcialNoEnviado;
 import ec.mdd.validacionocs.dominio.ParcialYaEnviado;
 import ec.mdd.validacionocs.dominio.ParcialesPendientes;
 import ec.mdd.validacionocs.dominio.SinConsolidar;
@@ -85,7 +90,21 @@ class ErroresValidacionocsTest {
                         tuple(
                                 InconsistenciasAbiertas.class,
                                 "VALIDACIONOCS_INCONSISTENCIAS_ABIERTAS",
-                                409));
+                                409),
+                        tuple(
+                                EtapaNoAdmiteDevolucion.class,
+                                "VALIDACIONOCS_ETAPA_NO_ADMITE_DEVOLUCION",
+                                409),
+                        tuple(
+                                DevolucionDesactivada.class,
+                                "VALIDACIONOCS_DEVOLUCION_DESACTIVADA",
+                                409),
+                        tuple(ParcialNoEnviado.class, "VALIDACIONOCS_PARCIAL_NO_ENVIADO", 409),
+                        tuple(CarreraRepetida.class, "VALIDACIONOCS_CARRERA_REPETIDA", 400),
+                        tuple(
+                                ObservacionInvalida.class,
+                                "VALIDACIONOCS_OBSERVACION_INVALIDA",
+                                400));
     }
 
     @Test
@@ -136,5 +155,31 @@ class ErroresValidacionocsTest {
         assertThat(entrada.detalles().apply(new InconsistenciasAbiertas(0, 2)))
                 .extracting(DetalleRespuesta::descripcion)
                 .containsExactly("Quedan 2: 0 duras y 2 blandas sin justificar.");
+    }
+
+    @Test
+    void dadaUnaDevolucionRechazadaPorUnaCarrera_cuandoSeResponde_entoncesNombraLaCarrera() {
+        ErroresValidacionocs catalogo = new ErroresValidacionocs();
+
+        assertThat(detalles(catalogo, ObservacionInvalida.class, new ObservacionInvalida("DS")))
+                .extracting(DetalleRespuesta::campo, DetalleRespuesta::descripcion)
+                .containsExactly(
+                        tuple("carrera", "Revisa la observación de DS: de 10 a 500 caracteres."));
+        assertThat(detalles(catalogo, CarreraRepetida.class, new CarreraRepetida("DS")))
+                .extracting(DetalleRespuesta::descripcion)
+                .containsExactly("DS está más de una vez.");
+        assertThat(detalles(catalogo, ParcialNoEnviado.class, new ParcialNoEnviado("DS")))
+                .extracting(DetalleRespuesta::descripcion)
+                .containsExactly("El parcial de DS no está enviado.");
+    }
+
+    private static List<DetalleRespuesta> detalles(
+            ErroresValidacionocs catalogo, Class<?> tipo, RuntimeException error) {
+        return catalogo.entradas().stream()
+                .filter(una -> una.excepcion() == tipo)
+                .findFirst()
+                .orElseThrow()
+                .detalles()
+                .apply(error);
     }
 }

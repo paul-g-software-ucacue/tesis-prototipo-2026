@@ -317,7 +317,8 @@ class ProcesoAprobacionTest {
                                                         etapa.tipo(),
                                                         false,
                                                         etapa.nombre(),
-                                                        etapa.rol())
+                                                        etapa.rol(),
+                                                        etapa.admiteDevolucion())
                                                 : etapa)
                         .toList();
         ProcesoAprobacion proceso = enConsolidacion(sinRevision);
@@ -510,7 +511,8 @@ class ProcesoAprobacionTest {
                                                         etapa.tipo(),
                                                         true,
                                                         etapa.nombre(),
-                                                        "VICERRECTOR")
+                                                        "VICERRECTOR",
+                                                        etapa.admiteDevolucion())
                                                 : etapa)
                         .toList();
 
@@ -577,14 +579,30 @@ class ProcesoAprobacionTest {
                                             default -> true;
                                         },
                                         "Nombre de " + tipo,
-                                        rolDe(tipo)))
+                                        rolDe(tipo),
+                                        admiteDevolucion(tipo)))
                 .toList();
     }
 
     private static List<EtapaDelProceso> etapasTodasActivas() {
         return Arrays.stream(TipoDeEtapa.values())
-                .map(tipo -> new EtapaDelProceso(tipo, true, "Nombre de " + tipo, rolDe(tipo)))
+                .map(
+                        tipo ->
+                                new EtapaDelProceso(
+                                        tipo,
+                                        true,
+                                        "Nombre de " + tipo,
+                                        rolDe(tipo),
+                                        admiteDevolucion(tipo)))
                 .toList();
+    }
+
+    // Como la plantilla (flujo-por-defecto.yaml).
+    private static boolean admiteDevolucion(TipoDeEtapa tipo) {
+        return switch (tipo) {
+            case EN_CONSOLIDACION, EN_REVISION_VRA, CONGELADO_EN_FIRMA, EN_OCS -> true;
+            default -> false;
+        };
     }
 
     private static String rolDe(TipoDeEtapa tipo) {
