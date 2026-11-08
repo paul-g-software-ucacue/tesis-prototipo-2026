@@ -10,6 +10,7 @@
 
 | Condición | Texto |
 |---|---|
+| Algún parcial con `enviado = false` en el flujo | «Hay parciales sin enviar: su carrera tiene que enviarlos.» |
 | Sin `consolidacion` | «Consolida el periodo.» |
 | `desactualizado` | «Consolida otra vez: algo cambió después de consolidar.» |
 | Sin `informe` | «Adjunta el informe sustentado.» |

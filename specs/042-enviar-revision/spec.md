@@ -130,7 +130,7 @@ Como institución, quiero que solo el rol de EN_CONSOLIDACION pueda enviar a rev
 **Condiciones**
 
 - **FR-005**: El envío DEBE rechazarse con 409 si quedan inconsistencias abiertas: duras, o blandas sin justificar (MD-07). El mensaje DEBE decir cuántas quedan, y cuántas son duras y cuántas blandas.
-- **FR-006**: El envío DEBE rechazarse con 409 si el distributivo no se consolidó, o si el consolidado está desactualizado.
+- **FR-006**: El envío DEBE rechazarse con 409 si algún parcial del distributivo no está enviado (una carrera que recibió su primera propuesta después), si el distributivo no se consolidó, o si el consolidado está desactualizado.
 - **FR-007**: El envío DEBE rechazarse con 409 si el consolidado no tiene informe sustentado.
 - **FR-008**: Las condiciones DEBEN evaluarse en el momento del envío, con el panel y el consolidado calculados entonces, no con lo que se vio en pantalla.
 - **FR-009**: Cada condición que falla DEBE tener su propio error en el catálogo, con su mensaje y la acción que la corrige (principio XIII).
@@ -144,7 +144,7 @@ Como institución, quiero que solo el rol de EN_CONSOLIDACION pueda enviar a rev
 **Consulta**
 
 - **FR-013**: Quien consulta el estado del flujo en EN_CONSOLIDACION DEBE ver la acción de enviar a revisión solo si tiene el rol de la etapa.
-- **FR-014**: La pantalla del consolidado DEBE mostrar al Responsable cuáles condiciones faltan para enviar (consolidar, consolidar otra vez, adjuntar el informe, inconsistencias abiertas con su número) y permitir enviar solo cuando no falta ninguna.
+- **FR-014**: La pantalla del consolidado DEBE mostrar al Responsable cuáles condiciones faltan para enviar (parciales sin enviar, consolidar, consolidar otra vez, adjuntar el informe, inconsistencias abiertas con su número) y permitir enviar solo cuando no falta ninguna.
 
 ### Key Entities
 
@@ -161,7 +161,7 @@ Como institución, quiero que solo el rol de EN_CONSOLIDACION pueda enviar a rev
 - **SC-002**: Con todas las condiciones cumplidas, el distributivo está en la siguiente etapa activa en la misma respuesta del envío, y la bitácora tiene exactamente una transición con los seis datos de RF-44.
 - **SC-003**: El 100 % de los intentos de enviar con un rol que no es el de EN_CONSOLIDACION reciben 403: los 9 roles de la matriz D-16 que no son el de la etapa.
 - **SC-004**: Con dos envíos simultáneos, el distributivo pasa de etapa exactamente una vez.
-- **SC-005**: Con el consolidado listo, el Responsable de consolidación lo envía a revisión en menos de 30 segundos desde que abre la pantalla del consolidado.
+- **SC-005**: Con el consolidado listo, el Responsable de consolidación lo envía a revisión en menos de 30 segundos desde que abre la pantalla del consolidado. Con los datos de prueba no hay un consolidado listo (research §10): se mide cuando F12-H05 (#211) permita corregir las duras; hasta entonces queda pendiente en la evidencia.
 - **SC-006**: Con un consolidado que no está listo, el Responsable ve en la pantalla todas las condiciones que faltan sin necesidad de intentar el envío.
 
 ## Assumptions

@@ -52,6 +52,8 @@ description: "Tareas de F10-H03: enviar a revisión con cero inconsistencias abi
   - `ENVIAR_A_REVISION` en `AccionDelFlujo`.
 
   Regenerar `SPA/api/generado/validacionocs.d.ts` y compilar `:servicios:validacionocs`.
+
+  La descripción de `enviarARevision` no nombra la bitácora: `BitacoraSinBorradoContratoTest` solo admite que la nombre la escritura de Usuarios, y en F12-H02 eso rompió la CI. Gradle no vuelve a correr Usuarios cuando cambia otro contrato, así que después correr `./gradlew :servicios:usuarios:test --rerun`.
 - [ ] T003 Agregar a `contratos/comun/errores.md`, con sus 8 columnas (research §11), estos seis códigos, todos 409:
   - `VALIDACIONOCS_ETAPA_NO_ADMITE_REVISION`;
   - `VALIDACIONOCS_PARCIALES_PENDIENTES`;
@@ -64,6 +66,7 @@ description: "Tareas de F10-H03: enviar a revisión con cero inconsistencias abi
 - [ ] T004 [P] En Generación, agregar a `GEN/main/.../puertos/entrada/ParcialesDelDistributivo.java` el método `condicionesDeRevision(periodo)`, y crear el registro `CondicionesDeRevision` (`version`, `consolidado`, `desactualizado`, `informe: Optional<String>`, `duras`, `blandas`), con tipos simples (`contracts/generacion.md`). Ver fallar primero `GEN/test/.../aplicacion/ParcialesDelDistributivoServicioTest.java` (Mockito):
   - con un `ConsolidadoDelPeriodo` de prueba, cada campo sale del consolidado: sin consolidar, desactualizado, con informe (su huella) y las abiertas del panel, cada una en los dos sentidos;
   - sin distributivo, `DistributivoNoEncontrado`;
+  - solo cuenta `abiertas`: las reglas de `sinEvaluar` no bloquean (Edge Cases);
   - no guarda nada.
 
   Después, en un comando aparte, implementarlo en `ParcialesDelDistributivoServicio`, que recibe `ConsultarConsolidado`, y conectarlo en la configuración de Generación.
@@ -90,7 +93,9 @@ description: "Tareas de F10-H03: enviar a revisión con cero inconsistencias abi
   - una sola entrada en `RegistroDeCambios`, con la acción `CONSOLIDADO_ENVIADO_A_REVISION`; en el detalle, `periodo`, `version`, `hash` e `informe`; en `anterior` y `nuevo`, el estado (`contracts/bitacora.md`);
   - si `validarRevision` rechaza, no llama a Generación;
   - un periodo cerrado responde `PeriodoCerrado`;
-  - un rechazo no registra nada.
+  - un rechazo no registra nada;
+  - si `condicionesDeRevision` falla porque Datos no responde, el error del proceso se propaga (502 o 504 del catálogo), sin transición ni entrada (Edge Cases);
+  - `condicionesDeRevision` se llama en cada envío: no se reutiliza lo que la pantalla vio antes (FR-008, US2-3).
 
   Después, en un comando aparte:
   - `enviarARevision` en `FlujoDelDistributivoServicio`;
@@ -99,7 +104,7 @@ description: "Tareas de F10-H03: enviar a revisión con cero inconsistencias abi
 - [ ] T007 [US1] Agregar a `VAL/test/.../adaptadores/entrada/FlujoContratoTest.java` y ver fallar: el 200 de `enviarARevision` cumple `EstadoDelFlujo` con la etapa nueva; el 400 de un `periodo` inválido; el 404 sin distributivo. Después, la operación en `VAL/main/.../adaptadores/entrada/FlujoControlador.java`, con `RolDeOtraEtapa` traducido a `AccessDeniedException`, y el caso de uso en `VAL/main/.../infraestructura/ConfiguracionValidacionocs.java`. Sumar `enviarARevision` a `PermisosValidacionocsTest`.
 - [ ] T008 [US1] Crear `VAL/integrationTest/.../EnvioARevisionIntegrationTest.java` con PostgreSQL real. Usa `FlujoDelDistributivoServicio`, `RepositorioProcesoJdbc` y la transacción reales, y un `Distributivo` falso: proceso en EN_CONSOLIDACION, condiciones cumplidas. Comprueba:
   - el envío deja el proceso en EN_REVISION_VRA, con su transición guardada en `validacionocs.transicion`;
-  - el registro recibe una sola entrada;
+  - un `RegistroDeCambios` falso, que cuenta lo que recibe, recibe una sola entrada (la entrega a la bitácora ya la prueba F17-H01);
   - con dos hilos que envían a la vez, un solo `PASO_DE_ETAPA` desde EN_CONSOLIDACION, y el otro recibe `EtapaNoAdmiteRevision` (SC-004).
 
 **Checkpoint**: el envío que pasa funciona por la API, con su entrada en la bitácora.
@@ -169,7 +174,7 @@ description: "Tareas de F10-H03: enviar a revisión con cero inconsistencias abi
     - con `faltan`, el botón deshabilitado y la lista con `aria-describedby`;
     - la confirmación;
     - el 409 con su detalle.
-  - **`SPA/pantallas/consolidado/Consolidado.test.tsx`:** cada condición da su texto, la de las inconsistencias con el enlace al panel; con todo cumplido, el botón habilitado; al enviar, se invalidan el flujo y el consolidado.
+  - **`SPA/pantallas/consolidado/Consolidado.test.tsx`:** cada condición da su texto, también «Hay parciales sin enviar» con el flujo, la de las inconsistencias con el enlace al panel; con todo cumplido, el botón habilitado; al enviar, se invalidan el flujo y el consolidado.
 
   Después, el código de `EstadoDelFlujo.tsx` y `Consolidado.tsx`. Agregar a `frontend/e2e/consolidado.spec.ts` lo que falta y el envío exitoso con la API simulada, con axe-core.
 - [ ] T016 Crear `deploy/probar_revision.sh` con los 7 pasos de `contracts/demostracion.md`, sobre los datos de prueba y con la base limpia al terminar, sin imprimir claves ni tokens. Agregar su paso a `.github/workflows/perfil-consolidado.yml` después de «Avance por etapas». Pasar shellcheck. Correr `probar_avance.sh` y `probar_revision.sh` en su orden sobre un perfil nuevo.
@@ -180,8 +185,9 @@ description: "Tareas de F10-H03: enviar a revisión con cero inconsistencias abi
   - la SPA: tipos, ESLint, Prettier, Vitest y Playwright;
   - los scripts de `perfil-consolidado` en su orden sobre un perfil nuevo, shellcheck y Gitleaks;
   - los criterios de terminado de la constitución §6;
-  - la limitación de research §10: el envío que pasa se prueba solo en integración.
-- [ ] T019 Fusionar solo con la aprobación del autor y con todas las comprobaciones en verde. Verificar el despliegue en el equipo de demostración: GitHub `demostracion` y los 8 contenedores sanos con la versión nueva. Hacer la comprobación del autor con `quickstart.md` §4, que incluye ver lo que falta y el 409 con el número del panel. Abrir el PR de evidencia con `Closes #55` y borrar las ramas.
+  - la limitación de research §10: el envío que pasa se prueba solo en integración;
+  - SC-005 pendiente hasta F12-H05 (#211), con el motivo.
+- [ ] T019 Fusionar solo con la aprobación del autor y con todas las comprobaciones en verde. Verificar el despliegue en el equipo de demostración: GitHub `demostracion` y los 8 contenedores sanos con la versión nueva. Hacer la comprobación del autor con `quickstart.md` §4, que incluye ver lo que falta y el 409 con el número del panel. SC-005 no se cronometra: con los datos de la demo no hay un consolidado listo; queda pendiente en la evidencia y en un comentario de #211. Abrir el PR de evidencia con `Closes #55` y borrar las ramas.
 
 ---
 
