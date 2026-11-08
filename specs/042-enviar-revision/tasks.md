@@ -38,7 +38,7 @@ description: "Tareas de F10-H03: enviar a revisión con cero inconsistencias abi
 
 ## Phase 1: Setup
 
-- [ ] T001 Revisar el glosario (`~/Downloads/MDD_artefactos_desarrollo/requerimientos_mdd/sdd/modelo_dominio.md` §6 y §7). «Panel de inconsistencias», «Informe sustentado», «Responsable de consolidación» y `ConsolidadoEnviadoARevision` ya están. Confirmar si «Condiciones de revisión» es un término nuevo del negocio. Si lo es, proponerlo al autor y anotarlo en `evidencia.md`. Anotar el resultado aquí.
+- [X] T001 Revisar el glosario (`~/Downloads/MDD_artefactos_desarrollo/requerimientos_mdd/sdd/modelo_dominio.md` §6 y §7). «Panel de inconsistencias», «Informe sustentado», «Responsable de consolidación» y `ConsolidadoEnviadoARevision` ya están. Confirmar si «Condiciones de revisión» es un término nuevo del negocio. Si lo es, proponerlo al autor y anotarlo en `evidencia.md`. Anotar el resultado aquí. **Resultado (2026-11-08):** los cuatro términos están en el glosario (§6 y §7). «Condiciones de revisión» nombra el conjunto de comprobaciones de MD-07 y D-97, no un concepto nuevo del negocio; no se agrega.
 
 ---
 
@@ -46,7 +46,7 @@ description: "Tareas de F10-H03: enviar a revisión con cero inconsistencias abi
 
 **⚠️ CRITICAL**: ninguna historia empieza antes de T004.
 
-- [ ] T002 Agregar a `contratos/validacionocs/openapi.yaml`, según `contracts/validacionocs.md`:
+- [X] T002 Agregar a `contratos/validacionocs/openapi.yaml`, según `contracts/validacionocs.md`:
   - la operación `enviarARevision` (`POST /api/validacionocs/periodos/{periodo}/revision`), en la etiqueta `Aprobacion`, con `x-mdd-permiso: CONSOLIDACION:APROBACION`, sin cuerpo y con `periodo` `^[A-Za-z0-9._-]{1,20}$`;
   - sus respuestas 200 `EstadoDelFlujo`, 400, 401, 403, 404, 409 (los seis códigos nuevos y `VALIDACIONOCS_PERIODO_CERRADO`), 500, 502 y 504;
   - `ENVIAR_A_REVISION` en `AccionDelFlujo`.
@@ -54,7 +54,7 @@ description: "Tareas de F10-H03: enviar a revisión con cero inconsistencias abi
   Regenerar `SPA/api/generado/validacionocs.d.ts` y compilar `:servicios:validacionocs`.
 
   La descripción de `enviarARevision` no nombra la bitácora: `BitacoraSinBorradoContratoTest` solo admite que la nombre la escritura de Usuarios, y en F12-H02 eso rompió la CI. Gradle no vuelve a correr Usuarios cuando cambia otro contrato, así que después correr `./gradlew :servicios:usuarios:test --rerun`.
-- [ ] T003 Agregar a `contratos/comun/errores.md`, con sus 8 columnas (research §11), estos seis códigos, todos 409:
+- [X] T003 Agregar a `contratos/comun/errores.md`, con sus 8 columnas (research §11), estos seis códigos, todos 409:
   - `VALIDACIONOCS_ETAPA_NO_ADMITE_REVISION`;
   - `VALIDACIONOCS_PARCIALES_PENDIENTES`;
   - `VALIDACIONOCS_SIN_CONSOLIDAR`;
@@ -63,7 +63,7 @@ description: "Tareas de F10-H03: enviar a revisión con cero inconsistencias abi
   - `VALIDACIONOCS_INCONSISTENCIAS_ABIERTAS`.
 
   Crear sus excepciones en `VAL/main/.../dominio/`. `InconsistenciasAbiertas` lleva `duras` y `blandas`. Agregar sus entradas en `VAL/main/.../adaptadores/entrada/ErroresValidacionocs.java`; la de `INCONSISTENCIAS_ABIERTAS` va con `EntradaCatalogo.conDetalles`, con el campo `inconsistencias` y el texto «Quedan N: D duras y B blandas sin justificar.» (singular y plural correctos). Escribir primero su prueba en `ErroresValidacionocsTest`.
-- [ ] T004 [P] En Generación, agregar a `GEN/main/.../puertos/entrada/ParcialesDelDistributivo.java` el método `condicionesDeRevision(periodo)`, y crear el registro `CondicionesDeRevision` (`version`, `consolidado`, `desactualizado`, `informe: Optional<String>`, `duras`, `blandas`), con tipos simples (`contracts/generacion.md`). Ver fallar primero `GEN/test/.../aplicacion/ParcialesDelDistributivoServicioTest.java` (Mockito):
+- [X] T004 [P] En Generación, agregar a `GEN/main/.../puertos/entrada/ParcialesDelDistributivo.java` el método `condicionesDeRevision(periodo)`, y crear el registro `CondicionesDeRevision` (`version`, `consolidado`, `desactualizado`, `informe: Optional<String>`, `duras`, `blandas`), con tipos simples (`contracts/generacion.md`). Ver fallar primero `GEN/test/.../aplicacion/ParcialesDelDistributivoServicioTest.java` (Mockito):
   - con un `ConsolidadoDelPeriodo` de prueba, cada campo sale del consolidado: sin consolidar, desactualizado, con informe (su huella) y las abiertas del panel, cada una en los dos sentidos;
   - sin distributivo, `DistributivoNoEncontrado`;
   - solo cuenta `abiertas`: las reglas de `sinEvaluar` no bloquean (Edge Cases);
@@ -81,14 +81,14 @@ description: "Tareas de F10-H03: enviar a revisión con cero inconsistencias abi
 
 **Independent Test**: en la prueba de integración, con condiciones cumplidas, el distributivo queda en EN_REVISION_VRA con una transición y una entrada `CONSOLIDADO_ENVIADO_A_REVISION` (research §10).
 
-- [ ] T005 [US1] Crear `VAL/main/.../dominio/CondicionesDeRevision.java` (data-model.md: `consolidado`, `desactualizado`, `informe` opcional, `duras ≥ 0`, `blandas ≥ 0`). Agregar a `VAL/test/.../dominio/ProcesoAprobacionTest.java` y ver fallar:
+- [X] T005 [US1] Crear `VAL/main/.../dominio/CondicionesDeRevision.java` (data-model.md: `consolidado`, `desactualizado`, `informe` opcional, `duras ≥ 0`, `blandas ≥ 0`). Agregar a `VAL/test/.../dominio/ProcesoAprobacionTest.java` y ver fallar:
   - `validarRevision` exige `estado == EN_CONSOLIDACION` (`EtapaNoAdmiteRevision`) y todos los parciales `ENVIADO` (`ParcialesPendientes`), y no cambia nada;
   - `enviarARevision` con todo cumplido deja un `PASO_DE_ETAPA` de EN_CONSOLIDACION a EN_REVISION_VRA, con la versión, el hash, quién y cuándo;
   - con EN_REVISION_VRA desactivada en la copia de la configuración, pasa a la siguiente activa (US1-3);
   - un segundo envío, ya en EN_REVISION_VRA, lanza `EtapaNoAdmiteRevision` sin agregar transiciones (US1-4).
 
   Después, en un comando aparte, `validarRevision` y `enviarARevision` en `ProcesoAprobacion`.
-- [ ] T006 [US1] Crear `VAL/main/.../puertos/entrada/EnviarARevision.java`, y agregar `condicionesDeRevision(periodo)` a `VAL/main/.../puertos/salida/Distributivo.java`. Agregar a `VAL/test/.../aplicacion/FlujoDelDistributivoServicioTest.java` y ver fallar:
+- [X] T006 [US1] Crear `VAL/main/.../puertos/entrada/EnviarARevision.java`, y agregar `condicionesDeRevision(periodo)` a `VAL/main/.../puertos/salida/Distributivo.java`. Agregar a `VAL/test/.../aplicacion/FlujoDelDistributivoServicioTest.java` y ver fallar:
   - el orden de research §2: periodo abierto, `validarRevision`, `condicionesDeRevision` fuera de la transacción y, en la transacción con el proceso bloqueado, `enviarARevision`;
   - una sola entrada en `RegistroDeCambios`, con la acción `CONSOLIDADO_ENVIADO_A_REVISION`; en el detalle, `periodo`, `version`, `hash` e `informe`; en `anterior` y `nuevo`, el estado (`contracts/bitacora.md`);
   - si `validarRevision` rechaza, no llama a Generación;
@@ -101,11 +101,13 @@ description: "Tareas de F10-H03: enviar a revisión con cero inconsistencias abi
   - `enviarARevision` en `FlujoDelDistributivoServicio`;
   - la acción `CONSOLIDADO_ENVIADO_A_REVISION` en `CambioDeFlujo`, que `cambio()` elige para un paso desde EN_CONSOLIDACION y que lleva la huella del informe;
   - el método en `VAL/main/.../adaptadores/salida/DistributivoDesdeGeneracion.java`.
-- [ ] T007 [US1] Agregar a `VAL/test/.../adaptadores/entrada/FlujoContratoTest.java` y ver fallar: el 200 de `enviarARevision` cumple `EstadoDelFlujo` con la etapa nueva; el 400 de un `periodo` inválido; el 404 sin distributivo. Después, la operación en `VAL/main/.../adaptadores/entrada/FlujoControlador.java`, con `RolDeOtraEtapa` traducido a `AccessDeniedException`, y el caso de uso en `VAL/main/.../infraestructura/ConfiguracionValidacionocs.java`. Sumar `enviarARevision` a `PermisosValidacionocsTest`.
-- [ ] T008 [US1] Crear `VAL/integrationTest/.../EnvioARevisionIntegrationTest.java` con PostgreSQL real. Usa `FlujoDelDistributivoServicio`, `RepositorioProcesoJdbc` y la transacción reales, y un `Distributivo` falso: proceso en EN_CONSOLIDACION, condiciones cumplidas. Comprueba:
+- [X] T007 [US1] Agregar a `VAL/test/.../adaptadores/entrada/FlujoContratoTest.java` y ver fallar: el 200 de `enviarARevision` cumple `EstadoDelFlujo` con la etapa nueva; el 400 de un `periodo` inválido; el 404 sin distributivo. Después, la operación en `VAL/main/.../adaptadores/entrada/FlujoControlador.java`, con `RolDeOtraEtapa` traducido a `AccessDeniedException`, y el caso de uso en `VAL/main/.../infraestructura/ConfiguracionValidacionocs.java`. Sumar `enviarARevision` a `PermisosValidacionocsTest`.
+- [X] T008 [US1] Crear `VAL/integrationTest/.../EnvioARevisionIntegrationTest.java` con PostgreSQL real. Usa `FlujoDelDistributivoServicio`, `RepositorioProcesoJdbc` y la transacción reales, y un `Distributivo` falso: proceso en EN_CONSOLIDACION, condiciones cumplidas. Comprueba:
   - el envío deja el proceso en EN_REVISION_VRA, con su transición guardada en `validacionocs.transicion`;
   - un `RegistroDeCambios` falso, que cuenta lo que recibe, recibe una sola entrada (la entrega a la bitácora ya la prueba F17-H01);
   - con dos hilos que envían a la vez, un solo `PASO_DE_ETAPA` desde EN_CONSOLIDACION, y el otro recibe `EtapaNoAdmiteRevision` (SC-004).
+
+  **Resultado:** pasa a la primera, porque prueba lo que ya implementaron T005 y T006 con el repositorio y la transacción reales. Las tablas se consultan con su esquema, `validacionocs.`.
 
 **Checkpoint**: el envío que pasa funciona por la API, con su entrada en la bitácora.
 

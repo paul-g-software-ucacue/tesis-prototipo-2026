@@ -1,7 +1,8 @@
 # Contrato de validacionocs. Desde F12-H01: la configuración del flujo y del árbol de firmas de cada
 # periodo (RF-34, RF-58, ADR-007, D-89). La carga y la lee quien tiene FLUJO_FIRMAS. Desde F12-H02:
 # el flujo del distributivo, el envío del parcial de cada carrera y el avance por el rol de la etapa
-# (RF-34, RF-44, MD-04).
+# (RF-34, RF-44, MD-04). Desde F10-H03: enviar a revisión con cero inconsistencias abiertas (RF-29,
+# MD-07, D-97).
 openapi: 3.0.3
 info:
   title: MDD · validacionocs
@@ -14,7 +15,9 @@ tags:
   - name: Flujo
     description: La configuración del flujo y del árbol de firmas (RF-34, RF-58).
   - name: Aprobacion
-    description: El flujo del distributivo, el envío de los parciales y el avance por etapas (F12-H02).
+    description: >-
+      El flujo del distributivo, el envío de los parciales, el avance por etapas (F12-H02) y el envío
+      a revisión (F10-H03).
 paths:
   /api/validacionocs/plantilla-flujo:
     get:
@@ -304,6 +307,65 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
         '504':
           $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/validacionocs/periodos/{periodo}/revision:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2026-I
+    post:
+      tags: [Aprobacion]
+      operationId: enviarARevision
+      summary: Envía el consolidado a revisión, si cumple las condiciones de D-97.
+      description: >-
+        Solo el Responsable de consolidación, con el rol de EN_CONSOLIDACION en la configuración del
+        distributivo (RF-34). Exige todos los parciales enviados, el consolidado al día y con su
+        informe sustentado, y cero inconsistencias abiertas (MD-07, D-97), evaluados al enviar. El
+        distributivo pasa a la siguiente etapa activa, por defecto EN_REVISION_VRA, en la misma
+        respuesta, y la transición queda con la versión y el hash (D-95).
+      x-mdd-permiso: CONSOLIDACION:APROBACION
+      responses:
+        '200':
+          description: Enviado; el distributivo ya está en la siguiente etapa activa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoDelFlujo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: El periodo no tiene distributivo (VALIDACIONOCS_SIN_DISTRIBUTIVO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '409':
+          description: >-
+            El distributivo no está en EN_CONSOLIDACION (VALIDACIONOCS_ETAPA_NO_ADMITE_REVISION), hay
+            parciales sin enviar (VALIDACIONOCS_PARCIALES_PENDIENTES), no se consolidó
+            (VALIDACIONOCS_SIN_CONSOLIDAR), el consolidado está desactualizado
+            (VALIDACIONOCS_CONSOLIDADO_DESACTUALIZADO), no tiene informe (VALIDACIONOCS_SIN_INFORME),
+            quedan inconsistencias abiertas, con su número en detalles
+            (VALIDACIONOCS_INCONSISTENCIAS_ABIERTAS), o el periodo está cerrado
+            (VALIDACIONOCS_PERIODO_CERRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
 components:
   securitySchemes:
     bearer:
@@ -396,7 +458,7 @@ components:
           format: date-time
     AccionDelFlujo:
       type: string
-      enum: [ENVIAR_PARCIAL, AVANZAR]
+      enum: [ENVIAR_PARCIAL, AVANZAR, ENVIAR_A_REVISION]
     TransicionDelFlujo:
       type: object
       additionalProperties: false

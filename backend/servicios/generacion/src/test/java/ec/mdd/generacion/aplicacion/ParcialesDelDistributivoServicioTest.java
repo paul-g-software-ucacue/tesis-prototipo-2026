@@ -9,11 +9,17 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ec.mdd.generacion.dominio.CargaHoraria;
+import ec.mdd.generacion.dominio.Consolidacion;
+import ec.mdd.generacion.dominio.ConsolidadoDelPeriodo;
 import ec.mdd.generacion.dominio.ContenidoDelParcial;
 import ec.mdd.generacion.dominio.EstadoDeVersion;
 import ec.mdd.generacion.dominio.EstadoDelParcial;
+import ec.mdd.generacion.dominio.InformeSustentado;
 import ec.mdd.generacion.dominio.ParcialCarrera;
 import ec.mdd.generacion.dominio.VersionDistributivo;
+import ec.mdd.generacion.puertos.entrada.CondicionesDeRevision;
+import ec.mdd.generacion.puertos.entrada.ConsultarConsolidado;
 import ec.mdd.generacion.puertos.entrada.DistributivoNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.EstadoDelDistributivo;
 import ec.mdd.generacion.puertos.entrada.EstadoDelDistributivo.ParcialYSuEstado;
@@ -22,6 +28,7 @@ import ec.mdd.generacion.puertos.entrada.ParcialNoEncontrado;
 import ec.mdd.generacion.puertos.salida.RegistroDeCambios;
 import ec.mdd.generacion.puertos.salida.RepositorioDistributivos;
 import ec.mdd.generacion.puertos.salida.Transaccion;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -49,9 +56,10 @@ class ParcialesDelDistributivoServicioTest {
                     return trabajo.get();
                 }
             };
+    private final ConsultarConsolidado consolidado = mock(ConsultarConsolidado.class);
     // El servicio no recibe el registro de cambios: no puede registrar (D-95).
     private final ParcialesDelDistributivoServicio servicio =
-            new ParcialesDelDistributivoServicio(distributivos, transaccion);
+            new ParcialesDelDistributivoServicio(distributivos, transaccion, consolidado);
 
     @Test
     void dadoElDistributivo_cuandoSePideSuEstado_entoncesVersionCreacionYParciales() {
@@ -143,5 +151,81 @@ class ParcialesDelDistributivoServicioTest {
                         new ParcialCarrera("DS", estadoDeDs),
                         new ParcialCarrera("TDS", EstadoDelParcial.EN_ELABORACION)),
                 List.of());
+    }
+
+    // Condiciones para enviar a revisión (F10-H03, contracts/generacion.md).
+
+    private static final String HUELLA = "a".repeat(64);
+    private static final CargaHoraria SIN_HORAS =
+            new CargaHoraria(
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO);
+
+    private static ConsolidadoDelPeriodo consolidado(
+            boolean consolidado,
+            boolean desactualizado,
+            boolean informe,
+            long duras,
+            long blandas) {
+        return new ConsolidadoDelPeriodo(
+                PERIODO,
+                true,
+                Optional.of(VERSION),
+                3,
+                consolidado
+                        ? Optional.of(new Consolidacion("consolidacion.demo", CREADO))
+                        : Optional.empty(),
+                desactualizado,
+                List.of(),
+                SIN_HORAS,
+                duras,
+                blandas,
+                informe
+                        ? Optional.of(
+                                new InformeSustentado(
+                                        "informe.pdf",
+                                        1024,
+                                        HUELLA,
+                                        "clave",
+                                        "consolidacion.demo",
+                                        CREADO))
+                        : Optional.empty());
+    }
+
+    @Test
+    void dadoUnConsolidadoListo_cuandoSePidenLasCondiciones_entoncesTodasSeCumplen() {
+        when(consolidado.consolidado(PERIODO)).thenReturn(consolidado(true, false, true, 0, 0));
+
+        assertThat(servicio.condicionesDeRevision(PERIODO))
+                .isEqualTo(new CondicionesDeRevision(3, true, false, Optional.of(HUELLA), 0, 0));
+        verify(distributivos, never()).marcarParcial(any(), anyString(), any());
+    }
+
+    @Test
+    void dadoUnConsolidadoSinNada_cuandoSePidenLasCondiciones_entoncesCadaFaltaSeVe() {
+        when(consolidado.consolidado(PERIODO)).thenReturn(consolidado(false, false, false, 2, 1));
+
+        assertThat(servicio.condicionesDeRevision(PERIODO))
+                .isEqualTo(new CondicionesDeRevision(3, false, false, Optional.empty(), 2, 1));
+    }
+
+    @Test
+    void dadoUnConsolidadoDesactualizado_cuandoSePidenLasCondiciones_entoncesLoDice() {
+        when(consolidado.consolidado(PERIODO)).thenReturn(consolidado(true, true, true, 0, 0));
+
+        assertThat(servicio.condicionesDeRevision(PERIODO).desactualizado()).isTrue();
+    }
+
+    @Test
+    void
+            dadoUnPeriodoSinDistributivo_cuandoSePidenLasCondiciones_entoncesDistributivoNoEncontrado() {
+        when(consolidado.consolidado(PERIODO))
+                .thenReturn(ConsolidadoDelPeriodo.sinDistributivo(PERIODO, true));
+
+        assertThatThrownBy(() -> servicio.condicionesDeRevision(PERIODO))
+                .isInstanceOf(DistributivoNoEncontrado.class);
     }
 }

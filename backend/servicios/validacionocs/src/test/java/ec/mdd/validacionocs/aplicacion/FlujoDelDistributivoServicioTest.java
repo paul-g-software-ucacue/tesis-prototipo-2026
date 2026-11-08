@@ -14,8 +14,10 @@ import ec.mdd.validacionocs.adaptadores.salida.LectorYaml;
 import ec.mdd.validacionocs.adaptadores.salida.PlantillaEnRecursos;
 import ec.mdd.validacionocs.dominio.AccionDelProceso;
 import ec.mdd.validacionocs.dominio.CargaGuardada;
+import ec.mdd.validacionocs.dominio.CondicionesDeRevision;
 import ec.mdd.validacionocs.dominio.EstadoDelPeriodo;
 import ec.mdd.validacionocs.dominio.EtapaConOperacionPropia;
+import ec.mdd.validacionocs.dominio.EtapaNoAdmiteRevision;
 import ec.mdd.validacionocs.dominio.ParcialYaEnviado;
 import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
 import ec.mdd.validacionocs.dominio.RolDeOtraEtapa;
@@ -295,6 +297,102 @@ class FlujoDelDistributivoServicioTest {
         assertThat(paso.accion()).isEqualTo(CambioDeFlujo.Accion.ETAPA_AVANZADA);
         assertThat(paso.usuario()).isEqualTo("gestion.demo");
         assertThat(paso.anterior()).isEqualTo(Map.of("estado", "BORRADOR_UNIDADES"));
+    }
+
+    // Enviar a revisión (F10-H03, research §2, contracts/bitacora.md).
+
+    private static final Solicitante RESPONSABLE =
+            new Solicitante(
+                    "consolidacion.demo", Set.of("RESPONSABLE_CONSOLIDACION"), Optional.empty());
+    private static final String HUELLA = "d".repeat(64);
+    private static final CondicionesDeRevision LISTO =
+            new CondicionesDeRevision(true, false, Optional.of(HUELLA), 0, 0);
+
+    private void enConsolidacion() {
+        servicio.enviar(PERIODO, "DS", COORDINADOR_DS);
+        servicio.enviar(PERIODO, "TDS", COORDINADOR_TDS);
+        org.mockito.Mockito.clearInvocations(registro);
+        eventos.clear();
+    }
+
+    private void conCondiciones(CondicionesDeRevision condiciones) {
+        when(distributivo.condicionesDeRevision(PERIODO))
+                .thenAnswer(
+                        uso -> {
+                            eventos.add("condiciones");
+                            return condiciones;
+                        });
+    }
+
+    @Test
+    void dadoUnConsolidadoListo_cuandoSeEnviaARevision_entoncesPasaYRegistraUnaEntrada() {
+        enConsolidacion();
+        conCondiciones(LISTO);
+
+        FlujoDelDistributivo flujo = servicio.enviarARevision(PERIODO, RESPONSABLE);
+
+        assertThat(flujo.etapa()).isEqualTo(TipoDeEtapa.EN_REVISION_VRA);
+        assertThat(procesos.de(PERIODO).orElseThrow().estado())
+                .isEqualTo(TipoDeEtapa.EN_REVISION_VRA);
+        // Las condiciones, fuera de una transacción; el registro, en la suya (research §2).
+        assertThat(eventos.subList(eventos.size() - 2, eventos.size()))
+                .containsExactly("condiciones", "transaccion");
+        assertThat(registrado()).hasSize(1);
+        CambioDeFlujo envio = registrado().getFirst();
+        assertThat(envio.accion()).isEqualTo(CambioDeFlujo.Accion.CONSOLIDADO_ENVIADO_A_REVISION);
+        assertThat(envio.usuario()).isEqualTo("consolidacion.demo");
+        assertThat(envio.momento()).isEqualTo(AHORA);
+        assertThat(envio.detalle())
+                .isEqualTo(
+                        Map.of(
+                                "periodo", PERIODO, "version", 1, "hash", HASH_TODO, "informe",
+                                HUELLA));
+        assertThat(envio.anterior()).isEqualTo(Map.of("estado", "EN_CONSOLIDACION"));
+        assertThat(envio.nuevo()).isEqualTo(Map.of("estado", "EN_REVISION_VRA"));
+    }
+
+    @Test
+    void dadoElDistributivoEnBorradorCarrera_cuandoSeEnviaARevision_entoncesNoPideCondiciones() {
+        assertThatThrownBy(() -> servicio.enviarARevision(PERIODO, RESPONSABLE))
+                .isInstanceOf(EtapaNoAdmiteRevision.class);
+        verify(distributivo, never()).condicionesDeRevision(anyString());
+        assertThat(registrado()).isEmpty();
+    }
+
+    @Test
+    void dadoUnPeriodoCerrado_cuandoSeEnviaARevision_entoncesPeriodoCerradoSinPedirCondiciones() {
+        enConsolidacion();
+        when(datos.estado(PERIODO)).thenReturn(Optional.of(new EstadoDelPeriodo("CERRADO")));
+
+        assertThatThrownBy(() -> servicio.enviarARevision(PERIODO, RESPONSABLE))
+                .isInstanceOf(PeriodoCerrado.class);
+        verify(distributivo, never()).condicionesDeRevision(anyString());
+        assertThat(registrado()).isEmpty();
+    }
+
+    @Test
+    void dadoQueDatosNoResponde_cuandoSeEnviaARevision_entoncesPropagaSinTransicionNiEntrada() {
+        enConsolidacion();
+        IllegalStateException sinRespuesta = new IllegalStateException("Datos no responde");
+        when(distributivo.condicionesDeRevision(PERIODO)).thenThrow(sinRespuesta);
+
+        assertThatThrownBy(() -> servicio.enviarARevision(PERIODO, RESPONSABLE))
+                .isSameAs(sinRespuesta);
+        assertThat(registrado()).isEmpty();
+        assertThat(procesos.de(PERIODO).orElseThrow().estado())
+                .isEqualTo(TipoDeEtapa.EN_CONSOLIDACION);
+    }
+
+    @Test
+    void dadaUnaConsulta_cuandoDespuesSeEnviaARevision_entoncesPideLasCondicionesAlEnviar() {
+        enConsolidacion();
+        conCondiciones(LISTO);
+        servicio.flujo(PERIODO, RESPONSABLE);
+        verify(distributivo, never()).condicionesDeRevision(anyString());
+
+        servicio.enviarARevision(PERIODO, RESPONSABLE);
+
+        verify(distributivo, org.mockito.Mockito.times(1)).condicionesDeRevision(PERIODO);
     }
 
     private List<CambioDeFlujo> registrado() {

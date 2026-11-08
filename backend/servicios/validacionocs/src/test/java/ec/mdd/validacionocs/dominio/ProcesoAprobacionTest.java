@@ -277,6 +277,117 @@ class ProcesoAprobacionTest {
         return proceso.enviarParcial(carrera, quien, 1, HASH_PARCIAL, HASH_DISTRIBUTIVO, AHORA);
     }
 
+    // Enviar a revisión (F10-H03, data-model.md, D-97).
+
+    private static final Solicitante RESPONSABLE =
+            new Solicitante(
+                    "consolidacion.demo", Set.of("RESPONSABLE_CONSOLIDACION"), Optional.empty());
+    private static final CondicionesDeRevision LISTO =
+            new CondicionesDeRevision(true, false, Optional.of("c".repeat(64)), 0, 0);
+
+    @Test
+    void dadoUnConsolidadoListo_cuandoLoEnvioARevision_entoncesPasaAEnRevisionVra() {
+        ProcesoAprobacion proceso = enConsolidacion(etapas(false));
+
+        List<Transicion> nuevas = revisar(proceso, LISTO);
+
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_REVISION_VRA);
+        assertThat(nuevas)
+                .containsExactly(
+                        new Transicion(
+                                TipoDeTransicion.PASO_DE_ETAPA,
+                                TipoDeEtapa.EN_CONSOLIDACION,
+                                TipoDeEtapa.EN_REVISION_VRA,
+                                Optional.empty(),
+                                2,
+                                HASH_DISTRIBUTIVO,
+                                "consolidacion.demo",
+                                AHORA));
+        assertThat(proceso.transiciones()).isEqualTo(nuevas);
+    }
+
+    @Test
+    void dadaEnRevisionVraDesactivada_cuandoLoEnvioARevision_entoncesPasaALaSiguienteActiva() {
+        List<EtapaDelProceso> sinRevision =
+                etapas(false).stream()
+                        .map(
+                                etapa ->
+                                        etapa.tipo() == TipoDeEtapa.EN_REVISION_VRA
+                                                ? new EtapaDelProceso(
+                                                        etapa.tipo(),
+                                                        false,
+                                                        etapa.nombre(),
+                                                        etapa.rol())
+                                                : etapa)
+                        .toList();
+        ProcesoAprobacion proceso = enConsolidacion(sinRevision);
+
+        revisar(proceso, LISTO);
+
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.CONGELADO_EN_FIRMA);
+    }
+
+    @Test
+    void dadoElDistributivoYaEnRevision_cuandoLoEnvioOtraVez_entoncesEtapaNoAdmiteRevision() {
+        ProcesoAprobacion proceso = enConsolidacion(etapas(false));
+        revisar(proceso, LISTO);
+
+        assertThatThrownBy(() -> revisar(proceso, LISTO)).isInstanceOf(EtapaNoAdmiteRevision.class);
+        assertThatThrownBy(() -> proceso.validarRevision(RESPONSABLE))
+                .isInstanceOf(EtapaNoAdmiteRevision.class);
+        assertThat(proceso.transiciones()).hasSize(1);
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_REVISION_VRA);
+    }
+
+    @Test
+    void
+            dadoElDistributivoEnBorradorCarrera_cuandoLoEnvioARevision_entoncesEtapaNoAdmiteRevision() {
+        ProcesoAprobacion proceso = nuevo(false, "DS");
+
+        assertThatThrownBy(() -> proceso.validarRevision(RESPONSABLE))
+                .isInstanceOf(EtapaNoAdmiteRevision.class);
+        assertThatThrownBy(() -> revisar(proceso, LISTO)).isInstanceOf(EtapaNoAdmiteRevision.class);
+        assertThat(proceso.transiciones()).isEmpty();
+    }
+
+    @Test
+    void
+            dadoUnParcialPendienteEnConsolidacion_cuandoLoEnvioARevision_entoncesParcialesPendientes() {
+        ProcesoAprobacion proceso = enConsolidacion(etapas(false));
+        proceso.sumarParciales(List.of("NUEVA"));
+
+        assertThatThrownBy(() -> proceso.validarRevision(RESPONSABLE))
+                .isInstanceOf(ParcialesPendientes.class);
+        assertThatThrownBy(() -> revisar(proceso, LISTO)).isInstanceOf(ParcialesPendientes.class);
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_CONSOLIDACION);
+        assertThat(proceso.transiciones()).isEmpty();
+    }
+
+    @Test
+    void dadoUnConsolidadoListo_cuandoSoloSeValida_entoncesNoCambiaNada() {
+        ProcesoAprobacion proceso = enConsolidacion(etapas(false));
+
+        proceso.validarRevision(RESPONSABLE);
+
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_CONSOLIDACION);
+        assertThat(proceso.transiciones()).isEmpty();
+    }
+
+    private static List<Transicion> revisar(
+            ProcesoAprobacion proceso, CondicionesDeRevision condiciones) {
+        return proceso.enviarARevision(RESPONSABLE, condiciones, 2, HASH_DISTRIBUTIVO, AHORA);
+    }
+
+    private static ProcesoAprobacion enConsolidacion(List<EtapaDelProceso> etapas) {
+        return ProcesoAprobacion.de(
+                "2026-I",
+                etapas,
+                TipoDeEtapa.EN_CONSOLIDACION,
+                CREADO,
+                Map.of("DS", EstadoDeEnvio.ENVIADO, "TDS", EstadoDeEnvio.ENVIADO),
+                List.of());
+    }
+
     private static ProcesoAprobacion nuevo(boolean conUnidades, String... carreras) {
         return ProcesoAprobacion.nuevo("2026-I", etapas(conUnidades), CREADO, List.of(carreras));
     }

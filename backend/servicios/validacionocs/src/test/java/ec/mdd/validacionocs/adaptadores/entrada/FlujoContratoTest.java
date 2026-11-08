@@ -63,6 +63,8 @@ class FlujoContratoTest {
     private static final String FLUJO = "/api/validacionocs/periodos/%s/flujo";
     private static final String ENVIO = "/api/validacionocs/periodos/%s/parciales/%s/envio";
     private static final String AVANCE = "/api/validacionocs/periodos/%s/avance";
+    private static final String REVISION = "/api/validacionocs/periodos/%s/revision";
+    private static final String RESPONSABLE = "RESPONSABLE_CONSOLIDACION";
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final Map<String, List<String>> MATRIZ = matrizD16();
     private static final FlujoEnMemoria MEMORIA = new FlujoEnMemoria();
@@ -222,6 +224,47 @@ class FlujoContratoTest {
         assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
         assertThat(cuerpo(resultado).get("etapa").asString()).isEqualTo("EN_CONSOLIDACION");
         contrato.validar(resultado);
+    }
+
+    // Enviar a revisión (F10-H03, contracts/validacionocs.md).
+
+    @Test
+    void dadoUnConsolidadoListo_cuandoElResponsableLoEnvia_entonces200EnRevisionSegunElContrato()
+            throws Exception {
+        enConsolidacion(PERIODO);
+
+        MvcResult resultado = revisar(PERIODO, RESPONSABLE);
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        JsonNode cuerpo = cuerpo(resultado);
+        assertThat(cuerpo.get("etapa").asString()).isEqualTo("EN_REVISION_VRA");
+        JsonNode paso = cuerpo.get("transiciones").get(3);
+        assertThat(paso.get("desde").asString()).isEqualTo("EN_CONSOLIDACION");
+        assertThat(paso.get("hacia").asString()).isEqualTo("EN_REVISION_VRA");
+        assertThat(paso.get("quien").asString()).isEqualTo("responsable_consolidacion.demo");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnPeriodoInvalido_cuandoSeEnviaARevision_entonces400ConSuDetalle() throws Exception {
+        MvcResult resultado = revisar("2026 I!", RESPONSABLE);
+
+        assertCodigo(resultado, 400, "COMUN_SOLICITUD_INVALIDA");
+        assertThat(cuerpo(resultado).get("detalles")).isNotEmpty();
+    }
+
+    @Test
+    void dadoUnPeriodoSinDistributivo_cuandoSeEnviaARevision_entonces404() throws Exception {
+        assertCodigo(revisar(SIN_DISTRIBUTIVO, RESPONSABLE), 404, "VALIDACIONOCS_SIN_DISTRIBUTIVO");
+    }
+
+    private void enConsolidacion(String periodo) throws Exception {
+        enviar(periodo, DS, DS);
+        enviar(periodo, TDS, TDS);
+    }
+
+    private MvcResult revisar(String periodo, String rol) throws Exception {
+        return pedir(post(REVISION.formatted(periodo)), rol, null);
     }
 
     // SC-002 y T016: los 9 roles que no son el de la etapa reciben 403, en las dos operaciones.

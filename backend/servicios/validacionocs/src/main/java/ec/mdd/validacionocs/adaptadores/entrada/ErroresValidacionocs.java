@@ -6,10 +6,16 @@ import ec.mdd.plataforma.errores.nucleo.DetalleRespuesta;
 import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
 import ec.mdd.validacionocs.dominio.ArchivoDemasiadoGrande;
 import ec.mdd.validacionocs.dominio.ArchivoIlegible;
+import ec.mdd.validacionocs.dominio.ConsolidadoDesactualizado;
 import ec.mdd.validacionocs.dominio.EtapaConOperacionPropia;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteEnvio;
+import ec.mdd.validacionocs.dominio.EtapaNoAdmiteRevision;
+import ec.mdd.validacionocs.dominio.InconsistenciasAbiertas;
 import ec.mdd.validacionocs.dominio.ParcialNoEncontrado;
 import ec.mdd.validacionocs.dominio.ParcialYaEnviado;
+import ec.mdd.validacionocs.dominio.ParcialesPendientes;
+import ec.mdd.validacionocs.dominio.SinConsolidar;
+import ec.mdd.validacionocs.dominio.SinInforme;
 import ec.mdd.validacionocs.puertos.entrada.ConfiguracionInvalida;
 import ec.mdd.validacionocs.puertos.entrada.PeriodoCerrado;
 import ec.mdd.validacionocs.puertos.entrada.PeriodoNoEncontrado;
@@ -108,6 +114,63 @@ class ErroresValidacionocs implements CatalogoDeErrores {
                         "VALIDACIONOCS_PERIODO_CERRADO",
                         409,
                         "Periodo cerrado",
-                        "El periodo está cerrado: el distributivo ya no cambia de etapa."));
+                        "El periodo está cerrado: el distributivo ya no cambia de etapa."),
+                // El envío a revisión (F10-H03, D-97), en el orden en que se comprueban.
+                EntradaCatalogo.de(
+                        EtapaNoAdmiteRevision.class,
+                        "VALIDACIONOCS_ETAPA_NO_ADMITE_REVISION",
+                        409,
+                        "Etapa sin envío a revisión",
+                        "Solo se envía a revisión desde la consolidación."),
+                EntradaCatalogo.de(
+                        ParcialesPendientes.class,
+                        "VALIDACIONOCS_PARCIALES_PENDIENTES",
+                        409,
+                        "Parciales sin enviar",
+                        "Hay parciales sin enviar: su carrera tiene que enviarlos antes de la"
+                                + " revisión."),
+                EntradaCatalogo.de(
+                        SinConsolidar.class,
+                        "VALIDACIONOCS_SIN_CONSOLIDAR",
+                        409,
+                        "Sin consolidar",
+                        "Consolida el periodo antes de enviarlo a revisión."),
+                EntradaCatalogo.de(
+                        ConsolidadoDesactualizado.class,
+                        "VALIDACIONOCS_CONSOLIDADO_DESACTUALIZADO",
+                        409,
+                        "Consolidado desactualizado",
+                        "Algo cambió después de consolidar. Consolida otra vez antes de enviarlo"
+                                + " a revisión."),
+                EntradaCatalogo.de(
+                        SinInforme.class,
+                        "VALIDACIONOCS_SIN_INFORME",
+                        409,
+                        "Sin informe sustentado",
+                        "Adjunta el informe sustentado antes de enviarlo a revisión."),
+                EntradaCatalogo.conDetalles(
+                        InconsistenciasAbiertas.class,
+                        new DefinicionDeCodigo(
+                                "VALIDACIONOCS_INCONSISTENCIAS_ABIERTAS",
+                                409,
+                                "Inconsistencias abiertas",
+                                "Quedan inconsistencias abiertas. Corrige las duras y justifica las"
+                                        + " blandas en el panel de inconsistencias."),
+                        error ->
+                                List.of(
+                                        new DetalleRespuesta(
+                                                "inconsistencias", cuantasQuedan(error)))));
+    }
+
+    // «Quedan 3: 2 duras y 1 blanda sin justificar.», con el singular cuando es una.
+    private static String cuantasQuedan(InconsistenciasAbiertas error) {
+        return (error.total() == 1 ? "Queda " : "Quedan ")
+                + error.total()
+                + ": "
+                + error.duras()
+                + (error.duras() == 1 ? " dura y " : " duras y ")
+                + error.blandas()
+                + (error.blandas() == 1 ? " blanda" : " blandas")
+                + " sin justificar.";
     }
 }

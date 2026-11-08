@@ -1,5 +1,6 @@
 package ec.mdd.validacionocs.puertos.salida;
 
+import ec.mdd.validacionocs.dominio.CondicionesDeRevision;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
@@ -32,6 +33,15 @@ public interface Distributivo {
      * @return el hash del distributivo, el de todos sus parciales
      */
     String hash(String periodo);
+
+    /**
+     * Las condiciones del consolidado para enviarlo a revisión, calculadas al pedirlas (F10-H03,
+     * D-97). Puede llamar a otro proceso: no se usa dentro de una transacción (D-83).
+     *
+     * @param periodo el código del periodo
+     * @return si se consolidó, si quedó desactualizado, el informe y las abiertas
+     */
+    CondicionesDeRevision condicionesDeRevision(String periodo);
 
     /**
      * El distributivo de un periodo.

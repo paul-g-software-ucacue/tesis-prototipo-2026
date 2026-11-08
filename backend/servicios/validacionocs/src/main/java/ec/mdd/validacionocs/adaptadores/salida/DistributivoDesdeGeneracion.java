@@ -4,6 +4,7 @@ import ec.mdd.generacion.puertos.entrada.DistributivoNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.EstadoDelDistributivo;
 import ec.mdd.generacion.puertos.entrada.ParcialMarcado;
 import ec.mdd.generacion.puertos.entrada.ParcialesDelDistributivo;
+import ec.mdd.validacionocs.dominio.CondicionesDeRevision;
 import ec.mdd.validacionocs.dominio.ParcialNoEncontrado;
 import ec.mdd.validacionocs.puertos.entrada.SinDistributivo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo;
@@ -55,6 +56,22 @@ public final class DistributivoDesdeGeneracion implements Distributivo {
     public String hash(String periodo) {
         try {
             return parciales.hashDelDistributivo(periodo);
+        } catch (DistributivoNoEncontrado sinDistributivo) {
+            throw new SinDistributivo();
+        }
+    }
+
+    @Override
+    public CondicionesDeRevision condicionesDeRevision(String periodo) {
+        try {
+            ec.mdd.generacion.puertos.entrada.CondicionesDeRevision condiciones =
+                    parciales.condicionesDeRevision(periodo);
+            return new CondicionesDeRevision(
+                    condiciones.consolidado(),
+                    condiciones.desactualizado(),
+                    condiciones.informe(),
+                    condiciones.duras(),
+                    condiciones.blandas());
         } catch (DistributivoNoEncontrado sinDistributivo) {
             throw new SinDistributivo();
         }

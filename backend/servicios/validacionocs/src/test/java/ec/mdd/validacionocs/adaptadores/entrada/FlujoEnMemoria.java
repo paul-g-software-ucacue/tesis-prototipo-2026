@@ -5,6 +5,7 @@ import ec.mdd.validacionocs.adaptadores.salida.PlantillaEnRecursos;
 import ec.mdd.validacionocs.aplicacion.EtapasAlCrearse;
 import ec.mdd.validacionocs.aplicacion.FlujoDelDistributivoServicio;
 import ec.mdd.validacionocs.dominio.CargaGuardada;
+import ec.mdd.validacionocs.dominio.CondicionesDeRevision;
 import ec.mdd.validacionocs.dominio.EstadoDelPeriodo;
 import ec.mdd.validacionocs.dominio.Firmantes;
 import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
@@ -50,6 +51,17 @@ final class FlujoEnMemoria {
 
     private final Map<String, Map<String, Boolean>> enviados = new HashMap<>();
     private final Map<String, ProcesoAprobacion> procesos = new HashMap<>();
+    private CondicionesDeRevision condiciones = listo();
+
+    /** Un consolidado que cumple todo lo que pide enviar a revisión (F10-H03). */
+    static CondicionesDeRevision listo() {
+        return new CondicionesDeRevision(true, false, Optional.of("c".repeat(64)), 0, 0);
+    }
+
+    /** Lo que Generación dirá del consolidado en el próximo envío a revisión. */
+    void condiciones(CondicionesDeRevision nuevas) {
+        condiciones = nuevas;
+    }
 
     FlujoEnMemoria() {
         reiniciar();
@@ -59,6 +71,7 @@ final class FlujoEnMemoria {
     void reiniciar() {
         enviados.clear();
         procesos.clear();
+        condiciones = listo();
         for (String periodo : List.of(PERIODO, CERRADO)) {
             Map<String, Boolean> carreras = new LinkedHashMap<>();
             carreras.put(DS, false);
@@ -107,6 +120,11 @@ final class FlujoEnMemoria {
             @Override
             public String hash(String periodo) {
                 return "b".repeat(64);
+            }
+
+            @Override
+            public CondicionesDeRevision condicionesDeRevision(String periodo) {
+                return condiciones;
             }
         };
     }

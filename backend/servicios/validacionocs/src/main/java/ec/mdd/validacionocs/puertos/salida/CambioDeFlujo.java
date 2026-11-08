@@ -88,6 +88,12 @@ public record CambioDeFlujo(
          */
         PARCIAL_ENVIADO,
         /** El distributivo pasó a otra etapa (F12-H02): cambia, con la etapa antes y después. */
-        ETAPA_AVANZADA
+        ETAPA_AVANZADA,
+        /**
+         * El consolidado enviado a revisión (F10-H03): el paso desde EN_CONSOLIDACION, con la etapa
+         * antes y después, y la versión, el hash y la huella del informe en el detalle
+         * (contracts/bitacora.md, D-95, D-97).
+         */
+        CONSOLIDADO_ENVIADO_A_REVISION
     }
 }

@@ -115,7 +115,10 @@ public class ConfiguracionValidacionocs {
         return new DistributivoDesdeGeneracion(parciales);
     }
 
-    /** Consultar el flujo, enviar el parcial y el avance genérico (F12-H02). */
+    /**
+     * Consultar el flujo, enviar el parcial, el avance genérico (F12-H02) y enviar a revisión
+     * (F10-H03).
+     */
     @Bean
     public FlujoDelDistributivoServicio flujoDelDistributivo(
             Distributivo distributivoDeGeneracion,
