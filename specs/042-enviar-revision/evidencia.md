@@ -68,8 +68,28 @@ El envío que pasa lo prueba `EnvioARevisionIntegrationTest`, con PostgreSQL rea
 | Bitácora (D-90, D-95) | Una entrada por transición, con la versión, el hash y la huella del informe |
 | Decisión registrada | D-97, antes de implementar |
 
-## Pendiente (T019)
+## El equipo de demostración (T019)
 
-- El pull request y su fusión con la aprobación del autor.
-- El despliegue en el equipo de demostración y la comprobación del autor con `quickstart.md` §3, sin cronometrar SC-005.
-- El PR de evidencia con `Closes #55`.
+| Qué | Resultado | Fuente | Fecha |
+|---|---|---|---|
+| Fusión (#212) | `fb53d36`, con las 12 comprobaciones de CI en verde, `perfil-consolidado` incluido | GitHub | 2026-11-08 |
+| Despliegue | `demostracion` exitoso a las 14:37; «Sano en 83 s», con la prueba de humo en verde; los 8 contenedores sanos con las imágenes `fb53d36a0b7e` | GitHub, `journalctl` y `docker ps` | 2026-11-08 |
+
+Para llegar a EN_CONSOLIDACION, el autor envió los 6 parciales que faltaban con `coordinacion.demo`. Como `admin.demo` le cambió la carrera antes de cada envío, porque la demo tiene un solo coordinador. Con el último, a las 17:44:57, la bitácora tiene un `PARCIAL_ENVIADO` y una `ETAPA_AVANZADA` de BORRADOR_CARRERA a EN_CONSOLIDACION, versión 1.
+
+Comprobación del autor con `quickstart.md` §3, en 2026-I:
+
+| Paso | Resultado |
+|---|---|
+| 1. `consolidacion.demo` en «Consolidado del periodo» | OK: «Consolidación · versión 1», etapa EN_CONSOLIDACION, los 7 parciales enviados; **Enviar a revisión** deshabilitado, con lo que falta debajo |
+| 2. Consolidar | OK: `DISTRIBUTIVO_CONSOLIDADO` a las 17:52:16; la lista ya no pide consolidar |
+| 3. Adjuntar el informe | OK: `INFORME_ADJUNTADO` a las 17:58:14; solo queda «Quedan 212 inconsistencias abiertas…», el mismo número que el panel (211 duras y 1 blanda), con el enlace |
+| 4. `vicerrectorado.demo` en «Consolidado del periodo» | OK: ve la etapa y los parciales, sin el botón |
+| 5. El 409 por la API | No se hizo en la demo. Lo comprueba `probar_revision.sh`, paso 5, en el perfil local |
+| 6. La bitácora | OK: ninguna `CONSOLIDADO_ENVIADO_A_REVISION`; en la base, ninguna transición desde EN_CONSOLIDACION y la etapa sigue en EN_CONSOLIDACION |
+
+**Un intento fallido al adjuntar, sin defecto.** Los dos primeros intentos de adjuntar mostraron «Servicio no disponible». El autor eligió un PDF de la Papelera y el navegador no pudo leerlo: cortó la conexión sin enviar el archivo. El API Gateway registró `AbortedException` y Generación, el cuerpo vacío (`EOFException`). Con un PDF de otra carpeta se adjuntó a la primera.
+
+**SC-005 (enviar a revisión en menos de 30 s con el consolidado listo): pendiente hasta F12-H05 (#211).** Con las 211 duras de la demo, el envío no pasa.
+
+En la demo, 2026-I queda en EN_CONSOLIDACION con todos los parciales enviados: las carreras están en solo lectura en ese periodo hasta que se pueda devolver un parcial (#211).
