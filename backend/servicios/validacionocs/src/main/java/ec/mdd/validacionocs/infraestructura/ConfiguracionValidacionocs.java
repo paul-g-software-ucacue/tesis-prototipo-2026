@@ -1,21 +1,28 @@
 package ec.mdd.validacionocs.infraestructura;
 
+import ec.mdd.generacion.puertos.entrada.ParcialesDelDistributivo;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
 import ec.mdd.validacionocs.adaptadores.salida.DatosDesdeProcesos;
+import ec.mdd.validacionocs.adaptadores.salida.DistributivoDesdeGeneracion;
 import ec.mdd.validacionocs.adaptadores.salida.LectorYaml;
 import ec.mdd.validacionocs.adaptadores.salida.PlantillaEnRecursos;
 import ec.mdd.validacionocs.adaptadores.salida.PublicadorDeCambios;
 import ec.mdd.validacionocs.adaptadores.salida.RepositorioConfiguracionJdbc;
+import ec.mdd.validacionocs.adaptadores.salida.RepositorioProcesoJdbc;
 import ec.mdd.validacionocs.adaptadores.salida.TransaccionSpring;
 import ec.mdd.validacionocs.aplicacion.CargarConfiguracionServicio;
 import ec.mdd.validacionocs.aplicacion.ConsultarConfiguracionServicio;
+import ec.mdd.validacionocs.aplicacion.EtapasAlCrearse;
+import ec.mdd.validacionocs.aplicacion.FlujoDelDistributivoServicio;
 import ec.mdd.validacionocs.puertos.entrada.CargarConfiguracion;
 import ec.mdd.validacionocs.puertos.entrada.ConsultarConfiguracion;
 import ec.mdd.validacionocs.puertos.salida.DatosDelPeriodo;
+import ec.mdd.validacionocs.puertos.salida.Distributivo;
 import ec.mdd.validacionocs.puertos.salida.LectorDeConfiguracion;
 import ec.mdd.validacionocs.puertos.salida.PlantillaDelFlujo;
 import ec.mdd.validacionocs.puertos.salida.RegistroDeCambios;
 import ec.mdd.validacionocs.puertos.salida.RepositorioConfiguracion;
+import ec.mdd.validacionocs.puertos.salida.RepositorioProceso;
 import ec.mdd.validacionocs.puertos.salida.Transaccion;
 import java.net.URI;
 import java.time.Clock;
@@ -94,5 +101,38 @@ public class ConfiguracionValidacionocs {
             RepositorioConfiguracion repositorio,
             PlantillaDelFlujo plantilla) {
         return new ConsultarConfiguracionServicio(datos, lector, repositorio, plantilla);
+    }
+
+    /** Los procesos de aprobación (F12-H02). */
+    @Bean
+    public RepositorioProceso repositorioProceso(JdbcClient jdbc) {
+        return new RepositorioProcesoJdbc(jdbc);
+    }
+
+    /** El distributivo, por la interfaz publicada de Generación en el mismo proceso (MD-04). */
+    @Bean
+    public Distributivo distributivoDeGeneracion(ParcialesDelDistributivo parciales) {
+        return new DistributivoDesdeGeneracion(parciales);
+    }
+
+    /** Consultar el flujo, enviar el parcial y el avance genérico (F12-H02). */
+    @Bean
+    public FlujoDelDistributivoServicio flujoDelDistributivo(
+            Distributivo distributivoDeGeneracion,
+            RepositorioProceso repositorioProceso,
+            LectorDeConfiguracion lector,
+            RepositorioConfiguracion repositorio,
+            PlantillaDelFlujo plantilla,
+            DatosDelPeriodo datos,
+            RegistroDeCambios registroDeCambiosValidacionocs,
+            Transaccion transaccionValidacionocs) {
+        return new FlujoDelDistributivoServicio(
+                distributivoDeGeneracion,
+                repositorioProceso,
+                new EtapasAlCrearse(repositorio, lector, plantilla),
+                datos,
+                registroDeCambiosValidacionocs,
+                transaccionValidacionocs,
+                Clock.systemUTC());
     }
 }

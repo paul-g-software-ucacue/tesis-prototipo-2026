@@ -211,6 +211,7 @@ delete from generacion.parcial_carrera where version_id in (select v.id from gen
     join generacion.distributivo d on d.id = v.distributivo_id where d.periodo in ($periodos));
 delete from generacion.version_distributivo where distributivo_id in (select id from generacion.distributivo where periodo in ($periodos));
 delete from generacion.distributivo where periodo in ($periodos);
+delete from validacionocs.proceso_aprobacion where periodo in ($periodos);
 delete from generacion.registro_cambio where momento >= '$inicio';
 delete from docentes.proyecto where codigo in ($proyectos);
 delete from docentes.cargo where docente in ($docentes);

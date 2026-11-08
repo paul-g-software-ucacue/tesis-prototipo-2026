@@ -19,6 +19,7 @@ import { Link as RouterLink } from 'react-router';
 import { AvisoDeError } from '../../errores/AvisoDeError';
 import { traducirError, type MensajeDeError } from '../../errores/traducir';
 import { useTitulo } from '../../navegacion/useTitulo';
+import { EstadoDelFlujoDelPeriodo } from '../comun/EstadoDelFlujo';
 import { ESCRITURA_DEL_PANEL } from '../../sesion/funcionalidades';
 import { tieneAlguno } from '../../sesion/permisos';
 import { useSesionActual } from '../../sesion/useSesionActual';
@@ -258,6 +259,7 @@ export function Consolidado() {
           Este periodo todavía no tiene distributivo: no hay nada que consolidar.
         </Alert>
       )}
+      {datos?.creado && periodo && <EstadoDelFlujoDelPeriodo periodo={periodo} />}
       {datos?.creado && periodo && (
         <>
           <Typography sx={{ mt: 1 }}>

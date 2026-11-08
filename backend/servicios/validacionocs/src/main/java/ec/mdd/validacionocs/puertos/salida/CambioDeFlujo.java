@@ -81,6 +81,13 @@ public record CambioDeFlujo(
          * Configuración del flujo cargada para un periodo. Crea la primera vez y cambia después:
          * lleva {@code nuevo}, y {@code anterior} si había una (research §2).
          */
-        CONFIGURACION_FLUJO_CARGADA
+        CONFIGURACION_FLUJO_CARGADA,
+        /**
+         * El parcial de una carrera enviado (F12-H02): cambia, con el estado del parcial antes y
+         * después, y la versión y el hash en el detalle (contracts/bitacora.md, D-95).
+         */
+        PARCIAL_ENVIADO,
+        /** El distributivo pasó a otra etapa (F12-H02): cambia, con la etapa antes y después. */
+        ETAPA_AVANZADA
     }
 }

@@ -29,6 +29,17 @@ public final class RepositorioConfiguracionJdbc implements RepositorioConfigurac
              limit 1
             """;
 
+    private static final String VIGENTE_EN =
+            """
+            select contenido, cargada_por, cargada_en,
+                   (select count(*) from validacionocs.configuracion_flujo
+                     where periodo = :periodo and cargada_en <= :instante) as numero
+              from validacionocs.configuracion_flujo
+             where periodo = :periodo and cargada_en <= :instante
+             order by cargada_en desc, id desc
+             limit 1
+            """;
+
     private final JdbcClient jdbc;
 
     /** Repositorio sobre el {@link JdbcClient} del proceso. */
@@ -51,6 +62,21 @@ public final class RepositorioConfiguracionJdbc implements RepositorioConfigurac
     public Optional<CargaGuardada> vigente(String periodo) {
         return jdbc.sql(VIGENTE)
                 .param("periodo", periodo)
+                .query(
+                        (fila, indice) ->
+                                new CargaGuardada(
+                                        fila.getInt("numero"),
+                                        fila.getString("contenido"),
+                                        fila.getString("cargada_por"),
+                                        fila.getTimestamp("cargada_en").toInstant()))
+                .optional();
+    }
+
+    @Override
+    public Optional<CargaGuardada> vigenteEn(String periodo, Instant instante) {
+        return jdbc.sql(VIGENTE_EN)
+                .param("periodo", periodo)
+                .param("instante", java.sql.Timestamp.from(instante))
                 .query(
                         (fila, indice) ->
                                 new CargaGuardada(

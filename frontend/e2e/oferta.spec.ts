@@ -1,7 +1,8 @@
 // F03-H03 en un navegador, con la API simulada: el Vicerrector oferta una asignatura de 4 horas en
 // 3 paralelos y ve 12 horas a cubrir; retira uno y ve 8. También la accesibilidad de «Oferta del
 // periodo» y de sus diálogos con axe-core (WCAG 2.1 AA). Y F06-H02: la sugerencia de docentes de una
-// asignatura-paralelo, con su desglose. Y F06-H03: proponer con y sin justificación.
+// asignatura-paralelo, con su desglose. Y F06-H03: proponer con y sin justificación. Y F12-H02: el
+// coordinador envía el parcial de su carrera, y después ya no propone.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { ingresar, simularApi } from './simulacion';
@@ -504,4 +505,78 @@ test('proponer bajo el mínimo exige la justificación, y el diálogo es accesib
   await expect(page.getByText('Propuesto: PROPUESTO DEL SERVIDOR · Excepción')).toBeVisible();
   await expect(page.getByText('Dictó esta materia durante tres años')).toBeVisible();
   await sinFallas(page);
+});
+
+// F12-H02: el coordinador envía su parcial; después la sugerencia ya no deja proponer.
+test('el coordinador envía el parcial de su carrera y ya no propone', async ({ page }) => {
+  let enviado = false;
+  const flujo = () => ({
+    periodo: '2026-2',
+    etapa: 'BORRADOR_CARRERA',
+    nombreDeEtapa: 'Propuesta de carrera',
+    version: 1,
+    parciales: [
+      enviado
+        ? {
+            carrera: DS.codigo,
+            enviado: true,
+            pendienteDeConfirmar: false,
+            enviadoPor: 'coordinacion.demo',
+            enviadoEn: '2026-11-07T17:02:14Z',
+          }
+        : { carrera: DS.codigo, enviado: false, pendienteDeConfirmar: false },
+    ],
+    acciones: enviado ? [] : ['ENVIAR_PARCIAL'],
+    transiciones: [],
+  });
+  await page.route('**/api/validacionocs/periodos/*/flujo', (ruta) =>
+    ruta.fulfill({ json: flujo() }),
+  );
+  await page.route('**/api/validacionocs/periodos/*/parciales/*/envio', (ruta) => {
+    enviado = true;
+    return ruta.fulfill({ json: flujo() });
+  });
+  await page.route('**/api/generacion/periodos/*/oferta/*/*/sugerencia', (ruta) =>
+    ruta.fulfill({ json: SUGERENCIA }),
+  );
+  await abrirOferta(page, [nocturna('A_NOCTURNA')], COORDINADOR);
+  await page.route('**/api/generacion/periodos/*/parciales', (ruta) =>
+    ruta.fulfill({
+      json: {
+        creado: true,
+        parciales: [
+          {
+            carrera: DS.codigo,
+            estado: enviado ? 'ENVIADO' : 'EN_ELABORACION',
+            ofertadas: 1,
+            conPropuesta: 0,
+            completo: false,
+            propuestas: [],
+          },
+        ],
+      },
+    }),
+  );
+  const estado = page.getByRole('region', { name: 'Estado del distributivo' });
+  await expect(estado).toContainText(`${DS.codigo}: pendiente`);
+  await sinFallas(page);
+
+  await estado.getByRole('button', { name: 'Enviar parcial' }).click();
+  const confirmar = page.getByRole('dialog', { name: `Enviar el parcial de ${DS.codigo}` });
+  await expect(confirmar).toContainText('no podrás cambiar las propuestas ni las actividades');
+  await confirmar.getByRole('button', { name: 'Enviar' }).click();
+
+  await expect(estado).toContainText(`${DS.codigo}: enviado por coordinacion.demo`);
+  await expect(estado.getByRole('button', { name: 'Enviar parcial' })).toHaveCount(0);
+  await expect(
+    page.getByText('Ya se envió el parcial: sus propuestas quedan en solo lectura.'),
+  ).toBeVisible();
+  await expect(page.getByText('No cambias la oferta, pero propones sus docentes.')).toHaveCount(0);
+  await page.reload();
+  await ingresar(page, COORDINADOR.cuerpo.usuario);
+  await page.getByRole('link', { name: 'Oferta del periodo' }).click();
+  await page.getByRole('button', { name: `Sugerencia de ${POO.codigo} A_NOCTURNA` }).click();
+  const dialogo = page.getByRole('dialog', { name: /^Docentes sugeridos para/ });
+  await expect(dialogo.getByText(/PERALTA/).first()).toBeVisible();
+  await expect(dialogo.getByRole('button', { name: /^Proponer a/ })).toHaveCount(0);
 });

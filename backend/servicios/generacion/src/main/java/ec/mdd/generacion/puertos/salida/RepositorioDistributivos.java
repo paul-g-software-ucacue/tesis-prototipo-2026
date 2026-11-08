@@ -1,6 +1,7 @@
 package ec.mdd.generacion.puertos.salida;
 
 import ec.mdd.generacion.dominio.ActividadNoLectiva;
+import ec.mdd.generacion.dominio.EstadoDelParcial;
 import ec.mdd.generacion.dominio.ParcialCarrera;
 import ec.mdd.generacion.dominio.Propuesta;
 import ec.mdd.generacion.dominio.VersionDistributivo;
@@ -53,4 +54,21 @@ public interface RepositorioDistributivos {
      * @return si existía
      */
     boolean quitarPropuesta(UUID version, String asignatura, String paralelo);
+
+    /**
+     * Cuándo se creó el distributivo del periodo (F12-H02).
+     *
+     * @param periodo el código del periodo
+     * @return el instante; vacío si no hay distributivo
+     */
+    Optional<Instant> creadoEn(String periodo);
+
+    /**
+     * Cambia el estado de un parcial, por orden de Aprobación (MD-04, F12-H02).
+     *
+     * @param version la versión
+     * @param carrera la carrera del parcial
+     * @param estado el estado nuevo
+     */
+    void marcarParcial(UUID version, String carrera, EstadoDelParcial estado);
 }

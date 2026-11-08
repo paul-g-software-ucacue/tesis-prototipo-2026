@@ -20,6 +20,7 @@ import ec.mdd.generacion.aplicacion.ConsultarSugerenciaServicio;
 import ec.mdd.generacion.aplicacion.CrearDistributivoServicio;
 import ec.mdd.generacion.aplicacion.InformeSustentadoServicio;
 import ec.mdd.generacion.aplicacion.JustificarInconsistenciaServicio;
+import ec.mdd.generacion.aplicacion.ParcialesDelDistributivoServicio;
 import ec.mdd.generacion.aplicacion.ProponerDocenteServicio;
 import ec.mdd.generacion.puertos.entrada.AsignarActividad;
 import ec.mdd.generacion.puertos.entrada.Consolidar;
@@ -33,6 +34,7 @@ import ec.mdd.generacion.puertos.entrada.ConsultarParciales;
 import ec.mdd.generacion.puertos.entrada.ConsultarSugerencia;
 import ec.mdd.generacion.puertos.entrada.GestionarInforme;
 import ec.mdd.generacion.puertos.entrada.JustificarInconsistencia;
+import ec.mdd.generacion.puertos.entrada.ParcialesDelDistributivo;
 import ec.mdd.generacion.puertos.entrada.ProponerDocente;
 import ec.mdd.generacion.puertos.salida.AlmacenDeArchivos;
 import ec.mdd.generacion.puertos.salida.DatosParaActividades;
@@ -82,6 +84,13 @@ public class ConfiguracionGeneracion {
     @Bean
     public RepositorioDistributivos repositorioDistributivos(JdbcClient jdbc) {
         return new RepositorioDistributivosJdbc(jdbc);
+    }
+
+    /** Los parciales para Aprobación, en el mismo proceso (F12-H02, MD-04). Sin registro (D-95). */
+    @Bean
+    public ParcialesDelDistributivo parcialesDelDistributivo(
+            RepositorioDistributivos distributivos, Transaccion transaccion) {
+        return new ParcialesDelDistributivoServicio(distributivos, transaccion);
     }
 
     /** La bitácora de los cambios del distributivo (F06-H03). */

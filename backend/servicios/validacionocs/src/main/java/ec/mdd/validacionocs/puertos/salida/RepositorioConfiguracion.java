@@ -20,4 +20,14 @@ public interface RepositorioConfiguracion {
      * @return la última carga, o vacío si no hay ninguna
      */
     Optional<CargaGuardada> vigente(String periodo);
+
+    /**
+     * La carga que regía en un instante: la última con {@code cargada_en} hasta ese instante
+     * (F12-H02, research §5). La tabla es solo de inserción, así que se puede reconstruir.
+     *
+     * @param periodo el código del periodo
+     * @param instante el instante, por ejemplo la creación del distributivo
+     * @return esa carga, o vacío si todavía regía la configuración por defecto
+     */
+    Optional<CargaGuardada> vigenteEn(String periodo, Instant instante);
 }

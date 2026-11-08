@@ -1,0 +1,177 @@
+// El estado del flujo del distributivo (F12-H02, contracts/spa.md): la etapa, el envío de cada
+// parcial y solo las acciones que la API dice que el usuario puede hacer.
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { instalarApiSimulada, json, type ApiSimulada } from '../../pruebas/apiSimulada';
+import { EstadoDelFlujoDelPeriodo } from './EstadoDelFlujo';
+import type { EstadoDelFlujo } from './flujo';
+
+const RUTA = '/api/validacionocs/periodos/2026-I/flujo';
+const ENVIO = '/api/validacionocs/periodos/2026-I/parciales/DS/envio';
+const AVANCE = '/api/validacionocs/periodos/2026-I/avance';
+
+function flujo(cambios: Partial<EstadoDelFlujo> = {}): EstadoDelFlujo {
+  return {
+    periodo: '2026-I',
+    etapa: 'BORRADOR_CARRERA',
+    nombreDeEtapa: 'Propuesta de carrera',
+    version: 1,
+    parciales: [
+      { carrera: 'DS', enviado: false, pendienteDeConfirmar: false },
+      {
+        carrera: 'TDS',
+        enviado: true,
+        pendienteDeConfirmar: false,
+        enviadoPor: 'otra.coordinacion',
+        enviadoEn: '2026-11-07T17:02:14Z',
+      },
+    ],
+    acciones: [],
+    transiciones: [],
+    ...cambios,
+  };
+}
+
+function montar(carrera?: string) {
+  const consultas = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const alCambiar = vi.fn();
+  render(
+    <QueryClientProvider client={consultas}>
+      <EstadoDelFlujoDelPeriodo periodo="2026-I" carrera={carrera} alCambiar={alCambiar} />
+    </QueryClientProvider>,
+  );
+  return { alCambiar };
+}
+
+describe('EstadoDelFlujo', () => {
+  let simulada: ApiSimulada;
+
+  beforeEach(() => {
+    simulada = instalarApiSimulada();
+  });
+
+  it('muestra la etapa, la versión y el envío de cada parcial', async () => {
+    simulada.responder('GET', RUTA, json(200, flujo()));
+    montar();
+
+    const region = await screen.findByRole('region', { name: 'Estado del distributivo' });
+    expect(within(region).getByText('Propuesta de carrera · versión 1')).toBeVisible();
+    expect(within(region).getByText('DS: pendiente')).toBeVisible();
+    expect(
+      within(region).getByText('TDS: enviado por otra.coordinacion el 7/11/26, 12:02'),
+    ).toBeVisible();
+    expect(within(region).queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('el coordinador envía su parcial con una confirmación', async () => {
+    simulada.responder('GET', RUTA, json(200, flujo({ acciones: ['ENVIAR_PARCIAL'] })));
+    simulada.responder(
+      'POST',
+      ENVIO,
+      json(
+        200,
+        flujo({ parciales: [{ carrera: 'DS', enviado: true, pendienteDeConfirmar: false }] }),
+      ),
+    );
+    const { alCambiar } = montar('DS');
+    const usuario = userEvent.setup();
+
+    await usuario.click(await screen.findByRole('button', { name: 'Enviar parcial' }));
+    const confirmar = screen.getByRole('dialog', { name: 'Enviar el parcial de DS' });
+    expect(confirmar).toHaveTextContent(
+      'Después de enviarlo, no podrás cambiar las propuestas ni las actividades de tu carrera.',
+    );
+    await usuario.click(within(confirmar).getByRole('button', { name: 'Enviar' }));
+
+    await waitFor(() =>
+      expect(simulada.peticiones.some((una) => una.method === 'POST')).toBe(true),
+    );
+    await waitFor(() => expect(alCambiar).toHaveBeenCalled());
+  });
+
+  it('un parcial pendiente de confirmar dice que falta confirmar y deja reenviarlo', async () => {
+    simulada.responder(
+      'GET',
+      RUTA,
+      json(
+        200,
+        flujo({
+          acciones: ['ENVIAR_PARCIAL'],
+          parciales: [{ carrera: 'DS', enviado: false, pendienteDeConfirmar: true }],
+        }),
+      ),
+    );
+    montar('DS');
+
+    expect(await screen.findByText('DS: enviado, falta confirmar')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Reenviar parcial' })).toBeVisible();
+  });
+
+  it('el gestor avanza BORRADOR_UNIDADES', async () => {
+    simulada.responder(
+      'GET',
+      RUTA,
+      json(
+        200,
+        flujo({ etapa: 'BORRADOR_UNIDADES', nombreDeEtapa: 'Unidades', acciones: ['AVANZAR'] }),
+      ),
+    );
+    simulada.responder('POST', AVANCE, json(200, flujo({ etapa: 'EN_CONSOLIDACION' })));
+    montar();
+    const usuario = userEvent.setup();
+
+    await usuario.click(
+      await screen.findByRole('button', { name: 'Avanzar a la siguiente etapa' }),
+    );
+    await usuario.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Avanzar' }),
+    );
+
+    await waitFor(() =>
+      expect(simulada.peticiones.some((una) => new URL(una.url).pathname === AVANCE)).toBe(true),
+    );
+  });
+
+  it('un 409 de ya enviado se muestra con el aviso común', async () => {
+    simulada.responder('GET', RUTA, json(200, flujo({ acciones: ['ENVIAR_PARCIAL'] })));
+    simulada.responder(
+      'POST',
+      ENVIO,
+      json(409, {
+        titulo: 'Parcial ya enviado',
+        descripcion: 'Este parcial ya se envió.',
+        codigo: 'VALIDACIONOCS_PARCIAL_YA_ENVIADO',
+      }),
+    );
+    montar('DS');
+    const usuario = userEvent.setup();
+
+    await usuario.click(await screen.findByRole('button', { name: 'Enviar parcial' }));
+    await usuario.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Enviar' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Parcial ya enviado');
+  });
+
+  it('sin distributivo no muestra nada', async () => {
+    simulada.responder(
+      'GET',
+      RUTA,
+      json(404, {
+        titulo: 'Sin distributivo',
+        descripcion: 'El periodo todavía no tiene distributivo.',
+        codigo: 'VALIDACIONOCS_SIN_DISTRIBUTIVO',
+      }),
+    );
+    montar();
+
+    await waitFor(() =>
+      expect(simulada.peticiones.some((una) => new URL(una.url).pathname === RUTA)).toBe(true),
+    );
+    expect(
+      screen.queryByRole('region', { name: 'Estado del distributivo' }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+});

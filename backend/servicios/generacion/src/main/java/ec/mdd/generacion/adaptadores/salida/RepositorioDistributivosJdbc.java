@@ -271,4 +271,23 @@ public final class RepositorioDistributivosJdbc implements RepositorioDistributi
     }
 
     private record Cabecera(UUID id, int numero, EstadoDeVersion estado) {}
+
+    @Override
+    public Optional<Instant> creadoEn(String periodo) {
+        return jdbc.sql("SELECT creado_en FROM generacion.distributivo WHERE periodo = :periodo")
+                .param("periodo", periodo)
+                .query((fila, numero) -> fila.getTimestamp("creado_en").toInstant())
+                .optional();
+    }
+
+    @Override
+    public void marcarParcial(UUID version, String carrera, EstadoDelParcial estado) {
+        jdbc.sql(
+                        "UPDATE generacion.parcial_carrera SET estado = :estado"
+                                + " WHERE version_id = :version AND carrera = :carrera")
+                .param("estado", estado.name())
+                .param("version", version)
+                .param("carrera", carrera)
+                .update();
+    }
 }

@@ -75,6 +75,36 @@ describe('Actividades no lectivas', () => {
     cerrarSesion();
   });
 
+  it('con el parcial de la carrera enviado, no asigna ni quita (F12-H02, FR-005)', async () => {
+    simulada.responder('GET', RUTA, json(200, ACTIVIDADES));
+    simulada.responder(
+      'GET',
+      '/api/validacionocs/periodos/2026-2/flujo',
+      json(200, {
+        periodo: '2026-2',
+        etapa: 'BORRADOR_CARRERA',
+        nombreDeEtapa: 'Propuesta de carrera',
+        version: 1,
+        parciales: [{ carrera: CARRERA, enviado: true, pendienteDeConfirmar: false }],
+        acciones: [],
+        transiciones: [],
+      }),
+    );
+    sesionCon(simulada, COORDINADOR);
+    montarSpa('/actividades');
+
+    await waitFor(() =>
+      expect(simulada.peticiones.some((una) => new URL(una.url).pathname.endsWith('/flujo'))).toBe(
+        true,
+      ),
+    );
+    await screen.findAllByRole('table');
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Asignar actividad' })).not.toBeInTheDocument(),
+    );
+    expect(screen.queryByRole('button', { name: /^Quitar/ })).not.toBeInTheDocument();
+  });
+
   async function abrirFormulario() {
     sesionCon(simulada, COORDINADOR);
     montarSpa('/actividades');

@@ -38,6 +38,7 @@ import { CLAVE_CARGA_HORARIA } from '../comun/cargaHoraria';
 import { SELECCION } from '../comun/formulario';
 import { PanelDeCarga } from '../comun/PanelDeCarga';
 import { useUnidades } from '../estructura/consultas';
+import { EstadoDelFlujoDelPeriodo } from '../comun/EstadoDelFlujo';
 import { usePeriodos } from '../periodos/consultas';
 import { NOMBRE_DEL_ESTADO } from '../periodos/estados';
 import {
@@ -92,6 +93,14 @@ export function Oferta() {
   const puedeProponer =
     tieneAlguno(sesion.data?.permisos, ESCRITURA_DE_LA_PROPUESTA) &&
     oferta.data?.estadoDelPeriodo !== 'CERRADO';
+
+  // Un parcial enviado ya no admite propuestas (F12-H02, FR-005).
+  const enviado = (carrera: string) =>
+    parciales.data?.parciales.find((uno) => uno.carrera === carrera)?.estado === 'ENVIADO';
+  // Con todo lo que se ve ya enviado, el aviso no dice que se propone.
+  const todoEnviado =
+    Boolean(oferta.data?.carreras.length) &&
+    Boolean(oferta.data?.carreras.every((carrera) => enviado(carrera.carrera)));
 
   const terminar = async () => {
     await consultas.invalidateQueries({ queryKey: CLAVE_OFERTA });
@@ -161,6 +170,12 @@ export function Oferta() {
           ))}
         </TextField>
       )}
+      {/* El flujo del distributivo (F12-H02): el coordinador ve solo su carrera y la envía. */}
+      <EstadoDelFlujoDelPeriodo
+        periodo={periodo}
+        carrera={oferta.data?.carreras.length === 1 ? oferta.data.carreras[0]?.carrera : undefined}
+        alCambiar={() => void consultas.invalidateQueries({ queryKey: CLAVE_OFERTA })}
+      />
       {propuesto && propuesto.periodo === periodo && (
         <Box sx={{ my: 1 }}>
           <PanelDeCarga periodo={propuesto.periodo} docente={propuesto.docente} guardada />
@@ -178,9 +193,11 @@ export function Oferta() {
           )}
           {oferta.data.modificable && !escritura && (
             <Alert severity="info" sx={{ my: 1 }}>
-              {puedeProponer
-                ? 'No cambias la oferta, pero propones sus docentes.'
-                : 'Solo lectura: tu rol no cambia la oferta.'}
+              {!puedeProponer
+                ? 'Solo lectura: tu rol no cambia la oferta.'
+                : todoEnviado
+                  ? 'Ya se envió el parcial: sus propuestas quedan en solo lectura.'
+                  : 'No cambias la oferta, pero propones sus docentes.'}
             </Alert>
           )}
           {puedeCambiar && (
@@ -195,19 +212,24 @@ export function Oferta() {
           {oferta.data.carreras.length === 0 && (
             <Typography sx={{ mt: 2 }}>No hay oferta para mostrar en este periodo.</Typography>
           )}
-          {oferta.data.carreras.map((carrera) => (
-            <OfertaDeCarrera
-              key={carrera.carrera}
-              carrera={carrera}
-              oferta={oferta.data}
-              parcial={parciales.data?.parciales.find((uno) => uno.carrera === carrera.carrera)}
-              puedeCambiar={puedeCambiar}
-              puedeVerSugerencia={puedeVerSugerencia}
-              puedeProponer={puedeProponer}
-              alAbrir={setAbierto}
-              alVolverAOfertar={(una) => void cambiarEstado(una, 'OFERTADA')}
-            />
-          ))}
+          {oferta.data.carreras.map((carrera) => {
+            const parcial = parciales.data?.parciales.find(
+              (uno) => uno.carrera === carrera.carrera,
+            );
+            return (
+              <OfertaDeCarrera
+                key={carrera.carrera}
+                carrera={carrera}
+                oferta={oferta.data}
+                parcial={parcial}
+                puedeCambiar={puedeCambiar}
+                puedeVerSugerencia={puedeVerSugerencia}
+                puedeProponer={puedeProponer && !enviado(carrera.carrera)}
+                alAbrir={setAbierto}
+                alVolverAOfertar={(una) => void cambiarEstado(una, 'OFERTADA')}
+              />
+            );
+          })}
         </>
       )}
       {abierto?.que === 'ofertar' && periodo && (
@@ -234,7 +256,7 @@ export function Oferta() {
         <SugerenciaDelParalelo
           periodo={periodo}
           asignaturaParalelo={abierto.asignaturaParalelo}
-          puedeProponer={puedeProponer}
+          puedeProponer={puedeProponer && !enviado(abierto.asignaturaParalelo.carrera)}
           alCerrar={() => setAbierto(null)}
           alProponer={alProponer}
         />
