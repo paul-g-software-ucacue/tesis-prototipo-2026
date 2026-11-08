@@ -50,7 +50,7 @@ Como Responsable de consolidación, quiero devolver el parcial de una o varias c
 1. **Dado** el distributivo en EN_CONSOLIDACION con una inconsistencia dura en una carrera, **cuando** devuelvo el parcial de esa carrera con una observación, **entonces** el parcial queda DEVUELTO y su coordinador puede corregirlo y reenviarlo **y** la transición queda en la bitácora con la observación. *(issue)*
 2. **Dado** el distributivo en EN_CONSOLIDACION, **cuando** devuelvo tres carreras, cada una con su observación, **entonces** las tres quedan devueltas, las demás siguen enviadas y el distributivo queda en BORRADOR_CARRERA con una sola transición.
 3. **Dado** una devolución hecha, **cuando** se consulta el estado del flujo, **entonces** cada parcial devuelto dice quién lo devolvió, cuándo y su observación.
-4. **Dado** un consolidado al día antes de devolver, **cuando** devuelvo un parcial, **entonces** el consolidado queda desactualizado: hay que consolidar otra vez antes de enviar a revisión.
+4. **Dado** un consolidado al día antes de devolver, **cuando** el coordinador cambia una propuesta o una actividad del parcial devuelto, **entonces** el consolidado queda desactualizado: hay que consolidar otra vez antes de enviar a revisión. Devolver, por sí solo, no cambia el contenido.
 
 ---
 
@@ -114,8 +114,8 @@ Como institución, quiero que solo el rol de EN_CONSOLIDACION pueda devolver des
 - **Una devolución y un envío a revisión a la vez:** pasa solo uno de los dos; el otro se rechaza por la etapa.
 - **BORRADOR_UNIDADES activa:** cuando la última carrera devuelta reenvía, el distributivo pasa a la siguiente etapa activa, que es BORRADOR_UNIDADES, como en F12-H02.
 - **Un periodo cerrado:** no se devuelve.
-- **Generación no responde** al devolver: no se devuelve nada, el distributivo sigue en EN_CONSOLIDACION y no queda transición ni entrada. Si Generación ya había marcado algún parcial, el estado del flujo lo muestra como pendiente de confirmar, como el envío de F12-H02.
-- **El coordinador reenvía sin cambiar nada:** se permite; el consolidado ya quedó desactualizado al devolver, así que hay que consolidar otra vez.
+- **Generación no responde** al devolver: no se devuelve nada, el distributivo sigue en EN_CONSOLIDACION y no queda transición ni entrada. Si Generación ya marcó los parciales y lo que falla es el registro en Aprobación, repetir la devolución la completa, como el reenvío de F12-H02; mientras tanto, el envío a revisión se rechaza.
+- **El coordinador reenvía sin cambiar nada:** se permite; el contenido es el mismo que se consolidó, así que el consolidado sigue al día.
 - **Una segunda devolución de la misma carrera** después de reenviarla: se permite; el estado del flujo muestra la observación de la última devolución, y la bitácora conserva todas.
 - **El usuario pierde el rol durante la sesión:** pierde el permiso en la próxima renovación del token (D-62); el servidor valida el rol en cada devolución.
 
@@ -130,7 +130,7 @@ Como institución, quiero que solo el rol de EN_CONSOLIDACION pueda devolver des
 - **FR-003**: Solo un usuario con el rol de EN_CONSOLIDACION en la configuración del distributivo DEBE poder devolver (regla de F12-H02). Cualquier otro recibe `SEGURIDAD_ACCESO_NO_AUTORIZADO` (403), sin saber qué rol falta.
 - **FR-004**: La devolución DEBE rechazarse con un 409 del catálogo si el distributivo no está en EN_CONSOLIDACION o si EN_CONSOLIDACION no admite devolución en la configuración del distributivo.
 - **FR-005**: La devolución DEBE ser todo o nada: si una carrera no se puede devolver, ninguna se devuelve.
-- **FR-006**: Devolver DEBE dejar el consolidado desactualizado.
+- **FR-006**: Un cambio en un parcial devuelto (una propuesta, una asignación o una quita) DEBE dejar el consolidado desactualizado, como cualquier cambio después de consolidar (F10-H02). Devolver, por sí solo, no cambia el contenido ni deja el consolidado desactualizado.
 
 **Observación**
 

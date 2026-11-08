@@ -96,6 +96,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-95 | 2026-11-07 | Una transición del flujo la registra Aprobación; Generación no duplica el cambio de estado del parcial | Aceptada | D-90, MD-04 |
 | D-96 | 2026-11-08 | `zlib1g` de `cloudflared` espera con una excepción de Grype hasta que Cloudflare reconstruya la imagen | Aceptada | D-54, D-81 |
 | D-97 | 2026-11-08 | Enviar a revisión exige el consolidado al día, su informe y cero inconsistencias abiertas; no notifica todavía | Aceptada | RF-29, RF-32, MD-07, D-95 |
+| D-98 | 2026-11-08 | Devolver desde EN_CONSOLIDACION: varias carreras, cada una con su observación, y el distributivo vuelve a BORRADOR_CARRERA; no notifica todavía | Aceptada | RF-34, RF-36, D-95, D-97 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1859,5 +1860,36 @@ Con la base de datos de Grype del 2026-11-07, la CI encontró además dos altas 
 **Consecuencias.**
 - Con los datos de prueba, el distributivo no puede pasar a revisión, porque tiene inconsistencias duras. El envío que pasa lo prueban las pruebas de integración hasta que llegue #211.
 - El tercer «Entonces» del issue #55, que el Vicerrector recibe una notificación, se cumple con F16-H01.
+
+**Documentos que hay que poner al día.** Ninguno.
+
+---
+
+## D-98. Devolver desde EN_CONSOLIDACION: varias carreras, cada una con su observación, y el distributivo vuelve a BORRADOR_CARRERA; no notifica todavía
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-08 · **Decidido por:** autor de la tesis
+- **Origen:** aclaraciones de F12-H05 (`specs/043-devolver-parcial/spec.md`) y su plan (`research.md` §2, §4, §6 y §7)
+- **Precisa a:** RF-34 («con devolución a cualquier etapa anterior y observaciones») y RF-36 («una devolución sin observación no se permite») para la etapa EN_CONSOLIDACION
+- **Relacionadas:** MD-04, D-95, D-97; F12-H02 dejó la devolución a esta historia
+
+**Decisión.**
+- El Responsable de consolidación devuelve, en una sola operación, el parcial de una o varias carreras, cada una con su observación de 10 a 500 caracteres. Es todo o nada.
+- Los parciales devueltos quedan DEVUELTO y se editan como uno en elaboración; los demás siguen enviados. El distributivo vuelve a BORRADOR_CARRERA, y pasa otra vez a la siguiente etapa activa cuando la última carrera devuelta reenvía (F12-H02).
+- Solo si EN_CONSOLIDACION admite devolución en la copia de la configuración del distributivo. Los procesos creados antes de esta decisión toman el valor de la plantilla.
+- La devolución no crea una versión nueva (no hay firmas que anular, RF-59) ni deja el consolidado desactualizado: lo deja cualquier cambio posterior del coordinador, como antes.
+- La transición es de un tipo propio, `DEVOLUCION`, con las observaciones. La registra Aprobación, con la acción `DISTRIBUTIVO_DEVUELTO` y una sola entrada (D-95).
+- El coordinador ve la observación en el estado del flujo. No se le notifica: lo hará F16-H01, como en D-97.
+
+**Por qué.** En EN_CONSOLIDACION todos los parciales están enviados y no se editan, así que una inconsistencia dura no se corrige sin devolver. Con una carrera por devolución, las demás esperarían a que la primera reenvíe. Volver a BORRADOR_CARRERA reutiliza el envío y el paso de etapa de F12-H02, y deja la regla «en EN_CONSOLIDACION nada se edita» intacta.
+
+**Alternativas.**
+- Que el distributivo siga en EN_CONSOLIDACION mientras la carrera corrige: hace falta un reenvío propio de esa etapa y aflojar la regla de que nada se edita en ella.
+- Una carrera por devolución: más simple, pero lento con duras en varias carreras.
+- Marcar el consolidado desactualizado al devolver: obliga a consolidar otra vez aunque nada cambie, y exige que Generación registre una transición de Aprobación.
+
+**Consecuencias.**
+- Devolver desde EN_REVISION_VRA, desde la firma o desde el OCS sigue siendo de sus historias (F13-H01, F12-H04, F14-H04).
+- La migración `V4` de Validación OCS completa la copia de la configuración del proceso de 2026-I de la demo con la plantilla, que es la que usa.
+- El primer «Entonces» del issue #211 se cumple sin notificación; el aviso al coordinador llega con F16-H01.
 
 **Documentos que hay que poner al día.** Ninguno.
