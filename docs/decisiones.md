@@ -93,6 +93,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-92 | 2026-11-06 | Las palabras clave de una asignatura no se tratan como un secreto en la bitácora | Aceptada | FR-011 de F17-H01 |
 | D-93 | 2026-11-07 | `golang.org/x/net` de Caddy sube a una versión con menos de dos semanas, como excepción | Aceptada | D-54, D-80, D-81 |
 | D-94 | 2026-11-07 | Un guardado que no cambia nada no deja entrada en el registro de cambios ni en la bitácora | Aceptada | Supuesto «Mismo valor» de F17-H01 |
+| D-96 | 2026-11-08 | `zlib1g` de `cloudflared` espera con una excepción de Grype hasta que Cloudflare reconstruya la imagen | Aceptada | D-54, D-81 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1779,3 +1780,28 @@ Con la base de datos de Grype del 2026-11-07, la CI encontró además dos altas 
 - Las entradas sin cambio que ya están en la bitácora se quedan: no se pueden borrar.
 
 **Documentos que hay que poner al día.** El supuesto «Mismo valor» de `specs/039-bitacora-cambios/spec.md`, con una nota que remite a esta decisión.
+
+---
+
+## D-96. `zlib1g` de `cloudflared` espera con una excepción de Grype hasta que Cloudflare reconstruya la imagen
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-08 · **Decidido por:** autor de la tesis
+- **Origen:** el check «5 · imágenes» del PR #202 falla por CVE-2026-76844 y CVE-2026-85091 (altas) en `zlib1g` de la imagen de `cloudflared`
+- **Sigue a:** D-81, que dejó `.grype.yaml` sin excepciones
+
+**Decisión.** `.grype.yaml` agrega dos excepciones según D-54, una por CVE, solo para `zlib1g` 1:1.3.dfsg+really1.3.1-1+b1 de Debian, que es la versión de la imagen de `cloudflared`. Rigen desde el 2026-11-08 y vencen el 2026-12-08. Cuando Cloudflare publique una imagen con el arreglo (deb13u1), se sube su digest en `deploy/equipo/compose.demo.yml` y se quitan las excepciones.
+
+**Por qué.** Las dos vulnerabilidades se publicaron después del último despliegue, y Debian ya tiene el arreglo. La imagen oficial más reciente sigue siendo la 2026.10.7, del 2026-10-30, y el MDD no la construye: solo Cloudflare puede reconstruirla. El binario `cloudflared` es Go enlazado estáticamente (comprobado con `file`), así que no carga la zlib del sistema. Además, el túnel sigue apagado (D-81): en el equipo de demostración corren 8 contenedores y ninguno es `cloudflared`. Mientras tanto, «5 · imágenes» bloquea `main` y todos los PR que tocan el despliegue.
+
+**Alternativas.**
+- Esperar a Cloudflare sin excepción: no se fusiona nada que toque el despliegue durante días.
+- Construir una imagen propia de `cloudflared`, como D-80 hizo con PostgreSQL y Caddy: es otro componente que mantener, para un servicio que no corre.
+- Quitar `cloudflared` de la demo: se pierde el túnel opcional de D-55.
+
+**Consecuencias.**
+- Las excepciones solo cubren esa versión de `zlib1g`. Si otra imagen la trae, Grype la sigue reportando.
+- Al vencer, `deploy/sca/excepciones.sh` las quita y el check vuelve a fallar si la imagen no cambió.
+- Antes de encender el túnel, la imagen tiene que estar sin esta excepción.
+
+**Documentos que hay que poner al día.** Ninguno.
+
