@@ -181,9 +181,9 @@ description: "Tareas de F10-H03: enviar a revisión con cero inconsistencias abi
   Después, el código de `EstadoDelFlujo.tsx` y `Consolidado.tsx`. Agregar a `frontend/e2e/consolidado.spec.ts` lo que falta y el envío exitoso con la API simulada, con axe-core.
 
   **Resultado:** «Hay parciales sin enviar» sale del estado de cada carrera en el consolidado, que es el mismo dato que da el flujo, y así la pantalla no necesita otra consulta. En Playwright, el caso pasa a «listo» con «Volver a consolidar», porque recargar la página pierde la sesión.
-- [ ] T016 Crear `deploy/probar_revision.sh` con los 7 pasos de `contracts/demostracion.md`, sobre los datos de prueba y con la base limpia al terminar, sin imprimir claves ni tokens. Agregar su paso a `.github/workflows/perfil-consolidado.yml` después de «Avance por etapas». Pasar shellcheck. Correr `probar_avance.sh` y `probar_revision.sh` en su orden sobre un perfil nuevo.
-- [ ] T017 Revisar el JavaDoc de `validarRevision`, `enviarARevision`, `CondicionesDeRevision` (en los dos servicios), `ParcialesDelDistributivo.condicionesDeRevision` y `FlujoDelDistributivoServicio.enviarARevision` (principio XII). El de `enviarARevision` dice que no notifica (D-97).
-- [ ] T018 Crear `specs/042-enviar-revision/evidencia.md`, como `specs/041-avanzar-etapas/evidencia.md`:
+- [X] T016 Crear `deploy/probar_revision.sh` con los 7 pasos de `contracts/demostracion.md`, sobre los datos de prueba y con la base limpia al terminar, sin imprimir claves ni tokens. Agregar su paso a `.github/workflows/perfil-consolidado.yml` después de «Avance por etapas». Pasar shellcheck. Correr `probar_avance.sh` y `probar_revision.sh` en su orden sobre un perfil nuevo.
+- [X] T017 Revisar el JavaDoc de `validarRevision`, `enviarARevision`, `CondicionesDeRevision` (en los dos servicios), `ParcialesDelDistributivo.condicionesDeRevision` y `FlujoDelDistributivoServicio.enviarARevision` (principio XII). El de `enviarARevision` dice que no notifica (D-97).
+- [X] T018 Crear `specs/042-enviar-revision/evidencia.md`, como `specs/041-avanzar-etapas/evidencia.md`:
   - las pruebas unitarias e `integrationTest`, completas;
   - la cobertura por módulo (60 %, D-32), Spotless y SpotBugs;
   - la SPA: tipos, ESLint, Prettier, Vitest y Playwright;
