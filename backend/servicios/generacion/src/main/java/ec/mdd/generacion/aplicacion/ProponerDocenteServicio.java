@@ -153,6 +153,11 @@ public final class ProponerDocenteServicio implements ProponerDocente {
                     }
                     Optional<Propuesta> anterior =
                             actual.propuestaDe(propuesta.asignatura(), propuesta.paralelo());
+                    // La misma propuesta no cambia nada: no se guarda ni se registra (D-94).
+                    if (anterior.filter(propuesta::mismosDatosQue).isPresent()) {
+                        return ResultadoDePropuesta.guardada(
+                                new PropuestaVista(anterior.get(), false, reglas.sinExceso(carga)));
+                    }
                     distributivos.guardarPropuesta(actual.id(), propuesta);
                     registro.registrar(
                             cambioGuardado(periodo, propuesta, anterior, solicitud.quien(), ahora));
@@ -247,6 +252,10 @@ public final class ProponerDocenteServicio implements ProponerDocente {
         detalle.put("docente", propuesta.docente());
         detalle.put("justificacion", propuesta.justificacion().tipo().name());
         anterior.ifPresent(una -> detalle.put("docenteAnterior", una.docente()));
+        // El texto no va a la bitácora: solo que cambió (D-94).
+        if (anterior.filter(propuesta::otroTextoQue).isPresent()) {
+            detalle.put("textoCambiado", true);
+        }
         return new CambioDeDistributivo(
                 ahora,
                 quien,

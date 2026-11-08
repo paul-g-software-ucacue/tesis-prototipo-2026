@@ -163,7 +163,7 @@ Como institución, quiero que la bitácora no guarde contraseñas ni tokens, par
 
 - **Firmas:** el escenario del issue dice «mientras se aceptan firmas», pero firmar llega con F14. Esta historia lo demuestra con los cambios que existen hoy (las asignaciones), y cada historia que agregue una acción (firmar, avanzar etapa, congelar, publicar) publica su propia entrada sobre el mismo camino.
 - **Sin carga histórica:** los cambios hechos antes de esta historia no se copian a la bitácora. Los registros locales que ya existen se conservan como están.
-- **Mismo valor:** la bitácora recibe lo que cada servicio ya considera un cambio, sin una regla nueva.
+- **Mismo valor:** la bitácora recibe lo que cada servicio ya considera un cambio, sin una regla nueva. *Reemplazado por D-94 (F17-H02): un guardado que no cambia nada no deja entrada.*
 - **Quién:** el usuario que inició la acción, por su nombre de usuario. Los datos de la demo son ficticios (D-06).
 - **Retención:** las entradas se conservan siempre y no hay purga, lo que cumple los 5 años de RNF-INT-02.
 - **El evento de prueba de B00-H05:** esta historia puede retirar el receptor y el evento de prueba (D-47), porque el camino queda probado con entradas reales.

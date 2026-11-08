@@ -8,7 +8,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 - **ADR-NNN:** una decisión de arquitectura que afecta a más de una feature (constitución, sección 6, paso 4). Se registra **antes** de implementarla.
 - Los números no se reutilizan. Una decisión que reemplaza a otra la cita en «Modifica a» y la otra cambia su estado.
 - Cada entrada dice quién decidió, de dónde salió, qué cambia y qué documentos hay que poner al día.
-- **Siguiente número libre:** D-94 · ADR-025.
+- **Siguiente número libre:** D-95 · ADR-025.
 
 ## Índice
 
@@ -92,6 +92,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-91 | 2026-11-05 | La bitácora no guarda los valores de los datos personales de un docente | Aceptada | Alcance del issue #69 (F17-H01), RF-44 |
 | D-92 | 2026-11-06 | Las palabras clave de una asignatura no se tratan como un secreto en la bitácora | Aceptada | FR-011 de F17-H01 |
 | D-93 | 2026-11-07 | `golang.org/x/net` de Caddy sube a una versión con menos de dos semanas, como excepción | Aceptada | D-54, D-80, D-81 |
+| D-94 | 2026-11-07 | Un guardado que no cambia nada no deja entrada en el registro de cambios ni en la bitácora | Aceptada | Supuesto «Mismo valor» de F17-H01 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1753,3 +1754,28 @@ Con la base de datos de Grype del 2026-11-07, la CI encontró además dos altas 
 **Consecuencias.** La imagen de Caddy queda sin vulnerabilidades altas ni críticas con corrección, y `.grype.yaml` sigue sin excepciones. Quedan dos medias que no bloquean: GO-2026-6809 en la biblioteca estándar de Go 1.26.9 y GHSA-j6qf-3m9c-vwj3 en `go-chi/chi`. El binario sigue siendo Caddy v2.11.7 y valida `deploy/Caddyfile`.
 
 **Documentos que hay que poner al día.** Ninguno.
+
+---
+
+## D-94. Un guardado que no cambia nada no deja entrada en el registro de cambios ni en la bitácora
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-07 · **Decidido por:** autor de la tesis
+- **Origen:** aclaración Q1 de la especificación de F17-H02 (`specs/040-consultar-bitacora/spec.md`), por la nota «Para revisar en F17-H02» de la evidencia de F17-H01
+- **Modifica a:** el supuesto «Mismo valor» de F17-H01 («la bitácora recibe lo que cada servicio ya considera un cambio, sin una regla nueva»)
+- **Relacionadas:** D-90, D-91
+
+**Decisión.** Un guardado que deja el elemento con los mismos datos que tenía no guarda nada ni deja entrada, ni en el registro de cambios del servicio ni en la bitácora, y responde con éxito, como hoy. Vale para los seis servicios del alcance de D-90. «Los mismos datos» son todos los datos del negocio del elemento, también los que la bitácora no guarda (el texto de una justificación, los datos personales de un docente), y no cuentan quién lo guardó ni cuándo. Las acciones que crean, que quitan o que son un acto (consolidar, adjuntar el informe sustentado, cargar la configuración del flujo) registran siempre.
+
+**Por qué.** Es la regla que F17-H01 ya aplica a un intento rechazado: si nada cambió, no hay entrada. La mayoría de los servicios ya la cumplía (las correcciones de Académico, Docentes y Normativa, los cambios de estado, asignar roles y designar al Responsable). Faltaban seis acciones: `PROPUESTA_GUARDADA`, `ACTIVIDAD_GUARDADA` e `INCONSISTENCIA_JUSTIFICADA` (Generación), `MATRICULA_CORREGIDA` (Académico), y `EDITAR_ROL` e `INDICAR_CARRERA` (Roles). Sin ellas, la pantalla de la bitácora muestra entradas como una actividad de 4 a 4 horas.
+
+**Alternativas.**
+- Solo en Generación: corrige el caso visto, pero deja el ruido de Académico y Roles.
+- Seguir registrando y ocultar en la consulta las entradas con el valor anterior igual al nuevo: la bitácora guarda lo que nadie ve, y oculta un cambio real que solo tocó un dato sin valor en la bitácora (el texto de una justificación).
+- Un filtro único en el adaptador de cada registro de cambios que descarte `anterior = nuevo`: por la misma razón, perdería esos cambios reales.
+
+**Consecuencias.**
+- Cada una de las seis acciones compara el elemento antes y después, en su servicio, y no guarda ni registra si es igual. Cada una tiene su prueba.
+- Un cambio en el texto de una justificación (de una propuesta o de una inconsistencia) deja su entrada con `objeto.textoCambiado = true`, porque `anterior` y `nuevo` no llevan el texto.
+- Las entradas sin cambio que ya están en la bitácora se quedan: no se pueden borrar.
+
+**Documentos que hay que poner al día.** El supuesto «Mismo valor» de `specs/039-bitacora-cambios/spec.md`, con una nota que remite a esta decisión.

@@ -9,8 +9,13 @@ import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
 import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
 import ec.mdd.usuarios.aplicacion.RegistrarEventoRecibidoServicio;
 import ec.mdd.usuarios.dominio.EntradaBitacora;
+import ec.mdd.usuarios.dominio.FiltroDeBitacora;
+import ec.mdd.usuarios.dominio.PaginaPedida;
+import ec.mdd.usuarios.puertos.entrada.AccionConocida;
 import ec.mdd.usuarios.puertos.entrada.EventoRecibido;
+import ec.mdd.usuarios.puertos.entrada.PaginaDeEntradas;
 import ec.mdd.usuarios.puertos.entrada.RegistrarEventoRecibido;
+import ec.mdd.usuarios.puertos.salida.RepositorioBitacora;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -235,7 +240,26 @@ class EventosContratoTest {
         @Bean
         RegistrarEventoRecibido registrarEventoRecibido() {
             return new RegistrarEventoRecibidoServicio(
-                    (EventoRecibido evento) -> RECIBIDOS.add(evento.idEvento()), REGISTRADOS::add);
+                    (EventoRecibido evento) -> RECIBIDOS.add(evento.idEvento()), new Bitacora());
+        }
+    }
+
+    /** La bitácora en memoria: solo registra; la consulta no se usa en esta prueba. */
+    private static final class Bitacora implements RepositorioBitacora {
+
+        @Override
+        public void registrar(EntradaBitacora entrada) {
+            REGISTRADOS.add(entrada);
+        }
+
+        @Override
+        public PaginaDeEntradas consultar(FiltroDeBitacora filtro, PaginaPedida pagina) {
+            throw new UnsupportedOperationException("Sin consulta en esta prueba");
+        }
+
+        @Override
+        public List<AccionConocida> acciones() {
+            throw new UnsupportedOperationException("Sin consulta en esta prueba");
         }
     }
 }

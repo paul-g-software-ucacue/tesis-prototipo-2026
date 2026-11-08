@@ -190,6 +190,43 @@ class MantenerCarrerasServicioTest {
     }
 
     @Test
+    void dadaUnaMallaYaDerogada_cuandoSeDerogaOtraVez_entoncesNoGuardaNiRegistra() {
+        // D-94 (T024): el mismo estado no es un cambio.
+        carreras.add(carrera("C1", "DS"));
+        mallas.add(Malla.nueva("DS-2019", "C1").conEstado(EstadoDeMalla.DEROGADA));
+
+        servicio.cambiarEstadoMalla("DS-2019", EstadoDeMalla.DEROGADA, QUIEN);
+
+        verify(registro, never()).registrar(any());
+    }
+
+    @Test
+    void dadaUnaAsignaturaConLosMismosDatosOElMismoEstado_cuandoSeGuarda_entoncesNoRegistra() {
+        // D-94 (T024): corregirla sin cambios o pedir el estado que ya tiene no es un cambio.
+        carreras.add(carrera("C1", "DS"));
+        mallas.add(Malla.nueva("DS-2019", "C1"));
+        Asignatura actual = asignatura("A1", 1);
+        asignaturas.add(actual);
+
+        servicio.corregirAsignatura(
+                "A1",
+                new DatosDeAsignatura(
+                        actual.nombre(),
+                        actual.ciclo(),
+                        actual.unidadOrganizacionCurricular(),
+                        actual.horasSemanalesClase(),
+                        actual.horasPracticasSemanales(),
+                        actual.creditos(),
+                        actual.troncoComun(),
+                        actual.campo(),
+                        actual.palabrasClave()),
+                QUIEN);
+        servicio.cambiarEstadoAsignatura("A1", true, QUIEN);
+
+        verify(registro, never()).registrar(any());
+    }
+
+    @Test
     void dadaUnaAsignaturaValida_cuandoSeRegistra_entoncesRegistraYUnaRepetidaNo() {
         carreras.add(carrera("C1", "DS"));
         mallas.add(Malla.nueva("DS-2019", "C1"));

@@ -14,12 +14,14 @@ import ec.mdd.usuarios.adaptadores.salida.RepositorioIntentosJdbc;
 import ec.mdd.usuarios.adaptadores.salida.RepositorioUsuariosJpa;
 import ec.mdd.usuarios.adaptadores.salida.UsuarioJpaRepositorio;
 import ec.mdd.usuarios.adaptadores.salida.VerificadorArgon2;
+import ec.mdd.usuarios.aplicacion.ConsultarBitacoraServicio;
 import ec.mdd.usuarios.aplicacion.EmitirTokenDeProcesoServicio;
 import ec.mdd.usuarios.aplicacion.IniciarSesionServicio;
 import ec.mdd.usuarios.aplicacion.ListarUsuariosServicio;
 import ec.mdd.usuarios.aplicacion.RegistrarEventoRecibidoServicio;
 import ec.mdd.usuarios.aplicacion.RenovarSesionServicio;
 import ec.mdd.usuarios.dominio.PoliticaDeIntentos;
+import ec.mdd.usuarios.puertos.entrada.ConsultarBitacora;
 import ec.mdd.usuarios.puertos.entrada.EmitirTokenDeProceso;
 import ec.mdd.usuarios.puertos.entrada.IniciarSesion;
 import ec.mdd.usuarios.puertos.entrada.ListarUsuarios;
@@ -157,6 +159,12 @@ public class ConfiguracionUsuarios {
     @Bean
     public RepositorioBitacora repositorioBitacora(JdbcClient jdbc) {
         return new RepositorioBitacoraJdbc(jdbc);
+    }
+
+    /** La consulta de la bitácora, solo de lectura (F17-H02). */
+    @Bean
+    public ConsultarBitacora consultarBitacora(RepositorioBitacora bitacora) {
+        return new ConsultarBitacoraServicio(bitacora, Clock.systemUTC());
     }
 
     /** El receptor de la bitácora (F17-H01): las entradas de los seis servicios que registran. */

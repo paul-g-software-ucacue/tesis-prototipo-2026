@@ -59,6 +59,10 @@ public final class MantenerMatriculasServicio implements MantenerMatriculas {
         transaccion.ejecutar(
                 () -> {
                     Matricula anterior = anterior(matricula);
+                    // Los mismos valores no cambian nada: no se guarda ni se registra (D-94).
+                    if (anterior.equals(matricula)) {
+                        return null;
+                    }
                     repositorio.guardar(matricula);
                     registro.registrar(
                             new CambioRegistrado(

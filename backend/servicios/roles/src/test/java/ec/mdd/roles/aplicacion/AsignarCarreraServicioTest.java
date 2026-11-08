@@ -78,6 +78,18 @@ class AsignarCarreraServicioTest {
     }
 
     @Test
+    void dadoUnCoordinadorConLaMismaCarrera_cuandoSeIndica_entoncesNoGuardaNiRegistra() {
+        // D-94: indicar la carrera que ya tiene no es un cambio.
+        when(asignaciones.rolesDe("coordinacion.demo")).thenReturn(List.of("COORDINADOR_CARRERA"));
+        when(carreras.de("coordinacion.demo")).thenReturn(Optional.of("DS-01"));
+
+        servicio.indicar("coordinacion.demo", "DS-01", "admin.demo");
+
+        verify(carreras, never()).guardar(any(), any(), any(), any());
+        verify(registro, never()).registrar(any());
+    }
+
+    @Test
     void dadoUnUsuarioConMayusculas_cuandoSeIndicaSuCarrera_entoncesSeNormaliza() {
         when(asignaciones.rolesDe("coordinacion.demo")).thenReturn(List.of("COORDINADOR_CARRERA"));
 

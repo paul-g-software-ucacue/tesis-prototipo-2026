@@ -184,6 +184,44 @@ class AsignarActividadServicioTest {
     }
 
     @Test
+    void
+            dadaUnaActividadConLasMismasHoras_cuandoSeGuarda_entoncesNoGuardaNiRegistraYDevuelveLaQueHabia() {
+        // La nota de F17-H01: guardar de 4 a 4 no es un cambio (D-94, US3-1).
+        ActividadNoLectiva habia =
+                new ActividadNoLectiva(
+                        CARRERA,
+                        DOCENTE,
+                        "PEREZ LUIS",
+                        "140-b",
+                        "Una actividad",
+                        Componente.OTRAS_DOCENCIA,
+                        null,
+                        null,
+                        new BigDecimal("4"),
+                        AHORA.minusSeconds(3600),
+                        "otra.coordinacion");
+        conTodo(version(habia), NADA);
+
+        ActividadGuardada guardada = servicio.asignar(solicitud("140-b", "4.00", null));
+
+        verify(distributivos, never()).guardarActividad(any(), any());
+        verify(registro, never()).registrar(any());
+        assertThat(guardada.actividad()).isEqualTo(habia);
+    }
+
+    @Test
+    void
+            dadaUnaActividadConLasMismasHorasQueViolaUnaRegla_cuandoSeGuarda_entoncesLaReglaVaPrimero() {
+        // La comparación va después de las validaciones (contracts/sin-cambios.md).
+        conTodo(version(actividad("140-b", "4", null)), NADA);
+        when(actividades.reglas(PERIODO)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> servicio.asignar(solicitud("140-b", "4", null)))
+                .isInstanceOf(PeriodoSinAbrir.class);
+        verify(registro, never()).registrar(any());
+    }
+
+    @Test
     void dadaUnaCarreraSinParcial_cuandoSeAsigna_entoncesLoCreaConLaPrimeraActividad() {
         conTodo(
                 new VersionDistributivo(VERSION, 1, EstadoDeVersion.EDITABLE, List.of(), List.of()),
