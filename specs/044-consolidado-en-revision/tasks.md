@@ -132,7 +132,7 @@ description: "Tareas de #215: el consolidado no cambia durante la revisión"
   - la SPA: tipos, ESLint, Prettier, Vitest y Playwright;
   - los scripts de `perfil-consolidado`, shellcheck y Gitleaks;
   - los criterios de terminado de la constitución §6 y las desviaciones.
-- [ ] T014 Fusionar solo con la aprobación del autor y con todas las comprobaciones en verde. Verificar el despliegue en el equipo de demostración. Hacer la comprobación del autor con `quickstart.md` §3 y §4: en la demo, 2026-I sigue en Consolidación y las tres acciones siguen. Abrir el PR de evidencia con `Closes #215`. Borrar las ramas solo si el autor lo pide.
+- [X] T014 Fusionar solo con la aprobación del autor y con todas las comprobaciones en verde. Verificar el despliegue en el equipo de demostración. Hacer la comprobación del autor con `quickstart.md` §3 y §4: en la demo, 2026-I sigue en Consolidación y las tres acciones siguen. Abrir el PR de evidencia con `Closes #215`. Borrar las ramas solo si el autor lo pide.
 
 ---
 
