@@ -65,6 +65,7 @@ class PanelControlador implements PanelApi {
                         periodo,
                         panel.creado(),
                         panel.modificable(),
+                        false, // #215: lo llena T006
                         new TotalesDelPanel(
                                 Math.toIntExact(panel.abiertas(Severidad.DURA)),
                                 Math.toIntExact(panel.abiertas(Severidad.BLANDA))),

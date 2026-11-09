@@ -36,7 +36,7 @@ description: "Tareas de #215: el consolidado no cambia durante la revisión"
 
 ## Phase 1: Setup
 
-- [ ] T001 Revisar el glosario (`~/Downloads/MDD_artefactos_desarrollo/requerimientos_mdd/sdd/modelo_dominio.md` §6 y §7): «Consolidado», «Informe sustentado», «Justificación de una inconsistencia» y las etapas. Confirmar que «Etapa del consolidado» no es un término nuevo del negocio, sino el nombre técnico del puerto. Anotar el resultado aquí.
+- [X] T001 Revisar el glosario (`~/Downloads/MDD_artefactos_desarrollo/requerimientos_mdd/sdd/modelo_dominio.md` §6 y §7): «Consolidado», «Informe sustentado», «Justificación de una inconsistencia» y las etapas. Confirmar que «Etapa del consolidado» no es un término nuevo del negocio, sino el nombre técnico del puerto. Anotar el resultado aquí. **Resultado (2026-11-08):** «Consolidado», `InformeSustentado` y «Justificación de una inconsistencia» están en el glosario (§5 y §7). «Etapa del consolidado» solo nombra el puerto; no se agrega.
 
 ---
 
@@ -44,19 +44,19 @@ description: "Tareas de #215: el consolidado no cambia durante la revisión"
 
 **⚠️ CRITICAL**: ninguna historia empieza antes de T004.
 
-- [ ] T002 Comprobar primero el riesgo del plan, con esqueletos:
+- [X] T002 Comprobar primero el riesgo del plan, con esqueletos:
   - crear `GEN/main/java/ec/mdd/generacion/puertos/requeridos/EtapaDelConsolidado.java`, con `boolean admiteCambios(String periodo, Instant distributivoCreadoEn)`, y su `package-info.java` con `@NamedInterface("requeridos")`;
   - crear en Validación OCS `puertos/entrada/ConsultarEtapaDelConsolidado.java`, `aplicacion/EtapaDelConsolidadoServicio.java` (esqueleto que responde `true`) y `adaptadores/entrada/EtapaParaGeneracion.java`, que implementa el puerto de Generación y delega;
   - registrar los beans en `VAL/main/.../infraestructura/ConfiguracionValidacionocs.java`, e inyectar el puerto en `GEN/main/.../infraestructura/ConfiguracionGeneracion.java`, sin usarlo todavía;
   - en las pruebas de Spring de Generación que arman su configuración, un doble del puerto.
 
-  Correr `:apps:distributivo:test` (`ModulosTest`), ArchUnit y las pruebas de los dos servicios. Si Spring Modulith o ArchUnit lo rechazan, detenerse y anotar el motivo aquí antes de seguir.
-- [ ] T003 Agregar a `contratos/generacion/openapi.yaml`, según `contracts/generacion.md`:
+  Correr `:apps:distributivo:test` (`ModulosTest`), ArchUnit y las pruebas de los dos servicios. Si Spring Modulith o ArchUnit lo rechazan, detenerse y anotar el motivo aquí antes de seguir. **Resultado:** en verde; Spring Modulith acepta la interfaz nombrada `requeridos` sin ciclo.
+- [X] T003 Agregar a `contratos/generacion/openapi.yaml`, según `contracts/generacion.md`:
   - `enRevision` (booleano, obligatorio) en `ConsolidadoDelPeriodo` y en `PanelDeInconsistencias`;
   - `GENERACION_CONSOLIDADO_EN_REVISION` en la descripción del 409 de `consolidar`, `justificarInconsistencia` y `adjuntarInformeSustentado`.
 
   Regenerar `SPA/api/generado/generacion.d.ts` y compilar `:servicios:generacion`; en los controladores, `enRevision` en falso hasta T006. Después correr `./gradlew :servicios:usuarios:test --rerun` (`BitacoraSinBorradoContratoTest`).
-- [ ] T004 Agregar a `contratos/comun/errores.md`, con sus 8 columnas, `GENERACION_CONSOLIDADO_EN_REVISION` (409, «Consolidado en revisión», «El distributivo está en revisión del Vicerrectorado: el consolidado ya no cambia.»). Crear `GEN/main/.../dominio/ConsolidadoEnRevision.java` y su entrada en `ErroresGeneracion`. Escribir primero su prueba en `ErroresGeneracionTest`.
+- [X] T004 Agregar a `contratos/comun/errores.md`, con sus 8 columnas, `GENERACION_CONSOLIDADO_EN_REVISION` (409, «Consolidado en revisión», «El distributivo está en revisión del Vicerrectorado: el consolidado ya no cambia.»). Crear `GEN/main/.../puertos/entrada/ConsolidadoEnRevision.java` (junto a `SinConsolidar` y `PeriodoCerrado`, como los demás errores de la aplicación de Generación) y su entrada en `ErroresGeneracion`. Escribir primero su prueba en `ErroresGeneracionTest`.
 
 **Checkpoint**: el puerto cruza los módulos sin ciclo, el contrato compila y el error está en el catálogo.
 

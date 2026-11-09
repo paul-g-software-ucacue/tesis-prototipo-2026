@@ -11,6 +11,7 @@ import ec.mdd.generacion.dominio.ProyectoNoValido;
 import ec.mdd.generacion.puertos.entrada.ActividadFueraDelCatalogo;
 import ec.mdd.generacion.puertos.entrada.ActividadNoEncontrada;
 import ec.mdd.generacion.puertos.entrada.AfinidadInsuficiente;
+import ec.mdd.generacion.puertos.entrada.ConsolidadoEnRevision;
 import ec.mdd.generacion.puertos.entrada.DistributivoNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.DistributivoRepetido;
 import ec.mdd.generacion.puertos.entrada.DocenteNoActivo;
@@ -88,6 +89,10 @@ class ErroresGeneracionTest {
                                 "GENERACION_INCONSISTENCIA_DURA",
                                 409),
                         tuple(SinConsolidar.class, "GENERACION_SIN_CONSOLIDAR", 409),
+                        tuple(
+                                ConsolidadoEnRevision.class,
+                                "GENERACION_CONSOLIDADO_EN_REVISION",
+                                409),
                         tuple(InformeNoEsPdf.class, "GENERACION_INFORME_NO_ES_PDF", 400),
                         tuple(
                                 InformeDemasiadoGrande.class,

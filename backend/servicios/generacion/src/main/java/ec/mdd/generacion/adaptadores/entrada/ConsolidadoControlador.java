@@ -100,6 +100,7 @@ class ConsolidadoControlador implements ConsolidadoApi {
                         consolidado.periodo(),
                         consolidado.creado(),
                         consolidado.modificable(),
+                        false, // #215: lo llena T006
                         consolidado.desactualizado(),
                         consolidado.carreras().stream()
                                 .map(ConsolidadoControlador::respuesta)

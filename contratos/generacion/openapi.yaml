@@ -609,8 +609,9 @@ paths:
                 $ref: '../comun/errores.yaml#/components/schemas/Error'
         '409':
           description: >-
-            Sin distributivo (GENERACION_SIN_DISTRIBUTIVO) o periodo cerrado
-            (GENERACION_PERIODO_CERRADO).
+            Sin distributivo (GENERACION_SIN_DISTRIBUTIVO), periodo cerrado
+            (GENERACION_PERIODO_CERRADO) o el distributivo ya está en revisión o después
+            (GENERACION_CONSOLIDADO_EN_REVISION).
           content:
             application/json:
               schema:
@@ -712,7 +713,8 @@ paths:
         '409':
           description: >-
             Sin consolidar (GENERACION_SIN_CONSOLIDAR), sin distributivo
-            (GENERACION_SIN_DISTRIBUTIVO) o periodo cerrado (GENERACION_PERIODO_CERRADO).
+            (GENERACION_SIN_DISTRIBUTIVO), periodo cerrado (GENERACION_PERIODO_CERRADO) o el
+            distributivo ya está en revisión o después (GENERACION_CONSOLIDADO_EN_REVISION).
           content:
             application/json:
               schema:
@@ -829,7 +831,8 @@ paths:
           description: >-
             Ya no existe (GENERACION_INCONSISTENCIA_NO_ENCONTRADA), es dura
             (GENERACION_INCONSISTENCIA_DURA), periodo cerrado (GENERACION_PERIODO_CERRADO), sin
-            distributivo (GENERACION_SIN_DISTRIBUTIVO) o sin versión (GENERACION_PERIODO_SIN_ABRIR).
+            distributivo (GENERACION_SIN_DISTRIBUTIVO), sin versión (GENERACION_PERIODO_SIN_ABRIR) o el
+            distributivo ya está en revisión o después (GENERACION_CONSOLIDADO_EN_REVISION).
           content:
             application/json:
               schema:
@@ -1207,7 +1210,7 @@ components:
     ConsolidadoDelPeriodo:
       description: El distributivo institucional del periodo, calculado al abrirlo (RF-32).
       type: object
-      required: [periodo, creado, modificable, desactualizado, carreras, totales, abiertas]
+      required: [periodo, creado, modificable, enRevision, desactualizado, carreras, totales, abiertas]
       properties:
         periodo:
           type: string
@@ -1216,6 +1219,11 @@ components:
           type: boolean
         modificable:
           description: Si admite consolidar y adjuntar; un periodo cerrado solo se lee.
+          type: boolean
+        enRevision:
+          description: >-
+            Si el distributivo ya está en revisión del Vicerrectorado o después: el consolidado ya no
+            cambia, aunque se puede consultar y descargar el informe (D-99).
           type: boolean
         version:
           description: El número de la versión; solo si está creado.
@@ -1289,7 +1297,7 @@ components:
     PanelDeInconsistencias:
       description: Las inconsistencias globales de la versión vigente, abiertas y justificadas.
       type: object
-      required: [periodo, creado, modificable, abiertas, inconsistencias, sinEvaluar]
+      required: [periodo, creado, modificable, enRevision, abiertas, inconsistencias, sinEvaluar]
       properties:
         periodo:
           type: string
@@ -1298,6 +1306,11 @@ components:
           type: boolean
         modificable:
           description: Si admite justificaciones; un periodo cerrado se lee, pero no se justifica.
+          type: boolean
+        enRevision:
+          description: >-
+            Si el distributivo ya está en revisión del Vicerrectorado o después: ya no se justifica
+            (D-99).
           type: boolean
         version:
           description: El número de la versión del distributivo; solo si está creado.
