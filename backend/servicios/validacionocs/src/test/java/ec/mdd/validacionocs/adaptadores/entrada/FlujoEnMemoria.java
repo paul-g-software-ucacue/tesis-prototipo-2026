@@ -171,6 +171,15 @@ final class FlujoEnMemoria {
             }
 
             @Override
+            public Optional<RepositorioProceso.EstadoCompartido> estadoCompartido(String periodo) {
+                return de(periodo)
+                        .map(
+                                uno ->
+                                        new RepositorioProceso.EstadoCompartido(
+                                                uno.estado(), uno.distributivoCreadoEn()));
+            }
+
+            @Override
             public void crear(ProcesoAprobacion proceso, Instant ahora) {
                 procesos.put(proceso.periodo(), proceso);
             }

@@ -1,7 +1,9 @@
 package ec.mdd.validacionocs.infraestructura;
 
 import ec.mdd.generacion.puertos.entrada.ParcialesDelDistributivo;
+import ec.mdd.generacion.puertos.requeridos.EtapaDelConsolidado;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
+import ec.mdd.validacionocs.adaptadores.entrada.EtapaParaGeneracion;
 import ec.mdd.validacionocs.adaptadores.salida.DatosDesdeProcesos;
 import ec.mdd.validacionocs.adaptadores.salida.DistributivoDesdeGeneracion;
 import ec.mdd.validacionocs.adaptadores.salida.LectorYaml;
@@ -12,6 +14,7 @@ import ec.mdd.validacionocs.adaptadores.salida.RepositorioProcesoJdbc;
 import ec.mdd.validacionocs.adaptadores.salida.TransaccionSpring;
 import ec.mdd.validacionocs.aplicacion.CargarConfiguracionServicio;
 import ec.mdd.validacionocs.aplicacion.ConsultarConfiguracionServicio;
+import ec.mdd.validacionocs.aplicacion.EtapaDelConsolidadoServicio;
 import ec.mdd.validacionocs.aplicacion.EtapasAlCrearse;
 import ec.mdd.validacionocs.aplicacion.FlujoDelDistributivoServicio;
 import ec.mdd.validacionocs.puertos.entrada.CargarConfiguracion;
@@ -110,6 +113,12 @@ public class ConfiguracionValidacionocs {
     }
 
     /** El distributivo, por la interfaz publicada de Generación en el mismo proceso (MD-04). */
+    /** Lo que Generación pregunta antes de cambiar el consolidado (#215, D-99). */
+    @Bean
+    public EtapaDelConsolidado etapaDelConsolidado(RepositorioProceso procesos) {
+        return new EtapaParaGeneracion(new EtapaDelConsolidadoServicio(procesos));
+    }
+
     @Bean
     public Distributivo distributivoDeGeneracion(ParcialesDelDistributivo parciales) {
         return new DistributivoDesdeGeneracion(parciales);

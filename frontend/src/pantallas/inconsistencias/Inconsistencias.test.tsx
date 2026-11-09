@@ -275,6 +275,21 @@ describe('Panel de inconsistencias', () => {
     });
   });
 
+  describe('en revisión (#215)', () => {
+    it('no sale «Justificar» en ninguna y avisa por qué', async () => {
+      simulada.responder('GET', RUTA, json(200, { ...PANEL, enRevision: true }));
+      await abrir();
+
+      expect(
+        screen.getByText(
+          'El distributivo está en revisión del Vicerrectorado: el consolidado ya no cambia.',
+        ),
+      ).toBeVisible();
+      expect(screen.queryByRole('button', { name: /Justificar/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Cambiar/ })).not.toBeInTheDocument();
+    });
+  });
+
   describe('permisos', () => {
     it('el Vicerrectorado lee el mismo panel, sin justificar', async () => {
       const tabla = await abrir(VICERRECTOR);

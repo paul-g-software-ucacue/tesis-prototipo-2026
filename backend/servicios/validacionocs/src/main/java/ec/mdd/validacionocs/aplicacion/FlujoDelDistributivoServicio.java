@@ -151,11 +151,13 @@ public final class FlujoDelDistributivoServicio
         }
         CondicionesDeRevision condiciones = distributivo.condicionesDeRevision(periodo);
         String hashDelDistributivo = distributivo.hash(periodo);
-        Instant ahora = reloj.instant();
         ProcesoAprobacion proceso =
                 transaccion.ejecutar(
                         () -> {
                             ProcesoAprobacion bloqueado = proceso(periodo, actual, true);
+                            // #215, research §2: el momento, ya con el bloqueo. Si el envío esperó
+                            // a una operación de Generación sobre el consolidado, queda después.
+                            Instant ahora = reloj.instant();
                             List<Transicion> nuevas =
                                     bloqueado.enviarARevision(
                                             quien,

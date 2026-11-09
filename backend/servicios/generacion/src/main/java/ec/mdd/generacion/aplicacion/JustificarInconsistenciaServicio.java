@@ -5,7 +5,9 @@ import ec.mdd.generacion.dominio.JustificacionDeInconsistencia;
 import ec.mdd.generacion.dominio.PanelDeInconsistencias;
 import ec.mdd.generacion.dominio.Severidad;
 import ec.mdd.generacion.dominio.TipoDeInconsistencia;
+import ec.mdd.generacion.puertos.entrada.ConsolidadoEnRevision;
 import ec.mdd.generacion.puertos.entrada.ConsultarPanel;
+import ec.mdd.generacion.puertos.entrada.EnRevision;
 import ec.mdd.generacion.puertos.entrada.InconsistenciaNoEncontrada;
 import ec.mdd.generacion.puertos.entrada.InconsistenciaNoJustificable;
 import ec.mdd.generacion.puertos.entrada.JustificarInconsistencia;
@@ -34,6 +36,7 @@ public final class JustificarInconsistenciaServicio implements JustificarInconsi
     private final RepositorioJustificaciones justificaciones;
     private final RegistroDeCambios registro;
     private final Transaccion transaccion;
+    private final EnRevision enRevision;
     private final Clock reloj;
 
     /** Recibe el panel y los puertos de salida. */
@@ -42,11 +45,13 @@ public final class JustificarInconsistenciaServicio implements JustificarInconsi
             RepositorioJustificaciones justificaciones,
             RegistroDeCambios registro,
             Transaccion transaccion,
+            EnRevision enRevision,
             Clock reloj) {
         this.panel = panel;
         this.justificaciones = justificaciones;
         this.registro = registro;
         this.transaccion = transaccion;
+        this.enRevision = enRevision;
         this.reloj = reloj;
     }
 
@@ -89,6 +94,10 @@ public final class JustificarInconsistenciaServicio implements JustificarInconsi
         }
         transaccion.ejecutar(
                 () -> {
+                    // #215, D-99: dentro de la transacción, para no quedar después de un envío.
+                    if (enRevision.enRevision(solicitud.periodo())) {
+                        throw new ConsolidadoEnRevision();
+                    }
                     justificaciones.guardar(version, justificacion);
                     registro.registrar(
                             new CambioDeDistributivo(

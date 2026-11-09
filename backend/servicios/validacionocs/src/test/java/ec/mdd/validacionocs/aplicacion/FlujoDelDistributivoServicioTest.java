@@ -548,6 +548,15 @@ class FlujoDelDistributivoServicioTest {
         }
 
         @Override
+        public Optional<RepositorioProceso.EstadoCompartido> estadoCompartido(String periodo) {
+            return de(periodo)
+                    .map(
+                            uno ->
+                                    new RepositorioProceso.EstadoCompartido(
+                                            uno.estado(), uno.distributivoCreadoEn()));
+        }
+
+        @Override
         public void crear(ProcesoAprobacion proceso, Instant ahora) {
             guardados.put(proceso.periodo(), copia(proceso));
         }

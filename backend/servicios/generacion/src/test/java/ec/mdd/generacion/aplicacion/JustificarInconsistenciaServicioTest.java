@@ -20,7 +20,9 @@ import ec.mdd.generacion.dominio.PanelDeInconsistencias;
 import ec.mdd.generacion.dominio.Severidad;
 import ec.mdd.generacion.dominio.TipoDeInconsistencia;
 import ec.mdd.generacion.dominio.VersionDistributivo;
+import ec.mdd.generacion.puertos.entrada.ConsolidadoEnRevision;
 import ec.mdd.generacion.puertos.entrada.ConsultarPanel;
+import ec.mdd.generacion.puertos.entrada.EnRevision;
 import ec.mdd.generacion.puertos.entrada.InconsistenciaNoEncontrada;
 import ec.mdd.generacion.puertos.entrada.InconsistenciaNoJustificable;
 import ec.mdd.generacion.puertos.entrada.PeriodoCerrado;
@@ -33,6 +35,7 @@ import ec.mdd.generacion.puertos.salida.Transaccion;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -58,11 +61,26 @@ class JustificarInconsistenciaServicioTest {
     private final RepositorioJustificaciones justificaciones =
             mock(RepositorioJustificaciones.class);
     private final RegistroDeCambios registro = mock(RegistroDeCambios.class);
+    // #215: si el distributivo está en revisión, fuera o dentro de la transacción (research §2).
+    private boolean dentro;
+    private boolean enRevisionFuera;
+    private boolean enRevisionDentro;
+    private final List<Boolean> consultadoDentro = new ArrayList<>();
+    private final EnRevision enRevision =
+            periodo -> {
+                consultadoDentro.add(dentro);
+                return dentro ? enRevisionDentro : enRevisionFuera;
+            };
     private final Transaccion transaccion =
             new Transaccion() {
                 @Override
                 public <T> T ejecutar(Supplier<T> trabajo) {
-                    return trabajo.get();
+                    dentro = true;
+                    try {
+                        return trabajo.get();
+                    } finally {
+                        dentro = false;
+                    }
                 }
             };
     private final JustificarInconsistenciaServicio servicio =
@@ -71,6 +89,7 @@ class JustificarInconsistenciaServicioTest {
                     justificaciones,
                     registro,
                     transaccion,
+                    enRevision,
                     Clock.fixed(AHORA, ZoneOffset.UTC));
 
     @BeforeEach
@@ -253,6 +272,24 @@ class JustificarInconsistenciaServicioTest {
                 .isInstanceOf(InconsistenciaNoEncontrada.class);
 
         assertNoGuardoNada();
+    }
+
+    @Test
+    void dadoElDistributivoEnRevision_cuandoSeJustifica_entoncesSeRechazaSinGuardar() {
+        enRevisionFuera = true;
+        enRevisionDentro = true;
+
+        assertThatThrownBy(() -> servicio.justificar(solicitud(TipoDeInconsistencia.PROPORCION)))
+                .isInstanceOf(ConsolidadoEnRevision.class);
+
+        assertNoGuardoNada();
+    }
+
+    @Test
+    void dadaUnaJustificacion_cuandoSeGuarda_entoncesLaEtapaSeConsultaDentroDeLaTransaccion() {
+        servicio.justificar(solicitud(TipoDeInconsistencia.PROPORCION));
+
+        assertThat(consultadoDentro).contains(true);
     }
 
     @Test

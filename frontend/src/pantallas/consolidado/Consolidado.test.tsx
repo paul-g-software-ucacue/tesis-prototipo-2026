@@ -162,6 +162,32 @@ describe('Consolidado del periodo', () => {
     expect(screen.getByRole('button', { name: 'Descargar el informe' })).toBeVisible();
   });
 
+  it('en revisión se lee, sin consolidar ni adjuntar, con el aviso (#215)', async () => {
+    simulada.responder('GET', RUTA, json(200, { ...CON_INFORME, enRevision: true }));
+    await abrir();
+
+    expect(
+      screen.getByText(
+        'El distributivo está en revisión del Vicerrectorado: el consolidado ya no cambia.',
+      ),
+    ).toBeVisible();
+    expect(screen.queryByRole('button', { name: /onsolidar/ })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Adjuntar/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Descargar el informe' })).toBeVisible();
+  });
+
+  it('antes de la revisión no hay aviso (#215)', async () => {
+    simulada.responder('GET', RUTA, json(200, CON_INFORME));
+    await abrir();
+
+    expect(
+      screen.queryByText(
+        'El distributivo está en revisión del Vicerrectorado: el consolidado ya no cambia.',
+      ),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Volver a consolidar' })).toBeVisible();
+  });
+
   describe('desactualizado', () => {
     it('avisa que hay que repetirlo', async () => {
       simulada.responder('GET', RUTA, json(200, { ...CONSOLIDADO, desactualizado: true }));

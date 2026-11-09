@@ -14,6 +14,7 @@ import ec.mdd.generacion.dominio.InconsistenciaGlobal;
 import ec.mdd.generacion.dominio.JustificacionObligatoria;
 import ec.mdd.generacion.dominio.Severidad;
 import ec.mdd.generacion.puertos.entrada.ConsultarPanel;
+import ec.mdd.generacion.puertos.entrada.EnRevision;
 import ec.mdd.generacion.puertos.entrada.JustificarInconsistencia;
 import ec.mdd.generacion.puertos.entrada.SolicitudDeJustificacion;
 import ec.mdd.plataforma.errores.nucleo.DetalleRespuesta;
@@ -50,8 +51,11 @@ class PanelControlador implements PanelApi {
 
     private final ConsultarPanel consultar;
     private final JustificarInconsistencia justificar;
+    private final EnRevision enRevision;
 
-    PanelControlador(ConsultarPanel consultar, JustificarInconsistencia justificar) {
+    PanelControlador(
+            ConsultarPanel consultar, JustificarInconsistencia justificar, EnRevision enRevision) {
+        this.enRevision = enRevision;
         this.consultar = consultar;
         this.justificar = justificar;
     }
@@ -65,6 +69,7 @@ class PanelControlador implements PanelApi {
                         periodo,
                         panel.creado(),
                         panel.modificable(),
+                        enRevision.enRevision(periodo),
                         new TotalesDelPanel(
                                 Math.toIntExact(panel.abiertas(Severidad.DURA)),
                                 Math.toIntExact(panel.abiertas(Severidad.BLANDA))),

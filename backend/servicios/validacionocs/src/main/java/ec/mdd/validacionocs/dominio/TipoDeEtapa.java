@@ -27,6 +27,15 @@ public enum TipoDeEtapa {
         this.esqueleto = esqueleto;
     }
 
+    /**
+     * Si el consolidado todavía admite cambios en esta etapa: consolidar, justificar una blanda y
+     * adjuntar el informe (#215, D-99). Hasta EN_CONSOLIDACION inclusive, en el orden del flujo;
+     * desde EN_REVISION_VRA, lo enviado a revisión no cambia.
+     */
+    public boolean admiteCambiosEnElConsolidado() {
+        return compareTo(EN_CONSOLIDACION) <= 0;
+    }
+
     /** Si es del esqueleto fijo, que ninguna configuración quita ni desactiva. */
     public boolean esEsqueleto() {
         return esqueleto;

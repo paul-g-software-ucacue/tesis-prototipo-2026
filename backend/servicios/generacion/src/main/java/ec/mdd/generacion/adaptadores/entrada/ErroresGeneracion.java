@@ -8,6 +8,7 @@ import ec.mdd.generacion.dominio.ProyectoNoValido;
 import ec.mdd.generacion.puertos.entrada.ActividadFueraDelCatalogo;
 import ec.mdd.generacion.puertos.entrada.ActividadNoEncontrada;
 import ec.mdd.generacion.puertos.entrada.AfinidadInsuficiente;
+import ec.mdd.generacion.puertos.entrada.ConsolidadoEnRevision;
 import ec.mdd.generacion.puertos.entrada.DistributivoNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.DistributivoRepetido;
 import ec.mdd.generacion.puertos.entrada.DocenteNoActivo;
@@ -198,6 +199,14 @@ class ErroresGeneracion implements CatalogoDeErrores {
                         413,
                         "Informe demasiado grande",
                         "El informe pasa de 10 MB. Reduce su tamaño y vuelve a adjuntarlo."),
+                // #215, D-99: lo enviado a revisión no cambia.
+                EntradaCatalogo.de(
+                        ConsolidadoEnRevision.class,
+                        "GENERACION_CONSOLIDADO_EN_REVISION",
+                        409,
+                        "Consolidado en revisión",
+                        "El distributivo está en revisión del Vicerrectorado: el consolidado ya no"
+                                + " cambia."),
                 EntradaCatalogo.de(
                         InformeNoEncontrado.class,
                         "GENERACION_INFORME_NO_ENCONTRADO",

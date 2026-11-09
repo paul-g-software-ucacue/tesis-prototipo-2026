@@ -263,7 +263,9 @@ export function Inconsistencias() {
   };
 
   const datos = panel.data;
-  const puedeJustificar = tieneAlguno(permisos, ESCRITURA_DEL_PANEL) && Boolean(datos?.modificable);
+  // #215, D-99: desde la revisión del Vicerrectorado ya no se justifica.
+  const puedeJustificar =
+    tieneAlguno(permisos, ESCRITURA_DEL_PANEL) && Boolean(datos?.modificable && !datos.enRevision);
   const abiertas = datos?.inconsistencias.filter((una) => una.estado === 'ABIERTA') ?? [];
   const justificadas = datos?.inconsistencias.filter((una) => una.estado === 'JUSTIFICADA') ?? [];
 
@@ -310,6 +312,11 @@ export function Inconsistencias() {
       )}
       {datos?.creado && (
         <>
+          {datos.enRevision && (
+            <Alert severity="info" role="status" sx={{ my: 2 }}>
+              El distributivo está en revisión del Vicerrectorado: el consolidado ya no cambia.
+            </Alert>
+          )}
           {abiertas.length === 0 ? (
             <Alert severity="success" role="status" sx={{ my: 2 }}>
               No hay inconsistencias abiertas.

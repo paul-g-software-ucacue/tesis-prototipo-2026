@@ -9,6 +9,7 @@ import ec.mdd.generacion.adaptadores.entrada.api.InformeSustentado;
 import ec.mdd.generacion.adaptadores.entrada.api.TotalesDelPanel;
 import ec.mdd.generacion.puertos.entrada.Consolidar;
 import ec.mdd.generacion.puertos.entrada.ConsultarConsolidado;
+import ec.mdd.generacion.puertos.entrada.EnRevision;
 import ec.mdd.generacion.puertos.entrada.GestionarInforme;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -38,9 +39,14 @@ class ConsolidadoControlador implements ConsolidadoApi {
     private final ConsultarConsolidado consultar;
     private final Consolidar consolidar;
     private final GestionarInforme informe;
+    private final EnRevision enRevision;
 
     ConsolidadoControlador(
-            ConsultarConsolidado consultar, Consolidar consolidar, GestionarInforme informe) {
+            ConsultarConsolidado consultar,
+            Consolidar consolidar,
+            GestionarInforme informe,
+            EnRevision enRevision) {
+        this.enRevision = enRevision;
         this.consultar = consultar;
         this.consolidar = consolidar;
         this.informe = informe;
@@ -49,13 +55,14 @@ class ConsolidadoControlador implements ConsolidadoApi {
     @Override
     @PreAuthorize(LEER)
     public ResponseEntity<ConsolidadoDelPeriodo> consultarConsolidado(String periodo) {
-        return ResponseEntity.ok(respuesta(consultar.consolidado(periodo)));
+        return ResponseEntity.ok(
+                respuesta(consultar.consolidado(periodo), enRevision.enRevision(periodo)));
     }
 
     @Override
     @PreAuthorize(ESCRIBIR)
     public ResponseEntity<ConsolidadoDelPeriodo> consolidar(String periodo) {
-        return ResponseEntity.ok(respuesta(consolidar.consolidar(periodo, quien())));
+        return ResponseEntity.ok(respuesta(consolidar.consolidar(periodo, quien()), false));
     }
 
     @Override
@@ -93,13 +100,15 @@ class ConsolidadoControlador implements ConsolidadoApi {
         return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 
+    // enRevision: #215, D-99. Tras consolidar es falso: si no, se habría rechazado.
     private static ConsolidadoDelPeriodo respuesta(
-            ec.mdd.generacion.dominio.ConsolidadoDelPeriodo consolidado) {
+            ec.mdd.generacion.dominio.ConsolidadoDelPeriodo consolidado, boolean enRevision) {
         ConsolidadoDelPeriodo respuesta =
                 new ConsolidadoDelPeriodo(
                         consolidado.periodo(),
                         consolidado.creado(),
                         consolidado.modificable(),
+                        enRevision,
                         consolidado.desactualizado(),
                         consolidado.carreras().stream()
                                 .map(ConsolidadoControlador::respuesta)

@@ -1,6 +1,7 @@
 package ec.mdd.validacionocs.puertos.salida;
 
 import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
+import ec.mdd.validacionocs.dominio.TipoDeEtapa;
 import ec.mdd.validacionocs.dominio.Transicion;
 import java.time.Instant;
 import java.util.List;
@@ -41,4 +42,21 @@ public interface RepositorioProceso {
      * @param nuevas las transiciones que agregó este cambio
      */
     void guardar(ProcesoAprobacion proceso, List<Transicion> nuevas);
+
+    /**
+     * La etapa del proceso y de qué distributivo es, con un bloqueo compartido de su fila hasta que
+     * termina la transacción en curso: un envío a revisión simultáneo espera (#215, research §2).
+     *
+     * @param periodo el código del periodo
+     * @return vacío si el periodo no tiene proceso
+     */
+    Optional<EstadoCompartido> estadoCompartido(String periodo);
+
+    /**
+     * La etapa de un proceso y cuándo se creó su distributivo.
+     *
+     * @param estado la etapa actual
+     * @param distributivoCreadoEn cuándo se creó el distributivo que acompaña
+     */
+    record EstadoCompartido(TipoDeEtapa estado, Instant distributivoCreadoEn) {}
 }
