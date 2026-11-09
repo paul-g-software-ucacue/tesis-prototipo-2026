@@ -12,6 +12,7 @@ const RUTA = '/api/validacionocs/periodos/2026-I/flujo';
 const ENVIO = '/api/validacionocs/periodos/2026-I/parciales/DS/envio';
 const AVANCE = '/api/validacionocs/periodos/2026-I/avance';
 const REVISION = '/api/validacionocs/periodos/2026-I/revision';
+const DEVOLUCION = '/api/validacionocs/periodos/2026-I/devolucion';
 
 function flujo(cambios: Partial<EstadoDelFlujo> = {}): EstadoDelFlujo {
   return {
@@ -240,6 +241,133 @@ describe('EstadoDelFlujo', () => {
       const aviso = await screen.findByRole('alert');
       expect(aviso).toHaveTextContent('Inconsistencias abiertas');
       expect(aviso).toHaveTextContent('Quedan 3: 2 duras y 1 blanda sin justificar.');
+    });
+  });
+
+  describe('devolver parciales (F12-H05)', () => {
+    const enConsolidacion = flujo({
+      etapa: 'EN_CONSOLIDACION',
+      nombreDeEtapa: 'Consolidación',
+      parciales: [
+        {
+          carrera: 'DS',
+          enviado: true,
+          pendienteDeConfirmar: false,
+          enviadoPor: 'coordinacion.demo',
+          enviadoEn: '2026-11-07T17:02:14Z',
+        },
+        {
+          carrera: 'TDS',
+          enviado: true,
+          pendienteDeConfirmar: false,
+          enviadoPor: 'otra.coordinacion',
+          enviadoEn: '2026-11-07T17:02:14Z',
+        },
+      ],
+      acciones: ['ENVIAR_A_REVISION', 'DEVOLVER_PARCIALES'],
+    });
+    const devuelto = flujo({
+      parciales: [
+        {
+          carrera: 'DS',
+          enviado: false,
+          pendienteDeConfirmar: false,
+          devolucion: {
+            por: 'consolidacion.demo',
+            en: '2026-11-08T22:10:00Z',
+            observacion: 'Faltan docentes en primer nivel.',
+          },
+        },
+      ],
+    });
+
+    it('un parcial devuelto dice quién, cuándo y la observación', async () => {
+      simulada.responder('GET', RUTA, json(200, devuelto));
+      montar();
+
+      const region = await screen.findByRole('region', { name: 'Estado del distributivo' });
+      expect(
+        within(region).getByText('DS: devuelto por consolidacion.demo el 8/11/26, 17:10'),
+      ).toBeVisible();
+      expect(within(region).getByText('Faltan docentes en primer nivel.')).toBeVisible();
+      expect(within(region).getByText('Observación')).toBeVisible();
+    });
+
+    it('el coordinador con su parcial devuelto lo reenvía', async () => {
+      simulada.responder('GET', RUTA, json(200, { ...devuelto, acciones: ['ENVIAR_PARCIAL'] }));
+      montar('DS');
+
+      expect(await screen.findByRole('button', { name: 'Reenviar parcial' })).toBeVisible();
+    });
+
+    it('sin la acción no hay botón de devolver', async () => {
+      simulada.responder(
+        'GET',
+        RUTA,
+        json(200, { ...enConsolidacion, acciones: ['ENVIAR_A_REVISION'] }),
+      );
+      montar(undefined, []);
+
+      await screen.findByRole('button', { name: 'Enviar a revisión' });
+      expect(screen.queryByRole('button', { name: 'Devolver parciales' })).not.toBeInTheDocument();
+    });
+
+    it('el Responsable elige carreras y escribe la observación de cada una', async () => {
+      simulada.responder('GET', RUTA, json(200, enConsolidacion));
+      simulada.responder('POST', DEVOLUCION, json(200, flujo()));
+      const { alCambiar } = montar(undefined, ['Consolida el periodo.']);
+      const usuario = userEvent.setup();
+
+      // Devolver no depende de lo que falta para enviar a revisión.
+      await usuario.click(await screen.findByRole('button', { name: 'Devolver parciales' }));
+      const dialogo = screen.getByRole('dialog', { name: 'Devolver parciales' });
+      const devolver = within(dialogo).getByRole('button', { name: 'Devolver' });
+      expect(devolver).toBeDisabled();
+      expect(within(dialogo).queryByLabelText(/Observación para/)).not.toBeInTheDocument();
+
+      await usuario.click(within(dialogo).getByRole('checkbox', { name: 'DS' }));
+      const observacion = within(dialogo).getByLabelText(/^Observación para DS/);
+      await usuario.type(observacion, 'corta');
+      expect(within(dialogo).getByText(/5 de 500/)).toBeVisible();
+      expect(observacion).toHaveAttribute('aria-invalid', 'true');
+      expect(devolver).toBeDisabled();
+
+      await usuario.type(observacion, ' pero ya no tanto.');
+      expect(devolver).toBeEnabled();
+      await usuario.click(devolver);
+
+      await waitFor(() => expect(alCambiar).toHaveBeenCalled());
+      const peticion = simulada.peticiones.find((una) => new URL(una.url).pathname === DEVOLUCION);
+      expect(await peticion?.json()).toEqual({
+        devoluciones: [{ carrera: 'DS', observacion: 'corta pero ya no tanto.' }],
+      });
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('el 409 se muestra en el diálogo', async () => {
+      simulada.responder('GET', RUTA, json(200, enConsolidacion));
+      simulada.responder(
+        'POST',
+        DEVOLUCION,
+        json(409, {
+          titulo: 'Etapa sin devolución',
+          descripcion: 'Solo se devuelven parciales desde la consolidación.',
+          codigo: 'VALIDACIONOCS_ETAPA_NO_ADMITE_DEVOLUCION',
+        }),
+      );
+      montar(undefined, []);
+      const usuario = userEvent.setup();
+
+      await usuario.click(await screen.findByRole('button', { name: 'Devolver parciales' }));
+      const dialogo = screen.getByRole('dialog', { name: 'Devolver parciales' });
+      await usuario.click(within(dialogo).getByRole('checkbox', { name: 'TDS' }));
+      await usuario.type(
+        within(dialogo).getByLabelText(/^Observación para TDS/),
+        'Un docente sin clase.',
+      );
+      await usuario.click(within(dialogo).getByRole('button', { name: 'Devolver' }));
+
+      expect(await within(dialogo).findByRole('alert')).toHaveTextContent('Etapa sin devolución');
     });
   });
 

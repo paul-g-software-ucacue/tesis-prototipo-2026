@@ -53,3 +53,18 @@ export function enviarARevision(periodo: string) {
     }),
   );
 }
+
+export type ParcialADevolver = components['schemas']['ParcialADevolver'];
+
+/**
+ * Devuelve el parcial de una o varias carreras, cada una con su observación (F12-H05, D-98). El
+ * distributivo vuelve a la propuesta de carrera; el servidor exige el rol y la observación.
+ */
+export function devolverParciales(periodo: string, devoluciones: ParcialADevolver[]) {
+  return llamar(
+    apiValidacionocs.POST('/api/validacionocs/periodos/{periodo}/devolucion', {
+      params: { path: { periodo } },
+      body: { devoluciones },
+    }),
+  );
+}

@@ -196,7 +196,7 @@ description: "Tareas de F12-H05: devolver un parcial a su carrera con una observ
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T018 [P] En la SPA, según `contracts/spa.md`, escribir primero las pruebas.
+- [X] T018 [P] En la SPA, según `contracts/spa.md`, escribir primero las pruebas.
   - **`SPA/pantallas/comun/EstadoDelFlujo.test.tsx`:**
     - un parcial devuelto dice «devuelto por … el …» y muestra la observación;
     - el coordinador con el parcial devuelto ve «Reenviar parcial».

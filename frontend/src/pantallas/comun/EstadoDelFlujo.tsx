@@ -2,7 +2,7 @@
 // versión, el envío de cada parcial y un botón por cada acción que la API dice que el usuario puede
 // hacer. Lo usan «Oferta del periodo» (el coordinador envía su parcial), «Consolidado del periodo»
 // (el Responsable y el Vicerrector ven la etapa; desde F10-H03, el Responsable envía a revisión y ve
-// lo que falta) y «Proyectos» (el Gestor de unidad avanza BORRADOR_UNIDADES). El servidor valida el
+// lo que falta; desde F12-H05, devuelve parciales, y el coordinador ve la observación) y «Proyectos» (el Gestor de unidad avanza BORRADOR_UNIDADES). El servidor valida el
 // permiso, el rol de la etapa, la carrera y las condiciones.
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -13,6 +13,7 @@ import { useId, useState } from 'react';
 import { AvisoDeError } from '../../errores/AvisoDeError';
 import { FalloDeApi, traducirError, type MensajeDeError } from '../../errores/traducir';
 import { DialogoConfirmar } from '../carreras/DialogosDeCarrera';
+import { DialogoDeDevolucion } from './DialogoDeDevolucion';
 import {
   CLAVE_FLUJO,
   avanzarEtapa,
@@ -31,6 +32,10 @@ const MOMENTO = new Intl.DateTimeFormat('es-EC', {
 });
 
 function estadoDe(parcial: ParcialDelFlujo) {
+  if (parcial.devolucion) {
+    const { por, en } = parcial.devolucion;
+    return `${parcial.carrera}: devuelto por ${por} el ${MOMENTO.format(new Date(en))}`;
+  }
   if (parcial.enviado) {
     const cuando = parcial.enviadoEn ? ` el ${MOMENTO.format(new Date(parcial.enviadoEn))}` : '';
     return `${parcial.carrera}: enviado${parcial.enviadoPor ? ` por ${parcial.enviadoPor}` : ''}${cuando}`;
@@ -40,7 +45,7 @@ function estadoDe(parcial: ParcialDelFlujo) {
     : `${parcial.carrera}: pendiente`;
 }
 
-type Confirmar = 'enviar' | 'avanzar' | 'revisar' | null;
+type Confirmar = 'enviar' | 'avanzar' | 'revisar' | 'devolver' | null;
 
 /**
  * El estado del flujo del periodo. Sin distributivo no muestra nada: las pantallas ya dicen cómo
@@ -89,6 +94,7 @@ export function EstadoDelFlujoDelPeriodo({
   const puedeEnviar = acciones.includes('ENVIAR_PARCIAL') && Boolean(carrera);
   const puedeAvanzar = acciones.includes('AVANZAR');
   const puedeRevisar = acciones.includes('ENVIAR_A_REVISION');
+  const puedeDevolver = acciones.includes('DEVOLVER_PARCIALES');
 
   const ejecutar = async (accion: () => Promise<unknown>) => {
     setConfirmar(null);
@@ -122,6 +128,25 @@ export function EstadoDelFlujoDelPeriodo({
         {parciales.map((parcial) => (
           <Typography component="li" variant="body2" key={parcial.carrera}>
             {estadoDe(parcial)}
+            {parcial.devolucion && (
+              <Box
+                component="span"
+                sx={{
+                  display: 'block',
+                  mt: 0.5,
+                  pl: 1,
+                  borderLeft: 3,
+                  borderColor: 'warning.main',
+                }}
+              >
+                <Box component="span" sx={{ display: 'block', fontWeight: 'bold' }}>
+                  Observación
+                </Box>
+                <Box component="span" sx={{ display: 'block', whiteSpace: 'pre-line' }}>
+                  {parcial.devolucion.observacion}
+                </Box>
+              </Box>
+            )}
           </Typography>
         ))}
       </Box>
@@ -137,7 +162,9 @@ export function EstadoDelFlujoDelPeriodo({
       <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
         {puedeEnviar && (
           <Button variant="contained" disabled={enviando} onClick={() => setConfirmar('enviar')}>
-            {propio?.pendienteDeConfirmar ? 'Reenviar parcial' : 'Enviar parcial'}
+            {propio?.pendienteDeConfirmar || propio?.devolucion
+              ? 'Reenviar parcial'
+              : 'Enviar parcial'}
           </Button>
         )}
         {puedeAvanzar && (
@@ -153,6 +180,11 @@ export function EstadoDelFlujoDelPeriodo({
             onClick={() => setConfirmar('revisar')}
           >
             Enviar a revisión
+          </Button>
+        )}
+        {puedeDevolver && (
+          <Button variant="outlined" disabled={enviando} onClick={() => setConfirmar('devolver')}>
+            Devolver parciales
           </Button>
         )}
       </Stack>
@@ -186,6 +218,19 @@ export function EstadoDelFlujoDelPeriodo({
           accion="Enviar"
           alCerrar={() => setConfirmar(null)}
           alConfirmar={() => void ejecutar(() => enviarARevision(periodo))}
+        />
+      )}
+      {confirmar === 'devolver' && (
+        <DialogoDeDevolucion
+          periodo={periodo}
+          carreras={parciales.filter((uno) => uno.enviado).map((uno) => uno.carrera)}
+          etapaActual={nombreDeEtapa}
+          alCerrar={() => setConfirmar(null)}
+          alDevolver={async () => {
+            setConfirmar(null);
+            await consultas.invalidateQueries({ queryKey: CLAVE_FLUJO });
+            alCambiar?.();
+          }}
         />
       )}
       {confirmar === 'avanzar' && (

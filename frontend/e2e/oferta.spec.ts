@@ -580,3 +580,38 @@ test('el coordinador envía el parcial de su carrera y ya no propone', async ({ 
   await expect(dialogo.getByText(/PERALTA/).first()).toBeVisible();
   await expect(dialogo.getByRole('button', { name: /^Proponer a/ })).toHaveCount(0);
 });
+
+// F12-H05: el coordinador ve la observación de su parcial devuelto y lo reenvía.
+test('el coordinador ve por qué le devolvieron el parcial y puede reenviarlo', async ({ page }) => {
+  await page.route('**/api/validacionocs/periodos/*/flujo', (ruta) =>
+    ruta.fulfill({
+      json: {
+        periodo: '2026-2',
+        etapa: 'BORRADOR_CARRERA',
+        nombreDeEtapa: 'Propuesta de carrera',
+        version: 1,
+        parciales: [
+          {
+            carrera: DS.codigo,
+            enviado: false,
+            pendienteDeConfirmar: false,
+            devolucion: {
+              por: 'consolidacion.demo',
+              en: '2026-11-08T22:10:00Z',
+              observacion: 'Faltan docentes en los paralelos nocturnos.',
+            },
+          },
+        ],
+        acciones: ['ENVIAR_PARCIAL'],
+        transiciones: [],
+      },
+    }),
+  );
+  await abrirOferta(page, [nocturna('A_NOCTURNA')], COORDINADOR);
+
+  const estado = page.getByRole('region', { name: 'Estado del distributivo' });
+  await expect(estado).toContainText(`${DS.codigo}: devuelto por consolidacion.demo`);
+  await expect(estado).toContainText('Faltan docentes en los paralelos nocturnos.');
+  await expect(estado.getByRole('button', { name: 'Reenviar parcial' })).toBeVisible();
+  await sinFallas(page);
+});
