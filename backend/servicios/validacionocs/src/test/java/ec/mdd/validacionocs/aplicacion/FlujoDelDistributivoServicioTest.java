@@ -23,6 +23,7 @@ import ec.mdd.validacionocs.dominio.EtapaNoAdmiteDevolucion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteRevision;
 import ec.mdd.validacionocs.dominio.ParcialNoEncontrado;
 import ec.mdd.validacionocs.dominio.ParcialYaEnviado;
+import ec.mdd.validacionocs.dominio.ParcialesPendientes;
 import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
 import ec.mdd.validacionocs.dominio.RolDeOtraEtapa;
 import ec.mdd.validacionocs.dominio.Solicitante;
@@ -498,6 +499,20 @@ class FlujoDelDistributivoServicioTest {
         assertThat(registrado()).isEmpty();
         assertThat(procesos.de(PERIODO).orElseThrow().estado())
                 .isEqualTo(TipoDeEtapa.EN_CONSOLIDACION);
+    }
+
+    // research §2: la devolución que Generación marcó y Aprobación no registró.
+    @Test
+    void
+            dadoUnParcialDevueltoSoloEnGeneracion_cuandoSeEnviaARevision_entoncesParcialesPendientes() {
+        enConsolidacion();
+        conCondiciones(LISTO);
+        enviadosEnGeneracion.put("TDS", false);
+
+        assertThatThrownBy(() -> servicio.enviarARevision(PERIODO, RESPONSABLE))
+                .isInstanceOf(ParcialesPendientes.class);
+        verify(distributivo, never()).condicionesDeRevision(anyString());
+        assertThat(registrado()).isEmpty();
     }
 
     private static FlujoDelDistributivo.Parcial parcial(

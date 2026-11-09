@@ -4,6 +4,7 @@ import ec.mdd.validacionocs.dominio.CondicionesDeRevision;
 import ec.mdd.validacionocs.dominio.DevolucionDeParcial;
 import ec.mdd.validacionocs.dominio.EstadoDeEnvio;
 import ec.mdd.validacionocs.dominio.EstadoDelPeriodo;
+import ec.mdd.validacionocs.dominio.ParcialesPendientes;
 import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
 import ec.mdd.validacionocs.dominio.Solicitante;
 import ec.mdd.validacionocs.dominio.TipoDeEtapa;
@@ -143,6 +144,11 @@ public final class FlujoDelDistributivoServicio
         exigirAbierto(periodo);
         DistributivoActual actual = actual(periodo);
         transaccion.ejecutar(() -> proceso(periodo, actual, false)).validarRevision(quien);
+        // F12-H05, research §2: una devolución que Generación marcó y Aprobación no registró deja
+        // el parcial editable; no pasa a revisión hasta que se complete.
+        if (actual.enviados().containsValue(false)) {
+            throw new ParcialesPendientes();
+        }
         CondicionesDeRevision condiciones = distributivo.condicionesDeRevision(periodo);
         String hashDelDistributivo = distributivo.hash(periodo);
         Instant ahora = reloj.instant();

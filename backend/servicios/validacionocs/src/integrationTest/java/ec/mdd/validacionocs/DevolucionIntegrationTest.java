@@ -142,6 +142,31 @@ class DevolucionIntegrationTest {
     }
 
     @Test
+    void dadasDosCarrerasDevueltas_cuandoReenvianLasDos_entoncesVuelveAConsolidacionConUnPaso() {
+        String periodo = enConsolidacion();
+        servicio.devolver(periodo, List.of(devolucion("DS"), devolucion("TDS")), RESPONSABLE);
+
+        servicio.enviar(periodo, "DS", coordinador("DS"));
+        assertThat(estadoGuardado(periodo)).isEqualTo("BORRADOR_CARRERA");
+        servicio.enviar(periodo, "TDS", coordinador("TDS"));
+
+        assertThat(estadoGuardado(periodo)).isEqualTo("EN_CONSOLIDACION");
+        assertThat(parcialesGuardados(periodo).values()).containsOnly("ENVIADO");
+        assertThat(
+                        jdbc.sql(
+                                        "select count(*) from validacionocs.transicion where"
+                                                + " periodo = ? and tipo = 'PASO_DE_ETAPA'")
+                                .param(periodo)
+                                .query(Integer.class)
+                                .single())
+                .isEqualTo(2);
+        assertThat(
+                        servicio.flujo(periodo, RESPONSABLE).parciales().stream()
+                                .allMatch(uno -> uno.devolucion().isEmpty()))
+                .isTrue();
+    }
+
+    @Test
     void dadasDosDevolucionesALaVez_cuandoSeEnvian_entoncesSaleUnaSolaVez() throws Exception {
         String periodo = enConsolidacion();
 

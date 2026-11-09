@@ -24,8 +24,10 @@ import java.util.TreeMap;
  *       ({@link RolDeOtraEtapa}); un coordinador con alcance propio, solo su carrera ({@link
  *       ParcialDeOtraCarrera}, D-64);
  *   <li>los parciales se envían en BORRADOR_CARRERA ({@link EtapaNoAdmiteEnvio}), una sola vez
- *       ({@link ParcialYaEnviado}); con el último, el distributivo pasa a la siguiente etapa
- *       activa;
+ *       ({@link ParcialYaEnviado}), salvo que se devuelvan; con el último, el distributivo pasa a
+ *       la siguiente etapa activa;
+ *   <li>desde EN_CONSOLIDACION, solo su rol devuelve parciales, cada uno con su observación, si la
+ *       etapa admite devolución; el distributivo vuelve a BORRADOR_CARRERA (F12-H05, D-98);
  *   <li>el avance genérico vale solo para las etapas opcionales sin historia propia, hoy
  *       BORRADOR_UNIDADES; las demás se avanzan con su propia operación ({@link
  *       EtapaConOperacionPropia});
@@ -264,7 +266,8 @@ public final class ProcesoAprobacion {
         if (estado != TipoDeEtapa.EN_CONSOLIDACION) {
             throw new EtapaNoAdmiteRevision();
         }
-        if (parciales.containsValue(EstadoDeEnvio.PENDIENTE)) {
+        // Pendiente o devuelto: su carrera todavía no lo envió (F12-H05).
+        if (parciales.values().stream().anyMatch(uno -> uno != EstadoDeEnvio.ENVIADO)) {
             throw new ParcialesPendientes();
         }
     }
@@ -409,17 +412,24 @@ public final class ProcesoAprobacion {
         if (estado == TipoDeEtapa.BORRADOR_CARRERA
                 && tieneRol(quien, TipoDeEtapa.BORRADOR_CARRERA)
                 && quien.carreraPropia()
-                        .map(carrera -> parciales.get(carrera) == EstadoDeEnvio.PENDIENTE)
+                        .map(
+                                carrera ->
+                                        parciales.containsKey(carrera)
+                                                && parciales.get(carrera) != EstadoDeEnvio.ENVIADO)
                         .orElse(false)) {
             return List.of(AccionDelProceso.ENVIAR_PARCIAL);
         }
         if (CON_AVANCE_GENERICO.contains(estado) && tieneRol(quien, estado)) {
             return List.of(AccionDelProceso.AVANZAR);
         }
-        // Aunque falten condiciones: la pantalla dice cuáles (F10-H03, FR-013).
+        // Aunque falten condiciones: la pantalla dice cuáles (F10-H03, FR-013). Devolver, si la
+        // copia de la configuración lo admite (F12-H05, FR-016).
         if (estado == TipoDeEtapa.EN_CONSOLIDACION
                 && tieneRol(quien, TipoDeEtapa.EN_CONSOLIDACION)) {
-            return List.of(AccionDelProceso.ENVIAR_A_REVISION);
+            return etapa(TipoDeEtapa.EN_CONSOLIDACION).admiteDevolucion()
+                    ? List.of(
+                            AccionDelProceso.ENVIAR_A_REVISION, AccionDelProceso.DEVOLVER_PARCIALES)
+                    : List.of(AccionDelProceso.ENVIAR_A_REVISION);
         }
         return List.of();
     }

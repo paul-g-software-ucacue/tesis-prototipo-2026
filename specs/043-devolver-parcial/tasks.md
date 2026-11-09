@@ -142,7 +142,7 @@ description: "Tareas de F12-H05: devolver un parcial a su carrera con una observ
 
 **Independent Test**: en la prueba de integración, tras devolver dos carreras, reenviar la primera deja BORRADOR_CARRERA y reenviar la segunda pasa a EN_CONSOLIDACION con un `PASO_DE_ETAPA` (`probar_devolucion.sh`, pasos 7 y 8).
 
-- [ ] T012 [US2] Agregar a `ProcesoAprobacionTest` y ver fallar:
+- [X] T012 [US2] Agregar a `ProcesoAprobacionTest` y ver fallar:
   - `validarEnvio` acepta un parcial DEVUELTO y sigue rechazando uno ENVIADO (`ParcialYaEnviado`);
   - `acciones` ofrece `ENVIAR_PARCIAL` al coordinador con el parcial DEVUELTO;
   - tras devolver dos, `enviarParcial` de la primera deja BORRADOR_CARRERA, y el de la segunda pasa a EN_CONSOLIDACION;
@@ -151,8 +151,8 @@ description: "Tareas de F12-H05: devolver un parcial a su carrera con una observ
   - una segunda devolución de la misma carrera, después de reenviarla, se permite, y la vista muestra la observación de la última.
 
   Después, en un comando aparte, los cambios de research §5 en `ProcesoAprobacion`.
-- [ ] T013 [US2] Agregar a `FlujoDelDistributivoServicioTest` y ver fallar: `enviarARevision` rechaza con `ParcialesPendientes` si Generación tiene algún parcial que no está enviado aunque Aprobación lo tenga ENVIADO (research §2). Después, en un comando aparte, la comprobación en `enviarARevision`.
-- [ ] T014 [US2] Agregar a `DevolucionIntegrationTest` el reenvío: las dos carreras devueltas se reenvían y el proceso vuelve a EN_CONSOLIDACION con un `PASO_DE_ETAPA`. Agregar a la prueba de integración de Generación de T011 que una propuesta en el parcial devuelto se guarda, y que el consolidado queda desactualizado solo después de ese cambio (research §7).
+- [X] T013 [US2] Agregar a `FlujoDelDistributivoServicioTest` y ver fallar: `enviarARevision` rechaza con `ParcialesPendientes` si Generación tiene algún parcial que no está enviado aunque Aprobación lo tenga ENVIADO (research §2). Después, en un comando aparte, la comprobación en `enviarARevision`.
+- [X] T014 [US2] Agregar a `DevolucionIntegrationTest` el reenvío: las dos carreras devueltas se reenvían y el proceso vuelve a EN_CONSOLIDACION con un `PASO_DE_ETAPA`. Agregar a la prueba de integración de Generación de T011 que una propuesta en el parcial devuelto se guarda, y que el consolidado queda desactualizado solo después de ese cambio (research §7).
 
 **Checkpoint**: el ciclo completo, devolver y reenviar, funciona por la API.
 
@@ -164,7 +164,7 @@ description: "Tareas de F12-H05: devolver un parcial a su carrera con una observ
 
 **Independent Test**: sin observación, con una de 9 caracteres, con una solo de espacios y con una carrera repetida, 400 y ningún parcial devuelto (`probar_devolucion.sh`, paso 3).
 
-- [ ] T015 [US3] Agregar a `FlujoContratoTest` y ver fallar:
+- [X] T015 [US3] Agregar a `FlujoContratoTest` y ver fallar:
   - el 400 `COMUN_SOLICITUD_INVALIDA` con `devoluciones` vacía, una observación de 9 y de 501 caracteres, una solo de espacios y una carrera fuera del patrón, cada uno con su campo;
   - el 400 `VALIDACIONOCS_OBSERVACION_INVALIDA`, con una observación de 10 caracteres que tiene espacios en los extremos y la carrera en el detalle;
   - el 400 `VALIDACIONOCS_CARRERA_REPETIDA`;
@@ -181,14 +181,14 @@ description: "Tareas de F12-H05: devolver un parcial a su carrera con una observ
 
 **Independent Test**: los 9 roles que no son el de EN_CONSOLIDACION reciben 403 con el mismo cuerpo; `consultarFlujo` muestra `DEVOLVER_PARCIALES` solo al Responsable.
 
-- [ ] T016 [US4] Agregar a `ProcesoAprobacionTest` y ver fallar:
+- [X] T016 [US4] Agregar a `ProcesoAprobacionTest` y ver fallar:
   - `validarDevolucion` y `devolver` exigen el rol de EN_CONSOLIDACION de la copia de la configuración (`RolDeOtraEtapa`), también con otro rol configurado para esa etapa;
   - fuera de EN_CONSOLIDACION, `EtapaNoAdmiteDevolucion`; con `admiteDevolucion` falso en la copia, `DevolucionDesactivada`;
   - `acciones` incluye `DEVOLVER_PARCIALES` junto a `ENVIAR_A_REVISION` solo con el rol, en EN_CONSOLIDACION y si admite devolución;
   - el orden de los rechazos de research §10.
 
   Después, en un comando aparte, `AccionDelProceso.DEVOLVER_PARCIALES` y lo que falte en `ProcesoAprobacion`.
-- [ ] T017 [US4] Agregar a la tabla de rol, operación y resultado de `FlujoContratoTest` la operación `devolverParciales`, en EN_CONSOLIDACION. Comprueba el 403 de cada uno de los 9 roles de la matriz D-16 que no son el Responsable de consolidación, con el mismo cuerpo, y el 200 del Responsable (SC-003). Agregar los 409 `VALIDACIONOCS_ETAPA_NO_ADMITE_DEVOLUCION`, `VALIDACIONOCS_DEVOLUCION_DESACTIVADA` y `VALIDACIONOCS_PERIODO_CERRADO`.
+- [X] T017 [US4] Agregar a la tabla de rol, operación y resultado de `FlujoContratoTest` la operación `devolverParciales`, en EN_CONSOLIDACION. Comprueba el 403 de cada uno de los 9 roles de la matriz D-16 que no son el Responsable de consolidación, con el mismo cuerpo, y el 200 del Responsable (SC-003). Agregar los 409 `VALIDACIONOCS_ETAPA_NO_ADMITE_DEVOLUCION`, `VALIDACIONOCS_DEVOLUCION_DESACTIVADA` y `VALIDACIONOCS_PERIODO_CERRADO`.
 
 **Checkpoint**: las cuatro historias funcionan por la API.
 
