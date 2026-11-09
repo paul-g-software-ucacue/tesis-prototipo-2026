@@ -102,7 +102,7 @@ description: "Tareas de #215: el consolidado no cambia durante la revisión"
 
 **Independent Test**: Vitest y Playwright de las dos pantallas con `enRevision` verdadero y falso.
 
-- [ ] T009 [US2] Escribir primero las pruebas, según `contracts/spa.md`:
+- [X] T009 [US2] Escribir primero las pruebas, según `contracts/spa.md`:
   - `SPA/pantallas/consolidado/Consolidado.test.tsx`: con `enRevision`, sin «Consolidar»/«Volver a consolidar» ni «Adjuntar el informe», con el aviso y con la descarga;
   - `SPA/pantallas/inconsistencias/Inconsistencias.test.tsx`: con `enRevision`, sin «Justificar» y con el aviso.
 

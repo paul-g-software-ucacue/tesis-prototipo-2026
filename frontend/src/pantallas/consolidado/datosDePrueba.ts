@@ -16,6 +16,7 @@ export const SIN_CONSOLIDAR: ConsolidadoDelPeriodo = {
   periodo: '2026-2',
   creado: true,
   modificable: true,
+  enRevision: false,
   version: 1,
   desactualizado: false,
   carreras: [
@@ -43,6 +44,7 @@ export const SIN_DISTRIBUTIVO: ConsolidadoDelPeriodo = {
   periodo: '2026-2',
   creado: false,
   modificable: true,
+  enRevision: false,
   desactualizado: false,
   carreras: [],
   totales: { clase: 0, otrasDocencia: 0, investigacion: 0, vinculacion: 0, gestion: 0 },

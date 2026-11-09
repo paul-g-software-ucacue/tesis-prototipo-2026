@@ -260,3 +260,47 @@ test('devuelve dos carreras con su observación y el diálogo es accesible', asy
   expect(devueltas.map((una) => una.carrera)).toEqual(['TDS', 'DS']);
   await sinFallas(page);
 });
+
+// #215: en revisión, el consolidado se lee y el informe se descarga, pero no se consolida ni adjunta.
+test('en revisión no ofrece consolidar ni adjuntar, avisa por qué y es accesible', async ({
+  page,
+}) => {
+  await abrirConsolidado(page, () => ({
+    periodo: '2026-2',
+    creado: true,
+    modificable: true,
+    enRevision: true,
+    version: 1,
+    desactualizado: false,
+    carreras: [
+      {
+        carrera: 'TDS',
+        estado: 'ENVIADO',
+        paralelos: 3,
+        propuestos: 3,
+        completo: true,
+        horas: HORAS,
+      },
+    ],
+    totales: HORAS,
+    abiertas: { duras: 0, blandas: 0 },
+    consolidacion: { por: 'consolidacion.demo', en: '2026-11-02T15:00:00Z' },
+    informe: {
+      nombre: 'informe.pdf',
+      tamano: 2048,
+      huella: 'a'.repeat(64),
+      por: 'consolidacion.demo',
+      en: '2026-11-02T15:10:00Z',
+    },
+  }));
+
+  await expect(
+    page.getByText(
+      'El distributivo está en revisión del Vicerrectorado: el consolidado ya no cambia.',
+    ),
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: /onsolidar/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Adjuntar/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Descargar el informe' })).toBeVisible();
+  await sinFallas(page);
+});

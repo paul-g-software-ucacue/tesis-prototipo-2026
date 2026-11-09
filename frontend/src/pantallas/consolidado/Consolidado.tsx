@@ -252,7 +252,8 @@ export function Consolidado() {
 
   const datos = consulta.data;
   const escribe = tieneAlguno(sesion.data?.permisos, ESCRITURA_DEL_PANEL);
-  const puedeEscribir = escribe && Boolean(datos?.creado && datos.modificable);
+  // #215, D-99: desde la revisión del Vicerrectorado, el consolidado ya no cambia.
+  const puedeEscribir = escribe && Boolean(datos?.creado && datos.modificable && !datos.enRevision);
   const nombreDe = (codigo: string) =>
     carreras.data?.find((carrera) => carrera.codigo === codigo)?.nombre ?? codigo;
 
@@ -295,6 +296,11 @@ export function Consolidado() {
       )}
       {datos?.creado && periodo && (
         <>
+          {datos.enRevision && (
+            <Alert severity="info" role="status" sx={{ my: 2 }}>
+              El distributivo está en revisión del Vicerrectorado: el consolidado ya no cambia.
+            </Alert>
+          )}
           <Typography sx={{ mt: 1 }}>
             {datos.consolidacion
               ? `Consolidado por ${datos.consolidacion.por} · ${fecha(datos.consolidacion.en)}`
