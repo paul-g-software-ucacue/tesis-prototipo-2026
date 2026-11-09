@@ -342,7 +342,8 @@ preparado() {
     iniciar "$RESPONSABLE"
     pedir GET "$FLUJO" "Bearer $token"
     [[ $estado == 200 && $(jq -r '.etapa' <<<"$cuerpo") == EN_CONSOLIDACION ]] || return 1
-    [[ $(jq -c '.acciones' <<<"$cuerpo") == '["ENVIAR_A_REVISION"]' ]] || return 1
+    # Desde F12-H05 también ve devolver parciales.
+    [[ $(jq -c '.acciones' <<<"$cuerpo") == '["ENVIAR_A_REVISION","DEVOLVER_PARCIALES"]' ]] || return 1
     iniciar vicerrectorado.demo
     pedir GET "$FLUJO" "Bearer $token"
     [[ $(jq -c '.acciones' <<<"$cuerpo") == '[]' ]]

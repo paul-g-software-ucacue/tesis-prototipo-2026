@@ -221,7 +221,7 @@ description: "Tareas de F12-H05: devolver un parcial a su carrera con una observ
   - reenviar, consolidar y adjuntar un informe.
 
   Si el panel llega a cero abiertas, cronometrar «Enviar a revisión» desde que se abre «Consolidado del periodo» y anotarlo en `specs/042-enviar-revision/evidencia.md` (SC-005 de F10-H03). Si no llega, anotar allí cuántas duras quedan, de qué reglas y por qué. El script que se use queda en el scratchpad, no en el repositorio, salvo que el autor lo pida.
-- [ ] T021 Revisar el JavaDoc de `validarDevolucion`, `devolver`, `DevolucionDeParcial`, `ParcialesDelDistributivo.marcarParcialesDevueltos` y `FlujoDelDistributivoServicio.devolver` (principio XII). El de `devolver` dice que no notifica (D-98). Revisar el JavaDoc de `EstadoDeEnvio`, que hoy dice que PENDIENTE equivale a devuelto.
+- [X] T021 Revisar el JavaDoc de `validarDevolucion`, `devolver`, `DevolucionDeParcial`, `ParcialesDelDistributivo.marcarParcialesDevueltos` y `FlujoDelDistributivoServicio.devolver` (principio XII). El de `devolver` dice que no notifica (D-98). Revisar el JavaDoc de `EstadoDeEnvio`, que hoy dice que PENDIENTE equivale a devuelto.
 - [ ] T022 Crear `specs/043-devolver-parcial/evidencia.md`, como `specs/042-enviar-revision/evidencia.md`:
   - las pruebas unitarias e `integrationTest`, completas;
   - la cobertura por módulo (60 %, D-32), Spotless, SpotBugs y Spring Modulith;
