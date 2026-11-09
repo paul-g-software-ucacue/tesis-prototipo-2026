@@ -13,7 +13,7 @@ F12-H05 (issue #211). Cada sección dice qué se verificó, cómo y con qué res
 | Arquitectura | ArchUnit y Spring Modulith en verde: Validación OCS sigue usando solo `ec.mdd.generacion.puertos.entrada` | Dentro de `build` |
 | `BitacoraSinBorradoContratoTest` | En verde: la descripción de `devolverParciales` no nombra la bitácora | `./gradlew :servicios:usuarios:test --rerun` |
 | SPA: tipos, ESLint y Prettier | En verde | `npm run tipos`, `eslint . --max-warnings 0`, `prettier --check .`, en `node:24-alpine` |
-| SPA: Vitest | 537 pruebas en 39 archivos, 0 fallas | `vitest run` |
+| SPA: Vitest | 538 pruebas en 39 archivos, 0 fallas | `vitest run` |
 | SPA: Playwright | 15 casos de `consolidado`, `oferta` y `flujo` en Chromium, con la devolución, el parcial devuelto en la oferta y axe-core (WCAG 2.1 AA) sin fallas | `playwright test …`, en `mcr.microsoft.com/playwright:v1.64.0-noble` |
 | Scripts de `perfil-consolidado` | `probar_avance.sh` (8/8), `probar_revision.sh` (7/7), `probar_devolucion.sh` (9/9) y los 25 que siguen en el workflow (de `probar_spa.sh` a `probar_flujo.sh`) pasan, en su orden, sobre un perfil construido desde la rama. Los 4 anteriores (autenticación, errores y bitácora) no cambian con esta historia y no se repitieron | Uno tras otro, como el workflow |
 | shellcheck | 0 hallazgos en `probar_devolucion.sh` y `probar_revision.sh` | `koalaman/shellcheck:v0.11.0` |
@@ -51,6 +51,10 @@ Con la sugerencia de docentes, el distributivo de 2026-I **sí llega a un consol
 | `probar_revision.sh` sin cambios | Su paso 1 espera ahora las dos acciones del Responsable | Desde esta historia también ve `DEVOLVER_PARCIALES` |
 | Ver fallar cada prueba antes del código | T011 y T015 pasaron a la primera | Prueban lo que ya habían hecho T002, T003, T005 y T006: el contrato, la validación y el marcado en Generación |
 | La prueba de Generación de T014 con una propuesta guardada | Comprueba que el parcial devuelto queda editable y que devolver no es un cambio de asignaciones; guardar y quitar una propuesta en el parcial devuelto, y el 409 en el que no se devolvió, los prueba `probar_devolucion.sh`, paso 7 | La prueba de integración usa el repositorio, no el caso de uso de proponer |
+
+## Un hallazgo de la comprobación, ya corregido
+
+En el diálogo «Devolver parciales» y en el estado del flujo, las carreras aparecían con su código (`550411C02-P-0301`), que el usuario no reconoce. Ahora se muestran con su nombre de Académico, como la tabla del consolidado, y con el código solo si no se puede leer el nombre. Vale también para la confirmación de enviar el parcial. Lo comprueba una prueba nueva en `EstadoDelFlujo.test.tsx`; las de `e2e/oferta.spec.ts` buscan ahora el nombre.
 
 ## Criterios de terminado (constitución §6)
 

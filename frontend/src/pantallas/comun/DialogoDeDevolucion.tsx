@@ -25,7 +25,7 @@ function valida(texto: string) {
 }
 
 /**
- * @param carreras las carreras con el parcial enviado, las que se pueden devolver
+ * @param carreras las carreras con el parcial enviado, las que se pueden devolver, con su nombre
  * @param etapaActual el nombre de la etapa actual, adonde vuelve el distributivo al reenviar
  * @param alDevolver se llama después de devolver, para recargar
  */
@@ -37,7 +37,7 @@ export function DialogoDeDevolucion({
   alDevolver,
 }: {
   periodo: string;
-  carreras: readonly string[];
+  carreras: readonly { codigo: string; nombre: string }[];
   etapaActual: string;
   alCerrar: () => void;
   alDevolver: () => Promise<void>;
@@ -48,7 +48,7 @@ export function DialogoDeDevolucion({
   const [aviso, setAviso] = useState<MensajeDeError | null>(null);
   const [enviando, setEnviando] = useState(false);
 
-  const marcadas = carreras.filter((carrera) => carrera in observaciones);
+  const marcadas = carreras.map((una) => una.codigo).filter((codigo) => codigo in observaciones);
   const lista =
     marcadas.length > 0 && marcadas.every((carrera) => valida(observaciones[carrera] ?? ''));
 
@@ -98,7 +98,7 @@ export function DialogoDeDevolucion({
             ))}
           </AvisoDeError>
         )}
-        {carreras.map((carrera) => {
+        {carreras.map(({ codigo: carrera, nombre }) => {
           const marcada = carrera in observaciones;
           const texto = observaciones[carrera] ?? '';
           const corta = tocadas[carrera] === true && !valida(texto);
@@ -111,11 +111,11 @@ export function DialogoDeDevolucion({
                     onChange={(evento) => marcar(carrera, evento.target.checked)}
                   />
                 }
-                label={carrera}
+                label={nombre}
               />
               {marcada && (
                 <TextField
-                  label={`Observación para ${carrera}`}
+                  label={`Observación para ${nombre}`}
                   value={texto}
                   onChange={(evento) => {
                     setTocadas((antes) => ({ ...antes, [carrera]: true }));

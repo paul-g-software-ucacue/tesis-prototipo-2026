@@ -12,6 +12,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useId, useState } from 'react';
 import { AvisoDeError } from '../../errores/AvisoDeError';
 import { FalloDeApi, traducirError, type MensajeDeError } from '../../errores/traducir';
+import { useCarreras } from '../carreras/consultas';
 import { DialogoConfirmar } from '../carreras/DialogosDeCarrera';
 import { DialogoDeDevolucion } from './DialogoDeDevolucion';
 import {
@@ -31,18 +32,19 @@ const MOMENTO = new Intl.DateTimeFormat('es-EC', {
   timeZone: 'America/Guayaquil',
 });
 
-function estadoDe(parcial: ParcialDelFlujo) {
+// La carrera con su nombre, como en la tabla del consolidado; sin permiso para leerlo, el código.
+function estadoDe(parcial: ParcialDelFlujo, nombre: string) {
   if (parcial.devolucion) {
     const { por, en } = parcial.devolucion;
-    return `${parcial.carrera}: devuelto por ${por} el ${MOMENTO.format(new Date(en))}`;
+    return `${nombre}: devuelto por ${por} el ${MOMENTO.format(new Date(en))}`;
   }
   if (parcial.enviado) {
     const cuando = parcial.enviadoEn ? ` el ${MOMENTO.format(new Date(parcial.enviadoEn))}` : '';
-    return `${parcial.carrera}: enviado${parcial.enviadoPor ? ` por ${parcial.enviadoPor}` : ''}${cuando}`;
+    return `${nombre}: enviado${parcial.enviadoPor ? ` por ${parcial.enviadoPor}` : ''}${cuando}`;
   }
   return parcial.pendienteDeConfirmar
-    ? `${parcial.carrera}: enviado, falta confirmar`
-    : `${parcial.carrera}: pendiente`;
+    ? `${nombre}: enviado, falta confirmar`
+    : `${nombre}: pendiente`;
 }
 
 type Confirmar = 'enviar' | 'avanzar' | 'revisar' | 'devolver' | null;
@@ -71,6 +73,7 @@ export function EstadoDelFlujoDelPeriodo({
   faltan?: readonly string[] | undefined;
 }) {
   const flujo = useFlujo(periodo);
+  const carreras = useCarreras();
   const consultas = useQueryClient();
   const [confirmar, setConfirmar] = useState<Confirmar>(null);
   const [aviso, setAviso] = useState<MensajeDeError | null>(null);
@@ -91,6 +94,8 @@ export function EstadoDelFlujoDelPeriodo({
     return null;
   }
   const propio = parciales.find((uno) => uno.carrera === carrera);
+  const nombreDe = (codigo: string) =>
+    carreras.data?.find((una) => una.codigo === codigo)?.nombre ?? codigo;
   const puedeEnviar = acciones.includes('ENVIAR_PARCIAL') && Boolean(carrera);
   const puedeAvanzar = acciones.includes('AVANZAR');
   const puedeRevisar = acciones.includes('ENVIAR_A_REVISION');
@@ -127,7 +132,7 @@ export function EstadoDelFlujoDelPeriodo({
       <Box component="ul" sx={{ m: 0, pl: 3 }}>
         {parciales.map((parcial) => (
           <Typography component="li" variant="body2" key={parcial.carrera}>
-            {estadoDe(parcial)}
+            {estadoDe(parcial, nombreDe(parcial.carrera))}
             {parcial.devolucion && (
               <Box
                 component="span"
@@ -204,7 +209,7 @@ export function EstadoDelFlujoDelPeriodo({
       )}
       {confirmar === 'enviar' && carrera && (
         <DialogoConfirmar
-          titulo={`Enviar el parcial de ${carrera}`}
+          titulo={`Enviar el parcial de ${nombreDe(carrera)}`}
           texto="Después de enviarlo, no podrás cambiar las propuestas ni las actividades de tu carrera."
           accion="Enviar"
           alCerrar={() => setConfirmar(null)}
@@ -223,7 +228,9 @@ export function EstadoDelFlujoDelPeriodo({
       {confirmar === 'devolver' && (
         <DialogoDeDevolucion
           periodo={periodo}
-          carreras={parciales.filter((uno) => uno.enviado).map((uno) => uno.carrera)}
+          carreras={parciales
+            .filter((uno) => uno.enviado)
+            .map((uno) => ({ codigo: uno.carrera, nombre: nombreDe(uno.carrera) }))}
           etapaActual={nombreDeEtapa}
           alCerrar={() => setConfirmar(null)}
           alDevolver={async () => {

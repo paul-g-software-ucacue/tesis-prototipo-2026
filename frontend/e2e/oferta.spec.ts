@@ -558,15 +558,15 @@ test('el coordinador envía el parcial de su carrera y ya no propone', async ({ 
     }),
   );
   const estado = page.getByRole('region', { name: 'Estado del distributivo' });
-  await expect(estado).toContainText(`${DS.codigo}: pendiente`);
+  await expect(estado).toContainText(`${DS.nombre}: pendiente`);
   await sinFallas(page);
 
   await estado.getByRole('button', { name: 'Enviar parcial' }).click();
-  const confirmar = page.getByRole('dialog', { name: `Enviar el parcial de ${DS.codigo}` });
+  const confirmar = page.getByRole('dialog', { name: `Enviar el parcial de ${DS.nombre}` });
   await expect(confirmar).toContainText('no podrás cambiar las propuestas ni las actividades');
   await confirmar.getByRole('button', { name: 'Enviar' }).click();
 
-  await expect(estado).toContainText(`${DS.codigo}: enviado por coordinacion.demo`);
+  await expect(estado).toContainText(`${DS.nombre}: enviado por coordinacion.demo`);
   await expect(estado.getByRole('button', { name: 'Enviar parcial' })).toHaveCount(0);
   await expect(
     page.getByText('Ya se envió el parcial: sus propuestas quedan en solo lectura.'),
@@ -610,7 +610,7 @@ test('el coordinador ve por qué le devolvieron el parcial y puede reenviarlo', 
   await abrirOferta(page, [nocturna('A_NOCTURNA')], COORDINADOR);
 
   const estado = page.getByRole('region', { name: 'Estado del distributivo' });
-  await expect(estado).toContainText(`${DS.codigo}: devuelto por consolidacion.demo`);
+  await expect(estado).toContainText(`${DS.nombre}: devuelto por consolidacion.demo`);
   await expect(estado).toContainText('Faltan docentes en los paralelos nocturnos.');
   await expect(estado.getByRole('button', { name: 'Reenviar parcial' })).toBeVisible();
   await sinFallas(page);

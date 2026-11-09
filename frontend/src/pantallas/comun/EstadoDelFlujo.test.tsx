@@ -344,6 +344,30 @@ describe('EstadoDelFlujo', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
+    it('nombra cada carrera por su nombre, no por su código', async () => {
+      simulada.responder('GET', RUTA, json(200, enConsolidacion));
+      simulada.responder(
+        'GET',
+        '/api/academico/carreras',
+        json(200, [
+          { codigo: 'DS', nombre: 'DESARROLLO DE SOFTWARE', estado: 'VIGENTE' },
+          { codigo: 'TDS', nombre: 'TOPOGRAFÍA', estado: 'VIGENTE' },
+        ]),
+      );
+      montar(undefined, []);
+      const usuario = userEvent.setup();
+
+      const region = await screen.findByRole('region', { name: 'Estado del distributivo' });
+      expect(
+        await within(region).findByText(/^DESARROLLO DE SOFTWARE: enviado por coordinacion.demo/),
+      ).toBeVisible();
+      await usuario.click(screen.getByRole('button', { name: 'Devolver parciales' }));
+      const dialogo = screen.getByRole('dialog', { name: 'Devolver parciales' });
+      await usuario.click(within(dialogo).getByRole('checkbox', { name: 'TOPOGRAFÍA' }));
+      expect(within(dialogo).getByLabelText(/^Observación para TOPOGRAFÍA/)).toBeVisible();
+      expect(within(dialogo).queryByText('DS')).not.toBeInTheDocument();
+    });
+
     it('el 409 se muestra en el diálogo', async () => {
       simulada.responder('GET', RUTA, json(200, enConsolidacion));
       simulada.responder(
