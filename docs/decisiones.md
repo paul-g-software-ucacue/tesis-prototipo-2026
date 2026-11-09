@@ -97,6 +97,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-96 | 2026-11-08 | `zlib1g` de `cloudflared` espera con una excepción de Grype hasta que Cloudflare reconstruya la imagen | Aceptada | D-54, D-81 |
 | D-97 | 2026-11-08 | Enviar a revisión exige el consolidado al día, su informe y cero inconsistencias abiertas; no notifica todavía | Aceptada | RF-29, RF-32, MD-07, D-95 |
 | D-98 | 2026-11-08 | Devolver desde EN_CONSOLIDACION: varias carreras, cada una con su observación, y el distributivo vuelve a BORRADOR_CARRERA; no notifica todavía | Aceptada | RF-34, RF-36, D-95, D-97 |
+| D-99 | 2026-11-08 | Generación pregunta a Aprobación por un puerto propio si el consolidado admite cambios; desde EN_REVISION_VRA no cambia | Aceptada | RF-32, RF-34, D-97, MD-04 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1891,5 +1892,32 @@ Con la base de datos de Grype del 2026-11-07, la CI encontró además dos altas 
 - Devolver desde EN_REVISION_VRA, desde la firma o desde el OCS sigue siendo de sus historias (F13-H01, F12-H04, F14-H04).
 - La migración `V4` de Validación OCS completa la copia de la configuración del proceso de 2026-I de la demo con la plantilla, que es la que usa.
 - El primer «Entonces» del issue #211 se cumple sin notificación; el aviso al coordinador llega con F16-H01.
+
+**Documentos que hay que poner al día.** Ninguno.
+
+---
+
+## D-99. Generación pregunta a Aprobación por un puerto propio si el consolidado admite cambios; desde EN_REVISION_VRA no cambia
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-08 · **Decidido por:** autor de la tesis
+- **Origen:** el defecto #215, encontrado al comprobar F12-H05; aclaraciones de `specs/044-consolidado-en-revision/spec.md` y su plan (`research.md` §1 y §2)
+- **Precisa a:** D-97 (lo que se envía a revisión es el consolidado con su informe y sus justificaciones)
+- **Relacionadas:** MD-04, D-83, D-95, ADR-012 (interfaces publicadas en el proceso)
+
+**Decisión.**
+- Desde EN_REVISION_VRA en adelante no se puede consolidar, justificar una blanda ni adjuntar o reemplazar el informe. Se rechaza con `GENERACION_CONSOLIDADO_EN_REVISION` (409). Consultar y descargar siguen permitidos. Antes, todo como hasta ahora.
+- Generación no copia la etapa: la pregunta en el momento de cada acción por un puerto propio, `EtapaDelConsolidado`, en una interfaz nombrada nueva (`requeridos`). Lo implementa Validación OCS, que ya depende de Generación. Así no hay ciclo entre los módulos.
+- La lectura toma un bloqueo compartido de la fila del proceso dentro de la transacción de Generación, y el envío a revisión toma su momento dentro de su transacción bloqueada. Ninguna consolidación queda después de un envío.
+
+**Por qué.** La confirmación de F10-H03 prometía que no se podría consolidar ni justificar durante la revisión, y no era cierto. Preguntar en el momento evita un estado copiado que se desincronice, y una devolución futura desde la revisión levanta el bloqueo sola.
+
+**Alternativas.**
+- Que Aprobación le ordene a Generación cerrar el consolidado al enviar: exige estado nuevo, una migración y compensar si la transacción de Aprobación falla.
+- Un evento de cambio de etapa: es eventual y deja pasar una consolidación justo después del envío.
+- Una interfaz publicada de Validación OCS que Generación use: crea un ciclo entre los módulos.
+
+**Consecuencias.**
+- Generación necesita una implementación del puerto para arrancar; en el proceso `distributivo` la da Validación OCS, y sus pruebas de Spring usan un doble.
+- El patrón sirve para las historias de firma: Generación puede preguntar lo mismo antes de cualquier cambio.
 
 **Documentos que hay que poner al día.** Ninguno.
