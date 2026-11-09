@@ -213,7 +213,7 @@ description: "Tareas de F12-H05: devolver un parcial a su carrera con una observ
   - el código de `EstadoDelFlujo.tsx` y `Consolidado.tsx`;
   - en `frontend/e2e/consolidado.spec.ts`, la devolución de dos carreras con la API simulada y axe-core con el diálogo abierto;
   - en `frontend/e2e/oferta.spec.ts`, el coordinador con su parcial devuelto, que ve la observación y «Reenviar parcial».
-- [ ] T019 Crear `deploy/probar_devolucion.sh` con los 9 pasos de `contracts/demostracion.md`, sobre los datos de prueba y con la base limpia al terminar, sin imprimir claves ni tokens. Agregar su paso a `.github/workflows/perfil-consolidado.yml` después de «Enviar a revisión». Pasar shellcheck. Correr `probar_avance.sh`, `probar_revision.sh` y `probar_devolucion.sh` en su orden sobre un perfil nuevo, y después los scripts que siguen en el workflow.
+- [X] T019 Crear `deploy/probar_devolucion.sh` con los 9 pasos de `contracts/demostracion.md`, sobre los datos de prueba y con la base limpia al terminar, sin imprimir claves ni tokens. Agregar su paso a `.github/workflows/perfil-consolidado.yml` después de «Enviar a revisión». Pasar shellcheck. Correr `probar_avance.sh`, `probar_revision.sh` y `probar_devolucion.sh` en su orden sobre un perfil nuevo, y después los scripts que siguen en el workflow.
 - [ ] T020 SC-007, con tiempo acotado de 2 horas (research §12, quickstart §5). En el perfil local:
   - llevar 2026-I a EN_CONSOLIDACION;
   - devolver las carreras;
@@ -222,7 +222,7 @@ description: "Tareas de F12-H05: devolver un parcial a su carrera con una observ
 
   Si el panel llega a cero abiertas, cronometrar «Enviar a revisión» desde que se abre «Consolidado del periodo» y anotarlo en `specs/042-enviar-revision/evidencia.md` (SC-005 de F10-H03). Si no llega, anotar allí cuántas duras quedan, de qué reglas y por qué. El script que se use queda en el scratchpad, no en el repositorio, salvo que el autor lo pida.
 - [X] T021 Revisar el JavaDoc de `validarDevolucion`, `devolver`, `DevolucionDeParcial`, `ParcialesDelDistributivo.marcarParcialesDevueltos` y `FlujoDelDistributivoServicio.devolver` (principio XII). El de `devolver` dice que no notifica (D-98). Revisar el JavaDoc de `EstadoDeEnvio`, que hoy dice que PENDIENTE equivale a devuelto.
-- [ ] T022 Crear `specs/043-devolver-parcial/evidencia.md`, como `specs/042-enviar-revision/evidencia.md`:
+- [X] T022 Crear `specs/043-devolver-parcial/evidencia.md`, como `specs/042-enviar-revision/evidencia.md`:
   - las pruebas unitarias e `integrationTest`, completas;
   - la cobertura por módulo (60 %, D-32), Spotless, SpotBugs y Spring Modulith;
   - la SPA: tipos, ESLint, Prettier, Vitest y Playwright;
