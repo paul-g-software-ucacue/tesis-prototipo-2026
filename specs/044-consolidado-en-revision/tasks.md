@@ -118,15 +118,15 @@ description: "Tareas de #215: el consolidado no cambia durante la revisión"
 
 **Independent Test**: las pruebas y los scripts de F10-H01, F10-H02, F10-H03 y F12-H05 pasan sin cambios.
 
-- [ ] T010 [US3] Confirmar que las pruebas de Generación de T006 cubren «admite cambios: funciona como hoy» en las tres operaciones, y que `EtapaDelConsolidadoServicioTest` cubre BORRADOR_CARRERA tras una devolución. Correr completos `:servicios:generacion:test`, `:servicios:validacionocs:test` e `integrationTest` de los dos, y `probar_consolidado.sh`, `probar_justificacion.sh`, `probar_panel.sh`, `probar_revision.sh` y `probar_devolucion.sh` sobre un perfil construido desde la rama.
+- [X] T010 [US3] Confirmar que las pruebas de Generación de T006 cubren «admite cambios: funciona como hoy» en las tres operaciones, y que `EtapaDelConsolidadoServicioTest` cubre BORRADOR_CARRERA tras una devolución. Correr completos `:servicios:generacion:test`, `:servicios:validacionocs:test` e `integrationTest` de los dos, y `probar_consolidado.sh`, `probar_justificacion.sh`, `probar_panel.sh`, `probar_revision.sh` y `probar_devolucion.sh` sobre un perfil construido desde la rama.
 
 ---
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T011 Crear `deploy/probar_consolidado_en_revision.sh` con los 6 pasos de `contracts/demostracion.md`, a partir de `probar_devolucion.sh` (las cargas, la limpieza y las ayudas) y del armado de T020 de F12-H05 (la sugerencia en cada paralelo, prefiriendo docentes sin clase). Sin imprimir claves ni tokens, y con la base limpia al terminar. Agregar su paso a `.github/workflows/perfil-consolidado.yml` después de «Devolver parciales». Pasar shellcheck. Correr los scripts del workflow en su orden sobre un perfil nuevo, y anotar cuánto tarda el script nuevo.
-- [ ] T012 Revisar el JavaDoc de `EtapaDelConsolidado`, `ConsultarEtapaDelConsolidado`, `EtapaDelConsolidadoServicio`, `EtapaParaGeneracion`, `ConsolidadoEnRevision`, `TipoDeEtapa.admiteCambiosEnElConsolidado` y las tres operaciones de Generación (principio XII). El de `enviarARevision` explica por qué el momento va dentro de la transacción.
-- [ ] T013 Crear `specs/044-consolidado-en-revision/evidencia.md`, como `specs/043-devolver-parcial/evidencia.md`. Anotar que «quitar la justificación» no existe como operación (A4 del análisis) y que el aviso es el mismo en todas las etapas posteriores (A5):
+- [X] T011 Crear `deploy/probar_consolidado_en_revision.sh` con los 6 pasos de `contracts/demostracion.md`, a partir de `probar_devolucion.sh` (las cargas, la limpieza y las ayudas) y del armado de T020 de F12-H05 (la sugerencia en cada paralelo, prefiriendo docentes sin clase). Sin imprimir claves ni tokens, y con la base limpia al terminar. Agregar su paso a `.github/workflows/perfil-consolidado.yml` después de «Devolver parciales». Pasar shellcheck. Correr los scripts del workflow en su orden sobre un perfil nuevo, y anotar cuánto tarda el script nuevo.
+- [X] T012 Revisar el JavaDoc de `EtapaDelConsolidado`, `ConsultarEtapaDelConsolidado`, `EtapaDelConsolidadoServicio`, `EtapaParaGeneracion`, `ConsolidadoEnRevision`, `TipoDeEtapa.admiteCambiosEnElConsolidado` y las tres operaciones de Generación (principio XII). El de `enviarARevision` explica por qué el momento va dentro de la transacción.
+- [X] T013 Crear `specs/044-consolidado-en-revision/evidencia.md`, como `specs/043-devolver-parcial/evidencia.md`. Anotar que «quitar la justificación» no existe como operación (A4 del análisis) y que el aviso es el mismo en todas las etapas posteriores (A5):
   - las pruebas unitarias e `integrationTest`, completas;
   - la cobertura por módulo, Spotless, SpotBugs, ArchUnit y Spring Modulith;
   - la SPA: tipos, ESLint, Prettier, Vitest y Playwright;

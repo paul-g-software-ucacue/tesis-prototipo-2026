@@ -83,6 +83,9 @@ jobs:
       - name: Devolver parciales
         shell: bash
         run: deploy/probar_devolucion.sh
+      - name: El consolidado en revisión
+        shell: bash
+        run: deploy/probar_consolidado_en_revision.sh
 
       # B00-H06: la SPA detrás de Nginx, con /api hacia el API Gateway en el mismo origen (D-52).
       - name: SPA de punta a punta
