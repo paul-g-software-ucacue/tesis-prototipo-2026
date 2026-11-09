@@ -62,8 +62,12 @@ Antes de mover el momento dentro de la transacción bloqueada, la prueba fallaba
 | Seguridad | La regla en el servidor; la SPA solo la refleja; SQL parametrizado; SpotBugs y Gitleaks en verde |
 | Decisión registrada | D-99, antes de implementar |
 
-## Pendiente (T014)
+## Equipo de demostración (T014)
 
-- El pull request y su fusión con la aprobación del autor.
-- El despliegue en el equipo de demostración y la comprobación del autor: en la demo, 2026-I está en Consolidación, así que «Volver a consolidar», «Adjuntar el informe» y «Justificar» siguen, y no aparece el aviso.
-- El PR de evidencia con `Closes #215`.
+| Comprobación | Resultado |
+|---|---|
+| Fusión | PR #217 (`8a92806`), con las 12 comprobaciones en verde; en `perfil-consolidado`, `probar_consolidado_en_revision.sh` pasó 6/6 |
+| Despliegue | `cd` exitoso; `mdd-actualizar` tomó `8a92806` y dice «Sano en 80 s»; los 8 contenedores sanos con las imágenes `*-8a928065f323` |
+| Comprobación del autor (2026-11-09, `consolidacion.demo`) | 2026-I en EN_CONSOLIDACION, con 209 duras: «Volver a consolidar» funcionó (18:44:45); «Descargar el informe» y «Reemplazar el informe» siguen; una blanda RN-05 se justificó (18:46:15) y queda «Cambiar justificación»; no aparece el aviso de revisión |
+
+En la demo no se ve el estado en revisión: 2026-I tiene 1 propuesta de 165 paralelos y no puede enviarse a revisión sin proponer los demás. Ese estado lo cubren el script en la CI y las pruebas de la SPA.
