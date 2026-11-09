@@ -102,7 +102,7 @@ Comprobación del autor con `quickstart.md` §3 y §4, en 2026-I, con TECNOLOGIA
 | La bitácora | OK: `DISTRIBUTIVO_DEVUELTO`, después `PROPUESTA_GUARDADA`, `PARCIAL_ENVIADO` y `ETAPA_AVANZADA`. En la base, una `DEVOLUCION` de EN_CONSOLIDACION a BORRADOR_CARRERA con la observación de la carrera, y el `ENVIO_PARCIAL` y el `PASO_DE_ETAPA` del reenvío |
 | Consolidar otra vez | OK: tras el cambio, el autor volvió a consolidar a las 21:23:44. El panel pasó de 211 duras y 1 blanda a 209 duras y 3 blandas: el paralelo cubierto y el docente con clase dejaron de ser duras, y la propuesta dejó dos blandas nuevas. «Enviar a revisión» sigue deshabilitado con «Quedan 212 inconsistencias abiertas», y «Devolver parciales» vuelve a estar disponible |
 
-**SC-005 (devolver en menos de 1 minuto):** cumplido en el perfil local, **30 s** (sección «Comprobación del autor en el perfil local»). En la demo no se cronometró.
+**SC-005 (devolver en menos de 1 minuto):** en la demo, **60 s**, justo en el límite: la meta pide menos de 1 minuto, así que no se cumple estrictamente. En el perfil local fue **30 s** (sección «Comprobación del autor en el perfil local»). En la demo, el autor buscó la carrera en una lista de 7 nombres largos y escribió una observación más larga.
 
 En la demo, 2026-I queda en EN_CONSOLIDACION, con la carrera reenviada y una propuesta más.
 
