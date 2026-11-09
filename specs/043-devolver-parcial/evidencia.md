@@ -84,8 +84,28 @@ En el diálogo «Devolver parciales» y en el estado del flujo, las carreras apa
 | Bitácora (D-90, D-95) | Una entrada `DISTRIBUTIVO_DEVUELTO` por devolución, con la versión, el hash y cada observación |
 | Decisión registrada | D-98, antes de implementar |
 
-## Pendiente (T023)
+## El equipo de demostración (T023)
 
-- El pull request y su fusión con la aprobación del autor.
-- El despliegue en el equipo de demostración, con la migración `V4`, y la comprobación del autor con `quickstart.md` §3 y §4, con una carrera, incluido SC-005 (devolver en menos de 1 minuto).
-- El PR de evidencia con `Closes #211`.
+| Qué | Resultado | Fuente | Fecha |
+|---|---|---|---|
+| Fusión (#214) | `753f7a6`, con las 12 comprobaciones de CI en verde, `perfil-consolidado` incluido | GitHub | 2026-11-08 |
+| Despliegue | `demostracion` exitoso a las 20:51; «Sano en 75 s», con la prueba de humo en verde; los 8 contenedores sanos con las imágenes `753f7a610150` | GitHub, `journalctl` y `docker ps` | 2026-11-08 |
+| La migración `V4` | Exitosa; el proceso de 2026-I, que ya existía, quedó con `admiteDevolucion: true` en EN_CONSOLIDACION | `flyway_schema_history` y consulta de solo lectura | 2026-11-08 |
+
+Comprobación del autor con `quickstart.md` §3 y §4, en 2026-I, con TECNOLOGIA SUPERIOR EN CONTROL DE INCENDIOS Y OPERACIONES DE RESCATE (`551021B01-D-0301`), la carrera que tenía asignada `coordinacion.demo`:
+
+| Paso | Resultado |
+|---|---|
+| Devolver como `consolidacion.demo` | OK, a las 21:15:53: «Propuesta de carrera»; la carrera «devuelto por consolidacion.demo» con su observación; las otras 6 enviadas |
+| Corregir como `coordinacion.demo` | OK: propuso un docente en un paralelo (`PROPUESTA_GUARDADA` a las 21:18:25), y en el parcial enviado no habría podido |
+| Reenviar | OK, a las 21:18:31: `PARCIAL_ENVIADO` y `ETAPA_AVANZADA`, de vuelta en «Consolidación» |
+| La bitácora | OK: `DISTRIBUTIVO_DEVUELTO`, después `PROPUESTA_GUARDADA`, `PARCIAL_ENVIADO` y `ETAPA_AVANZADA`. En la base, una `DEVOLUCION` de EN_CONSOLIDACION a BORRADOR_CARRERA con la observación de la carrera, y el `ENVIO_PARCIAL` y el `PASO_DE_ETAPA` del reenvío |
+| Consolidar otra vez | OK: tras el cambio, el autor volvió a consolidar a las 21:23:44. El panel pasó de 211 duras y 1 blanda a 209 duras y 3 blandas: el paralelo cubierto y el docente con clase dejaron de ser duras, y la propuesta dejó dos blandas nuevas. «Enviar a revisión» sigue deshabilitado con «Quedan 212 inconsistencias abiertas», y «Devolver parciales» vuelve a estar disponible |
+
+**SC-005 (devolver en menos de 1 minuto):** en la demo, **60 s**, justo en el límite: la meta pide menos de 1 minuto, así que no se cumple estrictamente. En el perfil local fue **30 s** (sección «Comprobación del autor en el perfil local»).
+
+En la demo, 2026-I queda en EN_CONSOLIDACION, con la carrera reenviada y una propuesta más.
+
+## Lo que queda fuera
+
+- **#215:** Generación permite consolidar, justificar y cambiar el informe después de enviar a revisión. Lo encontró el autor en esta comprobación; es de F10-H03.

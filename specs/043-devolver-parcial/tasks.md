@@ -230,7 +230,7 @@ description: "Tareas de F12-H05: devolver un parcial a su carrera con una observ
   - SC-005 cronometrado en el perfil local (quickstart §3);
   - el resultado de T020;
   - los criterios de terminado de la constitución §6 y las desviaciones.
-- [ ] T023 Fusionar solo con la aprobación del autor y con todas las comprobaciones en verde. Verificar el despliegue en el equipo de demostración: GitHub `demostracion`, los 8 contenedores sanos con la versión nueva y la migración `V4` en `flyway_schema_history`. Hacer la comprobación del autor con `quickstart.md` §3 y §4, con una carrera. Abrir el PR de evidencia con `Closes #211`. Borrar las ramas solo si el autor lo pide.
+- [X] T023 Fusionar solo con la aprobación del autor y con todas las comprobaciones en verde. Verificar el despliegue en el equipo de demostración: GitHub `demostracion`, los 8 contenedores sanos con la versión nueva y la migración `V4` en `flyway_schema_history`. Hacer la comprobación del autor con `quickstart.md` §3 y §4, con una carrera. Abrir el PR de evidencia con `Closes #211`. Borrar las ramas solo si el autor lo pide.
 
 ---
 

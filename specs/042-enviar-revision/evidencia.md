@@ -108,4 +108,4 @@ El autor devolvió CONTABILIDAD y la reenvió sin cambios, y el consolidado sigu
 | **SC-005: enviar a revisión en menos de 30 s** | **Cumplido, 15 s**, cronometrado por el autor desde que abrió «Consolidado del periodo» hasta ver «Revisión del Vicerrectorado» |
 | El envío que pasa con datos reales | OK: «Revisión del Vicerrectorado · versión 1», con los 7 parciales enviados |
 
-**Un hallazgo, sin corregir.** Ya en EN_REVISION_VRA, `consolidacion.demo` sigue viendo «Volver a consolidar». Generación solo bloquea consolidar si el periodo está cerrado (`ConsolidarServicio`), y no sabe en qué etapa está el distributivo. La confirmación de enviar a revisión dice «Ya no se podrá consolidar ni justificar en esta etapa». Queda para decidir con el autor.
+**Un hallazgo, sin corregir.** Ya en EN_REVISION_VRA, `consolidacion.demo` sigue viendo «Volver a consolidar». Generación solo bloquea consolidar si el periodo está cerrado (`ConsolidarServicio`), y no sabe en qué etapa está el distributivo. La confirmación de enviar a revisión dice «Ya no se podrá consolidar ni justificar en esta etapa». Abierto como #215.
