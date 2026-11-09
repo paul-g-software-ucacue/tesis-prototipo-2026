@@ -59,10 +59,10 @@ Como Responsable de consolidación, quiero que la pantalla no me ofrezca lo que 
 
 **Acceptance Scenarios**:
 
-1. **Dado** el distributivo fuera de BORRADOR_CARRERA y EN_CONSOLIDACION, **cuando** el Responsable abre «Consolidado del periodo», **entonces** no ve «Consolidar» o «Volver a consolidar» ni «Adjuntar el informe», y ve el aviso «El distributivo está en revisión del Vicerrectorado: el consolidado ya no cambia.». *(issue)*
+1. **Dado** el distributivo en EN_REVISION_VRA o en una etapa posterior, **cuando** el Responsable abre «Consolidado del periodo», **entonces** no ve «Consolidar» o «Volver a consolidar» ni «Adjuntar el informe», y ve el aviso «El distributivo está en revisión del Vicerrectorado: el consolidado ya no cambia.». *(issue)*
 2. **Dado** lo mismo, **cuando** abre el panel de inconsistencias, **entonces** no ve la acción de justificar y ve el mismo aviso.
 3. **Dado** lo mismo, **cuando** abre el consolidado, **entonces** sigue viendo el informe con su botón para descargarlo.
-4. **Dado** el distributivo en BORRADOR_CARRERA o EN_CONSOLIDACION, **cuando** abre las mismas pantallas, **entonces** ve los botones como hoy y no ve el aviso.
+4. **Dado** el distributivo en una etapa anterior a EN_REVISION_VRA (BORRADOR_CARRERA, BORRADOR_UNIDADES o EN_CONSOLIDACION), **cuando** abre las mismas pantallas, **entonces** ve los botones como hoy y no ve el aviso.
 
 ---
 
@@ -100,13 +100,13 @@ Como Responsable de consolidación, quiero seguir consolidando, justificando y a
 - **FR-002**: En las mismas etapas, justificar una inconsistencia blanda, o cambiar su justificación, DEBE rechazarse con un 409 del catálogo, sin cambiar nada.
 - **FR-003**: En las mismas etapas, adjuntar o reemplazar el informe sustentado DEBE rechazarse con un 409 del catálogo, sin cambiar nada.
 - **FR-004**: Consultar el consolidado y el panel, y descargar el informe, DEBEN seguir permitidos en cualquier etapa.
-- **FR-005**: En BORRADOR_CARRERA y EN_CONSOLIDACION, y sin proceso de aprobación todavía, las tres acciones DEBEN funcionar como hoy.
+- **FR-005**: En las etapas anteriores a EN_REVISION_VRA (BORRADOR_CARRERA, BORRADOR_UNIDADES y EN_CONSOLIDACION), y sin proceso de aprobación todavía, las tres acciones DEBEN funcionar como hoy.
 - **FR-006**: La etapa DEBE comprobarse en el servidor, en el momento de la acción, de modo que una acción que llega después del envío a revisión se rechace aunque la pantalla se haya abierto antes.
 - **FR-007**: Un intento rechazado NO DEBE dejar entrada en la bitácora ni en el registro de cambios.
 
 **Pantalla**
 
-- **FR-008**: Fuera de BORRADOR_CARRERA y EN_CONSOLIDACION, «Consolidado del periodo» NO DEBE mostrar «Consolidar», «Volver a consolidar» ni «Adjuntar el informe», y el panel NO DEBE mostrar la acción de justificar.
+- **FR-008**: Con el distributivo en EN_REVISION_VRA o en una etapa posterior, «Consolidado del periodo» NO DEBE mostrar «Consolidar», «Volver a consolidar» ni «Adjuntar el informe», y el panel NO DEBE mostrar la acción de justificar.
 - **FR-009**: En su lugar, las dos pantallas DEBEN mostrar el aviso «El distributivo está en revisión del Vicerrectorado: el consolidado ya no cambia.».
 - **FR-010**: El informe vigente DEBE seguir visible con su descarga.
 

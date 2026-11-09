@@ -52,7 +52,7 @@ description: "Tareas de #215: el consolidado no cambia durante la revisión"
 
   Correr `:apps:distributivo:test` (`ModulosTest`), ArchUnit y las pruebas de los dos servicios. Si Spring Modulith o ArchUnit lo rechazan, detenerse y anotar el motivo aquí antes de seguir.
 - [ ] T003 Agregar a `contratos/generacion/openapi.yaml`, según `contracts/generacion.md`:
-  - `enRevision` (booleano, obligatorio) en `ConsolidadoDelPeriodo` y en el panel;
+  - `enRevision` (booleano, obligatorio) en `ConsolidadoDelPeriodo` y en `PanelDeInconsistencias`;
   - `GENERACION_CONSOLIDADO_EN_REVISION` en la descripción del 409 de `consolidar`, `justificarInconsistencia` y `adjuntarInformeSustentado`.
 
   Regenerar `SPA/api/generado/generacion.d.ts` y compilar `:servicios:generacion`; en los controladores, `enRevision` en falso hasta T006. Después correr `./gradlew :servicios:usuarios:test --rerun` (`BitacoraSinBorradoContratoTest`).
@@ -78,10 +78,11 @@ description: "Tareas de #215: el consolidado no cambia durante la revisión"
   - el servicio.
 - [ ] T006 [US1] En Generación, agregar y ver fallar, con Mockito:
   - en `ConsolidarServicioTest`, `JustificarInconsistenciaServicioTest` e `InformeSustentadoServicioTest`:
-    - si el puerto dice que no admite cambios, `ConsolidadoEnRevision`, sin guardar, sin registrar y, en el informe, sin guardar el archivo;
+    - si el puerto dice que no admite cambios, `ConsolidadoEnRevision`, sin guardar y sin registrar;
+    - en el informe, la comprobación va dos veces (research §2, A2 del análisis): antes de guardar el archivo, con `enRevision` del consolidado leído al empezar, sin tocar el almacén; y dentro de la transacción. Una prueba para cada una;
     - el puerto se consulta dentro de la transacción (un `Transaccion` de prueba que anota el orden), con el periodo y la fecha de creación del distributivo;
     - el periodo cerrado sigue respondiendo su error antes (research §4);
-  - en las pruebas de `ConsultarConsolidado` y del panel: `enRevision` es lo contrario de lo que responde el puerto.
+  - en las pruebas de `ConsultarConsolidado` y del panel (`PanelDeInconsistencias`): `enRevision` es lo contrario de lo que responde el puerto.
 
   Después, en un comando aparte: la comprobación en los tres servicios, `enRevision` en `ConsolidadoDelPeriodo` y en el panel, y su mapeo en los controladores.
 - [ ] T007 [US1] Agregar a las pruebas de contrato de Generación (las de consolidado, informe y panel) y ver fallar: con el doble del puerto en «no admite», el 409 `GENERACION_CONSOLIDADO_EN_REVISION` en las tres operaciones, y `enRevision: true` en las dos consultas, que cumplen el esquema.
@@ -125,7 +126,7 @@ description: "Tareas de #215: el consolidado no cambia durante la revisión"
 
 - [ ] T011 Crear `deploy/probar_consolidado_en_revision.sh` con los 6 pasos de `contracts/demostracion.md`, a partir de `probar_devolucion.sh` (las cargas, la limpieza y las ayudas) y del armado de T020 de F12-H05 (la sugerencia en cada paralelo, prefiriendo docentes sin clase). Sin imprimir claves ni tokens, y con la base limpia al terminar. Agregar su paso a `.github/workflows/perfil-consolidado.yml` después de «Devolver parciales». Pasar shellcheck. Correr los scripts del workflow en su orden sobre un perfil nuevo, y anotar cuánto tarda el script nuevo.
 - [ ] T012 Revisar el JavaDoc de `EtapaDelConsolidado`, `ConsultarEtapaDelConsolidado`, `EtapaDelConsolidadoServicio`, `EtapaParaGeneracion`, `ConsolidadoEnRevision`, `TipoDeEtapa.admiteCambiosEnElConsolidado` y las tres operaciones de Generación (principio XII). El de `enviarARevision` explica por qué el momento va dentro de la transacción.
-- [ ] T013 Crear `specs/044-consolidado-en-revision/evidencia.md`, como `specs/043-devolver-parcial/evidencia.md`:
+- [ ] T013 Crear `specs/044-consolidado-en-revision/evidencia.md`, como `specs/043-devolver-parcial/evidencia.md`. Anotar que «quitar la justificación» no existe como operación (A4 del análisis) y que el aviso es el mismo en todas las etapas posteriores (A5):
   - las pruebas unitarias e `integrationTest`, completas;
   - la cobertura por módulo, Spotless, SpotBugs, ArchUnit y Spring Modulith;
   - la SPA: tipos, ESLint, Prettier, Vitest y Playwright;

@@ -33,6 +33,12 @@ Fase 0 del plan de #215. La especificación no dejó marcas por aclarar; aquí s
 - Un `FOR SHARE` y un `FOR UPDATE` sobre la misma fila se esperan entre sí. Si la operación de Generación llega primero, el envío espera a que confirme. Si el envío llega primero, la operación lee EN_REVISION_VRA y se rechaza.
 - **Ajuste en el envío a revisión (F10-H03):** el momento de la transición se toma dentro de la transacción bloqueada, no antes. Así, si el envío esperó a una consolidación, su momento es posterior a ella (SC-004).
 
+**El informe (A2 del análisis).** Hoy Generación guarda el archivo en el almacén **antes** de su transacción, y el almacén no tiene una operación para borrar. Por eso el informe se comprueba dos veces:
+1. antes de guardar el archivo, con `enRevision` del consolidado que el servicio ya lee al empezar: el caso normal se rechaza sin tocar el almacén;
+2. dentro de la transacción, con el bloqueo, por si el envío a revisión llega entre las dos.
+
+Solo en ese segundo caso, que exige dos peticiones a la vez, el PDF queda guardado sin su fila, igual que hoy con cualquier fallo de la transacción. No se agrega una operación para borrar (principio X).
+
 **Lo que queda fuera.** Las condiciones del envío se calculan antes del bloqueo (D-83, por la llamada a Datos). Una consolidación o un informe que entren entre ese cálculo y el bloqueo dejan la entrada de la bitácora con la huella anterior del informe. Es la misma ventana que F10-H03 aceptó (research §2 de 042), y ahora ya no puede pasar después del envío.
 
 ## 3. Qué ve la pantalla
