@@ -366,6 +366,74 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
         '504':
           $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/validacionocs/periodos/{periodo}/devolucion:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2026-I
+    post:
+      tags: [Aprobacion]
+      operationId: devolverParciales
+      summary: Devuelve el parcial de una o varias carreras, cada una con su observación.
+      description: >-
+        Solo el Responsable de consolidación, con el rol de EN_CONSOLIDACION en la configuración del
+        distributivo, y si esa etapa admite devolución (RF-34, D-98). Todo o nada: cada parcial
+        devuelto vuelve a editarse en su carrera, los demás siguen enviados, y el distributivo vuelve
+        a BORRADOR_CARRERA en la misma respuesta. Cada carrera lleva su observación (RF-36). La
+        transición queda con la versión, el hash y las observaciones (D-95). Cuando la última carrera
+        devuelta reenvía su parcial, el distributivo pasa otra vez a la siguiente etapa activa.
+      x-mdd-permiso: CONSOLIDACION:APROBACION
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitudDeDevolucion'
+      responses:
+        '200':
+          description: Devuelto; el distributivo ya está en BORRADOR_CARRERA.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoDelFlujo'
+        '400':
+          description: >-
+            La solicitud no cumple el contrato (COMUN_SOLICITUD_INVALIDA), una observación tiene menos
+            de 10 caracteres sin los espacios de los extremos (VALIDACIONOCS_OBSERVACION_INVALIDA) o
+            una carrera está repetida (VALIDACIONOCS_CARRERA_REPETIDA).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: >-
+            El periodo no tiene distributivo (VALIDACIONOCS_SIN_DISTRIBUTIVO) o una carrera no tiene
+            parcial (VALIDACIONOCS_PARCIAL_NO_ENCONTRADO); no se devuelve ninguna.
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '409':
+          description: >-
+            El distributivo no está en EN_CONSOLIDACION (VALIDACIONOCS_ETAPA_NO_ADMITE_DEVOLUCION), esa
+            etapa no admite devolución (VALIDACIONOCS_DEVOLUCION_DESACTIVADA), una carrera no tiene su
+            parcial enviado (VALIDACIONOCS_PARCIAL_NO_ENVIADO) o el periodo está cerrado
+            (VALIDACIONOCS_PERIODO_CERRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
 components:
   securitySchemes:
     bearer:
@@ -456,9 +524,49 @@ components:
         enviadoEn:
           type: string
           format: date-time
+        devolucion:
+          $ref: '#/components/schemas/DevolucionDelParcial'
+    DevolucionDelParcial:
+      description: La última devolución del parcial; presente mientras está devuelto (F12-H05).
+      type: object
+      additionalProperties: false
+      required: [por, en, observacion]
+      properties:
+        por:
+          type: string
+        en:
+          type: string
+          format: date-time
+        observacion:
+          type: string
+    SolicitudDeDevolucion:
+      type: object
+      additionalProperties: false
+      required: [devoluciones]
+      properties:
+        devoluciones:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/ParcialADevolver'
+    ParcialADevolver:
+      type: object
+      additionalProperties: false
+      required: [carrera, observacion]
+      properties:
+        carrera:
+          type: string
+          pattern: '^[0-9A-Z_-]{1,20}$'
+        observacion:
+          description: Qué tiene que corregir la carrera, de 10 a 500 caracteres (RF-36).
+          type: string
+          minLength: 10
+          maxLength: 500
+          pattern: '^[\s\S]*\S[\s\S]*$'
     AccionDelFlujo:
       type: string
-      enum: [ENVIAR_PARCIAL, AVANZAR, ENVIAR_A_REVISION]
+      enum: [ENVIAR_PARCIAL, AVANZAR, ENVIAR_A_REVISION, DEVOLVER_PARCIALES]
     TransicionDelFlujo:
       type: object
       additionalProperties: false
@@ -466,7 +574,7 @@ components:
       properties:
         tipo:
           type: string
-          enum: [ENVIO_PARCIAL, PASO_DE_ETAPA]
+          enum: [ENVIO_PARCIAL, PASO_DE_ETAPA, DEVOLUCION]
         desde:
           $ref: '#/components/schemas/TipoDeEtapa'
         hacia:

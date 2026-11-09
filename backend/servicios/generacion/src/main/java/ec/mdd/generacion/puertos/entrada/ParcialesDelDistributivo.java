@@ -1,5 +1,7 @@
 package ec.mdd.generacion.puertos.entrada;
 
+import java.util.List;
+
 /**
  * Lo que Aprobación (Validación OCS) le pide a Generación sobre los parciales del distributivo, en
  * el mismo proceso (F12-H02, MD-04, {@code specs/041-avanzar-etapas/contracts/generacion.md}). Solo
@@ -29,6 +31,21 @@ public interface ParcialesDelDistributivo {
      * @throws ParcialNoEncontrado si la carrera no tiene parcial en la versión vigente
      */
     ParcialMarcado marcarParcialEnviado(String periodo, String carrera);
+
+    /**
+     * Marca como devueltos los parciales de las carreras, para que vuelvan a editarse (F12-H05,
+     * D-98). Todo o nada, en una transacción que bloquea la versión vigente: si una carrera no
+     * tiene parcial, no marca ninguno. Es idempotente: un parcial ya devuelto queda igual. No toca
+     * el contenido, así que el consolidado no queda desactualizado por devolver. No registra en el
+     * registro de cambios de Generación: la transición la registra Aprobación (D-95).
+     *
+     * @param periodo el código del periodo
+     * @param carreras las carreras de los parciales, sin repetidas
+     * @return el número de la versión vigente
+     * @throws DistributivoNoEncontrado si el periodo no tiene distributivo
+     * @throws ParcialNoEncontrado si alguna carrera no tiene parcial en la versión vigente
+     */
+    int marcarParcialesDevueltos(String periodo, List<String> carreras);
 
     /**
      * El hash del distributivo: el de los hashes de todos sus parciales (research §4).

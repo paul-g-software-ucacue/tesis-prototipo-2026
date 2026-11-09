@@ -7,5 +7,7 @@ public enum AccionDelProceso {
     /** El avance genérico de una etapa opcional sin historia propia. */
     AVANZAR,
     /** Enviar el consolidado a revisión, desde EN_CONSOLIDACION (F10-H03). */
-    ENVIAR_A_REVISION
+    ENVIAR_A_REVISION,
+    /** Devolver parciales a sus carreras, desde EN_CONSOLIDACION (F12-H05). */
+    DEVOLVER_PARCIALES
 }

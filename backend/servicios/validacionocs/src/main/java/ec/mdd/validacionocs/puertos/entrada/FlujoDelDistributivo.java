@@ -47,11 +47,22 @@ public record FlujoDelDistributivo(
      *     §2)
      * @param enviadoPor quién lo envió
      * @param enviadoEn cuándo
+     * @param devolucion la última devolución, mientras el parcial está devuelto (F12-H05)
      */
     public record Parcial(
             String carrera,
             boolean enviado,
             boolean pendienteDeConfirmar,
             Optional<String> enviadoPor,
-            Optional<Instant> enviadoEn) {}
+            Optional<Instant> enviadoEn,
+            Optional<Devolucion> devolucion) {}
+
+    /**
+     * La última devolución de un parcial (F12-H05, FR-015).
+     *
+     * @param por quién lo devolvió
+     * @param en cuándo
+     * @param observacion qué tiene que corregir la carrera
+     */
+    public record Devolucion(String por, Instant en, String observacion) {}
 }

@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -23,8 +24,10 @@ import java.util.TreeMap;
  *       ({@link RolDeOtraEtapa}); un coordinador con alcance propio, solo su carrera ({@link
  *       ParcialDeOtraCarrera}, D-64);
  *   <li>los parciales se envían en BORRADOR_CARRERA ({@link EtapaNoAdmiteEnvio}), una sola vez
- *       ({@link ParcialYaEnviado}); con el último, el distributivo pasa a la siguiente etapa
- *       activa;
+ *       ({@link ParcialYaEnviado}), salvo que se devuelvan; con el último, el distributivo pasa a
+ *       la siguiente etapa activa;
+ *   <li>desde EN_CONSOLIDACION, solo su rol devuelve parciales, cada uno con su observación, si la
+ *       etapa admite devolución; el distributivo vuelve a BORRADOR_CARRERA (F12-H05, D-98);
  *   <li>el avance genérico vale solo para las etapas opcionales sin historia propia, hoy
  *       BORRADOR_UNIDADES; las demás se avanzan con su propia operación ({@link
  *       EtapaConOperacionPropia});
@@ -263,7 +266,8 @@ public final class ProcesoAprobacion {
         if (estado != TipoDeEtapa.EN_CONSOLIDACION) {
             throw new EtapaNoAdmiteRevision();
         }
-        if (parciales.containsValue(EstadoDeEnvio.PENDIENTE)) {
+        // Pendiente o devuelto: su carrera todavía no lo envió (F12-H05).
+        if (parciales.values().stream().anyMatch(uno -> uno != EstadoDeEnvio.ENVIADO)) {
             throw new ParcialesPendientes();
         }
     }
@@ -312,22 +316,120 @@ public final class ProcesoAprobacion {
         return List.of(paso);
     }
 
+    /**
+     * Comprueba que {@code quien} puede devolver esos parciales, sin cambiar nada (F12-H05, D-98).
+     * El caso de uso lo llama antes de pedirle a Generación que los marque, para que un intento
+     * rechazado no la toque (FR-013). Las comprobaciones van en el orden de research §10.
+     *
+     * @param quien quien devuelve
+     * @param devoluciones las carreras, cada una con su observación
+     * @throws RolDeOtraEtapa si no tiene el rol de EN_CONSOLIDACION en la copia de la configuración
+     * @throws EtapaNoAdmiteDevolucion si el distributivo no está en EN_CONSOLIDACION
+     * @throws DevolucionDesactivada si EN_CONSOLIDACION no admite devolución en la copia
+     * @throws CarreraRepetida si una carrera está dos veces
+     * @throws ParcialNoEncontrado si una carrera no tiene parcial en el distributivo
+     * @throws ParcialNoEnviado si el parcial de una carrera no está enviado
+     */
+    public void validarDevolucion(Solicitante quien, List<DevolucionDeParcial> devoluciones) {
+        exigirRol(quien, TipoDeEtapa.EN_CONSOLIDACION);
+        if (estado != TipoDeEtapa.EN_CONSOLIDACION) {
+            throw new EtapaNoAdmiteDevolucion();
+        }
+        if (!etapa(TipoDeEtapa.EN_CONSOLIDACION).admiteDevolucion()) {
+            throw new DevolucionDesactivada();
+        }
+        Set<String> vistas = new HashSet<>();
+        for (DevolucionDeParcial devolucion : devoluciones) {
+            if (!vistas.add(devolucion.carrera())) {
+                throw new CarreraRepetida(devolucion.carrera());
+            }
+        }
+        for (DevolucionDeParcial devolucion : devoluciones) {
+            EstadoDeEnvio actual = parciales.get(devolucion.carrera());
+            if (actual == null) {
+                throw new ParcialNoEncontrado();
+            }
+            if (actual != EstadoDeEnvio.ENVIADO) {
+                throw new ParcialNoEnviado(devolucion.carrera());
+            }
+        }
+    }
+
+    /**
+     * Devuelve los parciales de una o varias carreras, cada una con su observación, todos o ninguno
+     * (FR-005). Quedan DEVUELTO y se corrigen y reenvían en BORRADOR_CARRERA, adonde vuelve el
+     * distributivo; los demás siguen enviados. No crea una versión nueva: no hay firmas que anular
+     * (RF-59). No notifica a nadie: eso es de F16-H01 (D-98).
+     *
+     * @param quien quien devuelve
+     * @param devoluciones las carreras, cada una con su observación; al menos una
+     * @param version la versión vigente del distributivo
+     * @param hashDelDistributivo el hash de todos los parciales
+     * @param ahora cuándo
+     * @return la transición nueva, una devolución con las observaciones
+     * @throws RolDeOtraEtapa si no tiene el rol de EN_CONSOLIDACION
+     * @throws EtapaNoAdmiteDevolucion si el distributivo no está en EN_CONSOLIDACION
+     * @throws DevolucionDesactivada si EN_CONSOLIDACION no admite devolución
+     * @throws CarreraRepetida si una carrera está dos veces
+     * @throws ParcialNoEncontrado si una carrera no tiene parcial
+     * @throws ParcialNoEnviado si el parcial de una carrera no está enviado
+     */
+    public List<Transicion> devolver(
+            Solicitante quien,
+            List<DevolucionDeParcial> devoluciones,
+            int version,
+            String hashDelDistributivo,
+            Instant ahora) {
+        if (devoluciones.isEmpty()) {
+            throw new IllegalArgumentException("Una devolución lleva al menos una carrera");
+        }
+        validarDevolucion(quien, devoluciones);
+        Map<String, Observacion> observaciones = new TreeMap<>();
+        devoluciones.forEach(
+                devolucion -> {
+                    parciales.put(devolucion.carrera(), EstadoDeEnvio.DEVUELTO);
+                    observaciones.put(devolucion.carrera(), devolucion.observacion());
+                });
+        TipoDeEtapa desde = estado;
+        estado = TipoDeEtapa.BORRADOR_CARRERA;
+        Transicion devolucion =
+                new Transicion(
+                        TipoDeTransicion.DEVOLUCION,
+                        desde,
+                        estado,
+                        Optional.empty(),
+                        version,
+                        hashDelDistributivo,
+                        quien.usuario(),
+                        ahora,
+                        observaciones);
+        transiciones.add(devolucion);
+        return List.of(devolucion);
+    }
+
     /** Lo que {@code quien} puede hacer ahora (FR-014). */
     public List<AccionDelProceso> acciones(Solicitante quien) {
         if (estado == TipoDeEtapa.BORRADOR_CARRERA
                 && tieneRol(quien, TipoDeEtapa.BORRADOR_CARRERA)
                 && quien.carreraPropia()
-                        .map(carrera -> parciales.get(carrera) == EstadoDeEnvio.PENDIENTE)
+                        .map(
+                                carrera ->
+                                        parciales.containsKey(carrera)
+                                                && parciales.get(carrera) != EstadoDeEnvio.ENVIADO)
                         .orElse(false)) {
             return List.of(AccionDelProceso.ENVIAR_PARCIAL);
         }
         if (CON_AVANCE_GENERICO.contains(estado) && tieneRol(quien, estado)) {
             return List.of(AccionDelProceso.AVANZAR);
         }
-        // Aunque falten condiciones: la pantalla dice cuáles (F10-H03, FR-013).
+        // Aunque falten condiciones: la pantalla dice cuáles (F10-H03, FR-013). Devolver, si la
+        // copia de la configuración lo admite (F12-H05, FR-016).
         if (estado == TipoDeEtapa.EN_CONSOLIDACION
                 && tieneRol(quien, TipoDeEtapa.EN_CONSOLIDACION)) {
-            return List.of(AccionDelProceso.ENVIAR_A_REVISION);
+            return etapa(TipoDeEtapa.EN_CONSOLIDACION).admiteDevolucion()
+                    ? List.of(
+                            AccionDelProceso.ENVIAR_A_REVISION, AccionDelProceso.DEVOLVER_PARCIALES)
+                    : List.of(AccionDelProceso.ENVIAR_A_REVISION);
         }
         return List.of();
     }

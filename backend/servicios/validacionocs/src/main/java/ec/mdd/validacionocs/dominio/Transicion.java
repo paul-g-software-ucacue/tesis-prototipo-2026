@@ -1,8 +1,11 @@
 package ec.mdd.validacionocs.dominio;
 
 import java.time.Instant;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
 
 /**
@@ -18,6 +21,8 @@ import java.util.regex.Pattern;
  * @param hash el SHA-256 del contenido aprobado, en hexadecimal
  * @param quien el usuario que la hizo
  * @param momento cuándo
+ * @param observaciones en una devolución, la observación de cada carrera devuelta, por carrera;
+ *     vacío en los demás tipos (F12-H05)
  */
 public record Transicion(
         TipoDeTransicion tipo,
@@ -27,7 +32,8 @@ public record Transicion(
         int version,
         String hash,
         String quien,
-        Instant momento) {
+        Instant momento,
+        Map<String, Observacion> observaciones) {
 
     private static final Pattern HASH = Pattern.compile("^[0-9a-f]{64}$");
 
@@ -45,5 +51,23 @@ public record Transicion(
         if (hash == null || !HASH.matcher(hash).matches()) {
             throw new IllegalArgumentException("El hash no es un SHA-256 en hexadecimal");
         }
+        observaciones = Collections.unmodifiableMap(new TreeMap<>(observaciones));
+        if ((tipo == TipoDeTransicion.DEVOLUCION) == observaciones.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Solo una devolución lleva observaciones, y siempre");
+        }
+    }
+
+    /** Un envío o un paso de etapa: sin observaciones. */
+    public Transicion(
+            TipoDeTransicion tipo,
+            TipoDeEtapa desde,
+            TipoDeEtapa hacia,
+            Optional<String> carrera,
+            int version,
+            String hash,
+            String quien,
+            Instant momento) {
+        this(tipo, desde, hacia, carrera, version, hash, quien, momento, Map.of());
     }
 }

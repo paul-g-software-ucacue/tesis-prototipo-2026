@@ -317,7 +317,8 @@ class ProcesoAprobacionTest {
                                                         etapa.tipo(),
                                                         false,
                                                         etapa.nombre(),
-                                                        etapa.rol())
+                                                        etapa.rol(),
+                                                        etapa.admiteDevolucion())
                                                 : etapa)
                         .toList();
         ProcesoAprobacion proceso = enConsolidacion(sinRevision);
@@ -510,7 +511,8 @@ class ProcesoAprobacionTest {
                                                         etapa.tipo(),
                                                         true,
                                                         etapa.nombre(),
-                                                        "VICERRECTOR")
+                                                        "VICERRECTOR",
+                                                        etapa.admiteDevolucion())
                                                 : etapa)
                         .toList();
 
@@ -525,10 +527,323 @@ class ProcesoAprobacionTest {
     void dadoElResponsableEnConsolidacion_cuandoConsulta_entoncesVeEnviarARevisionYOtroNo() {
         ProcesoAprobacion proceso = enConsolidacion(etapas(false));
 
-        assertThat(proceso.acciones(RESPONSABLE))
-                .containsExactly(AccionDelProceso.ENVIAR_A_REVISION);
+        assertThat(proceso.acciones(RESPONSABLE)).contains(AccionDelProceso.ENVIAR_A_REVISION);
         assertThat(proceso.acciones(VICERRECTOR)).isEmpty();
         assertThat(nuevo(false, "DS").acciones(RESPONSABLE)).isEmpty();
+    }
+
+    // Devolver (F12-H05, data-model.md, D-98).
+
+    private static final DevolucionDeParcial DEVOLVER_DS =
+            DevolucionDeParcial.de("DS", "Faltan docentes en primer nivel.");
+    private static final DevolucionDeParcial DEVOLVER_TDS =
+            DevolucionDeParcial.de("TDS", "Un docente sin clase en segundo nivel.");
+
+    @Test
+    void dadoElDistributivoEnConsolidacion_cuandoDevuelvoDosCarreras_entoncesVuelveABorrador() {
+        ProcesoAprobacion proceso = enConsolidacionCon("DS", "TDS", "EL");
+
+        List<Transicion> nuevas = devolver(proceso, DEVOLVER_DS, DEVOLVER_TDS);
+
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.BORRADOR_CARRERA);
+        assertThat(proceso.parciales())
+                .isEqualTo(
+                        Map.of(
+                                "DS", EstadoDeEnvio.DEVUELTO,
+                                "TDS", EstadoDeEnvio.DEVUELTO,
+                                "EL", EstadoDeEnvio.ENVIADO));
+        assertThat(nuevas)
+                .containsExactly(
+                        new Transicion(
+                                TipoDeTransicion.DEVOLUCION,
+                                TipoDeEtapa.EN_CONSOLIDACION,
+                                TipoDeEtapa.BORRADOR_CARRERA,
+                                Optional.empty(),
+                                2,
+                                HASH_DISTRIBUTIVO,
+                                "consolidacion.demo",
+                                AHORA,
+                                Map.of(
+                                        "DS", DEVOLVER_DS.observacion(),
+                                        "TDS", DEVOLVER_TDS.observacion())));
+        assertThat(proceso.transiciones()).containsExactlyElementsOf(nuevas);
+    }
+
+    @Test
+    void dadaUnaDevolucion_cuandoSeRegistra_entoncesLlevaLaVersionVigenteSinCrearOtra() {
+        ProcesoAprobacion proceso = enConsolidacionCon("DS", "TDS");
+
+        Transicion devolucion = devolver(proceso, DEVOLVER_DS).getFirst();
+
+        // FR-014: la versión es la que llega, la vigente; devolver no la cambia.
+        assertThat(devolucion.version()).isEqualTo(2);
+    }
+
+    @Test
+    void dadasTodasLasCarreras_cuandoLasDevuelvo_entoncesSePermite() {
+        ProcesoAprobacion proceso = enConsolidacionCon("DS", "TDS");
+
+        devolver(proceso, DEVOLVER_DS, DEVOLVER_TDS);
+
+        assertThat(proceso.parciales().values()).containsOnly(EstadoDeEnvio.DEVUELTO);
+    }
+
+    @Test
+    void dadaUnaCarreraSinParcial_cuandoDevuelvo_entoncesNoSeDevuelveNinguna() {
+        ProcesoAprobacion proceso = enConsolidacionCon("DS", "TDS");
+
+        assertThatThrownBy(
+                        () ->
+                                devolver(
+                                        proceso,
+                                        DEVOLVER_DS,
+                                        DevolucionDeParcial.de("OTRA", "Una carrera que no está.")))
+                .isInstanceOf(ParcialNoEncontrado.class);
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_CONSOLIDACION);
+        assertThat(proceso.parciales().values()).containsOnly(EstadoDeEnvio.ENVIADO);
+        assertThat(proceso.transiciones()).isEmpty();
+    }
+
+    @Test
+    void dadoUnParcialPendiente_cuandoLoDevuelvo_entoncesParcialNoEnviadoConSuCarrera() {
+        ProcesoAprobacion proceso =
+                ProcesoAprobacion.de(
+                        "2026-I",
+                        etapas(false),
+                        TipoDeEtapa.EN_CONSOLIDACION,
+                        CREADO,
+                        Map.of("DS", EstadoDeEnvio.ENVIADO, "TDS", EstadoDeEnvio.PENDIENTE),
+                        List.of());
+
+        assertThatThrownBy(() -> devolver(proceso, DEVOLVER_DS, DEVOLVER_TDS))
+                .isInstanceOf(ParcialNoEnviado.class)
+                .extracting(error -> ((ParcialNoEnviado) error).carrera())
+                .isEqualTo("TDS");
+        assertThat(proceso.parciales()).containsEntry("DS", EstadoDeEnvio.ENVIADO);
+        assertThat(proceso.transiciones()).isEmpty();
+    }
+
+    @Test
+    void dadaUnaCarreraRepetida_cuandoDevuelvo_entoncesCarreraRepetida() {
+        ProcesoAprobacion proceso = enConsolidacionCon("DS", "TDS");
+
+        assertThatThrownBy(
+                        () ->
+                                devolver(
+                                        proceso,
+                                        DEVOLVER_DS,
+                                        DevolucionDeParcial.de("DS", "Otra observación igual.")))
+                .isInstanceOf(CarreraRepetida.class)
+                .extracting(error -> ((CarreraRepetida) error).carrera())
+                .isEqualTo("DS");
+        assertThat(proceso.transiciones()).isEmpty();
+    }
+
+    @Test
+    void dadaUnaDevolucionQueCabe_cuandoSoloSeValida_entoncesNoCambiaNada() {
+        ProcesoAprobacion proceso = enConsolidacionCon("DS", "TDS");
+
+        proceso.validarDevolucion(RESPONSABLE, List.of(DEVOLVER_DS));
+
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_CONSOLIDACION);
+        assertThat(proceso.parciales().values()).containsOnly(EstadoDeEnvio.ENVIADO);
+        assertThat(proceso.transiciones()).isEmpty();
+    }
+
+    // Corregir y reenviar (F12-H05, US2, research §5).
+
+    @Test
+    void dadoUnParcialDevuelto_cuandoSuCoordinadorLoReenvia_entoncesSeAceptaYElEnviadoNo() {
+        ProcesoAprobacion proceso = enConsolidacionCon("DS", "TDS");
+        devolver(proceso, DEVOLVER_DS);
+
+        proceso.validarEnvio("DS", COORDINADOR_DS);
+        assertThatThrownBy(() -> proceso.validarEnvio("TDS", COORDINADOR_TDS))
+                .isInstanceOf(ParcialYaEnviado.class);
+        assertThat(proceso.acciones(COORDINADOR_DS))
+                .containsExactly(AccionDelProceso.ENVIAR_PARCIAL);
+        assertThat(proceso.acciones(COORDINADOR_TDS)).isEmpty();
+    }
+
+    @Test
+    void
+            dadasDosCarrerasDevueltas_cuandoReenvianUnaYOtra_entoncesConLaUltimaVuelveAConsolidacion() {
+        ProcesoAprobacion proceso = enConsolidacionCon("DS", "TDS");
+        devolver(proceso, DEVOLVER_DS, DEVOLVER_TDS);
+
+        enviar(proceso, COORDINADOR_DS, "DS");
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.BORRADOR_CARRERA);
+
+        List<Transicion> nuevas = enviar(proceso, COORDINADOR_TDS, "TDS");
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_CONSOLIDACION);
+        assertThat(nuevas)
+                .extracting(Transicion::tipo)
+                .containsExactly(TipoDeTransicion.ENVIO_PARCIAL, TipoDeTransicion.PASO_DE_ETAPA);
+        assertThat(proceso.parciales().values()).containsOnly(EstadoDeEnvio.ENVIADO);
+    }
+
+    @Test
+    void dadaBorradorUnidadesActiva_cuandoReenviaLaUltimaDevuelta_entoncesPasaABorradorUnidades() {
+        ProcesoAprobacion proceso =
+                ProcesoAprobacion.de(
+                        "2026-I",
+                        etapas(true),
+                        TipoDeEtapa.EN_CONSOLIDACION,
+                        CREADO,
+                        Map.of("DS", EstadoDeEnvio.ENVIADO),
+                        List.of());
+        devolver(proceso, DEVOLVER_DS);
+
+        enviar(proceso, COORDINADOR_DS, "DS");
+
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.BORRADOR_UNIDADES);
+    }
+
+    @Test
+    void dadoUnParcialDevueltoEnConsolidacion_cuandoSeEnviaARevision_entoncesParcialesPendientes() {
+        ProcesoAprobacion proceso =
+                ProcesoAprobacion.de(
+                        "2026-I",
+                        etapas(false),
+                        TipoDeEtapa.EN_CONSOLIDACION,
+                        CREADO,
+                        Map.of("DS", EstadoDeEnvio.ENVIADO, "TDS", EstadoDeEnvio.DEVUELTO),
+                        List.of());
+
+        assertThatThrownBy(() -> proceso.validarRevision(RESPONSABLE))
+                .isInstanceOf(ParcialesPendientes.class);
+    }
+
+    @Test
+    void dadaUnaCarreraReenviada_cuandoSeDevuelveOtraVez_entoncesSePermiteYValeLaUltima() {
+        ProcesoAprobacion proceso = enConsolidacionCon("DS");
+        devolver(proceso, DEVOLVER_DS);
+        enviar(proceso, COORDINADOR_DS, "DS");
+
+        devolver(proceso, DevolucionDeParcial.de("DS", "Todavía falta un docente."));
+
+        assertThat(proceso.transiciones())
+                .filteredOn(una -> una.tipo() == TipoDeTransicion.DEVOLUCION)
+                .extracting(una -> una.observaciones().get("DS").texto())
+                .containsExactly("Faltan docentes en primer nivel.", "Todavía falta un docente.");
+    }
+
+    // Solo el rol de la etapa devuelve (F12-H05, US4, research §10).
+
+    @Test
+    void dadoOtroRol_cuandoDevuelve_entoncesRolDeOtraEtapaSinCambiarNada() {
+        ProcesoAprobacion proceso = enConsolidacionCon("DS", "TDS");
+
+        assertThatThrownBy(
+                        () ->
+                                proceso.devolver(
+                                        VICERRECTOR,
+                                        List.of(DEVOLVER_DS),
+                                        2,
+                                        HASH_DISTRIBUTIVO,
+                                        AHORA))
+                .isInstanceOf(RolDeOtraEtapa.class);
+        assertThatThrownBy(() -> proceso.validarDevolucion(COORDINADOR_DS, List.of(DEVOLVER_DS)))
+                .isInstanceOf(RolDeOtraEtapa.class);
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_CONSOLIDACION);
+        assertThat(proceso.transiciones()).isEmpty();
+    }
+
+    @Test
+    void dadoOtroRolConfiguradoParaConsolidacion_cuandoDevuelve_entoncesValeElDeLaConfiguracion() {
+        ProcesoAprobacion proceso = enConsolidacion(conConsolidacion("VICERRECTOR", true));
+
+        assertThatThrownBy(() -> proceso.validarDevolucion(RESPONSABLE, List.of(DEVOLVER_DS)))
+                .isInstanceOf(RolDeOtraEtapa.class);
+        proceso.validarDevolucion(VICERRECTOR, List.of(DEVOLVER_DS));
+    }
+
+    @Test
+    void dadoElDistributivoFueraDeConsolidacion_cuandoDevuelvo_entoncesEtapaNoAdmiteDevolucion() {
+        ProcesoAprobacion borrador = nuevo(false, "DS");
+        ProcesoAprobacion enRevision = enConsolidacion(etapas(false));
+        revisar(enRevision, LISTO);
+
+        assertThatThrownBy(() -> devolver(borrador, DEVOLVER_DS))
+                .isInstanceOf(EtapaNoAdmiteDevolucion.class);
+        assertThatThrownBy(() -> devolver(enRevision, DEVOLVER_DS))
+                .isInstanceOf(EtapaNoAdmiteDevolucion.class);
+        ProcesoAprobacion devuelto = enConsolidacionCon("DS");
+        devolver(devuelto, DEVOLVER_DS);
+        assertThatThrownBy(() -> devolver(devuelto, DEVOLVER_DS))
+                .isInstanceOf(EtapaNoAdmiteDevolucion.class);
+    }
+
+    @Test
+    void dadaConsolidacionSinDevolucionEnLaCopia_cuandoDevuelvo_entoncesDevolucionDesactivada() {
+        ProcesoAprobacion proceso =
+                enConsolidacion(conConsolidacion("RESPONSABLE_CONSOLIDACION", false));
+
+        assertThatThrownBy(() -> devolver(proceso, DEVOLVER_DS))
+                .isInstanceOf(DevolucionDesactivada.class);
+        assertThat(proceso.acciones(RESPONSABLE))
+                .containsExactly(AccionDelProceso.ENVIAR_A_REVISION);
+    }
+
+    @Test
+    void dadoQueFaltaTodo_cuandoDevuelvo_entoncesRespondeElPrimeroDelOrden() {
+        // Etapa antes que la carrera repetida y que el parcial: research §10.
+        ProcesoAprobacion borrador = nuevo(false, "DS");
+        assertThatThrownBy(
+                        () ->
+                                devolver(
+                                        borrador,
+                                        DEVOLVER_DS,
+                                        DevolucionDeParcial.de("DS", "Otra observación igual.")))
+                .isInstanceOf(EtapaNoAdmiteDevolucion.class);
+        // Carrera repetida antes que una sin parcial.
+        assertThatThrownBy(
+                        () ->
+                                devolver(
+                                        enConsolidacionCon("DS"),
+                                        DevolucionDeParcial.de("OTRA", "Una carrera que no está."),
+                                        DEVOLVER_DS,
+                                        DEVOLVER_DS))
+                .isInstanceOf(CarreraRepetida.class);
+    }
+
+    @Test
+    void dadoElResponsableEnConsolidacion_cuandoConsulta_entoncesVeDevolverYOtroNo() {
+        ProcesoAprobacion proceso = enConsolidacion(etapas(false));
+
+        assertThat(proceso.acciones(RESPONSABLE))
+                .containsExactly(
+                        AccionDelProceso.ENVIAR_A_REVISION, AccionDelProceso.DEVOLVER_PARCIALES);
+        assertThat(proceso.acciones(VICERRECTOR)).isEmpty();
+    }
+
+    private static List<EtapaDelProceso> conConsolidacion(String rol, boolean admiteDevolucion) {
+        return etapas(false).stream()
+                .map(
+                        etapa ->
+                                etapa.tipo() == TipoDeEtapa.EN_CONSOLIDACION
+                                        ? new EtapaDelProceso(
+                                                etapa.tipo(),
+                                                true,
+                                                etapa.nombre(),
+                                                rol,
+                                                admiteDevolucion)
+                                        : etapa)
+                .toList();
+    }
+
+    private static List<Transicion> devolver(
+            ProcesoAprobacion proceso, DevolucionDeParcial... devoluciones) {
+        return proceso.devolver(RESPONSABLE, List.of(devoluciones), 2, HASH_DISTRIBUTIVO, AHORA);
+    }
+
+    private static ProcesoAprobacion enConsolidacionCon(String... carreras) {
+        Map<String, EstadoDeEnvio> enviados = new java.util.TreeMap<>();
+        for (String carrera : carreras) {
+            enviados.put(carrera, EstadoDeEnvio.ENVIADO);
+        }
+        return ProcesoAprobacion.de(
+                "2026-I", etapas(false), TipoDeEtapa.EN_CONSOLIDACION, CREADO, enviados, List.of());
     }
 
     private static CondicionesDeRevision abiertas(long duras, long blandas) {
@@ -577,14 +892,30 @@ class ProcesoAprobacionTest {
                                             default -> true;
                                         },
                                         "Nombre de " + tipo,
-                                        rolDe(tipo)))
+                                        rolDe(tipo),
+                                        admiteDevolucion(tipo)))
                 .toList();
     }
 
     private static List<EtapaDelProceso> etapasTodasActivas() {
         return Arrays.stream(TipoDeEtapa.values())
-                .map(tipo -> new EtapaDelProceso(tipo, true, "Nombre de " + tipo, rolDe(tipo)))
+                .map(
+                        tipo ->
+                                new EtapaDelProceso(
+                                        tipo,
+                                        true,
+                                        "Nombre de " + tipo,
+                                        rolDe(tipo),
+                                        admiteDevolucion(tipo)))
                 .toList();
+    }
+
+    // Como la plantilla (flujo-por-defecto.yaml).
+    private static boolean admiteDevolucion(TipoDeEtapa tipo) {
+        return switch (tipo) {
+            case EN_CONSOLIDACION, EN_REVISION_VRA, CONGELADO_EN_FIRMA, EN_OCS -> true;
+            default -> false;
+        };
     }
 
     private static String rolDe(TipoDeEtapa tipo) {

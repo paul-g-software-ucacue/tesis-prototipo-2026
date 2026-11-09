@@ -8,6 +8,7 @@ import ec.mdd.validacionocs.dominio.CargaGuardada;
 import ec.mdd.validacionocs.dominio.CondicionesDeRevision;
 import ec.mdd.validacionocs.dominio.EstadoDelPeriodo;
 import ec.mdd.validacionocs.dominio.Firmantes;
+import ec.mdd.validacionocs.dominio.ParcialNoEncontrado;
 import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
 import ec.mdd.validacionocs.dominio.Transicion;
 import ec.mdd.validacionocs.puertos.entrada.SinDistributivo;
@@ -52,6 +53,7 @@ final class FlujoEnMemoria {
     private final Map<String, Map<String, Boolean>> enviados = new HashMap<>();
     private final Map<String, ProcesoAprobacion> procesos = new HashMap<>();
     private CondicionesDeRevision condiciones = listo();
+    private boolean sinDevolucion;
 
     /** Un consolidado que cumple todo lo que pide enviar a revisión (F10-H03). */
     static CondicionesDeRevision listo() {
@@ -61,6 +63,14 @@ final class FlujoEnMemoria {
     /** Una carrera que recibe su primer parcial después (research §4 de F10-H03). */
     void agregarParcial(String periodo, String carrera) {
         enviados.get(periodo).put(carrera, false);
+    }
+
+    /**
+     * El próximo distributivo que se cree en {@link #PERIODO} tendrá EN_CONSOLIDACION sin
+     * devolución en la copia de su configuración (F12-H05).
+     */
+    void sinDevolucion() {
+        sinDevolucion = true;
     }
 
     /** Lo que Generación dirá del consolidado en el próximo envío a revisión. */
@@ -77,6 +87,7 @@ final class FlujoEnMemoria {
         enviados.clear();
         procesos.clear();
         condiciones = listo();
+        sinDevolucion = false;
         for (String periodo : List.of(PERIODO, CERRADO)) {
             Map<String, Boolean> carreras = new LinkedHashMap<>();
             carreras.put(DS, false);
@@ -123,6 +134,19 @@ final class FlujoEnMemoria {
             }
 
             @Override
+            public int marcarDevueltos(String periodo, List<String> carreras) {
+                Map<String, Boolean> todas = enviados.get(periodo);
+                if (todas == null) {
+                    throw new SinDistributivo();
+                }
+                if (!todas.keySet().containsAll(carreras)) {
+                    throw new ParcialNoEncontrado();
+                }
+                carreras.forEach(carrera -> todas.put(carrera, false));
+                return 1;
+            }
+
+            @Override
             public String hash(String periodo) {
                 return "b".repeat(64);
             }
@@ -158,11 +182,18 @@ final class FlujoEnMemoria {
         };
     }
 
-    private static RepositorioConfiguracion configuraciones() {
+    private RepositorioConfiguracion configuraciones() {
         String conUnidades =
                 new PlantillaEnRecursos()
                         .texto()
                         .replaceFirst("(BORRADOR_UNIDADES:\\s*\\n\\s*activa:) false", "$1 true");
+        String sinDevolverEnConsolidacion =
+                new PlantillaEnRecursos()
+                        .texto()
+                        .replaceFirst(
+                                "(EN_CONSOLIDACION:(?:\\s*\\n\\s*\\w+:.*){4}\\s*\\n\\s*admite_devolucion:)"
+                                        + " true",
+                                "$1 false");
         return new RepositorioConfiguracion() {
             @Override
             public void guardar(String periodo, String contenido, String por, Instant en) {
@@ -176,6 +207,10 @@ final class FlujoEnMemoria {
 
             @Override
             public Optional<CargaGuardada> vigenteEn(String periodo, Instant instante) {
+                if (sinDevolucion && PERIODO.equals(periodo)) {
+                    return Optional.of(
+                            new CargaGuardada(1, sinDevolverEnConsolidacion, "admin.demo", CREADO));
+                }
                 return CON_UNIDADES.equals(periodo)
                         ? Optional.of(new CargaGuardada(1, conUnidades, "admin.demo", CREADO))
                         : Optional.empty();

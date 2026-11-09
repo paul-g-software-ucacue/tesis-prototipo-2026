@@ -221,6 +221,12 @@ class EnvioARevisionIntegrationTest {
             }
 
             @Override
+            public int marcarDevueltos(String periodo, List<String> carreras) {
+                carreras.forEach(carrera -> ENVIADOS.get(periodo).put(carrera, false));
+                return 1;
+            }
+
+            @Override
             public String hash(String periodo) {
                 return "b".repeat(64);
             }

@@ -38,6 +38,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -66,6 +67,8 @@ class FlujoContratoTest {
     private static final String ENVIO = "/api/validacionocs/periodos/%s/parciales/%s/envio";
     private static final String AVANCE = "/api/validacionocs/periodos/%s/avance";
     private static final String REVISION = "/api/validacionocs/periodos/%s/revision";
+    private static final String DEVOLUCION = "/api/validacionocs/periodos/%s/devolucion";
+    private static final String OBSERVACION = "Faltan docentes en primer nivel.";
     private static final String RESPONSABLE = "RESPONSABLE_CONSOLIDACION";
     private static final String HUELLA = "c".repeat(64);
     private static final JsonMapper JSON = JsonMapper.builder().build();
@@ -362,7 +365,7 @@ class FlujoContratoTest {
 
         assertThat(cuerpo(pedir(get(FLUJO.formatted(PERIODO)), RESPONSABLE, null)).get("acciones"))
                 .extracting(JsonNode::asString)
-                .containsExactly("ENVIAR_A_REVISION");
+                .containsExactly("ENVIAR_A_REVISION", "DEVOLVER_PARCIALES");
         assertThat(
                         cuerpo(pedir(get(FLUJO.formatted(PERIODO)), "VICERRECTOR", null))
                                 .get("acciones"))
@@ -376,6 +379,268 @@ class FlujoContratoTest {
 
     private MvcResult revisar(String periodo, String rol) throws Exception {
         return pedir(post(REVISION.formatted(periodo)), rol, null);
+    }
+
+    // Devolver (F12-H05, contracts/validacionocs.md).
+
+    @Test
+    void dadoEnConsolidacion_cuandoElResponsableDevuelve_entonces200EnBorradorSegunElContrato()
+            throws Exception {
+        enConsolidacion(PERIODO);
+
+        MvcResult resultado = devolver(PERIODO, RESPONSABLE, DS, OBSERVACION);
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        JsonNode cuerpo = cuerpo(resultado);
+        assertThat(cuerpo.get("etapa").asString()).isEqualTo("BORRADOR_CARRERA");
+        JsonNode ds = parcial(cuerpo, DS);
+        assertThat(ds.get("enviado").asBoolean()).isFalse();
+        assertThat(ds.get("devolucion").get("por").asString())
+                .isEqualTo("responsable_consolidacion.demo");
+        assertThat(ds.get("devolucion").get("observacion").asString()).isEqualTo(OBSERVACION);
+        assertThat(parcial(cuerpo, TDS).has("devolucion")).isFalse();
+        JsonNode devolucion = cuerpo.get("transiciones").get(3);
+        assertThat(devolucion.get("tipo").asString()).isEqualTo("DEVOLUCION");
+        assertThat(devolucion.get("hacia").asString()).isEqualTo("BORRADOR_CARRERA");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadaUnaCarreraSinParcial_cuandoSeDevuelve_entonces404SinDevolverNinguna()
+            throws Exception {
+        enConsolidacion(PERIODO);
+
+        MvcResult resultado =
+                pedir(
+                        post(DEVOLUCION.formatted(PERIODO))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(solicitud(Map.of(DS, OBSERVACION, "OTRA", OBSERVACION))),
+                        RESPONSABLE,
+                        null);
+
+        assertCodigo(resultado, 404, "VALIDACIONOCS_PARCIAL_NO_ENCONTRADO");
+        assertThat(etapa(PERIODO)).isEqualTo("EN_CONSOLIDACION");
+    }
+
+    @Test
+    void dadoUnParcialPendienteEnConsolidacion_cuandoSeDevuelve_entonces409NoEnviado()
+            throws Exception {
+        enConsolidacion(PERIODO);
+        MEMORIA.agregarParcial(PERIODO, "550732E01-D-0301");
+
+        MvcResult resultado = devolver(PERIODO, RESPONSABLE, "550732E01-D-0301", OBSERVACION);
+
+        assertCodigo(resultado, 409, "VALIDACIONOCS_PARCIAL_NO_ENVIADO");
+        assertThat(cuerpo(resultado).get("detalles").get(0).get("descripcion").asString())
+                .contains("550732E01-D-0301");
+    }
+
+    @Test
+    void dadoUnPeriodoSinDistributivo_cuandoSeDevuelve_entonces404() throws Exception {
+        assertCodigo(
+                devolver(SIN_DISTRIBUTIVO, RESPONSABLE, DS, OBSERVACION),
+                404,
+                "VALIDACIONOCS_SIN_DISTRIBUTIVO");
+    }
+
+    // US3 (T015): sin una observación válida no se devuelve ninguna (RF-36).
+    @Test
+    void dadaUnaSolicitudFueraDelContrato_cuandoSeDevuelve_entonces400ConSuCampo()
+            throws Exception {
+        enConsolidacion(PERIODO);
+        List<String> malas =
+                List.of(
+                        "{\"devoluciones\":[]}",
+                        cuerpoCon(DS, "a".repeat(9)),
+                        cuerpoCon(DS, "a".repeat(501)),
+                        cuerpoCon(DS, " ".repeat(12)),
+                        cuerpoCon("ds minúscula", OBSERVACION));
+
+        for (String mala : malas) {
+            MvcResult resultado = devolverCuerpo(PERIODO, mala);
+            assertCodigo(resultado, 400, "COMUN_SOLICITUD_INVALIDA");
+            assertThat(cuerpo(resultado).get("detalles")).as(mala).isNotEmpty();
+        }
+        assertThat(etapa(PERIODO)).isEqualTo("EN_CONSOLIDACION");
+    }
+
+    @Test
+    void dadaUnaObservacionCortaSinSusEspacios_cuandoSeDevuelve_entonces400ConLaCarrera()
+            throws Exception {
+        enConsolidacion(PERIODO);
+
+        MvcResult resultado = devolver(PERIODO, RESPONSABLE, DS, "   corta    ");
+
+        assertCodigo(resultado, 400, "VALIDACIONOCS_OBSERVACION_INVALIDA");
+        assertThat(cuerpo(resultado).get("detalles").get(0).get("descripcion").asString())
+                .contains(DS);
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadaUnaCarreraRepetida_cuandoSeDevuelve_entonces400SinDevolverNinguna() throws Exception {
+        enConsolidacion(PERIODO);
+        String repetida =
+                "{\"devoluciones\":[{\"carrera\":\""
+                        + DS
+                        + "\",\"observacion\":\""
+                        + OBSERVACION
+                        + "\"},{\"carrera\":\""
+                        + DS
+                        + "\",\"observacion\":\""
+                        + OBSERVACION
+                        + "\"}]}";
+
+        assertCodigo(devolverCuerpo(PERIODO, repetida), 400, "VALIDACIONOCS_CARRERA_REPETIDA");
+        assertThat(etapa(PERIODO)).isEqualTo("EN_CONSOLIDACION");
+    }
+
+    @Test
+    void dadasTresCarrerasConUnaObservacionInvalida_cuandoSeDevuelven_entoncesNingunaSeDevuelve()
+            throws Exception {
+        enConsolidacion(PERIODO);
+        Map<String, String> tres = new java.util.LinkedHashMap<>();
+        tres.put(DS, OBSERVACION);
+        tres.put(TDS, "   corta    ");
+
+        MvcResult resultado = devolverCuerpo(PERIODO, solicitud(tres));
+
+        assertCodigo(resultado, 400, "VALIDACIONOCS_OBSERVACION_INVALIDA");
+        assertThat(etapa(PERIODO)).isEqualTo("EN_CONSOLIDACION");
+        assertThat(
+                        parcial(cuerpo(pedir(get(FLUJO.formatted(PERIODO)), RESPONSABLE, null)), DS)
+                                .get("enviado")
+                                .asBoolean())
+                .isTrue();
+    }
+
+    @Test
+    void dadasObservacionesNormalesDe10Y500ConSaltos_cuandoSeDevuelven_entoncesPasanElContrato()
+            throws Exception {
+        enConsolidacion(PERIODO);
+        Map<String, String> dos = new java.util.LinkedHashMap<>();
+        dos.put(DS, "Revisa DS.");
+        dos.put(TDS, "Línea uno.\n" + "b".repeat(489));
+
+        MvcResult resultado = devolverCuerpo(PERIODO, solicitud(dos));
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        contrato.validar(resultado);
+    }
+
+    private MvcResult devolverCuerpo(String periodo, String cuerpo) throws Exception {
+        return pedir(
+                post(DEVOLUCION.formatted(periodo))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpo),
+                RESPONSABLE,
+                null);
+    }
+
+    private static String cuerpoCon(String carrera, String observacion) {
+        Map<String, String> una = new java.util.LinkedHashMap<>();
+        una.put(carrera, observacion);
+        return solicitud(una);
+    }
+
+    private MvcResult devolver(String periodo, String rol, String carrera, String observacion)
+            throws Exception {
+        Map<String, String> una = new java.util.LinkedHashMap<>();
+        una.put(carrera, observacion);
+        return pedir(
+                post(DEVOLUCION.formatted(periodo))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(solicitud(una)),
+                rol,
+                null);
+    }
+
+    private static String solicitud(Map<String, String> devoluciones) {
+        List<Map<String, String>> lista = new ArrayList<>();
+        devoluciones.forEach(
+                (carrera, observacion) ->
+                        lista.add(Map.of("carrera", carrera, "observacion", observacion)));
+        return JSON.writeValueAsString(Map.of("devoluciones", lista));
+    }
+
+    private static JsonNode parcial(JsonNode flujo, String carrera) {
+        for (JsonNode uno : flujo.get("parciales")) {
+            if (uno.get("carrera").asString().equals(carrera)) {
+                return uno;
+            }
+        }
+        throw new AssertionError("Sin el parcial " + carrera);
+    }
+
+    private String etapa(String periodo) throws Exception {
+        return cuerpo(pedir(get(FLUJO.formatted(periodo)), RESPONSABLE, null))
+                .get("etapa")
+                .asString();
+    }
+
+    // US4 (T017): los 9 roles que no son el Responsable reciben 403 al devolver; él, 200.
+    @Test
+    void dadosLosRolesQueNoSonElDeConsolidacion_cuandoDevuelven_entonces403YElSuyo200()
+            throws Exception {
+        List<String> fallas = new ArrayList<>();
+        String cuerpoDel403 = null;
+        for (String rol : MATRIZ.keySet()) {
+            MEMORIA.reiniciar();
+            enConsolidacion(PERIODO);
+            MvcResult resultado = devolver(PERIODO, rol, DS, OBSERVACION);
+            int esperado = rol.equals(RESPONSABLE) ? 200 : 403;
+            if (resultado.getResponse().getStatus() != esperado) {
+                fallas.add(rol + ": " + resultado.getResponse().getStatus());
+            } else if (esperado == 403) {
+                String cuerpo = resultado.getResponse().getContentAsString(StandardCharsets.UTF_8);
+                assertThat(cuerpo).doesNotContain("RESPONSABLE_CONSOLIDACION");
+                assertThat(cuerpo(resultado).get("codigo").asString())
+                        .isEqualTo("SEGURIDAD_ACCESO_NO_AUTORIZADO");
+                if (cuerpoDel403 == null) {
+                    cuerpoDel403 = cuerpo;
+                }
+                assertThat(cuerpo).isEqualTo(cuerpoDel403);
+            }
+        }
+        assertThat(fallas).isEmpty();
+    }
+
+    @Test
+    void dadoElDistributivoFueraDeConsolidacion_cuandoSeDevuelve_entonces409Etapa()
+            throws Exception {
+        assertCodigo(
+                devolver(PERIODO, RESPONSABLE, DS, OBSERVACION),
+                409,
+                "VALIDACIONOCS_ETAPA_NO_ADMITE_DEVOLUCION");
+        enConsolidacion(PERIODO);
+        devolver(PERIODO, RESPONSABLE, DS, OBSERVACION);
+        assertCodigo(
+                devolver(PERIODO, RESPONSABLE, TDS, OBSERVACION),
+                409,
+                "VALIDACIONOCS_ETAPA_NO_ADMITE_DEVOLUCION");
+    }
+
+    @Test
+    void dadaConsolidacionSinDevolucion_cuandoSeDevuelve_entonces409YSinLaAccion()
+            throws Exception {
+        MEMORIA.sinDevolucion();
+        enConsolidacion(PERIODO);
+
+        assertCodigo(
+                devolver(PERIODO, RESPONSABLE, DS, OBSERVACION),
+                409,
+                "VALIDACIONOCS_DEVOLUCION_DESACTIVADA");
+        assertThat(cuerpo(pedir(get(FLUJO.formatted(PERIODO)), RESPONSABLE, null)).get("acciones"))
+                .extracting(JsonNode::asString)
+                .containsExactly("ENVIAR_A_REVISION");
+    }
+
+    @Test
+    void dadoUnPeriodoCerrado_cuandoSeDevuelve_entonces409PeriodoCerrado() throws Exception {
+        assertCodigo(
+                devolver(CERRADO, RESPONSABLE, DS, OBSERVACION),
+                409,
+                "VALIDACIONOCS_PERIODO_CERRADO");
     }
 
     // SC-002 y T016: los 9 roles que no son el de la etapa reciben 403, en las dos operaciones.

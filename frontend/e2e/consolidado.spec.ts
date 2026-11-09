@@ -1,5 +1,6 @@
 // F10-H02 en un navegador, con la API simulada: consolidar, adjuntar el informe y su accesibilidad
-// con axe-core (WCAG 2.1 AA). F10-H03: lo que falta para enviar a revisión, y el envío.
+// con axe-core (WCAG 2.1 AA). F10-H03: lo que falta para enviar a revisión, y el envío. F12-H05:
+// devolver dos carreras con su observación.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { ingresar, simularApi } from './simulacion';
@@ -201,5 +202,61 @@ test('dice lo que falta para enviar a revisión, envía cuando está listo y es 
   await page.getByRole('dialog').getByRole('button', { name: 'Enviar' }).click();
   await expect(page.getByText('Revisión del Vicerrectorado · versión 1')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Enviar a revisión' })).toHaveCount(0);
+  await sinFallas(page);
+});
+
+// F12-H05: el Responsable devuelve dos carreras, cada una con su observación.
+test('devuelve dos carreras con su observación y el diálogo es accesible', async ({ page }) => {
+  let devueltas: { carrera: string; observacion: string }[] = [];
+  const flujo = () => ({
+    periodo: '2026-2',
+    etapa: devueltas.length > 0 ? 'BORRADOR_CARRERA' : 'EN_CONSOLIDACION',
+    nombreDeEtapa: devueltas.length > 0 ? 'Propuesta de carrera' : 'Consolidación',
+    version: 1,
+    parciales: ['TDS', 'DS', 'EL'].map((carrera) => {
+      const devuelta = devueltas.find((una) => una.carrera === carrera);
+      return devuelta
+        ? {
+            carrera,
+            enviado: false,
+            pendienteDeConfirmar: false,
+            devolucion: {
+              por: 'consolidacion.demo',
+              en: '2026-11-08T22:10:00Z',
+              observacion: devuelta.observacion,
+            },
+          }
+        : { carrera, enviado: true, pendienteDeConfirmar: false };
+    }),
+    acciones: devueltas.length > 0 ? [] : ['ENVIAR_A_REVISION', 'DEVOLVER_PARCIALES'],
+    transiciones: [],
+  });
+  await page.route('**/api/validacionocs/periodos/*/flujo', (ruta) =>
+    ruta.fulfill({ json: flujo() }),
+  );
+  await page.route('**/api/validacionocs/periodos/*/devolucion', async (ruta) => {
+    devueltas = (ruta.request().postDataJSON() as { devoluciones: typeof devueltas }).devoluciones;
+    await ruta.fulfill({ json: flujo() });
+  });
+  await abrirConsolidado(page);
+
+  await page.getByRole('button', { name: 'Devolver parciales' }).click();
+  const dialogo = page.getByRole('dialog', { name: 'Devolver parciales' });
+  await dialogo.getByRole('checkbox', { name: 'TDS', exact: true }).check();
+  await dialogo.getByRole('checkbox', { name: 'DS', exact: true }).check();
+  await dialogo.getByLabel(/^Observación para TDS/).fill('Faltan docentes en primer nivel.');
+  await dialogo.getByLabel(/^Observación para DS/).fill('corta');
+  await expect(dialogo.getByRole('button', { name: 'Devolver' })).toBeDisabled();
+  await sinFallas(page);
+  await dialogo.getByLabel(/^Observación para DS/).fill('Un docente sin clase en segundo nivel.');
+  await dialogo.getByRole('button', { name: 'Devolver' }).click();
+
+  const estado = page.getByRole('region', { name: 'Estado del distributivo' });
+  await expect(estado).toContainText('Propuesta de carrera · versión 1');
+  await expect(estado).toContainText('TDS: devuelto por consolidacion.demo');
+  await expect(estado).toContainText('Faltan docentes en primer nivel.');
+  await expect(estado).toContainText('Un docente sin clase en segundo nivel.');
+  await expect(page.getByRole('button', { name: 'Devolver parciales' })).toHaveCount(0);
+  expect(devueltas.map((una) => una.carrera)).toEqual(['TDS', 'DS']);
   await sinFallas(page);
 });

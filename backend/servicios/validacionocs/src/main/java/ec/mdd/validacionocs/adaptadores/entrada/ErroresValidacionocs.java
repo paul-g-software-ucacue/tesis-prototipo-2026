@@ -6,12 +6,17 @@ import ec.mdd.plataforma.errores.nucleo.DetalleRespuesta;
 import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
 import ec.mdd.validacionocs.dominio.ArchivoDemasiadoGrande;
 import ec.mdd.validacionocs.dominio.ArchivoIlegible;
+import ec.mdd.validacionocs.dominio.CarreraRepetida;
 import ec.mdd.validacionocs.dominio.ConsolidadoDesactualizado;
+import ec.mdd.validacionocs.dominio.DevolucionDesactivada;
 import ec.mdd.validacionocs.dominio.EtapaConOperacionPropia;
+import ec.mdd.validacionocs.dominio.EtapaNoAdmiteDevolucion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteEnvio;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteRevision;
 import ec.mdd.validacionocs.dominio.InconsistenciasAbiertas;
+import ec.mdd.validacionocs.dominio.ObservacionInvalida;
 import ec.mdd.validacionocs.dominio.ParcialNoEncontrado;
+import ec.mdd.validacionocs.dominio.ParcialNoEnviado;
 import ec.mdd.validacionocs.dominio.ParcialYaEnviado;
 import ec.mdd.validacionocs.dominio.ParcialesPendientes;
 import ec.mdd.validacionocs.dominio.SinConsolidar;
@@ -159,7 +164,64 @@ class ErroresValidacionocs implements CatalogoDeErrores {
                         error ->
                                 List.of(
                                         new DetalleRespuesta(
-                                                "inconsistencias", cuantasQuedan(error)))));
+                                                "inconsistencias", cuantasQuedan(error)))),
+                // La devolución (F12-H05, D-98), en el orden en que se comprueban.
+                EntradaCatalogo.de(
+                        EtapaNoAdmiteDevolucion.class,
+                        "VALIDACIONOCS_ETAPA_NO_ADMITE_DEVOLUCION",
+                        409,
+                        "Etapa sin devolución",
+                        "Solo se devuelven parciales desde la consolidación."),
+                EntradaCatalogo.de(
+                        DevolucionDesactivada.class,
+                        "VALIDACIONOCS_DEVOLUCION_DESACTIVADA",
+                        409,
+                        "Devolución desactivada",
+                        "La configuración del flujo de este distributivo no admite devolver desde la"
+                                + " consolidación."),
+                EntradaCatalogo.conDetalles(
+                        CarreraRepetida.class,
+                        new DefinicionDeCodigo(
+                                "VALIDACIONOCS_CARRERA_REPETIDA",
+                                400,
+                                "Carrera repetida",
+                                "Una carrera está más de una vez en la devolución. Déjala una sola"
+                                        + " vez."),
+                        error ->
+                                List.of(
+                                        new DetalleRespuesta(
+                                                "carrera",
+                                                error.carrera() + " está más de una vez."))),
+                EntradaCatalogo.conDetalles(
+                        ObservacionInvalida.class,
+                        new DefinicionDeCodigo(
+                                "VALIDACIONOCS_OBSERVACION_INVALIDA",
+                                400,
+                                "Observación no válida",
+                                "Cada carrera devuelta lleva una observación de 10 a 500"
+                                        + " caracteres."),
+                        error ->
+                                List.of(
+                                        new DetalleRespuesta(
+                                                "carrera",
+                                                "Revisa la observación de "
+                                                        + error.carrera()
+                                                        + ": de 10 a 500 caracteres."))),
+                EntradaCatalogo.conDetalles(
+                        ParcialNoEnviado.class,
+                        new DefinicionDeCodigo(
+                                "VALIDACIONOCS_PARCIAL_NO_ENVIADO",
+                                409,
+                                "Parcial sin enviar",
+                                "Solo se devuelve un parcial enviado. Quita esa carrera de la"
+                                        + " devolución."),
+                        error ->
+                                List.of(
+                                        new DetalleRespuesta(
+                                                "carrera",
+                                                "El parcial de "
+                                                        + error.carrera()
+                                                        + " no está enviado."))));
     }
 
     // «Quedan 3: 2 duras y 1 blanda sin justificar.», con el singular cuando es una.

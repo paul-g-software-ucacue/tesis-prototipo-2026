@@ -2,6 +2,7 @@ package ec.mdd.validacionocs.puertos.salida;
 
 import ec.mdd.validacionocs.dominio.CondicionesDeRevision;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -42,6 +43,17 @@ public interface Distributivo {
      * @return si se consolidó, si quedó desactualizado, el informe y las abiertas
      */
     CondicionesDeRevision condicionesDeRevision(String periodo);
+
+    /**
+     * Marca como devueltos los parciales de esas carreras, todos o ninguno, para que vuelvan a
+     * editarse (F12-H05, research §2). Es idempotente.
+     *
+     * @param periodo el código del periodo
+     * @param carreras las carreras, sin repetidas
+     * @return el número de la versión vigente
+     * @throws ec.mdd.validacionocs.dominio.ParcialNoEncontrado si una carrera no tiene parcial
+     */
+    int marcarDevueltos(String periodo, List<String> carreras);
 
     /**
      * El distributivo de un periodo.

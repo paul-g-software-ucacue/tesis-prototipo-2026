@@ -1,8 +1,10 @@
 package ec.mdd.validacionocs.aplicacion;
 
 import ec.mdd.validacionocs.dominio.CondicionesDeRevision;
+import ec.mdd.validacionocs.dominio.DevolucionDeParcial;
 import ec.mdd.validacionocs.dominio.EstadoDeEnvio;
 import ec.mdd.validacionocs.dominio.EstadoDelPeriodo;
+import ec.mdd.validacionocs.dominio.ParcialesPendientes;
 import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
 import ec.mdd.validacionocs.dominio.Solicitante;
 import ec.mdd.validacionocs.dominio.TipoDeEtapa;
@@ -10,6 +12,7 @@ import ec.mdd.validacionocs.dominio.TipoDeTransicion;
 import ec.mdd.validacionocs.dominio.Transicion;
 import ec.mdd.validacionocs.puertos.entrada.AvanzarEtapa;
 import ec.mdd.validacionocs.puertos.entrada.ConsultarFlujo;
+import ec.mdd.validacionocs.puertos.entrada.DevolverParciales;
 import ec.mdd.validacionocs.puertos.entrada.EnviarARevision;
 import ec.mdd.validacionocs.puertos.entrada.EnviarParcial;
 import ec.mdd.validacionocs.puertos.entrada.FlujoDelDistributivo;
@@ -33,8 +36,9 @@ import java.util.Optional;
 
 /**
  * El flujo del distributivo (F12-H02): consultarlo, enviar el parcial de una carrera y el avance
- * genérico; desde F10-H03, enviar el consolidado a revisión, sin notificar (D-97). Las reglas son
- * de {@link ProcesoAprobacion}; este servicio coordina con Generación y con la bitácora.
+ * genérico; desde F10-H03, enviar el consolidado a revisión, sin notificar (D-97); desde F12-H05,
+ * devolver parciales desde EN_CONSOLIDACION, sin notificar (D-98). Las reglas son de {@link
+ * ProcesoAprobacion}; este servicio coordina con Generación y con la bitácora.
  *
  * <p>Enviar son dos transacciones, una por servicio (principio V, research §2): primero Generación
  * marca el parcial y calcula su hash, en la suya; después se registra la transición y, si era el
@@ -43,7 +47,7 @@ import java.util.Optional;
  * Generación, {@link ProcesoAprobacion#validarEnvio} rechaza lo que no cabe (FR-013).
  */
 public final class FlujoDelDistributivoServicio
-        implements ConsultarFlujo, EnviarParcial, AvanzarEtapa, EnviarARevision {
+        implements ConsultarFlujo, EnviarParcial, AvanzarEtapa, EnviarARevision, DevolverParciales {
 
     private final Distributivo distributivo;
     private final RepositorioProceso procesos;
@@ -140,6 +144,11 @@ public final class FlujoDelDistributivoServicio
         exigirAbierto(periodo);
         DistributivoActual actual = actual(periodo);
         transaccion.ejecutar(() -> proceso(periodo, actual, false)).validarRevision(quien);
+        // F12-H05, research §2: una devolución que Generación marcó y Aprobación no registró deja
+        // el parcial editable; no pasa a revisión hasta que se complete.
+        if (actual.enviados().containsValue(false)) {
+            throw new ParcialesPendientes();
+        }
         CondicionesDeRevision condiciones = distributivo.condicionesDeRevision(periodo);
         String hashDelDistributivo = distributivo.hash(periodo);
         Instant ahora = reloj.instant();
@@ -162,6 +171,45 @@ public final class FlujoDelDistributivoServicio
                             return bloqueado;
                         });
         return vista(proceso, actual, quien);
+    }
+
+    // F12-H05, research §2: como enviar un parcial. Primero el dominio sin cambiar nada; después
+    // Generación marca los parciales, todos o ninguno, en su transacción; al final, con el proceso
+    // bloqueado, el agregado vuelve a comprobar y registra. Si la última falla, repetir la
+    // devolución la completa: Generación es idempotente.
+    @Override
+    public FlujoDelDistributivo devolver(
+            String periodo, List<DevolucionDeParcial> devoluciones, Solicitante quien) {
+        exigirAbierto(periodo);
+        DistributivoActual antes = actual(periodo);
+        transaccion
+                .ejecutar(() -> proceso(periodo, antes, false))
+                .validarDevolucion(quien, devoluciones);
+        int version =
+                distributivo.marcarDevueltos(
+                        periodo, devoluciones.stream().map(DevolucionDeParcial::carrera).toList());
+        String hashDelDistributivo = distributivo.hash(periodo);
+        DistributivoActual despues = actual(periodo);
+        Instant ahora = reloj.instant();
+        ProcesoAprobacion proceso =
+                transaccion.ejecutar(
+                        () -> {
+                            ProcesoAprobacion bloqueado = proceso(periodo, despues, true);
+                            List<Transicion> nuevas =
+                                    bloqueado.devolver(
+                                            quien,
+                                            devoluciones,
+                                            version,
+                                            hashDelDistributivo,
+                                            ahora);
+                            procesos.guardar(bloqueado, nuevas);
+                            nuevas.forEach(
+                                    una ->
+                                            registro.registrar(
+                                                    cambio(periodo, una, Optional.empty())));
+                            return bloqueado;
+                        });
+        return vista(proceso, despues, quien);
     }
 
     private DistributivoActual actual(String periodo) {
@@ -219,6 +267,20 @@ public final class FlujoDelDistributivoServicio
                     Map.of("estado", transicion.desde().name(), "parcial", "PENDIENTE"),
                     Map.of("estado", transicion.hacia().name(), "parcial", "ENVIADO"));
         }
+        if (transicion.tipo() == TipoDeTransicion.DEVOLUCION) {
+            Map<String, Object> devueltos = new LinkedHashMap<>();
+            transicion
+                    .observaciones()
+                    .forEach((carrera, observacion) -> devueltos.put(carrera, observacion.texto()));
+            detalle.put("devueltos", devueltos);
+            return new CambioDeFlujo(
+                    transicion.momento(),
+                    transicion.quien(),
+                    CambioDeFlujo.Accion.DISTRIBUTIVO_DEVUELTO,
+                    detalle,
+                    Map.of("estado", transicion.desde().name()),
+                    Map.of("estado", transicion.hacia().name()));
+        }
         return new CambioDeFlujo(
                 transicion.momento(),
                 transicion.quien(),
@@ -266,7 +328,25 @@ public final class FlujoDelDistributivoServicio
                 enviado,
                 !enviado && actual.enviados().getOrDefault(carrera, false),
                 envio.map(Transicion::quien),
-                envio.map(Transicion::momento));
+                envio.map(Transicion::momento),
+                estado == EstadoDeEnvio.DEVUELTO
+                        ? devolucionDe(proceso, carrera)
+                        : Optional.empty());
+    }
+
+    // La última devolución que incluye la carrera, con su observación (FR-015).
+    private static Optional<FlujoDelDistributivo.Devolucion> devolucionDe(
+            ProcesoAprobacion proceso, String carrera) {
+        return proceso.transiciones().stream()
+                .filter(una -> una.tipo() == TipoDeTransicion.DEVOLUCION)
+                .filter(una -> una.observaciones().containsKey(carrera))
+                .reduce((primera, ultima) -> ultima)
+                .map(
+                        una ->
+                                new FlujoDelDistributivo.Devolucion(
+                                        una.quien(),
+                                        una.momento(),
+                                        una.observaciones().get(carrera).texto()));
     }
 
     private static Optional<Transicion> envioDe(ProcesoAprobacion proceso, String carrera) {

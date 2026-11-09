@@ -94,6 +94,12 @@ public record CambioDeFlujo(
          * antes y después, y la versión, el hash y la huella del informe en el detalle
          * (contracts/bitacora.md, D-95, D-97).
          */
-        CONSOLIDADO_ENVIADO_A_REVISION
+        CONSOLIDADO_ENVIADO_A_REVISION,
+        /**
+         * Parciales devueltos desde EN_CONSOLIDACION (F12-H05): la etapa antes y después, y la
+         * versión, el hash y la observación de cada carrera devuelta en el detalle
+         * (contracts/bitacora.md, D-95, D-98). Una entrada aunque devuelva varias carreras.
+         */
+        DISTRIBUTIVO_DEVUELTO
     }
 }

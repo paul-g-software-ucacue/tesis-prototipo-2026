@@ -2,6 +2,7 @@ package ec.mdd.validacionocs.adaptadores.salida;
 
 import ec.mdd.validacionocs.dominio.EstadoDeEnvio;
 import ec.mdd.validacionocs.dominio.EtapaDelProceso;
+import ec.mdd.validacionocs.dominio.Observacion;
 import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
 import ec.mdd.validacionocs.dominio.TipoDeEtapa;
 import ec.mdd.validacionocs.dominio.TipoDeTransicion;
@@ -9,10 +10,12 @@ import ec.mdd.validacionocs.dominio.Transicion;
 import ec.mdd.validacionocs.puertos.salida.RepositorioProceso;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import tools.jackson.core.type.TypeReference;
@@ -20,7 +23,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Los procesos de aprobación en {@code validacionocs.proceso_aprobacion}, con sus parciales y sus
- * transiciones (F12-H02, V3). Las transiciones solo se insertan (principio VII).
+ * transiciones (F12-H02, V3), y las observaciones de cada devolución (F12-H05, V4). Las
+ * transiciones y sus observaciones solo se insertan (principio VII).
  */
 public final class RepositorioProcesoJdbc implements RepositorioProceso {
 
@@ -97,12 +101,13 @@ public final class RepositorioProcesoJdbc implements RepositorioProceso {
     }
 
     private void insertar(String periodo, Transicion transicion) {
+        UUID id = UUID.randomUUID();
         jdbc.sql(
                         "INSERT INTO validacionocs.transicion (id, periodo, tipo, desde, hacia,"
                                 + " carrera, version, hash, quien, momento) VALUES (:id, :periodo,"
                                 + " :tipo, :desde, :hacia, :carrera, :version, :hash, :quien,"
                                 + " :momento)")
-                .param("id", UUID.randomUUID())
+                .param("id", id)
                 .param("periodo", periodo)
                 .param("tipo", transicion.tipo().name())
                 .param("desde", transicion.desde().name())
@@ -113,6 +118,19 @@ public final class RepositorioProcesoJdbc implements RepositorioProceso {
                 .param("quien", transicion.quien())
                 .param("momento", Timestamp.from(transicion.momento()))
                 .update();
+        // Las observaciones de una devolución (F12-H05), también solo de inserción.
+        transicion
+                .observaciones()
+                .forEach(
+                        (carrera, observacion) ->
+                                jdbc.sql(
+                                                "INSERT INTO validacionocs.observacion_de_devolucion"
+                                                        + " (transicion_id, carrera, texto) VALUES"
+                                                        + " (:id, :carrera, :texto)")
+                                        .param("id", id)
+                                        .param("carrera", carrera)
+                                        .param("texto", observacion.texto())
+                                        .update());
     }
 
     private Optional<ProcesoAprobacion> leer(String consulta, String periodo) {
@@ -154,9 +172,10 @@ public final class RepositorioProcesoJdbc implements RepositorioProceso {
     }
 
     private List<Transicion> transiciones(String periodo) {
+        Map<UUID, Map<String, Observacion>> observaciones = observaciones(periodo);
         // El orden de inserción dentro de un mismo momento: el envío antes que su paso de etapa.
         return jdbc.sql(
-                        "SELECT tipo, desde, hacia, carrera, version, hash, quien, momento"
+                        "SELECT id, tipo, desde, hacia, carrera, version, hash, quien, momento"
                                 + " FROM validacionocs.transicion WHERE periodo = :periodo"
                                 + " ORDER BY momento, CASE tipo WHEN 'ENVIO_PARCIAL' THEN 0 ELSE 1"
                                 + " END, ctid")
@@ -171,8 +190,31 @@ public final class RepositorioProcesoJdbc implements RepositorioProceso {
                                         fila.getInt("version"),
                                         fila.getString("hash"),
                                         fila.getString("quien"),
-                                        fila.getTimestamp("momento").toInstant()))
+                                        fila.getTimestamp("momento").toInstant(),
+                                        observaciones.getOrDefault(
+                                                fila.getObject("id", UUID.class), Map.of())))
                 .list();
+    }
+
+    private Map<UUID, Map<String, Observacion>> observaciones(String periodo) {
+        Map<UUID, Map<String, Observacion>> porTransicion = new HashMap<>();
+        jdbc.sql(
+                        "SELECT o.transicion_id, o.carrera, o.texto"
+                                + " FROM validacionocs.observacion_de_devolucion o"
+                                + " JOIN validacionocs.transicion t ON t.id = o.transicion_id"
+                                + " WHERE t.periodo = :periodo")
+                .param("periodo", periodo)
+                .query(
+                        (fila, numero) ->
+                                porTransicion
+                                        .computeIfAbsent(
+                                                fila.getObject("transicion_id", UUID.class),
+                                                id -> new TreeMap<>())
+                                        .put(
+                                                fila.getString("carrera"),
+                                                new Observacion(fila.getString("texto"))))
+                .list();
+        return porTransicion;
     }
 
     private static List<EtapaGuardada> etapas(List<EtapaDelProceso> etapas) {
@@ -180,17 +222,26 @@ public final class RepositorioProcesoJdbc implements RepositorioProceso {
                 .map(
                         una ->
                                 new EtapaGuardada(
-                                        una.tipo().name(), una.activa(), una.nombre(), una.rol()))
+                                        una.tipo().name(),
+                                        una.activa(),
+                                        una.nombre(),
+                                        una.rol(),
+                                        una.admiteDevolucion()))
                 .toList();
     }
 
     private record Cabecera(TipoDeEtapa estado, String etapas, Instant distributivoCreadoEn) {}
 
-    /** Una etapa de la copia, tal como va en el jsonb. */
-    record EtapaGuardada(String tipo, boolean activa, String nombre, String rol) {
+    /**
+     * Una etapa de la copia, tal como va en el jsonb. {@code admiteDevolucion} llegó con F12-H05;
+     * la migración V4 lo completó en los procesos anteriores.
+     */
+    record EtapaGuardada(
+            String tipo, boolean activa, String nombre, String rol, boolean admiteDevolucion) {
 
         EtapaDelProceso etapa() {
-            return new EtapaDelProceso(TipoDeEtapa.valueOf(tipo), activa, nombre, rol);
+            return new EtapaDelProceso(
+                    TipoDeEtapa.valueOf(tipo), activa, nombre, rol, admiteDevolucion);
         }
     }
 }

@@ -40,7 +40,7 @@ El envío que pasa lo prueba `EnvioARevisionIntegrationTest`, con PostgreSQL rea
 - deja una sola entrada `CONSOLIDADO_ENVIADO_A_REVISION`;
 - con dos envíos a la vez, un solo paso, y el otro recibe `EtapaNoAdmiteRevision` (SC-004).
 
-**SC-005 (enviar en menos de 30 s con el consolidado listo): pendiente hasta F12-H05 (#211).** No hay un consolidado listo en los datos de prueba ni en la demo.
+**SC-005 (enviar en menos de 30 s con el consolidado listo): cumplido, 15 s, el 2026-11-08 con F12-H05 (#211).** Ver la sección «SC-005 con F12-H05», al final.
 
 ## El 403 de los roles (SC-003)
 
@@ -90,6 +90,22 @@ Comprobación del autor con `quickstart.md` §3, en 2026-I:
 
 **Un intento fallido al adjuntar, sin defecto.** Los dos primeros intentos de adjuntar mostraron «Servicio no disponible». El autor eligió un PDF de la Papelera y el navegador no pudo leerlo: cortó la conexión sin enviar el archivo. El API Gateway registró `AbortedException` y Generación, el cuerpo vacío (`EOFException`). Con un PDF de otra carpeta se adjuntó a la primera.
 
-**SC-005 (enviar a revisión en menos de 30 s con el consolidado listo): pendiente hasta F12-H05 (#211).** Con las 211 duras de la demo, el envío no pasa.
+**SC-005 (enviar a revisión en menos de 30 s con el consolidado listo):** con las 211 duras de la demo, el envío no pasa. Se cronometró en el perfil local con F12-H05 (sección siguiente).
 
 En la demo, 2026-I queda en EN_CONSOLIDACION con todos los parciales enviados: las carreras están en solo lectura en ese periodo hasta que se pueda devolver un parcial (#211).
+
+## SC-005 con F12-H05 (2026-11-08)
+
+Con F12-H05 (#211, `specs/043-devolver-parcial/evidencia.md`), el distributivo de 2026-I llegó a un consolidado listo en el perfil local, construido desde la rama `043-devolver-parcial`:
+- un script del scratchpad propuso con la sugerencia de docentes los 165 paralelos;
+- el panel quedó con 0 duras y 92 blandas de RN-05, que se justificaron;
+- se enviaron los 7 parciales, se consolidó y se adjuntó el informe.
+
+El autor devolvió CONTABILIDAD y la reenvió sin cambios, y el consolidado siguió al día. Después envió a revisión.
+
+| Qué | Resultado |
+|---|---|
+| **SC-005: enviar a revisión en menos de 30 s** | **Cumplido, 15 s**, cronometrado por el autor desde que abrió «Consolidado del periodo» hasta ver «Revisión del Vicerrectorado» |
+| El envío que pasa con datos reales | OK: «Revisión del Vicerrectorado · versión 1», con los 7 parciales enviados |
+
+**Un hallazgo, sin corregir.** Ya en EN_REVISION_VRA, `consolidacion.demo` sigue viendo «Volver a consolidar». Generación solo bloquea consolidar si el periodo está cerrado (`ConsolidarServicio`), y no sabe en qué etapa está el distributivo. La confirmación de enviar a revisión dice «Ya no se podrá consolidar ni justificar en esta etapa». Queda para decidir con el autor.
