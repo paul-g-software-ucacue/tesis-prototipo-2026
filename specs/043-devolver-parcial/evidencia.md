@@ -40,7 +40,20 @@ Con la sugerencia de docentes, el distributivo de 2026-I **sí llega a un consol
 - quedaron 0 paralelos sin propuesta y 46 docentes con clase; el panel quedó con **0 duras** y 92 blandas, todas de RN-05;
 - justificó las 92 blandas, envió los 7 parciales, consolidó y adjuntó un PDF mínimo: el consolidado quedó con 0 abiertas, al día y con informe.
 
-**Pendiente:** cronometrar «Enviar a revisión» en la pantalla y anotarlo en `specs/042-enviar-revision/evidencia.md`.
+**Cronometrado por el autor: 15 s** (meta: menos de 30 s), anotado en `specs/042-enviar-revision/evidencia.md`. Fue el primer envío a revisión que pasa con datos reales.
+
+## Comprobación del autor en el perfil local (quickstart §3)
+
+Sobre el consolidado listo de la sección anterior, el 2026-11-08:
+
+| Paso | Resultado |
+|---|---|
+| 1–3. Devolver CONTABILIDAD como `consolidacion.demo` | OK: con «corta», error en el campo y «Devolver» deshabilitado; con la observación, «Propuesta de carrera», CONTABILIDAD «devuelto por consolidacion.demo el 8/11/26, 20:08» con la observación debajo, las otras 6 enviadas y sin los botones |
+| **SC-005: devolver en menos de 1 minuto** | **Cumplido, 30 s**, desde abrir «Consolidado del periodo» |
+| 4–5. `coordinacion.demo` reenvía sin cambios | OK: vuelve a «Consolidación»; el consolidado sigue al día (consolidado a las 19:22) y con 0 abiertas |
+| 7. Bitácora | OK: `DISTRIBUTIVO_DEVUELTO` a las 20:08:15, de EN_CONSOLIDACION a BORRADOR_CARRERA, con la observación de `550411C02-P-0301`; después `PARCIAL_ENVIADO` y `ETAPA_AVANZADA` a las 20:10:03 |
+| 8. `vicerrectorado.demo` en el consolidado | OK: ve la etapa, sin «Devolver parciales» |
+| Enviar a revisión al final | OK: «Revisión del Vicerrectorado», en 15 s |
 
 ## Desviaciones del plan
 

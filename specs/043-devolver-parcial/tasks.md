@@ -214,7 +214,7 @@ description: "Tareas de F12-H05: devolver un parcial a su carrera con una observ
   - en `frontend/e2e/consolidado.spec.ts`, la devolución de dos carreras con la API simulada y axe-core con el diálogo abierto;
   - en `frontend/e2e/oferta.spec.ts`, el coordinador con su parcial devuelto, que ve la observación y «Reenviar parcial».
 - [X] T019 Crear `deploy/probar_devolucion.sh` con los 9 pasos de `contracts/demostracion.md`, sobre los datos de prueba y con la base limpia al terminar, sin imprimir claves ni tokens. Agregar su paso a `.github/workflows/perfil-consolidado.yml` después de «Enviar a revisión». Pasar shellcheck. Correr `probar_avance.sh`, `probar_revision.sh` y `probar_devolucion.sh` en su orden sobre un perfil nuevo, y después los scripts que siguen en el workflow.
-- [ ] T020 SC-007, con tiempo acotado de 2 horas (research §12, quickstart §5). En el perfil local:
+- [X] T020 SC-007, con tiempo acotado de 2 horas (research §12, quickstart §5). En el perfil local:
   - llevar 2026-I a EN_CONSOLIDACION;
   - devolver las carreras;
   - proponer los paralelos que faltan con la sugerencia de docentes (F08) por la API;
