@@ -12,7 +12,9 @@ import static org.mockito.Mockito.when;
 import ec.mdd.generacion.dominio.CargaHoraria;
 import ec.mdd.generacion.dominio.Consolidacion;
 import ec.mdd.generacion.dominio.ConsolidadoDelPeriodo;
+import ec.mdd.generacion.puertos.entrada.ConsolidadoEnRevision;
 import ec.mdd.generacion.puertos.entrada.ConsultarConsolidado;
+import ec.mdd.generacion.puertos.entrada.EnRevision;
 import ec.mdd.generacion.puertos.entrada.PeriodoCerrado;
 import ec.mdd.generacion.puertos.entrada.SinDistributivo;
 import ec.mdd.generacion.puertos.salida.CambioDeDistributivo;
@@ -23,6 +25,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,6 +45,16 @@ class ConsolidarServicioTest {
     private final ConsultarConsolidado consultar = mock(ConsultarConsolidado.class);
     private final RepositorioConsolidacion consolidacion = mock(RepositorioConsolidacion.class);
     private final RegistroDeCambios registro = mock(RegistroDeCambios.class);
+    // #215: si el distributivo está en revisión, fuera o dentro de la transacción (research §2).
+    private boolean dentro;
+    private boolean enRevisionFuera;
+    private boolean enRevisionDentro;
+    private final List<Boolean> consultadoDentro = new ArrayList<>();
+    private final EnRevision enRevision =
+            periodo -> {
+                consultadoDentro.add(dentro);
+                return dentro ? enRevisionDentro : enRevisionFuera;
+            };
     private final ConsolidarServicio servicio =
             new ConsolidarServicio(
                     consultar,
@@ -50,10 +63,47 @@ class ConsolidarServicioTest {
                     new Transaccion() {
                         @Override
                         public <T> T ejecutar(Supplier<T> trabajo) {
-                            return trabajo.get();
+                            dentro = true;
+                            try {
+                                return trabajo.get();
+                            } finally {
+                                dentro = false;
+                            }
                         }
                     },
+                    enRevision,
                     Clock.fixed(AHORA, ZoneOffset.UTC));
+
+    @Test
+    void dadoElDistributivoEnRevision_cuandoSeConsolida_entoncesSeRechazaSinGuardarNiRegistrar() {
+        when(consultar.consolidado(PERIODO)).thenReturn(consolidado(true, 0));
+        enRevisionFuera = true;
+        enRevisionDentro = true;
+
+        assertThatThrownBy(() -> servicio.consolidar(PERIODO, QUIEN))
+                .isInstanceOf(ConsolidadoEnRevision.class);
+        verify(consolidacion, never()).guardarConsolidacion(any(), any());
+        verify(registro, never()).registrar(any());
+    }
+
+    @Test
+    void dadaUnaConsolidacion_cuandoSeGuarda_entoncesLaEtapaSeConsultaDentroDeLaTransaccion() {
+        when(consultar.consolidado(PERIODO)).thenReturn(consolidado(true, 0));
+
+        servicio.consolidar(PERIODO, QUIEN);
+
+        assertThat(consultadoDentro).contains(true);
+    }
+
+    @Test
+    void dadoUnPeriodoCerradoEnRevision_cuandoSeConsolida_entoncesRespondePeriodoCerrado() {
+        when(consultar.consolidado(PERIODO)).thenReturn(consolidado(false, 0));
+        enRevisionFuera = true;
+        enRevisionDentro = true;
+
+        assertThatThrownBy(() -> servicio.consolidar(PERIODO, QUIEN))
+                .isInstanceOf(PeriodoCerrado.class);
+    }
 
     @Test
     void dadaLaVersion_cuandoSeConsolida_entoncesGuardaQuienYCuando() {

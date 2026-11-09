@@ -52,6 +52,21 @@ public final class RepositorioProcesoJdbc implements RepositorioProceso {
         return leer(PROCESO + " FOR UPDATE", periodo);
     }
 
+    // #215, research §2: FOR SHARE espera al FOR UPDATE del envío a revisión, y lo hace esperar.
+    @Override
+    public Optional<EstadoCompartido> estadoCompartido(String periodo) {
+        return jdbc.sql(
+                        "SELECT estado, distributivo_creado_en FROM validacionocs.proceso_aprobacion"
+                                + " WHERE periodo = :periodo FOR SHARE")
+                .param("periodo", periodo)
+                .query(
+                        (fila, numero) ->
+                                new EstadoCompartido(
+                                        TipoDeEtapa.valueOf(fila.getString("estado")),
+                                        fila.getTimestamp("distributivo_creado_en").toInstant()))
+                .optional();
+    }
+
     @Override
     public void crear(ProcesoAprobacion proceso, Instant ahora) {
         // Los parciales y las transiciones del anterior se van con él (on delete cascade).

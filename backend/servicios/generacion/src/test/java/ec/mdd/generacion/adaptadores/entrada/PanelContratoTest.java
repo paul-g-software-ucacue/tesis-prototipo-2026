@@ -14,7 +14,9 @@ import ec.mdd.generacion.dominio.ObjetoAfectado;
 import ec.mdd.generacion.dominio.PanelDeInconsistencias;
 import ec.mdd.generacion.dominio.Severidad;
 import ec.mdd.generacion.dominio.TipoDeInconsistencia;
+import ec.mdd.generacion.puertos.entrada.ConsolidadoEnRevision;
 import ec.mdd.generacion.puertos.entrada.ConsultarPanel;
+import ec.mdd.generacion.puertos.entrada.EnRevision;
 import ec.mdd.generacion.puertos.entrada.InconsistenciaNoEncontrada;
 import ec.mdd.generacion.puertos.entrada.InconsistenciaNoJustificable;
 import ec.mdd.generacion.puertos.entrada.JustificarInconsistencia;
@@ -41,6 +43,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -108,6 +111,18 @@ class PanelContratoTest {
                 .contains(detalle)
                 .contains(indicacion);
         assertThat(resto).contains("\"pantalla\":\"" + pantalla + "\"");
+    }
+
+    // #215: en revisión se consulta, y lo dice.
+    @Test
+    void dadoElDistributivoEnRevision_cuandoSeConsulta_entonces200ConEnRevision() throws Exception {
+        MvcResult resultado = pedir("EN-REVISION", CONSOLIDA);
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString()).contains("\"enRevision\":true");
+        contrato.validar(resultado);
+        assertThat(pedir("2026-I", CONSOLIDA).getResponse().getContentAsString())
+                .contains("\"enRevision\":false");
     }
 
     @Test
@@ -205,7 +220,8 @@ class PanelContratoTest {
         "RESUELTA,409,GENERACION_INCONSISTENCIA_NO_ENCONTRADA",
         "DURA,409,GENERACION_INCONSISTENCIA_DURA",
         "CERRADO,409,GENERACION_PERIODO_CERRADO",
-        "SIN,409,GENERACION_SIN_DISTRIBUTIVO"
+        "SIN,409,GENERACION_SIN_DISTRIBUTIVO",
+        "EN-REVISION,409,GENERACION_CONSOLIDADO_EN_REVISION"
     })
     void dadoLoQueNoAdmite_cuandoJustifica_entoncesElCodigoDelCatalogo(
             String periodo, int estado, String codigo) throws Exception {
@@ -286,6 +302,14 @@ class PanelContratoTest {
                     };
         }
 
+        // #215: el periodo EN-REVISION tiene el distributivo en revisión. Es el mismo doble que el
+        // de ConsolidadoContratoTest; PermisosGeneracionTest importa los dos y usa este.
+        @Bean
+        @Primary
+        EnRevision enRevisionDelPanel() {
+            return "EN-REVISION"::equals;
+        }
+
         @Bean
         JustificarInconsistencia justificarInconsistencia() {
             return solicitud -> {
@@ -295,6 +319,7 @@ class PanelContratoTest {
                     case "DURA" -> throw new InconsistenciaNoJustificable();
                     case "CERRADO" -> throw new PeriodoCerrado();
                     case "SIN" -> throw new SinDistributivo();
+                    case "EN-REVISION" -> throw new ConsolidadoEnRevision();
                     default -> PEDIDOS.add(solicitud.quien());
                 }
                 return new EntradaDelPanel(

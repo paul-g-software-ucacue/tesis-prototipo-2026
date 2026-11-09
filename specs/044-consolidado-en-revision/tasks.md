@@ -68,7 +68,7 @@ description: "Tareas de #215: el consolidado no cambia durante la revisión"
 
 **Independent Test**: con el proceso en EN_REVISION_VRA, las tres operaciones responden 409 `GENERACION_CONSOLIDADO_EN_REVISION`, sin guardar ni registrar nada (`probar_consolidado_en_revision.sh`, paso 4).
 
-- [ ] T005 [P] [US1] En Validación OCS, ver fallar primero:
+- [X] T005 [P] [US1] En Validación OCS, ver fallar primero:
   - `VAL/test/.../dominio/TipoDeEtapaTest.java`: `admiteCambiosEnElConsolidado()` es verdadera para BORRADOR_CARRERA, BORRADOR_UNIDADES y EN_CONSOLIDACION, y falsa para las otras 6;
   - `VAL/test/.../aplicacion/EtapaDelConsolidadoServicioTest.java`: con el proceso en cada etapa; sin proceso, `true`; con el proceso de otro distributivo (otra `distributivo_creado_en`), `true`.
 
@@ -76,7 +76,7 @@ description: "Tareas de #215: el consolidado no cambia durante la revisión"
   - `TipoDeEtapa.admiteCambiosEnElConsolidado()`;
   - `RepositorioProceso.estadoCompartido(periodo)`, que devuelve el estado y `distributivoCreadoEn`, con su implementación en `RepositorioProcesoJdbc` (`SELECT … FOR SHARE`);
   - el servicio.
-- [ ] T006 [US1] En Generación, agregar y ver fallar, con Mockito:
+- [X] T006 [US1] En Generación, agregar y ver fallar, con Mockito:
   - en `ConsolidarServicioTest`, `JustificarInconsistenciaServicioTest` e `InformeSustentadoServicioTest`:
     - si el puerto dice que no admite cambios, `ConsolidadoEnRevision`, sin guardar y sin registrar;
     - en el informe, la comprobación va dos veces (research §2, A2 del análisis): antes de guardar el archivo, con `enRevision` del consolidado leído al empezar, sin tocar el almacén; y dentro de la transacción. Una prueba para cada una;
@@ -85,8 +85,8 @@ description: "Tareas de #215: el consolidado no cambia durante la revisión"
   - en las pruebas de `ConsultarConsolidado` y del panel (`PanelDeInconsistencias`): `enRevision` es lo contrario de lo que responde el puerto.
 
   Después, en un comando aparte: la comprobación en los tres servicios, `enRevision` en `ConsolidadoDelPeriodo` y en el panel, y su mapeo en los controladores.
-- [ ] T007 [US1] Agregar a las pruebas de contrato de Generación (las de consolidado, informe y panel) y ver fallar: con el doble del puerto en «no admite», el 409 `GENERACION_CONSOLIDADO_EN_REVISION` en las tres operaciones, y `enRevision: true` en las dos consultas, que cumplen el esquema.
-- [ ] T008 [US1] En `VAL/main/.../aplicacion/FlujoDelDistributivoServicio.java`, tomar el momento del envío a revisión dentro de la transacción bloqueada (research §2). Crear `VAL/integrationTest/.../EtapaDelConsolidadoIntegrationTest.java` con PostgreSQL real:
+- [X] T007 [US1] Agregar a las pruebas de contrato de Generación (las de consolidado, informe y panel) y ver fallar: con el doble del puerto en «no admite», el 409 `GENERACION_CONSOLIDADO_EN_REVISION` en las tres operaciones, y `enRevision: true` en las dos consultas, que cumplen el esquema.
+- [X] T008 [US1] En `VAL/main/.../aplicacion/FlujoDelDistributivoServicio.java`, tomar el momento del envío a revisión dentro de la transacción bloqueada (research §2). Crear `VAL/integrationTest/.../EtapaDelConsolidadoIntegrationTest.java` con PostgreSQL real:
   - un hilo abre una transacción, llama a `admiteCambios` (que toma el `FOR SHARE`), espera 1 s y confirma;
   - otro envía a revisión al mismo tiempo, con el reloj del sistema;
   - el envío espera, y su transición queda con un momento posterior al de la confirmación del primero (SC-004);

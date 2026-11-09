@@ -18,6 +18,7 @@ import ec.mdd.generacion.aplicacion.ConsultarPanelServicio;
 import ec.mdd.generacion.aplicacion.ConsultarParcialesServicio;
 import ec.mdd.generacion.aplicacion.ConsultarSugerenciaServicio;
 import ec.mdd.generacion.aplicacion.CrearDistributivoServicio;
+import ec.mdd.generacion.aplicacion.EnRevisionServicio;
 import ec.mdd.generacion.aplicacion.InformeSustentadoServicio;
 import ec.mdd.generacion.aplicacion.JustificarInconsistenciaServicio;
 import ec.mdd.generacion.aplicacion.ParcialesDelDistributivoServicio;
@@ -32,10 +33,12 @@ import ec.mdd.generacion.puertos.entrada.ConsultarConsolidado;
 import ec.mdd.generacion.puertos.entrada.ConsultarPanel;
 import ec.mdd.generacion.puertos.entrada.ConsultarParciales;
 import ec.mdd.generacion.puertos.entrada.ConsultarSugerencia;
+import ec.mdd.generacion.puertos.entrada.EnRevision;
 import ec.mdd.generacion.puertos.entrada.GestionarInforme;
 import ec.mdd.generacion.puertos.entrada.JustificarInconsistencia;
 import ec.mdd.generacion.puertos.entrada.ParcialesDelDistributivo;
 import ec.mdd.generacion.puertos.entrada.ProponerDocente;
+import ec.mdd.generacion.puertos.requeridos.EtapaDelConsolidado;
 import ec.mdd.generacion.puertos.salida.AlmacenDeArchivos;
 import ec.mdd.generacion.puertos.salida.DatosParaActividades;
 import ec.mdd.generacion.puertos.salida.DatosParaAfinidad;
@@ -193,9 +196,10 @@ public class ConfiguracionGeneracion {
             ConsultarPanel panel,
             RepositorioJustificaciones justificaciones,
             RegistroDeCambios registro,
-            Transaccion transaccion) {
+            Transaccion transaccion,
+            EnRevision enRevision) {
         return new JustificarInconsistenciaServicio(
-                panel, justificaciones, registro, transaccion, Clock.systemUTC());
+                panel, justificaciones, registro, transaccion, enRevision, Clock.systemUTC());
     }
 
     /** Los archivos del negocio, en el volumen (D-88). */
@@ -226,9 +230,10 @@ public class ConfiguracionGeneracion {
             ConsultarConsolidado consultar,
             RepositorioConsolidacion consolidacion,
             RegistroDeCambios registro,
-            Transaccion transaccion) {
+            Transaccion transaccion,
+            EnRevision enRevision) {
         return new ConsolidarServicio(
-                consultar, consolidacion, registro, transaccion, Clock.systemUTC());
+                consultar, consolidacion, registro, transaccion, enRevision, Clock.systemUTC());
     }
 
     /** Adjuntar y descargar el informe sustentado (RF-32). */
@@ -238,9 +243,26 @@ public class ConfiguracionGeneracion {
             AlmacenDeArchivos almacen,
             RepositorioConsolidacion consolidacion,
             RegistroDeCambios registro,
-            Transaccion transaccion) {
+            Transaccion transaccion,
+            EnRevision enRevision) {
         return new InformeSustentadoServicio(
-                consultar, almacen, consolidacion, registro, transaccion, Clock.systemUTC());
+                consultar,
+                almacen,
+                consolidacion,
+                registro,
+                transaccion,
+                enRevision,
+                Clock.systemUTC());
+    }
+
+    /**
+     * Si el distributivo ya está en revisión: lo pregunta a Aprobación, que implementa el puerto
+     * requerido en el mismo proceso (#215, D-99).
+     */
+    @Bean
+    public EnRevision enRevision(
+            EtapaDelConsolidado etapa, RepositorioDistributivos distributivos) {
+        return new EnRevisionServicio(etapa, distributivos);
     }
 
     /** La carga horaria de un docente (RF-27, D-82). */

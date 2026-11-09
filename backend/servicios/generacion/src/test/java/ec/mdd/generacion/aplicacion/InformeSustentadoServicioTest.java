@@ -14,7 +14,9 @@ import ec.mdd.generacion.dominio.Consolidacion;
 import ec.mdd.generacion.dominio.ConsolidadoDelPeriodo;
 import ec.mdd.generacion.dominio.InformeNoEsPdf;
 import ec.mdd.generacion.dominio.InformeSustentado;
+import ec.mdd.generacion.puertos.entrada.ConsolidadoEnRevision;
 import ec.mdd.generacion.puertos.entrada.ConsultarConsolidado;
+import ec.mdd.generacion.puertos.entrada.EnRevision;
 import ec.mdd.generacion.puertos.entrada.InformeIlegible;
 import ec.mdd.generacion.puertos.entrada.InformeNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.PeriodoCerrado;
@@ -32,6 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -58,6 +61,16 @@ class InformeSustentadoServicioTest {
     private final AlmacenDeArchivos almacen = mock(AlmacenDeArchivos.class);
     private final RepositorioConsolidacion repositorio = mock(RepositorioConsolidacion.class);
     private final RegistroDeCambios registro = mock(RegistroDeCambios.class);
+    // #215: si el distributivo está en revisión, fuera o dentro de la transacción (research §2).
+    private boolean dentro;
+    private boolean enRevisionFuera;
+    private boolean enRevisionDentro;
+    private final List<Boolean> consultadoDentro = new ArrayList<>();
+    private final EnRevision enRevision =
+            periodo -> {
+                consultadoDentro.add(dentro);
+                return dentro ? enRevisionDentro : enRevisionFuera;
+            };
     private final InformeSustentadoServicio servicio =
             new InformeSustentadoServicio(
                     consultar,
@@ -67,9 +80,15 @@ class InformeSustentadoServicioTest {
                     new Transaccion() {
                         @Override
                         public <T> T ejecutar(Supplier<T> trabajo) {
-                            return trabajo.get();
+                            dentro = true;
+                            try {
+                                return trabajo.get();
+                            } finally {
+                                dentro = false;
+                            }
                         }
                     },
+                    enRevision,
                     Clock.fixed(AHORA, ZoneOffset.UTC));
 
     @BeforeEach
@@ -81,6 +100,31 @@ class InformeSustentadoServicioTest {
                                 Optional.of(new Consolidacion(QUIEN, AHORA)),
                                 Optional.empty()));
         when(almacen.guardar(any())).thenReturn(CLAVE);
+    }
+
+    // A2 del análisis: antes de guardar el archivo, sin tocar el almacén.
+    @Test
+    void dadoElDistributivoEnRevision_cuandoSeAdjunta_entoncesSeRechazaSinTocarElAlmacen() {
+        enRevisionFuera = true;
+        enRevisionDentro = true;
+
+        assertThatThrownBy(() -> servicio.adjuntar(PERIODO, "informe.pdf", PDF, QUIEN))
+                .isInstanceOf(ConsolidadoEnRevision.class);
+        verify(almacen, never()).guardar(any());
+        verify(repositorio, never()).guardarInforme(any(), any());
+        verify(registro, never()).registrar(any());
+    }
+
+    // Y otra vez dentro de la transacción, por si el envío a revisión llegó entre las dos.
+    @Test
+    void dadoUnEnvioARevisionEntreLasDosComprobaciones_cuandoSeAdjunta_entoncesNoGuardaLaFila() {
+        enRevisionDentro = true;
+
+        assertThatThrownBy(() -> servicio.adjuntar(PERIODO, "informe.pdf", PDF, QUIEN))
+                .isInstanceOf(ConsolidadoEnRevision.class);
+        verify(repositorio, never()).guardarInforme(any(), any());
+        verify(registro, never()).registrar(any());
+        assertThat(consultadoDentro).containsExactly(false, true);
     }
 
     @Test

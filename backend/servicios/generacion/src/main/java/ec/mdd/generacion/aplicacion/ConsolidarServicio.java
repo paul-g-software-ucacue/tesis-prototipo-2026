@@ -2,8 +2,10 @@ package ec.mdd.generacion.aplicacion;
 
 import ec.mdd.generacion.dominio.Consolidacion;
 import ec.mdd.generacion.dominio.ConsolidadoDelPeriodo;
+import ec.mdd.generacion.puertos.entrada.ConsolidadoEnRevision;
 import ec.mdd.generacion.puertos.entrada.Consolidar;
 import ec.mdd.generacion.puertos.entrada.ConsultarConsolidado;
+import ec.mdd.generacion.puertos.entrada.EnRevision;
 import ec.mdd.generacion.puertos.entrada.PeriodoCerrado;
 import ec.mdd.generacion.puertos.entrada.SinDistributivo;
 import ec.mdd.generacion.puertos.salida.CambioDeDistributivo;
@@ -25,6 +27,7 @@ public final class ConsolidarServicio implements Consolidar {
     private final RepositorioConsolidacion consolidacion;
     private final RegistroDeCambios registro;
     private final Transaccion transaccion;
+    private final EnRevision enRevision;
     private final Clock reloj;
 
     /** Recibe la consulta y los puertos de salida. */
@@ -33,11 +36,13 @@ public final class ConsolidarServicio implements Consolidar {
             RepositorioConsolidacion consolidacion,
             RegistroDeCambios registro,
             Transaccion transaccion,
+            EnRevision enRevision,
             Clock reloj) {
         this.consultar = consultar;
         this.consolidacion = consolidacion;
         this.registro = registro;
         this.transaccion = transaccion;
+        this.enRevision = enRevision;
         this.reloj = reloj;
     }
 
@@ -51,6 +56,10 @@ public final class ConsolidarServicio implements Consolidar {
         Instant ahora = reloj.instant();
         transaccion.ejecutar(
                 () -> {
+                    // #215, D-99: dentro de la transacción, para no quedar después de un envío.
+                    if (enRevision.enRevision(periodo)) {
+                        throw new ConsolidadoEnRevision();
+                    }
                     consolidacion.guardarConsolidacion(version, new Consolidacion(quien, ahora));
                     registro.registrar(
                             new CambioDeDistributivo(

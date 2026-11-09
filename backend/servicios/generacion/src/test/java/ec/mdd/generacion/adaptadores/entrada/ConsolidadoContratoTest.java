@@ -16,8 +16,10 @@ import ec.mdd.generacion.dominio.EstadoDelParcial;
 import ec.mdd.generacion.dominio.InformeDemasiadoGrande;
 import ec.mdd.generacion.dominio.InformeNoEsPdf;
 import ec.mdd.generacion.dominio.InformeSustentado;
+import ec.mdd.generacion.puertos.entrada.ConsolidadoEnRevision;
 import ec.mdd.generacion.puertos.entrada.Consolidar;
 import ec.mdd.generacion.puertos.entrada.ConsultarConsolidado;
+import ec.mdd.generacion.puertos.entrada.EnRevision;
 import ec.mdd.generacion.puertos.entrada.GestionarInforme;
 import ec.mdd.generacion.puertos.entrada.InformeIlegible;
 import ec.mdd.generacion.puertos.entrada.InformeNoEncontrado;
@@ -74,6 +76,18 @@ class ConsolidadoContratoTest {
 
     @Autowired private MockMvc mvc;
 
+    // #215: en revisión se consulta, y lo dice.
+    @Test
+    void dadoElDistributivoEnRevision_cuandoConsulta_entonces200ConEnRevision() throws Exception {
+        MvcResult resultado = pedir("EN-REVISION", LEE);
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString()).contains("\"enRevision\":true");
+        contrato.validar(resultado);
+        assertThat(pedir("2026-I", LEE).getResponse().getContentAsString())
+                .contains("\"enRevision\":false");
+    }
+
     @Test
     void dadoConsolidacion_cuandoConsulta_entonces200ConLoCalculado() throws Exception {
         MvcResult resultado = pedir("2026-I", LEE);
@@ -120,7 +134,11 @@ class ConsolidadoContratoTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"SIN,409,GENERACION_SIN_DISTRIBUTIVO", "CERRADO,409,GENERACION_PERIODO_CERRADO"})
+    @CsvSource({
+        "SIN,409,GENERACION_SIN_DISTRIBUTIVO",
+        "CERRADO,409,GENERACION_PERIODO_CERRADO",
+        "EN-REVISION,409,GENERACION_CONSOLIDADO_EN_REVISION"
+    })
     void dadoLoQueNoAdmite_cuandoConsolida_entoncesElCodigoDelCatalogo(
             String periodo, int estado, String codigo) throws Exception {
         assertError(consolidar(periodo, ESCRIBE), estado, codigo);
@@ -143,7 +161,8 @@ class ConsolidadoContratoTest {
         "GRANDE,413,GENERACION_INFORME_DEMASIADO_GRANDE",
         "SIN-CONSOLIDAR,409,GENERACION_SIN_CONSOLIDAR",
         "SIN,409,GENERACION_SIN_DISTRIBUTIVO",
-        "CERRADO,409,GENERACION_PERIODO_CERRADO"
+        "CERRADO,409,GENERACION_PERIODO_CERRADO",
+        "EN-REVISION,409,GENERACION_CONSOLIDADO_EN_REVISION"
     })
     void dadoLoQueNoAdmite_cuandoAdjunta_entoncesElCodigoDelCatalogo(
             String periodo, int estado, String codigo) throws Exception {
@@ -262,12 +281,19 @@ class ConsolidadoContratoTest {
                     };
         }
 
+        // #215: el periodo EN-REVISION tiene el distributivo en revisión.
+        @Bean
+        EnRevision enRevision() {
+            return "EN-REVISION"::equals;
+        }
+
         @Bean
         Consolidar consolidarElPeriodo() {
             return (periodo, quien) -> {
                 switch (periodo) {
                     case "SIN" -> throw new SinDistributivo();
                     case "CERRADO" -> throw new PeriodoCerrado();
+                    case "EN-REVISION" -> throw new ConsolidadoEnRevision();
                     default -> CONSOLIDARON.add(quien);
                 }
                 return consolidado(periodo);
@@ -286,6 +312,7 @@ class ConsolidadoContratoTest {
                         case "SIN-CONSOLIDAR" -> throw new SinConsolidar();
                         case "SIN" -> throw new SinDistributivo();
                         case "CERRADO" -> throw new PeriodoCerrado();
+                        case "EN-REVISION" -> throw new ConsolidadoEnRevision();
                         default -> {
                             return new InformeSustentado(
                                     nombre,

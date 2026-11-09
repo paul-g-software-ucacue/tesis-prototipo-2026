@@ -3,7 +3,9 @@ package ec.mdd.generacion.aplicacion;
 import ec.mdd.generacion.dominio.ArchivoPdf;
 import ec.mdd.generacion.dominio.ConsolidadoDelPeriodo;
 import ec.mdd.generacion.dominio.InformeSustentado;
+import ec.mdd.generacion.puertos.entrada.ConsolidadoEnRevision;
 import ec.mdd.generacion.puertos.entrada.ConsultarConsolidado;
+import ec.mdd.generacion.puertos.entrada.EnRevision;
 import ec.mdd.generacion.puertos.entrada.GestionarInforme;
 import ec.mdd.generacion.puertos.entrada.InformeIlegible;
 import ec.mdd.generacion.puertos.entrada.InformeNoEncontrado;
@@ -33,6 +35,7 @@ public final class InformeSustentadoServicio implements GestionarInforme {
     private final RepositorioConsolidacion consolidacion;
     private final RegistroDeCambios registro;
     private final Transaccion transaccion;
+    private final EnRevision enRevision;
     private final Clock reloj;
 
     /** Recibe la consulta y los puertos de salida. */
@@ -42,12 +45,14 @@ public final class InformeSustentadoServicio implements GestionarInforme {
             RepositorioConsolidacion consolidacion,
             RegistroDeCambios registro,
             Transaccion transaccion,
+            EnRevision enRevision,
             Clock reloj) {
         this.consultar = consultar;
         this.almacen = almacen;
         this.consolidacion = consolidacion;
         this.registro = registro;
         this.transaccion = transaccion;
+        this.enRevision = enRevision;
         this.reloj = reloj;
     }
 
@@ -62,6 +67,11 @@ public final class InformeSustentadoServicio implements GestionarInforme {
         if (actual.consolidacion().isEmpty()) {
             throw new SinConsolidar();
         }
+        // #215, D-99, research §2: antes de guardar el archivo, porque el almacén no borra; y otra
+        // vez dentro de la transacción, por si el envío a revisión llega entre las dos.
+        if (enRevision.enRevision(periodo)) {
+            throw new ConsolidadoEnRevision();
+        }
         ArchivoPdf archivo = ArchivoPdf.de(nombre, contenido);
         String clave = almacen.guardar(archivo.contenido());
         Instant ahora = reloj.instant();
@@ -70,6 +80,9 @@ public final class InformeSustentadoServicio implements GestionarInforme {
                         archivo.nombre(), contenido.length, archivo.huella(), clave, quien, ahora);
         return transaccion.ejecutar(
                 () -> {
+                    if (enRevision.enRevision(periodo)) {
+                        throw new ConsolidadoEnRevision();
+                    }
                     consolidacion.guardarInforme(version, informe);
                     registro.registrar(
                             new CambioDeDistributivo(
