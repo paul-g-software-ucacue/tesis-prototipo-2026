@@ -16,7 +16,8 @@ import java.util.Optional;
 
 /**
  * El distributivo, por la interfaz publicada de Generación en el mismo proceso (MD-04, principio V,
- * F12-H02). No lee tablas de Generación.
+ * F12-H02). No lee tablas de Generación. Traduce sus excepciones a las de Aprobación; desde F13-H01
+ * también le ordena congelar la versión, que Generación hace en su propia transacción.
  */
 public final class DistributivoDesdeGeneracion implements Distributivo {
 
