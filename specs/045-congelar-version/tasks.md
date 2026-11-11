@@ -209,7 +209,7 @@ description: "Tareas de F13-H01: aprobar el contenido y congelar la versión"
   - la tabla del script nuevo;
   - la comprobación a mano de `quickstart.md` §3, con el tiempo medido (SC-003);
   - las desviaciones y los criterios de terminado de la constitución §6.
-- [ ] T022 Fusionar solo con la aprobación del autor y con todas las comprobaciones en verde. Verificar el despliegue en el equipo de demostración. Hacer la comprobación del autor con `quickstart.md` §4: en la demo, 2026-I sigue en Consolidación y nada cambia. Abrir el PR de evidencia con `Closes #60`. Borrar las ramas solo si el autor lo pide.
+- [X] T022 Fusionar solo con la aprobación del autor y con todas las comprobaciones en verde. Verificar el despliegue en el equipo de demostración. Hacer la comprobación del autor con `quickstart.md` §4: en la demo, 2026-I sigue en Consolidación y nada cambia. Abrir el PR de evidencia con `Closes #60`. Borrar las ramas solo si el autor lo pide.
 
 ---
 

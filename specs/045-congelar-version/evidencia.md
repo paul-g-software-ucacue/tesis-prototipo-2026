@@ -77,3 +77,14 @@ Hecha por el autor el 2026-11-11, con `quickstart.md` §3, sobre el perfil local
 | JavaDoc | `congelarVersion`, `VersionCongeladaEnGeneracion`, `VersionCongelada`, `exigirEditable`, `AprobarContenido` (por qué dos transacciones y por qué idempotente), `validarAprobacion`, `aprobarContenido`, `congelaAlAvanzar`, `congelacion`, `Distributivo.congelar`, `DistributivoDesdeGeneracion`, `EnRevision.versionCongelada` y `EtapaNoAdmiteAprobacion` (T020) |
 | Seguridad | El permiso `DISTRIBUTIVO:APROBACION` y el rol de la etapa en el servidor; la SPA solo refleja; SQL parametrizado; SpotBugs y Gitleaks en verde |
 | Decisión registrada | D-100, antes de implementar |
+
+## Equipo de demostración (T022)
+
+| Comprobación | Resultado |
+|---|---|
+| Fusión | PR #219 (`a8ac00e`), con las 12 comprobaciones en verde; en `perfil-consolidado`, `probar_aprobacion.sh` pasó 7/7 |
+| Despliegue | `cd` exitoso; `mdd-actualizar` tomó `a8ac00e` y dice «Sano en 54 s», con los 5 pasos de la demo en OK; los 8 contenedores sanos con las imágenes `*-a8ac00e55669`, sin reinicios |
+| Nada cambió en la demo (`quickstart.md` §4, por lectura de la base) | 2026-I sigue en EN_CONSOLIDACION, con la versión 1 EDITABLE y ninguna transición hacia CONGELADO_EN_FIRMA |
+
+En la demo no se llega a la revisión: 2026-I tiene 1 propuesta de 165 paralelos. La aprobación la cubren el script en la CI y la comprobación del autor en el perfil local.
+
