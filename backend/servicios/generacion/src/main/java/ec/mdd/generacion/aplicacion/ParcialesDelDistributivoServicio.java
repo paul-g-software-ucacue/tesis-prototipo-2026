@@ -2,6 +2,7 @@ package ec.mdd.generacion.aplicacion;
 
 import ec.mdd.generacion.dominio.ConsolidadoDelPeriodo;
 import ec.mdd.generacion.dominio.ContenidoDelParcial;
+import ec.mdd.generacion.dominio.EstadoDeVersion;
 import ec.mdd.generacion.dominio.EstadoDelParcial;
 import ec.mdd.generacion.dominio.InformeSustentado;
 import ec.mdd.generacion.dominio.ParcialCarrera;
@@ -14,6 +15,7 @@ import ec.mdd.generacion.puertos.entrada.EstadoDelDistributivo.ParcialYSuEstado;
 import ec.mdd.generacion.puertos.entrada.ParcialMarcado;
 import ec.mdd.generacion.puertos.entrada.ParcialNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.ParcialesDelDistributivo;
+import ec.mdd.generacion.puertos.entrada.VersionCongeladaEnGeneracion;
 import ec.mdd.generacion.puertos.salida.RepositorioDistributivos;
 import ec.mdd.generacion.puertos.salida.Transaccion;
 import java.util.List;
@@ -23,8 +25,9 @@ import java.util.TreeMap;
 /**
  * Los parciales del distributivo para Aprobación (F12-H02, MD-04). Marcar un parcial cambia su
  * estado por orden de Aprobación y no se registra en Generación: la transición la registra
- * Aprobación (D-95). Por eso este servicio no recibe el registro de cambios. Las condiciones para
- * enviar a revisión salen del consolidado, que ya arma el panel (F10-H03): no se evalúan dos veces.
+ * Aprobación (D-95); lo mismo al congelar la versión (F13-H01, D-100). Por eso este servicio no
+ * recibe el registro de cambios. Las condiciones para enviar a revisión salen del consolidado, que
+ * ya arma el panel (F10-H03): no se evalúan dos veces.
  */
 public final class ParcialesDelDistributivoServicio implements ParcialesDelDistributivo {
 
@@ -113,10 +116,32 @@ public final class ParcialesDelDistributivoServicio implements ParcialesDelDistr
                 });
     }
 
+    // F13-H01, D-100: con la versión bloqueada, como marcar un parcial; ninguna propuesta queda
+    // después. Idempotente: un reintento de Aprobación recibe el mismo hash.
+    @Override
+    public VersionCongeladaEnGeneracion congelarVersion(String periodo) {
+        return transaccion.ejecutar(
+                () -> {
+                    VersionDistributivo version =
+                            distributivos
+                                    .bloquearVigente(periodo)
+                                    .orElseThrow(DistributivoNoEncontrado::new);
+                    if (version.estado() != EstadoDeVersion.CONGELADA) {
+                        distributivos.congelar(version.id());
+                    }
+                    return new VersionCongeladaEnGeneracion(
+                            version.numero(), hashDe(periodo, version));
+                });
+    }
+
     @Override
     public String hashDelDistributivo(String periodo) {
-        VersionDistributivo version =
-                distributivos.vigenteDe(periodo).orElseThrow(DistributivoNoEncontrado::new);
+        return hashDe(
+                periodo,
+                distributivos.vigenteDe(periodo).orElseThrow(DistributivoNoEncontrado::new));
+    }
+
+    private static String hashDe(String periodo, VersionDistributivo version) {
         Map<String, String> hashes = new TreeMap<>();
         version.parciales()
                 .forEach(

@@ -154,6 +154,12 @@ public final class AsignarActividadServicio implements AsignarActividad {
         Instant ahora = reloj.instant();
         transaccion.ejecutar(
                 () -> {
+                    // F13-H01, research §7: con la versión bloqueada, como asignar; si se congeló
+                    // o se envió mientras tanto, no se quita.
+                    distributivos
+                            .bloquearVigente(periodo)
+                            .orElseThrow(ActividadNoEncontrada::new)
+                            .exigirEditable(quitada.carrera());
                     if (!distributivos.quitarActividad(
                             version.id(),
                             quitada.carrera(),

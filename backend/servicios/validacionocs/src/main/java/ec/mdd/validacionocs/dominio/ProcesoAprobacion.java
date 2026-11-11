@@ -33,6 +33,8 @@ import java.util.TreeMap;
  *       EtapaConOperacionPropia});
  *   <li>desde EN_CONSOLIDACION, solo su rol envía a revisión, con las condiciones de D-97 en su
  *       orden (F10-H03);
+ *   <li>desde EN_REVISION_VRA, solo su rol aprueba el contenido y el distributivo pasa a
+ *       CONGELADO_EN_FIRMA; todo paso hacia esa etapa congela antes la versión (F13-H01, D-100);
  *   <li>un intento rechazado no cambia nada ni deja transición (FR-013).
  * </ul>
  */
@@ -242,13 +244,74 @@ public final class ProcesoAprobacion {
      */
     public List<Transicion> avanzar(
             Solicitante quien, int version, String hashDelDistributivo, Instant ahora) {
+        validarAvance(quien);
+        Transicion paso = paso(quien, version, hashDelDistributivo, ahora);
+        transiciones.add(paso);
+        return List.of(paso);
+    }
+
+    /**
+     * Comprueba que {@code quien} puede usar el avance genérico, sin cambiar nada. El caso de uso
+     * lo llama antes de pedirle a Generación que congele, si el paso llega a CONGELADO_EN_FIRMA
+     * (F13-H01).
+     *
+     * @param quien quien avanza
+     * @throws EtapaConOperacionPropia si la etapa no es de las del avance genérico
+     * @throws RolDeOtraEtapa si no tiene el rol de la etapa actual
+     */
+    public void validarAvance(Solicitante quien) {
         if (!CON_AVANCE_GENERICO.contains(estado)) {
             throw new EtapaConOperacionPropia();
         }
         exigirRol(quien, estado);
-        Transicion paso = paso(quien, version, hashDelDistributivo, ahora);
-        transiciones.add(paso);
-        return List.of(paso);
+    }
+
+    /**
+     * Si enviar el parcial de {@code carrera} completa los parciales y el distributivo pasa de
+     * etapa: los demás ya están enviados (F13-H01). No cambia nada.
+     *
+     * @param carrera la carrera del parcial que se envía
+     * @return verdadero si es el último
+     */
+    public boolean esElUltimoParcial(String carrera) {
+        return parciales.entrySet().stream()
+                .allMatch(
+                        uno ->
+                                uno.getKey().equals(carrera)
+                                        || uno.getValue() == EstadoDeEnvio.ENVIADO);
+    }
+
+    /**
+     * Comprueba que {@code quien} puede enviar el distributivo a revisión con esas condiciones, sin
+     * cambiar nada. El caso de uso lo llama antes de pedirle a Generación que congele, cuando
+     * EN_REVISION_VRA está desactivada, para que un envío que no cabe no congele (F13-H01).
+     *
+     * @param quien quien envía
+     * @param condiciones lo que Generación dice del consolidado
+     * @throws RolDeOtraEtapa si no tiene el rol de EN_CONSOLIDACION
+     * @throws EtapaNoAdmiteRevision si el distributivo no está en EN_CONSOLIDACION
+     * @throws ParcialesPendientes si algún parcial no está enviado
+     * @throws SinConsolidar si la versión vigente no se consolidó
+     * @throws ConsolidadoDesactualizado si algo cambió después de consolidar
+     * @throws SinInforme si no tiene informe sustentado
+     * @throws InconsistenciasAbiertas si quedan duras o blandas sin justificar (MD-07)
+     */
+    public void validarRevision(Solicitante quien, CondicionesDeRevision condiciones) {
+        validarRevision(quien);
+        // El orden de D-97: de lo que se arregla antes a lo que se arregla después.
+        if (!condiciones.consolidado()) {
+            throw new SinConsolidar();
+        }
+        if (condiciones.desactualizado()) {
+            throw new ConsolidadoDesactualizado();
+        }
+        if (condiciones.informe().isEmpty()) {
+            throw new SinInforme();
+        }
+        if (condiciones.duras() + condiciones.blandas() > 0) {
+            throw new InconsistenciasAbiertas(
+                    Math.toIntExact(condiciones.duras()), Math.toIntExact(condiciones.blandas()));
+        }
     }
 
     /**
@@ -296,21 +359,7 @@ public final class ProcesoAprobacion {
             int version,
             String hashDelDistributivo,
             Instant ahora) {
-        validarRevision(quien);
-        // El orden de D-97: de lo que se arregla antes a lo que se arregla después.
-        if (!condiciones.consolidado()) {
-            throw new SinConsolidar();
-        }
-        if (condiciones.desactualizado()) {
-            throw new ConsolidadoDesactualizado();
-        }
-        if (condiciones.informe().isEmpty()) {
-            throw new SinInforme();
-        }
-        if (condiciones.duras() + condiciones.blandas() > 0) {
-            throw new InconsistenciasAbiertas(
-                    Math.toIntExact(condiciones.duras()), Math.toIntExact(condiciones.blandas()));
-        }
+        validarRevision(quien, condiciones);
         Transicion paso = paso(quien, version, hashDelDistributivo, ahora);
         transiciones.add(paso);
         return List.of(paso);
@@ -407,6 +456,66 @@ public final class ProcesoAprobacion {
         return List.of(devolucion);
     }
 
+    /**
+     * Comprueba que {@code quien} puede aprobar el contenido, sin cambiar nada (F13-H01, D-100). El
+     * caso de uso lo llama antes de pedirle a Generación que congele la versión, para que un
+     * intento que no cabe no la toque (FR-009).
+     *
+     * @param quien quien aprueba
+     * @throws RolDeOtraEtapa si no tiene el rol de EN_REVISION_VRA en la copia de la configuración
+     * @throws EtapaNoAdmiteAprobacion si el distributivo no está en EN_REVISION_VRA
+     */
+    public void validarAprobacion(Solicitante quien) {
+        exigirRol(quien, TipoDeEtapa.EN_REVISION_VRA);
+        if (estado != TipoDeEtapa.EN_REVISION_VRA) {
+            throw new EtapaNoAdmiteAprobacion();
+        }
+    }
+
+    /**
+     * Aprueba el contenido: pasa de EN_REVISION_VRA a la siguiente etapa activa,
+     * CONGELADO_EN_FIRMA, que es del esqueleto fijo. La versión ya la congeló Generación por orden
+     * de Aprobación (MD-04); la transición lleva su número y su hash, el mismo del envío a revisión
+     * porque nada cambió durante la revisión (D-99). Sin comentario y sin notificar: eso es de
+     * F16-H01.
+     *
+     * @param quien quien aprueba
+     * @param version la versión congelada
+     * @param hashDelDistributivo el hash de la versión congelada
+     * @param ahora cuándo
+     * @return la transición nueva, un paso de etapa
+     * @throws RolDeOtraEtapa si no tiene el rol de EN_REVISION_VRA
+     * @throws EtapaNoAdmiteAprobacion si el distributivo no está en EN_REVISION_VRA
+     */
+    public List<Transicion> aprobarContenido(
+            Solicitante quien, int version, String hashDelDistributivo, Instant ahora) {
+        validarAprobacion(quien);
+        Transicion paso = paso(quien, version, hashDelDistributivo, ahora);
+        transiciones.add(paso);
+        return List.of(paso);
+    }
+
+    /**
+     * Si el próximo paso de etapa llega a CONGELADO_EN_FIRMA: entonces la versión se congela antes
+     * (D-100, research §3). Es la regla de la etapa de llegada, así que vale también para el envío
+     * a revisión cuando EN_REVISION_VRA está desactivada.
+     */
+    public boolean congelaAlAvanzar() {
+        return estado.ordinal() < TipoDeEtapa.CONGELADO_EN_FIRMA.ordinal()
+                && siguienteActiva(estado) == TipoDeEtapa.CONGELADO_EN_FIRMA;
+    }
+
+    /**
+     * La congelación de la versión: el último paso de etapa hacia CONGELADO_EN_FIRMA, con quién,
+     * cuándo, la versión y el hash (F13-H01). Vacía si el distributivo todavía no llegó.
+     */
+    public Optional<Transicion> congelacion() {
+        return transiciones.stream()
+                .filter(una -> una.tipo() == TipoDeTransicion.PASO_DE_ETAPA)
+                .filter(una -> una.hacia() == TipoDeEtapa.CONGELADO_EN_FIRMA)
+                .reduce((primera, ultima) -> ultima);
+    }
+
     /** Lo que {@code quien} puede hacer ahora (FR-014). */
     public List<AccionDelProceso> acciones(Solicitante quien) {
         if (estado == TipoDeEtapa.BORRADOR_CARRERA
@@ -430,6 +539,9 @@ public final class ProcesoAprobacion {
                     ? List.of(
                             AccionDelProceso.ENVIAR_A_REVISION, AccionDelProceso.DEVOLVER_PARCIALES)
                     : List.of(AccionDelProceso.ENVIAR_A_REVISION);
+        }
+        if (estado == TipoDeEtapa.EN_REVISION_VRA && tieneRol(quien, TipoDeEtapa.EN_REVISION_VRA)) {
+            return List.of(AccionDelProceso.APROBAR_CONTENIDO);
         }
         return List.of();
     }

@@ -70,6 +70,7 @@ class PanelControlador implements PanelApi {
                         panel.creado(),
                         panel.modificable(),
                         enRevision.enRevision(periodo),
+                        enRevision.versionCongelada(periodo).isPresent(),
                         new TotalesDelPanel(
                                 Math.toIntExact(panel.abiertas(Severidad.DURA)),
                                 Math.toIntExact(panel.abiertas(Severidad.BLANDA))),

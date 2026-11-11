@@ -48,6 +48,20 @@ public interface ParcialesDelDistributivo {
     int marcarParcialesDevueltos(String periodo, List<String> carreras);
 
     /**
+     * Congela la versión vigente por orden de Aprobación (F13-H01, MD-04, D-100), con la versión
+     * bloqueada durante su transacción: desde entonces no admite cambios (RF-40). Es idempotente:
+     * si ya estaba congelada, devuelve el mismo hash sin cambiar nada, así que volver a aprobar
+     * completa una aprobación cortada a mitad. No registra en el registro de cambios de Generación:
+     * la transición la registra Aprobación (D-95).
+     *
+     * @param periodo el código del periodo
+     * @return el número de la versión y el hash del distributivo, el mismo de {@link
+     *     #hashDelDistributivo}
+     * @throws DistributivoNoEncontrado si el periodo no tiene distributivo
+     */
+    VersionCongeladaEnGeneracion congelarVersion(String periodo);
+
+    /**
      * El hash del distributivo: el de los hashes de todos sus parciales (research §4).
      *
      * @param periodo el código del periodo

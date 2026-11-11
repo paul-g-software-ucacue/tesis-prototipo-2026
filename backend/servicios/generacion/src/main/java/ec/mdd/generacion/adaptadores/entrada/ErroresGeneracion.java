@@ -5,6 +5,7 @@ import ec.mdd.generacion.dominio.InformeDemasiadoGrande;
 import ec.mdd.generacion.dominio.InformeNoEsPdf;
 import ec.mdd.generacion.dominio.ParcialNoEditable;
 import ec.mdd.generacion.dominio.ProyectoNoValido;
+import ec.mdd.generacion.dominio.VersionCongelada;
 import ec.mdd.generacion.puertos.entrada.ActividadFueraDelCatalogo;
 import ec.mdd.generacion.puertos.entrada.ActividadNoEncontrada;
 import ec.mdd.generacion.puertos.entrada.AfinidadInsuficiente;
@@ -207,6 +208,19 @@ class ErroresGeneracion implements CatalogoDeErrores {
                         "Consolidado en revisión",
                         "El distributivo está en revisión del Vicerrectorado: el consolidado ya no"
                                 + " cambia."),
+                // F13-H01, D-100: la versión aprobada no cambia; un cambio exige una versión nueva.
+                EntradaCatalogo.conDetalles(
+                        VersionCongelada.class,
+                        new DefinicionDeCodigo(
+                                "GENERACION_VERSION_CONGELADA",
+                                409,
+                                "Versión congelada",
+                                "La versión del distributivo ya se aprobó y está congelada para la"
+                                        + " firma: un cambio exige una versión nueva."),
+                        error ->
+                                List.of(
+                                        new DetalleRespuesta(
+                                                "version", "Versión " + error.version() + "."))),
                 EntradaCatalogo.de(
                         InformeNoEncontrado.class,
                         "GENERACION_INFORME_NO_ENCONTRADO",

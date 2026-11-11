@@ -198,6 +198,12 @@ class EtapaDelConsolidadoIntegrationTest {
                 return "b".repeat(64);
             }
 
+            // F13-H01: estas pruebas no llegan a la firma.
+            @Override
+            public VersionCongeladaEnAprobacion congelar(String periodo) {
+                throw new UnsupportedOperationException("No llega a CONGELADO_EN_FIRMA");
+            }
+
             @Override
             public CondicionesDeRevision condicionesDeRevision(String periodo) {
                 return LISTO;

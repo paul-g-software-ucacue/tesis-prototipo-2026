@@ -14,6 +14,7 @@ import ec.mdd.generacion.dominio.Consolidacion;
 import ec.mdd.generacion.dominio.ConsolidadoDelPeriodo;
 import ec.mdd.generacion.dominio.InformeNoEsPdf;
 import ec.mdd.generacion.dominio.InformeSustentado;
+import ec.mdd.generacion.dominio.VersionCongelada;
 import ec.mdd.generacion.puertos.entrada.ConsolidadoEnRevision;
 import ec.mdd.generacion.puertos.entrada.ConsultarConsolidado;
 import ec.mdd.generacion.puertos.entrada.EnRevision;
@@ -38,6 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,10 +68,22 @@ class InformeSustentadoServicioTest {
     private boolean enRevisionFuera;
     private boolean enRevisionDentro;
     private final List<Boolean> consultadoDentro = new ArrayList<>();
+    // F13-H01: la versión congelada, también fuera o dentro de la transacción.
+    private Integer congeladaFuera;
+    private Integer congeladaDentro;
     private final EnRevision enRevision =
-            periodo -> {
-                consultadoDentro.add(dentro);
-                return dentro ? enRevisionDentro : enRevisionFuera;
+            new EnRevision() {
+                @Override
+                public boolean enRevision(String periodo) {
+                    consultadoDentro.add(dentro);
+                    return dentro ? enRevisionDentro : enRevisionFuera;
+                }
+
+                @Override
+                public OptionalInt versionCongelada(String periodo) {
+                    Integer numero = dentro ? congeladaDentro : congeladaFuera;
+                    return numero == null ? OptionalInt.empty() : OptionalInt.of(numero);
+                }
             };
     private final InformeSustentadoServicio servicio =
             new InformeSustentadoServicio(
@@ -111,6 +125,32 @@ class InformeSustentadoServicioTest {
         assertThatThrownBy(() -> servicio.adjuntar(PERIODO, "informe.pdf", PDF, QUIEN))
                 .isInstanceOf(ConsolidadoEnRevision.class);
         verify(almacen, never()).guardar(any());
+        verify(repositorio, never()).guardarInforme(any(), any());
+        verify(registro, never()).registrar(any());
+    }
+
+    // F13-H01, research §4: la versión congelada gana a la revisión, antes del almacén.
+    @Test
+    void
+            dadaLaVersionCongeladaYEnRevision_cuandoSeAdjunta_entoncesVersionCongeladaSinTocarElAlmacen() {
+        enRevisionFuera = true;
+        enRevisionDentro = true;
+        congeladaFuera = 1;
+        congeladaDentro = 1;
+
+        assertThatThrownBy(() -> servicio.adjuntar(PERIODO, "informe.pdf", PDF, QUIEN))
+                .isInstanceOf(VersionCongelada.class);
+        verify(almacen, never()).guardar(any());
+        verify(repositorio, never()).guardarInforme(any(), any());
+        verify(registro, never()).registrar(any());
+    }
+
+    @Test
+    void dadaUnaCongelacionEntreLasDosComprobaciones_cuandoSeAdjunta_entoncesNoGuardaLaFila() {
+        congeladaDentro = 1;
+
+        assertThatThrownBy(() -> servicio.adjuntar(PERIODO, "informe.pdf", PDF, QUIEN))
+                .isInstanceOf(VersionCongelada.class);
         verify(repositorio, never()).guardarInforme(any(), any());
         verify(registro, never()).registrar(any());
     }

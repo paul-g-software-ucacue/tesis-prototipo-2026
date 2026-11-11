@@ -210,6 +210,12 @@ public final class ProponerDocenteServicio implements ProponerDocente {
         Instant ahora = reloj.instant();
         transaccion.ejecutar(
                 () -> {
+                    // F13-H01, research §7: con la versión bloqueada, como proponer; si se congeló
+                    // o se envió mientras tanto, no se quita.
+                    distributivos
+                            .bloquearVigente(periodo)
+                            .orElseThrow(PropuestaNoEncontrada::new)
+                            .exigirEditable(uno.carrera());
                     if (!distributivos.quitarPropuesta(version.id(), asignatura, paralelo)) {
                         throw new PropuestaNoEncontrada();
                     }

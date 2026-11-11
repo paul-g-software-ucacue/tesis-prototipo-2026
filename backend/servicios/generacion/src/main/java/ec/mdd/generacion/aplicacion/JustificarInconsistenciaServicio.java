@@ -95,6 +95,8 @@ public final class JustificarInconsistenciaServicio implements JustificarInconsi
         transaccion.ejecutar(
                 () -> {
                     // #215, D-99: dentro de la transacción, para no quedar después de un envío.
+                    // F13-H01, research §4: primero la versión congelada, la causa más fuerte.
+                    ConsolidarServicio.exigirNoCongelada(enRevision, solicitud.periodo());
                     if (enRevision.enRevision(solicitud.periodo())) {
                         throw new ConsolidadoEnRevision();
                     }

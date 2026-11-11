@@ -9,5 +9,7 @@ public enum AccionDelProceso {
     /** Enviar el consolidado a revisión, desde EN_CONSOLIDACION (F10-H03). */
     ENVIAR_A_REVISION,
     /** Devolver parciales a sus carreras, desde EN_CONSOLIDACION (F12-H05). */
-    DEVOLVER_PARCIALES
+    DEVOLVER_PARCIALES,
+    /** Aprobar el contenido y congelar la versión, desde EN_REVISION_VRA (F13-H01). */
+    APROBAR_CONTENIDO
 }

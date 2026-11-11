@@ -7,9 +7,9 @@ import ec.mdd.validacionocs.dominio.EstadoDelPeriodo;
 import ec.mdd.validacionocs.dominio.ParcialesPendientes;
 import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
 import ec.mdd.validacionocs.dominio.Solicitante;
-import ec.mdd.validacionocs.dominio.TipoDeEtapa;
 import ec.mdd.validacionocs.dominio.TipoDeTransicion;
 import ec.mdd.validacionocs.dominio.Transicion;
+import ec.mdd.validacionocs.puertos.entrada.AprobarContenido;
 import ec.mdd.validacionocs.puertos.entrada.AvanzarEtapa;
 import ec.mdd.validacionocs.puertos.entrada.ConsultarFlujo;
 import ec.mdd.validacionocs.puertos.entrada.DevolverParciales;
@@ -24,6 +24,7 @@ import ec.mdd.validacionocs.puertos.salida.DatosDelPeriodo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo.DistributivoActual;
 import ec.mdd.validacionocs.puertos.salida.Distributivo.ParcialEnviadoEnGeneracion;
+import ec.mdd.validacionocs.puertos.salida.Distributivo.VersionCongeladaEnAprobacion;
 import ec.mdd.validacionocs.puertos.salida.RegistroDeCambios;
 import ec.mdd.validacionocs.puertos.salida.RepositorioProceso;
 import ec.mdd.validacionocs.puertos.salida.Transaccion;
@@ -37,7 +38,8 @@ import java.util.Optional;
 /**
  * El flujo del distributivo (F12-H02): consultarlo, enviar el parcial de una carrera y el avance
  * genérico; desde F10-H03, enviar el consolidado a revisión, sin notificar (D-97); desde F12-H05,
- * devolver parciales desde EN_CONSOLIDACION, sin notificar (D-98). Las reglas son de {@link
+ * devolver parciales desde EN_CONSOLIDACION, sin notificar (D-98); desde F13-H01, aprobar el
+ * contenido y congelar la versión, sin notificar (D-100). Las reglas son de {@link
  * ProcesoAprobacion}; este servicio coordina con Generación y con la bitácora.
  *
  * <p>Enviar son dos transacciones, una por servicio (principio V, research §2): primero Generación
@@ -47,7 +49,12 @@ import java.util.Optional;
  * Generación, {@link ProcesoAprobacion#validarEnvio} rechaza lo que no cabe (FR-013).
  */
 public final class FlujoDelDistributivoServicio
-        implements ConsultarFlujo, EnviarParcial, AvanzarEtapa, EnviarARevision, DevolverParciales {
+        implements ConsultarFlujo,
+                EnviarParcial,
+                AvanzarEtapa,
+                EnviarARevision,
+                DevolverParciales,
+                AprobarContenido {
 
     private final Distributivo distributivo;
     private final RepositorioProceso procesos;
@@ -86,9 +93,14 @@ public final class FlujoDelDistributivoServicio
     public FlujoDelDistributivo enviar(String periodo, String carrera, Solicitante quien) {
         exigirAbierto(periodo);
         DistributivoActual antes = actual(periodo);
-        transaccion.ejecutar(() -> proceso(periodo, antes, false)).validarEnvio(carrera, quien);
+        ProcesoAprobacion leido = transaccion.ejecutar(() -> proceso(periodo, antes, false));
+        leido.validarEnvio(carrera, quien);
         ParcialEnviadoEnGeneracion marcado = distributivo.marcarEnviado(periodo, carrera);
-        String hashDelDistributivo = distributivo.hash(periodo);
+        // F13-H01, D-100: si el último parcial lleva el distributivo a la firma, congela antes.
+        String hashDelDistributivo =
+                leido.esElUltimoParcial(carrera) && leido.congelaAlAvanzar()
+                        ? distributivo.congelar(periodo).hash()
+                        : distributivo.hash(periodo);
         DistributivoActual despues = actual(periodo);
         Instant ahora = reloj.instant();
         ProcesoAprobacion proceso =
@@ -117,7 +129,9 @@ public final class FlujoDelDistributivoServicio
     public FlujoDelDistributivo avanzar(String periodo, Solicitante quien) {
         exigirAbierto(periodo);
         DistributivoActual actual = actual(periodo);
-        String hashDelDistributivo = distributivo.hash(periodo);
+        ProcesoAprobacion leido = transaccion.ejecutar(() -> proceso(periodo, actual, false));
+        leido.validarAvance(quien);
+        String hashDelDistributivo = hashAlAvanzar(periodo, leido);
         Instant ahora = reloj.instant();
         ProcesoAprobacion proceso =
                 transaccion.ejecutar(
@@ -143,14 +157,20 @@ public final class FlujoDelDistributivoServicio
     public FlujoDelDistributivo enviarARevision(String periodo, Solicitante quien) {
         exigirAbierto(periodo);
         DistributivoActual actual = actual(periodo);
-        transaccion.ejecutar(() -> proceso(periodo, actual, false)).validarRevision(quien);
+        ProcesoAprobacion leido = transaccion.ejecutar(() -> proceso(periodo, actual, false));
+        leido.validarRevision(quien);
         // F12-H05, research §2: una devolución que Generación marcó y Aprobación no registró deja
         // el parcial editable; no pasa a revisión hasta que se complete.
         if (actual.enviados().containsValue(false)) {
             throw new ParcialesPendientes();
         }
         CondicionesDeRevision condiciones = distributivo.condicionesDeRevision(periodo);
-        String hashDelDistributivo = distributivo.hash(periodo);
+        // F13-H01, research §3: con EN_REVISION_VRA desactivada el envío llega a la firma; congela
+        // solo si el envío cabe.
+        if (leido.congelaAlAvanzar()) {
+            leido.validarRevision(quien, condiciones);
+        }
+        String hashDelDistributivo = hashAlAvanzar(periodo, leido);
         ProcesoAprobacion proceso =
                 transaccion.ejecutar(
                         () -> {
@@ -214,6 +234,43 @@ public final class FlujoDelDistributivoServicio
         return vista(proceso, despues, quien);
     }
 
+    // F13-H01, research §1: como enviar un parcial. Primero el dominio sin cambiar nada; después
+    // Generación congela la versión en su transacción, de forma idempotente; al final, con el
+    // proceso bloqueado, el agregado vuelve a comprobar y registra el paso a CONGELADO_EN_FIRMA con
+    // la versión y el hash que devolvió Generación. Si la última falla, volver a aprobar la
+    // completa. Dos aprobaciones a la vez: la segunda espera el bloqueo y el agregado la rechaza.
+    @Override
+    public FlujoDelDistributivo aprobarContenido(String periodo, Solicitante quien) {
+        exigirAbierto(periodo);
+        DistributivoActual actual = actual(periodo);
+        transaccion.ejecutar(() -> proceso(periodo, actual, false)).validarAprobacion(quien);
+        VersionCongeladaEnAprobacion congelada = distributivo.congelar(periodo);
+        ProcesoAprobacion proceso =
+                transaccion.ejecutar(
+                        () -> {
+                            ProcesoAprobacion bloqueado = proceso(periodo, actual, true);
+                            Instant ahora = reloj.instant();
+                            List<Transicion> nuevas =
+                                    bloqueado.aprobarContenido(
+                                            quien, congelada.version(), congelada.hash(), ahora);
+                            procesos.guardar(bloqueado, nuevas);
+                            nuevas.forEach(
+                                    una ->
+                                            registro.registrar(
+                                                    cambio(periodo, una, Optional.empty())));
+                            return bloqueado;
+                        });
+        return vista(proceso, actual, quien);
+    }
+
+    // F13-H01, D-100: todo paso hacia CONGELADO_EN_FIRMA congela antes la versión; el hash es el
+    // mismo del distributivo.
+    private String hashAlAvanzar(String periodo, ProcesoAprobacion leido) {
+        return leido.congelaAlAvanzar()
+                ? distributivo.congelar(periodo).hash()
+                : distributivo.hash(periodo);
+    }
+
     private DistributivoActual actual(String periodo) {
         return distributivo.actual(periodo).orElseThrow(SinDistributivo::new);
     }
@@ -251,7 +308,8 @@ public final class FlujoDelDistributivoServicio
 
     // Una entrada por transición (D-95). Un paso desde EN_CONSOLIDACION solo viene del envío a
     // revisión, porque el avance genérico rechaza esa etapa: lleva su propia acción y la huella del
-    // informe (F10-H03, research §5).
+    // informe (F10-H03, research §5). Uno desde EN_REVISION_VRA solo viene de aprobar el contenido
+    // (F13-H01, research §5).
     private static CambioDeFlujo cambio(
             String periodo, Transicion transicion, Optional<String> informe) {
         Map<String, Object> detalle = new LinkedHashMap<>();
@@ -286,9 +344,11 @@ public final class FlujoDelDistributivoServicio
         return new CambioDeFlujo(
                 transicion.momento(),
                 transicion.quien(),
-                transicion.desde() == TipoDeEtapa.EN_CONSOLIDACION
-                        ? CambioDeFlujo.Accion.CONSOLIDADO_ENVIADO_A_REVISION
-                        : CambioDeFlujo.Accion.ETAPA_AVANZADA,
+                switch (transicion.desde()) {
+                    case EN_CONSOLIDACION -> CambioDeFlujo.Accion.CONSOLIDADO_ENVIADO_A_REVISION;
+                    case EN_REVISION_VRA -> CambioDeFlujo.Accion.CONTENIDO_APROBADO;
+                    default -> CambioDeFlujo.Accion.ETAPA_AVANZADA;
+                },
                 detalle,
                 Map.of("estado", transicion.desde().name()),
                 Map.of("estado", transicion.hacia().name()));
@@ -313,7 +373,15 @@ public final class FlujoDelDistributivoServicio
                 actual.version(),
                 parciales,
                 proceso.acciones(quien),
-                proceso.transiciones());
+                proceso.transiciones(),
+                proceso.congelacion()
+                        .map(
+                                una ->
+                                        new FlujoDelDistributivo.Congelacion(
+                                                una.version(),
+                                                una.hash(),
+                                                una.quien(),
+                                                una.momento())));
     }
 
     // Enviado: con su transición registrada. Pendiente de confirmar: Generación lo marcó y la

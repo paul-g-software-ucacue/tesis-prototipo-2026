@@ -36,7 +36,7 @@ description: "Tareas de F13-H01: aprobar el contenido y congelar la versión"
 
 ## Phase 1: Setup
 
-- [ ] T001 Revisar el glosario (`~/Downloads/MDD_artefactos_desarrollo/requerimientos_mdd/sdd/modelo_dominio.md` §6 y §7): «Versión del distributivo», «Versión congelada», «Huella» o «Hash de contenido» y las etapas. Si «Aprobar el contenido» o «Versión congelada» no están, usar el término del glosario más cercano y anotar aquí el resultado.
+- [X] T001 Revisar el glosario (`~/Downloads/MDD_artefactos_desarrollo/requerimientos_mdd/sdd/modelo_dominio.md` §6 y §7): «Versión del distributivo», «Versión congelada», «Huella» o «Hash de contenido» y las etapas. Si «Aprobar el contenido» o «Versión congelada» no están, usar el término del glosario más cercano y anotar aquí el resultado.
 
   Escribir **D-100** en `docs/decisiones.md`, en la fila del índice y en su sección. Su contenido:
   - aprobar el contenido es del rol de EN_REVISION_VRA;
@@ -47,25 +47,27 @@ description: "Tareas de F13-H01: aprobar el contenido y congelar la versión"
 
   Relacionadas: RF-38, RF-40, RF-59, MD-04, D-95, D-99.
 
+  **Resultado (2026-11-10):** «Versión congelada» y «Versión del distributivo» están en el glosario (§7), con `VersionDistributivo` en `CONGELADA`. «Hash» está, pero como el del documento firmable; el de esta historia es el «hash de contenido» de `ContenidoVersion` (§6), y se usa ese término. «Aprobar el contenido» no está; se usa el del diseño de firmas §2 («Aprobar contenido»).
+
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
 **⚠️ CRITICAL**: ninguna historia empieza antes de T004.
 
-- [ ] T002 Agregar a `contratos/validacionocs/openapi.yaml`, según `contracts/validacionocs.md`:
+- [X] T002 Agregar a `contratos/validacionocs/openapi.yaml`, según `contracts/validacionocs.md`:
   - la operación `POST /api/validacionocs/periodos/{periodo}/aprobacion` (`aprobarContenido`, `x-mdd-permiso: DISTRIBUTIVO:APROBACION`, sin cuerpo, con sus respuestas);
   - `APROBAR_CONTENIDO` en la enumeración de acciones;
   - `congelacion` (opcional, con `version`, `hash` de 64 hexadecimales, `quien` y `momento`) en `EstadoDelFlujo`;
   - la nota de congelar en la descripción de `enviarARevision`.
 
   Compilar `:servicios:validacionocs`, con el controlador respondiendo 501 o sin implementar hasta T008. Regenerar `SPA/api/generado/validacionocs.d.ts`.
-- [ ] T003 Agregar a `contratos/generacion/openapi.yaml`, según `contracts/generacion.md`:
+- [X] T003 Agregar a `contratos/generacion/openapi.yaml`, según `contracts/generacion.md`:
   - `versionCongelada` (booleano, obligatorio) en `ConsolidadoDelPeriodo` y en `PanelDeInconsistencias`;
   - `GENERACION_VERSION_CONGELADA` en la descripción del 409 de `proponerDocente`, `quitarPropuesta`, `asignarActividad`, `quitarActividad`, `consolidar`, `justificarInconsistencia` y `adjuntarInformeSustentado`.
 
   Regenerar `SPA/api/generado/generacion.d.ts`; en los controladores, `versionCongelada` en falso hasta T011. Después de T002 y T003, correr `./gradlew :servicios:usuarios:test --rerun` (`BitacoraSinBorradoContratoTest`).
-- [ ] T004 Agregar a `contratos/comun/errores.md`, con sus 8 columnas:
+- [X] T004 Agregar a `contratos/comun/errores.md`, con sus 8 columnas:
   - `VALIDACIONOCS_ETAPA_NO_ADMITE_APROBACION` (409, «Etapa sin aprobación», «El distributivo no está en revisión del Vicerrectorado: no se puede aprobar su contenido.»);
   - `GENERACION_VERSION_CONGELADA` (409, «Versión congelada», «La versión del distributivo ya se aprobó y está congelada para la firma: un cambio exige una versión nueva.», con `version` en detalles).
 
@@ -81,7 +83,7 @@ description: "Tareas de F13-H01: aprobar el contenido y congelar la versión"
 
 **Independent Test**: `probar_aprobacion.sh`, pasos 2 a 4 y 7.
 
-- [ ] T005 [P] [US1] En el dominio de Validación OCS, ver fallar primero `VAL/test/.../dominio/ProcesoAprobacionTest.java`:
+- [X] T005 [P] [US1] En el dominio de Validación OCS, ver fallar primero `VAL/test/.../dominio/ProcesoAprobacionTest.java`:
   - **`validarAprobacion`:**
     - sin el rol de EN_REVISION_VRA en la copia, `RolDeOtraEtapa`;
     - en BORRADOR_CARRERA, EN_CONSOLIDACION o CONGELADO_EN_FIRMA, `EtapaNoAdmiteAprobacion`;
@@ -92,14 +94,14 @@ description: "Tareas de F13-H01: aprobar el contenido y congelar la versión"
   - **`congelacion`:** vacía sin el paso; con el paso, la última transición `PASO_DE_ETAPA` hacia CONGELADO_EN_FIRMA.
 
   Después, en un comando aparte: `AccionDelProceso.APROBAR_CONTENIDO` y los métodos en `ProcesoAprobacion.java`, con su JavaDoc.
-- [ ] T006 [P] [US1] En Generación, ver fallar primero `GEN/test/.../aplicacion/ParcialesDelDistributivoServicioTest.java` para `congelarVersion`:
+- [X] T006 [P] [US1] En Generación, ver fallar primero `GEN/test/.../aplicacion/ParcialesDelDistributivoServicioTest.java` para `congelarVersion`:
   - con una versión EDITABLE, la bloquea (`bloquearVigente`), la marca CONGELADA y devuelve el número y el mismo hash que `hashDelDistributivo`;
   - con una versión ya CONGELADA, devuelve lo mismo sin escribir (idempotente);
   - sin distributivo, `DistributivoNoEncontrado`;
   - no registra en el registro de cambios de Generación (D-95).
 
   Después: `ParcialesDelDistributivo.congelarVersion` y `puertos/entrada/VersionCongeladaEnGeneracion.java`, el servicio, y `RepositorioDistributivos.congelar(UUID version)` con su implementación en `RepositorioDistributivosJdbc` (`update … set estado = 'CONGELADA'`).
-- [ ] T007 [US1] En Validación OCS, ver fallar primero en `VAL/test/.../aplicacion/FlujoDelDistributivoServicioTest.java`, con dobles:
+- [X] T007 [US1] En Validación OCS, ver fallar primero en `VAL/test/.../aplicacion/FlujoDelDistributivoServicioTest.java`, con dobles:
   - **`aprobarContenido`:** valida sin bloquear, después `distributivo.congelar`, y al final la transición con el proceso bloqueado y la versión y el hash que devolvió Generación. Una entrada en la bitácora, `CONTENIDO_APROBADO`, con periodo, versión y hash; antes `{estado: EN_REVISION_VRA}`, después `{estado: CONGELADO_EN_FIRMA}`.
   - **Un rechazo** (rol, etapa, periodo cerrado, sin distributivo) no llama a `congelar` ni registra nada.
   - **Reintento:** si la transacción final falla, volver a aprobar llama otra vez a `congelar` y completa.
@@ -110,12 +112,16 @@ description: "Tareas de F13-H01: aprobar el contenido y congelar la versión"
   - **Puertos:** `puertos/entrada/AprobarContenido.java`; `Distributivo.congelar(periodo)` con el registro `VersionCongeladaEnAprobacion(version, hash)`; `CambioDeFlujo.Accion.CONTENIDO_APROBADO`.
   - **Servicio:** el método en `FlujoDelDistributivoServicio`; en `cambio(...)`, un `PASO_DE_ETAPA` desde EN_REVISION_VRA da `CONTENIDO_APROBADO`; `congelacion` en `FlujoDelDistributivo`.
   - **Adaptador:** `DistributivoDesdeGeneracion.congelar`, con `ParcialesDelDistributivo.congelarVersion`.
-- [ ] T008 [US1] En `VAL/main/.../adaptadores/entrada/FlujoControlador.java`, la operación `aprobarContenido`, con `RolDeOtraEtapa` traducido a 403 como en enviar y devolver, y `congelacion` en la respuesta. Ver fallar primero:
+
+  **Resultado (2026-11-10):** además del envío a revisión, el envío del último parcial y el avance genérico también congelan si llegan a CONGELADO_EN_FIRMA (FR-016: «ningún distributivo entra en CONGELADO_EN_FIRMA con una versión editable»; posible si la configuración desactiva EN_CONSOLIDACION y EN_REVISION_VRA). Antes de congelar, el dominio valida sin cambiar nada (`validarAvance`, `validarRevision` con las condiciones), para que un intento que no cabe no congele. La prueba del avance genérico se escribió después del código.
+- [X] T008 [US1] En `VAL/main/.../adaptadores/entrada/FlujoControlador.java`, la operación `aprobarContenido`, con `RolDeOtraEtapa` traducido a 403 como en enviar y devolver, y `congelacion` en la respuesta. Ver fallar primero:
   - en `FlujoContratoTest`: 200 con `congelacion` que cumple el esquema; 409 `VALIDACIONOCS_ETAPA_NO_ADMITE_APROBACION`; 403 sin el rol de la etapa; `APROBAR_CONTENIDO` en `acciones`;
   - en `PermisosValidacionocsTest`: la operación nueva con `DISTRIBUTIVO:APROBACION` (8 operaciones).
-- [ ] T009 [US1] Crear `VAL/integrationTest/.../AprobacionIntegrationTest.java` con PostgreSQL real y Generación en el mismo proceso:
+- [X] T009 [US1] Crear `VAL/integrationTest/.../AprobacionIntegrationTest.java` con PostgreSQL real y Generación en el mismo proceso:
   - aprobar deja la versión CONGELADA, el proceso en CONGELADO_EN_FIRMA, una transición con el mismo hash que la del envío a revisión (SC-002) y una entrada en la bitácora;
   - dos aprobaciones simultáneas: una responde y la otra recibe `EtapaNoAdmiteAprobacion`; queda una sola transición desde EN_REVISION_VRA (SC-004).
+
+  **Resultado (2026-11-10):** como `EnvioARevisionIntegrationTest` y `DevolucionIntegrationTest`, Generación es un doble que congela y cuenta; la congelación real, su idempotencia y el bloqueo de la versión se prueban contra PostgreSQL en `GEN/integrationTest/.../CongelacionIntegrationTest.java` (T013).
 
 **Checkpoint**: se aprueba y se congela por la API.
 
@@ -127,12 +133,12 @@ description: "Tareas de F13-H01: aprobar el contenido y congelar la versión"
 
 **Independent Test**: `probar_aprobacion.sh`, pasos 5 y 6.
 
-- [ ] T010 [P] [US2] Ver fallar primero `GEN/test/.../dominio/VersionDistributivoTest.java`:
+- [X] T010 [P] [US2] Ver fallar primero `GEN/test/.../dominio/VersionDistributivoTest.java`:
   - `exigirEditable` con una versión CONGELADA lanza `VersionCongelada` con su número, aunque el parcial esté enviado;
   - con una versión ANULADA, o EDITABLE con el parcial enviado, sigue lanzando `ParcialNoEditable`.
 
   Después, el cambio en `VersionDistributivo.exigirEditable`. Confirmar que proponer, quitar una propuesta, asignar y quitar una actividad la llaman con la versión bloqueada; agregar o ajustar una prueba de aplicación para cada una que no lo cubra.
-- [ ] T011 [US2] En `ConsolidarServicioTest`, `JustificarInconsistenciaServicioTest` e `InformeSustentadoServicioTest`, ver fallar primero:
+- [X] T011 [US2] En `ConsolidarServicioTest`, `JustificarInconsistenciaServicioTest` e `InformeSustentadoServicioTest`, ver fallar primero:
   - con la versión vigente CONGELADA, `VersionCongelada`, sin guardar ni registrar;
   - con la versión congelada y `EnRevision` verdadero, gana `VersionCongelada` (research §4);
   - en el informe, también antes de `almacen.guardar`.
@@ -144,8 +150,12 @@ description: "Tareas de F13-H01: aprobar el contenido y congelar la versión"
   - `versionCongelada` en `ConsolidadoControlador` y `PanelControlador`.
 
   Si hace falta, extender `EnRevision`/`EnRevisionServicio` con la consulta de la versión, sin duplicar la lectura.
-- [ ] T012 [US2] En las pruebas de contrato de Generación (propuesta, actividades, consolidado, informe y panel), ver fallar primero: con una versión CONGELADA en el doble del repositorio, 409 `GENERACION_VERSION_CONGELADA` en las siete operaciones, y `versionCongelada: true` en las dos consultas, que cumplen el esquema.
-- [ ] T013 [US2] En `AprobacionIntegrationTest`, congelar y proponer a la vez sobre PostgreSQL real: la propuesta que toma el bloqueo después de congelar responde `VersionCongelada`, y la versión congelada no tiene la propuesta.
+
+  **Resultado (2026-11-10):** `EnRevision.versionCongelada(periodo)` (por defecto vacía, para los dobles que solo miran la etapa) y `RepositorioDistributivos.versionCongelada`, que lee la versión vigente con `FOR SHARE`: dentro de la transacción de la operación, una congelación que llega después espera. `versionCongelada` de las consultas sale de ahí, en los dos controladores; su prueba está en `EnRevisionServicioTest` y en las de contrato (T012). Además, quitar una propuesta y quitar una actividad no comprobaban la versión bloqueada (T010): ahora la comprueban dentro de su transacción.
+- [X] T012 [US2] En las pruebas de contrato de Generación (propuesta, actividades, consolidado, informe y panel), ver fallar primero: con una versión CONGELADA en el doble del repositorio, 409 `GENERACION_VERSION_CONGELADA` en las siete operaciones, y `versionCongelada: true` en las dos consultas, que cumplen el esquema.
+- [X] T013 [US2] En `AprobacionIntegrationTest`, congelar y proponer a la vez sobre PostgreSQL real: la propuesta que toma el bloqueo después de congelar responde `VersionCongelada`, y la versión congelada no tiene la propuesta.
+
+  **Resultado (2026-11-10):** va en `GEN/integrationTest/.../CongelacionIntegrationTest.java`, junto al repositorio real de Generación: congelar real e idempotente; una propuesta que llega con la versión ya bloqueada por la congelación se rechaza; una congelación que llega con la versión bloqueada por una propuesta la espera y la incluye en su hash; y una lectura con `FOR SHARE` hace esperar a la congelación.
 
 **Checkpoint**: la versión congelada no cambia por ninguna vía.
 

@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import ec.mdd.generacion.dominio.CargaHoraria;
 import ec.mdd.generacion.dominio.Consolidacion;
 import ec.mdd.generacion.dominio.ConsolidadoDelPeriodo;
+import ec.mdd.generacion.dominio.VersionCongelada;
 import ec.mdd.generacion.puertos.entrada.ConsolidadoEnRevision;
 import ec.mdd.generacion.puertos.entrada.ConsultarConsolidado;
 import ec.mdd.generacion.puertos.entrada.EnRevision;
@@ -29,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
@@ -50,10 +52,22 @@ class ConsolidarServicioTest {
     private boolean enRevisionFuera;
     private boolean enRevisionDentro;
     private final List<Boolean> consultadoDentro = new ArrayList<>();
+    // F13-H01: la versión congelada, también fuera o dentro de la transacción.
+    private Integer congeladaFuera;
+    private Integer congeladaDentro;
     private final EnRevision enRevision =
-            periodo -> {
-                consultadoDentro.add(dentro);
-                return dentro ? enRevisionDentro : enRevisionFuera;
+            new EnRevision() {
+                @Override
+                public boolean enRevision(String periodo) {
+                    consultadoDentro.add(dentro);
+                    return dentro ? enRevisionDentro : enRevisionFuera;
+                }
+
+                @Override
+                public OptionalInt versionCongelada(String periodo) {
+                    Integer numero = dentro ? congeladaDentro : congeladaFuera;
+                    return numero == null ? OptionalInt.empty() : OptionalInt.of(numero);
+                }
             };
     private final ConsolidarServicio servicio =
             new ConsolidarServicio(
@@ -93,6 +107,33 @@ class ConsolidarServicioTest {
         servicio.consolidar(PERIODO, QUIEN);
 
         assertThat(consultadoDentro).contains(true);
+    }
+
+    // F13-H01, research §4: la versión congelada gana a la revisión, dentro de la transacción.
+    @Test
+    void dadaLaVersionCongeladaYEnRevision_cuandoSeConsolida_entoncesVersionCongeladaSinGuardar() {
+        when(consultar.consolidado(PERIODO)).thenReturn(consolidado(true, 0));
+        enRevisionFuera = true;
+        enRevisionDentro = true;
+        congeladaFuera = 1;
+        congeladaDentro = 1;
+
+        assertThatThrownBy(() -> servicio.consolidar(PERIODO, QUIEN))
+                .isInstanceOfSatisfying(
+                        VersionCongelada.class, error -> assertThat(error.version()).isEqualTo(1));
+        verify(consolidacion, never()).guardarConsolidacion(any(), any());
+        verify(registro, never()).registrar(any());
+    }
+
+    @Test
+    void dadaUnaCongelacionAntesDeLaTransaccion_cuandoSeConsolida_entoncesVersionCongelada() {
+        when(consultar.consolidado(PERIODO)).thenReturn(consolidado(true, 0));
+        congeladaDentro = 1;
+
+        assertThatThrownBy(() -> servicio.consolidar(PERIODO, QUIEN))
+                .isInstanceOf(VersionCongelada.class);
+        verify(consolidacion, never()).guardarConsolidacion(any(), any());
+        verify(registro, never()).registrar(any());
     }
 
     @Test

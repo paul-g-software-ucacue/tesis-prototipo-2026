@@ -151,6 +151,15 @@ final class FlujoEnMemoria {
                 return "b".repeat(64);
             }
 
+            // F13-H01: el mismo hash del distributivo, como Generación.
+            @Override
+            public VersionCongeladaEnAprobacion congelar(String periodo) {
+                if (!enviados.containsKey(periodo)) {
+                    throw new SinDistributivo();
+                }
+                return new VersionCongeladaEnAprobacion(1, "b".repeat(64));
+            }
+
             @Override
             public CondicionesDeRevision condicionesDeRevision(String periodo) {
                 return condiciones;

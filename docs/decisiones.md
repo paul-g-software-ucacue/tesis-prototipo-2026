@@ -98,6 +98,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-97 | 2026-11-08 | Enviar a revisión exige el consolidado al día, su informe y cero inconsistencias abiertas; no notifica todavía | Aceptada | RF-29, RF-32, MD-07, D-95 |
 | D-98 | 2026-11-08 | Devolver desde EN_CONSOLIDACION: varias carreras, cada una con su observación, y el distributivo vuelve a BORRADOR_CARRERA; no notifica todavía | Aceptada | RF-34, RF-36, D-95, D-97 |
 | D-99 | 2026-11-08 | Generación pregunta a Aprobación por un puerto propio si el consolidado admite cambios; desde EN_REVISION_VRA no cambia | Aceptada | RF-32, RF-34, D-97, MD-04 |
+| D-100 | 2026-11-10 | Aprobar el contenido congela la versión: Generación congela por orden de Aprobación y Aprobación registra el paso a CONGELADO_EN_FIRMA; no notifica todavía | Aceptada | RF-38, RF-40, RF-59, MD-04, D-95, D-99 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1919,5 +1920,31 @@ Con la base de datos de Grype del 2026-11-07, la CI encontró además dos altas 
 **Consecuencias.**
 - Generación necesita una implementación del puerto para arrancar; en el proceso `distributivo` la da Validación OCS, y sus pruebas de Spring usan un doble.
 - El patrón sirve para las historias de firma: Generación puede preguntar lo mismo antes de cualquier cambio.
+
+**Documentos que hay que poner al día.** Ninguno.
+
+## D-100. Aprobar el contenido congela la versión: Generación congela por orden de Aprobación y Aprobación registra el paso a CONGELADO_EN_FIRMA; no notifica todavía
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-10 · **Decidido por:** autor de la tesis
+- **Origen:** F13-H01 (#60); aclaraciones de `specs/045-congelar-version/spec.md` y su plan (`research.md` §1 a §6)
+- **Relacionadas:** RF-38, RF-40, RF-59, MD-04, D-95, D-99; diseño de firmas §2
+
+**Decisión.**
+- Aprobar el contenido es del rol de EN_REVISION_VRA en la copia de la configuración (VICERRECTOR), con el permiso `DISTRIBUTIVO:APROBACION`. Sin comentario.
+- Son dos transacciones, como enviar o devolver un parcial: Generación congela la versión vigente con la versión bloqueada, de forma idempotente, y devuelve el número y el hash del distributivo; después Aprobación, con el proceso bloqueado, registra el `PASO_DE_ETAPA` de EN_REVISION_VRA a CONGELADO_EN_FIRMA con esa versión y ese hash. La bitácora recibe una entrada `CONTENIDO_APROBADO`. Generación no registra el cambio de estado de la versión (D-95).
+- Todo paso hacia CONGELADO_EN_FIRMA congela antes la versión: también el envío a revisión cuando EN_REVISION_VRA está desactivada.
+- Una versión CONGELADA rechaza toda edición (propuestas, actividades, consolidar, justificar e informe) con `GENERACION_VERSION_CONGELADA` (409). Es una regla de la versión, no de la etapa, y se comprueba antes que la del parcial enviado y la de la revisión (D-99).
+- No notifica todavía (F16-H01).
+
+**Por qué.** La versión es de Generación y la etapa es de Aprobación (MD-04). El paso idempotente permite completar una aprobación cortada a mitad volviendo a aprobar, sin compensaciones. El hash es el mismo que llevan las transiciones anteriores, así que la congelación se compara con el envío a revisión.
+
+**Alternativas.**
+- Congelar en Aprobación con una copia del contenido: duplica datos de Generación.
+- Un tipo de transición nuevo, `CONGELACION`: exige migración y no dice nada que la etapa de llegada no diga.
+- Reusar `GENERACION_PARCIAL_NO_EDITABLE`: no dice por qué ni qué hacer.
+
+**Consecuencias.**
+- Si falla la segunda transacción, la versión queda congelada y la etapa en EN_REVISION_VRA hasta que se vuelva a aprobar; la pantalla sigue ofreciendo aprobar.
+- Sin migraciones: la columna `estado` de la versión ya admite `CONGELADA`.
 
 **Documentos que hay que poner al día.** Ninguno.

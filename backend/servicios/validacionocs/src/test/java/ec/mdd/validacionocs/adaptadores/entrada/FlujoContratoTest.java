@@ -68,6 +68,7 @@ class FlujoContratoTest {
     private static final String AVANCE = "/api/validacionocs/periodos/%s/avance";
     private static final String REVISION = "/api/validacionocs/periodos/%s/revision";
     private static final String DEVOLUCION = "/api/validacionocs/periodos/%s/devolucion";
+    private static final String APROBACION = "/api/validacionocs/periodos/%s/aprobacion";
     private static final String OBSERVACION = "Faltan docentes en primer nivel.";
     private static final String RESPONSABLE = "RESPONSABLE_CONSOLIDACION";
     private static final String HUELLA = "c".repeat(64);
@@ -379,6 +380,98 @@ class FlujoContratoTest {
 
     private MvcResult revisar(String periodo, String rol) throws Exception {
         return pedir(post(REVISION.formatted(periodo)), rol, null);
+    }
+
+    // Aprobar el contenido (F13-H01, contracts/validacionocs.md).
+
+    @Test
+    void
+            dadoElDistributivoEnRevision_cuandoElVicerrectorAprueba_entonces200CongeladoSegunElContrato()
+                    throws Exception {
+        enRevision(PERIODO);
+
+        MvcResult resultado = aprobar(PERIODO, "VICERRECTOR");
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        JsonNode cuerpo = cuerpo(resultado);
+        assertThat(cuerpo.get("etapa").asString()).isEqualTo("CONGELADO_EN_FIRMA");
+        JsonNode congelacion = cuerpo.get("congelacion");
+        assertThat(congelacion.get("version").asInt()).isEqualTo(1);
+        assertThat(congelacion.get("hash").asString()).isEqualTo("b".repeat(64));
+        assertThat(congelacion.get("quien").asString()).isEqualTo("vicerrector.demo");
+        assertThat(cuerpo.get("acciones")).isEmpty();
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoElDistributivoEnRevision_cuandoConsultan_entoncesSoloElVicerrectorVeAprobar()
+            throws Exception {
+        enRevision(PERIODO);
+
+        MvcResult vicerrector = pedir(get(FLUJO.formatted(PERIODO)), "VICERRECTOR", null);
+        assertThat(cuerpo(vicerrector).get("acciones"))
+                .extracting(JsonNode::asString)
+                .containsExactly("APROBAR_CONTENIDO");
+        assertThat(cuerpo(vicerrector).has("congelacion")).isFalse();
+        contrato.validar(vicerrector);
+        assertThat(cuerpo(pedir(get(FLUJO.formatted(PERIODO)), "RECTOR", null)).get("acciones"))
+                .isEmpty();
+    }
+
+    @Test
+    void dadoElDistributivoFueraDeRevision_cuandoSeAprueba_entonces409Etapa() throws Exception {
+        enConsolidacion(PERIODO);
+        assertCodigo(
+                aprobar(PERIODO, "VICERRECTOR"), 409, "VALIDACIONOCS_ETAPA_NO_ADMITE_APROBACION");
+        revisar(PERIODO, RESPONSABLE);
+        aprobar(PERIODO, "VICERRECTOR");
+        assertCodigo(
+                aprobar(PERIODO, "VICERRECTOR"), 409, "VALIDACIONOCS_ETAPA_NO_ADMITE_APROBACION");
+    }
+
+    @Test
+    void dadoUnPeriodoSinDistributivo_cuandoSeAprueba_entonces404() throws Exception {
+        assertCodigo(aprobar("2027-I", "VICERRECTOR"), 404, "VALIDACIONOCS_SIN_DISTRIBUTIVO");
+    }
+
+    @Test
+    void dadoUnPeriodoCerrado_cuandoSeAprueba_entonces409PeriodoCerrado() throws Exception {
+        assertCodigo(aprobar(CERRADO, "VICERRECTOR"), 409, "VALIDACIONOCS_PERIODO_CERRADO");
+    }
+
+    @Test
+    void dadoUnPeriodoInvalido_cuandoSeAprueba_entonces400() throws Exception {
+        assertCodigo(aprobar("2026 I!", "VICERRECTOR"), 400, "COMUN_SOLICITUD_INVALIDA");
+    }
+
+    // FR-005: el Rector tiene el permiso pero no el rol de la etapa; los demás, ni el permiso.
+    @Test
+    void dadosLosRolesQueNoSonElDeRevision_cuandoAprueban_entonces403YElVicerrector200()
+            throws Exception {
+        List<String> fallas = new ArrayList<>();
+        for (String rol : MATRIZ.keySet()) {
+            MEMORIA.reiniciar();
+            enRevision(PERIODO);
+            MvcResult resultado = aprobar(PERIODO, rol);
+            int esperado = rol.equals("VICERRECTOR") ? 200 : 403;
+            if (resultado.getResponse().getStatus() != esperado) {
+                fallas.add(rol + ": " + resultado.getResponse().getStatus());
+            } else if (esperado == 403) {
+                assertThat(cuerpo(resultado).get("codigo").asString())
+                        .isEqualTo("SEGURIDAD_ACCESO_NO_AUTORIZADO");
+                assertThat(etapa(PERIODO)).isEqualTo("EN_REVISION_VRA");
+            }
+        }
+        assertThat(fallas).isEmpty();
+    }
+
+    private void enRevision(String periodo) throws Exception {
+        enConsolidacion(periodo);
+        revisar(periodo, RESPONSABLE);
+    }
+
+    private MvcResult aprobar(String periodo, String rol) throws Exception {
+        return pedir(post(APROBACION.formatted(periodo)), rol, null);
     }
 
     // Devolver (F12-H05, contracts/validacionocs.md).

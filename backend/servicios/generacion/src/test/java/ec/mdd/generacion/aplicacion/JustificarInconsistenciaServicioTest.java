@@ -19,6 +19,7 @@ import ec.mdd.generacion.dominio.ObjetoAfectado;
 import ec.mdd.generacion.dominio.PanelDeInconsistencias;
 import ec.mdd.generacion.dominio.Severidad;
 import ec.mdd.generacion.dominio.TipoDeInconsistencia;
+import ec.mdd.generacion.dominio.VersionCongelada;
 import ec.mdd.generacion.dominio.VersionDistributivo;
 import ec.mdd.generacion.puertos.entrada.ConsolidadoEnRevision;
 import ec.mdd.generacion.puertos.entrada.ConsultarPanel;
@@ -37,6 +38,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,10 +68,22 @@ class JustificarInconsistenciaServicioTest {
     private boolean enRevisionFuera;
     private boolean enRevisionDentro;
     private final List<Boolean> consultadoDentro = new ArrayList<>();
+    // F13-H01: la versión congelada, también fuera o dentro de la transacción.
+    private Integer congeladaFuera;
+    private Integer congeladaDentro;
     private final EnRevision enRevision =
-            periodo -> {
-                consultadoDentro.add(dentro);
-                return dentro ? enRevisionDentro : enRevisionFuera;
+            new EnRevision() {
+                @Override
+                public boolean enRevision(String periodo) {
+                    consultadoDentro.add(dentro);
+                    return dentro ? enRevisionDentro : enRevisionFuera;
+                }
+
+                @Override
+                public OptionalInt versionCongelada(String periodo) {
+                    Integer numero = dentro ? congeladaDentro : congeladaFuera;
+                    return numero == null ? OptionalInt.empty() : OptionalInt.of(numero);
+                }
             };
     private final Transaccion transaccion =
             new Transaccion() {
@@ -281,6 +295,30 @@ class JustificarInconsistenciaServicioTest {
 
         assertThatThrownBy(() -> servicio.justificar(solicitud(TipoDeInconsistencia.PROPORCION)))
                 .isInstanceOf(ConsolidadoEnRevision.class);
+
+        assertNoGuardoNada();
+    }
+
+    // F13-H01, research §4: la versión congelada gana a la revisión, dentro de la transacción.
+    @Test
+    void dadaLaVersionCongeladaYEnRevision_cuandoSeJustifica_entoncesVersionCongeladaSinGuardar() {
+        enRevisionFuera = true;
+        enRevisionDentro = true;
+        congeladaFuera = 1;
+        congeladaDentro = 1;
+
+        assertThatThrownBy(() -> servicio.justificar(solicitud(TipoDeInconsistencia.PROPORCION)))
+                .isInstanceOf(VersionCongelada.class);
+
+        assertNoGuardoNada();
+    }
+
+    @Test
+    void dadaUnaCongelacionAntesDeLaTransaccion_cuandoSeJustifica_entoncesVersionCongelada() {
+        congeladaDentro = 1;
+
+        assertThatThrownBy(() -> servicio.justificar(solicitud(TipoDeInconsistencia.PROPORCION)))
+                .isInstanceOf(VersionCongelada.class);
 
         assertNoGuardoNada();
     }
