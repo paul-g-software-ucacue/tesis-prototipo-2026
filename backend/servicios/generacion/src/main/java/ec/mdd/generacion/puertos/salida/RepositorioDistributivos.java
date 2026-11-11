@@ -8,6 +8,7 @@ import ec.mdd.generacion.dominio.VersionDistributivo;
 import ec.mdd.generacion.puertos.entrada.DistributivoRepetido;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.UUID;
 
 /** Los distributivos, en el esquema {@code generacion} (MD-01). */
@@ -71,4 +72,22 @@ public interface RepositorioDistributivos {
      * @param estado el estado nuevo
      */
     void marcarParcial(UUID version, String carrera, EstadoDelParcial estado);
+
+    /**
+     * Congela la versión, por orden de Aprobación (MD-04, F13-H01). Se llama dentro de la
+     * transacción que la bloqueó.
+     *
+     * @param version la versión
+     */
+    void congelar(UUID version);
+
+    /**
+     * El número de la versión vigente si está congelada (F13-H01). Dentro de una transacción, la
+     * lee con un bloqueo compartido: no espera a otras lecturas, pero una congelación que llega
+     * después espera a que termine.
+     *
+     * @param periodo el código del periodo
+     * @return el número; vacío si no está congelada o el periodo no tiene distributivo
+     */
+    OptionalInt versionCongelada(String periodo);
 }

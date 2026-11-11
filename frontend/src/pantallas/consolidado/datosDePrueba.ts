@@ -17,6 +17,7 @@ export const SIN_CONSOLIDAR: ConsolidadoDelPeriodo = {
   creado: true,
   modificable: true,
   enRevision: false,
+  versionCongelada: false,
   version: 1,
   desactualizado: false,
   carreras: [
@@ -45,6 +46,7 @@ export const SIN_DISTRIBUTIVO: ConsolidadoDelPeriodo = {
   creado: false,
   modificable: true,
   enRevision: false,
+  versionCongelada: false,
   desactualizado: false,
   carreras: [],
   totales: { clase: 0, otrasDocencia: 0, investigacion: 0, vinculacion: 0, gestion: 0 },

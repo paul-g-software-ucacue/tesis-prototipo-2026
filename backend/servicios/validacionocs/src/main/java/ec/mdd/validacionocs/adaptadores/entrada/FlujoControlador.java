@@ -4,6 +4,7 @@ import ec.mdd.plataforma.errores.nucleo.AlcanceDeCarrera;
 import ec.mdd.plataforma.errores.nucleo.CarreraSinIndicar;
 import ec.mdd.validacionocs.adaptadores.entrada.api.AccionDelFlujo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.AprobacionApi;
+import ec.mdd.validacionocs.adaptadores.entrada.api.CongelacionDeLaVersion;
 import ec.mdd.validacionocs.adaptadores.entrada.api.DevolucionDelParcial;
 import ec.mdd.validacionocs.adaptadores.entrada.api.EstadoDelFlujo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.ParcialDelFlujo;
@@ -15,6 +16,7 @@ import ec.mdd.validacionocs.dominio.ParcialDeOtraCarrera;
 import ec.mdd.validacionocs.dominio.RolDeOtraEtapa;
 import ec.mdd.validacionocs.dominio.Solicitante;
 import ec.mdd.validacionocs.dominio.Transicion;
+import ec.mdd.validacionocs.puertos.entrada.AprobarContenido;
 import ec.mdd.validacionocs.puertos.entrada.AvanzarEtapa;
 import ec.mdd.validacionocs.puertos.entrada.ConsultarFlujo;
 import ec.mdd.validacionocs.puertos.entrada.DevolverParciales;
@@ -37,9 +39,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * El flujo del distributivo ({@code contratos/validacionocs/openapi.yaml}, etiqueta {@code
- * Aprobacion}, F12-H02, F10-H03 y F12-H05). El permiso de cada operación lo exige su {@code
- * x-mdd-permiso} (ADR-021); el rol de la etapa y la carrera los exige el dominio con los roles y la
- * carrera del token. Si no corresponden, el mismo 403 común que sin permiso, sin decir qué falta.
+ * Aprobacion}, F12-H02, F10-H03, F12-H05 y F13-H01). El permiso de cada operación lo exige su
+ * {@code x-mdd-permiso} (ADR-021); el rol de la etapa y la carrera los exige el dominio con los
+ * roles y la carrera del token. Si no corresponden, el mismo 403 común que sin permiso, sin decir
+ * qué falta.
  */
 @RestController
 class FlujoControlador implements AprobacionApi {
@@ -52,18 +55,21 @@ class FlujoControlador implements AprobacionApi {
     private final AvanzarEtapa avanzar;
     private final EnviarARevision revisar;
     private final DevolverParciales devolver;
+    private final AprobarContenido aprobar;
 
     FlujoControlador(
             ConsultarFlujo consultar,
             EnviarParcial enviar,
             AvanzarEtapa avanzar,
             EnviarARevision revisar,
-            DevolverParciales devolver) {
+            DevolverParciales devolver,
+            AprobarContenido aprobar) {
         this.consultar = consultar;
         this.enviar = enviar;
         this.avanzar = avanzar;
         this.revisar = revisar;
         this.devolver = devolver;
+        this.aprobar = aprobar;
     }
 
     @Override
@@ -113,6 +119,17 @@ class FlujoControlador implements AprobacionApi {
                 respuesta(sinPermiso(() -> devolver.devolver(periodo, devoluciones, quien))));
     }
 
+    // F13-H01: el permiso de la matriz D-16 (el Rector también lo tiene) y, en el dominio, el rol
+    // de
+    // EN_REVISION_VRA en la copia de la configuración. Sin cuerpo: no lleva comentario.
+    @Override
+    @PreAuthorize("hasAuthority('PERMISO_DISTRIBUTIVO:APROBACION')")
+    public ResponseEntity<EstadoDelFlujo> aprobarContenido(String periodo) {
+        Solicitante quien = solicitante(true);
+        return ResponseEntity.ok(
+                respuesta(sinPermiso(() -> aprobar.aprobarContenido(periodo, quien))));
+    }
+
     private static FlujoDelDistributivo sinPermiso(Supplier<FlujoDelDistributivo> caso) {
         try {
             return caso.get();
@@ -146,16 +163,27 @@ class FlujoControlador implements AprobacionApi {
     }
 
     private static EstadoDelFlujo respuesta(FlujoDelDistributivo flujo) {
-        return new EstadoDelFlujo(
-                flujo.periodo(),
-                TipoDeEtapa.fromValue(flujo.etapa().name()),
-                flujo.nombreDeEtapa(),
-                flujo.version(),
-                flujo.parciales().stream().map(FlujoControlador::parcial).toList(),
-                flujo.acciones().stream()
-                        .map(accion -> AccionDelFlujo.fromValue(accion.name()))
-                        .toList(),
-                flujo.transiciones().stream().map(FlujoControlador::transicion).toList());
+        EstadoDelFlujo respuesta =
+                new EstadoDelFlujo(
+                        flujo.periodo(),
+                        TipoDeEtapa.fromValue(flujo.etapa().name()),
+                        flujo.nombreDeEtapa(),
+                        flujo.version(),
+                        flujo.parciales().stream().map(FlujoControlador::parcial).toList(),
+                        flujo.acciones().stream()
+                                .map(accion -> AccionDelFlujo.fromValue(accion.name()))
+                                .toList(),
+                        flujo.transiciones().stream().map(FlujoControlador::transicion).toList());
+        flujo.congelacion()
+                .ifPresent(
+                        una ->
+                                respuesta.congelacion(
+                                        new CongelacionDeLaVersion(
+                                                una.version(),
+                                                una.hash(),
+                                                una.quien(),
+                                                una.momento().atOffset(ZoneOffset.UTC))));
+        return respuesta;
     }
 
     private static ParcialDelFlujo parcial(FlujoDelDistributivo.Parcial parcial) {

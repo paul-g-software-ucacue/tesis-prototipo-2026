@@ -12,6 +12,7 @@ import ec.mdd.validacionocs.dominio.CarreraRepetida;
 import ec.mdd.validacionocs.dominio.ConsolidadoDesactualizado;
 import ec.mdd.validacionocs.dominio.DevolucionDesactivada;
 import ec.mdd.validacionocs.dominio.EtapaConOperacionPropia;
+import ec.mdd.validacionocs.dominio.EtapaNoAdmiteAprobacion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteDevolucion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteEnvio;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteRevision;
@@ -79,6 +80,10 @@ class ErroresValidacionocsTest {
                         tuple(
                                 EtapaNoAdmiteRevision.class,
                                 "VALIDACIONOCS_ETAPA_NO_ADMITE_REVISION",
+                                409),
+                        tuple(
+                                EtapaNoAdmiteAprobacion.class,
+                                "VALIDACIONOCS_ETAPA_NO_ADMITE_APROBACION",
                                 409),
                         tuple(ParcialesPendientes.class, "VALIDACIONOCS_PARCIALES_PENDIENTES", 409),
                         tuple(SinConsolidar.class, "VALIDACIONOCS_SIN_CONSOLIDAR", 409),

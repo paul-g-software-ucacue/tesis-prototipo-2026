@@ -34,6 +34,7 @@ import ec.mdd.generacion.dominio.ReglasDelPeriodo;
 import ec.mdd.generacion.dominio.Severidad;
 import ec.mdd.generacion.dominio.TipoDeJustificacion;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
+import ec.mdd.generacion.dominio.VersionCongelada;
 import ec.mdd.generacion.dominio.VersionDistributivo;
 import ec.mdd.generacion.puertos.entrada.ActividadFueraDelCatalogo;
 import ec.mdd.generacion.puertos.entrada.ActividadGuardada;
@@ -502,6 +503,27 @@ class AsignarActividadServicioTest {
     }
 
     @Test
+    void dadaUnaVersionCongelada_cuandoSeAsigna_entoncesVersionCongeladaSinGuardar() {
+        conTodo(congelada(), NADA);
+
+        assertThatThrownBy(() -> servicio.asignar(solicitud("140-b", "4", null)))
+                .isInstanceOf(VersionCongelada.class);
+
+        assertNoGuardoNada();
+    }
+
+    @Test
+    void dadaUnaVersionQueSeCongelaAntesDelBloqueo_cuandoSeAsigna_entoncesVersionCongelada() {
+        conTodo(version(), NADA);
+        when(distributivos.bloquearVigente(PERIODO)).thenReturn(Optional.of(congelada()));
+
+        assertThatThrownBy(() -> servicio.asignar(solicitud("140-b", "4", null)))
+                .isInstanceOf(VersionCongelada.class);
+
+        assertNoGuardoNada();
+    }
+
+    @Test
     void dadoUnPeriodoSinVersionDeNormativa_cuandoSeAsigna_entoncesNoGuarda() {
         conTodo(version(), NADA);
         when(actividades.catalogo(PERIODO)).thenReturn(Optional.empty());
@@ -700,6 +722,41 @@ class AsignarActividadServicioTest {
 
         assertThatThrownBy(() -> servicio.quitar(quitada("140-b", null, TODAS)))
                 .isInstanceOf(ActividadNoEncontrada.class);
+    }
+
+    // F13-H01, D-100: congelada, también si se congela antes del bloqueo (research §7).
+    @Test
+    void
+            dadaUnaVersionQueSeCongelaAntesDelBloqueo_cuandoSeQuita_entoncesVersionCongeladaSinBorrar() {
+        conTodo(version(actividad("140-b", "4", null)), NADA);
+        when(distributivos.bloquearVigente(PERIODO))
+                .thenReturn(Optional.of(congelada(actividad("140-b", "4", null))));
+
+        assertThatThrownBy(() -> servicio.quitar(quitada("140-b", null, TODAS)))
+                .isInstanceOf(VersionCongelada.class);
+
+        verify(distributivos, never()).quitarActividad(any(), any(), any(), any(), any());
+        verify(registro, never()).registrar(any());
+    }
+
+    @Test
+    void dadaUnaVersionCongelada_cuandoSeQuita_entoncesVersionCongeladaSinBorrar() {
+        conTodo(congelada(actividad("140-b", "4", null)), NADA);
+
+        assertThatThrownBy(() -> servicio.quitar(quitada("140-b", null, TODAS)))
+                .isInstanceOf(VersionCongelada.class);
+
+        verify(distributivos, never()).quitarActividad(any(), any(), any(), any(), any());
+    }
+
+    private static VersionDistributivo congelada(ActividadNoLectiva... actividades) {
+        return new VersionDistributivo(
+                VERSION,
+                1,
+                EstadoDeVersion.CONGELADA,
+                List.of(new ParcialCarrera(CARRERA, EstadoDelParcial.ENVIADO)),
+                List.of(),
+                List.of(actividades));
     }
 
     @Test

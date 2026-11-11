@@ -8,6 +8,7 @@ import ec.mdd.generacion.dominio.InformeDemasiadoGrande;
 import ec.mdd.generacion.dominio.InformeNoEsPdf;
 import ec.mdd.generacion.dominio.ParcialNoEditable;
 import ec.mdd.generacion.dominio.ProyectoNoValido;
+import ec.mdd.generacion.dominio.VersionCongelada;
 import ec.mdd.generacion.puertos.entrada.ActividadFueraDelCatalogo;
 import ec.mdd.generacion.puertos.entrada.ActividadNoEncontrada;
 import ec.mdd.generacion.puertos.entrada.AfinidadInsuficiente;
@@ -31,6 +32,7 @@ import ec.mdd.generacion.puertos.entrada.PropuestaNoEncontrada;
 import ec.mdd.generacion.puertos.entrada.SinConsolidar;
 import ec.mdd.generacion.puertos.entrada.SinDistributivo;
 import ec.mdd.generacion.puertos.entrada.TopeDeClase;
+import ec.mdd.plataforma.errores.nucleo.DetalleRespuesta;
 import ec.mdd.plataforma.errores.nucleo.EntradaCatalogo;
 import ec.mdd.plataforma.pruebas.VerificadorDeCatalogo;
 import org.junit.jupiter.api.Test;
@@ -93,6 +95,7 @@ class ErroresGeneracionTest {
                                 ConsolidadoEnRevision.class,
                                 "GENERACION_CONSOLIDADO_EN_REVISION",
                                 409),
+                        tuple(VersionCongelada.class, "GENERACION_VERSION_CONGELADA", 409),
                         tuple(InformeNoEsPdf.class, "GENERACION_INFORME_NO_ES_PDF", 400),
                         tuple(
                                 InformeDemasiadoGrande.class,
@@ -103,5 +106,18 @@ class ErroresGeneracionTest {
                         tuple(HorasExcedidas.class, "GENERACION_HORAS_EXCEDIDAS", 409),
                         tuple(TopeDeClase.class, "GENERACION_TOPE_DE_CLASE", 409),
                         tuple(DocenteNoEncontrado.class, "GENERACION_DOCENTE_NO_ENCONTRADO", 404));
+    }
+
+    @Test
+    void dadaUnaVersionCongelada_cuandoSeTraduce_entoncesLlevaSuNumeroEnLosDetalles() {
+        EntradaCatalogo entrada =
+                new ErroresGeneracion()
+                        .entradas().stream()
+                                .filter(una -> una.excepcion() == VersionCongelada.class)
+                                .findFirst()
+                                .orElseThrow();
+
+        assertThat(entrada.detalles(new VersionCongelada(3)))
+                .containsExactly(new DetalleRespuesta("version", "Versión 3."));
     }
 }

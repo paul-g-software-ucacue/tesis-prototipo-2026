@@ -2,8 +2,10 @@
 // versión, el envío de cada parcial y un botón por cada acción que la API dice que el usuario puede
 // hacer. Lo usan «Oferta del periodo» (el coordinador envía su parcial), «Consolidado del periodo»
 // (el Responsable y el Vicerrector ven la etapa; desde F10-H03, el Responsable envía a revisión y ve
-// lo que falta; desde F12-H05, devuelve parciales, y el coordinador ve la observación) y «Proyectos» (el Gestor de unidad avanza BORRADOR_UNIDADES). El servidor valida el
-// permiso, el rol de la etapa, la carrera y las condiciones.
+// lo que falta; desde F12-H05, devuelve parciales, y el coordinador ve la observación; desde
+// F13-H01, el Vicerrector aprueba el contenido y todos ven la constancia de la versión congelada) y
+// «Proyectos» (el Gestor de unidad avanza BORRADOR_UNIDADES). El servidor valida el permiso, el rol
+// de la etapa, la carrera y las condiciones.
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
@@ -14,6 +16,7 @@ import { AvisoDeError } from '../../errores/AvisoDeError';
 import { FalloDeApi, traducirError, type MensajeDeError } from '../../errores/traducir';
 import { useCarreras } from '../carreras/consultas';
 import { DialogoConfirmar } from '../carreras/DialogosDeCarrera';
+import { DialogoDeAprobacion } from './DialogoDeAprobacion';
 import { DialogoDeDevolucion } from './DialogoDeDevolucion';
 import {
   CLAVE_FLUJO,
@@ -21,6 +24,7 @@ import {
   enviarARevision,
   enviarParcial,
   useFlujo,
+  type CongelacionDeLaVersion,
   type EstadoDelFlujo,
   type ParcialDelFlujo,
 } from './flujo';
@@ -47,7 +51,39 @@ function estadoDe(parcial: ParcialDelFlujo, nombre: string) {
     : `${nombre}: pendiente`;
 }
 
-type Confirmar = 'enviar' | 'avanzar' | 'revisar' | 'devolver' | null;
+type Confirmar = 'enviar' | 'avanzar' | 'revisar' | 'devolver' | 'aprobar' | null;
+
+// La huella abreviada: los 12 primeros caracteres; la completa se copia (contracts/spa.md).
+const LARGO_DE_LA_HUELLA = 12;
+
+// La constancia de la versión congelada (F13-H01, FR-013): quién, cuándo y la huella, con un botón
+// para copiarla entera. «Huella copiada» se anuncia en una región viva.
+function Constancia({ congelacion }: { congelacion: CongelacionDeLaVersion }) {
+  const [copiada, setCopiada] = useState(false);
+  const { version, quien, momento, hash } = congelacion;
+  const copiar = async () => {
+    await navigator.clipboard.writeText(hash);
+    setCopiada(true);
+  };
+  return (
+    <Box sx={{ mt: 1, mb: 1, pl: 1, borderLeft: 3, borderColor: 'info.main' }}>
+      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+        {`Versión ${String(version)} congelada por ${quien} el ${MOMENTO.format(new Date(momento))}`}
+      </Typography>
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+        <Typography variant="body2" title={hash}>
+          {`Huella: ${hash.slice(0, LARGO_DE_LA_HUELLA)}…`}
+        </Typography>
+        <Button size="small" onClick={() => void copiar()}>
+          Copiar la huella
+        </Button>
+        <Typography variant="body2" role="status" color="text.secondary">
+          {copiada ? 'Huella copiada' : ''}
+        </Typography>
+      </Stack>
+    </Box>
+  );
+}
 
 /**
  * El estado del flujo del periodo. Sin distributivo no muestra nada: las pantallas ya dicen cómo
@@ -89,7 +125,7 @@ export function EstadoDelFlujoDelPeriodo({
   if (!flujo.data || !periodo) {
     return null;
   }
-  const { etapa, nombreDeEtapa, version, parciales, acciones } = flujo.data;
+  const { etapa, nombreDeEtapa, version, parciales, acciones, congelacion } = flujo.data;
   if (soloEn && !soloEn.includes(etapa)) {
     return null;
   }
@@ -100,6 +136,7 @@ export function EstadoDelFlujoDelPeriodo({
   const puedeAvanzar = acciones.includes('AVANZAR');
   const puedeRevisar = acciones.includes('ENVIAR_A_REVISION');
   const puedeDevolver = acciones.includes('DEVOLVER_PARCIALES');
+  const puedeAprobar = acciones.includes('APROBAR_CONTENIDO');
 
   const ejecutar = async (accion: () => Promise<unknown>) => {
     setConfirmar(null);
@@ -129,6 +166,7 @@ export function EstadoDelFlujoDelPeriodo({
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
         {`Etapa ${etapa}`}
       </Typography>
+      {congelacion && <Constancia congelacion={congelacion} />}
       <Box component="ul" sx={{ m: 0, pl: 3 }}>
         {parciales.map((parcial) => (
           <Typography component="li" variant="body2" key={parcial.carrera}>
@@ -192,6 +230,11 @@ export function EstadoDelFlujoDelPeriodo({
             Devolver parciales
           </Button>
         )}
+        {puedeAprobar && (
+          <Button variant="contained" disabled={enviando} onClick={() => setConfirmar('aprobar')}>
+            Aprobar el contenido
+          </Button>
+        )}
       </Stack>
       {puedeRevisar && faltan.length > 0 && (
         <Box
@@ -234,6 +277,18 @@ export function EstadoDelFlujoDelPeriodo({
           etapaActual={nombreDeEtapa}
           alCerrar={() => setConfirmar(null)}
           alDevolver={async () => {
+            setConfirmar(null);
+            await consultas.invalidateQueries({ queryKey: CLAVE_FLUJO });
+            alCambiar?.();
+          }}
+        />
+      )}
+      {confirmar === 'aprobar' && (
+        <DialogoDeAprobacion
+          periodo={periodo}
+          version={version}
+          alCerrar={() => setConfirmar(null)}
+          alAprobar={async () => {
             setConfirmar(null);
             await consultas.invalidateQueries({ queryKey: CLAVE_FLUJO });
             alCambiar?.();

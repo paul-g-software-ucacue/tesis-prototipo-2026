@@ -17,6 +17,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.UUID;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -289,5 +290,30 @@ public final class RepositorioDistributivosJdbc implements RepositorioDistributi
                 .param("version", version)
                 .param("carrera", carrera)
                 .update();
+    }
+
+    @Override
+    public void congelar(UUID version) {
+        jdbc.sql(
+                        "UPDATE generacion.version_distributivo SET estado = 'CONGELADA'"
+                                + " WHERE id = :version")
+                .param("version", version)
+                .update();
+    }
+
+    // F13-H01: FOR SHARE, para que congelar (FOR UPDATE de la versión) espere a la operación que
+    // ya leyó la versión editable.
+    @Override
+    public OptionalInt versionCongelada(String periodo) {
+        return jdbc.sql(VIGENTE + " FOR SHARE OF v")
+                .param("periodo", periodo)
+                .query(
+                        (fila, numero) ->
+                                EstadoDeVersion.valueOf(fila.getString("estado"))
+                                                == EstadoDeVersion.CONGELADA
+                                        ? OptionalInt.of(fila.getInt("numero"))
+                                        : OptionalInt.empty())
+                .optional()
+                .orElse(OptionalInt.empty());
     }
 }

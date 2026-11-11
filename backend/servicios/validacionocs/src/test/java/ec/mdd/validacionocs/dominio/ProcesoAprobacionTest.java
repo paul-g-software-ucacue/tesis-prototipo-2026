@@ -869,6 +869,166 @@ class ProcesoAprobacionTest {
         return ProcesoAprobacion.nuevo("2026-I", etapas(conUnidades), CREADO, List.of(carreras));
     }
 
+    // Aprobar el contenido y congelar la versión (F13-H01, data-model.md, D-100).
+
+    private static final Solicitante RECTOR =
+            new Solicitante("rectorado.demo", Set.of("RECTOR"), Optional.empty());
+    private static final String HASH_CONGELADO = "d".repeat(64);
+
+    @Test
+    void dadoElDistributivoEnRevision_cuandoElVicerrectorAprueba_entoncesPasaACongeladoEnFirma() {
+        ProcesoAprobacion proceso = enRevision(etapas(false));
+
+        List<Transicion> nuevas = proceso.aprobarContenido(VICERRECTOR, 2, HASH_CONGELADO, AHORA);
+
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.CONGELADO_EN_FIRMA);
+        assertThat(nuevas)
+                .containsExactly(
+                        new Transicion(
+                                TipoDeTransicion.PASO_DE_ETAPA,
+                                TipoDeEtapa.EN_REVISION_VRA,
+                                TipoDeEtapa.CONGELADO_EN_FIRMA,
+                                Optional.empty(),
+                                2,
+                                HASH_CONGELADO,
+                                "vicerrectorado.demo",
+                                AHORA));
+        assertThat(proceso.transiciones()).isEqualTo(nuevas);
+    }
+
+    @Test
+    void dadoOtroRol_cuandoAprueba_entoncesRolDeOtraEtapaSinCambiarNada() {
+        for (Solicitante otro : List.of(RECTOR, RESPONSABLE, COORDINADOR_DS)) {
+            ProcesoAprobacion proceso = enRevision(etapas(false));
+
+            assertThatThrownBy(() -> proceso.validarAprobacion(otro))
+                    .isInstanceOf(RolDeOtraEtapa.class);
+            assertThatThrownBy(() -> proceso.aprobarContenido(otro, 2, HASH_CONGELADO, AHORA))
+                    .isInstanceOf(RolDeOtraEtapa.class);
+            assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_REVISION_VRA);
+            assertThat(proceso.transiciones()).isEmpty();
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = TipoDeEtapa.class,
+            names = {"BORRADOR_CARRERA", "EN_CONSOLIDACION", "CONGELADO_EN_FIRMA", "EN_OCS"})
+    void dadoElDistributivoEnOtraEtapa_cuandoElVicerrectorAprueba_entoncesEtapaNoAdmiteAprobacion(
+            TipoDeEtapa etapa) {
+        ProcesoAprobacion proceso = en(etapa, etapas(false));
+
+        assertThatThrownBy(() -> proceso.validarAprobacion(VICERRECTOR))
+                .isInstanceOf(EtapaNoAdmiteAprobacion.class);
+        assertThatThrownBy(() -> proceso.aprobarContenido(VICERRECTOR, 2, HASH_CONGELADO, AHORA))
+                .isInstanceOf(EtapaNoAdmiteAprobacion.class);
+        assertThat(proceso.estado()).isEqualTo(etapa);
+        assertThat(proceso.transiciones()).isEmpty();
+    }
+
+    @Test
+    void dadaUnaAprobacionQueCabe_cuandoSoloSeValida_entoncesNoCambiaNada() {
+        ProcesoAprobacion proceso = enRevision(etapas(false));
+
+        proceso.validarAprobacion(VICERRECTOR);
+
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_REVISION_VRA);
+        assertThat(proceso.transiciones()).isEmpty();
+    }
+
+    @Test
+    void dadasDosAprobaciones_cuandoLlegaLaSegunda_entoncesEtapaNoAdmiteAprobacion() {
+        ProcesoAprobacion proceso = enRevision(etapas(false));
+        proceso.aprobarContenido(VICERRECTOR, 2, HASH_CONGELADO, AHORA);
+
+        assertThatThrownBy(() -> proceso.aprobarContenido(VICERRECTOR, 2, HASH_CONGELADO, AHORA))
+                .isInstanceOf(EtapaNoAdmiteAprobacion.class);
+        assertThat(proceso.transiciones()).hasSize(1);
+    }
+
+    @Test
+    void dadoElDistributivoEnRevision_cuandoSeVenLasAcciones_entoncesSoloElVicerrectorAprueba() {
+        ProcesoAprobacion proceso = enRevision(etapas(false));
+
+        assertThat(proceso.acciones(VICERRECTOR))
+                .containsExactly(AccionDelProceso.APROBAR_CONTENIDO);
+        assertThat(proceso.acciones(RESPONSABLE)).isEmpty();
+        assertThat(proceso.acciones(RECTOR)).isEmpty();
+        assertThat(proceso.acciones(COORDINADOR_DS)).isEmpty();
+    }
+
+    @Test
+    void dadoElDistributivoCongelado_cuandoSeVenLasAccionesDelVicerrector_entoncesNoHayNinguna() {
+        ProcesoAprobacion proceso = enRevision(etapas(false));
+        proceso.aprobarContenido(VICERRECTOR, 2, HASH_CONGELADO, AHORA);
+
+        assertThat(proceso.acciones(VICERRECTOR)).isEmpty();
+    }
+
+    @Test
+    void dadaLaRevisionActiva_cuandoSePreguntaSiCongelaAlAvanzar_entoncesSoloDesdeLaRevision() {
+        assertThat(enRevision(etapas(false)).congelaAlAvanzar()).isTrue();
+        assertThat(enConsolidacion(etapas(false)).congelaAlAvanzar()).isFalse();
+        assertThat(nuevo(false, "DS").congelaAlAvanzar()).isFalse();
+        assertThat(en(TipoDeEtapa.CONGELADO_EN_FIRMA, etapas(false)).congelaAlAvanzar()).isFalse();
+        assertThat(en(TipoDeEtapa.PUBLICADO, etapas(false)).congelaAlAvanzar()).isFalse();
+    }
+
+    @Test
+    void dadaLaRevisionDesactivada_cuandoSePreguntaSiCongelaAlAvanzar_entoncesDesdeConsolidacion() {
+        assertThat(enConsolidacion(sinRevision()).congelaAlAvanzar()).isTrue();
+    }
+
+    @Test
+    void dadoUnProcesoSinPasoAFirma_cuandoSePideLaCongelacion_entoncesNoHay() {
+        assertThat(enRevision(etapas(false)).congelacion()).isEmpty();
+    }
+
+    @Test
+    void dadoElPasoAFirma_cuandoSePideLaCongelacion_entoncesEsEsaTransicion() {
+        ProcesoAprobacion proceso = enRevision(etapas(false));
+        Transicion paso = proceso.aprobarContenido(VICERRECTOR, 2, HASH_CONGELADO, AHORA).get(0);
+
+        assertThat(proceso.congelacion()).contains(paso);
+    }
+
+    @Test
+    void dadaLaRevisionDesactivada_cuandoSeEnviaARevision_entoncesEseEnvioEsLaCongelacion() {
+        ProcesoAprobacion proceso = enConsolidacion(sinRevision());
+        Transicion paso = revisar(proceso, LISTO).get(0);
+
+        assertThat(proceso.congelacion()).contains(paso);
+    }
+
+    private static List<EtapaDelProceso> sinRevision() {
+        return etapas(false).stream()
+                .map(
+                        etapa ->
+                                etapa.tipo() == TipoDeEtapa.EN_REVISION_VRA
+                                        ? new EtapaDelProceso(
+                                                etapa.tipo(),
+                                                false,
+                                                etapa.nombre(),
+                                                etapa.rol(),
+                                                etapa.admiteDevolucion())
+                                        : etapa)
+                .toList();
+    }
+
+    private static ProcesoAprobacion enRevision(List<EtapaDelProceso> etapas) {
+        return en(TipoDeEtapa.EN_REVISION_VRA, etapas);
+    }
+
+    private static ProcesoAprobacion en(TipoDeEtapa etapa, List<EtapaDelProceso> etapas) {
+        return ProcesoAprobacion.de(
+                "2026-I",
+                etapas,
+                etapa,
+                CREADO,
+                Map.of("DS", EstadoDeEnvio.ENVIADO, "TDS", EstadoDeEnvio.ENVIADO),
+                List.of());
+    }
+
     private static ProcesoAprobacion enBorradorUnidades() {
         return ProcesoAprobacion.de(
                 "2026-I",

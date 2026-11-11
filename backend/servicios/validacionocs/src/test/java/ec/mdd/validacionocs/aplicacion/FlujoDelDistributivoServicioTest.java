@@ -19,6 +19,7 @@ import ec.mdd.validacionocs.dominio.CondicionesDeRevision;
 import ec.mdd.validacionocs.dominio.DevolucionDeParcial;
 import ec.mdd.validacionocs.dominio.EstadoDelPeriodo;
 import ec.mdd.validacionocs.dominio.EtapaConOperacionPropia;
+import ec.mdd.validacionocs.dominio.EtapaNoAdmiteAprobacion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteDevolucion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteRevision;
 import ec.mdd.validacionocs.dominio.ParcialNoEncontrado;
@@ -37,6 +38,7 @@ import ec.mdd.validacionocs.puertos.salida.DatosDelPeriodo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo.DistributivoActual;
 import ec.mdd.validacionocs.puertos.salida.Distributivo.ParcialEnviadoEnGeneracion;
+import ec.mdd.validacionocs.puertos.salida.Distributivo.VersionCongeladaEnAprobacion;
 import ec.mdd.validacionocs.puertos.salida.RegistroDeCambios;
 import ec.mdd.validacionocs.puertos.salida.RepositorioConfiguracion;
 import ec.mdd.validacionocs.puertos.salida.RepositorioProceso;
@@ -513,6 +515,225 @@ class FlujoDelDistributivoServicioTest {
                 .isInstanceOf(ParcialesPendientes.class);
         verify(distributivo, never()).condicionesDeRevision(anyString());
         assertThat(registrado()).isEmpty();
+    }
+
+    // Aprobar el contenido y congelar la versión (F13-H01, research §1 y §3, D-100).
+
+    private static final String HASH_CONGELADO = "e".repeat(64);
+
+    private void enRevision() {
+        enConsolidacion();
+        conCondiciones(LISTO);
+        servicio.enviarARevision(PERIODO, RESPONSABLE);
+        org.mockito.Mockito.clearInvocations(registro);
+        eventos.clear();
+    }
+
+    private void congelaEnGeneracion() {
+        when(distributivo.congelar(PERIODO))
+                .thenAnswer(
+                        uso -> {
+                            eventos.add("congelar");
+                            return new VersionCongeladaEnAprobacion(1, HASH_CONGELADO);
+                        });
+    }
+
+    private void conLaConfiguracion(String... desactivadas) {
+        String texto = new PlantillaEnRecursos().texto();
+        for (String etapa : desactivadas) {
+            texto = texto.replaceFirst("(" + etapa + ":\\s*\\n\\s*activa:) true", "$1 false");
+        }
+        when(configuraciones.vigenteEn(PERIODO, CREADO))
+                .thenReturn(Optional.of(new CargaGuardada(1, texto, "admin.demo", CREADO)));
+    }
+
+    @Test
+    void
+            dadoElDistributivoEnRevision_cuandoElVicerrectorAprueba_entoncesCongelaYRegistraUnaEntrada() {
+        enRevision();
+        congelaEnGeneracion();
+
+        FlujoDelDistributivo flujo = servicio.aprobarContenido(PERIODO, VICERRECTOR);
+
+        assertThat(flujo.etapa()).isEqualTo(TipoDeEtapa.CONGELADO_EN_FIRMA);
+        assertThat(procesos.de(PERIODO).orElseThrow().estado())
+                .isEqualTo(TipoDeEtapa.CONGELADO_EN_FIRMA);
+        // research §1: validar sin cambiar nada, Generación congela, y al final la transición.
+        assertThat(eventos).containsExactly("transaccion", "congelar", "transaccion");
+        assertThat(registrado()).hasSize(1);
+        CambioDeFlujo aprobacion = registrado().getFirst();
+        assertThat(aprobacion.accion()).isEqualTo(CambioDeFlujo.Accion.CONTENIDO_APROBADO);
+        assertThat(aprobacion.usuario()).isEqualTo("vicerrectorado.demo");
+        assertThat(aprobacion.momento()).isEqualTo(AHORA);
+        assertThat(aprobacion.detalle())
+                .isEqualTo(Map.of("periodo", PERIODO, "version", 1, "hash", HASH_CONGELADO));
+        assertThat(aprobacion.anterior()).isEqualTo(Map.of("estado", "EN_REVISION_VRA"));
+        assertThat(aprobacion.nuevo()).isEqualTo(Map.of("estado", "CONGELADO_EN_FIRMA"));
+        assertThat(flujo.congelacion())
+                .contains(
+                        new FlujoDelDistributivo.Congelacion(
+                                1, HASH_CONGELADO, "vicerrectorado.demo", AHORA));
+        assertThat(flujo.acciones()).isEmpty();
+    }
+
+    @Test
+    void dadoElDistributivoEnRevision_cuandoSeConsulta_entoncesSinCongelacionYConLaAccion() {
+        enRevision();
+
+        FlujoDelDistributivo flujo = servicio.flujo(PERIODO, VICERRECTOR);
+
+        assertThat(flujo.congelacion()).isEmpty();
+        assertThat(flujo.acciones()).containsExactly(AccionDelProceso.APROBAR_CONTENIDO);
+    }
+
+    @Test
+    void dadoOtroRol_cuandoAprueba_entoncesRolDeOtraEtapaSinCongelarNiRegistrar() {
+        enRevision();
+        congelaEnGeneracion();
+
+        assertThatThrownBy(() -> servicio.aprobarContenido(PERIODO, RESPONSABLE))
+                .isInstanceOf(RolDeOtraEtapa.class);
+        verify(distributivo, never()).congelar(anyString());
+        assertThat(registrado()).isEmpty();
+    }
+
+    @Test
+    void
+            dadoElDistributivoEnConsolidacion_cuandoAprueba_entoncesEtapaNoAdmiteAprobacionSinCongelar() {
+        enConsolidacion();
+        congelaEnGeneracion();
+
+        assertThatThrownBy(() -> servicio.aprobarContenido(PERIODO, VICERRECTOR))
+                .isInstanceOf(EtapaNoAdmiteAprobacion.class);
+        verify(distributivo, never()).congelar(anyString());
+        assertThat(registrado()).isEmpty();
+    }
+
+    @Test
+    void dadoUnPeriodoCerrado_cuandoAprueba_entoncesPeriodoCerradoSinCongelar() {
+        enRevision();
+        congelaEnGeneracion();
+        when(datos.estado(PERIODO)).thenReturn(Optional.of(new EstadoDelPeriodo("CERRADO")));
+
+        assertThatThrownBy(() -> servicio.aprobarContenido(PERIODO, VICERRECTOR))
+                .isInstanceOf(PeriodoCerrado.class);
+        verify(distributivo, never()).congelar(anyString());
+        assertThat(registrado()).isEmpty();
+    }
+
+    @Test
+    void dadoUnPeriodoSinDistributivo_cuandoAprueba_entoncesSinDistributivoSinCongelar() {
+        when(distributivo.actual(PERIODO)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> servicio.aprobarContenido(PERIODO, VICERRECTOR))
+                .isInstanceOf(SinDistributivo.class);
+        verify(distributivo, never()).congelar(anyString());
+        assertThat(registrado()).isEmpty();
+    }
+
+    @Test
+    void dadaUnaAprobacionQueFalloAlRegistrarse_cuandoSeApruebaOtraVez_entoncesLaCompleta() {
+        enRevision();
+        congelaEnGeneracion();
+        doThrow(new IllegalStateException("se cayó la base")).when(registro).registrar(any());
+        assertThatThrownBy(() -> servicio.aprobarContenido(PERIODO, VICERRECTOR))
+                .isInstanceOf(IllegalStateException.class);
+        procesos.revertir();
+        // La versión quedó congelada y la etapa no avanzó: se sigue ofreciendo aprobar.
+        assertThat(servicio.flujo(PERIODO, VICERRECTOR).acciones())
+                .containsExactly(AccionDelProceso.APROBAR_CONTENIDO);
+        org.mockito.Mockito.reset(registro);
+
+        FlujoDelDistributivo flujo = servicio.aprobarContenido(PERIODO, VICERRECTOR);
+
+        assertThat(flujo.etapa()).isEqualTo(TipoDeEtapa.CONGELADO_EN_FIRMA);
+        verify(distributivo, org.mockito.Mockito.times(2)).congelar(PERIODO);
+        assertThat(registrado()).hasSize(1);
+        assertThat(registrado().getFirst().detalle()).containsEntry("hash", HASH_CONGELADO);
+    }
+
+    @Test
+    void dadaLaRevisionActiva_cuandoSeEnviaARevision_entoncesNoCongela() {
+        enConsolidacion();
+        conCondiciones(LISTO);
+
+        servicio.enviarARevision(PERIODO, RESPONSABLE);
+
+        verify(distributivo, never()).congelar(anyString());
+    }
+
+    @Test
+    void dadaLaRevisionDesactivada_cuandoSeEnviaARevision_entoncesCongelaAntesDelPasoAFirma() {
+        conLaConfiguracion("EN_REVISION_VRA");
+        enConsolidacion();
+        conCondiciones(LISTO);
+        congelaEnGeneracion();
+
+        FlujoDelDistributivo flujo = servicio.enviarARevision(PERIODO, RESPONSABLE);
+
+        assertThat(flujo.etapa()).isEqualTo(TipoDeEtapa.CONGELADO_EN_FIRMA);
+        assertThat(eventos).containsSubsequence("condiciones", "congelar", "transaccion");
+        assertThat(registrado().getFirst().detalle()).containsEntry("hash", HASH_CONGELADO);
+        assertThat(flujo.congelacion())
+                .contains(
+                        new FlujoDelDistributivo.Congelacion(
+                                1, HASH_CONGELADO, "consolidacion.demo", AHORA));
+    }
+
+    @Test
+    void dadaLaRevisionDesactivadaYUnaCondicionQueFalta_cuandoSeEnviaARevision_entoncesNoCongela() {
+        conLaConfiguracion("EN_REVISION_VRA");
+        enConsolidacion();
+        conCondiciones(new CondicionesDeRevision(true, false, Optional.empty(), 0, 0));
+        congelaEnGeneracion();
+
+        assertThatThrownBy(() -> servicio.enviarARevision(PERIODO, RESPONSABLE))
+                .isInstanceOf(ec.mdd.validacionocs.dominio.SinInforme.class);
+        verify(distributivo, never()).congelar(anyString());
+        assertThat(registrado()).isEmpty();
+    }
+
+    @Test
+    void dadasConsolidacionYRevisionDesactivadas_cuandoSeEnviaElUltimoParcial_entoncesCongela() {
+        conLaConfiguracion("EN_CONSOLIDACION", "EN_REVISION_VRA");
+        congelaEnGeneracion();
+        servicio.enviar(PERIODO, "DS", COORDINADOR_DS);
+        verify(distributivo, never()).congelar(anyString());
+
+        FlujoDelDistributivo flujo = servicio.enviar(PERIODO, "TDS", COORDINADOR_TDS);
+
+        assertThat(flujo.etapa()).isEqualTo(TipoDeEtapa.CONGELADO_EN_FIRMA);
+        verify(distributivo).congelar(PERIODO);
+        assertThat(flujo.congelacion())
+                .map(FlujoDelDistributivo.Congelacion::hash)
+                .contains(HASH_CONGELADO);
+    }
+
+    @Test
+    void dadoElAvanceGenericoHaciaLaFirma_cuandoElGestorAvanza_entoncesCongelaAntes() {
+        String texto =
+                new PlantillaEnRecursos()
+                        .texto()
+                        .replaceFirst("(BORRADOR_UNIDADES:\\s*\\n\\s*activa:) false", "$1 true")
+                        .replaceFirst("(EN_CONSOLIDACION:\\s*\\n\\s*activa:) true", "$1 false")
+                        .replaceFirst("(EN_REVISION_VRA:\\s*\\n\\s*activa:) true", "$1 false");
+        when(configuraciones.vigenteEn(PERIODO, CREADO))
+                .thenReturn(Optional.of(new CargaGuardada(1, texto, "admin.demo", CREADO)));
+        congelaEnGeneracion();
+        servicio.enviar(PERIODO, "DS", COORDINADOR_DS);
+        servicio.enviar(PERIODO, "TDS", COORDINADOR_TDS);
+        verify(distributivo, never()).congelar(anyString());
+        Solicitante gestor =
+                new Solicitante("gestion.demo", Set.of("GESTOR_UNIDAD"), Optional.empty());
+
+        assertThatThrownBy(() -> servicio.avanzar(PERIODO, VICERRECTOR))
+                .isInstanceOf(RolDeOtraEtapa.class);
+        verify(distributivo, never()).congelar(anyString());
+        FlujoDelDistributivo flujo = servicio.avanzar(PERIODO, gestor);
+
+        assertThat(flujo.etapa()).isEqualTo(TipoDeEtapa.CONGELADO_EN_FIRMA);
+        verify(distributivo).congelar(PERIODO);
+        assertThat(registrado().getLast().detalle()).containsEntry("hash", HASH_CONGELADO);
     }
 
     private static FlujoDelDistributivo.Parcial parcial(

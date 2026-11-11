@@ -15,6 +15,7 @@ import ec.mdd.generacion.dominio.HorasNoValidas;
 import ec.mdd.generacion.dominio.ParcialNoEditable;
 import ec.mdd.generacion.dominio.ProyectoDelDocente;
 import ec.mdd.generacion.dominio.ProyectoNoValido;
+import ec.mdd.generacion.dominio.VersionCongelada;
 import ec.mdd.generacion.puertos.entrada.ActividadFueraDelCatalogo;
 import ec.mdd.generacion.puertos.entrada.ActividadGuardada;
 import ec.mdd.generacion.puertos.entrada.ActividadNoEncontrada;
@@ -213,6 +214,7 @@ class ActividadesContratoTest {
         "SIN,409,GENERACION_SIN_DISTRIBUTIVO",
         "NO-ACTIVO,409,GENERACION_DOCENTE_NO_ACTIVO",
         "ENVIADO,409,GENERACION_PARCIAL_NO_EDITABLE",
+        "CONGELADA,409,GENERACION_VERSION_CONGELADA",
         "PROYECTO,409,GENERACION_PROYECTO_NO_VALIDO",
         "CARGO,409,GENERACION_CARGO_NO_VIGENTE",
         "EXCEDIDAS,409,GENERACION_HORAS_EXCEDIDAS",
@@ -247,7 +249,8 @@ class ActividadesContratoTest {
     @CsvSource({
         "SIN-ACTIVIDAD,404,GENERACION_ACTIVIDAD_NO_ENCONTRADA",
         "CERRADO,409,GENERACION_PERIODO_CERRADO",
-        "ENVIADO,409,GENERACION_PARCIAL_NO_EDITABLE"
+        "ENVIADO,409,GENERACION_PARCIAL_NO_EDITABLE",
+        "CONGELADA,409,GENERACION_VERSION_CONGELADA"
     })
     void dadoUnFallo_cuandoQuita_entoncesResponde(String periodo, int estado, String codigo)
             throws Exception {
@@ -407,6 +410,7 @@ class ActividadesContratoTest {
                 case "SIN" -> throw new SinDistributivo();
                 case "NO-ACTIVO" -> throw new DocenteNoActivo();
                 case "ENVIADO" -> throw new ParcialNoEditable();
+                case "CONGELADA" -> throw new VersionCongelada(1);
                 case "PROYECTO" -> throw new ProyectoNoValido();
                 case "CARGO" -> throw new CargoNoVigente();
                 case "EXCEDIDAS" -> throw new HorasExcedidas(new BigDecimal("2.5"));

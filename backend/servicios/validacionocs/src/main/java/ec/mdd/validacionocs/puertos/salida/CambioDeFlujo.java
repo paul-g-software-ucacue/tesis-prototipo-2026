@@ -96,6 +96,11 @@ public record CambioDeFlujo(
          */
         CONSOLIDADO_ENVIADO_A_REVISION,
         /**
+         * El contenido aprobado y la versión congelada (F13-H01): el paso desde EN_REVISION_VRA,
+         * con la etapa antes y después, y la versión y el hash en el detalle (D-95, D-100).
+         */
+        CONTENIDO_APROBADO,
+        /**
          * Parciales devueltos desde EN_CONSOLIDACION (F12-H05): la etapa antes y después, y la
          * versión, el hash y la observación de cada carrera devuelta en el detalle
          * (contracts/bitacora.md, D-95, D-98). Una entrada aunque devuelva varias carreras.

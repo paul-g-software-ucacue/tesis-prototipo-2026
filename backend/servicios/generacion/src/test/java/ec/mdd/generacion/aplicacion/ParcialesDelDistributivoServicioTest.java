@@ -25,6 +25,7 @@ import ec.mdd.generacion.puertos.entrada.EstadoDelDistributivo;
 import ec.mdd.generacion.puertos.entrada.EstadoDelDistributivo.ParcialYSuEstado;
 import ec.mdd.generacion.puertos.entrada.ParcialMarcado;
 import ec.mdd.generacion.puertos.entrada.ParcialNoEncontrado;
+import ec.mdd.generacion.puertos.entrada.VersionCongeladaEnGeneracion;
 import ec.mdd.generacion.puertos.salida.RegistroDeCambios;
 import ec.mdd.generacion.puertos.salida.RepositorioDistributivos;
 import ec.mdd.generacion.puertos.salida.Transaccion;
@@ -184,6 +185,72 @@ class ParcialesDelDistributivoServicioTest {
                                         ContenidoDelParcial.de(PERIODO, "DS", version).hash(),
                                         "TDS",
                                         ContenidoDelParcial.de(PERIODO, "TDS", version).hash())));
+    }
+
+    // Congelar la versión (F13-H01, contracts/generacion.md, D-100).
+
+    @Test
+    void dadaUnaVersionEditable_cuandoSeCongela_entoncesLaBloqueaLaCongelaYDevuelveSuHash() {
+        VersionDistributivo editable = conEstado(EstadoDeVersion.EDITABLE);
+        when(distributivos.bloquearVigente(PERIODO)).thenReturn(Optional.of(editable));
+
+        VersionCongeladaEnGeneracion congelada = servicio.congelarVersion(PERIODO);
+
+        verify(distributivos).congelar(VERSION);
+        assertThat(congelada).isEqualTo(new VersionCongeladaEnGeneracion(1, hashDe(editable)));
+        assertThat(transacciones).hasValue(1);
+        verify(registro, never()).registrar(any());
+    }
+
+    @Test
+    void dadaUnaVersionYaCongelada_cuandoSeCongelaOtraVez_entoncesDevuelveElMismoHashSinGuardar() {
+        VersionDistributivo congelada = conEstado(EstadoDeVersion.CONGELADA);
+        when(distributivos.bloquearVigente(PERIODO)).thenReturn(Optional.of(congelada));
+
+        VersionCongeladaEnGeneracion otraVez = servicio.congelarVersion(PERIODO);
+
+        verify(distributivos, never()).congelar(any());
+        assertThat(otraVez).isEqualTo(new VersionCongeladaEnGeneracion(1, hashDe(congelada)));
+    }
+
+    @Test
+    void
+            dadaUnaVersionCongelada_cuandoSePideElHashDelDistributivo_entoncesEsElMismoDeLaCongelacion() {
+        VersionDistributivo editable = conEstado(EstadoDeVersion.EDITABLE);
+        when(distributivos.bloquearVigente(PERIODO)).thenReturn(Optional.of(editable));
+        when(distributivos.vigenteDe(PERIODO)).thenReturn(Optional.of(editable));
+
+        assertThat(servicio.congelarVersion(PERIODO).hash())
+                .isEqualTo(servicio.hashDelDistributivo(PERIODO));
+    }
+
+    @Test
+    void dadoUnPeriodoSinDistributivo_cuandoSeCongela_entoncesDistributivoNoEncontrado() {
+        when(distributivos.bloquearVigente(PERIODO)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> servicio.congelarVersion(PERIODO))
+                .isInstanceOf(DistributivoNoEncontrado.class);
+        verify(distributivos, never()).congelar(any());
+    }
+
+    private static VersionDistributivo conEstado(EstadoDeVersion estado) {
+        return new VersionDistributivo(
+                VERSION,
+                1,
+                estado,
+                List.of(
+                        new ParcialCarrera("DS", EstadoDelParcial.ENVIADO),
+                        new ParcialCarrera("TDS", EstadoDelParcial.ENVIADO)),
+                List.of());
+    }
+
+    private static String hashDe(VersionDistributivo version) {
+        return ContenidoDelParcial.hashDelDistributivo(
+                PERIODO,
+                version.numero(),
+                Map.of(
+                        "DS", ContenidoDelParcial.de(PERIODO, "DS", version).hash(),
+                        "TDS", ContenidoDelParcial.de(PERIODO, "TDS", version).hash()));
     }
 
     private static VersionDistributivo version(EstadoDelParcial estadoDeDs) {

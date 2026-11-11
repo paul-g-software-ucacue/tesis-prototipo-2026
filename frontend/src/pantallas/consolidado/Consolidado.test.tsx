@@ -188,6 +188,37 @@ describe('Consolidado del periodo', () => {
     expect(screen.getByRole('button', { name: 'Volver a consolidar' })).toBeVisible();
   });
 
+  it('con la versión congelada se lee, sin editar, con su aviso en lugar del de revisión (F13-H01)', async () => {
+    simulada.responder(
+      'GET',
+      RUTA,
+      json(200, { ...CON_INFORME, enRevision: true, versionCongelada: true }),
+    );
+    await abrir();
+
+    expect(
+      screen.getByText('La versión 1 está congelada para la firma: ya no cambia.'),
+    ).toBeVisible();
+    expect(
+      screen.queryByText(
+        'El distributivo está en revisión del Vicerrectorado: el consolidado ya no cambia.',
+      ),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /onsolidar/ })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Adjuntar/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Descargar el informe' })).toBeVisible();
+  });
+
+  it('con la versión congelada y fuera de la revisión, tampoco se edita (F13-H01)', async () => {
+    simulada.responder('GET', RUTA, json(200, { ...CON_INFORME, versionCongelada: true }));
+    await abrir();
+
+    expect(
+      screen.getByText('La versión 1 está congelada para la firma: ya no cambia.'),
+    ).toBeVisible();
+    expect(screen.queryByRole('button', { name: /onsolidar/ })).not.toBeInTheDocument();
+  });
+
   describe('desactualizado', () => {
     it('avisa que hay que repetirlo', async () => {
       simulada.responder('GET', RUTA, json(200, { ...CONSOLIDADO, desactualizado: true }));

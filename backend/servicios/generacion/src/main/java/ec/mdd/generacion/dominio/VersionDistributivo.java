@@ -108,9 +108,14 @@ public record VersionDistributivo(
      * Comprueba que la carrera puede cambiar sus propuestas. Una carrera sin parcial recibe el suyo
      * con la primera propuesta.
      *
+     * @throws VersionCongelada si la versión ya se aprobó y está congelada para la firma, aunque el
+     *     parcial esté enviado: un cambio exige una versión nueva (F13-H01, D-100)
      * @throws ParcialNoEditable si la versión no está editable o el parcial se envió
      */
     public void exigirEditable(String carrera) {
+        if (estado == EstadoDeVersion.CONGELADA) {
+            throw new VersionCongelada(numero);
+        }
         boolean parcialCerrado =
                 parcialDe(carrera).map(parcial -> !parcial.editable()).orElse(false);
         if (estado != EstadoDeVersion.EDITABLE || parcialCerrado) {

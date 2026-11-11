@@ -56,6 +56,15 @@ public interface Distributivo {
     int marcarDevueltos(String periodo, List<String> carreras);
 
     /**
+     * Le ordena a Generación congelar la versión vigente, en su propia transacción (F13-H01,
+     * D-100). Es idempotente: si ya estaba congelada, devuelve lo mismo.
+     *
+     * @param periodo el código del periodo
+     * @return el número de la versión y el hash del distributivo
+     */
+    VersionCongeladaEnAprobacion congelar(String periodo);
+
+    /**
      * El distributivo de un periodo.
      *
      * @param version el número de la versión vigente
@@ -77,4 +86,12 @@ public interface Distributivo {
      * @param hash el SHA-256 de su contenido
      */
     record ParcialEnviadoEnGeneracion(int version, String hash) {}
+
+    /**
+     * La versión que congeló Generación (F13-H01).
+     *
+     * @param version su número
+     * @param hash el SHA-256 del distributivo, el de todos sus parciales
+     */
+    record VersionCongeladaEnAprobacion(int version, String hash) {}
 }

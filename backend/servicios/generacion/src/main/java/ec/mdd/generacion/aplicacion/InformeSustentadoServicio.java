@@ -68,7 +68,9 @@ public final class InformeSustentadoServicio implements GestionarInforme {
             throw new SinConsolidar();
         }
         // #215, D-99, research §2: antes de guardar el archivo, porque el almacén no borra; y otra
-        // vez dentro de la transacción, por si el envío a revisión llega entre las dos.
+        // vez dentro de la transacción, por si el envío a revisión llega entre las dos. F13-H01:
+        // primero la versión congelada, la causa más fuerte (research §4).
+        ConsolidarServicio.exigirNoCongelada(enRevision, periodo);
         if (enRevision.enRevision(periodo)) {
             throw new ConsolidadoEnRevision();
         }
@@ -80,6 +82,7 @@ public final class InformeSustentadoServicio implements GestionarInforme {
                         archivo.nombre(), contenido.length, archivo.huella(), clave, quien, ahora);
         return transaccion.ejecutar(
                 () -> {
+                    ConsolidarServicio.exigirNoCongelada(enRevision, periodo);
                     if (enRevision.enRevision(periodo)) {
                         throw new ConsolidadoEnRevision();
                     }

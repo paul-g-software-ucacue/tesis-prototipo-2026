@@ -326,7 +326,9 @@ paths:
         distributivo (RF-34). Exige todos los parciales enviados, el consolidado al día y con su
         informe sustentado, y cero inconsistencias abiertas (MD-07, D-97), evaluados al enviar. El
         distributivo pasa a la siguiente etapa activa, por defecto EN_REVISION_VRA, en la misma
-        respuesta, y la transición queda con la versión y el hash (D-95).
+        respuesta, y la transición queda con la versión y el hash (D-95). Si la siguiente etapa activa
+        es CONGELADO_EN_FIRMA, porque EN_REVISION_VRA está desactivada, Generación congela antes la
+        versión vigente (D-100).
       x-mdd-permiso: CONSOLIDACION:APROBACION
       responses:
         '200':
@@ -434,6 +436,60 @@ paths:
                 $ref: '../comun/errores.yaml#/components/schemas/Error'
         '500':
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+  /api/validacionocs/periodos/{periodo}/aprobacion:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2026-I
+    post:
+      tags: [Aprobacion]
+      operationId: aprobarContenido
+      summary: Aprueba el contenido y congela la versión vigente (F13-H01).
+      description: >-
+        Solo el rol de EN_REVISION_VRA en la configuración del distributivo, el Vicerrector (RF-34,
+        D-100). Sin cuerpo y sin comentario. Generación congela la versión vigente y el distributivo
+        pasa a la siguiente etapa activa, CONGELADO_EN_FIRMA, en la misma respuesta. La transición
+        queda con la versión y el hash, el mismo del envío a revisión (D-95, D-99). Si la versión ya
+        estaba congelada por un intento anterior cortado a mitad, volver a aprobar lo completa.
+      x-mdd-permiso: DISTRIBUTIVO:APROBACION
+      responses:
+        '200':
+          description: Aprobado; el distributivo ya está en CONGELADO_EN_FIRMA, con su congelación.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoDelFlujo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: El periodo no tiene distributivo (VALIDACIONOCS_SIN_DISTRIBUTIVO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '409':
+          description: >-
+            El distributivo no está en EN_REVISION_VRA (VALIDACIONOCS_ETAPA_NO_ADMITE_APROBACION) o el
+            periodo está cerrado (VALIDACIONOCS_PERIODO_CERRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
 components:
   securitySchemes:
     bearer:
@@ -505,6 +561,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TransicionDelFlujo'
+        congelacion:
+          $ref: '#/components/schemas/CongelacionDeLaVersion'
+    CongelacionDeLaVersion:
+      description: >-
+        La congelación de la versión: el último paso hacia CONGELADO_EN_FIRMA. Presente desde que el
+        distributivo llegó a esa etapa (F13-H01, D-100).
+      type: object
+      additionalProperties: false
+      required: [version, hash, quien, momento]
+      properties:
+        version:
+          type: integer
+          format: int32
+          minimum: 1
+        hash:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+          description: SHA-256 del contenido de la versión congelada; la «huella» en la pantalla.
+        quien:
+          type: string
+        momento:
+          type: string
+          format: date-time
     ParcialDelFlujo:
       type: object
       additionalProperties: false
@@ -566,7 +645,7 @@ components:
           pattern: '^[\s\S]*\S[\s\S]*$'
     AccionDelFlujo:
       type: string
-      enum: [ENVIAR_PARCIAL, AVANZAR, ENVIAR_A_REVISION, DEVOLVER_PARCIALES]
+      enum: [ENVIAR_PARCIAL, AVANZAR, ENVIAR_A_REVISION, DEVOLVER_PARCIALES, APROBAR_CONTENIDO]
     TransicionDelFlujo:
       type: object
       additionalProperties: false

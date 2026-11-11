@@ -14,6 +14,7 @@ import ec.mdd.generacion.dominio.ObjetoAfectado;
 import ec.mdd.generacion.dominio.PanelDeInconsistencias;
 import ec.mdd.generacion.dominio.Severidad;
 import ec.mdd.generacion.dominio.TipoDeInconsistencia;
+import ec.mdd.generacion.dominio.VersionCongelada;
 import ec.mdd.generacion.puertos.entrada.ConsolidadoEnRevision;
 import ec.mdd.generacion.puertos.entrada.ConsultarPanel;
 import ec.mdd.generacion.puertos.entrada.EnRevision;
@@ -125,6 +126,19 @@ class PanelContratoTest {
                 .contains("\"enRevision\":false");
     }
 
+    // F13-H01: con la versión congelada se consulta, y lo dice.
+    @Test
+    void dadaLaVersionCongelada_cuandoSeConsulta_entonces200ConVersionCongelada() throws Exception {
+        MvcResult resultado = pedir("CONGELADA", CONSOLIDA);
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("\"versionCongelada\":true");
+        contrato.validar(resultado);
+        assertThat(pedir("2026-I", CONSOLIDA).getResponse().getContentAsString())
+                .contains("\"versionCongelada\":false");
+    }
+
     @Test
     void unaBlanda_cuandoSeConsulta_entoncesDiceQueSePuedeJustificar() throws Exception {
         String cuerpo = pedir("2026-I", CONSOLIDA).getResponse().getContentAsString();
@@ -221,7 +235,8 @@ class PanelContratoTest {
         "DURA,409,GENERACION_INCONSISTENCIA_DURA",
         "CERRADO,409,GENERACION_PERIODO_CERRADO",
         "SIN,409,GENERACION_SIN_DISTRIBUTIVO",
-        "EN-REVISION,409,GENERACION_CONSOLIDADO_EN_REVISION"
+        "EN-REVISION,409,GENERACION_CONSOLIDADO_EN_REVISION",
+        "CONGELADA,409,GENERACION_VERSION_CONGELADA"
     })
     void dadoLoQueNoAdmite_cuandoJustifica_entoncesElCodigoDelCatalogo(
             String periodo, int estado, String codigo) throws Exception {
@@ -307,7 +322,20 @@ class PanelContratoTest {
         @Bean
         @Primary
         EnRevision enRevisionDelPanel() {
-            return "EN-REVISION"::equals;
+            return new EnRevision() {
+                @Override
+                public boolean enRevision(String periodo) {
+                    return "EN-REVISION".equals(periodo) || "CONGELADA".equals(periodo);
+                }
+
+                // F13-H01: CONGELADA tiene la versión congelada.
+                @Override
+                public java.util.OptionalInt versionCongelada(String periodo) {
+                    return "CONGELADA".equals(periodo)
+                            ? java.util.OptionalInt.of(2)
+                            : java.util.OptionalInt.empty();
+                }
+            };
         }
 
         @Bean
@@ -320,6 +348,7 @@ class PanelContratoTest {
                     case "CERRADO" -> throw new PeriodoCerrado();
                     case "SIN" -> throw new SinDistributivo();
                     case "EN-REVISION" -> throw new ConsolidadoEnRevision();
+                    case "CONGELADA" -> throw new VersionCongelada(1);
                     default -> PEDIDOS.add(solicitud.quien());
                 }
                 return new EntradaDelPanel(

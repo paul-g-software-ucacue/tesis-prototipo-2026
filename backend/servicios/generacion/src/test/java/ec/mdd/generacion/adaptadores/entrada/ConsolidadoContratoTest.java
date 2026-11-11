@@ -16,6 +16,7 @@ import ec.mdd.generacion.dominio.EstadoDelParcial;
 import ec.mdd.generacion.dominio.InformeDemasiadoGrande;
 import ec.mdd.generacion.dominio.InformeNoEsPdf;
 import ec.mdd.generacion.dominio.InformeSustentado;
+import ec.mdd.generacion.dominio.VersionCongelada;
 import ec.mdd.generacion.puertos.entrada.ConsolidadoEnRevision;
 import ec.mdd.generacion.puertos.entrada.Consolidar;
 import ec.mdd.generacion.puertos.entrada.ConsultarConsolidado;
@@ -88,6 +89,21 @@ class ConsolidadoContratoTest {
                 .contains("\"enRevision\":false");
     }
 
+    // F13-H01: con la versión congelada se consulta, y lo dice.
+    @Test
+    void dadaLaVersionCongelada_cuandoConsulta_entonces200ConVersionCongelada() throws Exception {
+        MvcResult resultado = pedir("CONGELADA", LEE);
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("\"versionCongelada\":true");
+        contrato.validar(resultado);
+        assertThat(pedir("2026-I", LEE).getResponse().getContentAsString())
+                .contains("\"versionCongelada\":false");
+        assertThat(pedir("SIN", LEE).getResponse().getContentAsString())
+                .contains("\"versionCongelada\":false");
+    }
+
     @Test
     void dadoConsolidacion_cuandoConsulta_entonces200ConLoCalculado() throws Exception {
         MvcResult resultado = pedir("2026-I", LEE);
@@ -137,7 +153,8 @@ class ConsolidadoContratoTest {
     @CsvSource({
         "SIN,409,GENERACION_SIN_DISTRIBUTIVO",
         "CERRADO,409,GENERACION_PERIODO_CERRADO",
-        "EN-REVISION,409,GENERACION_CONSOLIDADO_EN_REVISION"
+        "EN-REVISION,409,GENERACION_CONSOLIDADO_EN_REVISION",
+        "CONGELADA,409,GENERACION_VERSION_CONGELADA"
     })
     void dadoLoQueNoAdmite_cuandoConsolida_entoncesElCodigoDelCatalogo(
             String periodo, int estado, String codigo) throws Exception {
@@ -162,7 +179,8 @@ class ConsolidadoContratoTest {
         "SIN-CONSOLIDAR,409,GENERACION_SIN_CONSOLIDAR",
         "SIN,409,GENERACION_SIN_DISTRIBUTIVO",
         "CERRADO,409,GENERACION_PERIODO_CERRADO",
-        "EN-REVISION,409,GENERACION_CONSOLIDADO_EN_REVISION"
+        "EN-REVISION,409,GENERACION_CONSOLIDADO_EN_REVISION",
+        "CONGELADA,409,GENERACION_VERSION_CONGELADA"
     })
     void dadoLoQueNoAdmite_cuandoAdjunta_entoncesElCodigoDelCatalogo(
             String periodo, int estado, String codigo) throws Exception {
@@ -281,10 +299,23 @@ class ConsolidadoContratoTest {
                     };
         }
 
-        // #215: el periodo EN-REVISION tiene el distributivo en revisión.
+        // #215: el periodo EN-REVISION tiene el distributivo en revisión; F13-H01: CONGELADA,
+        // también su versión congelada.
         @Bean
         EnRevision enRevision() {
-            return "EN-REVISION"::equals;
+            return new EnRevision() {
+                @Override
+                public boolean enRevision(String periodo) {
+                    return "EN-REVISION".equals(periodo) || "CONGELADA".equals(periodo);
+                }
+
+                @Override
+                public java.util.OptionalInt versionCongelada(String periodo) {
+                    return "CONGELADA".equals(periodo)
+                            ? java.util.OptionalInt.of(2)
+                            : java.util.OptionalInt.empty();
+                }
+            };
         }
 
         @Bean
@@ -294,6 +325,7 @@ class ConsolidadoContratoTest {
                     case "SIN" -> throw new SinDistributivo();
                     case "CERRADO" -> throw new PeriodoCerrado();
                     case "EN-REVISION" -> throw new ConsolidadoEnRevision();
+                    case "CONGELADA" -> throw new VersionCongelada(1);
                     default -> CONSOLIDARON.add(quien);
                 }
                 return consolidado(periodo);
@@ -313,6 +345,7 @@ class ConsolidadoContratoTest {
                         case "SIN" -> throw new SinDistributivo();
                         case "CERRADO" -> throw new PeriodoCerrado();
                         case "EN-REVISION" -> throw new ConsolidadoEnRevision();
+                        case "CONGELADA" -> throw new VersionCongelada(1);
                         default -> {
                             return new InformeSustentado(
                                     nombre,

@@ -3,11 +3,13 @@ package ec.mdd.generacion.aplicacion;
 import ec.mdd.generacion.puertos.entrada.EnRevision;
 import ec.mdd.generacion.puertos.requeridos.EtapaDelConsolidado;
 import ec.mdd.generacion.puertos.salida.RepositorioDistributivos;
+import java.util.OptionalInt;
 
 /**
  * Pregunta a Aprobación, por el puerto que Generación requiere, si el consolidado del distributivo
- * vigente todavía admite cambios (#215, D-99). Dentro de una transacción, la pregunta deja un
- * bloqueo compartido sobre la etapa hasta que termina (research §2).
+ * vigente todavía admite cambios (#215, D-99); y lee de sus versiones si la vigente está congelada
+ * (F13-H01, D-100). Dentro de una transacción, la pregunta deja un bloqueo compartido sobre la
+ * etapa hasta que termina (research §2).
  */
 public final class EnRevisionServicio implements EnRevision {
 
@@ -26,5 +28,10 @@ public final class EnRevisionServicio implements EnRevision {
                 .creadoEn(periodo)
                 .map(creadoEn -> !etapa.admiteCambios(periodo, creadoEn))
                 .orElse(false);
+    }
+
+    @Override
+    public OptionalInt versionCongelada(String periodo) {
+        return distributivos.versionCongelada(periodo);
     }
 }

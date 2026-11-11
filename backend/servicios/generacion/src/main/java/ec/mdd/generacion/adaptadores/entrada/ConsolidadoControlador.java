@@ -56,13 +56,16 @@ class ConsolidadoControlador implements ConsolidadoApi {
     @PreAuthorize(LEER)
     public ResponseEntity<ConsolidadoDelPeriodo> consultarConsolidado(String periodo) {
         return ResponseEntity.ok(
-                respuesta(consultar.consolidado(periodo), enRevision.enRevision(periodo)));
+                respuesta(
+                        consultar.consolidado(periodo),
+                        enRevision.enRevision(periodo),
+                        enRevision.versionCongelada(periodo).isPresent()));
     }
 
     @Override
     @PreAuthorize(ESCRIBIR)
     public ResponseEntity<ConsolidadoDelPeriodo> consolidar(String periodo) {
-        return ResponseEntity.ok(respuesta(consolidar.consolidar(periodo, quien()), false));
+        return ResponseEntity.ok(respuesta(consolidar.consolidar(periodo, quien()), false, false));
     }
 
     @Override
@@ -100,15 +103,19 @@ class ConsolidadoControlador implements ConsolidadoApi {
         return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 
-    // enRevision: #215, D-99. Tras consolidar es falso: si no, se habría rechazado.
+    // enRevision: #215, D-99; versionCongelada: F13-H01, D-100. Tras consolidar los dos son falsos:
+    // si no, se habría rechazado.
     private static ConsolidadoDelPeriodo respuesta(
-            ec.mdd.generacion.dominio.ConsolidadoDelPeriodo consolidado, boolean enRevision) {
+            ec.mdd.generacion.dominio.ConsolidadoDelPeriodo consolidado,
+            boolean enRevision,
+            boolean versionCongelada) {
         ConsolidadoDelPeriodo respuesta =
                 new ConsolidadoDelPeriodo(
                         consolidado.periodo(),
                         consolidado.creado(),
                         consolidado.modificable(),
                         enRevision,
+                        versionCongelada,
                         consolidado.desactualizado(),
                         consolidado.carreras().stream()
                                 .map(ConsolidadoControlador::respuesta)

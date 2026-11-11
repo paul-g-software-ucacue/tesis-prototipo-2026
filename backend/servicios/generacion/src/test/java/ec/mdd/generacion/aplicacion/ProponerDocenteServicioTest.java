@@ -35,6 +35,7 @@ import ec.mdd.generacion.dominio.ReglasDelPeriodo;
 import ec.mdd.generacion.dominio.Severidad;
 import ec.mdd.generacion.dominio.TipoDeJustificacion;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
+import ec.mdd.generacion.dominio.VersionCongelada;
 import ec.mdd.generacion.dominio.VersionDistributivo;
 import ec.mdd.generacion.puertos.entrada.AfinidadInsuficiente;
 import ec.mdd.generacion.puertos.entrada.DocenteNoActivo;
@@ -672,6 +673,52 @@ class ProponerDocenteServicioTest {
                 .isInstanceOf(ParcialNoEditable.class);
 
         verify(distributivos, never()).quitarPropuesta(any(), any(), any());
+    }
+
+    // F13-H01, D-100: congelada.
+    @Test
+    void dadaUnaVersionCongelada_cuandoSePropone_entoncesVersionCongeladaSinGuardar() {
+        conTodo(congelada(propuestaDe(AFIN.identificacion())));
+
+        assertThatThrownBy(() -> servicio.proponer(solicitud(AFIN, null)))
+                .isInstanceOf(VersionCongelada.class);
+
+        assertNoGuardoNada();
+    }
+
+    // F13-H01: la que llega después de congelar lo ve con la versión bloqueada (research §7).
+    @Test
+    void dadaUnaVersionQueSeCongelaAntesDelBloqueo_cuandoSePropone_entoncesVersionCongelada() {
+        conTodo(version());
+        when(distributivos.bloquearVigente(PERIODO)).thenReturn(Optional.of(congelada()));
+
+        assertThatThrownBy(() -> servicio.proponer(solicitud(AFIN, null)))
+                .isInstanceOf(VersionCongelada.class);
+
+        assertNoGuardoNada();
+    }
+
+    @Test
+    void
+            dadaUnaVersionQueSeCongelaAntesDelBloqueo_cuandoSeQuita_entoncesVersionCongeladaSinBorrar() {
+        conTodo(version(propuestaDe(AFIN.identificacion())));
+        when(distributivos.bloquearVigente(PERIODO))
+                .thenReturn(Optional.of(congelada(propuestaDe(AFIN.identificacion()))));
+
+        assertThatThrownBy(() -> servicio.quitar(PERIODO, ASIGNATURA, "A", TODAS, QUIEN))
+                .isInstanceOf(VersionCongelada.class);
+
+        verify(distributivos, never()).quitarPropuesta(any(), any(), any());
+        verify(registro, never()).registrar(any());
+    }
+
+    private static VersionDistributivo congelada(Propuesta... propuestas) {
+        return new VersionDistributivo(
+                VERSION,
+                1,
+                EstadoDeVersion.CONGELADA,
+                List.of(new ParcialCarrera("TDS", EstadoDelParcial.ENVIADO)),
+                List.of(propuestas));
     }
 
     @Test

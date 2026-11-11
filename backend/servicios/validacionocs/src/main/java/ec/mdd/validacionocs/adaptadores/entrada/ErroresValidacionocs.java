@@ -10,6 +10,7 @@ import ec.mdd.validacionocs.dominio.CarreraRepetida;
 import ec.mdd.validacionocs.dominio.ConsolidadoDesactualizado;
 import ec.mdd.validacionocs.dominio.DevolucionDesactivada;
 import ec.mdd.validacionocs.dominio.EtapaConOperacionPropia;
+import ec.mdd.validacionocs.dominio.EtapaNoAdmiteAprobacion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteDevolucion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteEnvio;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteRevision;
@@ -120,6 +121,14 @@ class ErroresValidacionocs implements CatalogoDeErrores {
                         409,
                         "Periodo cerrado",
                         "El periodo está cerrado: el distributivo ya no cambia de etapa."),
+                // Aprobar el contenido (F13-H01, D-100).
+                EntradaCatalogo.de(
+                        EtapaNoAdmiteAprobacion.class,
+                        "VALIDACIONOCS_ETAPA_NO_ADMITE_APROBACION",
+                        409,
+                        "Etapa sin aprobación",
+                        "El distributivo no está en revisión del Vicerrectorado: no se puede"
+                                + " aprobar su contenido."),
                 // El envío a revisión (F10-H03, D-97), en el orden en que se comprueban.
                 EntradaCatalogo.de(
                         EtapaNoAdmiteRevision.class,

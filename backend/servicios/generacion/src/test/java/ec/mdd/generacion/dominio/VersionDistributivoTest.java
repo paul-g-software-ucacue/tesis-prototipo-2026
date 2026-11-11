@@ -164,13 +164,46 @@ class VersionDistributivoTest {
                 .isInstanceOf(ParcialNoEditable.class);
     }
 
+    // F13-H01, D-100: la causa más fuerte primero, con el número de la versión.
     @Test
-    void dadaUnaVersionCongelada_cuandoSeExigeEditable_entoncesRechaza() {
+    void dadaUnaVersionCongelada_cuandoSeExigeEditable_entoncesVersionCongeladaConSuNumero() {
+        VersionDistributivo version =
+                new VersionDistributivo(
+                        ID,
+                        3,
+                        EstadoDeVersion.CONGELADA,
+                        List.of(ParcialCarrera.nuevo("TDS")),
+                        List.of());
+
+        assertThatThrownBy(() -> version.exigirEditable("TDS"))
+                .isInstanceOfSatisfying(
+                        VersionCongelada.class, error -> assertThat(error.version()).isEqualTo(3));
+    }
+
+    @Test
+    void
+            dadaUnaVersionCongeladaConElParcialEnviado_cuandoSeExigeEditable_entoncesVersionCongelada() {
         VersionDistributivo version =
                 new VersionDistributivo(
                         ID,
                         1,
                         EstadoDeVersion.CONGELADA,
+                        List.of(new ParcialCarrera("TDS", EstadoDelParcial.ENVIADO)),
+                        List.of());
+
+        assertThatThrownBy(() -> version.exigirEditable("TDS"))
+                .isInstanceOf(VersionCongelada.class);
+        assertThatThrownBy(() -> version.exigirEditable("SIN_PARCIAL"))
+                .isInstanceOf(VersionCongelada.class);
+    }
+
+    @Test
+    void dadaUnaVersionAnulada_cuandoSeExigeEditable_entoncesParcialNoEditable() {
+        VersionDistributivo version =
+                new VersionDistributivo(
+                        ID,
+                        1,
+                        EstadoDeVersion.ANULADA,
                         List.of(ParcialCarrera.nuevo("TDS")),
                         List.of());
 

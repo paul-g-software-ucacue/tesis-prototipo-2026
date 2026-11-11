@@ -16,6 +16,7 @@ import ec.mdd.generacion.dominio.Propuesta;
 import ec.mdd.generacion.dominio.ReglaDeAsignacion;
 import ec.mdd.generacion.dominio.Severidad;
 import ec.mdd.generacion.dominio.TipoDeJustificacion;
+import ec.mdd.generacion.dominio.VersionCongelada;
 import ec.mdd.generacion.puertos.entrada.AfinidadInsuficiente;
 import ec.mdd.generacion.puertos.entrada.ConsultarDistributivo;
 import ec.mdd.generacion.puertos.entrada.ConsultarParciales;
@@ -214,6 +215,7 @@ class DistributivoContratoTest {
                 case "AFINIDAD" -> throw new AfinidadInsuficiente();
                 case "TOPE" -> throw new TopeDeClase(new BigDecimal("2"));
                 case "ENVIADO" -> throw new ParcialNoEditable();
+                case "CONGELADA" -> throw new VersionCongelada(1);
                 case "NADA" -> throw new PeriodoNoEncontrado();
                 case "PARALELO" -> throw new ParaleloNoEncontrado();
                 case "FALLA" -> throw new ProcesoConError("motivo-interno");

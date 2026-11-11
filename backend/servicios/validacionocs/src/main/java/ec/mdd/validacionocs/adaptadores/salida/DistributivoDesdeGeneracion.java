@@ -4,6 +4,7 @@ import ec.mdd.generacion.puertos.entrada.DistributivoNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.EstadoDelDistributivo;
 import ec.mdd.generacion.puertos.entrada.ParcialMarcado;
 import ec.mdd.generacion.puertos.entrada.ParcialesDelDistributivo;
+import ec.mdd.generacion.puertos.entrada.VersionCongeladaEnGeneracion;
 import ec.mdd.validacionocs.dominio.CondicionesDeRevision;
 import ec.mdd.validacionocs.dominio.ParcialNoEncontrado;
 import ec.mdd.validacionocs.puertos.entrada.SinDistributivo;
@@ -15,7 +16,8 @@ import java.util.Optional;
 
 /**
  * El distributivo, por la interfaz publicada de Generación en el mismo proceso (MD-04, principio V,
- * F12-H02). No lee tablas de Generación.
+ * F12-H02). No lee tablas de Generación. Traduce sus excepciones a las de Aprobación; desde F13-H01
+ * también le ordena congelar la versión, que Generación hace en su propia transacción.
  */
 public final class DistributivoDesdeGeneracion implements Distributivo {
 
@@ -61,6 +63,17 @@ public final class DistributivoDesdeGeneracion implements Distributivo {
             throw new SinDistributivo();
         } catch (ec.mdd.generacion.puertos.entrada.ParcialNoEncontrado sinParcial) {
             throw new ParcialNoEncontrado();
+        }
+    }
+
+    // F13-H01: Generación congela con la versión bloqueada y es idempotente (D-100).
+    @Override
+    public VersionCongeladaEnAprobacion congelar(String periodo) {
+        try {
+            VersionCongeladaEnGeneracion congelada = parciales.congelarVersion(periodo);
+            return new VersionCongeladaEnAprobacion(congelada.version(), congelada.hash());
+        } catch (DistributivoNoEncontrado sinDistributivo) {
+            throw new SinDistributivo();
         }
     }
 
