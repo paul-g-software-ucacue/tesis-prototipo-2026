@@ -45,7 +45,13 @@ Los scripts existentes no cambiaron (T018): sus aserciones de `acciones` son en 
 
 ## Comprobación a mano en el perfil local (T018, SC-003, SC-006)
 
-Pendiente del autor, con `quickstart.md` §3: el perfil local quedó con 2026-I en EN_REVISION_VRA (`MDD_CONSERVAR=1`).
+Hecha por el autor el 2026-11-11, con `quickstart.md` §3, sobre el perfil local con 2026-I en EN_REVISION_VRA (`MDD_CONSERVAR=1`):
+
+| Comprobación | Resultado |
+|---|---|
+| Aprobar como `vicerrectorado.demo` (SC-003) | **15 s** desde que se abre «Consolidado del periodo» hasta la constancia, con el diálogo de confirmación |
+| La constancia (SC-006, FR-013) | «En firma · versión 1»; «Versión 1 congelada por vicerrectorado.demo el 11/11/26, 00:01» y «Huella: 1292473e7744…»; «Copiar la huella» confirma «Huella copiada» |
+| Como `consolidacion.demo` (FR-014, FR-010) | El aviso «La versión 1 está congelada para la firma: ya no cambia.»; sin «Volver a consolidar», «Reemplazar el informe» ni «Justificar»; «Descargar el informe» sigue; 0 duras y 0 blandas abiertas |
 
 ## Desviaciones del plan
 
