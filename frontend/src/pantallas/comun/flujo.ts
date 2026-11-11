@@ -68,3 +68,17 @@ export function devolverParciales(periodo: string, devoluciones: ParcialADevolve
     }),
   );
 }
+
+export type CongelacionDeLaVersion = components['schemas']['CongelacionDeLaVersion'];
+
+/**
+ * Aprueba el contenido y congela la versión vigente (F13-H01, D-100). Sin cuerpo: no lleva
+ * comentario. El servidor exige el rol de la etapa.
+ */
+export function aprobarContenido(periodo: string) {
+  return llamar(
+    apiValidacionocs.POST('/api/validacionocs/periodos/{periodo}/aprobacion', {
+      params: { path: { periodo } },
+    }),
+  );
+}

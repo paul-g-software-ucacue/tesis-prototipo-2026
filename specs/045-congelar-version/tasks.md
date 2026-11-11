@@ -167,7 +167,7 @@ description: "Tareas de F13-H01: aprobar el contenido y congelar la versión"
 
 **Independent Test**: Vitest y Playwright con axe-core, según `contracts/spa.md`.
 
-- [ ] T014 [US3] Escribir primero `SPA/pantallas/comun/EstadoDelFlujo.test.tsx` y `SPA/pantallas/comun/DialogoDeAprobacion.test.tsx`:
+- [X] T014 [US3] Escribir primero `SPA/pantallas/comun/EstadoDelFlujo.test.tsx` y `SPA/pantallas/comun/DialogoDeAprobacion.test.tsx`:
   - **El botón:** con `APROBAR_CONTENIDO`, se ve «Aprobar el contenido»; sin la acción, no.
   - **El diálogo:**
     - dice «La versión N queda congelada: es la que se firmará. Todo cambio posterior exigirá una versión nueva.»;
@@ -178,14 +178,14 @@ description: "Tareas de F13-H01: aprobar el contenido y congelar la versión"
   - **La constancia:** con `congelacion`, se ve «Versión N congelada por <quien> el <fecha>» y la huella abreviada (12 caracteres y «…»); «Copiar la huella» escribe los 64 caracteres en el portapapeles y anuncia «Huella copiada».
 
   Después: `aprobarContenido` en `SPA/pantallas/comun/flujo.ts`, `DialogoDeAprobacion.tsx` y los cambios en `EstadoDelFlujo.tsx`.
-- [ ] T015 [US3] Escribir primero, en `SPA/pantallas/consolidado/Consolidado.test.tsx` y `SPA/pantallas/inconsistencias/Inconsistencias.test.tsx`:
+- [X] T015 [US3] Escribir primero, en `SPA/pantallas/consolidado/Consolidado.test.tsx` y `SPA/pantallas/inconsistencias/Inconsistencias.test.tsx`:
   - con `versionCongelada`, sin ediciones, con el aviso «La versión N está congelada para la firma: ya no cambia.» y sin el de revisión;
   - la descarga del informe sigue;
   - con `enRevision` y sin congelar, sigue el aviso de #215;
   - a mitad de camino (`contracts/spa.md`): con `versionCongelada` y un flujo sin `congelacion` y con `APROBAR_CONTENIDO`, se ve el aviso de versión congelada y la tarjeta sigue ofreciendo «Aprobar el contenido», sin constancia.
 
   Agregar `versionCongelada: false` a los datos de prueba existentes. Después, el código de las dos pantallas.
-- [ ] T016 [US3] En `frontend/e2e/consolidado.spec.ts`, con la API simulada:
+- [X] T016 [US3] En `frontend/e2e/consolidado.spec.ts`, con la API simulada:
   - el Vicerrector en EN_REVISION_VRA abre el diálogo, cancela y aprueba;
   - después, la constancia y el aviso;
   - axe-core sin fallas (WCAG 2.1 AA) con el diálogo abierto y con la constancia.
