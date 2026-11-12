@@ -118,7 +118,7 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
   - `ContenidoDelDocumentoTest`: arma los firmantes desde el árbol (rótulo = etiqueta + « por», el cargo por rol y el nombre del campo `firma-<orden>-<rol>`); falla con `FirmanteSinNombre` si falta uno.
 
   Después, el dominio.
-- [ ] T011 [US1] El generador, `FIR/main/.../adaptadores/salida/GeneradorPdfa.java`, con el camino de `PdfaDePruebaTest`. Ver fallar primero `GeneradorPdfaTest`, sin Docker y con veraPDF:
+- [X] T011 [US1] El generador, `FIR/main/.../adaptadores/salida/GeneradorPdfa.java`, con el camino de `PdfaDePruebaTest`. Ver fallar primero `GeneradorPdfaTest`, sin Docker y con veraPDF:
   - un contenido pequeño y uno de 165 paralelos (datos sintéticos) dan PDF/A-2b conforme;
   - cada página tiene en el pie «<periodo> · versión N · hash <64 hex>», con el texto extraído con PDFBox;
   - están el resumen por carrera, los totales y cada docente con sus asignaturas y actividades;
@@ -144,12 +144,14 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
 
 **Independent Test**: `GeneradorPdfaTest` y `probar_documento_firmable.sh`, paso 4.
 
-- [ ] T014 [US2] Ver fallar primero en `GeneradorPdfaTest`:
+- [X] T014 [US2] Ver fallar primero en `GeneradorPdfaTest`:
   - la última página tiene los tres rótulos en orden, cada uno con su cargo y su nombre;
   - el `AcroForm` tiene tres `PDSignatureField` vacíos, `firma-1-RESPONSABLE_CONSOLIDACION`, `firma-2-VICERRECTOR` y `firma-3-RECTOR`, con su widget dentro de la última página, el indicador *Print* y una apariencia normal;
   - veraPDF sigue dando PDF/A-2b conforme.
 
   Después, el bloque en la última página con posiciones fijas y los campos con PDFBox (research §2).
+
+  **Resultado (2026-11-11):** las 10 pruebas de `GeneradorPdfaTest` pasan; veraPDF da PDF/A-2b conforme con los tres campos. El contenido de 165 paralelos se genera y verifica en 1,6 s. La prueba deja en `backend/servicios/firma/build/documento-firmable/` el PDF y las imágenes de la primera y la última página, con los campos marcados en rojo: así se vio que el margen por defecto del cuerpo desplazaba los recuadros 2,8 mm y que el borde sumaba a la altura; se corrigió (`body { margin: 0 }`, `box-sizing: border-box`).
 - [ ] T015 [P] [US2] Los firmantes del periodo:
   - en Roles, ver fallar primero la prueba del servicio y la de contrato de `/interno/roles/periodos/{periodo}/responsable`: 200 con el usuario y su nombre para mostrar (sin nombre, el usuario); 404 `ROLES_SIN_RESPONSABLE`; solo con token de proceso. Después, la ruta, el servicio y `NombreDeUsuario` en Usuarios (API publicada), verificado por el `ModulosTest` de `identidad`;
   - en Firma, ver fallar primero `FirmantesDesdeProcesosTest` (con el servidor de pruebas de los adaptadores entre procesos): el Rector y el Vicerrector salen de `cargos-vigentes` más `activos`, y el Responsable de la ruta nueva; si falta alguno, `FirmanteSinNombre` con el cargo. Después, el adaptador.
