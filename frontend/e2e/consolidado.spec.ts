@@ -358,6 +358,28 @@ test('el Vicerrector aprueba y congela, ve la constancia y es accesible', async 
     congelado = true;
     await ruta.fulfill({ json: flujo() });
   });
+  // F13-H02: al entrar en firma, el documento se genera solo; primero en curso, después generado.
+  let consultasDelDocumento = 0;
+  await page.route('**/api/firma/periodos/*/documento', (ruta) => {
+    consultasDelDocumento++;
+    return ruta.fulfill({
+      json:
+        consultasDelDocumento < 2
+          ? { periodo: '2026-2', version: 1, estado: 'EN_CURSO', acciones: [] }
+          : {
+              periodo: '2026-2',
+              version: 1,
+              estado: 'GENERADO',
+              documento: {
+                sha256: 'f'.repeat(64),
+                hashContenido: HASH,
+                generadoPor: 'sistema',
+                generadoEn: '2026-11-10T15:30:20Z',
+              },
+              acciones: [],
+            },
+    });
+  });
   await abrirConsolidado(
     page,
     () => ({
@@ -422,5 +444,81 @@ test('el Vicerrector aprueba y congela, ve la constancia y es accesible', async 
   await expect(page.getByRole('button', { name: /onsolidar/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Descargar el informe' })).toBeVisible();
   expect(aprobaciones).toBe(1);
+  await expect(estado).toContainText('Documento firmable generado el 10/11/26, 10:30');
+  await expect(estado).toContainText('Huella del PDF: ffffffffffff…');
+  await sinFallas(page);
+});
+
+// F13-H02: el documento firmable no se pudo generar; el Responsable lo genera con «Generar el PDF».
+test('el Responsable genera el PDF que falló y la sección es accesible en cada estado', async ({
+  page,
+}) => {
+  let generado = false;
+  await page.route('**/api/validacionocs/periodos/*/flujo', (ruta) =>
+    ruta.fulfill({
+      json: {
+        periodo: '2026-2',
+        etapa: 'CONGELADO_EN_FIRMA',
+        nombreDeEtapa: 'En firma',
+        version: 1,
+        parciales: [{ carrera: 'TDS', enviado: true, pendienteDeConfirmar: false }],
+        acciones: [],
+        transiciones: [],
+        congelacion: {
+          version: 1,
+          hash: 'e'.repeat(64),
+          quien: 'vicerrectorado.demo',
+          momento: '2026-11-10T15:30:00Z',
+        },
+      },
+    }),
+  );
+  const estadoDelDocumento = () =>
+    generado
+      ? {
+          periodo: '2026-2',
+          version: 1,
+          estado: 'GENERADO',
+          documento: {
+            sha256: 'f'.repeat(64),
+            hashContenido: 'e'.repeat(64),
+            generadoPor: 'consolidacion.demo',
+            generadoEn: '2026-11-10T15:40:00Z',
+          },
+          acciones: [],
+        }
+      : {
+          periodo: '2026-2',
+          version: 1,
+          estado: 'FALLIDA',
+          motivo: 'Falta el nombre del Rector.',
+          acciones: ['GENERAR'],
+        };
+  await page.route('**/api/firma/periodos/*/documento', async (ruta) => {
+    if (ruta.request().method() === 'POST') {
+      generado = true;
+    }
+    await ruta.fulfill({ json: estadoDelDocumento() });
+  });
+  await abrirConsolidado(page, () => ({
+    periodo: '2026-2',
+    creado: true,
+    modificable: true,
+    enRevision: true,
+    versionCongelada: true,
+    version: 1,
+    desactualizado: false,
+    carreras: [],
+    totales: HORAS,
+    abiertas: { duras: 0, blandas: 0 },
+  }));
+
+  const estado = page.getByRole('region', { name: 'Estado del distributivo' });
+  await expect(estado.getByRole('alert')).toContainText('El PDF no se pudo generar');
+  await expect(estado.getByRole('alert')).toContainText('Falta el nombre del Rector.');
+  await sinFallas(page);
+  await estado.getByRole('button', { name: 'Generar el PDF' }).click();
+  await expect(estado).toContainText('Documento firmable generado el 10/11/26, 10:40');
+  await expect(estado.getByRole('button', { name: 'Generar el PDF' })).toHaveCount(0);
   await sinFallas(page);
 });

@@ -209,7 +209,7 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
 
 **Independent Test**: Vitest y Playwright con axe-core, según `contracts/spa.md`.
 
-- [ ] T021 [US5] Escribir primero `SPA/pantallas/comun/DocumentoFirmable.test.tsx`:
+- [X] T021 [US5] Escribir primero `SPA/pantallas/comun/DocumentoFirmable.test.tsx`:
   - GENERADO: «Documento firmable generado el <fecha>» y la huella abreviada con «Copiar la huella»;
   - EN_CURSO: «Generando el documento firmable…» y vuelve a consultar;
   - FALLIDA: «El PDF no se pudo generar» con el motivo;
@@ -217,7 +217,7 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
   - sin la acción, no hay botón.
 
   Después: `comun/documento.ts`, `DocumentoFirmable.tsx` (reusa el botón de copiar de la constancia) y su lugar en `EstadoDelFlujo.tsx`, solo en CONGELADO_EN_FIRMA.
-- [ ] T022 [US5] En `frontend/e2e/consolidado.spec.ts`, con la API simulada:
+- [X] T022 [US5] En `frontend/e2e/consolidado.spec.ts`, con la API simulada:
   - el Vicerrector aprueba y la tarjeta pasa de «Generando…» a «Documento firmable generado»;
   - el Responsable ve FALLIDA y «Generar el PDF», lo pulsa y queda GENERADO;
   - axe-core sin fallas en los tres estados.

@@ -470,6 +470,45 @@ describe('EstadoDelFlujo', () => {
       expect(await screen.findByText('Huella copiada')).toBeVisible();
     });
 
+    it('en firma, la tarjeta muestra el documento firmable (F13-H02)', async () => {
+      simulada.responder('GET', RUTA, json(200, congelado));
+      simulada.responder(
+        'GET',
+        '/api/firma/periodos/2026-I/documento',
+        json(200, {
+          periodo: '2026-I',
+          version: 2,
+          estado: 'GENERADO',
+          documento: {
+            sha256: 'f'.repeat(64),
+            hashContenido: HASH,
+            generadoPor: 'sistema',
+            generadoEn: '2026-11-10T15:30:20Z',
+          },
+          acciones: [],
+        }),
+      );
+      montar();
+
+      const region = await screen.findByRole('region', { name: 'Estado del distributivo' });
+      expect(
+        await within(region).findByText('Documento firmable generado el 10/11/26, 10:30'),
+      ).toBeVisible();
+      expect(within(region).getByText('Huella del PDF: ffffffffffff…')).toBeVisible();
+    });
+
+    it('antes de la firma no consulta el documento firmable', async () => {
+      simulada.responder(
+        'GET',
+        RUTA,
+        json(200, { ...enRevision, acciones: ['APROBAR_CONTENIDO'] }),
+      );
+      montar();
+
+      await screen.findByRole('button', { name: 'Aprobar el contenido' });
+      expect(simulada.peticiones.some((una) => una.url.includes('/api/firma/'))).toBe(false);
+    });
+
     it('a mitad de camino: sin constancia y con «Aprobar el contenido»', async () => {
       simulada.responder(
         'GET',

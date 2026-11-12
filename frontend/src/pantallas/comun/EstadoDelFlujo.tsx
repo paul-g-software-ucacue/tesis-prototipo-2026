@@ -3,7 +3,8 @@
 // hacer. Lo usan «Oferta del periodo» (el coordinador envía su parcial), «Consolidado del periodo»
 // (el Responsable y el Vicerrector ven la etapa; desde F10-H03, el Responsable envía a revisión y ve
 // lo que falta; desde F12-H05, devuelve parciales, y el coordinador ve la observación; desde
-// F13-H01, el Vicerrector aprueba el contenido y todos ven la constancia de la versión congelada) y
+// F13-H01, el Vicerrector aprueba el contenido y todos ven la constancia de la versión congelada;
+// desde F13-H02, en firma, el documento firmable) y
 // «Proyectos» (el Gestor de unidad avanza BORRADOR_UNIDADES). El servidor valida el permiso, el rol
 // de la etapa, la carrera y las condiciones.
 import Box from '@mui/material/Box';
@@ -17,7 +18,9 @@ import { FalloDeApi, traducirError, type MensajeDeError } from '../../errores/tr
 import { useCarreras } from '../carreras/consultas';
 import { DialogoConfirmar } from '../carreras/DialogosDeCarrera';
 import { DialogoDeAprobacion } from './DialogoDeAprobacion';
+import { DocumentoFirmable } from './DocumentoFirmable';
 import { DialogoDeDevolucion } from './DialogoDeDevolucion';
+import { HuellaCopiable } from './HuellaCopiable';
 import {
   CLAVE_FLUJO,
   avanzarEtapa,
@@ -53,34 +56,16 @@ function estadoDe(parcial: ParcialDelFlujo, nombre: string) {
 
 type Confirmar = 'enviar' | 'avanzar' | 'revisar' | 'devolver' | 'aprobar' | null;
 
-// La huella abreviada: los 12 primeros caracteres; la completa se copia (contracts/spa.md).
-const LARGO_DE_LA_HUELLA = 12;
-
 // La constancia de la versión congelada (F13-H01, FR-013): quién, cuándo y la huella, con un botón
 // para copiarla entera. «Huella copiada» se anuncia en una región viva.
 function Constancia({ congelacion }: { congelacion: CongelacionDeLaVersion }) {
-  const [copiada, setCopiada] = useState(false);
   const { version, quien, momento, hash } = congelacion;
-  const copiar = async () => {
-    await navigator.clipboard.writeText(hash);
-    setCopiada(true);
-  };
   return (
     <Box sx={{ mt: 1, mb: 1, pl: 1, borderLeft: 3, borderColor: 'info.main' }}>
       <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
         {`Versión ${String(version)} congelada por ${quien} el ${MOMENTO.format(new Date(momento))}`}
       </Typography>
-      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-        <Typography variant="body2" title={hash}>
-          {`Huella: ${hash.slice(0, LARGO_DE_LA_HUELLA)}…`}
-        </Typography>
-        <Button size="small" onClick={() => void copiar()}>
-          Copiar la huella
-        </Button>
-        <Typography variant="body2" role="status" color="text.secondary">
-          {copiada ? 'Huella copiada' : ''}
-        </Typography>
-      </Stack>
+      <HuellaCopiable etiqueta="Huella" hash={hash} />
     </Box>
   );
 }
@@ -167,6 +152,7 @@ export function EstadoDelFlujoDelPeriodo({
         {`Etapa ${etapa}`}
       </Typography>
       {congelacion && <Constancia congelacion={congelacion} />}
+      {etapa === 'CONGELADO_EN_FIRMA' && <DocumentoFirmable periodo={periodo} />}
       <Box component="ul" sx={{ m: 0, pl: 3 }}>
         {parciales.map((parcial) => (
           <Typography component="li" variant="body2" key={parcial.carrera}>

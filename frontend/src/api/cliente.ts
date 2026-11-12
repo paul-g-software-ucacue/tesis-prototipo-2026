@@ -8,6 +8,7 @@ import { cerrarSesion, marcarActividad, obtenerToken } from '../sesion/almacen';
 import type { paths as rutasDeAcademico } from './generado/academico';
 import type { paths as rutasDeCargas } from './generado/cargas';
 import type { paths as rutasDeDocentes } from './generado/docentes';
+import type { paths as rutasDeFirma } from './generado/firma';
 import type { paths as rutasDeGeneracion } from './generado/generacion';
 import type { paths as rutasDeNormativa } from './generado/normativa';
 import type { paths as rutasDeRoles } from './generado/roles';
@@ -110,3 +111,10 @@ export const apiValidacionocs = createClient<rutasDeValidacionocs>({
   fetch: (peticion) => globalThis.fetch(peticion),
 });
 apiValidacionocs.use(conToken);
+
+/** El cliente de Firma (F13-H02), con el mismo token y la misma actividad. */
+export const apiFirma = createClient<rutasDeFirma>({
+  baseUrl: globalThis.location?.origin ?? '',
+  fetch: (peticion) => globalThis.fetch(peticion),
+});
+apiFirma.use(conToken);
