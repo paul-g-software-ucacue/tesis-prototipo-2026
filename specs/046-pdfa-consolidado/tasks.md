@@ -228,7 +228,7 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T023 Crear `deploy/probar_documento_firmable.sh` con los 6 pasos de `contracts/demostracion.md`, a partir de `probar_aprobacion.sh`:
+- [X] T023 Crear `deploy/probar_documento_firmable.sh` con los 6 pasos de `contracts/demostracion.md`, a partir de `probar_aprobacion.sh`:
   - veraPDF en `verapdf/cli:v1.30.2` sobre el archivo copiado del volumen;
   - `MDD_CONSERVAR=1` con su guarda;
   - limpieza de `documentos/`;
@@ -241,6 +241,11 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
   - la revisión de «base sin datos» del paso 0 cuenta también esas tablas.
 
   Si no, el script siguiente encontraría ya GENERADA la versión 1 de 2026-I y recibiría el documento viejo.
+
+  **Resultado (2026-11-11):** los 6 pasos pasan contra el perfil local (el documento, unos 1 a 3 s después de aprobar), y `probar_aprobacion.sh` sigue en verde corrido antes. Tres hallazgos al correrlo:
+  - **El nombre del Responsable sale de la designación del periodo** (research §5), y los scripts anteriores no designaban a nadie: sin designación, la generación queda FALLIDA con «Falta el nombre del Responsable de consolidación.» (FR-008, como se diseñó). El script designa a `docente.demo`, como `probar_flujo.sh` (solo se designa a un DOCENTE), y borra la designación al terminar. En la demostración, el Vicerrector tiene que designar al Responsable del periodo antes de aprobar.
+  - **La limpieza no podía borrar `firma.generacion_documento`**, aunque ya no quedaran documentos: la verificación de la clave foránea de `documento_firmable` toma `FOR KEY SHARE` como dueño de esa tabla, y V2 le quitó UPDATE. La limpieza (superusuario) la borra con `session_replication_role = replica`, después de los documentos. El proceso nunca borra generaciones.
+  - **La imagen de veraPDF corre con el usuario 100**, que no lee la carpeta temporal (700, con respuestas que llevan tokens): se monta solo una subcarpeta con el PDF, de solo lectura.
 - [ ] T024 Correr todos los scripts del workflow, en su orden, sobre un perfil construido desde la rama, y anotar el tiempo de generación (SC-003). Recorrer `quickstart.md` §3 a mano: el PDF abierto, el pie, el detalle y el bloque de firmas; y el camino de fallo: sin Responsable designado (borrado en la base local, como dice el quickstart), el aviso «El PDF no se pudo generar»; designarlo otra vez, «Generar el PDF» y medir el tiempo (SC-006).
 - [ ] T025 Correr completos `./gradlew build integrationTest`, `:apps:distributivo:test` y `:apps:identidad:test` (Spring Modulith), la cobertura por módulo (D-32), Spotless y SpotBugs, y en la SPA los tipos, ESLint, Prettier, Vitest y Playwright (SC-007).
 - [ ] T026 Revisar el JavaDoc (principio XII): el evento interno y su oyente, `PrepararDocumentoFirmable` (por qué Aprobación entrega la cadena, MD-05), `ContenidoCongelado`, `NombreDeUsuario`, los puertos y el dominio de Firma, el generador (por qué el bloque en la última página), el almacén (por qué `CREATE_NEW`) y el oyente (por qué no relanza).
