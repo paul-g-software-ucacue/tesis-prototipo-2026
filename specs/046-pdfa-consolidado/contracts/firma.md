@@ -2,7 +2,7 @@
 
 Archivo nuevo: `contratos/firma/openapi.yaml` (etiqueta `DocumentoFirmable`). El API Gateway ya enruta `/api/firma/**` a `distributivo`.
 
-## API publicada en el proceso: `PrepararDocumentoFirmable` (interfaz nombrada `preparacion`)
+## API publicada en el proceso: `PrepararDocumentoFirmable` (API publicada (`puertos.entrada`, interfaz nombrada `api`))
 
 ```java
 /**

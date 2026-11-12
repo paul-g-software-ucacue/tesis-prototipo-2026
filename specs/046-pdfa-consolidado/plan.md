@@ -49,7 +49,7 @@ Al pasar a CONGELADO_EN_FIRMA, Validación OCS publica su evento interno `Distri
   - el almacén con `CREATE_NEW` no sobrescribe;
   - el evento llega a Firma después de confirmar (en el contexto de `apps:distributivo`, con dobles de los procesos remotos).
 - **Contrato:** Firma (las dos operaciones), Roles (la ruta interna) y Usuarios (el servicio `firma`).
-- **Arquitectura:** ArchUnit y `ModulosTest`. Validación OCS depende de Firma (`preparacion`) y Firma de Generación, por interfaces nombradas; Firma no depende de Validación OCS (MD-05), sin ciclos.
+- **Arquitectura:** ArchUnit y `ModulosTest`. Validación OCS depende de Firma (`puertos.entrada`) y Firma de Generación, por interfaces nombradas; Firma no depende de Validación OCS (MD-05), sin ciclos.
 - **Permisos:** `PermisosFirmaTest` con las dos operaciones.
 - **SPA:** Vitest y Playwright con axe-core.
 - **Punta a punta:** `deploy/probar_documento_firmable.sh`, con veraPDF en Docker.

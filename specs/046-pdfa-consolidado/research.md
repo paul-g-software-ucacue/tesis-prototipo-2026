@@ -58,7 +58,7 @@ MD-05 fija la dirección: **Aprobación le entrega la cadena a Firma al preparar
 - **Firma** registra la solicitud (con la cadena y el rol de la etapa) y genera. Con lo guardado decide el reintento y las acciones sin preguntar a Aprobación.
 - **Un fallo de generación no se relanza:** Firma lo registra (FALLIDA con el motivo) y `preparar` termina normal, así la publicación queda completada. Si se relanzara, `ReenvioDePublicaciones` regeneraría el PDF cada 30 s sin fin ante un dato que falta. El reintento es el botón (FR-012). Solo una caída del proceso antes de registrar deja la publicación incompleta, y el reenvío la retoma: preparar es idempotente (§8).
 
-Dependencias: Validación OCS → Firma (la API publicada `preparacion`), Firma → Generación (el contenido). Firma no depende de Validación OCS; Validación OCS ya depende de Generación. Sin ciclos.
+Dependencias: Validación OCS → Firma (su API publicada, `puertos.entrada`), Firma → Generación (el contenido). Firma no depende de Validación OCS; Validación OCS ya depende de Generación. Sin ciclos.
 
 **Alternativas.**
 - *Que Firma escuche un evento de Validación OCS y le pregunte la etapa y el árbol* (el primer plan): Firma conocería el flujo y, con los eventos de F14, habría un ciclo. Contra MD-05.

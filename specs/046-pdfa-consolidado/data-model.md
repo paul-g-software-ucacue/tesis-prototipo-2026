@@ -80,7 +80,7 @@ Lo que se imprime, inmutable:
 - **Entrada:**
   - `ConsultarDocumentoFirmable.estado(periodo, quien)` → `EstadoDelDocumento` (estado, versión, motivo, documento, acciones);
   - `GenerarDocumentoFirmable.generar(periodo, quien)`, el reintento;
-  - `PrepararDocumentoFirmable.preparar(SolicitudDeDocumento)`, la API publicada (interfaz nombrada `preparacion`) que llama Aprobación (MD-05). `SolicitudDeDocumento(periodo, version, hash, cadena, rolDeLaEtapa, momento)`, con `cadena` = `List<PasoDeLaCadena(orden, etiqueta, rol)>`. Es idempotente y no relanza un fallo de generación.
+  - `PrepararDocumentoFirmable.preparar(SolicitudDeDocumento)`, la API publicada (API publicada (`puertos.entrada`, interfaz nombrada `api`)) que llama Aprobación (MD-05). `SolicitudDeDocumento(periodo, version, hash, cadena, rolDeLaEtapa, momento)`, con `cadena` = `List<PasoDeLaCadena(orden, etiqueta, rol)>`. Es idempotente y no relanza un fallo de generación.
 - **Salida:**
   - `RepositorioDocumentos` (generación bloqueada, documento);
   - `AlmacenDeDocumentos.guardar(byte[]) → nombre` (`CREATE_NEW`, nombre = SHA-256);
