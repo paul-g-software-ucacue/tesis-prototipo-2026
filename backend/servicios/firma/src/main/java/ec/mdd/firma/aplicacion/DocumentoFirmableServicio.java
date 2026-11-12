@@ -3,11 +3,18 @@ package ec.mdd.firma.aplicacion;
 import ec.mdd.firma.dominio.ContenidoDelDocumento;
 import ec.mdd.firma.dominio.DocumentoFirmable;
 import ec.mdd.firma.dominio.EstadoDeGeneracion;
+import ec.mdd.firma.dominio.EtapaNoAdmiteGeneracion;
 import ec.mdd.firma.dominio.Firmante;
 import ec.mdd.firma.dominio.FirmanteSinNombre;
 import ec.mdd.firma.dominio.GeneracionDeDocumento;
+import ec.mdd.firma.dominio.GeneracionFallida;
 import ec.mdd.firma.dominio.PasoDeFirma;
+import ec.mdd.firma.dominio.SinRolDeFirma;
+import ec.mdd.firma.puertos.entrada.ConsultarDocumentoFirmable;
+import ec.mdd.firma.puertos.entrada.EstadoDelDocumento;
+import ec.mdd.firma.puertos.entrada.GenerarDocumentoFirmable;
 import ec.mdd.firma.puertos.entrada.PrepararDocumentoFirmable;
+import ec.mdd.firma.puertos.entrada.Solicitante;
 import ec.mdd.firma.puertos.entrada.SolicitudDeDocumento;
 import ec.mdd.firma.puertos.salida.AlmacenDeDocumentos;
 import ec.mdd.firma.puertos.salida.ContenidoDelDistributivo;
@@ -50,7 +57,8 @@ import org.slf4j.LoggerFactory;
  * <p>Un fallo se registra con su motivo (FALLIDA) y no se relanza al preparar: así el reenvío de
  * publicaciones no repite sin fin una generación que falla por un dato (research §4).
  */
-public final class DocumentoFirmableServicio implements PrepararDocumentoFirmable {
+public final class DocumentoFirmableServicio
+        implements PrepararDocumentoFirmable, ConsultarDocumentoFirmable, GenerarDocumentoFirmable {
 
     /** Quien genera cuando nadie lo pidió: la generación automática al entrar en firma. */
     public static final String SISTEMA = "sistema";
@@ -127,6 +135,77 @@ public final class DocumentoFirmableServicio implements PrepararDocumentoFirmabl
                             return Optional.of(generacion);
                         });
         empezada.ifPresent(generacion -> generar(generacion, SISTEMA));
+    }
+
+    @Override
+    public EstadoDelDocumento estado(String periodo, Solicitante quien) {
+        Optional<GeneracionDeDocumento> ultima = documentos.ultima(periodo);
+        if (ultima.isEmpty()) {
+            return new EstadoDelDocumento(
+                    periodo,
+                    Optional.empty(),
+                    EstadoDelDocumento.Estado.SIN_GENERAR,
+                    Optional.empty(),
+                    Optional.empty(),
+                    List.of());
+        }
+        GeneracionDeDocumento generacion = ultima.get();
+        EstadoDelDocumento.Estado estado =
+                switch (generacion.estado()) {
+                    case EN_CURSO -> EstadoDelDocumento.Estado.EN_CURSO;
+                    case FALLIDA -> EstadoDelDocumento.Estado.FALLIDA;
+                    case GENERADA -> EstadoDelDocumento.Estado.GENERADO;
+                };
+        boolean puedeGenerar =
+                generacion.estado() == EstadoDeGeneracion.FALLIDA
+                        && generacion.puedeReintentar(quien.roles());
+        return new EstadoDelDocumento(
+                periodo,
+                Optional.of(generacion.version()),
+                estado,
+                generacion.motivo(),
+                generacion.estado() == EstadoDeGeneracion.GENERADA
+                        ? documentos
+                                .documento(periodo, generacion.version())
+                                .map(
+                                        una ->
+                                                new EstadoDelDocumento.Documento(
+                                                        una.sha256Original(),
+                                                        una.hashContenido(),
+                                                        una.generadoPor(),
+                                                        una.generadoEn()))
+                        : Optional.empty(),
+                puedeGenerar ? List.of(EstadoDelDocumento.GENERAR) : List.of());
+    }
+
+    // FR-012: el rol de la etapa que llegó con la solicitud, sobre la última versión que pidió
+    // Aprobación. Genera en la misma petición; con el documento ya generado, no hace nada.
+    @Override
+    public EstadoDelDocumento generar(String periodo, Solicitante quien) {
+        GeneracionDeDocumento ultima =
+                documentos.ultima(periodo).orElseThrow(EtapaNoAdmiteGeneracion::new);
+        if (!ultima.puedeReintentar(quien.roles())) {
+            throw new SinRolDeFirma();
+        }
+        Optional<GeneracionDeDocumento> empezada =
+                transaccion.ejecutar(
+                        () -> {
+                            GeneracionDeDocumento bloqueada =
+                                    documentos
+                                            .bloquear(periodo, ultima.version())
+                                            .orElseThrow(EtapaNoAdmiteGeneracion::new);
+                            if (!bloqueada.iniciar(quien.usuario(), reloj.instant())) {
+                                return Optional.empty();
+                            }
+                            documentos.guardar(bloqueada);
+                            return Optional.of(bloqueada);
+                        });
+        empezada.flatMap(generacion -> generar(generacion, quien.usuario()))
+                .ifPresent(
+                        motivo -> {
+                            throw new GeneracionFallida(motivo);
+                        });
+        return estado(periodo, quien);
     }
 
     /**

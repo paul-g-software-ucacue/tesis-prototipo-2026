@@ -20,6 +20,9 @@ dependencies {
     // Las generaciones y los documentos, en el esquema firma (F13-H02); la cadena va en jsonb.
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     implementation 'tools.jackson.core:jackson-databind'
+    // El permiso de cada operación y quién la pide, en el token (ADR-021).
+    implementation 'org.springframework.security:spring-security-oauth2-resource-server'
+    implementation 'org.springframework.security:spring-security-oauth2-jose'
     // F13-H02, D-101: el PDF/A del documento firmable, con el camino probado en B00-S01.
     implementation "org.apache.pdfbox:pdfbox:${versionPdfbox}"
     implementation "io.github.openhtmltopdf:openhtmltopdf-pdfbox:${versionOpenHtmlToPdf}"

@@ -1,6 +1,7 @@
 package ec.mdd.firma.aplicacion;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -11,8 +12,13 @@ import static org.mockito.Mockito.when;
 import ec.mdd.firma.dominio.ContenidoDelDocumento;
 import ec.mdd.firma.dominio.DocumentoFirmable;
 import ec.mdd.firma.dominio.EstadoDeGeneracion;
+import ec.mdd.firma.dominio.EtapaNoAdmiteGeneracion;
 import ec.mdd.firma.dominio.GeneracionDeDocumento;
+import ec.mdd.firma.dominio.GeneracionFallida;
+import ec.mdd.firma.dominio.SinRolDeFirma;
+import ec.mdd.firma.puertos.entrada.EstadoDelDocumento;
 import ec.mdd.firma.puertos.entrada.PasoDeLaCadena;
+import ec.mdd.firma.puertos.entrada.Solicitante;
 import ec.mdd.firma.puertos.entrada.SolicitudDeDocumento;
 import ec.mdd.firma.puertos.salida.AlmacenDeDocumentos;
 import ec.mdd.firma.puertos.salida.ContenidoDelDistributivo;
@@ -194,6 +200,141 @@ class DocumentoFirmableServicioTest {
         assertThat(documentos.documento(PERIODO, 1)).isEmpty();
         verify(generador, never()).generar(any());
         assertThat(registrado()).isEmpty();
+    }
+
+    // El reintento y el estado (US4, FR-011 a FR-015).
+
+    private static final Solicitante RESPONSABLE =
+            new Solicitante("consolidacion.demo", Set.of("RESPONSABLE_CONSOLIDACION"));
+    private static final Solicitante VICERRECTOR =
+            new Solicitante("vicerrectorado.demo", Set.of("VICERRECTOR"));
+
+    private void sinNombreDelRector() {
+        when(firmantes.nombres(
+                        PERIODO, Set.of("RESPONSABLE_CONSOLIDACION", "VICERRECTOR", "RECTOR")))
+                .thenReturn(
+                        Map.of(
+                                "RESPONSABLE_CONSOLIDACION", "PÉREZ ANA",
+                                "VICERRECTOR", "LÓPEZ LUIS"));
+    }
+
+    @Test
+    void dadoUnFirmanteSinNombre_cuandoSePrepara_entoncesFallidaConElMotivoSinRelanzar() {
+        sinNombreDelRector();
+
+        servicio.preparar(solicitud());
+
+        GeneracionDeDocumento generacion = documentos.generacion(PERIODO, 1);
+        assertThat(generacion.estado()).isEqualTo(EstadoDeGeneracion.FALLIDA);
+        assertThat(generacion.motivo()).contains("Falta el nombre del Rector.");
+        assertThat(documentos.documento(PERIODO, 1)).isEmpty();
+        assertThat(registrado()).isEmpty();
+    }
+
+    @Test
+    void dadoUnFalloDelAlmacen_cuandoSePrepara_entoncesFallidaConUnMotivoSinDetallesInternos() {
+        when(almacen.guardar(any(), anyString()))
+                .thenThrow(new java.io.UncheckedIOException(new java.io.IOException("/var/mdd")));
+
+        servicio.preparar(solicitud());
+
+        GeneracionDeDocumento generacion = documentos.generacion(PERIODO, 1);
+        assertThat(generacion.estado()).isEqualTo(EstadoDeGeneracion.FALLIDA);
+        assertThat(generacion.motivo().orElseThrow())
+                .startsWith("No se pudo generar el PDF.")
+                .doesNotContain("/var/mdd");
+    }
+
+    @Test
+    void dadaUnaGeneracionFallida_cuandoElResponsableReintentaYYaEstaCorregida_entoncesGenerado() {
+        sinNombreDelRector();
+        servicio.preparar(solicitud());
+        when(firmantes.nombres(
+                        PERIODO, Set.of("RESPONSABLE_CONSOLIDACION", "VICERRECTOR", "RECTOR")))
+                .thenReturn(NOMBRES);
+
+        EstadoDelDocumento estado = servicio.generar(PERIODO, RESPONSABLE);
+
+        assertThat(estado.estado()).isEqualTo(EstadoDelDocumento.Estado.GENERADO);
+        assertThat(estado.documento().orElseThrow().generadoPor()).isEqualTo("consolidacion.demo");
+        assertThat(documentos.documento(PERIODO, 1).orElseThrow().generadoPor())
+                .isEqualTo("consolidacion.demo");
+        assertThat(registrado()).hasSize(1);
+        assertThat(registrado().getFirst().usuario()).isEqualTo("consolidacion.demo");
+    }
+
+    @Test
+    void
+            dadaUnaGeneracionQueSigueFallando_cuandoSeReintenta_entoncesGeneracionFallidaConElMotivo() {
+        sinNombreDelRector();
+        servicio.preparar(solicitud());
+
+        assertThatThrownBy(() -> servicio.generar(PERIODO, RESPONSABLE))
+                .isInstanceOfSatisfying(
+                        GeneracionFallida.class,
+                        error ->
+                                assertThat(error.motivo())
+                                        .isEqualTo("Falta el nombre del Rector."));
+        assertThat(documentos.generacion(PERIODO, 1).estado())
+                .isEqualTo(EstadoDeGeneracion.FALLIDA);
+    }
+
+    @Test
+    void dadoElDocumentoYaGenerado_cuandoSePideOtraVez_entoncesElMismoSinOtraEntrada() {
+        servicio.preparar(solicitud());
+        org.mockito.Mockito.clearInvocations(generador, registro);
+
+        EstadoDelDocumento estado = servicio.generar(PERIODO, RESPONSABLE);
+
+        assertThat(estado.estado()).isEqualTo(EstadoDelDocumento.Estado.GENERADO);
+        assertThat(estado.documento().orElseThrow().generadoPor()).isEqualTo("sistema");
+        verify(generador, never()).generar(any());
+        assertThat(registrado()).isEmpty();
+    }
+
+    @Test
+    void dadoOtroRol_cuandoPideGenerar_entoncesSinRolDeFirmaSinTocarNada() {
+        sinNombreDelRector();
+        servicio.preparar(solicitud());
+        org.mockito.Mockito.clearInvocations(generador);
+
+        assertThatThrownBy(() -> servicio.generar(PERIODO, VICERRECTOR))
+                .isInstanceOf(SinRolDeFirma.class);
+        verify(generador, never()).generar(any());
+    }
+
+    @Test
+    void dadoUnPeriodoQueNoEntroEnFirma_cuandoSePideGenerar_entoncesEtapaNoAdmiteGeneracion() {
+        assertThatThrownBy(() -> servicio.generar(PERIODO, RESPONSABLE))
+                .isInstanceOf(EtapaNoAdmiteGeneracion.class);
+    }
+
+    @Test
+    void dadoCadaEstado_cuandoSeConsulta_entoncesLoDiceConSusAccionesSoloParaElRol() {
+        EstadoDelDocumento sin = servicio.estado(PERIODO, RESPONSABLE);
+        assertThat(sin.estado()).isEqualTo(EstadoDelDocumento.Estado.SIN_GENERAR);
+        assertThat(sin.version()).isEmpty();
+        assertThat(sin.acciones()).isEmpty();
+
+        sinNombreDelRector();
+        servicio.preparar(solicitud());
+        EstadoDelDocumento fallida = servicio.estado(PERIODO, RESPONSABLE);
+        assertThat(fallida.estado()).isEqualTo(EstadoDelDocumento.Estado.FALLIDA);
+        assertThat(fallida.version()).contains(1);
+        assertThat(fallida.motivo()).contains("Falta el nombre del Rector.");
+        assertThat(fallida.acciones()).containsExactly("GENERAR");
+        assertThat(servicio.estado(PERIODO, VICERRECTOR).acciones()).isEmpty();
+
+        when(firmantes.nombres(
+                        PERIODO, Set.of("RESPONSABLE_CONSOLIDACION", "VICERRECTOR", "RECTOR")))
+                .thenReturn(NOMBRES);
+        servicio.generar(PERIODO, RESPONSABLE);
+        EstadoDelDocumento generado = servicio.estado(PERIODO, VICERRECTOR);
+        assertThat(generado.estado()).isEqualTo(EstadoDelDocumento.Estado.GENERADO);
+        assertThat(generado.documento().orElseThrow().sha256()).isEqualTo(sha256(PDF));
+        assertThat(generado.documento().orElseThrow().hashContenido()).isEqualTo(HASH);
+        assertThat(generado.motivo()).isEmpty();
+        assertThat(servicio.estado(PERIODO, RESPONSABLE).acciones()).isEmpty();
     }
 
     private static SolicitudDeDocumento solicitud() {

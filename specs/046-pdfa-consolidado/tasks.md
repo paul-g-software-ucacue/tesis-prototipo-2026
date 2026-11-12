@@ -191,11 +191,11 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
 
 **Independent Test**: `DocumentoFirmableServicioTest`, `DocumentoContratoTest` y el Playwright con el estado FALLIDA.
 
-- [ ] T019 [US4] Ver fallar primero en `DocumentoFirmableServicioTest`:
+- [X] T019 [US4] Ver fallar primero en `DocumentoFirmableServicioTest`:
   - un `FirmanteSinNombre`, un fallo de Datos o del almacén dejan FALLIDA con el motivo, sin documento ni entrada, y `preparar` termina sin relanzar;
   - **`generar(periodo, quien)`:** con el rol de la etapa de la solicitud, genera y registra a nombre de quien lo pidió; si falla, `GeneracionFallida` con el motivo; con el documento ya GENERADO, lo devuelve sin hacer nada; sin solicitud de Aprobación, `EtapaNoAdmiteGeneracion`; sin el rol, `SinRolDeFirma` (403);
   - **`estado(periodo, quien)`:** SIN_GENERAR (sin versión si no hay solicitud), EN_CURSO, FALLIDA con motivo o GENERADO con el documento; `GENERAR` solo para el rol y con FALLIDA.
-- [ ] T020 [US4] `DocumentoControlador` y su contrato. Ver fallar primero:
+- [X] T020 [US4] `DocumentoControlador` y su contrato. Ver fallar primero:
   - en `DocumentoContratoTest`: 200 en los cuatro estados según el esquema; 409 sin solicitud y de generación fallida con los detalles; 403 sin el rol; 400 con el periodo mal formado;
   - en `PermisosFirmaTest`: las dos operaciones con su permiso.
 
