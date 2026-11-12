@@ -152,7 +152,7 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
   Después, el bloque en la última página con posiciones fijas y los campos con PDFBox (research §2).
 
   **Resultado (2026-11-11):** las 10 pruebas de `GeneradorPdfaTest` pasan; veraPDF da PDF/A-2b conforme con los tres campos. El contenido de 165 paralelos se genera y verifica en 1,6 s. La prueba deja en `backend/servicios/firma/build/documento-firmable/` el PDF y las imágenes de la primera y la última página, con los campos marcados en rojo: así se vio que el margen por defecto del cuerpo desplazaba los recuadros 2,8 mm y que el borde sumaba a la altura; se corrigió (`body { margin: 0 }`, `box-sizing: border-box`).
-- [ ] T015 [P] [US2] Los firmantes del periodo:
+- [X] T015 [P] [US2] Los firmantes del periodo:
   - en Roles, ver fallar primero la prueba del servicio y la de contrato de `/interno/roles/periodos/{periodo}/responsable`: 200 con el usuario y su nombre para mostrar (sin nombre, el usuario); 404 `ROLES_SIN_RESPONSABLE`; solo con token de proceso. Después, la ruta, el servicio y `NombreDeUsuario` en Usuarios (API publicada), verificado por el `ModulosTest` de `identidad`;
   - en Firma, ver fallar primero `FirmantesDesdeProcesosTest` (con el servidor de pruebas de los adaptadores entre procesos): el Rector y el Vicerrector salen de `cargos-vigentes` más `activos`, y el Responsable de la ruta nueva; si falta alguno, `FirmanteSinNombre` con el cargo. Después, el adaptador.
 

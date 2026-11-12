@@ -15,6 +15,8 @@ dependencies {
     // El contenido de la versión congelada, por la interfaz publicada de Generación en el mismo
     // proceso (F13-H02): solo ec.mdd.generacion.puertos.entrada.
     implementation project(':servicios:generacion')
+    // Los nombres de los firmantes, por las rutas internas de Datos e Identidad (ADR-023).
+    implementation project(':plataforma:eventos')
     // Las generaciones y los documentos, en el esquema firma (F13-H02); la cadena va en jsonb.
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
     implementation 'tools.jackson.core:jackson-databind'
