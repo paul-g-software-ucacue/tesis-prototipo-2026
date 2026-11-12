@@ -120,9 +120,10 @@ class FiltroDeBitacoraTest {
                 "docentes",
                 "normativa",
                 "roles",
-                "validacionocs"
+                "validacionocs",
+                "firma"
             })
-    void dadoUnoDeLosSeisServicios_cuandoSeConstruye_entoncesSeAdmite(String servicio) {
+    void dadoUnoDeLosSieteServicios_cuandoSeConstruye_entoncesSeAdmite(String servicio) {
         assertThat(FiltroDeBitacora.de(null, null, null, servicio, null, null, null).servicio())
                 .contains(servicio);
     }

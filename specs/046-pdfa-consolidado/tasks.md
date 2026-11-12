@@ -69,19 +69,21 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
 - [X] T004 [P] Agregar a `contratos/roles/openapi.yaml` la ruta `/interno/roles/periodos/{periodo}/responsable` (`contracts/identidad.md`), y `firma` a la enumeración `servicio` de `contratos/usuarios/openapi.yaml`. Después de T003 y T004, correr `./gradlew :servicios:usuarios:test --rerun`.
 
   En la SPA, `NOMBRE_DEL_SERVICIO` (`SPA/pantallas/bitacora/nombres.ts`) es un `Record` de la enumeración: agregar `firma: 'Firma'`, porque si no, los tipos no compilan. Su prueba: el filtro por servicio de la bitácora ofrece «Firma».
-- [ ] T005 [P] Agregar a `contratos/comun/errores.md`, con sus 8 columnas:
+- [X] T005 [P] Agregar a `contratos/comun/errores.md`, con sus 8 columnas:
   - `FIRMA_ETAPA_NO_ADMITE_GENERACION` (409);
   - `FIRMA_GENERACION_FALLIDA` (409, el motivo en detalles);
   - `ROLES_SIN_RESPONSABLE` (404).
 
   Crear las excepciones y `ErroresFirma`. `SinRolDeFirma` (sin el rol de la etapa que llegó en la solicitud) la traduce el controlador a 403 con el cuerpo común, como `RolDeOtraEtapa` en Validación OCS. Primero `ErroresFirmaTest` (como `ErroresGeneracionTest`); la de Roles, en `ErroresRoles`.
-- [ ] T006 [P] Migraciones, con pruebas de integración primero:
+- [X] T006 [P] Migraciones, con pruebas de integración primero:
   - `FIR/main/resources/db/migration/firma/V2__documento_firmable.sql` según `data-model.md`, con los `check`, la clave única y los privilegios: solo `insert` y `select` sobre `documento_firmable` para el rol del proceso;
   - en Usuarios, la migración siguiente que agrega `firma` al `check` de `bitacora.servicio`.
 
   Ampliar `FirmaEsquemaIntegrationTest`: las tablas, los `check` y que el rol del proceso no puede actualizar ni borrar un documento.
 
   Las acciones que ofrece el filtro de la bitácora salen de las entradas guardadas (`SELECT DISTINCT servicio, accion`): `DOCUMENTO_FIRMABLE_GENERADO` aparece sola cuando llega la primera, sin registrarla en ninguna lista.
+
+  **Resultado (2026-11-11):** además del `check`, Usuarios tenía la lista de servicios en tres lugares del código (`EntradaBitacora`, `FiltroDeBitacora` y `RegistrarEventoRecibidoServicio`), con sus cuatro pruebas parametrizadas: se agregó `firma` en todos (migración `V6__bitacora_firma.sql`). La migración de Firma la prueba `DocumentoFirmableEsquemaIntegrationTest`, con un rol del proceso que no es superusuario.
 - [ ] T007 [P] La cadena de firmas en Validación OCS (`contracts/validacionocs.md`), viendo fallar primero su prueba: `EtapasAlCrearse` da también los pasos del documento CONSOLIDADO de la misma carga, en su orden (por defecto: Elaborado/RESPONSABLE_CONSOLIDACION, Revisado/VICERRECTOR, Aprobado/RECTOR), la que regía al crear el distributivo. Y la API publicada de Firma, `PrepararDocumentoFirmable` con `SolicitudDeDocumento` y `PasoDeLaCadena`, en la interfaz nombrada `preparacion` (esqueleto; la implementación es de T012).
 - [ ] T008 API publicada de Generación, `ContenidoCongelado.contenido(periodo)` (`contracts/generacion.md`). Ver fallar primero `ContenidoCongeladoServicioTest`:
   - exige la versión CONGELADA (`VersionNoCongelada`);
