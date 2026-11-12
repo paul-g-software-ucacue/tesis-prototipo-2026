@@ -85,7 +85,7 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
 
   **Resultado (2026-11-11):** además del `check`, Usuarios tenía la lista de servicios en tres lugares del código (`EntradaBitacora`, `FiltroDeBitacora` y `RegistrarEventoRecibidoServicio`), con sus cuatro pruebas parametrizadas: se agregó `firma` en todos (migración `V6__bitacora_firma.sql`). La migración de Firma la prueba `DocumentoFirmableEsquemaIntegrationTest`, con un rol del proceso que no es superusuario.
 - [X] T007 [P] La cadena de firmas en Validación OCS (`contracts/validacionocs.md`), viendo fallar primero su prueba: `EtapasAlCrearse` da también los pasos del documento CONSOLIDADO de la misma carga, en su orden (por defecto: Elaborado/RESPONSABLE_CONSOLIDACION, Revisado/VICERRECTOR, Aprobado/RECTOR), la que regía al crear el distributivo. Y la API publicada de Firma, `PrepararDocumentoFirmable` con `SolicitudDeDocumento` y `PasoDeLaCadena`, en su API publicada (`puertos.entrada`, interfaz nombrada `api`) (esqueleto; la implementación es de T012).
-- [ ] T008 API publicada de Generación, `ContenidoCongelado.contenido(periodo)` (`contracts/generacion.md`). Ver fallar primero `ContenidoCongeladoServicioTest`:
+- [X] T008 API publicada de Generación, `ContenidoCongelado.contenido(periodo)` (`contracts/generacion.md`). Ver fallar primero `ContenidoCongeladoServicioTest`:
   - exige la versión CONGELADA (`VersionNoCongelada`);
   - la versión y el hash son los de `hashDelDistributivo`;
   - las carreras y los totales son los del consolidado;
@@ -93,6 +93,8 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
   - sin distributivo, `DistributivoNoEncontrado`.
 
   Después, el servicio y su registro en `ConfiguracionGeneracion`.
+
+  **Resultado (2026-11-11):** Generación no conoce los nombres de las carreras (la oferta trae solo el código; en pantalla los pone Académico). Se agregó la ruta interna `/interno/academico/carreras` → `[{codigo, nombre}]` (contrato, `InternoAcademicoContratoTest` e `InternoAcademicoControlador`) y el puerto `DatosParaElDocumento` en Generación, con su adaptador y su prueba. La prueba y la ruta de Académico se escribieron juntas, sin verla fallar antes.
 
 **Checkpoint**: los contratos compilan, los errores están en el catálogo, las tablas existen y Firma tiene de dónde leer.
 

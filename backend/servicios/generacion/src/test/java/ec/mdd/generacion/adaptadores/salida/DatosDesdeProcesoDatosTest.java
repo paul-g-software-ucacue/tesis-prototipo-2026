@@ -2,6 +2,7 @@ package ec.mdd.generacion.adaptadores.salida;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 
 import ec.mdd.generacion.dominio.ActividadDelCatalogo;
 import ec.mdd.generacion.dominio.AsignaturaOfertada;
@@ -82,6 +83,18 @@ class DatosDesdeProcesoDatosTest {
 
         assertThat(datos.asignaturasOfertadas(PERIODO, Optional.empty()))
                 .contains(List.of(new AsignaturaOfertada("POO-204", "Programación", "06", "061")));
+    }
+
+    // F13-H02: los nombres de las carreras, para el documento firmable.
+    @Test
+    void dadasLasCarreras_cuandoSePidenSusNombres_entoncesPorCodigo() {
+        receptor.responderConsulta(
+                "/interno/academico/carreras",
+                200,
+                "[{\"codigo\":\"TDS\",\"nombre\":\"DESARROLLO DE SOFTWARE\"}]");
+
+        assertThat(datos.nombresDeCarreras())
+                .containsExactly(entry("TDS", "DESARROLLO DE SOFTWARE"));
     }
 
     @Test
