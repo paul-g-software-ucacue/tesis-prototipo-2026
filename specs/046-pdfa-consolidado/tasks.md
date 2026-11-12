@@ -126,7 +126,7 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
   - el de 165 paralelos tarda menos de 30 s (SC-003).
 
   El XHTML en Java, con los textos escapados; las tablas con `page-break-inside: avoid` por fila.
-- [ ] T012 [US1] En la aplicación de Firma, ver fallar primero `DocumentoFirmableServicioTest` (Mockito):
+- [X] T012 [US1] En la aplicación de Firma, ver fallar primero `DocumentoFirmableServicioTest` (Mockito):
   - **`preparar(solicitud)`:** registra la solicitud (cadena y rol de la etapa) y marca EN_CURSO; pide el contenido, el árbol y los firmantes fuera de la transacción; genera; y en la transacción final, con la generación bloqueada, guarda el archivo, registra el documento a nombre de `sistema` y una entrada `DOCUMENTO_FIRMABLE_GENERADO`, y marca GENERADA;
   - si la versión o el hash del contenido no son los de la solicitud, falla con ese motivo;
   - con la generación ya GENERADA, no hace nada.
@@ -177,7 +177,7 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
   - bloquear o crear la generación (`FOR UPDATE`);
   - registrar el documento y leerlo;
   - dos generaciones a la vez: la segunda espera, ve GENERADA y no registra; queda un documento (SC-005).
-- [ ] T018 [US3] La bitácora de Firma: `PublicadorDeCambios` con el evento `EntradaBitacora` del servicio `firma` (ADR-018), como el de Validación OCS. Ver fallar primero en `DocumentoFirmableServicioTest` que hay una sola entrada con el periodo, la versión, el hash de contenido y el SHA-256, y ninguna si ya estaba GENERADA.
+- [X] T018 [US3] La bitácora de Firma: `PublicadorDeCambios` con el evento `EntradaBitacora` del servicio `firma` (ADR-018), como el de Validación OCS. Ver fallar primero en `DocumentoFirmableServicioTest` que hay una sola entrada con el periodo, la versión, el hash de contenido y el SHA-256, y ninguna si ya estaba GENERADA.
 
 **Checkpoint**: el documento queda registrado e inmutable.
 

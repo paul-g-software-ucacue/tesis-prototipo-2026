@@ -100,7 +100,8 @@ class FirmantesDesdeProcesosTest {
         receptor.responderConsulta(
                 "/interno/docentes/activos",
                 200,
-                // Como responde Docentes: con la dedicación, las horas y la formación, que no se usan.
+                // Como responde Docentes: con la dedicación, las horas y la formación, que no se
+                // usan.
                 "[{\"identificacion\":\"0109990010\",\"nombre\":\"MORA EVA\","
                         + "\"dedicacion\":\"TC\",\"horasContratadas\":40,\"formacion\":{}},"
                         + "{\"identificacion\":\"0109990028\",\"nombre\":\"LÓPEZ LUIS\","

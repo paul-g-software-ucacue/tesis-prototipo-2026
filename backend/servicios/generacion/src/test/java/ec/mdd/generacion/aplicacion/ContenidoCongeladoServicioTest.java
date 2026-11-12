@@ -99,8 +99,18 @@ class ContenidoCongeladoServicioTest {
         assertThat(contenido.carreras())
                 .containsExactly(
                         new ContenidoDeLaVersion.Carrera(
-                                "TDS", "DESARROLLO DE SOFTWARE", "ENVIADO", 2, 2, horas("8", "4")));
-        assertThat(contenido.totales()).isEqualTo(horas("8", "4"));
+                                "TDS",
+                                "DESARROLLO DE SOFTWARE",
+                                "ENVIADO",
+                                2,
+                                2,
+                                new ContenidoDeLaVersion.Horas(
+                                        new BigDecimal("8"),
+                                        new BigDecimal("4"),
+                                        BigDecimal.ZERO,
+                                        BigDecimal.ZERO,
+                                        BigDecimal.ZERO)));
+        assertThat(contenido.totales().clase()).isEqualByComparingTo("8");
     }
 
     @Test

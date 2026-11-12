@@ -1,6 +1,5 @@
 package ec.mdd.generacion.puertos.entrada;
 
-import ec.mdd.generacion.dominio.CargaHoraria;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
@@ -22,7 +21,7 @@ public record ContenidoDeLaVersion(
         int version,
         String hash,
         List<Carrera> carreras,
-        CargaHoraria totales,
+        Horas totales,
         List<Docente> docentes) {
 
     /** Exige los datos y copia las listas. */
@@ -33,6 +32,22 @@ public record ContenidoDeLaVersion(
         carreras = List.copyOf(carreras);
         docentes = List.copyOf(docentes);
     }
+
+    /**
+     * Las horas semanales por componente (D-82), en los tipos de la API publicada.
+     *
+     * @param clase de clase
+     * @param otrasDocencia de otras actividades de docencia
+     * @param investigacion de investigación
+     * @param vinculacion de vinculación
+     * @param gestion de gestión
+     */
+    public record Horas(
+            BigDecimal clase,
+            BigDecimal otrasDocencia,
+            BigDecimal investigacion,
+            BigDecimal vinculacion,
+            BigDecimal gestion) {}
 
     /**
      * Una carrera del consolidado.
@@ -50,7 +65,7 @@ public record ContenidoDeLaVersion(
             String estado,
             int paralelos,
             int propuestos,
-            CargaHoraria horas) {}
+            Horas horas) {}
 
     /**
      * Un docente con sus asignaciones de la versión.
@@ -66,7 +81,7 @@ public record ContenidoDeLaVersion(
             String nombre,
             List<Asignatura> asignaturas,
             List<Actividad> actividades,
-            CargaHoraria horas) {
+            Horas horas) {
 
         /** Copia las listas. */
         public Docente {

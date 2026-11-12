@@ -86,14 +86,14 @@ public final class ContenidoCongeladoServicio implements ContenidoCongelado {
                                                 una.estado().name(),
                                                 una.avance().ofertadas(),
                                                 una.avance().conPropuesta(),
-                                                una.horas()))
+                                                horas(una.horas())))
                         .toList();
         return new ContenidoDeLaVersion(
                 periodo,
                 version.numero(),
                 parciales.hashDelDistributivo(periodo),
                 carreras,
-                resumen.totales(),
+                horas(resumen.totales()),
                 docentes(version, ofertadas));
     }
 
@@ -125,16 +125,26 @@ public final class ContenidoCongeladoServicio implements ContenidoCongelado {
                                         nombre,
                                         asignaturas(docente, version.propuestas(), vigentes),
                                         actividades(docente, version.actividades()),
-                                        CargaHoraria.calcular(
-                                                docente,
-                                                version.propuestas(),
-                                                version.actividades(),
-                                                ofertadas))));
+                                        horas(
+                                                CargaHoraria.calcular(
+                                                        docente,
+                                                        version.propuestas(),
+                                                        version.actividades(),
+                                                        ofertadas)))));
         return porDocente.values().stream()
                 .sorted(
                         Comparator.comparing(ContenidoDeLaVersion.Docente::nombre)
                                 .thenComparing(ContenidoDeLaVersion.Docente::identificacion))
                 .toList();
+    }
+
+    private static ContenidoDeLaVersion.Horas horas(CargaHoraria carga) {
+        return new ContenidoDeLaVersion.Horas(
+                carga.clase(),
+                carga.otrasDocencia(),
+                carga.investigacion(),
+                carga.vinculacion(),
+                carga.gestion());
     }
 
     private static List<ContenidoDeLaVersion.Asignatura> asignaturas(

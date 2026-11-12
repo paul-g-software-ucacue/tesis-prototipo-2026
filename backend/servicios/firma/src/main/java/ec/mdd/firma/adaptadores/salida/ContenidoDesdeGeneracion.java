@@ -2,7 +2,6 @@ package ec.mdd.firma.adaptadores.salida;
 
 import ec.mdd.firma.dominio.ContenidoDelDocumento;
 import ec.mdd.firma.puertos.salida.ContenidoDelDistributivo;
-import ec.mdd.generacion.dominio.CargaHoraria;
 import ec.mdd.generacion.puertos.entrada.ContenidoCongelado;
 import ec.mdd.generacion.puertos.entrada.ContenidoDeLaVersion;
 import java.util.List;
@@ -76,7 +75,7 @@ public final class ContenidoDesdeGeneracion implements ContenidoDelDistributivo 
                 horas(docente.horas()));
     }
 
-    private static ContenidoDelDocumento.Horas horas(CargaHoraria carga) {
+    private static ContenidoDelDocumento.Horas horas(ContenidoDeLaVersion.Horas carga) {
         return new ContenidoDelDocumento.Horas(
                 carga.clase(),
                 carga.otrasDocencia(),

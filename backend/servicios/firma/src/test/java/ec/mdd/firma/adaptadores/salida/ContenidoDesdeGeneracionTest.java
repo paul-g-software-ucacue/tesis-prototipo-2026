@@ -5,7 +5,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import ec.mdd.firma.dominio.ContenidoDelDocumento;
-import ec.mdd.generacion.dominio.CargaHoraria;
 import ec.mdd.generacion.puertos.entrada.ContenidoCongelado;
 import ec.mdd.generacion.puertos.entrada.ContenidoDeLaVersion;
 import java.math.BigDecimal;
@@ -20,8 +19,8 @@ class ContenidoDesdeGeneracionTest {
 
     @Test
     void dadoElContenidoDeGeneracion_cuandoSePide_entoncesLoPasaConLaCarreraPorSuNombre() {
-        CargaHoraria horas =
-                new CargaHoraria(
+        ContenidoDeLaVersion.Horas horas =
+                new ContenidoDeLaVersion.Horas(
                         new BigDecimal("4"),
                         new BigDecimal("2"),
                         BigDecimal.ZERO,
