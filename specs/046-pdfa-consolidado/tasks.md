@@ -113,7 +113,7 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
   - el evento lleva la cadena de la copia y el rol de la etapa CONGELADO_EN_FIRMA.
 
   Después: el registro interno en `VAL/main/.../aplicacion/`, el puerto de salida `AvisoDeFirma` con su adaptador sobre `ApplicationEventPublisher`, llamado dentro de la transacción del paso, y el oyente `PreparacionDelDocumento` (`@ApplicationModuleListener`) que llama a `PrepararDocumentoFirmable.preparar`, con su prueba.
-- [ ] T010 [P] [US1] En el dominio de Firma, ver fallar primero:
+- [X] T010 [P] [US1] En el dominio de Firma, ver fallar primero:
   - `GeneracionDeDocumentoTest`: los estados de `data-model.md`; GENERADA no cambia; FALLIDA vuelve a EN_CURSO; el motivo de hasta 200 caracteres;
   - `ContenidoDelDocumentoTest`: arma los firmantes desde el árbol (rótulo = etiqueta + « por», el cargo por rol y el nombre del campo `firma-<orden>-<rol>`); falla con `FirmanteSinNombre` si falta uno.
 
