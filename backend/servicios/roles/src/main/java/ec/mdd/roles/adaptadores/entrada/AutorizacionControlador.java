@@ -31,6 +31,13 @@ class AutorizacionControlador implements AutorizacionApi {
                 new Firmantes(delPeriodo.rolesConUsuario(), delPeriodo.responsableDesignado()));
     }
 
+    // F13-H02: pendiente hasta T015.
+    @Override
+    public ResponseEntity<ec.mdd.roles.adaptadores.entrada.api.ResponsableDelPeriodo>
+            consultarResponsableDelPeriodo(String periodo) {
+        return ResponseEntity.status(org.springframework.http.HttpStatus.NOT_IMPLEMENTED).build();
+    }
+
     @Override
     public ResponseEntity<Autorizacion> consultarAutorizacion(String usuario) {
         ec.mdd.roles.puertos.entrada.Autorizacion autorizacion = consultar.consultar(usuario);

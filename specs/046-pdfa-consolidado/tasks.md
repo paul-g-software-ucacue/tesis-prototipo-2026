@@ -61,12 +61,12 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
 
 **⚠️ CRITICAL**: ninguna historia empieza antes de T008.
 
-- [ ] T003 Escribir `contratos/firma/openapi.yaml` según `contracts/firma.md`:
+- [X] T003 Escribir `contratos/firma/openapi.yaml` según `contracts/firma.md`:
   - `consultarDocumentoFirmable` y `generarDocumentoFirmable`, con su `x-mdd-permiso`;
   - `EstadoDelDocumento` con el estado, la versión, el motivo, el documento y las acciones.
 
   Generar los modelos en el `build.gradle` de Firma como en los demás servicios (`mdd.contrato`). Agregar el script de `generar:api` de la SPA para `firma.d.ts`. Compilar `:servicios:firma`.
-- [ ] T004 [P] Agregar a `contratos/roles/openapi.yaml` la ruta `/interno/roles/periodos/{periodo}/responsable` (`contracts/identidad.md`), y `firma` a la enumeración `servicio` de `contratos/usuarios/openapi.yaml`. Después de T003 y T004, correr `./gradlew :servicios:usuarios:test --rerun`.
+- [X] T004 [P] Agregar a `contratos/roles/openapi.yaml` la ruta `/interno/roles/periodos/{periodo}/responsable` (`contracts/identidad.md`), y `firma` a la enumeración `servicio` de `contratos/usuarios/openapi.yaml`. Después de T003 y T004, correr `./gradlew :servicios:usuarios:test --rerun`.
 
   En la SPA, `NOMBRE_DEL_SERVICIO` (`SPA/pantallas/bitacora/nombres.ts`) es un `Record` de la enumeración: agregar `firma: 'Firma'`, porque si no, los tipos no compilan. Su prueba: el filtro por servicio de la bitácora ofrece «Firma».
 - [ ] T005 [P] Agregar a `contratos/comun/errores.md`, con sus 8 columnas:

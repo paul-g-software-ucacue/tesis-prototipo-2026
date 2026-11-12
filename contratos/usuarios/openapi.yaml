@@ -477,7 +477,7 @@ components:
     ServicioDeBitacora:
       type: string
       description: Un servicio que registra cambios en la bitácora (D-90).
-      enum: [generacion, academico, docentes, normativa, roles, validacionocs]
+      enum: [generacion, academico, docentes, normativa, roles, validacionocs, firma]
       example: generacion
     PaginaDeBitacora:
       type: object

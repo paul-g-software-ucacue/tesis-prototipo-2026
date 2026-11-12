@@ -16,7 +16,7 @@ void preparar(SolicitudDeDocumento solicitud);
 ## `GET /api/firma/periodos/{periodo}/documento`
 
 - `operationId: consultarDocumentoFirmable`.
-- `x-mdd-permiso`: `DISTRIBUTIVO:LECTURA`, `CONSOLIDACION:LECTURA` o `DISTRIBUTIVO:ESCRITURA`, los mismos que leen el consolidado.
+- `x-mdd-permiso: [CONSOLIDACION:LECTURA, DISTRIBUTIVO:ESCRITURA]`, los mismos que leen el consolidado.
 
 | Respuesta | Cuándo |
 |---|---|

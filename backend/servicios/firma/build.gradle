@@ -3,6 +3,7 @@
 // SpotBugs. Vale para todos los servicios, centrales o no.
 plugins {
     id 'mdd.servicio'
+    id 'mdd.contrato'
 }
 
 def versionBouncyCastle = providers.gradleProperty('versionBouncyCastle').get()

@@ -1,0 +1,139 @@
+# Contrato de firma (servicio 10). Desde F13-H02: el documento firmable de la versión congelada, el
+# PDF/A del consolidado con su hash (RF-38, RNF-POR-01, D-101). Se genera solo al entrar en firma;
+# el rol de la etapa lo reintenta si falló. La descarga y las firmas son de F14.
+openapi: 3.0.3
+info:
+  title: MDD · firma
+  version: 1.0.0
+servers:
+  - url: /
+security:
+  - bearer: []
+tags:
+  - name: DocumentoFirmable
+    description: El documento firmable de la versión congelada (F13-H02).
+paths:
+  /api/firma/periodos/{periodo}/documento:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2026-I
+    get:
+      tags: [DocumentoFirmable]
+      operationId: consultarDocumentoFirmable
+      summary: El estado del documento firmable de la versión congelada y lo que puede hacer el usuario.
+      description: >-
+        Generado (con su huella), en generación, fallido (con el motivo) o sin generar. Firma no
+        conoce el flujo (MD-05): si Aprobación todavía no pidió el documento, responde SIN_GENERAR
+        sin versión. Lo leen quienes leen el consolidado.
+      x-mdd-permiso: [CONSOLIDACION:LECTURA, DISTRIBUTIVO:ESCRITURA]
+      responses:
+        '200':
+          description: El estado del documento.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoDelDocumento'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+    post:
+      tags: [DocumentoFirmable]
+      operationId: generarDocumentoFirmable
+      summary: Genera el documento firmable que no se pudo generar al entrar en firma.
+      description: >-
+        Solo el rol de la etapa CONGELADO_EN_FIRMA que Aprobación entregó con la solicitud (el
+        Responsable de consolidación). Sin cuerpo. Genera en la misma petición; si el documento ya
+        existe, responde el mismo sin crear otro (FR-005). Si falla, el motivo va en los detalles.
+      x-mdd-permiso: CONSOLIDACION:APROBACION
+      responses:
+        '200':
+          description: El documento generado, ahora o antes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoDelDocumento'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '409':
+          description: >-
+            Aprobación no pidió el documento de este periodo: el distributivo no entró en firma
+            (FIRMA_ETAPA_NO_ADMITE_GENERACION), o la generación falló, con el motivo en detalles
+            (FIRMA_GENERACION_FALLIDA).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+components:
+  securitySchemes:
+    bearer:
+      $ref: '../comun/seguridad.yaml#/components/securitySchemes/bearer'
+  schemas:
+    EstadoDelDocumento:
+      type: object
+      additionalProperties: false
+      required: [periodo, estado, acciones]
+      properties:
+        periodo:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        version:
+          description: La versión congelada; falta si Aprobación todavía no pidió el documento.
+          type: integer
+          format: int32
+          minimum: 1
+        estado:
+          type: string
+          enum: [SIN_GENERAR, EN_CURSO, FALLIDA, GENERADO]
+        motivo:
+          description: Por qué falló la última generación; solo con FALLIDA.
+          type: string
+          maxLength: 200
+        documento:
+          $ref: '#/components/schemas/DocumentoFirmable'
+        acciones:
+          type: array
+          description: Lo que puede hacer ahora quien consulta; vacía si nada.
+          items:
+            type: string
+            enum: [GENERAR]
+    DocumentoFirmable:
+      description: El PDF/A registrado; solo con GENERADO.
+      type: object
+      additionalProperties: false
+      required: [sha256, hashContenido, generadoPor, generadoEn]
+      properties:
+        sha256:
+          description: El SHA-256 del archivo, también su nombre; la «huella del PDF».
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+        hashContenido:
+          description: El hash de contenido de la versión congelada, el del pie (D-100).
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+        generadoPor:
+          description: sistema, o quien pidió el reintento.
+          type: string
+        generadoEn:
+          type: string
+          format: date-time
