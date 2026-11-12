@@ -41,17 +41,19 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
 
 ## Phase 1: Setup
 
-- [ ] T001 Revisar el glosario (`~/Downloads/MDD_artefactos_desarrollo/requerimientos_mdd/sdd/modelo_dominio.md` §6 y §7): «Documento firmable», «Hash», «Versión congelada» y «Árbol de firmas». Anotar aquí el resultado.
+- [X] T001 Revisar el glosario (`~/Downloads/MDD_artefactos_desarrollo/requerimientos_mdd/sdd/modelo_dominio.md` §6 y §7): «Documento firmable», «Hash», «Versión congelada» y «Árbol de firmas». Anotar aquí el resultado.
 
   Escribir **D-101** en `docs/decisiones.md`, en la fila del índice y en su sección. Su contenido:
-  - el documento firmable se genera al entrar en CONGELADO_EN_FIRMA, por el evento `DistributivoEnFirma` que publica Validación OCS en la transacción del paso, escuchado por Firma después de confirmar (research §4);
+  - el documento firmable se genera al entrar en CONGELADO_EN_FIRMA: Validación OCS publica su evento interno `DistributivoEnFirma` en la transacción del paso y, después de confirmar, le entrega la cadena a Firma por `PrepararDocumentoFirmable` (MD-05: Firma no conoce el flujo; research §4);
   - un fallo se registra y no se relanza; el reintento es manual e idempotente;
   - la conformidad PDF/A se verifica en las pruebas y en el script, no en el proceso (research §3, D-46);
   - Firma tiene su propio almacén en el volumen de D-88, nombrado por el SHA-256 y sin sobrescribir (research §7);
   - los firmantes: el árbol de la copia de la configuración, los cargos vigentes para el Rector y el Vicerrector, y la designación del periodo para el Responsable (research §6).
 
-  Relacionadas: RF-38, RF-58, RNF-POR-01, ADR-006, ADR-018, D-46, D-83, D-88, D-100.
-- [ ] T002 [P] En `backend/servicios/firma/build.gradle`, pasar OpenHTMLtoPDF y PDFBox a `implementation`; veraPDF (con JAXB 2.3) y Bouncy Castle siguen solo en pruebas. Copiar `DejaVuSans.ttf` y su licencia a `FIR/main/resources/fuentes/`. Confirmar que el `runtimeClasspath` de `apps:distributivo` no trae JAXB 2.3 (`./gradlew :apps:distributivo:dependencies`).
+  Relacionadas: RF-38, RF-58, RNF-POR-01, MD-05, ADR-006, ADR-018, D-46, D-83, D-88, D-100.
+
+  **Resultado (2026-11-11):** «Documento firmable», «Hash» (el original identifica la versión congelada; el vigente, el último archivo firmado), «Árbol de firmas» y «Paso de firma» están en el glosario (§7) y se usan así. **MD-05** dice que Aprobación le entrega la cadena a Firma y Firma informa por eventos, para que Firma no conozca el flujo y no haya ciclo. El plan tenía a Firma escuchando y consultando a Validación OCS; se corrigió antes de implementar (research §4, data-model, contratos y T007, T009, T012, T013, T019).
+- [X] T002 [P] En `backend/servicios/firma/build.gradle`, pasar OpenHTMLtoPDF y PDFBox a `implementation`; veraPDF (con JAXB 2.3) y Bouncy Castle siguen solo en pruebas. Copiar `DejaVuSans.ttf` y su licencia a `FIR/main/resources/fuentes/`. Confirmar que el `runtimeClasspath` de `apps:distributivo` no trae JAXB 2.3 (`./gradlew :apps:distributivo:dependencies`).
 
 ---
 
@@ -68,12 +70,11 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
 
   En la SPA, `NOMBRE_DEL_SERVICIO` (`SPA/pantallas/bitacora/nombres.ts`) es un `Record` de la enumeración: agregar `firma: 'Firma'`, porque si no, los tipos no compilan. Su prueba: el filtro por servicio de la bitácora ofrece «Firma».
 - [ ] T005 [P] Agregar a `contratos/comun/errores.md`, con sus 8 columnas:
-  - `FIRMA_SIN_DISTRIBUTIVO` (404);
   - `FIRMA_ETAPA_NO_ADMITE_GENERACION` (409);
   - `FIRMA_GENERACION_FALLIDA` (409, el motivo en detalles);
   - `ROLES_SIN_RESPONSABLE` (404).
 
-  Crear las excepciones y `ErroresFirma`. `SinDistributivo` da `FIRMA_SIN_DISTRIBUTIVO`, y `SinRolDeFirma` (sin el rol de CONGELADO_EN_FIRMA) la traduce el controlador a 403 con el cuerpo común, como `RolDeOtraEtapa` en Validación OCS. Primero `ErroresFirmaTest` (como `ErroresGeneracionTest`); la de Roles, en `ErroresRoles`.
+  Crear las excepciones y `ErroresFirma`. `SinRolDeFirma` (sin el rol de la etapa que llegó en la solicitud) la traduce el controlador a 403 con el cuerpo común, como `RolDeOtraEtapa` en Validación OCS. Primero `ErroresFirmaTest` (como `ErroresGeneracionTest`); la de Roles, en `ErroresRoles`.
 - [ ] T006 [P] Migraciones, con pruebas de integración primero:
   - `FIR/main/resources/db/migration/firma/V2__documento_firmable.sql` según `data-model.md`, con los `check`, la clave única y los privilegios: solo `insert` y `select` sobre `documento_firmable` para el rol del proceso;
   - en Usuarios, la migración siguiente que agrega `firma` al `check` de `bitacora.servicio`.
@@ -81,12 +82,7 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
   Ampliar `FirmaEsquemaIntegrationTest`: las tablas, los `check` y que el rol del proceso no puede actualizar ni borrar un documento.
 
   Las acciones que ofrece el filtro de la bitácora salen de las entradas guardadas (`SELECT DISTINCT servicio, accion`): `DOCUMENTO_FIRMABLE_GENERADO` aparece sola cuando llega la primera, sin registrarla en ninguna lista.
-- [ ] T007 [P] APIs publicadas de Validación OCS (`contracts/validacionocs.md`), viendo fallar primero sus pruebas:
-  - `ArbolDeFirmas.firmas(periodo)` sale de la copia de la configuración (por defecto: Elaborado/RESPONSABLE_CONSOLIDACION, Revisado/VICERRECTOR, Aprobado/RECTOR) y la que regía al crear el distributivo;
-  - `EtapaParaFirma.de(periodo, quien)`: la etapa, la versión y si tiene el rol de CONGELADO_EN_FIRMA;
-  - las dos en una interfaz nombrada nueva, con su `package-info`.
-
-  Extender `EtapasAlCrearse` para leer `firmas` de la misma carga.
+- [ ] T007 [P] La cadena de firmas en Validación OCS (`contracts/validacionocs.md`), viendo fallar primero su prueba: `EtapasAlCrearse` da también los pasos del documento CONSOLIDADO de la misma carga, en su orden (por defecto: Elaborado/RESPONSABLE_CONSOLIDACION, Revisado/VICERRECTOR, Aprobado/RECTOR), la que regía al crear el distributivo. Y la API publicada de Firma, `PrepararDocumentoFirmable` con `SolicitudDeDocumento` y `PasoDeLaCadena`, en la interfaz nombrada `preparacion` (esqueleto; la implementación es de T012).
 - [ ] T008 API publicada de Generación, `ContenidoCongelado.contenido(periodo)` (`contracts/generacion.md`). Ver fallar primero `ContenidoCongeladoServicioTest`:
   - exige la versión CONGELADA (`VersionNoCongelada`);
   - la versión y el hash son los de `hashDelDistributivo`;
@@ -110,7 +106,9 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
   - `DistributivoEnFirma(periodo, version, hash, momento)` se publica una vez al aprobar, al enviar a revisión sin la revisión, con el último parcial y con el avance genérico que llegan a CONGELADO_EN_FIRMA;
   - no se publica en un rechazo ni en un paso a otra etapa.
 
-  Después: el registro en `VAL/main/.../eventos/` (interfaz nombrada `eventos`), un puerto de salida `AvisoDeFirma` y su adaptador sobre `ApplicationEventPublisher`, llamado dentro de la transacción del paso.
+  - el evento lleva la cadena de la copia y el rol de la etapa CONGELADO_EN_FIRMA.
+
+  Después: el registro interno en `VAL/main/.../aplicacion/`, el puerto de salida `AvisoDeFirma` con su adaptador sobre `ApplicationEventPublisher`, llamado dentro de la transacción del paso, y el oyente `PreparacionDelDocumento` (`@ApplicationModuleListener`) que llama a `PrepararDocumentoFirmable.preparar`, con su prueba.
 - [ ] T010 [P] [US1] En el dominio de Firma, ver fallar primero:
   - `GeneracionDeDocumentoTest`: los estados de `data-model.md`; GENERADA no cambia; FALLIDA vuelve a EN_CURSO; el motivo de hasta 200 caracteres;
   - `ContenidoDelDocumentoTest`: arma los firmantes desde el árbol (rótulo = etiqueta + « por», el cargo por rol y el nombre del campo `firma-<orden>-<rol>`); falla con `FirmanteSinNombre` si falta uno.
@@ -125,12 +123,12 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
 
   El XHTML en Java, con los textos escapados; las tablas con `page-break-inside: avoid` por fila.
 - [ ] T012 [US1] En la aplicación de Firma, ver fallar primero `DocumentoFirmableServicioTest` (Mockito):
-  - **`alEntrarEnFirma`:** marca EN_CURSO; pide el contenido, el árbol y los firmantes fuera de la transacción; genera; y en la transacción final, con la generación bloqueada, guarda el archivo, registra el documento a nombre de `sistema` y una entrada `DOCUMENTO_FIRMABLE_GENERADO`, y marca GENERADA;
-  - si la versión o el hash del contenido no son los del evento, falla con ese motivo;
+  - **`preparar(solicitud)`:** registra la solicitud (cadena y rol de la etapa) y marca EN_CURSO; pide el contenido, el árbol y los firmantes fuera de la transacción; genera; y en la transacción final, con la generación bloqueada, guarda el archivo, registra el documento a nombre de `sistema` y una entrada `DOCUMENTO_FIRMABLE_GENERADO`, y marca GENERADA;
+  - si la versión o el hash del contenido no son los de la solicitud, falla con ese motivo;
   - con la generación ya GENERADA, no hace nada.
 
-  Después: los puertos de `data-model.md`, el servicio, `OyenteDeFirma` (`@ApplicationModuleListener`) y `ConfiguracionFirma`. `ContenidoDesdeGeneracion` y `EtapaDesdeValidacionocs` son adaptadores sobre las APIs publicadas.
-- [ ] T013 [US1] En `backend/apps/distributivo/src/integrationTest/java/ec/mdd/DocumentoFirmableIntegrationTest.java`, como `BitacoraDesdeGeneracionIntegrationTest` (PostgreSQL real con Testcontainers, el contexto del proceso, los procesos remotos con dobles): aprobar deja, después de confirmar, un documento GENERADO de la versión congelada; la aprobación responde antes de que termine la generación. Verificar en `ModulosTest` que Firma depende de Generación y de Validación OCS solo por sus interfaces nombradas, sin ciclos.
+  Después: los puertos de `data-model.md`, el servicio y `ConfiguracionFirma`. `ContenidoDesdeGeneracion` es el adaptador sobre la API publicada de Generación.
+- [ ] T013 [US1] En `backend/apps/distributivo/src/integrationTest/java/ec/mdd/DocumentoFirmableIntegrationTest.java`, como `BitacoraDesdeGeneracionIntegrationTest` (PostgreSQL real con Testcontainers, el contexto del proceso, los procesos remotos con dobles): aprobar deja, después de confirmar, un documento GENERADO de la versión congelada; la aprobación responde antes de que termine la generación. Verificar en `ModulosTest` que Validación OCS depende de Firma solo por `preparacion`, que Firma depende de Generación solo por su interfaz nombrada, y que Firma no depende de Validación OCS (MD-05).
 
 **Checkpoint**: aprobar genera el documento.
 
@@ -186,11 +184,11 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
 **Independent Test**: `DocumentoFirmableServicioTest`, `DocumentoContratoTest` y el Playwright con el estado FALLIDA.
 
 - [ ] T019 [US4] Ver fallar primero en `DocumentoFirmableServicioTest`:
-  - un `FirmanteSinNombre`, un fallo de Datos o del almacén dejan FALLIDA con el motivo, sin documento ni entrada, y `alEntrarEnFirma` termina sin relanzar;
-  - **`generar(periodo, quien)`:** con el rol de CONGELADO_EN_FIRMA y en esa etapa, genera y registra a nombre de quien lo pidió; si falla, `GeneracionFallida` con el motivo; con el documento ya GENERADO, lo devuelve sin hacer nada; fuera de la etapa, `EtapaNoAdmiteGeneracion`; sin el rol, `SinRolDeFirma` (403);
-  - **`estado(periodo, quien)`:** SIN_GENERAR, EN_CURSO, FALLIDA con motivo o GENERADO con el documento; `GENERAR` solo para el rol, en la etapa y sin documento.
+  - un `FirmanteSinNombre`, un fallo de Datos o del almacén dejan FALLIDA con el motivo, sin documento ni entrada, y `preparar` termina sin relanzar;
+  - **`generar(periodo, quien)`:** con el rol de la etapa de la solicitud, genera y registra a nombre de quien lo pidió; si falla, `GeneracionFallida` con el motivo; con el documento ya GENERADO, lo devuelve sin hacer nada; sin solicitud de Aprobación, `EtapaNoAdmiteGeneracion`; sin el rol, `SinRolDeFirma` (403);
+  - **`estado(periodo, quien)`:** SIN_GENERAR (sin versión si no hay solicitud), EN_CURSO, FALLIDA con motivo o GENERADO con el documento; `GENERAR` solo para el rol y con FALLIDA.
 - [ ] T020 [US4] `DocumentoControlador` y su contrato. Ver fallar primero:
-  - en `DocumentoContratoTest`: 200 en los cuatro estados según el esquema; 409 de etapa y de generación fallida con los detalles; 403 sin el rol; 404 sin distributivo; 400 con el periodo mal formado;
+  - en `DocumentoContratoTest`: 200 en los cuatro estados según el esquema; 409 sin solicitud y de generación fallida con los detalles; 403 sin el rol; 400 con el periodo mal formado;
   - en `PermisosFirmaTest`: las dos operaciones con su permiso.
 
 **Checkpoint**: el fallo se ve y se corrige.
@@ -237,7 +235,7 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
   Si no, el script siguiente encontraría ya GENERADA la versión 1 de 2026-I y recibiría el documento viejo.
 - [ ] T024 Correr todos los scripts del workflow, en su orden, sobre un perfil construido desde la rama, y anotar el tiempo de generación (SC-003). Recorrer `quickstart.md` §3 a mano: el PDF abierto, el pie, el detalle y el bloque de firmas; y el camino de fallo: sin Responsable designado (borrado en la base local, como dice el quickstart), el aviso «El PDF no se pudo generar»; designarlo otra vez, «Generar el PDF» y medir el tiempo (SC-006).
 - [ ] T025 Correr completos `./gradlew build integrationTest`, `:apps:distributivo:test` y `:apps:identidad:test` (Spring Modulith), la cobertura por módulo (D-32), Spotless y SpotBugs, y en la SPA los tipos, ESLint, Prettier, Vitest y Playwright (SC-007).
-- [ ] T026 Revisar el JavaDoc (principio XII): el evento, `ArbolDeFirmas`, `EtapaParaFirma`, `ContenidoCongelado`, `NombreDeUsuario`, los puertos y el dominio de Firma, el generador (por qué el bloque en la última página), el almacén (por qué `CREATE_NEW`) y el oyente (por qué no relanza).
+- [ ] T026 Revisar el JavaDoc (principio XII): el evento interno y su oyente, `PrepararDocumentoFirmable` (por qué Aprobación entrega la cadena, MD-05), `ContenidoCongelado`, `NombreDeUsuario`, los puertos y el dominio de Firma, el generador (por qué el bloque en la última página), el almacén (por qué `CREATE_NEW`) y el oyente (por qué no relanza).
 - [ ] T027 Crear `specs/046-pdfa-consolidado/evidencia.md`, como la de 045, con:
   - las pruebas, la cobertura, la arquitectura, la SPA, los scripts, shellcheck y Gitleaks;
   - la tabla del script y el resultado de veraPDF;

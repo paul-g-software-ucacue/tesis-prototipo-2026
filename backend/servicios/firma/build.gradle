@@ -10,14 +10,19 @@ def versionPdfbox = providers.gradleProperty('versionPdfbox').get()
 def versionOpenHtmlToPdf = providers.gradleProperty('versionOpenHtmlToPdf').get()
 def versionVeraPdf = providers.gradleProperty('versionVeraPdf').get()
 
+dependencies {
+    // F13-H02, D-101: el PDF/A del documento firmable, con el camino probado en B00-S01.
+    implementation "org.apache.pdfbox:pdfbox:${versionPdfbox}"
+    implementation "io.github.openhtmltopdf:openhtmltopdf-pdfbox:${versionOpenHtmlToPdf}"
+}
+
 testing {
     suites {
         test {
             dependencies {
-                // Solo en pruebas: spike B00-S01 (D-44). No entran al runtimeClasspath ni a la imagen.
-                implementation "org.apache.pdfbox:pdfbox:${versionPdfbox}"
+                // Solo en pruebas: la validación del spike B00-S01 (D-44) y la verificación de
+                // PDF/A con veraPDF, que necesita JAXB 2.3 (D-46, D-101). No entran a la imagen.
                 implementation "org.bouncycastle:bcpkix-jdk18on:${versionBouncyCastle}"
-                implementation "io.github.openhtmltopdf:openhtmltopdf-pdfbox:${versionOpenHtmlToPdf}"
                 implementation "org.verapdf:validation-model:${versionVeraPdf}"
             }
         }

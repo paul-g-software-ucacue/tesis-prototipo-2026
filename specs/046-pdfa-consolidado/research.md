@@ -42,18 +42,28 @@ La spec quedó así en FR-002.
 
 **Alternativa.** *veraPDF en el proceso, en un classloader aparte:* complejidad sin necesidad (principio X).
 
-## §4. Qué dispara la generación
+## §4. Qué dispara la generación: Aprobación le entrega la cadena a Firma (MD-05)
 
-**Decisión.** Un evento de dominio del mismo proceso, persistido en el registro de Spring Modulith que ya tiene `distributivo` (ADR-018):
-- **Publica Validación OCS**, dueña de la etapa, en la transacción que registra el paso hacia CONGELADO_EN_FIRMA: `DistributivoEnFirma(periodo, version, hash, momento)`. Vale para los cuatro caminos (aprobar, envío a revisión sin la revisión, último parcial y avance genérico), porque todos pasan por `paso()` hacia CONGELADO_EN_FIRMA. El registro de la bitácora sigue igual.
-- **Escucha Firma**, con `@ApplicationModuleListener`: después de confirmar, en otro hilo y en una transacción nueva. La aprobación no espera al PDF (SC-003 de F13-H01 no cambia).
-- **Un fallo de generación no se relanza:** Firma lo registra (estado FALLIDA y motivo) y termina normal, así la publicación queda completada. Si se relanzara, `ReenvioDePublicaciones` regeneraría el PDF cada 30 s sin fin ante un dato que falta. El reintento es el botón (FR-012). Solo una caída del proceso antes de registrar deja la publicación incompleta, y el reenvío la retoma: generar es idempotente (§8).
+MD-05 fija la dirección: **Aprobación le entrega la cadena a Firma al prepararse el documento, y Firma informa por eventos**, para que Firma no conozca el flujo y no haya ciclo. Esto importa en F14: Firma publicará `CadenaDeFirmasCompleta` y `RechazoEnFirma`, que Aprobación escucha. Si Firma dependiera de Validación OCS, habría un ciclo.
 
-El evento vive en una interfaz nombrada de Validación OCS (`eventos`), como `requeridos` de Generación (D-99). Firma depende de Validación OCS y de Generación; ninguna de las dos depende de Firma: sin ciclos.
+**Decisión.**
+- **En la transacción del paso** hacia CONGELADO_EN_FIRMA, Validación OCS publica su evento interno `DistributivoEnFirma`, con:
+  - el periodo, la versión y el hash;
+  - la cadena de la copia de la configuración (orden, etiqueta y rol de cada paso del documento CONSOLIDADO);
+  - el rol de la etapa CONGELADO_EN_FIRMA;
+  - el momento.
+
+  Lo guarda el registro de Spring Modulith de `distributivo` (ADR-018). Vale para los cuatro caminos (aprobar, envío a revisión sin la revisión, último parcial y avance genérico), porque todos pasan por `paso()` hacia CONGELADO_EN_FIRMA.
+- **Un oyente de Validación OCS** (`PreparacionDelDocumento`, adaptador de salida, `@ApplicationModuleListener`) lo recibe después de confirmar, en otro hilo, y llama a la API publicada de Firma: `PrepararDocumentoFirmable.preparar(SolicitudDeDocumento)`. La aprobación no espera al PDF.
+- **Firma** registra la solicitud (con la cadena y el rol de la etapa) y genera. Con lo guardado decide el reintento y las acciones sin preguntar a Aprobación.
+- **Un fallo de generación no se relanza:** Firma lo registra (FALLIDA con el motivo) y `preparar` termina normal, así la publicación queda completada. Si se relanzara, `ReenvioDePublicaciones` regeneraría el PDF cada 30 s sin fin ante un dato que falta. El reintento es el botón (FR-012). Solo una caída del proceso antes de registrar deja la publicación incompleta, y el reenvío la retoma: preparar es idempotente (§8).
+
+Dependencias: Validación OCS → Firma (la API publicada `preparacion`), Firma → Generación (el contenido). Firma no depende de Validación OCS; Validación OCS ya depende de Generación. Sin ciclos.
 
 **Alternativas.**
-- *Que Generación publique `VersionCongelada` al congelar* (el nombre del modelo de dominio): la versión se congela antes de que la etapa avance; si la segunda transacción de la aprobación falla, habría PDF sin etapa en firma. El evento sale de quien registra el paso.
-- *Llamar a Firma dentro de la aprobación:* ata la aprobación a la generación, contra la decisión del autor (4).
+- *Que Firma escuche un evento de Validación OCS y le pregunte la etapa y el árbol* (el primer plan): Firma conocería el flujo y, con los eventos de F14, habría un ciclo. Contra MD-05.
+- *Que Generación publique `VersionCongelada` al congelar* (el nombre del modelo de dominio): la versión se congela antes de que la etapa avance; si la segunda transacción de la aprobación falla, habría PDF sin etapa en firma.
+- *Llamar a Firma dentro de la transacción de la aprobación:* ata la aprobación a la generación, contra la decisión del autor (4).
 
 ## §5. El contenido: Generación lo da por su API publicada
 
@@ -70,7 +80,7 @@ Generación ya tiene todo eso; la interfaz lo junta sin cálculos nuevos. Llama 
 ## §6. Los firmantes
 
 **Decisión.**
-- **El árbol de firmas** sale de la copia de la configuración del distributivo, la misma de las etapas (FR-003 de F12-H01): una consulta publicada de Validación OCS, `ArbolDeFirmas`, con `firmas(periodo)` → los pasos del documento CONSOLIDADO en su orden (orden, etiqueta y rol).
+- **El árbol de firmas** sale de la copia de la configuración del distributivo, la misma de las etapas (FR-003 de F12-H01): la carga que regía al crearse el distributivo, o la plantilla por defecto. Aprobación la lee al publicar el evento (`EtapasAlCrearse` lee también `firmas`) y la entrega en la solicitud (§4, MD-05).
 - **Rector y Vicerrector académico:** sus cargos vigentes (`/interno/docentes/cargos-vigentes`, tipos `RECTOR` y `VICERRECTOR`) y el nombre de ese docente (`/interno/docentes/activos`), en el proceso `datos`. Firma tiene su propio puerto, `FirmantesDelPeriodo`, y un adaptador entre procesos, como los de Generación (D-83).
 - **Responsable de consolidación:** el usuario designado para el periodo (`roles.designacion_responsable`, ADR-003) y su nombre para mostrar (`usuarios.usuario.nombre_para_mostrar`), en el proceso `identidad`. Ruta interna nueva en Roles, `/interno/roles/periodos/{periodo}/responsable` → `{usuario, nombre}`. Roles pide el nombre a Usuarios por una interfaz publicada nueva (`NombreDeUsuario`), en el mismo proceso.
 - **El cargo** que se muestra sale del rol: RESPONSABLE_CONSOLIDACION → «Responsable de consolidación», VICERRECTOR → «Vicerrector académico», RECTOR → «Rector».
@@ -116,13 +126,13 @@ Un fallo no deja entrada (FR-013).
   - la versión;
   - el motivo, si falló;
   - el documento (SHA-256, hash de contenido, quién y cuándo), si existe;
-  - `acciones`: `[GENERAR]` para el rol de la etapa CONGELADO_EN_FIRMA, en esa etapa y sin documento.
-  - Responde 404 sin distributivo. Lo leen quienes leen el flujo.
+  - `acciones`: `[GENERAR]` para el rol de la etapa que llegó en la solicitud, con la generación FALLIDA.
+  - Sin solicitud de Aprobación responde 200 SIN_GENERAR, sin versión: Firma no conoce el flujo. Lo leen quienes leen el flujo.
 - **`POST /api/firma/periodos/{periodo}/documento`** (`generarDocumentoFirmable`), sin cuerpo:
-  - permiso `CONSOLIDACION:APROBACION` (el Responsable lo tiene) y, en el dominio, el rol de CONGELADO_EN_FIRMA de la copia de la configuración, que Validación OCS dice por su API publicada;
+  - permiso `CONSOLIDACION:APROBACION` (el Responsable lo tiene) y, en el dominio, el rol de la etapa que llegó en la solicitud de Aprobación (§4);
   - genera en la misma petición y responde el estado: 200 GENERADO;
   - si la generación falla, 409 `FIRMA_GENERACION_FALLIDA` con el motivo en los detalles;
-  - 409 `FIRMA_ETAPA_NO_ADMITE_GENERACION` fuera de CONGELADO_EN_FIRMA;
+  - 409 `FIRMA_ETAPA_NO_ADMITE_GENERACION` si Aprobación no pidió el documento de la versión vigente (el distributivo no entró en firma);
   - 403 sin el rol.
 - Contrato nuevo: `contratos/firma/openapi.yaml`. El API Gateway ya enruta `/api/firma/**` a `distributivo`.
 - **SPA:** en CONGELADO_EN_FIRMA, la tarjeta del flujo consulta el documento y muestra «Documento firmable generado el <fecha>» con la huella abreviada y «Copiar la huella» (el mismo componente de la constancia), «Generando el documento firmable…», o «El PDF no se pudo generar» con el motivo. Con la acción, el botón «Generar el PDF». Mientras el estado sea EN_CURSO o SIN_GENERAR, vuelve a consultar cada 3 s, hasta 1 minuto.

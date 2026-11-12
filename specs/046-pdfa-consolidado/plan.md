@@ -6,8 +6,8 @@
 
 ## Summary
 
-Al pasar a CONGELADO_EN_FIRMA, Validación OCS publica `DistributivoEnFirma` en la misma transacción del paso. El registro de Spring Modulith lo guarda (ADR-018), y Firma lo escucha después de confirmar, en otro hilo (research §4). Firma entonces:
-1. pide el contenido de la versión congelada a Generación y el árbol de firmas a Validación OCS, por sus APIs publicadas;
+Al pasar a CONGELADO_EN_FIRMA, Validación OCS publica su evento interno `DistributivoEnFirma` en la misma transacción del paso, con la cadena de firmas de la copia de la configuración. El registro de Spring Modulith lo guarda (ADR-018). Después de confirmar, en otro hilo, un oyente de Validación OCS le entrega la cadena a Firma por su API publicada, `PrepararDocumentoFirmable` (MD-05: Firma no conoce el flujo; research §4). Firma entonces:
+1. pide el contenido de la versión congelada a Generación por su API publicada;
 2. pide los nombres de los firmantes a Datos y a Identidad, entre procesos;
 3. arma el XHTML y lo renderiza a PDF/A-2b con OpenHTMLtoPDF y PDFBox, el camino del spike B00-S01;
 4. agrega con PDFBox los tres campos de firma vacíos con nombre;
@@ -39,7 +39,7 @@ Al pasar a CONGELADO_EN_FIRMA, Validación OCS publica `DistributivoEnFirma` en 
   - `ProcesoAprobacion` (el paso hacia CONGELADO_EN_FIRMA dice que entra en firma).
 - **Aplicación (Mockito):**
   - `DocumentoFirmableServicio`: el orden de las llamadas; una generación por versión; el fallo con motivo y sin entrada; el reintento; el rol y la etapa;
-  - `FlujoDelDistributivoServicio` publica `DistributivoEnFirma` en los cuatro caminos y no en los rechazos;
+  - `FlujoDelDistributivoServicio` publica `DistributivoEnFirma`, con la cadena de la copia, en los cuatro caminos y no en los rechazos; el oyente llama a `preparar`;
   - `ContenidoCongeladoServicio`;
   - el servicio de Roles del responsable.
 - **Generador (sin Docker):** el PDF de un contenido pequeño y de uno de 165 paralelos pasa veraPDF 2b. Tiene el pie en cada página, el texto del contenido (extraído con PDFBox) y los tres campos de firma vacíos con su nombre y su rectángulo dentro de la última página.
@@ -49,7 +49,7 @@ Al pasar a CONGELADO_EN_FIRMA, Validación OCS publica `DistributivoEnFirma` en 
   - el almacén con `CREATE_NEW` no sobrescribe;
   - el evento llega a Firma después de confirmar (en el contexto de `apps:distributivo`, con dobles de los procesos remotos).
 - **Contrato:** Firma (las dos operaciones), Roles (la ruta interna) y Usuarios (el servicio `firma`).
-- **Arquitectura:** ArchUnit y `ModulosTest`. Firma depende de Generación y de Validación OCS por interfaces nombradas, sin ciclos.
+- **Arquitectura:** ArchUnit y `ModulosTest`. Validación OCS depende de Firma (`preparacion`) y Firma de Generación, por interfaces nombradas; Firma no depende de Validación OCS (MD-05), sin ciclos.
 - **Permisos:** `PermisosFirmaTest` con las dos operaciones.
 - **SPA:** Vitest y Playwright con axe-core.
 - **Punta a punta:** `deploy/probar_documento_firmable.sh`, con veraPDF en Docker.
@@ -72,11 +72,10 @@ Al pasar a CONGELADO_EN_FIRMA, Validación OCS publica `DistributivoEnFirma` en 
 **Scale/Scope**:
 - Firma:
   - 1 servicio de negocio nuevo, con dominio, aplicación, adaptadores y configuración;
-  - 2 operaciones HTTP y 1 contrato nuevo;
-  - 1 evento;
+  - 2 operaciones HTTP, 1 API publicada y 1 contrato nuevo;
   - 2 tablas;
-  - 2 códigos de error (y 1 de lectura).
-- Validación OCS: 2 APIs publicadas y la publicación del evento.
+  - 2 códigos de error.
+- Validación OCS: el evento interno, su oyente y la cadena en `EtapasAlCrearse`.
 - Generación: 1 API publicada.
 - Roles: 1 ruta interna y 1 código de error. Usuarios: 1 API publicada y 1 migración.
 - SPA: 1 componente.
@@ -90,10 +89,10 @@ Al pasar a CONGELADO_EN_FIRMA, Validación OCS publica `DistributivoEnFirma` en 
 | Principio | Cómo lo respeta el plan | Estado |
 |---|---|---|
 | I. Capas | Las reglas de la generación y del documento, en el dominio de Firma. El PDF y el almacén, detrás de puertos. La coordinación, en la aplicación. | ✅ |
-| II. DDD | Firma es dueña del documento firmable (modelo de dominio §5). Generación da el contenido, Validación OCS la etapa y el árbol, Roles el Responsable. | ✅ |
+| II. DDD | Firma es dueña del documento firmable (modelo de dominio §5). Generación da el contenido; Aprobación entrega la cadena y el rol de la etapa (MD-05); Roles da el Responsable. | ✅ |
 | III. Lenguaje ubicuo | «Documento firmable», «versión congelada», «hash de contenido», «huella», «Elaborado/Revisado/Aprobado por». | ✅ |
 | IV. API primero | `contratos/firma/openapi.yaml`, la ruta interna de Roles y el servicio `firma` en la bitácora se escriben antes del código. | ✅ |
-| V. Límites | APIs publicadas en el proceso y rutas internas con token de proceso entre procesos; el evento por el registro de ADR-018. | ✅ |
+| V. Límites | APIs publicadas en el proceso y rutas internas con token de proceso entre procesos; el evento por el registro de ADR-018. Aprobación le entrega la cadena a Firma (MD-05). | ✅ |
 | VI. Las reglas son datos | Los firmantes, su orden y sus rótulos salen del árbol de firmas de la copia de la configuración (RF-58). | ✅ |
 | VII. Inmutabilidad y trazabilidad | El archivo se nombra por su hash y no se sobrescribe. El registro guarda el SHA-256 original y el hash de contenido. Una entrada en la bitácora. | ✅ |
 | VIII. Pruebas | Primero el dominio y la aplicación, viéndolos fallar; el generador contra veraPDF; integración para la concurrencia y el evento; script de punta a punta. | ✅ |
@@ -101,7 +100,7 @@ Al pasar a CONGELADO_EN_FIRMA, Validación OCS publica `DistributivoEnFirma` en 
 | X. Simplicidad | El camino probado del spike. Sin motor de plantillas, sin veraPDF en el proceso, sin un módulo de archivos en la plataforma. | ✅ |
 | XI. Diseño pragmático | El bloque de firmas en la última página con posiciones fijas, para conocer los rectángulos de los campos. | ✅ |
 | XII. JavaDoc | El evento, las APIs publicadas, los puertos, el generador, el almacén y las reglas del dominio. | ✅ |
-| XIII. Errores | 3 códigos de Firma y 1 de Roles con sus 8 columnas. | ✅ |
+| XIII. Errores | 2 códigos de Firma y 1 de Roles con sus 8 columnas. | ✅ |
 | XIV. Validación | Sin cuerpo; el periodo con el patrón de siempre. | ✅ |
 
 **Post-diseño:** sin cambios. D-101 queda registrada antes de implementar, con las decisiones de research §3, §4 y §7.
@@ -134,7 +133,7 @@ specs/046-pdfa-consolidado/
 contratos/firma/openapi.yaml               nuevo: consultar y generar el documento firmable
 contratos/roles/openapi.yaml               /interno/roles/periodos/{periodo}/responsable
 contratos/usuarios/openapi.yaml            servicio firma en la bitácora
-contratos/comun/errores.md                 4 códigos
+contratos/comun/errores.md                 3 códigos
 
 backend/servicios/firma/
 ├── build.gradle                           OpenHTMLtoPDF y PDFBox en implementation
@@ -144,13 +143,13 @@ backend/servicios/firma/
 ├── aplicacion/                            DocumentoFirmableServicio (consultar, generar, al entrar en firma)
 ├── adaptadores/entrada/                   DocumentoControlador, ErroresFirma, OyenteDeFirma (@ApplicationModuleListener)
 ├── adaptadores/salida/                    GeneradorPdfa, AlmacenDeDocumentosEnDisco, RepositorioDocumentosJdbc,
-│                                          ContenidoDesdeGeneracion, EtapaDesdeValidacionocs,
+│                                          ContenidoDesdeGeneracion,
 │                                          FirmantesDesdeProcesos, PublicadorDeCambios
 ├── infraestructura/                       ConfiguracionFirma
 └── src/main/resources/                    db/migration/firma/V2, fuentes/DejaVuSans.ttf
 
-backend/servicios/validacionocs/           eventos/DistributivoEnFirma; ArbolDeFirmas, EtapaParaFirma;
-                                           publicación en FlujoDelDistributivoServicio
+backend/servicios/validacionocs/           DistributivoEnFirma (interno), AvisoDeFirma, PreparacionDelDocumento;
+                                           la cadena en EtapasAlCrearse
 backend/servicios/generacion/              ContenidoCongelado y su servicio
 backend/servicios/roles/                   ruta interna del responsable
 backend/servicios/usuarios/                NombreDeUsuario; migración de la bitácora

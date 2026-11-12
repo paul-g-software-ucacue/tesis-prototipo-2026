@@ -9,6 +9,9 @@ create table generacion_documento (
     periodo        varchar(20) not null,
     version        integer     not null check (version >= 1),
     tipo           varchar(20) not null check (tipo in ('CONSOLIDADO')),
+    hash_contenido char(64)    not null check (hash_contenido ~ '^[0-9a-f]{64}$'),
+    cadena         jsonb       not null,     -- [{orden, etiqueta, rol}] de la solicitud (MD-05)
+    rol_de_etapa   varchar(40) not null,     -- quien reintenta (FR-012)
     estado         varchar(20) not null check (estado in ('EN_CURSO', 'FALLIDA', 'GENERADA')),
     motivo         varchar(200),             -- solo con FALLIDA
     pedida_por     varchar(64) not null,     -- 'sistema' o el usuario del reintento
@@ -69,7 +72,6 @@ Lo que se imprime, inmutable:
 |---|---|---|
 | `EtapaNoAdmiteGeneracion` | `FIRMA_ETAPA_NO_ADMITE_GENERACION` | 409 |
 | `GeneracionFallida` (con el motivo en detalles) | `FIRMA_GENERACION_FALLIDA` | 409 |
-| `SinDistributivo` | `FIRMA_SIN_DISTRIBUTIVO` | 404 |
 | `SinRolDeFirma` | — el controlador la traduce a 403 con el cuerpo común, sin decir qué falta | 403 |
 | `FirmanteSinNombre` (con el cargo) | — interna: la generación la convierte en motivo de FALLIDA | — |
 
@@ -77,13 +79,12 @@ Lo que se imprime, inmutable:
 
 - **Entrada:**
   - `ConsultarDocumentoFirmable.estado(periodo, quien)` → `EstadoDelDocumento` (estado, versión, motivo, documento, acciones);
-  - `GenerarDocumentoFirmable.generar(periodo, quien)`;
-  - `AlEntrarEnFirma.generar(DistributivoEnFirma)`, la reacción al evento.
+  - `GenerarDocumentoFirmable.generar(periodo, quien)`, el reintento;
+  - `PrepararDocumentoFirmable.preparar(SolicitudDeDocumento)`, la API publicada (interfaz nombrada `preparacion`) que llama Aprobación (MD-05). `SolicitudDeDocumento(periodo, version, hash, cadena, rolDeLaEtapa, momento)`, con `cadena` = `List<PasoDeLaCadena(orden, etiqueta, rol)>`. Es idempotente y no relanza un fallo de generación.
 - **Salida:**
   - `RepositorioDocumentos` (generación bloqueada, documento);
   - `AlmacenDeDocumentos.guardar(byte[]) → nombre` (`CREATE_NEW`, nombre = SHA-256);
   - `ContenidoDelDistributivo` (adaptador sobre `ContenidoCongelado` de Generación);
-  - `EtapaYFirmas` (adaptador sobre `ArbolDeFirmas` y el estado del flujo de Validación OCS);
   - `FirmantesDelPeriodo` (adaptador entre procesos: Datos e Identidad);
   - `GeneradorDePdf.generar(ContenidoDelDocumento) → byte[]` (OpenHTMLtoPDF + PDFBox);
   - `RegistroDeCambios` (bitácora, ADR-018);
@@ -91,10 +92,9 @@ Lo que se imprime, inmutable:
 
 ## Validación OCS
 
-- **Evento `DistributivoEnFirma(periodo, version, hash, momento)`** en la interfaz nombrada `eventos`. Se publica en la transacción que guarda un `PASO_DE_ETAPA` hacia CONGELADO_EN_FIRMA, en los cuatro caminos de F13-H01.
-- **`ArbolDeFirmas.firmas(periodo)`** → los `PasoFirma` del documento CONSOLIDADO en la copia de la configuración, en su orden.
-- **`EtapaDelDistributivo.etapa(periodo)`** → la etapa actual y la versión, y si un `Solicitante` tiene el rol de la etapa CONGELADO_EN_FIRMA.
-- La copia de la configuración (`EtapasAlCrearse`) ya lee el YAML completo: `firmas` sale de la misma carga.
+- **Evento interno `DistributivoEnFirma(periodo, version, hash, cadena, rolDeLaEtapa, momento)`**, en `aplicacion` (no se publica fuera del módulo). Se publica en la transacción que guarda un `PASO_DE_ETAPA` hacia CONGELADO_EN_FIRMA, en los cuatro caminos de F13-H01, por un puerto de salida `AvisoDeFirma`.
+- **`PreparacionDelDocumento`** (adaptador de salida, `@ApplicationModuleListener`): después de confirmar, llama a `PrepararDocumentoFirmable.preparar` de Firma.
+- **La cadena** sale de la copia de la configuración: `EtapasAlCrearse` lee también `firmas` de la misma carga (los `PasoFirma` del documento CONSOLIDADO, en su orden).
 
 ## Generación
 
