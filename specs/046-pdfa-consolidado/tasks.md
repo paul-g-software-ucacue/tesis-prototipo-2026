@@ -166,14 +166,14 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
 
 **Independent Test**: `probar_documento_firmable.sh`, pasos 3, 5 y 6.
 
-- [ ] T016 [P] [US3] `AlmacenDeDocumentosEnDisco`, viendo fallar primero su prueba con una carpeta temporal:
+- [X] T016 [P] [US3] `AlmacenDeDocumentosEnDisco`, viendo fallar primero su prueba con una carpeta temporal:
   - guarda `documentos/<sha256>.pdf` y devuelve ese nombre;
   - un segundo guardado del mismo contenido no escribe;
   - nunca abre un archivo existente para escribir (`CREATE_NEW`);
   - sin permiso de escritura, una excepción que la aplicación convierte en fallo.
 
   Montar la carpeta en `apps:distributivo` (`mdd.firma.archivos`, por defecto `/var/mdd/archivos/documentos`).
-- [ ] T017 [P] [US3] `RepositorioDocumentosJdbc` con integración (PostgreSQL real):
+- [X] T017 [P] [US3] `RepositorioDocumentosJdbc` con integración (PostgreSQL real):
   - bloquear o crear la generación (`FOR UPDATE`);
   - registrar el documento y leerlo;
   - dos generaciones a la vez: la segunda espera, ve GENERADA y no registra; queda un documento (SC-005).
