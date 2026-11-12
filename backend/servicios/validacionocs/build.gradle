@@ -19,6 +19,11 @@ dependencies {
     // Aprobación le ordena a Generación marcar un parcial y calcular su hash (MD-04, F12-H02), por
     // su interfaz publicada en el mismo proceso: solo ec.mdd.generacion.puertos.entrada.
     implementation project(':servicios:generacion')
+    // Al entrar en firma, Aprobación le entrega la cadena a Firma por su interfaz publicada, en el
+    // mismo proceso (MD-05, F13-H02): solo ec.mdd.firma.puertos.entrada.
+    implementation project(':servicios:firma')
+    // El oyente del aviso de firma, después de confirmar (ADR-018).
+    implementation 'org.springframework.modulith:spring-modulith-events-api'
     // La copia de las etapas del proceso, en jsonb (F12-H02). La versión la fija Spring Boot.
     implementation 'tools.jackson.core:jackson-databind'
 }

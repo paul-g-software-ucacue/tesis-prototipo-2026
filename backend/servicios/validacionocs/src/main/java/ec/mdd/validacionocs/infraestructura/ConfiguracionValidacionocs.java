@@ -4,6 +4,7 @@ import ec.mdd.generacion.puertos.entrada.ParcialesDelDistributivo;
 import ec.mdd.generacion.puertos.requeridos.EtapaDelConsolidado;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
 import ec.mdd.validacionocs.adaptadores.entrada.EtapaParaGeneracion;
+import ec.mdd.validacionocs.adaptadores.salida.AvisoDeFirmaSpring;
 import ec.mdd.validacionocs.adaptadores.salida.DatosDesdeProcesos;
 import ec.mdd.validacionocs.adaptadores.salida.DistributivoDesdeGeneracion;
 import ec.mdd.validacionocs.adaptadores.salida.LectorYaml;
@@ -137,7 +138,8 @@ public class ConfiguracionValidacionocs {
             PlantillaDelFlujo plantilla,
             DatosDelPeriodo datos,
             RegistroDeCambios registroDeCambiosValidacionocs,
-            Transaccion transaccionValidacionocs) {
+            Transaccion transaccionValidacionocs,
+            ApplicationEventPublisher eventos) {
         return new FlujoDelDistributivoServicio(
                 distributivoDeGeneracion,
                 repositorioProceso,
@@ -145,6 +147,7 @@ public class ConfiguracionValidacionocs {
                 datos,
                 registroDeCambiosValidacionocs,
                 transaccionValidacionocs,
-                Clock.systemUTC());
+                Clock.systemUTC(),
+                new AvisoDeFirmaSpring(eventos));
     }
 }

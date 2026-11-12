@@ -106,7 +106,7 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
 
 **Independent Test**: `probar_documento_firmable.sh`, pasos 1, 2 y 4.
 
-- [ ] T009 [P] [US1] En Validación OCS, ver fallar primero en `FlujoDelDistributivoServicioTest`:
+- [X] T009 [P] [US1] En Validación OCS, ver fallar primero en `FlujoDelDistributivoServicioTest`:
   - `DistributivoEnFirma(periodo, version, hash, momento)` se publica una vez al aprobar, al enviar a revisión sin la revisión, con el último parcial y con el avance genérico que llegan a CONGELADO_EN_FIRMA;
   - no se publica en un rechazo ni en un paso a otra etapa.
 

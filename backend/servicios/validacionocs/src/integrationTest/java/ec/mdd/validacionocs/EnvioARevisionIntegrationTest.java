@@ -94,7 +94,8 @@ class EnvioARevisionIntegrationTest {
                         new TransaccionSpring(
                                 new TransactionTemplate(
                                         new DataSourceTransactionManager(dataSource))),
-                        Clock.fixed(AHORA, ZoneOffset.UTC));
+                        Clock.fixed(AHORA, ZoneOffset.UTC),
+                        aviso -> {});
     }
 
     @AfterAll

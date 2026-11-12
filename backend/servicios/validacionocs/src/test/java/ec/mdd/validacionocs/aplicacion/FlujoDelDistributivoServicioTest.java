@@ -33,6 +33,7 @@ import ec.mdd.validacionocs.dominio.Transicion;
 import ec.mdd.validacionocs.puertos.entrada.FlujoDelDistributivo;
 import ec.mdd.validacionocs.puertos.entrada.PeriodoCerrado;
 import ec.mdd.validacionocs.puertos.entrada.SinDistributivo;
+import ec.mdd.validacionocs.puertos.salida.AvisoDeFirma;
 import ec.mdd.validacionocs.puertos.salida.CambioDeFlujo;
 import ec.mdd.validacionocs.puertos.salida.DatosDelPeriodo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo;
@@ -91,6 +92,7 @@ class FlujoDelDistributivoServicioTest {
                     return trabajo.get();
                 }
             };
+    private final AvisoDeFirma aviso = mock(AvisoDeFirma.class);
     private final FlujoDelDistributivoServicio servicio =
             new FlujoDelDistributivoServicio(
                     distributivo,
@@ -100,7 +102,8 @@ class FlujoDelDistributivoServicioTest {
                     datos,
                     registro,
                     transaccion,
-                    Clock.fixed(AHORA, ZoneOffset.UTC));
+                    Clock.fixed(AHORA, ZoneOffset.UTC),
+                    aviso);
 
     private final Map<String, Boolean> enviadosEnGeneracion = new LinkedHashMap<>();
 
@@ -734,6 +737,72 @@ class FlujoDelDistributivoServicioTest {
         assertThat(flujo.etapa()).isEqualTo(TipoDeEtapa.CONGELADO_EN_FIRMA);
         verify(distributivo).congelar(PERIODO);
         assertThat(registrado().getLast().detalle()).containsEntry("hash", HASH_CONGELADO);
+        verify(aviso).avisar(any());
+    }
+
+    // Entrar en firma: Aprobación le entrega la cadena a Firma (F13-H02, MD-05, D-101).
+
+    private static final List<AvisoDeFirma.Paso> CADENA_POR_DEFECTO =
+            List.of(
+                    new AvisoDeFirma.Paso(1, "Elaborado", "RESPONSABLE_CONSOLIDACION"),
+                    new AvisoDeFirma.Paso(2, "Revisado", "VICERRECTOR"),
+                    new AvisoDeFirma.Paso(3, "Aprobado", "RECTOR"));
+
+    @Test
+    void dadaLaAprobacion_cuandoEntraEnFirma_entoncesAvisaUnaVezConLaCadenaYElRolDeLaEtapa() {
+        enRevision();
+        congelaEnGeneracion();
+
+        servicio.aprobarContenido(PERIODO, VICERRECTOR);
+
+        verify(aviso)
+                .avisar(
+                        new AvisoDeFirma.DistributivoEnFirma(
+                                PERIODO,
+                                1,
+                                HASH_CONGELADO,
+                                CADENA_POR_DEFECTO,
+                                "RESPONSABLE_CONSOLIDACION",
+                                AHORA));
+        org.mockito.Mockito.verifyNoMoreInteractions(aviso);
+    }
+
+    @Test
+    void dadoUnRechazoOUnPasoAOtraEtapa_cuandoSeConsulta_entoncesNoAvisa() {
+        enRevision();
+        congelaEnGeneracion();
+        assertThatThrownBy(() -> servicio.aprobarContenido(PERIODO, RESPONSABLE))
+                .isInstanceOf(RolDeOtraEtapa.class);
+
+        verify(aviso, never()).avisar(any());
+    }
+
+    @Test
+    void dadaLaRevisionDesactivada_cuandoSeEnviaARevision_entoncesAvisaConElHashCongelado() {
+        conLaConfiguracion("EN_REVISION_VRA");
+        enConsolidacion();
+        conCondiciones(LISTO);
+        congelaEnGeneracion();
+
+        servicio.enviarARevision(PERIODO, RESPONSABLE);
+
+        ArgumentCaptor<AvisoDeFirma.DistributivoEnFirma> avisado =
+                ArgumentCaptor.forClass(AvisoDeFirma.DistributivoEnFirma.class);
+        verify(aviso).avisar(avisado.capture());
+        assertThat(avisado.getValue().hash()).isEqualTo(HASH_CONGELADO);
+        assertThat(avisado.getValue().cadena()).isEqualTo(CADENA_POR_DEFECTO);
+    }
+
+    @Test
+    void dadoElUltimoParcialHaciaLaFirma_cuandoSeEnvia_entoncesAvisaUnaVez() {
+        conLaConfiguracion("EN_CONSOLIDACION", "EN_REVISION_VRA");
+        congelaEnGeneracion();
+        servicio.enviar(PERIODO, "DS", COORDINADOR_DS);
+        verify(aviso, never()).avisar(any());
+
+        servicio.enviar(PERIODO, "TDS", COORDINADOR_TDS);
+
+        verify(aviso).avisar(any());
     }
 
     private static FlujoDelDistributivo.Parcial parcial(

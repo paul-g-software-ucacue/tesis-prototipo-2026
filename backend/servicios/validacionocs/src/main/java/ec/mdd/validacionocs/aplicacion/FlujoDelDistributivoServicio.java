@@ -7,6 +7,7 @@ import ec.mdd.validacionocs.dominio.EstadoDelPeriodo;
 import ec.mdd.validacionocs.dominio.ParcialesPendientes;
 import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
 import ec.mdd.validacionocs.dominio.Solicitante;
+import ec.mdd.validacionocs.dominio.TipoDeEtapa;
 import ec.mdd.validacionocs.dominio.TipoDeTransicion;
 import ec.mdd.validacionocs.dominio.Transicion;
 import ec.mdd.validacionocs.puertos.entrada.AprobarContenido;
@@ -19,6 +20,7 @@ import ec.mdd.validacionocs.puertos.entrada.FlujoDelDistributivo;
 import ec.mdd.validacionocs.puertos.entrada.PeriodoCerrado;
 import ec.mdd.validacionocs.puertos.entrada.PeriodoNoEncontrado;
 import ec.mdd.validacionocs.puertos.entrada.SinDistributivo;
+import ec.mdd.validacionocs.puertos.salida.AvisoDeFirma;
 import ec.mdd.validacionocs.puertos.salida.CambioDeFlujo;
 import ec.mdd.validacionocs.puertos.salida.DatosDelPeriodo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo;
@@ -63,8 +65,9 @@ public final class FlujoDelDistributivoServicio
     private final RegistroDeCambios registro;
     private final Transaccion transaccion;
     private final Clock reloj;
+    private final AvisoDeFirma aviso;
 
-    /** Recibe los puertos, las etapas al crearse y el reloj. */
+    /** Recibe los puertos, las etapas al crearse, el reloj y el aviso de firma (F13-H02). */
     public FlujoDelDistributivoServicio(
             Distributivo distributivo,
             RepositorioProceso procesos,
@@ -72,7 +75,8 @@ public final class FlujoDelDistributivoServicio
             DatosDelPeriodo datos,
             RegistroDeCambios registro,
             Transaccion transaccion,
-            Clock reloj) {
+            Clock reloj,
+            AvisoDeFirma aviso) {
         this.distributivo = distributivo;
         this.procesos = procesos;
         this.etapas = etapas;
@@ -80,6 +84,7 @@ public final class FlujoDelDistributivoServicio
         this.registro = registro;
         this.transaccion = transaccion;
         this.reloj = reloj;
+        this.aviso = aviso;
     }
 
     @Override
@@ -116,6 +121,7 @@ public final class FlujoDelDistributivoServicio
                                             hashDelDistributivo,
                                             ahora);
                             procesos.guardar(bloqueado, nuevas);
+                            avisarSiEntraEnFirma(bloqueado, nuevas);
                             nuevas.forEach(
                                     una ->
                                             registro.registrar(
@@ -141,6 +147,7 @@ public final class FlujoDelDistributivoServicio
                                     bloqueado.avanzar(
                                             quien, actual.version(), hashDelDistributivo, ahora);
                             procesos.guardar(bloqueado, nuevas);
+                            avisarSiEntraEnFirma(bloqueado, nuevas);
                             nuevas.forEach(
                                     una ->
                                             registro.registrar(
@@ -186,6 +193,7 @@ public final class FlujoDelDistributivoServicio
                                             hashDelDistributivo,
                                             ahora);
                             procesos.guardar(bloqueado, nuevas);
+                            avisarSiEntraEnFirma(bloqueado, nuevas);
                             nuevas.forEach(
                                     una ->
                                             registro.registrar(
@@ -225,6 +233,7 @@ public final class FlujoDelDistributivoServicio
                                             hashDelDistributivo,
                                             ahora);
                             procesos.guardar(bloqueado, nuevas);
+                            avisarSiEntraEnFirma(bloqueado, nuevas);
                             nuevas.forEach(
                                     una ->
                                             registro.registrar(
@@ -254,6 +263,7 @@ public final class FlujoDelDistributivoServicio
                                     bloqueado.aprobarContenido(
                                             quien, congelada.version(), congelada.hash(), ahora);
                             procesos.guardar(bloqueado, nuevas);
+                            avisarSiEntraEnFirma(bloqueado, nuevas);
                             nuevas.forEach(
                                     una ->
                                             registro.registrar(
@@ -269,6 +279,45 @@ public final class FlujoDelDistributivoServicio
         return leido.congelaAlAvanzar()
                 ? distributivo.congelar(periodo).hash()
                 : distributivo.hash(periodo);
+    }
+
+    // F13-H02, MD-05, D-101: en la misma transacción del paso, el aviso de que entró en firma, con
+    // la cadena de la copia de la configuración y el rol de la etapa. Después de confirmar, el
+    // oyente se los entrega a Firma. Vale para los cuatro caminos que llegan a la etapa.
+    private void avisarSiEntraEnFirma(ProcesoAprobacion proceso, List<Transicion> nuevas) {
+        nuevas.stream()
+                .filter(una -> una.tipo() == TipoDeTransicion.PASO_DE_ETAPA)
+                .filter(una -> una.hacia() == TipoDeEtapa.CONGELADO_EN_FIRMA)
+                .findFirst()
+                .ifPresent(
+                        paso ->
+                                aviso.avisar(
+                                        new AvisoDeFirma.DistributivoEnFirma(
+                                                proceso.periodo(),
+                                                paso.version(),
+                                                paso.hash(),
+                                                etapas
+                                                        .cadenaDelConsolidado(
+                                                                proceso.periodo(),
+                                                                proceso.distributivoCreadoEn())
+                                                        .stream()
+                                                        .map(
+                                                                una ->
+                                                                        new AvisoDeFirma.Paso(
+                                                                                una.orden(),
+                                                                                una.etiqueta(),
+                                                                                una.rol()))
+                                                        .toList(),
+                                                rolDe(proceso, TipoDeEtapa.CONGELADO_EN_FIRMA),
+                                                paso.momento())));
+    }
+
+    private static String rolDe(ProcesoAprobacion proceso, TipoDeEtapa tipo) {
+        return proceso.etapas().stream()
+                .filter(una -> una.tipo() == tipo)
+                .findFirst()
+                .orElseThrow()
+                .rol();
     }
 
     private DistributivoActual actual(String periodo) {
