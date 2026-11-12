@@ -12,6 +12,9 @@ def versionOpenHtmlToPdf = providers.gradleProperty('versionOpenHtmlToPdf').get(
 def versionVeraPdf = providers.gradleProperty('versionVeraPdf').get()
 
 dependencies {
+    // El contenido de la versión congelada, por la interfaz publicada de Generación en el mismo
+    // proceso (F13-H02): solo ec.mdd.generacion.puertos.entrada.
+    implementation project(':servicios:generacion')
     // F13-H02, D-101: el PDF/A del documento firmable, con el camino probado en B00-S01.
     implementation "org.apache.pdfbox:pdfbox:${versionPdfbox}"
     implementation "io.github.openhtmltopdf:openhtmltopdf-pdfbox:${versionOpenHtmlToPdf}"
