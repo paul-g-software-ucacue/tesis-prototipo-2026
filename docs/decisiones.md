@@ -2056,7 +2056,14 @@ Con la base de datos de Grype del 2026-11-07, la CI encontró además dos altas 
 - **Gitleaks** admite `.crt` solo en esa carpeta, además de la CA de prueba. Un `.p12`, `.pem` o una llave siguen rechazados ahí. El principio IX se enmienda en parche (2.2.1) para decirlo.
 - **La firma de los scripts** la hace `deploy/herramientas/FirmarDePrueba.java`, con los certificados ficticios de la CA de prueba y las bibliotecas del contenedor `distributivo`, sin dependencias nuevas.
 
-**Las raíces versionadas.** Se anotan aquí al agregarlas (T002 de F14-H02): el sujeto, la vigencia y la huella SHA-256 de `ca-prueba.crt` y de `bce-raiz.crt`.
+**Las raíces versionadas** (una prueba de Firma comprueba sus huellas):
+
+| Archivo | Sujeto | Vigencia | SHA-256 del certificado |
+|---|---|---|---|
+| `ca-prueba.crt` | CN=CA de Prueba MDD Demo, O=MDD Demo, C=EC (la del spike, `ca-prueba/generar.sh`) | 2026-10-13 a 2036-10-10 | `60ca4684e97b094971d432f6fe59b244c42f83af1dfcc8df7d40979d6349e406` |
+| `bce-raiz.crt` | CN=AUTORIDAD DE CERTIFICACION RAIZ DEL BANCO CENTRAL DEL ECUADOR, OU=ENTIDAD DE CERTIFICACION DE INFORMACION-ECIBCE, O=BANCO CENTRAL DEL ECUADOR, L=QUITO, C=EC | 2011-08-08 a 2031-08-08 | `11c7c59be9d21d216f0e8151378d53d03b314060559adc49da161ec4f7829bec` |
+
+La raíz del BCE se sacó de la cadena que trae el certificado de firma del autor (`openssl pkcs12 -cacerts -nokeys`): solo el certificado público de la raíz, autofirmado, con `CA:TRUE` y sin llave. Ni el certificado del autor ni su intermedia entran al repositorio.
 
 **Por qué.**
 - La validación del spike ya funcionó con las firmas reales de FirmaEC (D-46). Contar firmas, no campos, no depende de cómo firma FirmaEC un PDF con campos vacíos, que el spike no vio.

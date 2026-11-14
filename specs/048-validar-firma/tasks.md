@@ -57,7 +57,7 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
   Revisar el glosario (`~/Downloads/MDD_artefactos_desarrollo/requerimientos_mdd/sdd/modelo_dominio.md` §7) por «Firma», «Informe de validación», «Comprobación», «Firma nueva» y «Lista de confianza» (principio III). Los que falten van a «Documentos que hay que poner al día» de D-103, con su definición, como en D-102. Anotar aquí el resultado.
 
   **Resultado (2026-11-14):** el glosario (§7.5) ya tiene «Firma» (`Firma`), «Validación básica» (`ResultadoValidacion`, «el informe de validación»), «Lista de confianza» (`ListaConfianza`) y «Archivo firmado rechazado» (`ArchivoFirmadoRechazado`). Para no tener sinónimos (principio III), el diseño cambió `InformeDeValidacion` por `ResultadoValidacion`, `ListaDeConfianza` por `ListaConfianza` y `FirmaRechazada` por `ArchivoFirmadoRechazado`. Faltan «Comprobación» y «Firma nueva», y `Firma` como validación aceptada difiere de la entidad de `PasoCadena`: quedan en «Documentos que hay que poner al día» de D-103. La constitución pasó a 2.2.1.
-- [ ] T002 Las raíces de confianza, después de T001:
+- [X] T002 Las raíces de confianza, después de T001:
   - en `.gitleaks.toml`, una excepción para la regla `certificado-o-llave` solo en `^backend/servicios/firma/src/main/resources/firma/raices/[^/]+\.crt$`, con su comentario;
   - la misma excepción en el hook `certificado-o-llave` de `.pre-commit-config.yaml` (se cambian juntos);
   - comprobar que un `.p12` o un `.pem` en esa carpeta sigue rechazado.
@@ -104,7 +104,7 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
   - con todo firmado, nadie está en turno.
 
   Luego `FirmaRegistrada` y el campo `firmas`. Ajustar quienes construyen `FirmasDelDocumento` (con una lista vacía, por ahora).
-- [ ] T008 El validador y la lista de confianza (research §3, §5).
+- [X] T008 El validador y la lista de confianza (research §3, §5).
   - **Primero, Bouncy Castle a `implementation`** en `backend/servicios/firma/build.gradle`, con su comentario.
   - **`ValidadorPadesTest`**, en `FIR/test/.../adaptadores/salida/`, con PDF del generador de F13-H02 firmados por `FirmadorDePrueba` y la CA de prueba. Ver fallar:
     - una firma en el campo del paso, y una en un campo nuevo: las tres aprobadas, con el certificado;
@@ -122,6 +122,11 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
   - **Arquitectura:** en la prueba de ArchUnit de Firma, `org.bouncycastle` y `org.apache.pdfbox` solo en los adaptadores; nunca en el dominio, los puertos ni la aplicación.
 
   `FirmadorDePrueba` sale del paquete `spike` a uno compartido de pruebas, o se le agrega lo que falte: firmar en un campo existente, `adbe.pkcs7.detached` y alterar. Luego, el puerto `ValidadorDeFirmas` (`HallazgosDeLaFirma`), `ValidadorPades` y `ListaConfianza` en `FIR/main/.../adaptadores/salida/`.
+
+**Resultado de T002 y T008 (2026-11-14):**
+- La raíz del BCE salió de la cadena del `.p12` del autor, con `openssl pkcs12 -cacerts -nokeys -legacy`. Solo se versionó la raíz: autofirmada, `CA:TRUE` y sin llave. Su huella está en D-103 y en `ListaConfianzaTest`.
+- El firmador de prueba quedó como test fixture de Firma (`FirmasDePrueba`), para usarlo también en `apps:distributivo`. Firma como FirmaEC: `adbe.pkcs7.detached`, `/Contents` de 16 384 bytes y la cadena en el CMS.
+- `ValidadorPadesTest` (9), `ListaConfianzaTest` (8) y la regla de ArchUnit en verde.
 
 **Checkpoint**: el dominio decide y el validador dice qué encontró, sin persistencia ni HTTP.
 

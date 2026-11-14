@@ -109,4 +109,24 @@ class ListaConfianzaTest {
                                 assertThat(una.resultado())
                                         .isEqualTo(ec.mdd.firma.dominio.Resultado.RECHAZADA));
     }
+
+    @Test
+    void dadasLasRaicesDelRepositorio_cuandoSeCalculaSuHuella_entoncesSonLasDeD103()
+            throws Exception {
+        // Si alguien cambia un archivo de la lista, esta prueba lo detecta (D-103).
+        assertThat(huella("firma/raices/bce-raiz.crt"))
+                .isEqualTo("11c7c59be9d21d216f0e8151378d53d03b314060559adc49da161ec4f7829bec");
+        assertThat(huella("firma/raices/ca-prueba.crt"))
+                .isEqualTo("60ca4684e97b094971d432f6fe59b244c42f83af1dfcc8df7d40979d6349e406");
+    }
+
+    private static String huella(String recurso) throws Exception {
+        byte[] der =
+                ListaConfianza.desde(List.of(new ClassPathResource(recurso)))
+                        .raices()
+                        .getFirst()
+                        .getEncoded();
+        return java.util.HexFormat.of()
+                .formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(der));
+    }
 }
