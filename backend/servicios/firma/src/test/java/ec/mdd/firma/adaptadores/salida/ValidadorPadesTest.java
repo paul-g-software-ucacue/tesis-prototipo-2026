@@ -154,7 +154,7 @@ class ValidadorPadesTest {
 
     @Test
     void dadoUnPdfDanadoDespuesDelVigente_cuandoSeValida_entoncesSeRechazaConUnMotivoDelSistema() {
-        byte[] danado = Arrays.copyOf(original, original.length + 40);
+        byte[] danado = Arrays.copyOf(original, original.length + 64);
         byte[] basura =
                 "\n%%EOF 1 0 obj << /Type /Sig /ByteRange [".getBytes(StandardCharsets.US_ASCII);
         System.arraycopy(basura, 0, danado, original.length, basura.length);
