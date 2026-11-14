@@ -53,18 +53,18 @@ description: "Tareas de F14-H01: ver mis firmas pendientes y descargar el PDF vi
 
 **⚠️ CRITICAL**: ninguna historia empieza antes de T005.
 
-- [ ] T002 [P] En `contratos/firma/openapi.yaml`, según `contracts/firma.md`:
+- [X] T002 [P] En `contratos/firma/openapi.yaml`, según `contracts/firma.md`:
   - `listarFirmasPendientes` (`GET /api/firma/pendientes`) con `FirmaPendiente`;
   - `descargarArchivoVigente` (`GET /api/firma/documentos/{documento}/archivo`), con `application/pdf`, `Content-Disposition` y `ETag`;
   - las dos con `x-mdd-permiso: DISTRIBUTIVO:FIRMA`.
 
   En `contratos/usuarios/openapi.yaml`, `consultarIdentificacion` (`GET /interno/usuarios/{usuario}/identificacion`), según `contracts/identidad.md`. Regenerar `firma.d.ts` en la SPA. Compilar `:servicios:firma` y `:servicios:usuarios`. Después, `./gradlew :servicios:usuarios:test --rerun`.
-- [ ] T003 [P] Agregar a `contratos/comun/errores.md`, con sus 8 columnas:
+- [X] T003 [P] Agregar a `contratos/comun/errores.md`, con sus 8 columnas:
   - `FIRMA_ARCHIVO_NO_DISPONIBLE` (500);
   - `USUARIOS_SIN_IDENTIFICACION` (404).
 
   Ver fallar primero `ErroresFirmaTest` y la prueba de `ErroresUsuarios`. Después, las excepciones `ArchivoNoDisponible` y `SinIdentificacion`, y su traducción. `SinTurnoDeFirma` la traduce el controlador al 403 común, como `SinRolDeFirma`.
-- [ ] T004 [P] Migraciones, con pruebas de integración primero:
+- [X] T004 [P] Migraciones, con pruebas de integración primero:
   - `FIR/main/resources/db/migration/firma/V3__firmante_esperado.sql`, según `data-model.md`:
     - el `check` de exactamente una persona;
     - la clave foránea a `generacion_documento`, no a `documento_firmable`: verificarla bloquea la fila apuntada con `FOR KEY SHARE`, y el dueño de `documento_firmable` no tiene UPDATE (data-model.md);
@@ -72,7 +72,7 @@ description: "Tareas de F14-H01: ver mis firmas pendientes y descargar el PDF vi
     
     Ampliar `DocumentoFirmableEsquemaIntegrationTest`, insertando con el rol del proceso: una generación, su documento y sus firmantes en la misma transacción.
   - `USU/main/resources/db/migration/usuarios/V7__identificacion.sql`: la columna con el patrón `^[0-9A-Z]{1,13}$` y el índice único parcial. La prueba de integración del esquema de Usuarios: dos cuentas con la misma identificación fallan; varias sin identificación, no.
-- [ ] T005 [P] En el dominio de Firma, ver fallar primero:
+- [X] T005 [P] En el dominio de Firma, ver fallar primero:
   - `FirmanteEsperadoTest`:
     - exige exactamente uno de usuario o identificación;
     - `reconoce` por usuario y por identificación;
@@ -85,6 +85,8 @@ description: "Tareas de F14-H01: ver mis firmas pendientes y descargar el PDF vi
     - `archivoVigente` sin firmas es el original.
 
   Después, `FirmanteEsperado`, `SinTurnoDeFirma` y los métodos de `DocumentoFirmable`.
+
+  **Resultado (2026-11-14):** en vez de cambiar el registro `DocumentoFirmable`, que se construye en cuatro lugares, el turno y el archivo vigente van en un valor nuevo: `FirmasDelDocumento` (el documento, su cadena y sus firmantes), con `pasoEnTurno`, `enTurno` y `archivoVigente`, más `ArchivoDelDocumento`. Las pruebas están en `FirmasDelDocumentoTest`. El usuario esperado se compara sin distinguir mayúsculas, como lo normaliza Roles.
 
 **Checkpoint**: contratos, errores, tablas y reglas del turno listos.
 

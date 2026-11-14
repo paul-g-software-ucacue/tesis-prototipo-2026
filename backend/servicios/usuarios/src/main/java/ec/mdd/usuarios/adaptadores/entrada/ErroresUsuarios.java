@@ -8,6 +8,7 @@ import ec.mdd.usuarios.aplicacion.CredencialesInvalidas;
 import ec.mdd.usuarios.aplicacion.EventoNoReconocido;
 import ec.mdd.usuarios.aplicacion.InicioBloqueado;
 import ec.mdd.usuarios.aplicacion.SesionNoRenovable;
+import ec.mdd.usuarios.aplicacion.SinIdentificacion;
 import ec.mdd.usuarios.dominio.EntradaBitacoraInvalida;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,12 @@ class ErroresUsuarios implements CatalogoDeErrores {
                         "USUARIOS_ENTRADA_BITACORA_INVALIDA",
                         400,
                         "Entrada de bitácora no válida",
-                        "La bitácora no admite este cambio tal como llegó."));
+                        "La bitácora no admite este cambio tal como llegó."),
+                EntradaCatalogo.de(
+                        SinIdentificacion.class,
+                        "USUARIOS_SIN_IDENTIFICACION",
+                        404,
+                        "Sin identificación",
+                        "La cuenta no tiene número de identificación."));
     }
 }

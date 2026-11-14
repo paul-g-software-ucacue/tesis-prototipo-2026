@@ -1,6 +1,7 @@
 # Contrato de firma (servicio 10). Desde F13-H02: el documento firmable de la versión congelada, el
 # PDF/A del consolidado con su hash (RF-38, RNF-POR-01, D-101). Se genera solo al entrar en firma;
-# el rol de la etapa lo reintenta si falló. La descarga y las firmas son de F14.
+# el rol de la etapa lo reintenta si falló. Desde F14-H01: las firmas pendientes del usuario y la
+# descarga del archivo vigente, solo para el firmante en turno (RF-38, D-102). Las firmas, de F14.
 openapi: 3.0.3
 info:
   title: MDD · firma
@@ -12,7 +13,93 @@ security:
 tags:
   - name: DocumentoFirmable
     description: El documento firmable de la versión congelada (F13-H02).
+  - name: FirmasPendientes
+    description: Los documentos que le toca firmar al usuario y su archivo vigente (F14-H01).
 paths:
+  /api/firma/pendientes:
+    get:
+      tags: [FirmasPendientes]
+      operationId: listarFirmasPendientes
+      summary: Los documentos firmables generados cuyo paso en turno es del usuario.
+      description: >-
+        En turno está el firmante esperado del primer paso sin firma, fijado al generar el
+        documento: el Responsable designado, o la cuenta con la identificación del docente del
+        cargo (D-102). Tener el rol del paso no basta. Sin documentos en turno, una lista vacía.
+        Ordenada por periodo y versión.
+      x-mdd-permiso: DISTRIBUTIVO:FIRMA
+      responses:
+        '200':
+          description: Las firmas pendientes del usuario.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FirmaPendiente'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/firma/documentos/{documento}/archivo:
+    parameters:
+      - name: documento
+        in: path
+        required: true
+        description: El identificador del documento firmable.
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [FirmasPendientes]
+      operationId: descargarArchivoVigente
+      summary: Descarga el archivo vigente del documento, solo para el firmante en turno.
+      description: >-
+        El archivo vigente es el resultante de la última firma o, sin firmas, el original. Firma
+        recalcula su SHA-256 antes de entregarlo: nunca entrega un archivo distinto del registrado.
+        A quien no es el firmante en turno, el 403 común, también si el documento no existe o no
+        está generado: no dice si existe ni de quién es el turno.
+      x-mdd-permiso: DISTRIBUTIVO:FIRMA
+      responses:
+        '200':
+          description: El PDF vigente.
+          headers:
+            Content-Disposition:
+              description: attachment; filename="distributivo-<periodo>-v<version>.pdf".
+              schema:
+                type: string
+            ETag:
+              description: El SHA-256 del archivo, entre comillas.
+              schema:
+                type: string
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          description: >-
+            El archivo falta o su SHA-256 no es el registrado (FIRMA_ARCHIVO_NO_DISPONIBLE); no se
+            entrega nada.
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
   /api/firma/periodos/{periodo}/documento:
     parameters:
       - name: periodo
@@ -134,6 +221,34 @@ components:
         generadoPor:
           description: sistema, o quien pidió el reintento.
           type: string
+        generadoEn:
+          type: string
+          format: date-time
+    FirmaPendiente:
+      description: Un documento firmable cuyo paso en turno es del usuario.
+      type: object
+      additionalProperties: false
+      required: [documento, periodo, version, orden, rotulo, generadoEn]
+      properties:
+        documento:
+          type: string
+          format: uuid
+        periodo:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        version:
+          type: integer
+          format: int32
+          minimum: 1
+        orden:
+          description: El orden del paso en turno en el árbol de firmas.
+          type: integer
+          format: int32
+          minimum: 1
+        rotulo:
+          description: El rótulo del paso, como en el PDF («Elaborado por»).
+          type: string
+          maxLength: 60
         generadoEn:
           type: string
           format: date-time

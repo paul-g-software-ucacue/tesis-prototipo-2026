@@ -6,6 +6,7 @@ import ec.mdd.plataforma.errores.nucleo.CodigosComunes;
 import ec.mdd.plataforma.pruebas.VerificadorDeCatalogo;
 import ec.mdd.usuarios.aplicacion.CredencialesInvalidas;
 import ec.mdd.usuarios.aplicacion.EventoNoReconocido;
+import ec.mdd.usuarios.aplicacion.SinIdentificacion;
 import org.junit.jupiter.api.Test;
 
 /** Los errores de Usuarios coinciden con contratos/comun/errores.md (ADR-016). */
@@ -40,6 +41,19 @@ class ErroresUsuariosTest {
                             assertThat(entrada.definicion())
                                     .isEqualTo(CodigosComunes.EVENTO_NO_RECONOCIDO);
                             assertThat(entrada.definicion().estado()).isEqualTo(400);
+                        });
+    }
+
+    @Test
+    void dadaUnaCuentaSinIdentificacion_cuandoSeBuscaSuEntrada_entoncesEs404ConSuCodigo() {
+        assertThat(new ErroresUsuarios().entradas())
+                .filteredOn(entrada -> entrada.excepcion() == SinIdentificacion.class)
+                .singleElement()
+                .satisfies(
+                        entrada -> {
+                            assertThat(entrada.definicion().codigo())
+                                    .isEqualTo("USUARIOS_SIN_IDENTIFICACION");
+                            assertThat(entrada.definicion().estado()).isEqualTo(404);
                         });
     }
 }

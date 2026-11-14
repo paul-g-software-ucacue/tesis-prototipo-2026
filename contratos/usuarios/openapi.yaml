@@ -27,6 +27,8 @@ tags:
     description: Usuarios del MDD, para asignarles roles (F05-H02).
   - name: Bitacora
     description: Consulta de la bitácora de auditoría, solo de lectura (F17-H02, RF-44).
+  - name: Identificacion
+    description: La identificación de la persona de una cuenta, solo entre procesos (F14-H01).
 paths:
   /api/usuarios/sesion:
     post:
@@ -229,6 +231,47 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '503':
           $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /interno/usuarios/{usuario}/identificacion:
+    parameters:
+      - name: usuario
+        in: path
+        required: true
+        description: Nombre de usuario; no distingue mayúsculas y minúsculas.
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 64
+        example: vicerrectorado.demo
+    get:
+      tags: [Identificacion]
+      operationId: consultarIdentificacion
+      summary: El número de identificación de la persona de una cuenta.
+      description: >-
+        Solo entre procesos, con un token de proceso (rol PROCESO): lo usa Firma para saber si quien
+        pide es el docente de un cargo firmante (F14-H01, D-102). Es un dato personal: no va en el
+        token ni en las respuestas públicas (principio IX). La misma respuesta 404 sin cuenta y sin
+        identificación.
+      responses:
+        '200':
+          description: La identificación de la cuenta.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Identificacion'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: La cuenta no existe o no tiene identificación (USUARIOS_SIN_IDENTIFICACION).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
   /api/usuarios/bitacora:
     get:
       tags: [Bitacora]
@@ -372,6 +415,15 @@ components:
     bearer:
       $ref: '../comun/seguridad.yaml#/components/securitySchemes/bearer'
   schemas:
+    Identificacion:
+      type: object
+      additionalProperties: false
+      required: [identificacion]
+      properties:
+        identificacion:
+          description: Cédula de 10 dígitos o pasaporte de hasta 13 letras mayúsculas o dígitos.
+          type: string
+          pattern: '^[0-9A-Z]{1,13}$'
     CredencialesSesion:
       type: object
       required: [usuario, clave]

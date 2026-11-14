@@ -1,5 +1,6 @@
 package ec.mdd.firma.adaptadores.entrada;
 
+import ec.mdd.firma.dominio.ArchivoNoDisponible;
 import ec.mdd.firma.dominio.EtapaNoAdmiteGeneracion;
 import ec.mdd.firma.dominio.GeneracionFallida;
 import ec.mdd.plataforma.errores.nucleo.CatalogoDeErrores;
@@ -34,6 +35,13 @@ class ErroresFirma implements CatalogoDeErrores {
                                 "El PDF no se pudo generar",
                                 "El documento firmable no se pudo generar. Corrige lo que dice el"
                                         + " detalle y vuelve a intentarlo."),
-                        error -> List.of(new DetalleRespuesta("motivo", error.motivo()))));
+                        error -> List.of(new DetalleRespuesta("motivo", error.motivo()))),
+                EntradaCatalogo.de(
+                        ArchivoNoDisponible.class,
+                        "FIRMA_ARCHIVO_NO_DISPONIBLE",
+                        500,
+                        "Archivo no disponible",
+                        "El archivo del documento firmable no está disponible. Avisa al"
+                                + " administrador con el identificador del incidente."));
     }
 }

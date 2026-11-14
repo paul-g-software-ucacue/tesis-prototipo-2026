@@ -120,6 +120,73 @@ class DocumentoFirmableEsquemaIntegrationTest {
                 .isInstanceOf(DataAccessException.class);
     }
 
+    @Test
+    void dadoUnDocumento_cuandoSeRegistranSusFirmantesEnLaMismaTransaccion_entoncesQuedan() {
+        generacion("P5", 1, "GENERADA", null);
+        documento("P5", 1, UUID.randomUUID());
+        firmante("P5", 1, "RESPONSABLE_CONSOLIDACION", "docente.demo", null);
+        firmante("P5", 2, "VICERRECTOR", null, "0109990028");
+
+        assertThat(
+                        comoProceso
+                                .sql(
+                                        "select count(*) from firma.firmante_esperado where periodo = 'P5'")
+                                .query(Integer.class)
+                                .single())
+                .isEqualTo(2);
+    }
+
+    @Test
+    void dadoUnFirmante_cuandoNoTieneExactamenteUnaPersona_entoncesSeRechaza() {
+        generacion("P6", 1, "GENERADA", null);
+        documento("P6", 1, UUID.randomUUID());
+
+        assertThatThrownBy(() -> firmante("P6", 1, "RECTOR", null, null))
+                .isInstanceOf(DataAccessException.class);
+        assertThatThrownBy(() -> firmante("P6", 1, "RECTOR", "rectorado.demo", "0109990010"))
+                .isInstanceOf(DataAccessException.class);
+        assertThatThrownBy(() -> firmante("P6", 1, "RECTOR", null, "abc"))
+                .isInstanceOf(DataAccessException.class);
+    }
+
+    @Test
+    void dadoUnFirmanteRegistrado_cuandoElProcesoLoCambiaOLoBorra_entoncesSeRechaza() {
+        generacion("P7", 1, "GENERADA", null);
+        documento("P7", 1, UUID.randomUUID());
+        firmante("P7", 1, "RESPONSABLE_CONSOLIDACION", "docente.demo", null);
+
+        assertThatThrownBy(
+                        () ->
+                                comoProceso
+                                        .sql(
+                                                "update firma.firmante_esperado set usuario ="
+                                                        + " 'otro' where periodo = 'P7'")
+                                        .update())
+                .isInstanceOf(DataAccessException.class);
+        assertThatThrownBy(
+                        () ->
+                                comoProceso
+                                        .sql(
+                                                "delete from firma.firmante_esperado where periodo = 'P7'")
+                                        .update())
+                .isInstanceOf(DataAccessException.class);
+    }
+
+    private static void firmante(
+            String periodo, int orden, String rol, String usuario, String identificacion) {
+        comoProceso
+                .sql(
+                        "insert into firma.firmante_esperado (periodo, version, tipo, orden, rol,"
+                                + " usuario, identificacion) values (:periodo, 1, 'CONSOLIDADO',"
+                                + " :orden, :rol, :usuario, :identificacion)")
+                .param("periodo", periodo)
+                .param("orden", orden)
+                .param("rol", rol)
+                .param("usuario", usuario)
+                .param("identificacion", identificacion)
+                .update();
+    }
+
     private static void generacion(String periodo, int version, String estado, String motivo) {
         comoProceso
                 .sql(
