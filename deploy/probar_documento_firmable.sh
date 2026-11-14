@@ -14,8 +14,14 @@
 # specs/047-firmas-pendientes/contracts/demostracion.md): docente.demo, el designado, ve su firma
 # pendiente y descarga el PDF vigente con su SHA-256; quien no está en turno (consolidacion.demo,
 # con el rol pero sin la designación, y vicerrectorado.demo y rectorado.demo) no la ve y recibe
-# 403, y coordinacion.demo, sin el permiso, también. Si la base ya tiene alguno de esos datos, falla sin tocar
-# nada. Al terminar, aunque un paso falle, borra lo que creó (también los archivos del volumen),
+# 403, y coordinacion.demo, sin el permiso, también. Desde F14-H02 (D-103;
+# specs/048-validar-firma/contracts/demostracion.md): docente.demo sube cinco PDF que se rechazan con
+# su 422 (otro documento, sin firma nueva, dos firmas nuevas, alterado y de una CA ajena) sin que
+# cambien el turno ni el archivo vigente; quien no está en turno recibe 403 al subir; y las tres
+# firmas (F1, F2 y F3) se aceptan en orden, cada una sobre el vigente que deja la anterior, con su
+# resultado en la base y en la bitácora. Firma con deploy/herramientas/FirmarDePrueba.java en
+# eclipse-temurin:25-jdk, con las bibliotecas del contenedor distributivo y los certificados
+# ficticios de la CA de prueba. Si la base ya tiene alguno de esos datos, falla sin tocar nada. Al terminar, aunque un paso falle, borra lo que creó (también los archivos del volumen),
 # salvo las entradas de la bitácora, que no se pueden borrar. Termina con 0 si todos los pasos pasan
 # y con 1 si alguno falla. Nunca imprime una clave ni un token.
 #
@@ -42,6 +48,11 @@ readonly APROBACION="$GATEWAY/api/validacionocs/periodos/$PERIODO/aprobacion"
 readonly DOCUMENTO="$GATEWAY/api/firma/periodos/$PERIODO/documento"
 readonly PENDIENTES="$GATEWAY/api/firma/pendientes"
 readonly VERAPDF=verapdf/cli:v1.30.2
+# La firma de prueba (F14-H02): la imagen con la que se compilan los procesos, los certificados
+# ficticios de la CA de prueba y su contraseña ficticia (ca-prueba/generar.sh).
+readonly TEMURIN=eclipse-temurin:25-jdk
+readonly CA_PRUEBA=backend/servicios/firma/src/test/resources/ca-prueba
+readonly CLAVE_P12=cambiar-en-local-firma
 readonly CONSERVAR="${MDD_CONSERVAR:-}"
 
 # MDD_CONSERVAR deja datos en la base: solo contra el perfil local, nunca contra otro equipo.
@@ -229,9 +240,10 @@ delete from generacion.parcial_carrera where version_id in (select v.id from gen
 delete from generacion.version_distributivo where distributivo_id in (select id from generacion.distributivo where periodo in ($periodos));
 delete from generacion.distributivo where periodo in ($periodos);
 delete from validacionocs.proceso_aprobacion where periodo in ($periodos);
+delete from firma.validacion_firma where periodo in ($periodos);
 delete from firma.firmante_esperado where periodo in ($periodos);
 delete from firma.documento_firmable where periodo in ($periodos);
--- El proceso no puede cambiar los documentos ni sus firmantes (V2 y V3 de firma), así que tampoco
+-- El proceso no puede cambiar los documentos, sus firmantes ni sus validaciones (V2 a V4 de firma), así que tampoco
 -- pasa la verificación de la clave foránea al borrar su generación; sin ellos ya, se borra sin los
 -- disparadores.
 set session_replication_role = replica;
@@ -271,6 +283,8 @@ delete from eventos_datos.event_publication where serialized_event::jsonb -> 'co
         + (select count(*) from validacionocs.proceso_aprobacion where periodo in ($periodos))
         + (select count(*) from firma.generacion_documento where periodo in ($periodos))
         + (select count(*) from firma.firmante_esperado where periodo in ($periodos))
+    + (select count(*) from firma.validacion_firma where periodo in ($periodos))
+        + (select count(*) from firma.validacion_firma where periodo in ($periodos))
         + (select count(*) from roles.designacion_responsable where periodo in ($periodos))
         + (select count(*) from docentes.docente where identificacion in ($docentes))
         + (select count(*) from academico.periodo_academico where codigo in ($periodos))" 2>/dev/null || echo '?')
@@ -291,12 +305,163 @@ ya_estan=$(consultar_base "select (select count(*) from academico.unidad_organic
     + (select count(*) from validacionocs.proceso_aprobacion where periodo in ($periodos))
     + (select count(*) from firma.generacion_documento where periodo in ($periodos))
     + (select count(*) from firma.firmante_esperado where periodo in ($periodos))
+    + (select count(*) from firma.validacion_firma where periodo in ($periodos))
     + (select count(*) from roles.designacion_responsable where periodo in ($periodos))")
 if [[ $ya_estan != 0 ]]; then
     echo "FALLA  0. La base ya tiene $ya_estan unidades, carreras, datos de prueba, carreras de coordinadores o distributivos: no se tocan."
     rm -rf "$carpeta"
     exit 1
 fi
+# --- La firma de prueba (F14-H02): FirmarDePrueba.java con las bibliotecas del proceso ---
+# Una carpeta propia, sin tokens: la herramienta, los certificados ficticios y las bibliotecas de
+# /app/BOOT-INF/lib del contenedor distributivo (las mismas versiones de PDFBox y Bouncy Castle).
+firmador="$carpeta/firmador"
+preparar_firmador() {
+    [[ -d $firmador/lib ]] && return 0
+    mkdir -p "$firmador"
+    cp deploy/herramientas/FirmarDePrueba.java "$CA_PRUEBA"/firmante-[123].p12 "$firmador/"
+    if ! docker compose cp distributivo:/app/BOOT-INF/lib "$firmador/lib" >/dev/null 2>&1 \
+        || ! compgen -G "$firmador/lib/bcpkix-*.jar" >/dev/null; then
+        echo "       no se pudieron copiar PDFBox y Bouncy Castle del contenedor distributivo" >&2
+        return 1
+    fi
+    chmod -R a+rX "$firmador"
+}
+
+# firmar <entrada> <salida> <firmante 1|2|3> <campo|-> [--ca-ajena] [--alterar]: en $firmador.
+firmar() {
+    local entrada=$1 salida=$2 numero=$3 campo=$4
+    shift 4
+    preparar_firmador || return 1
+    cp "$entrada" "$firmador/entrada.pdf"
+    MDD_CLAVE_P12=$CLAVE_P12 docker run --rm -u "$(id -u):$(id -g)" -e MDD_CLAVE_P12 \
+        -v "$firmador":/t:z -w /t "$TEMURIN" java -cp 'lib/*' FirmarDePrueba.java firmar \
+        entrada.pdf salida.pdf "firmante-$numero.p12" "$campo" "$@" >"$carpeta/firmador.log" 2>&1 \
+        || { sed 's/^/       /' "$carpeta/firmador.log" | tail -3 >&2; return 1; }
+    mv "$firmador/salida.pdf" "$salida"
+}
+
+# subir <archivo>: el PDF al documento del periodo, con el token de $token.
+subir() {
+    enviar POST "$GATEWAY/api/firma/documentos/$(id_del_documento)/firmas" \
+        -F "archivo=@$1;type=application/pdf"
+}
+
+# rechazada <código>: un 422 con el código y las cuatro comprobaciones en orden en los detalles.
+rechazada() {
+    es_codigo 422 "$1" && [[ $(jq -c '[.detalles[].campo]' <<<"$cuerpo") \
+        == '["MISMO_DOCUMENTO","UNA_FIRMA_NUEVA","INTEGRIDAD","CONFIANZA"]' ]]
+}
+
+# vigente_de <usuario>: lo descarga a $carpeta/descargado.pdf; falla si no está en turno.
+vigente_de() {
+    iniciar "$1"
+    descargar "$GATEWAY/api/firma/documentos/$(id_del_documento)/archivo"
+    [[ $estado == 200 ]]
+}
+
+# turno_de <usuario> <orden> <rótulo>: su única firma pendiente del periodo es ese paso.
+turno_de() {
+    iniciar "$1"
+    pedir GET "$PENDIENTES" "Bearer $token"
+    [[ $estado == 200 && $(jq -c --arg p "$PERIODO" '[.[] | select(.periodo == $p) | [.orden, .rotulo]]' \
+        <<<"$cuerpo") == "[[$2,\"$3\"]]" ]]
+}
+
+sin_pendientes() {  # sin_pendientes <usuario>
+    iniciar "$1"
+    pedir GET "$PENDIENTES" "Bearer $token"
+    [[ $estado == 200 && $(jq -c --arg p "$PERIODO" '[.[] | select(.periodo == $p)]' <<<"$cuerpo") == '[]' ]]
+}
+
+# --- 9. Cinco PDF rechazados con su 422; el turno y el archivo vigente no cambian ---
+rechazos() {
+    local campo=firma-1-RESPONSABLE_CONSOLIDACION vigente="$carpeta/vigente.pdf"
+    vigente_de "$DESIGNADO" || return 1
+    cp "$carpeta/descargado.pdf" "$vigente"
+    subir "$CA_PRUEBA/pdfa-prueba.pdf"
+    rechazada FIRMA_NO_ES_LA_VERSION_VIGENTE || { echo "       otro documento: $estado" >&2; return 1; }
+    subir "$vigente"
+    rechazada FIRMA_SIN_UNA_FIRMA_NUEVA || { echo "       sin firma nueva: $estado" >&2; return 1; }
+    firmar "$vigente" "$carpeta/una.pdf" 1 "$campo" || return 1
+    firmar "$carpeta/una.pdf" "$carpeta/dos.pdf" 1 - || return 1
+    iniciar "$DESIGNADO"
+    subir "$carpeta/dos.pdf"
+    rechazada FIRMA_SIN_UNA_FIRMA_NUEVA || { echo "       dos firmas nuevas: $estado" >&2; return 1; }
+    firmar "$vigente" "$carpeta/alterado.pdf" 1 "$campo" --alterar || return 1
+    subir "$carpeta/alterado.pdf"
+    rechazada FIRMA_NO_INTEGRA || { echo "       alterado: $estado" >&2; return 1; }
+    firmar "$vigente" "$carpeta/ajena.pdf" 1 "$campo" --ca-ajena || return 1
+    subir "$carpeta/ajena.pdf"
+    rechazada FIRMA_SIN_CONFIANZA || { echo "       CA ajena: $estado" >&2; return 1; }
+    turno_de "$DESIGNADO" 1 "Elaborado por" || return 1
+    vigente_de "$DESIGNADO" || return 1
+    [[ $(sha256sum "$carpeta/descargado.pdf" | cut -d' ' -f1) == "$sha" ]] || return 1
+    [[ $(consultar_base "select count(*) from firma.validacion_firma where periodo = '$PERIODO'
+        and not aceptada") == 5 ]]
+}
+
+# --- 10. Quien no está en turno sube un PDF bien firmado y recibe 403, sin dejar fila ---
+fuera_de_turno() {
+    local usuario
+    [[ -f $carpeta/una.pdf ]] || return 1
+    for usuario in "$VICERRECTOR" "$RESPONSABLE"; do
+        iniciar "$usuario"
+        subir "$carpeta/una.pdf"
+        es_codigo 403 SEGURIDAD_ACCESO_NO_AUTORIZADO || { echo "       $usuario sube ($estado)" >&2; return 1; }
+    done
+    [[ $(consultar_base "select count(*) from firma.validacion_firma where periodo = '$PERIODO'") == 5 ]]
+}
+
+# aceptada: un 201 con las cuatro comprobaciones aprobadas y el certificado.
+aceptada() {
+    [[ $estado == 201 && $(jq -r '.aceptada' <<<"$cuerpo") == true ]] \
+        && [[ $(jq -c '[.comprobaciones[].resultado] | unique' <<<"$cuerpo") == '["APROBADA"]' ]] \
+        && [[ -n $(jq -r '.certificado.nombre // empty' <<<"$cuerpo") ]]
+}
+
+# --- 11. Las tres firmas en orden, cada una sobre el vigente que deja la anterior ---
+firmados=()
+tres_firmas() {
+    local i usuarios=("$DESIGNADO" "$VICERRECTOR" rectorado.demo)
+    local campos=(firma-1-RESPONSABLE_CONSOLIDACION firma-2-VICERRECTOR firma-3-RECTOR)
+    local rotulos=("Elaborado por" "Revisado por" "Aprobado por")
+    for i in 0 1 2; do
+        turno_de "${usuarios[$i]}" $((i + 1)) "${rotulos[$i]}" \
+            || { echo "       no es el turno de ${usuarios[$i]}" >&2; return 1; }
+        vigente_de "${usuarios[$i]}" || return 1
+        firmar "$carpeta/descargado.pdf" "$carpeta/firmado-$i.pdf" $((i + 1)) "${campos[$i]}" || return 1
+        iniciar "${usuarios[$i]}"
+        subir "$carpeta/firmado-$i.pdf"
+        aceptada || { echo "       ${usuarios[$i]}: $estado" >&2; return 1; }
+        [[ $(jq -r '.sha256Subido' <<<"$cuerpo") == $(sha256sum "$carpeta/firmado-$i.pdf" | cut -d' ' -f1) ]] \
+            || return 1
+        firmados+=("$(jq -r '.sha256Subido' <<<"$cuerpo")")
+        sin_pendientes "${usuarios[$i]}" || { echo "       ${usuarios[$i]} sigue en turno" >&2; return 1; }
+    done
+    for i in "${usuarios[@]}" "$RESPONSABLE"; do
+        sin_pendientes "$i" || return 1
+    done
+}
+
+# --- 12. La base, los archivos y la bitácora ---
+registro_de_firmas() {
+    local hash
+    ((${#firmados[@]} == 3)) || return 1
+    [[ $(consultar_base "select string_agg(orden::text, ',' order by orden) from firma.validacion_firma
+        where periodo = '$PERIODO' and aceptada") == 1,2,3 ]] || return 1
+    [[ $(consultar_base "select count(*) from firma.validacion_firma where periodo = '$PERIODO'
+        and not aceptada") == 5 ]] || return 1
+    for hash in "$sha" "${firmados[@]}"; do
+        docker compose exec -T distributivo test -f "/var/mdd/archivos/documentos/$hash.pdf" \
+            || { echo "       falta documentos/$hash.pdf" >&2; return 1; }
+    done
+    esperar 15 hay_entradas 3 "servicio = 'firma' and accion = 'FIRMA_ACEPTADA'" || return 1
+    esperar 15 hay_entradas 5 "servicio = 'firma' and accion = 'FIRMA_RECHAZADA'" || return 1
+    [[ $(entradas "servicio = 'firma' and accion like 'FIRMA_%' and periodo = '$PERIODO'
+        and objeto -> 'comprobaciones' ? 'CONFIANZA'") == 8 ]]
+}
+
 if [[ -n $CONSERVAR ]]; then
     trap 'rm -rf "$carpeta"' EXIT
 else
@@ -631,6 +796,10 @@ verificar 5 "Un POST del Responsable devuelve el mismo, sin otro archivo ni fila
 verificar 6 "La bitácora: una DOCUMENTO_FIRMABLE_GENERADO con la versión, el hash y el SHA-256" bitacora
 verificar 7 "$DESIGNADO ve su firma pendiente («Elaborado por») y descarga el PDF con el SHA-256 registrado" pendiente_del_designado
 verificar 8 "$RESPONSABLE, $VICERRECTOR y rectorado.demo no la ven y reciben 403; $COORDINADOR, sin permiso, 403" nadie_mas
+verificar 9 "Cinco PDF rechazados con su 422 y las cuatro comprobaciones; el turno y el vigente no cambian" rechazos
+verificar 10 "$VICERRECTOR y $RESPONSABLE, fuera de turno, reciben 403 al subir, sin dejar fila" fuera_de_turno
+verificar 11 "F1, F2 y F3 se aceptan en orden, cada una sobre el vigente anterior; al final nadie está en turno" tres_firmas
+verificar 12 "validacion_firma: 3 aceptadas y 5 rechazadas; los 4 archivos; 3 FIRMA_ACEPTADA y 5 FIRMA_RECHAZADA" registro_de_firmas
 
 if ((fallas > 0)); then
     echo "El documento firmable de punta a punta: $fallas paso(s) fallan."
