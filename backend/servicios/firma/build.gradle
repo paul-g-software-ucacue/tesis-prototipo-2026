@@ -32,9 +32,10 @@ dependencies {
     // con el camino probado en B00-S01 (D-46). Solo en los adaptadores (ArquitecturaTest).
     implementation "org.bouncycastle:bcpkix-jdk18on:${versionBouncyCastle}"
 
-    // El firmador de prueba firma como FirmaEC, con una CA en memoria (F14-H02).
+    // El firmador de prueba firma como FirmaEC, con una CA en memoria (F14-H02). Bouncy Castle va
+    // como api: FirmasDePrueba.firmante recibe un X500Name, así que quien la usa lo necesita.
     testFixturesImplementation "org.apache.pdfbox:pdfbox:${versionPdfbox}"
-    testFixturesImplementation "org.bouncycastle:bcpkix-jdk18on:${versionBouncyCastle}"
+    testFixturesApi "org.bouncycastle:bcpkix-jdk18on:${versionBouncyCastle}"
 }
 
 testing {
