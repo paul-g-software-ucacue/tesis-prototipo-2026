@@ -126,9 +126,9 @@ paths:
         NO_EVALUADA. Si las cuatro pasan, registra la firma del paso en turno: el PDF subido pasa a
         ser el archivo vigente, guardado por su SHA-256, y el turno pasa al siguiente paso. Si no,
         responde 422 con el código de la primera comprobación rechazada y las cuatro en los
-        detalles, sin guardar el archivo. Cada subida del firmante en turno deja su resultado y su
-        entrada en la bitácora. A quien no es el firmante en turno, el 403 común, sin resultado,
-        también si el documento no existe o no está generado.
+        detalles, sin guardar el archivo. Cada subida del firmante en turno deja su resultado
+        registrado y publica su cambio (RF-44). A quien no es el firmante en turno, el 403
+        común, sin resultado, también si el documento no existe o no está generado.
       x-mdd-permiso: DISTRIBUTIVO:FIRMA
       requestBody:
         required: true

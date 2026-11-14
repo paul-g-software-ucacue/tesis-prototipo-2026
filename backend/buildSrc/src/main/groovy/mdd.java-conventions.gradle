@@ -149,6 +149,12 @@ tasks.named('spotbugsIntegrationTest') {
     enabled = false
 }
 
+// Los test fixtures también son código de prueba (F14-H02: el firmador de prueba, con la contraseña
+// ficticia de la CA de prueba). Solo existen en los módulos con java-test-fixtures.
+tasks.matching { it.name == 'spotbugsTestFixtures' }.configureEach {
+    enabled = false
+}
+
 tasks.named('spotbugsMain') {
     reports {
         html.required = true
