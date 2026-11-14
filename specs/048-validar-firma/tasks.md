@@ -70,7 +70,7 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
 
 **⚠️ CRITICAL**: ninguna historia empieza antes de T008.
 
-- [ ] T003 [P] En `contratos/firma/openapi.yaml`, según `contracts/firma.md`:
+- [X] T003 [P] En `contratos/firma/openapi.yaml`, según `contracts/firma.md`:
   - `subirFirma` (`POST /api/firma/documentos/{documento}/firmas`, `multipart/form-data` con la parte `archivo`), con `x-mdd-permiso: DISTRIBUTIVO:FIRMA`;
   - los esquemas `ResultadoValidacion`, `ResultadoDeComprobacion` («`motivo` maxLength 200») y `CertificadoDeLaFirma` («`serie` pattern `^[0-9a-f]{1,64}$`»);
   - las respuestas 201, 400, 401, 403, 413, 422, 500, 502 y 504.

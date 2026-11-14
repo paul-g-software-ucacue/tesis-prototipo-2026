@@ -2,6 +2,7 @@ package ec.mdd.firma.adaptadores.entrada;
 
 import ec.mdd.firma.adaptadores.entrada.api.FirmaPendiente;
 import ec.mdd.firma.adaptadores.entrada.api.FirmasPendientesApi;
+import ec.mdd.firma.adaptadores.entrada.api.ResultadoValidacion;
 import ec.mdd.firma.dominio.SinTurnoDeFirma;
 import ec.mdd.firma.puertos.entrada.ArchivoVigente;
 import ec.mdd.firma.puertos.entrada.ConsultarFirmasPendientes;
@@ -18,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Las firmas pendientes y la descarga del archivo vigente ({@code contratos/firma/openapi.yaml},
@@ -73,5 +75,11 @@ class FirmasPendientesControlador implements FirmasPendientesApi {
                                 .build()
                                 .toString())
                 .body(new ByteArrayResource(archivo.contenido()));
+    }
+
+    @Override
+    @PreAuthorize("hasAuthority('PERMISO_DISTRIBUTIVO:FIRMA')")
+    public ResponseEntity<ResultadoValidacion> subirFirma(UUID documento, MultipartFile archivo) {
+        throw new UnsupportedOperationException("F14-H02, T011");
     }
 }

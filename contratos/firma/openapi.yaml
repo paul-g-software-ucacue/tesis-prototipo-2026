@@ -1,7 +1,9 @@
 # Contrato de firma (servicio 10). Desde F13-H02: el documento firmable de la versión congelada, el
 # PDF/A del consolidado con su hash (RF-38, RNF-POR-01, D-101). Se genera solo al entrar en firma;
 # el rol de la etapa lo reintenta si falló. Desde F14-H01: las firmas pendientes del usuario y la
-# descarga del archivo vigente, solo para el firmante en turno (RF-38, D-102). Las firmas, de F14.
+# descarga del archivo vigente, solo para el firmante en turno (RF-38, D-102). Desde F14-H02: la
+# subida del PDF firmado con su validación básica (RF-39, D-23, D-103). El firmante por su
+# certificado, la vigencia y el paso a EN_OCS, de F14-H03.
 openapi: 3.0.3
 info:
   title: MDD · firma
@@ -14,7 +16,9 @@ tags:
   - name: DocumentoFirmable
     description: El documento firmable de la versión congelada (F13-H02).
   - name: FirmasPendientes
-    description: Los documentos que le toca firmar al usuario y su archivo vigente (F14-H01).
+    description: >-
+      Los documentos que le toca firmar al usuario, su archivo vigente (F14-H01) y la subida del
+      PDF firmado (F14-H02).
 paths:
   /api/firma/pendientes:
     get:
@@ -93,6 +97,92 @@ paths:
           description: >-
             El archivo falta o su SHA-256 no es el registrado (FIRMA_ARCHIVO_NO_DISPONIBLE); no se
             entrega nada.
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/firma/documentos/{documento}/firmas:
+    parameters:
+      - name: documento
+        in: path
+        required: true
+        description: El identificador del documento firmable.
+        schema:
+          type: string
+          format: uuid
+        example: 3f2504e0-4f89-41d3-9a0c-0305e82c3301
+    post:
+      tags: [FirmasPendientes]
+      operationId: subirFirma
+      summary: Sube el PDF firmado del paso en turno y lo valida; solo el firmante en turno.
+      description: >-
+        Valida en este orden: el mismo documento (empieza con los bytes del archivo vigente), una
+        sola firma nueva, su integridad sobre el ByteRange y que su certificado llega a una raíz de
+        la lista de confianza (D-23, D-103). Una comprobación que depende de otra rechazada queda
+        NO_EVALUADA. Si las cuatro pasan, registra la firma del paso en turno: el PDF subido pasa a
+        ser el archivo vigente, guardado por su SHA-256, y el turno pasa al siguiente paso. Si no,
+        responde 422 con el código de la primera comprobación rechazada y las cuatro en los
+        detalles, sin guardar el archivo. Cada subida del firmante en turno deja su resultado y su
+        entrada en la bitácora. A quien no es el firmante en turno, el 403 común, sin resultado,
+        también si el documento no existe o no está generado.
+      x-mdd-permiso: DISTRIBUTIVO:FIRMA
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [archivo]
+              properties:
+                archivo:
+                  description: El PDF firmado, de hasta 10 MB.
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Las cuatro comprobaciones aprobadas; la firma quedó registrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoValidacion'
+        '400':
+          description: >-
+            El identificador mal formado, sin la parte archivo (COMUN_SOLICITUD_INVALIDA) o con un
+            archivo vacío (FIRMA_ARCHIVO_VACIO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '413':
+          description: >-
+            El archivo pasa de 10 MB (FIRMA_ARCHIVO_DEMASIADO_GRANDE); más de 11 MB lo corta el
+            proceso (COMUN_CONTENIDO_DEMASIADO_GRANDE).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '422':
+          description: >-
+            Se rechazó, con el código de la primera comprobación rechazada:
+            FIRMA_NO_ES_LA_VERSION_VIGENTE, FIRMA_SIN_UNA_FIRMA_NUEVA, FIRMA_NO_INTEGRA o
+            FIRMA_SIN_CONFIANZA. Los detalles llevan las cuatro comprobaciones en orden: campo es la
+            comprobación y descripcion su resultado.
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          description: >-
+            El archivo vigente falta o su SHA-256 no es el registrado (FIRMA_ARCHIVO_NO_DISPONIBLE),
+            o un error interno.
           content:
             application/json:
               schema:
@@ -251,5 +341,79 @@ components:
           type: string
           maxLength: 60
         generadoEn:
+          type: string
+          format: date-time
+    ResultadoValidacion:
+      description: >-
+        El resultado de la validación básica de un PDF subido por el firmante en turno: el informe
+        de validación (D-23, D-103).
+      type: object
+      additionalProperties: false
+      required: [id, documento, orden, aceptada, sha256Subido, subidoEn, comprobaciones]
+      properties:
+        id:
+          type: string
+          format: uuid
+        documento:
+          type: string
+          format: uuid
+        orden:
+          description: El orden del paso en turno al subir.
+          type: integer
+          format: int32
+          minimum: 1
+        aceptada:
+          type: boolean
+        sha256Subido:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+        subidoEn:
+          type: string
+          format: date-time
+        comprobaciones:
+          description: Las cuatro comprobaciones, en orden.
+          type: array
+          minItems: 4
+          maxItems: 4
+          items:
+            $ref: '#/components/schemas/ResultadoDeComprobacion'
+        certificado:
+          $ref: '#/components/schemas/CertificadoDeLaFirma'
+    ResultadoDeComprobacion:
+      type: object
+      additionalProperties: false
+      required: [comprobacion, resultado]
+      properties:
+        comprobacion:
+          type: string
+          enum: [MISMO_DOCUMENTO, UNA_FIRMA_NUEVA, INTEGRIDAD, CONFIANZA]
+        resultado:
+          type: string
+          enum: [APROBADA, RECHAZADA, NO_EVALUADA]
+        motivo:
+          description: Por qué se rechazó o no se evaluó; un texto del sistema.
+          type: string
+          maxLength: 200
+    CertificadoDeLaFirma:
+      description: El certificado de la firma nueva; solo si hay una sola firma nueva legible.
+      type: object
+      additionalProperties: false
+      required: [nombre, emisor, serie, validoDesde, validoHasta]
+      properties:
+        nombre:
+          description: El CN del sujeto.
+          type: string
+          maxLength: 200
+        emisor:
+          type: string
+          maxLength: 400
+        serie:
+          description: El número de serie, en hexadecimal.
+          type: string
+          pattern: '^[0-9a-f]{1,64}$'
+        validoDesde:
+          type: string
+          format: date-time
+        validoHasta:
           type: string
           format: date-time
