@@ -171,7 +171,7 @@ description: "Tareas de F14-H01: ver mis firmas pendientes y descargar el PDF vi
     - 400 con un uuid mal formado;
     - 500 `FIRMA_ARCHIVO_NO_DISPONIBLE` en JSON;
   - `PermisosFirmaTest`: las cuatro operaciones con su permiso.
-- [ ] T013 [P] [US1] La pantalla. Escribir primero `SPA/pantallas/firmas/FirmasPendientes.test.tsx`:
+- [X] T013 [P] [US1] La pantalla. Escribir primero `SPA/pantallas/firmas/FirmasPendientes.test.tsx`:
   - con pendientes, la tabla «Firmas pendientes» con Periodo, Versión, Paso y Generado el;
   - sin pendientes, «No tienes firmas pendientes.»;
   - «Descargar el PDF» llama una vez, se desactiva mientras descarga y guarda con el nombre del servidor;

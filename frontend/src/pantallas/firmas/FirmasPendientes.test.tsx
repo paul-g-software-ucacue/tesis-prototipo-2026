@@ -1,0 +1,165 @@
+// «Pendientes de firma» (F14-H01, D-102): el firmante en turno ve sus documentos y descarga el PDF
+// vigente; sin pendientes, lo dice; un error en la descarga se muestra con el aviso común.
+import { screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { instalarApiSimulada, json, type ApiSimulada } from '../../pruebas/apiSimulada';
+import { montarSpa } from '../../pruebas/montarSpa';
+import { cerrarSesion, iniciarSesion } from '../../sesion/almacen';
+
+const DOCUMENTO = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
+const ARCHIVO = `/api/firma/documentos/${DOCUMENTO}/archivo`;
+const PENDIENTE = {
+  documento: DOCUMENTO,
+  periodo: '2026-I',
+  version: 1,
+  orden: 1,
+  rotulo: 'Elaborado por',
+  generadoEn: '2026-11-14T08:43:00Z',
+};
+
+function sesionCon(simulada: ApiSimulada, permisos: string[]) {
+  simulada.responder(
+    'GET',
+    '/api/usuarios/sesion',
+    json(200, { usuario: 'docente.demo', nombre: 'Docente (demo)', roles: [], permisos }),
+  );
+}
+
+describe('Pendientes de firma', () => {
+  let simulada: ApiSimulada;
+
+  beforeEach(() => {
+    simulada = instalarApiSimulada();
+    simulada.responder('GET', '/api/firma/pendientes', json(200, [PENDIENTE]));
+    iniciarSesion('cabecera.cuerpo.firma', new Date(Date.now() + 60_000));
+  });
+
+  afterEach(() => {
+    cerrarSesion('cierre');
+    vi.restoreAllMocks();
+  });
+
+  async function abrir(permisos = ['DISTRIBUTIVO:FIRMA']) {
+    sesionCon(simulada, permisos);
+    montarSpa('/firmas-pendientes');
+    return screen.findByRole('table', { name: 'Firmas pendientes' });
+  }
+
+  it('muestra cada documento en turno con su periodo, versión, paso y fecha', async () => {
+    const tabla = await abrir();
+
+    const fila = within(tabla).getByText('2026-I').closest('tr') as HTMLElement;
+    expect(within(fila).getByText('1')).toBeVisible();
+    expect(within(fila).getByText('Elaborado por')).toBeVisible();
+    expect(within(fila).getByText(/14\/11\/2026|14 nov/)).toBeVisible();
+    expect(
+      within(fila).getByRole('button', { name: 'Descargar el PDF de 2026-I, versión 1' }),
+    ).toBeEnabled();
+    expect(screen.getByRole('heading', { name: 'Pendientes de firma' })).toBeVisible();
+  });
+
+  it('sin pendientes, lo dice', async () => {
+    simulada.responder('GET', '/api/firma/pendientes', json(200, []));
+    sesionCon(simulada, ['DISTRIBUTIVO:FIRMA']);
+    montarSpa('/firmas-pendientes');
+
+    expect(await screen.findByText('No tienes firmas pendientes.')).toBeVisible();
+    expect(screen.queryByRole('table', { name: 'Firmas pendientes' })).not.toBeInTheDocument();
+  });
+
+  it('descarga el PDF una vez, con el nombre del servidor, y se desactiva mientras tanto', async () => {
+    const crear = vi.fn(() => 'blob:pdf');
+    Object.assign(URL, { createObjectURL: crear, revokeObjectURL: vi.fn() });
+    let soltar: (respuesta: Response) => void = () => {};
+    simulada.responder(
+      'GET',
+      ARCHIVO,
+      () =>
+        new Promise<Response>((resolver) => {
+          soltar = resolver;
+        }),
+    );
+    // El nombre con que se guarda: el del enlace temporal que se pulsa.
+    const enlaces: string[] = [];
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      enlaces.push(this.download);
+    });
+    await abrir();
+    const boton = screen.getByRole('button', { name: 'Descargar el PDF de 2026-I, versión 1' });
+
+    await userEvent.click(boton);
+    await waitFor(() => expect(boton).toBeDisabled());
+    soltar(
+      new Response(new Blob(['%PDF-1.7']), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': 'attachment; filename="distributivo-2026-I-v1.pdf"',
+        },
+      }),
+    );
+
+    await waitFor(() => expect(crear).toHaveBeenCalledTimes(1));
+    expect(enlaces).toEqual(['distributivo-2026-I-v1.pdf']);
+    await waitFor(() => expect(boton).toBeEnabled());
+    expect(simulada.peticiones.filter((una) => new URL(una.url).pathname === ARCHIVO)).toHaveLength(
+      1,
+    );
+  });
+
+  it('si la descarga responde 403, lo dice con el aviso común', async () => {
+    simulada.responder(
+      'GET',
+      ARCHIVO,
+      json(403, {
+        titulo: 'Acceso no autorizado',
+        descripcion: 'No tienes permiso para esta operación.',
+        codigo: 'SEGURIDAD_ACCESO_NO_AUTORIZADO',
+      }),
+    );
+    await abrir();
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Descargar el PDF de 2026-I, versión 1' }),
+    );
+
+    expect(await screen.findByText('Acceso no autorizado')).toBeVisible();
+  });
+
+  it('si el archivo no está disponible, lo dice', async () => {
+    simulada.responder(
+      'GET',
+      ARCHIVO,
+      json(500, {
+        titulo: 'Archivo no disponible',
+        descripcion:
+          'El archivo del documento firmable no está disponible. Avisa al administrador con el identificador del incidente.',
+        codigo: 'FIRMA_ARCHIVO_NO_DISPONIBLE',
+      }),
+    );
+    await abrir();
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Descargar el PDF de 2026-I, versión 1' }),
+    );
+
+    expect(await screen.findByText('Archivo no disponible')).toBeVisible();
+  });
+
+  it('el menú ofrece «Pendientes de firma» a quien firma', async () => {
+    await abrir();
+
+    expect(screen.getByRole('link', { name: 'Pendientes de firma' })).toBeVisible();
+  });
+
+  it('el menú no lo ofrece a quien no firma', async () => {
+    sesionCon(simulada, ['OFERTA:LECTURA']);
+    montarSpa('/');
+
+    await screen.findByRole('link', { name: 'Inicio' });
+    expect(screen.queryByRole('link', { name: 'Pendientes de firma' })).not.toBeInTheDocument();
+  });
+});
