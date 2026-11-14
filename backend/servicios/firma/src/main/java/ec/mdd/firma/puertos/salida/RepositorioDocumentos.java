@@ -4,6 +4,7 @@ import ec.mdd.firma.dominio.DocumentoFirmable;
 import ec.mdd.firma.dominio.FirmanteEsperado;
 import ec.mdd.firma.dominio.FirmasDelDocumento;
 import ec.mdd.firma.dominio.GeneracionDeDocumento;
+import ec.mdd.firma.dominio.ResultadoValidacion;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,4 +46,10 @@ public interface RepositorioDocumentos {
 
     /** El documento de esa versión, si se generó. */
     Optional<DocumentoFirmable> documento(String periodo, int version);
+
+    /** Esqueleto (F14-H02, T009). */
+    boolean registrarValidacion(ResultadoValidacion resultado, FirmasDelDocumento validadoContra);
+
+    /** Esqueleto (F14-H02, T009). */
+    List<ResultadoValidacion> validaciones(UUID documento);
 }

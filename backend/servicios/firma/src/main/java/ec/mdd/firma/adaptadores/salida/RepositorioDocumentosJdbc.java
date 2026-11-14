@@ -6,6 +6,7 @@ import ec.mdd.firma.dominio.FirmanteEsperado;
 import ec.mdd.firma.dominio.FirmasDelDocumento;
 import ec.mdd.firma.dominio.GeneracionDeDocumento;
 import ec.mdd.firma.dominio.PasoDeFirma;
+import ec.mdd.firma.dominio.ResultadoValidacion;
 import ec.mdd.firma.puertos.salida.RepositorioDocumentos;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -160,6 +161,17 @@ public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
                 .param("tipo", TIPO)
                 .query((fila, numero) -> documento(fila))
                 .optional();
+    }
+
+    @Override
+    public boolean registrarValidacion(
+            ResultadoValidacion resultado, FirmasDelDocumento validadoContra) {
+        throw new UnsupportedOperationException("F14-H02, T009");
+    }
+
+    @Override
+    public List<ResultadoValidacion> validaciones(UUID documento) {
+        throw new UnsupportedOperationException("F14-H02, T009");
     }
 
     // El documento, la cadena de su generación y sus firmantes esperados.

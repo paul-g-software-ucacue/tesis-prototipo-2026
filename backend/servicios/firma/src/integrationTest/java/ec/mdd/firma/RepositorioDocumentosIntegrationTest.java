@@ -4,18 +4,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import ec.mdd.firma.adaptadores.salida.RepositorioDocumentosJdbc;
 import ec.mdd.firma.adaptadores.salida.TransaccionSpring;
+import ec.mdd.firma.dominio.CertificadoDeLaFirma;
+import ec.mdd.firma.dominio.Comprobacion;
 import ec.mdd.firma.dominio.DocumentoFirmable;
 import ec.mdd.firma.dominio.EstadoDeGeneracion;
+import ec.mdd.firma.dominio.FirmaRegistrada;
 import ec.mdd.firma.dominio.FirmanteEsperado;
 import ec.mdd.firma.dominio.FirmasDelDocumento;
 import ec.mdd.firma.dominio.GeneracionDeDocumento;
 import ec.mdd.firma.dominio.PasoDeFirma;
+import ec.mdd.firma.dominio.ResultadoDeComprobacion;
+import ec.mdd.firma.dominio.ResultadoValidacion;
 import ec.mdd.firma.infraestructura.FirmaFlywayConfig;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -204,6 +210,140 @@ class RepositorioDocumentosIntegrationTest {
 
         assertThat(resultados).containsExactlyInAnyOrder("registró", "ya estaba");
         assertThat(repositorio.documento(periodo, 1)).isPresent();
+    }
+
+    @Test
+    void dadaUnaValidacionAceptada_cuandoSeRegistra_entoncesEsLaFirmaDelPasoYElTurnoAvanza() {
+        FirmasDelDocumento antes = generado(periodo());
+        ResultadoValidacion aceptada = aceptada(antes, 1, "c");
+
+        boolean registrada =
+                transaccion.ejecutar(() -> repositorio.registrarValidacion(aceptada, antes));
+
+        FirmasDelDocumento despues = repositorio.firmas(antes.documento().id()).orElseThrow();
+        assertThat(registrada).isTrue();
+        assertThat(despues.firmas())
+                .containsExactly(
+                        new FirmaRegistrada(1, "c".repeat(64), 4096, "docente.demo", MOMENTO));
+        assertThat(despues.archivoVigente().sha256()).isEqualTo("c".repeat(64));
+        assertThat(despues.pasoEnTurno()).get().extracting(t -> t.paso().orden()).isEqualTo(2);
+        assertThat(repositorio.generados())
+                .filteredOn(una -> una.documento().id().equals(antes.documento().id()))
+                .singleElement()
+                .isEqualTo(despues);
+        assertThat(repositorio.validaciones(antes.documento().id())).containsExactly(aceptada);
+    }
+
+    @Test
+    void dadaUnaValidacionRechazada_cuandoSeRegistra_entoncesQuedaSinFirmaYConSusComprobaciones() {
+        FirmasDelDocumento antes = generado(periodo());
+        ResultadoValidacion rechazada =
+                new ResultadoValidacion(
+                        UUID.randomUUID(),
+                        antes.documento().id(),
+                        1,
+                        "docente.demo",
+                        MOMENTO,
+                        "d".repeat(64),
+                        512,
+                        ResultadoDeComprobacion.desde(
+                                ResultadoDeComprobacion.rechazada(
+                                        Comprobacion.MISMO_DOCUMENTO, "No es la versión vigente.")),
+                        Optional.empty());
+
+        boolean registrada =
+                transaccion.ejecutar(() -> repositorio.registrarValidacion(rechazada, antes));
+
+        assertThat(registrada).isTrue();
+        assertThat(repositorio.firmas(antes.documento().id()).orElseThrow().firmas()).isEmpty();
+        assertThat(repositorio.validaciones(antes.documento().id())).containsExactly(rechazada);
+    }
+
+    @Test
+    void
+            dadasLasFirmasCambiadasDesdeLaValidacion_cuandoSeRegistraLaAceptada_entoncesNoSeRegistra() {
+        FirmasDelDocumento antes = generado(periodo());
+        transaccion.ejecutar(() -> repositorio.registrarValidacion(aceptada(antes, 1, "c"), antes));
+
+        boolean registrada =
+                transaccion.ejecutar(
+                        () -> repositorio.registrarValidacion(aceptada(antes, 1, "e"), antes));
+
+        assertThat(registrada).isFalse();
+        assertThat(repositorio.firmas(antes.documento().id()).orElseThrow().firmas())
+                .extracting(FirmaRegistrada::sha256)
+                .containsExactly("c".repeat(64));
+        assertThat(repositorio.validaciones(antes.documento().id())).hasSize(1);
+    }
+
+    @Test
+    void dadasDosSubidasAceptadasALaVez_cuandoSeRegistran_entoncesSoloUnaEsLaFirma()
+            throws Exception {
+        FirmasDelDocumento antes = generado(periodo());
+        CountDownLatch salida = new CountDownLatch(1);
+        ExecutorService hilos = Executors.newFixedThreadPool(2);
+        List<Boolean> resultados = Collections.synchronizedList(new ArrayList<>());
+        try {
+            List<Future<?>> tareas = new ArrayList<>();
+            for (String hash : List.of("c", "e")) {
+                tareas.add(
+                        hilos.submit(
+                                () -> {
+                                    salida.await(10, TimeUnit.SECONDS);
+                                    return resultados.add(
+                                            transaccion.ejecutar(
+                                                    () ->
+                                                            repositorio.registrarValidacion(
+                                                                    aceptada(antes, 1, hash),
+                                                                    antes)));
+                                }));
+            }
+            salida.countDown();
+            for (Future<?> tarea : tareas) {
+                tarea.get(30, TimeUnit.SECONDS);
+            }
+        } finally {
+            hilos.shutdownNow();
+        }
+
+        assertThat(resultados).containsExactlyInAnyOrder(true, false);
+        assertThat(repositorio.firmas(antes.documento().id()).orElseThrow().firmas()).hasSize(1);
+    }
+
+    private FirmasDelDocumento generado(String periodo) {
+        DocumentoFirmable documento = documento(periodo);
+        GeneracionDeDocumento generada = nueva(periodo);
+        generada.completar(MOMENTO);
+        transaccion.ejecutar(
+                () -> {
+                    repositorio.guardar(generada);
+                    repositorio.registrar(documento, FIRMANTES);
+                    return null;
+                });
+        return repositorio.firmas(documento.id()).orElseThrow();
+    }
+
+    private static ResultadoValidacion aceptada(FirmasDelDocumento contra, int orden, String hash) {
+        return new ResultadoValidacion(
+                UUID.randomUUID(),
+                contra.documento().id(),
+                orden,
+                "docente.demo",
+                MOMENTO,
+                hash.repeat(64),
+                4096,
+                List.of(
+                        ResultadoDeComprobacion.aprobada(Comprobacion.MISMO_DOCUMENTO),
+                        ResultadoDeComprobacion.aprobada(Comprobacion.UNA_FIRMA_NUEVA),
+                        ResultadoDeComprobacion.aprobada(Comprobacion.INTEGRIDAD),
+                        ResultadoDeComprobacion.aprobada(Comprobacion.CONFIANZA)),
+                Optional.of(
+                        new CertificadoDeLaFirma(
+                                "Firmante Uno Prueba (F1)",
+                                "CN=CA de Prueba MDD Demo,O=MDD Demo,C=EC",
+                                "19a2b3",
+                                MOMENTO.minus(1, ChronoUnit.DAYS),
+                                MOMENTO.plus(365, ChronoUnit.DAYS))));
     }
 
     private static GeneracionDeDocumento nueva(String periodo) {

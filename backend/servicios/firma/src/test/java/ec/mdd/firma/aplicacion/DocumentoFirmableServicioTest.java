@@ -491,6 +491,18 @@ class DocumentoFirmableServicioTest {
             return Optional.ofNullable(registrados.get(periodo + "/" + version));
         }
 
+        @Override
+        public boolean registrarValidacion(
+                ResultadoValidacion resultado, FirmasDelDocumento validadoContra) {
+            // La generación del documento no registra firmas (F14-H02 las prueba aparte).
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<ResultadoValidacion> validaciones(UUID documento) {
+            throw new UnsupportedOperationException();
+        }
+
         GeneracionDeDocumento generacion(String periodo, int version) {
             return generaciones.get(periodo + "/" + version);
         }
