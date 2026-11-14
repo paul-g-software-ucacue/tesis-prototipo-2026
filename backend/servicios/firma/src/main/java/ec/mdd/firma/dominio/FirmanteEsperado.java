@@ -11,6 +11,10 @@ import java.util.regex.Pattern;
  * (ADR-003), así que se reconoce por su usuario; el Vicerrector y el Rector son el docente del
  * cargo vigente, así que se reconocen por su identificación. Tener el rol del paso no basta.
  *
+ * <p>Se fija al generar, y no se calcula al consultar, para que firme quien figura en el PDF: si
+ * después cambian la designación o el cargo, el turno no pasa a alguien cuyo nombre no está
+ * impreso. Rehacer el documento con otros firmantes es de F12-H04.
+ *
  * @param orden el orden del paso, desde 1
  * @param rol el rol del paso en la cadena
  * @param usuario el usuario esperado, o {@code null} si se reconoce por la identificación

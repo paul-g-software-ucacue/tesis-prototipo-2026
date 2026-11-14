@@ -16,6 +16,9 @@ import java.util.regex.Pattern;
  * @param nombreParaMostrar nombre que ve el usuario en la pantalla de inicio
  * @param claveHash hash Argon2id de la contraseña
  * @param activo si puede iniciar sesión
+ * @param identificacion la cédula o el pasaporte de la persona, con el formato de Docentes, si se
+ *     conoce (F14-H01, D-102): con ella Firma reconoce al docente de un cargo firmante. Es un dato
+ *     personal: no va en el token ni en las respuestas públicas
  */
 public record Usuario(
         String nombreUsuario,

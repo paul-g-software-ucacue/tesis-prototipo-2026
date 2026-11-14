@@ -228,12 +228,20 @@ description: "Tareas de F14-H01: ver mis firmas pendientes y descargar el PDF vi
 
   La limpieza de `probar_documento_firmable.sh` y de `probar_aprobacion.sh` borra `firma.firmante_esperado` de los periodos de prueba antes que `documento_firmable` y `generacion_documento`, con el superusuario. Si el dueño no puede verificar las claves foráneas, se borra con `session_replication_role = replica`, como `generacion_documento`. La revisión de «base sin datos» del paso 0 y el conteo del final la cuentan también.
 - [ ] T018 Correr todos los scripts del workflow, en su orden, sobre un perfil construido desde la rama; `probar_autenticacion.sh` debe seguir igual. Recorrer `quickstart.md` §3 a mano (autor) y medir SC-001.
-- [ ] T019 Correr completos:
+
+  **Resultado de los scripts (2026-11-14):** los 35 de `perfil-consolidado` pasan, en su orden, sobre un perfil construido desde la rama y con la base vacía (sin `probar_equipo.sh`, que simula el equipo de demostración). `probar_autenticacion.sh` pasa igual; `probar_documento_firmable.sh`, 8/8 en 44 s. Corrido solo, antes, 8/8 en 56 s, y en la base quedan la identificación de `rectorado.demo` y de `vicerrectorado.demo` y ningún firmante esperado. **Pendiente:** el recorrido a mano de `quickstart.md` §3 y SC-001, del autor.
+- [X] T019 Correr completos:
   - `./gradlew build integrationTest`;
   - `:apps:distributivo:test` y `:apps:identidad:test` (Spring Modulith);
   - la cobertura por módulo (D-32), Spotless y SpotBugs;
   - en la SPA, los tipos, ESLint, Prettier, Vitest y Playwright (SC-004, SC-005).
-- [ ] T020 Revisar el JavaDoc (principio XII):
+
+  **Resultado (2026-11-14):**
+  - `./gradlew build integrationTest jacocoTestReport jacocoTestCoverageVerification --rerun-tasks --continue`: 3 048 pruebas unitarias y 297 de integración. Fallaron 2, las mismas de F13-H02 y en módulos que esta rama no toca, y las dos pasan corridas solas: `ClienteDeEventosLocalTest` de `plataforma:eventos` y la medición de tiempo de `ConfirmarLasDiezCargasIntegrationTest` de `apps:datos`. Firma 99 y 13; Usuarios 301 y 37; `apps:distributivo` 6 de integración; Spring Modulith (`apps:*:test`) en verde.
+  - Cobertura de líneas (D-32, mínimo 60 %): Firma 85,7 %, Usuarios 84,8 %; la más baja, Roles, 77,2 %.
+  - Spotless y SpotBugs en verde.
+  - SPA: tipos, ESLint y Prettier en verde; Vitest 569/569 en 42 archivos; Playwright 126/126.
+- [X] T020 Revisar el JavaDoc (principio XII):
   - `FirmanteEsperado.reconoce` y `DocumentoFirmable.pasoEnTurno` (por qué el primer paso sin firma);
   - por qué el firmante se fija al generar;
   - `IdentificacionDeUsuarios` (por qué no viaja en el token);
