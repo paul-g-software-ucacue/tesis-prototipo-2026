@@ -1,5 +1,6 @@
 // «Pendientes de firma» (F14-H01, D-102): el firmante en turno ve sus documentos y descarga el PDF
-// vigente; sin pendientes, lo dice; un error en la descarga se muestra con el aviso común.
+// vigente; sin pendientes, lo dice; un error en la descarga se muestra con el aviso común. Desde
+// F14-H02 (D-103), sube el PDF firmado y ve el resultado de cada comprobación.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,6 +10,7 @@ import { cerrarSesion, iniciarSesion } from '../../sesion/almacen';
 
 const DOCUMENTO = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
 const ARCHIVO = `/api/firma/documentos/${DOCUMENTO}/archivo`;
+const FIRMAS = `/api/firma/documentos/${DOCUMENTO}/firmas`;
 const PENDIENTE = {
   documento: DOCUMENTO,
   periodo: '2026-I',
@@ -147,6 +149,139 @@ describe('Pendientes de firma', () => {
     );
 
     expect(await screen.findByText('Archivo no disponible')).toBeVisible();
+  });
+
+  describe('subir el PDF firmado (F14-H02)', () => {
+    const ACEPTADA = {
+      id: '5d0c6f1e-2222-4333-8444-955566667777',
+      documento: DOCUMENTO,
+      orden: 1,
+      aceptada: true,
+      sha256Subido: 'e'.repeat(64),
+      subidoEn: '2026-11-14T10:00:00Z',
+      comprobaciones: [
+        { comprobacion: 'MISMO_DOCUMENTO', resultado: 'APROBADA' },
+        { comprobacion: 'UNA_FIRMA_NUEVA', resultado: 'APROBADA' },
+        { comprobacion: 'INTEGRIDAD', resultado: 'APROBADA' },
+        { comprobacion: 'CONFIANZA', resultado: 'APROBADA' },
+      ],
+      certificado: {
+        nombre: 'Firmante Uno Prueba (F1)',
+        emisor: 'CN=CA de Prueba MDD Demo,O=MDD Demo,C=EC',
+        serie: '19a2b3',
+        validoDesde: '2026-10-13T10:00:00Z',
+        validoHasta: '2029-10-12T10:00:00Z',
+      },
+    };
+    const NO_INTEGRA = {
+      titulo: 'Firma no íntegra',
+      descripcion:
+        'La firma nueva no corresponde al contenido del PDF: el archivo cambió después de firmarlo. Vuelve a firmar el PDF descargado.',
+      codigo: 'FIRMA_NO_INTEGRA',
+      detalles: [
+        { campo: 'MISMO_DOCUMENTO', descripcion: 'Aprobada.' },
+        { campo: 'UNA_FIRMA_NUEVA', descripcion: 'Aprobada.' },
+        { campo: 'INTEGRIDAD', descripcion: 'Rechazada. La firma nueva no es íntegra.' },
+        { campo: 'CONFIANZA', descripcion: 'No evaluada. La firma nueva no es íntegra.' },
+      ],
+    };
+    const firmado = () => new File(['%PDF-1.7 firmado'], 'firmado.pdf', { type: 'application/pdf' });
+
+    it('cada fila tiene «Subir el PDF firmado», con el nombre de su fila', async () => {
+      const tabla = await abrir();
+
+      expect(
+        within(tabla).getByRole('button', { name: 'Subir el PDF firmado de 2026-I, versión 1' }),
+      ).toBeEnabled();
+    });
+
+    it('sube el archivo elegido y, si se acepta, muestra el resultado y vuelve a pedir la lista', async () => {
+      simulada.responder('POST', FIRMAS, json(201, ACEPTADA));
+      await abrir();
+      simulada.responder('GET', '/api/firma/pendientes', json(200, []));
+
+      await userEvent.upload(
+        screen.getByLabelText('Archivo firmado de 2026-I, versión 1'),
+        firmado(),
+      );
+
+      const aviso = await screen.findByRole('status', { name: /Firma registrada/ });
+      expect(within(aviso).getByText('Es la versión vigente')).toBeVisible();
+      expect(within(aviso).getByText('Tiene una sola firma nueva')).toBeVisible();
+      expect(within(aviso).getByText('La firma es íntegra')).toBeVisible();
+      expect(within(aviso).getByText('El certificado es de confianza')).toBeVisible();
+      expect(within(aviso).getAllByText('Aprobada')).toHaveLength(4);
+      expect(within(aviso).getByText(/Firmante Uno Prueba \(F1\)/)).toBeVisible();
+      const subida = simulada.peticiones.find(
+        (una) => una.method === 'POST' && new URL(una.url).pathname === FIRMAS,
+      );
+      const formulario = await subida?.formData();
+      expect((formulario?.get('archivo') as File).name).toBe('firmado.pdf');
+      expect(await screen.findByText('No tienes firmas pendientes.')).toBeVisible();
+    });
+
+    it('si se rechaza, muestra el motivo y las cuatro comprobaciones, y la fila sigue', async () => {
+      simulada.responder('POST', FIRMAS, json(422, NO_INTEGRA));
+      await abrir();
+
+      await userEvent.upload(
+        screen.getByLabelText('Archivo firmado de 2026-I, versión 1'),
+        firmado(),
+      );
+
+      const aviso = await screen.findByRole('alert');
+      expect(within(aviso).getByText('Firma no íntegra')).toBeVisible();
+      expect(within(aviso).getByText('La firma es íntegra')).toBeVisible();
+      expect(within(aviso).getByText('Rechazada. La firma nueva no es íntegra.')).toBeVisible();
+      expect(within(aviso).getByText('No evaluada. La firma nueva no es íntegra.')).toBeVisible();
+      expect(screen.getByRole('table', { name: 'Firmas pendientes' })).toBeVisible();
+    });
+
+    it('otro error se muestra con el aviso común', async () => {
+      simulada.responder(
+        'POST',
+        FIRMAS,
+        json(403, {
+          titulo: 'Acceso no autorizado',
+          descripcion: 'No tienes permiso para esta operación.',
+          codigo: 'SEGURIDAD_ACCESO_NO_AUTORIZADO',
+        }),
+      );
+      await abrir();
+
+      await userEvent.upload(
+        screen.getByLabelText('Archivo firmado de 2026-I, versión 1'),
+        firmado(),
+      );
+
+      expect(await screen.findByText('Acceso no autorizado')).toBeVisible();
+    });
+
+    it('mientras sube, los dos botones de la fila se desactivan', async () => {
+      let soltar: (respuesta: Response) => void = () => {};
+      simulada.responder(
+        'POST',
+        FIRMAS,
+        () =>
+          new Promise<Response>((resolver) => {
+            soltar = resolver;
+          }),
+      );
+      await abrir();
+
+      await userEvent.upload(
+        screen.getByLabelText('Archivo firmado de 2026-I, versión 1'),
+        firmado(),
+      );
+
+      const subir = screen.getByRole('button', { name: 'Subir el PDF firmado de 2026-I, versión 1' });
+      const descargar = screen.getByRole('button', { name: 'Descargar el PDF de 2026-I, versión 1' });
+      await waitFor(() => expect(subir).toBeDisabled());
+      expect(descargar).toBeDisabled();
+      soltar(json(422, NO_INTEGRA));
+      await waitFor(() => expect(subir).toBeEnabled());
+      expect(descargar).toBeEnabled();
+    });
   });
 
   it('el menú ofrece «Pendientes de firma» a quien firma', async () => {
