@@ -268,7 +268,7 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
   - `:apps:distributivo:test` (Spring Modulith);
   - la cobertura por módulo (D-32), Spotless y SpotBugs;
   - en la SPA, los tipos, ESLint, Prettier, Vitest y Playwright (SC-007).
-- [ ] T022 Revisar el JavaDoc (principio XII):
+- [X] T022 Revisar el JavaDoc (principio XII):
   - el orden de las comprobaciones y «no evaluada»;
   - la fecha de la cadena;
   - el relleno de ceros y la llave pública (D-46);
