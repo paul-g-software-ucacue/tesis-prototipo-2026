@@ -91,4 +91,13 @@ Hecha por el autor el 2026-11-14, con `quickstart.md` §3, sobre un perfil const
 
 ## Equipo de demostración (T024)
 
-**Pendiente**, después de la fusión: `quickstart.md` §4, solo por lectura.
+| Comprobación | Resultado |
+|---|---|
+| Fusión | PR #228 (`46001e3`), con las 12 comprobaciones en verde. La primera corrida de la CI falló al compilar `apps:distributivo` (`cannot access X500Name`): el firmador de prueba recibía un tipo de Bouncy Castle que no llegaba a quien lo usa. Se corrigió con `testFixturesApi` (`047a025`) |
+| Despliegue | `cd` exitoso; `mdd-actualizar` tomó `46001e3` y dice «Sano en 49 s», con los 5 pasos de la demo en OK; los 8 contenedores sanos con las imágenes `*-46001e3da65f` |
+| La migración | En la base, `firma` tiene la V4 (`validacion firma`) |
+| La lista de confianza | `distributivo` arrancó en 11 s: sin raíces no arrancaría, así que cargó la CA de prueba y la raíz del BCE |
+| Nada en firma | `firma.validacion_firma` y `firma.documento_firmable` vacías: 2026-I sigue en consolidación |
+| Memoria | `distributivo` usa 232 de sus 512 MiB con Bouncy Castle; `identidad`, 478 (#224) |
+
+En la demo no se llega a la firma: 2026-I está en consolidación. La subida la cubren el script en la CI y la comprobación del autor con FirmaEC en el perfil local.

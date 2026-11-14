@@ -293,7 +293,7 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
   - la tabla del script;
   - el recorrido con FirmaEC;
   - las desviaciones y los criterios de terminado.
-- [ ] T024 Fusionar solo con la aprobación del autor y con todas las comprobaciones en verde. Verificar el despliegue en el equipo de demostración (`quickstart.md` §4, solo lectura) y abrir el PR de evidencia con `Closes #63`. Borrar las ramas solo si el autor lo pide.
+- [X] T024 Fusionar solo con la aprobación del autor y con todas las comprobaciones en verde. Verificar el despliegue en el equipo de demostración (`quickstart.md` §4, solo lectura) y abrir el PR de evidencia con `Closes #63`. Borrar las ramas solo si el autor lo pide.
 
 ---
 
