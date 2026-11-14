@@ -77,7 +77,7 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
 
   Actualizar el comentario de cabecera. Compilar `mdd.contrato` para ver la interfaz generada.
 - [X] T004 [P] Los seis códigos en `contratos/comun/errores.md`, con sus 8 columnas (`contracts/firma.md`): `FIRMA_NO_ES_LA_VERSION_VIGENTE`, `FIRMA_SIN_UNA_FIRMA_NUEVA`, `FIRMA_NO_INTEGRA`, `FIRMA_SIN_CONFIANZA` (422), `FIRMA_ARCHIVO_VACIO` (400) y `FIRMA_ARCHIVO_DEMASIADO_GRANDE` (413). Ver fallar primero `ErroresFirmaTest` con las excepciones nuevas, y luego registrarlas en `FIR/main/.../adaptadores/entrada/ErroresFirma.java`.
-- [ ] T005 [P] La migración `FIR/main/resources/db/migration/firma/V4__validacion_firma.sql`, según `data-model.md`:
+- [X] T005 [P] La migración `FIR/main/resources/db/migration/firma/V4__validacion_firma.sql`, según `data-model.md`:
   - «`orden` check `>= 1`», «`sha256_subido` check `~ '^[0-9a-f]{64}$'`», «`tamano` check `> 0`»;
   - «`comprobaciones` check `jsonb_typeof = 'array'`»;
   - la clave foránea a `generacion_documento`;

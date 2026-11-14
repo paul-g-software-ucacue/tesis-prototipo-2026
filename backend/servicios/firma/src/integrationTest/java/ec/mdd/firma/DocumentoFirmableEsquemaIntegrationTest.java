@@ -172,6 +172,91 @@ class DocumentoFirmableEsquemaIntegrationTest {
                 .isInstanceOf(DataAccessException.class);
     }
 
+    @Test
+    void dadaUnaSubidaAceptadaYUnaRechazada_cuandoSeRegistran_entoncesQuedanYElProcesoLasLee() {
+        generacion("P8", 1, "GENERADA", null);
+        documento("P8", 1, UUID.randomUUID());
+        validacion("P8", 1, true, "[]");
+        validacion("P8", 2, false, "[]");
+
+        assertThat(
+                        comoProceso
+                                .sql(
+                                        "select count(*) from firma.validacion_firma where periodo = 'P8'")
+                                .query(Integer.class)
+                                .single())
+                .isEqualTo(2);
+    }
+
+    @Test
+    void
+            dadaUnaFirmaAceptada_cuandoSeRegistraOtraAceptadaDelMismoPaso_entoncesSeRechazaYUnaRechazadaNo() {
+        generacion("P9", 1, "GENERADA", null);
+        documento("P9", 1, UUID.randomUUID());
+        validacion("P9", 1, true, "[]");
+
+        assertThatThrownBy(() -> validacion("P9", 1, true, "[]"))
+                .isInstanceOf(DataAccessException.class);
+        validacion("P9", 1, false, "[]");
+        validacion("P9", 1, false, "[]");
+    }
+
+    @Test
+    void dadaUnaValidacionRegistrada_cuandoElProcesoLaCambiaOLaBorra_entoncesSeRechaza() {
+        generacion("P10", 1, "GENERADA", null);
+        documento("P10", 1, UUID.randomUUID());
+        validacion("P10", 1, false, "[]");
+
+        assertThatThrownBy(
+                        () ->
+                                comoProceso
+                                        .sql(
+                                                "update firma.validacion_firma set aceptada = true"
+                                                        + " where periodo = 'P10'")
+                                        .update())
+                .isInstanceOf(DataAccessException.class);
+        assertThatThrownBy(
+                        () ->
+                                comoProceso
+                                        .sql(
+                                                "delete from firma.validacion_firma where periodo = 'P10'")
+                                        .update())
+                .isInstanceOf(DataAccessException.class);
+    }
+
+    @Test
+    void dadaUnaValidacionInvalida_cuandoSeGuarda_entoncesSeRechaza() {
+        generacion("P11", 1, "GENERADA", null);
+        documento("P11", 1, UUID.randomUUID());
+
+        assertThatThrownBy(() -> validacion("P11", 0, false, "[]"))
+                .isInstanceOf(DataAccessException.class);
+        assertThatThrownBy(() -> validacion("P11", 1, false, "{}"))
+                .isInstanceOf(DataAccessException.class);
+        assertThatThrownBy(() -> validacion("P12", 1, false, "[]"))
+                .as("sin generación")
+                .isInstanceOf(DataAccessException.class);
+    }
+
+    private static void validacion(
+            String periodo, int orden, boolean aceptada, String comprobaciones) {
+        comoProceso
+                .sql(
+                        "insert into firma.validacion_firma (id, periodo, version, tipo, orden,"
+                                + " subido_por, subido_en, sha256_subido, tamano, aceptada,"
+                                + " comprobaciones, certificado) values (:id, :periodo, 1,"
+                                + " 'CONSOLIDADO', :orden, 'docente.demo', :momento, :sha, 2048,"
+                                + " :aceptada, cast(:comprobaciones as jsonb), null)")
+                .param("id", UUID.randomUUID())
+                .param("periodo", periodo)
+                .param("orden", orden)
+                .param("momento", Timestamp.from(Instant.now()))
+                .param("sha", "c".repeat(64))
+                .param("aceptada", aceptada)
+                .param("comprobaciones", comprobaciones)
+                .update();
+    }
+
     private static void firmante(
             String periodo, int orden, String rol, String usuario, String identificacion) {
         comoProceso
