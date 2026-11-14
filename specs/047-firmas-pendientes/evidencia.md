@@ -83,4 +83,14 @@ El autor lo dio todo por bueno.
 
 ## Equipo de demostración (T022)
 
-**Pendiente**, después de la fusión: `quickstart.md` §4, solo por lectura.
+| Comprobación | Resultado |
+|---|---|
+| Fusión | PR #226 (`21c7fc4`), con las 12 comprobaciones en verde, `perfil-consolidado` incluida |
+| Despliegue | `cd` exitoso; `mdd-actualizar` tomó `21c7fc4` y dice «Sano en 50 s», con los 5 pasos de la demo en OK; los 8 contenedores sanos con las imágenes `*-21c7fc4c2a6a` |
+| Las migraciones | En la base, `usuarios` tiene la V7 (`identificacion`) y `firma` la V3 (`firmante esperado`) |
+| Las identificaciones (FR-012) | Solo 2 cuentas tienen identificación: `rectorado.demo`, con la del Rector de los datos de prueba, y `vicerrectorado.demo`, con la del Vicerrector. `docente.demo` y `consolidacion.demo`, ninguna |
+| Nada en firma | `firma.firmante_esperado` y `firma.documento_firmable` vacías: 2026-I sigue en consolidación |
+| La pantalla (`quickstart.md` §4) | Comprobado por el autor en la demo: `consolidacion.demo`, `vicerrectorado.demo` y `rectorado.demo` tienen «Pendientes de firma» en el menú, y dice «No tienes firmas pendientes.»; `coordinacion.demo`, sin el permiso de firma, no tiene la entrada |
+| Memoria | `identidad` usa 486 de sus 512 MiB después de arrancar (#224) |
+
+En la demo no se llega a la firma, así que nadie tiene pendientes. La lista con documentos la cubren el script en la CI y la comprobación del autor en el perfil local.

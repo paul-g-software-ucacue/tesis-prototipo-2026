@@ -252,7 +252,7 @@ description: "Tareas de F14-H01: ver mis firmas pendientes y descargar el PDF vi
   - la tabla del script;
   - la comprobación a mano;
   - las desviaciones y los criterios de terminado.
-- [ ] T022 Fusionar solo con la aprobación del autor y con todas las comprobaciones en verde. Verificar el despliegue en el equipo de demostración (`quickstart.md` §4, solo lectura) y abrir el PR de evidencia con `Closes #62`. Borrar las ramas solo si el autor lo pide.
+- [X] T022 Fusionar solo con la aprobación del autor y con todas las comprobaciones en verde. Verificar el despliegue en el equipo de demostración (`quickstart.md` §4, solo lectura) y abrir el PR de evidencia con `Closes #62`. Borrar las ramas solo si el autor lo pide.
 
 ---
 
