@@ -117,10 +117,12 @@ class RepositorioDocumentosIntegrationTest {
     void dadoUnDocumentoConSusFirmantes_cuandoSeLeenSusFirmas_entoncesTraeCadenaYFirmantes() {
         String periodo = periodo();
         DocumentoFirmable documento = documento(periodo);
+        GeneracionDeDocumento generada = nueva(periodo);
+        generada.completar(MOMENTO);
 
         transaccion.ejecutar(
                 () -> {
-                    repositorio.guardar(nueva(periodo));
+                    repositorio.guardar(generada);
                     repositorio.registrar(documento, FIRMANTES);
                     return null;
                 });
@@ -134,6 +136,23 @@ class RepositorioDocumentosIntegrationTest {
                 .singleElement()
                 .isEqualTo(firmas);
         assertThat(repositorio.firmas(UUID.randomUUID())).isEmpty();
+    }
+
+    @Test
+    void dadoUnDocumentoDeUnaGeneracionQueNoEstaGenerada_cuandoSeLeen_entoncesNoAparece() {
+        String periodo = periodo();
+        DocumentoFirmable documento = documento(periodo);
+
+        transaccion.ejecutar(
+                () -> {
+                    repositorio.guardar(nueva(periodo));
+                    repositorio.registrar(documento, FIRMANTES);
+                    return null;
+                });
+
+        assertThat(repositorio.firmas(documento.id())).isEmpty();
+        assertThat(repositorio.generados())
+                .noneMatch(una -> una.documento().periodo().equals(periodo));
     }
 
     @Test

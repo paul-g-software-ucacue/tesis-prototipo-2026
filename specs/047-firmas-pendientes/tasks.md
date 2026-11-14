@@ -164,7 +164,7 @@ description: "Tareas de F14-H01: ver mis firmas pendientes y descargar el PDF vi
   Después: `ConsultarFirmasPendientes`, `DescargarArchivoVigente`, `FirmaPendiente`, `ArchivoVigente` y el servicio. Leer el archivo y pedir la identificación, fuera de transacciones.
 
   **Resultado (2026-11-14):** el servicio es uno nuevo, `FirmasPendientesServicio`, y no `DocumentoFirmableServicio`, que ya genera, consulta y reintenta: no comparten dependencias más allá del repositorio y el almacén. Sus 11 pruebas, en `FirmasPendientesServicioTest`, cubren también los casos de T014: los otros dos firmantes, otro usuario con el rol, un usuario sin identificación, un documento inexistente, FALLIDO o sin firmantes esperados, y un árbol con el Vicerrector primero, que ejercita el reconocimiento por identificación sin la subida de firmas. Varios periodos a la vez (hallazgo E1 del análisis), también.
-- [ ] T012 [US1] `FirmasPendientesControlador` y su contrato. Ver fallar primero:
+- [X] T012 [US1] `FirmasPendientesControlador` y su contrato. Ver fallar primero:
   - `FirmasPendientesContratoTest`:
     - la lista según el esquema;
     - la descarga 200 con `application/pdf`, `Content-Disposition` y `ETag`;
@@ -193,7 +193,7 @@ description: "Tareas de F14-H01: ver mis firmas pendientes y descargar el PDF vi
 
 **Independent Test**: `DocumentoFirmableServicioTest`, `FirmasPendientesContratoTest` y `probar_documento_firmable.sh`, paso 8.
 
-- [ ] T014 [US2] Ver fallar primero en `DocumentoFirmableServicioTest`:
+- [X] T014 [US2] Ver fallar primero en `DocumentoFirmableServicioTest`:
   - con el paso en turno en F1, no ven nada ni descargan, y `archivo` lanza `SinTurnoDeFirma`:
     - el Vicerrector y el Rector, aunque tengan su identificación;
     - otro usuario con el rol RESPONSABLE_CONSOLIDACION;
@@ -203,7 +203,9 @@ description: "Tareas de F14-H01: ver mis firmas pendientes y descargar el PDF vi
   - con el turno simulado en F2, el usuario con la identificación del Vicerrector lo ve y lo descarga, y uno con el rol VICERRECTOR y otra identificación, no.
 
   Después, lo que falte en el servicio.
-- [ ] T015 [US2] En `FirmasPendientesContratoTest`, `SinTurnoDeFirma` da el 403 común (`SEGURIDAD_ACCESO_NO_AUTORIZADO`), con el mismo cuerpo que sin permiso y sin decir si el documento existe.
+- [X] T015 [US2] En `FirmasPendientesContratoTest`, `SinTurnoDeFirma` da el 403 común (`SEGURIDAD_ACCESO_NO_AUTORIZADO`), con el mismo cuerpo que sin permiso y sin decir si el documento existe.
+
+  **Resultado (2026-11-14):** T014 quedó en `FirmasPendientesServicioTest` (ver T011), escrita antes del servicio. T015 está en `FirmasPendientesContratoTest`: el 403 fuera de turno tiene el mismo cuerpo que sin permiso y no menciona el documento. Para que `PermisosFirmaTest` vea pasar el permiso de la descarga, el contrato da un `example` al identificador y el doble entrega ese documento a cualquiera; el turno lo prueban el servicio y la otra prueba de contrato. El armado del solicitante desde el token pasó a `SolicitanteDelToken`, compartido por los dos controladores.
 
 **Checkpoint**: el turno se respeta en el servidor.
 
