@@ -246,9 +246,13 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
   - **El nombre del Responsable sale de la designación del periodo** (research §5), y los scripts anteriores no designaban a nadie: sin designación, la generación queda FALLIDA con «Falta el nombre del Responsable de consolidación.» (FR-008, como se diseñó). El script designa a `docente.demo`, como `probar_flujo.sh` (solo se designa a un DOCENTE), y borra la designación al terminar. En la demostración, el Vicerrector tiene que designar al Responsable del periodo antes de aprobar.
   - **La limpieza no podía borrar `firma.generacion_documento`**, aunque ya no quedaran documentos: la verificación de la clave foránea de `documento_firmable` toma `FOR KEY SHARE` como dueño de esa tabla, y V2 le quitó UPDATE. La limpieza (superusuario) la borra con `session_replication_role = replica`, después de los documentos. El proceso nunca borra generaciones.
   - **La imagen de veraPDF corre con el usuario 100**, que no lee la carpeta temporal (700, con respuestas que llevan tokens): se monta solo una subcarpeta con el PDF, de solo lectura.
-- [ ] T024 Correr todos los scripts del workflow, en su orden, sobre un perfil construido desde la rama, y anotar el tiempo de generación (SC-003). Recorrer `quickstart.md` §3 a mano: el PDF abierto, el pie, el detalle y el bloque de firmas; y el camino de fallo: sin Responsable designado (borrado en la base local, como dice el quickstart), el aviso «El PDF no se pudo generar»; designarlo otra vez, «Generar el PDF» y medir el tiempo (SC-006).
+- [X] T024 Correr todos los scripts del workflow, en su orden, sobre un perfil construido desde la rama, y anotar el tiempo de generación (SC-003). Recorrer `quickstart.md` §3 a mano: el PDF abierto, el pie, el detalle y el bloque de firmas; y el camino de fallo: sin Responsable designado (borrado en la base local, como dice el quickstart), el aviso «El PDF no se pudo generar»; designarlo otra vez, «Generar el PDF» y medir el tiempo (SC-006).
 
-  **Resultado de los scripts (2026-11-12):** los 35 del workflow pasan, en su orden, sobre un perfil construido desde la rama y con la base vacía; `probar_documento_firmable.sh`, 6/6 en 44 s, con el documento generado 1 s después de aprobar (SC-003). **Pendiente:** el recorrido a mano de `quickstart.md` §3 y el camino de fallo (SC-006), del autor.
+  **Resultado de los scripts (2026-11-12):** los 35 del workflow pasan, en su orden, sobre un perfil construido desde la rama y con la base vacía; `probar_documento_firmable.sh`, 6/6 en 44 s, con el documento generado 1 s después de aprobar (SC-003).
+
+  **Recorrido a mano del autor (2026-11-14), en el perfil local:**
+  - Camino normal: al aprobar, la tarjeta pasó a «Documento firmable generado» en el mismo minuto (03:43). El PDF, de 11 páginas, tiene el SHA-256 de la tarjeta (`8b4e6d5c59d6…`); el autor revisó el resumen, el detalle, el pie y las firmas, y los dio por buenos.
+  - Camino de fallo (SC-006): sin designación, al aprobar la tarjeta dijo «El PDF no se pudo generar» con «Falta el nombre del Responsable de consolidación.», y la versión 1 quedó congelada igual. El Vicerrector designó otra vez a `docente.demo`. `consolidacion.demo` pulsó «Generar el PDF» y lo tuvo en **40 s**, medidos desde que abrió la pantalla. En la base quedó un solo documento, generado por `consolidacion.demo`, y en la bitácora `CONTENIDO_APROBADO` (03:50:42) y una sola `DOCUMENTO_FIRMABLE_GENERADO` (03:53:47, usuario `consolidacion.demo`).
 - [X] T025 Correr completos `./gradlew build integrationTest`, `:apps:distributivo:test` y `:apps:identidad:test` (Spring Modulith), la cobertura por módulo (D-32), Spotless y SpotBugs, y en la SPA los tipos, ESLint, Prettier, Vitest y Playwright (SC-007).
 
   **Resultado (2026-11-12):**
@@ -257,7 +261,7 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
   - Spotless y SpotBugs en verde.
   - SPA: tipos, ESLint y Prettier en verde; Vitest 562/562 en 41 archivos (con el build de Gradle corriendo a la vez fallaron 3 por tiempo; solas pasan); Playwright 123/123.
 - [X] T026 Revisar el JavaDoc (principio XII): el evento interno y su oyente, `PrepararDocumentoFirmable` (por qué Aprobación entrega la cadena, MD-05), `ContenidoCongelado`, `NombreDeUsuario`, los puertos y el dominio de Firma, el generador (por qué el bloque en la última página), el almacén (por qué `CREATE_NEW`) y el oyente (por qué no relanza).
-- [ ] T027 Crear `specs/046-pdfa-consolidado/evidencia.md`, como la de 045, con:
+- [X] T027 Crear `specs/046-pdfa-consolidado/evidencia.md`, como la de 045, con:
   - las pruebas, la cobertura, la arquitectura, la SPA, los scripts, shellcheck y Gitleaks;
   - la tabla del script y el resultado de veraPDF;
   - la comprobación a mano;
