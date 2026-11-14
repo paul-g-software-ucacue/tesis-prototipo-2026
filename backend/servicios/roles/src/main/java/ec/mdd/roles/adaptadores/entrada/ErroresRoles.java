@@ -56,6 +56,13 @@ class ErroresRoles implements CatalogoDeErrores {
                         409,
                         "Periodo cerrado",
                         "El periodo está cerrado y ya no admite cambios."),
+                // F13-H02: solo por la ruta interna que usa Firma.
+                EntradaCatalogo.de(
+                        ec.mdd.roles.puertos.entrada.SinResponsable.class,
+                        "ROLES_SIN_RESPONSABLE",
+                        404,
+                        "Sin Responsable de consolidación",
+                        "El periodo no tiene Responsable de consolidación designado."),
                 EntradaCatalogo.de(
                         CarreraSinRol.class,
                         "ROLES_CARRERA_SIN_ROL",

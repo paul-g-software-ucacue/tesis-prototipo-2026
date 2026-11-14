@@ -182,7 +182,8 @@ class BitacoraContratoTest {
                 "docentes",
                 "normativa",
                 "roles",
-                "validacionocs"
+                "validacionocs",
+                "firma"
             })
     void dadoUnServicioDeLaLista_cuandoSeConsultaConSuAccion_entonces200(String servicio)
             throws Exception {

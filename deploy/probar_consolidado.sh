@@ -191,7 +191,7 @@ IFS=$'\t' read -r carrera_b _ _ <"$carpeta/b.tsv"
 limpiar() {
     docker compose up -d --wait --no-recreate --no-build datos >/dev/null 2>&1 \
         || echo "AVISO  No se pudo volver a levantar el proceso datos"
-    docker compose exec -T distributivo sh -c 'rm -f /var/mdd/archivos/*' \
+    docker compose exec -T distributivo sh -c 'rm -rf /var/mdd/archivos/*' \
         || echo "AVISO  No se pudo vaciar el almacén de archivos"
     consultar_base "delete from generacion.actividad_no_lectiva where version_id in (select v.id from generacion.version_distributivo v
     join generacion.distributivo d on d.id = v.distributivo_id where d.periodo in ($periodos));

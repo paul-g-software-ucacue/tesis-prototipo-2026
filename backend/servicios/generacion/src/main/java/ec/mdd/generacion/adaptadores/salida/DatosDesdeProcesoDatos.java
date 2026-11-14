@@ -18,6 +18,7 @@ import ec.mdd.generacion.dominio.ReglasDelPeriodo;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
 import ec.mdd.generacion.puertos.salida.DatosParaActividades;
 import ec.mdd.generacion.puertos.salida.DatosParaAfinidad;
+import ec.mdd.generacion.puertos.salida.DatosParaElDocumento;
 import ec.mdd.generacion.puertos.salida.DatosParaElPanel;
 import ec.mdd.generacion.puertos.salida.DatosParaSugerencia;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
@@ -36,7 +37,11 @@ import org.springframework.web.util.UriComponentsBuilder;
  * propios de este adaptador: Generación no comparte tipos con sus dueños (principio V).
  */
 public final class DatosDesdeProcesoDatos
-        implements DatosParaAfinidad, DatosParaSugerencia, DatosParaActividades, DatosParaElPanel {
+        implements DatosParaAfinidad,
+                DatosParaSugerencia,
+                DatosParaActividades,
+                DatosParaElPanel,
+                DatosParaElDocumento {
 
     private final ConsultasEntreProcesos consultas;
     private final URI base;
@@ -169,6 +174,20 @@ public final class DatosDesdeProcesoDatos
                 .orElseThrow(
                         () -> new IllegalStateException("Docentes no publica los cargos vigentes"));
     }
+
+    @Override
+    public Map<String, String> nombresDeCarreras() {
+        return consultas
+                .obtener(ruta("academico", "carreras"), NombreDeCarrera[].class)
+                .map(List::of)
+                .orElseThrow(() -> new IllegalStateException("Académico no publica las carreras"))
+                .stream()
+                .collect(
+                        java.util.stream.Collectors.toMap(
+                                NombreDeCarrera::codigo, NombreDeCarrera::nombre, (a, b) -> a));
+    }
+
+    private record NombreDeCarrera(String codigo, String nombre) {}
 
     private URI ruta(String... segmentos) {
         return UriComponentsBuilder.fromUri(base)

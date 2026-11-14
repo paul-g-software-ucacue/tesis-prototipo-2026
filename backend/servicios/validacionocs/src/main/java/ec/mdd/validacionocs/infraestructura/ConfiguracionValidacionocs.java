@@ -1,13 +1,16 @@
 package ec.mdd.validacionocs.infraestructura;
 
+import ec.mdd.firma.puertos.entrada.PrepararDocumentoFirmable;
 import ec.mdd.generacion.puertos.entrada.ParcialesDelDistributivo;
 import ec.mdd.generacion.puertos.requeridos.EtapaDelConsolidado;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
 import ec.mdd.validacionocs.adaptadores.entrada.EtapaParaGeneracion;
+import ec.mdd.validacionocs.adaptadores.salida.AvisoDeFirmaSpring;
 import ec.mdd.validacionocs.adaptadores.salida.DatosDesdeProcesos;
 import ec.mdd.validacionocs.adaptadores.salida.DistributivoDesdeGeneracion;
 import ec.mdd.validacionocs.adaptadores.salida.LectorYaml;
 import ec.mdd.validacionocs.adaptadores.salida.PlantillaEnRecursos;
+import ec.mdd.validacionocs.adaptadores.salida.PreparacionDelDocumento;
 import ec.mdd.validacionocs.adaptadores.salida.PublicadorDeCambios;
 import ec.mdd.validacionocs.adaptadores.salida.RepositorioConfiguracionJdbc;
 import ec.mdd.validacionocs.adaptadores.salida.RepositorioProcesoJdbc;
@@ -71,6 +74,12 @@ public class ConfiguracionValidacionocs {
     @Bean
     public RegistroDeCambios registroDeCambiosValidacionocs(ApplicationEventPublisher eventos) {
         return new PublicadorDeCambios(eventos, Clock.systemUTC());
+    }
+
+    /** Al entrar en firma, le entrega la cadena a Firma después de confirmar (MD-05, F13-H02). */
+    @Bean
+    public PreparacionDelDocumento preparacionDelDocumento(PrepararDocumentoFirmable firma) {
+        return new PreparacionDelDocumento(firma);
     }
 
     /** Las transacciones de Validación OCS (F17-H01). */
@@ -137,7 +146,8 @@ public class ConfiguracionValidacionocs {
             PlantillaDelFlujo plantilla,
             DatosDelPeriodo datos,
             RegistroDeCambios registroDeCambiosValidacionocs,
-            Transaccion transaccionValidacionocs) {
+            Transaccion transaccionValidacionocs,
+            ApplicationEventPublisher eventos) {
         return new FlujoDelDistributivoServicio(
                 distributivoDeGeneracion,
                 repositorioProceso,
@@ -145,6 +155,7 @@ public class ConfiguracionValidacionocs {
                 datos,
                 registroDeCambiosValidacionocs,
                 transaccionValidacionocs,
-                Clock.systemUTC());
+                Clock.systemUTC(),
+                new AvisoDeFirmaSpring(eventos));
     }
 }

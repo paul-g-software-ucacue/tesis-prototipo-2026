@@ -24,7 +24,14 @@ public final class FiltroDeBitacora {
 
     /** Los servicios que registran en la bitácora (D-90). */
     public static final Set<String> SERVICIOS =
-            Set.of("generacion", "academico", "docentes", "normativa", "roles", "validacionocs");
+            Set.of(
+                    "generacion",
+                    "academico",
+                    "docentes",
+                    "normativa",
+                    "roles",
+                    "validacionocs",
+                    "firma");
 
     private static final int USUARIO_MAXIMO = 64;
     private static final Pattern ACCION = Pattern.compile("^[A-Z][A-Z_]{2,39}$");

@@ -24,7 +24,14 @@ public class RegistrarEventoRecibidoServicio implements RegistrarEventoRecibido 
     public static final String ENTRADA_BITACORA = "EntradaBitacora";
 
     private static final Set<String> SERVICIOS =
-            Set.of("generacion", "academico", "docentes", "normativa", "roles", "validacionocs");
+            Set.of(
+                    "generacion",
+                    "academico",
+                    "docentes",
+                    "normativa",
+                    "roles",
+                    "validacionocs",
+                    "firma");
 
     private final RepositorioEventosRecibidos eventos;
     private final RepositorioBitacora bitacora;

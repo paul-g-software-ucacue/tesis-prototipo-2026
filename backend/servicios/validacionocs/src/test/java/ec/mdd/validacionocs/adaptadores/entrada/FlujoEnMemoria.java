@@ -112,7 +112,8 @@ final class FlujoEnMemoria {
                         return trabajo.get();
                     }
                 },
-                Clock.fixed(AHORA, ZoneOffset.UTC));
+                Clock.fixed(AHORA, ZoneOffset.UTC),
+                aviso -> {});
     }
 
     private Distributivo distributivo() {

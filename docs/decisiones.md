@@ -99,6 +99,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-98 | 2026-11-08 | Devolver desde EN_CONSOLIDACION: varias carreras, cada una con su observación, y el distributivo vuelve a BORRADOR_CARRERA; no notifica todavía | Aceptada | RF-34, RF-36, D-95, D-97 |
 | D-99 | 2026-11-08 | Generación pregunta a Aprobación por un puerto propio si el consolidado admite cambios; desde EN_REVISION_VRA no cambia | Aceptada | RF-32, RF-34, D-97, MD-04 |
 | D-100 | 2026-11-10 | Aprobar el contenido congela la versión: Generación congela por orden de Aprobación y Aprobación registra el paso a CONGELADO_EN_FIRMA; no notifica todavía | Aceptada | RF-38, RF-40, RF-59, MD-04, D-95, D-99 |
+| D-101 | 2026-11-11 | El documento firmable se genera al entrar en firma: Aprobación le entrega la cadena a Firma después de confirmar; Firma genera el PDF/A, lo guarda por su hash y reintenta a pedido | Aceptada | RF-38, RF-58, RNF-POR-01, MD-05, ADR-018, D-46, D-88, D-100 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1923,6 +1924,8 @@ Con la base de datos de Grype del 2026-11-07, la CI encontró además dos altas 
 
 **Documentos que hay que poner al día.** Ninguno.
 
+---
+
 ## D-100. Aprobar el contenido congela la versión: Generación congela por orden de Aprobación y Aprobación registra el paso a CONGELADO_EN_FIRMA; no notifica todavía
 
 - **Estado:** Aceptada · **Fecha:** 2026-11-10 · **Decidido por:** autor de la tesis
@@ -1946,5 +1949,43 @@ Con la base de datos de Grype del 2026-11-07, la CI encontró además dos altas 
 **Consecuencias.**
 - Si falla la segunda transacción, la versión queda congelada y la etapa en EN_REVISION_VRA hasta que se vuelva a aprobar; la pantalla sigue ofreciendo aprobar.
 - Sin migraciones: la columna `estado` de la versión ya admite `CONGELADA`.
+
+**Documentos que hay que poner al día.** Ninguno.
+
+---
+
+## D-101. El documento firmable se genera al entrar en firma: Aprobación le entrega la cadena a Firma después de confirmar; Firma genera el PDF/A, lo guarda por su hash y reintenta a pedido
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-11 · **Decidido por:** autor de la tesis
+- **Origen:** F13-H02 (#61); aclaraciones de `specs/046-pdfa-consolidado/spec.md` y su plan (`research.md` §1 a §9)
+- **Relacionadas:** RF-38, RF-58, RNF-POR-01, MD-05, ADR-006, ADR-018, D-46, D-83, D-88, D-100; diseño de firmas §3 y §4
+
+**Decisión.**
+- **Cuándo.** Al pasar a CONGELADO_EN_FIRMA, por cualquiera de sus caminos, Validación OCS guarda en la transacción del paso un evento interno con la versión, el hash, la cadena de firmas de la copia de la configuración y el rol de la etapa. Después de confirmar, su oyente se los entrega a Firma por la API publicada `PrepararDocumentoFirmable` (MD-05). La aprobación no espera al PDF. Firma no conoce el flujo ni depende de Validación OCS.
+- **Qué.** El PDF/A-2b del consolidado con OpenHTMLtoPDF y PDFBox, el camino de B00-S01:
+  - el resumen por carrera, los totales y el detalle por docente;
+  - el pie con la versión y el hash de contenido en cada página;
+  - en la última página, el bloque de firmas con el cargo y el nombre de cada firmante y un campo de firma vacío por cada uno.
+- **Verificación.** veraPDF en las pruebas y en el script de punta a punta, no en el proceso: necesita JAXB 2.3 y Spring Boot trae JAXB 4 (D-46).
+- **Archivo.** Firma tiene su propio almacén en el volumen de D-88, en `documentos/`, nombrado por el SHA-256 del PDF y escrito con `CREATE_NEW`: nunca se sobrescribe ni se borra. El puerto de Generación no sube a la plataforma.
+- **Una generación por versión**, con la fila de la generación bloqueada y el documento único por versión. Una entrada `DOCUMENTO_FIRMABLE_GENERADO` en la bitácora, del servicio `firma`.
+- **Fallo.** Se registra con su motivo y no se relanza: si se relanzara, el reenvío de publicaciones regeneraría el PDF cada 30 s. El reintento lo pide el rol de la etapa con «Generar el PDF», de forma idempotente.
+- **Firmantes.** El árbol de la copia de la configuración. El Rector y el Vicerrector académico, de sus cargos vigentes en Datos; el Responsable de consolidación, de su designación del periodo en Roles, con su nombre de Usuarios.
+
+**Por qué.**
+- MD-05 fija que Aprobación entrega la cadena y Firma informa por eventos. Así F14 puede publicar `CadenaDeFirmasCompleta` y `RechazoEnFirma` sin ciclo.
+- Generar después de confirmar separa la aprobación del PDF, como pidió el autor.
+- Nombrar por el hash hace el archivo verificable y sin colisiones.
+
+**Alternativas.**
+- Que Firma escuche un evento de Aprobación y le pregunte la etapa y el árbol: contra MD-05.
+- Generar dentro de la aprobación: la ata a Firma.
+- veraPDF en el proceso: JAXB 2.3 en el classpath de producción.
+- `:plataforma:archivos`: un módulo para dos clases con reglas distintas.
+
+**Consecuencias.**
+- El PDF no es reproducible byte a byte (lleva su fecha de creación): el documento firmable es el primero que se registra.
+- Los scripts que llegan a CONGELADO_EN_FIRMA limpian también `firma` y `documentos/`.
+- La bitácora admite el servicio `firma`.
 
 **Documentos que hay que poner al día.** Ninguno.

@@ -64,6 +64,25 @@ class InternoAcademicoContratoTest {
         contrato.validar(resultado);
     }
 
+    // F13-H02: los nombres de las carreras, para el documento firmable.
+    @Test
+    void dadoUnProceso_cuandoConsultaLasCarreras_entonces200SoloConCodigoYNombre()
+            throws Exception {
+        MvcResult resultado =
+                mvc.perform(get("/interno/academico/carreras").with(deProceso())).andReturn();
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString())
+                .isEqualTo("[{\"codigo\":\"TDS\",\"nombre\":\"DESARROLLO DE SOFTWARE\"}]");
+        contrato.validar(resultado);
+        assertThat(
+                        mvc.perform(get("/interno/academico/carreras").with(jwt()))
+                                .andReturn()
+                                .getResponse()
+                                .getStatus())
+                .isEqualTo(403);
+    }
+
     @Test
     void dadoUnPeriodoQueNoExiste_cuandoConsultaElEstado_entonces404() throws Exception {
         MvcResult resultado =
@@ -262,6 +281,24 @@ class InternoAcademicoContratoTest {
 
     @TestConfiguration(proxyBeanMethods = false)
     static class Dobles {
+
+        // F13-H02: una carrera; el resto de sus datos no viaja.
+        @Bean
+        ec.mdd.academico.puertos.entrada.ConsultarCarreras consultarCarreras() {
+            ec.mdd.academico.dominio.Carrera carrera =
+                    org.mockito.Mockito.mock(ec.mdd.academico.dominio.Carrera.class);
+            org.mockito.Mockito.when(carrera.codigo()).thenReturn("TDS");
+            org.mockito.Mockito.when(carrera.nombre()).thenReturn("DESARROLLO DE SOFTWARE");
+            ec.mdd.academico.puertos.entrada.ConsultarCarreras consultar =
+                    org.mockito.Mockito.mock(
+                            ec.mdd.academico.puertos.entrada.ConsultarCarreras.class);
+            org.mockito.Mockito.when(consultar.carreras())
+                    .thenReturn(
+                            java.util.List.of(
+                                    new ec.mdd.academico.puertos.entrada.CarreraConMallas(
+                                            carrera, java.util.List.of())));
+            return consultar;
+        }
 
         @Bean
         ConsultarPeriodos consultarPeriodos() {

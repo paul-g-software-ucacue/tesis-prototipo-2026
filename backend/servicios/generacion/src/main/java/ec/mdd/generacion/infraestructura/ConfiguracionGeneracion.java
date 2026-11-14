@@ -17,6 +17,7 @@ import ec.mdd.generacion.aplicacion.ConsultarConsolidadoServicio;
 import ec.mdd.generacion.aplicacion.ConsultarPanelServicio;
 import ec.mdd.generacion.aplicacion.ConsultarParcialesServicio;
 import ec.mdd.generacion.aplicacion.ConsultarSugerenciaServicio;
+import ec.mdd.generacion.aplicacion.ContenidoCongeladoServicio;
 import ec.mdd.generacion.aplicacion.CrearDistributivoServicio;
 import ec.mdd.generacion.aplicacion.EnRevisionServicio;
 import ec.mdd.generacion.aplicacion.InformeSustentadoServicio;
@@ -33,6 +34,7 @@ import ec.mdd.generacion.puertos.entrada.ConsultarConsolidado;
 import ec.mdd.generacion.puertos.entrada.ConsultarPanel;
 import ec.mdd.generacion.puertos.entrada.ConsultarParciales;
 import ec.mdd.generacion.puertos.entrada.ConsultarSugerencia;
+import ec.mdd.generacion.puertos.entrada.ContenidoCongelado;
 import ec.mdd.generacion.puertos.entrada.EnRevision;
 import ec.mdd.generacion.puertos.entrada.GestionarInforme;
 import ec.mdd.generacion.puertos.entrada.JustificarInconsistencia;
@@ -42,6 +44,7 @@ import ec.mdd.generacion.puertos.requeridos.EtapaDelConsolidado;
 import ec.mdd.generacion.puertos.salida.AlmacenDeArchivos;
 import ec.mdd.generacion.puertos.salida.DatosParaActividades;
 import ec.mdd.generacion.puertos.salida.DatosParaAfinidad;
+import ec.mdd.generacion.puertos.salida.DatosParaElDocumento;
 import ec.mdd.generacion.puertos.salida.DatosParaElPanel;
 import ec.mdd.generacion.puertos.salida.DatosParaSugerencia;
 import ec.mdd.generacion.puertos.salida.RegistroDeCambios;
@@ -100,6 +103,18 @@ public class ConfiguracionGeneracion {
             ConsultarConsolidado consultarConsolidado) {
         return new ParcialesDelDistributivoServicio(
                 distributivos, transaccion, consultarConsolidado);
+    }
+
+    /** El contenido de la versión congelada para el documento firmable (F13-H02, D-101). */
+    @Bean
+    public ContenidoCongelado contenidoCongelado(
+            RepositorioDistributivos distributivos,
+            ConsultarConsolidado consultarConsolidado,
+            DatosParaSugerencia datos,
+            DatosParaElDocumento nombres,
+            ParcialesDelDistributivo parciales) {
+        return new ContenidoCongeladoServicio(
+                distributivos, consultarConsolidado, datos, nombres, parciales);
     }
 
     /** La bitácora de los cambios del distributivo (F06-H03). */

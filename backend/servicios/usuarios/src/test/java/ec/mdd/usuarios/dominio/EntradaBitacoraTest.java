@@ -82,7 +82,8 @@ class EntradaBitacoraTest {
                 "docentes",
                 "normativa",
                 "roles",
-                "validacionocs"
+                "validacionocs",
+                "firma"
             })
     void dadoCadaServicioAdmitido_cuandoSeConstruye_entoncesSeAcepta(String servicio) {
         assertThat(EntradaBitacora.de(ID, servicio, valida()).servicio()).isEqualTo(servicio);

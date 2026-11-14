@@ -4,7 +4,7 @@ import type { components } from '../../api/generado/usuarios';
 
 export type ServicioDeBitacora = components['schemas']['ServicioDeBitacora'];
 
-/** Los seis servicios que registran en la bitácora (D-90), en el orden del contrato. */
+/** Los siete servicios que registran en la bitácora (D-90; Firma desde F13-H02), en el orden del contrato. */
 export const NOMBRE_DEL_SERVICIO: Record<ServicioDeBitacora, string> = {
   generacion: 'Generación',
   academico: 'Académico',
@@ -12,6 +12,7 @@ export const NOMBRE_DEL_SERVICIO: Record<ServicioDeBitacora, string> = {
   normativa: 'Normativa',
   roles: 'Roles',
   validacionocs: 'Validación OCS',
+  firma: 'Firma',
 };
 
 // La zona se fija: un auditor con otra en su navegador ve la misma hora (research §3). Con 24

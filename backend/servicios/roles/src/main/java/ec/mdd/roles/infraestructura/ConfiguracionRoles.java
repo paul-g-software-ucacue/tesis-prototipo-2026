@@ -13,6 +13,7 @@ import ec.mdd.roles.aplicacion.AsignarRolesInicialesServicio;
 import ec.mdd.roles.aplicacion.AsignarRolesServicio;
 import ec.mdd.roles.aplicacion.ConsultarAutorizacionServicio;
 import ec.mdd.roles.aplicacion.ConsultarFirmantesServicio;
+import ec.mdd.roles.aplicacion.ConsultarResponsableServicio;
 import ec.mdd.roles.aplicacion.DesignarResponsableServicio;
 import ec.mdd.roles.aplicacion.GestionarRolesServicio;
 import ec.mdd.roles.aplicacion.RecibirEventosServicio;
@@ -21,8 +22,10 @@ import ec.mdd.roles.puertos.entrada.AsignarRoles;
 import ec.mdd.roles.puertos.entrada.AsignarRolesIniciales;
 import ec.mdd.roles.puertos.entrada.ConsultarAutorizacion;
 import ec.mdd.roles.puertos.entrada.ConsultarFirmantes;
+import ec.mdd.roles.puertos.entrada.ConsultarResponsable;
 import ec.mdd.roles.puertos.entrada.GestionarRoles;
 import ec.mdd.roles.puertos.entrada.RecibirEventos;
+import ec.mdd.roles.puertos.requeridos.NombreDeUsuario;
 import ec.mdd.roles.puertos.salida.RegistroDeCambios;
 import ec.mdd.roles.puertos.salida.RepositorioAsignacionesDeRol;
 import ec.mdd.roles.puertos.salida.RepositorioCarrerasDeCoordinadores;
@@ -114,6 +117,16 @@ public class ConfiguracionRoles {
             RepositorioPeriodosConocidos periodos,
             Transaccion transaccionRoles) {
         return new RecibirEventosServicio(eventos, periodos, transaccionRoles, Clock.systemUTC());
+    }
+
+    /**
+     * El Responsable del periodo y su nombre, para el bloque de firmas (F13-H02). El nombre lo da
+     * Usuarios por el puerto que Roles requiere.
+     */
+    @Bean
+    public ConsultarResponsable consultarResponsable(
+            RepositorioDesignaciones designaciones, NombreDeUsuario nombres) {
+        return new ConsultarResponsableServicio(designaciones, nombres);
     }
 
     /** Quién puede firmar en un periodo (RF-58). */

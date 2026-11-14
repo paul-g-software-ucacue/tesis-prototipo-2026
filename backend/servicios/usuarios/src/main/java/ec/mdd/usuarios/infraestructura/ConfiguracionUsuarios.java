@@ -5,6 +5,8 @@ import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import ec.mdd.plataforma.eventos.ReceptorLocal;
 import ec.mdd.roles.puertos.entrada.AsignarRolesIniciales;
 import ec.mdd.roles.puertos.entrada.ConsultarAutorizacion;
+import ec.mdd.roles.puertos.requeridos.NombreDeUsuario;
+import ec.mdd.usuarios.adaptadores.entrada.NombreParaRoles;
 import ec.mdd.usuarios.adaptadores.entrada.ReceptorLocalDeUsuarios;
 import ec.mdd.usuarios.adaptadores.salida.AutorizacionDesdeRoles;
 import ec.mdd.usuarios.adaptadores.salida.EmisorJwt;
@@ -66,6 +68,12 @@ public class ConfiguracionUsuarios {
     @Bean
     public JWKSet jwksUsuarios(LlavesDeFirma llaves) {
         return llaves.jwksPublico();
+    }
+
+    /** El nombre para mostrar que Roles requiere para el bloque de firmas (F13-H02, D-99). */
+    @Bean
+    public NombreDeUsuario nombreDeUsuarioParaRoles(RepositorioUsuarios usuarios) {
+        return new NombreParaRoles(usuarios);
     }
 
     @Bean

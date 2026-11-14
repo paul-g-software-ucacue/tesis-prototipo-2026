@@ -237,7 +237,7 @@ delete from eventos_datos.event_publication where serialized_event::jsonb -> 'co
         + (select count(*) from docentes.docente where identificacion in ($docentes))
         + (select count(*) from academico.periodo_academico where codigo in ($periodos))" 2>/dev/null || echo '?')
     [[ $quedan == 0 ]] || echo "AVISO  Quedaron $quedan filas creadas por el script"
-    docker compose exec -T distributivo sh -c 'rm -f /var/mdd/archivos/*' >/dev/null 2>&1 \
+    docker compose exec -T distributivo sh -c 'rm -rf /var/mdd/archivos/*' >/dev/null 2>&1 \
         || echo "AVISO  No se pudo vaciar el almacén de archivos"
     rm -rf "$carpeta"
 }

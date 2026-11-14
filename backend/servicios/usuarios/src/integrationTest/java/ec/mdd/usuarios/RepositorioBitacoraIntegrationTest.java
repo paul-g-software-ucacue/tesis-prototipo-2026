@@ -85,6 +85,29 @@ class RepositorioBitacoraIntegrationTest {
         assertThat(fila.get("recibida_en")).isNotNull();
     }
 
+    // F13-H02: Firma también registra en la bitácora.
+    @Test
+    void dadaUnaEntradaDeFirma_cuandoSeRegistra_entoncesLaBaseLaAdmite() {
+        Map<String, Object> contenido = new HashMap<>();
+        contenido.put("usuario", "sistema");
+        contenido.put("accion", "DOCUMENTO_FIRMABLE_GENERADO");
+        contenido.put("momento", "2026-11-11T15:00:00Z");
+        contenido.put("periodo", "2026-I");
+        contenido.put("objeto", Map.of("periodo", "2026-I", "version", 1));
+        contenido.put("nuevo", Map.of("estado", "GENERADO"));
+        EntradaBitacora entrada = EntradaBitacora.de(UUID.randomUUID(), "firma", contenido);
+
+        repositorio.registrar(entrada);
+
+        assertThat(
+                        comoProceso
+                                .sql("select servicio from usuarios.bitacora where id_evento = :id")
+                                .param("id", entrada.idEvento())
+                                .query(String.class)
+                                .single())
+                .isEqualTo("firma");
+    }
+
     @Test
     void dadoUnaEntradaSinPeriodoNiAnterior_cuandoSeRegistra_entoncesQuedanNulos() {
         EntradaBitacora entrada = entrada(null, false, true);

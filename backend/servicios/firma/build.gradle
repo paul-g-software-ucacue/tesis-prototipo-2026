@@ -3,6 +3,7 @@
 // SpotBugs. Vale para todos los servicios, centrales o no.
 plugins {
     id 'mdd.servicio'
+    id 'mdd.contrato'
 }
 
 def versionBouncyCastle = providers.gradleProperty('versionBouncyCastle').get()
@@ -10,14 +11,30 @@ def versionPdfbox = providers.gradleProperty('versionPdfbox').get()
 def versionOpenHtmlToPdf = providers.gradleProperty('versionOpenHtmlToPdf').get()
 def versionVeraPdf = providers.gradleProperty('versionVeraPdf').get()
 
+dependencies {
+    // El contenido de la versión congelada, por la interfaz publicada de Generación en el mismo
+    // proceso (F13-H02): solo ec.mdd.generacion.puertos.entrada.
+    implementation project(':servicios:generacion')
+    // Los nombres de los firmantes, por las rutas internas de Datos e Identidad (ADR-023).
+    implementation project(':plataforma:eventos')
+    // Las generaciones y los documentos, en el esquema firma (F13-H02); la cadena va en jsonb.
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'tools.jackson.core:jackson-databind'
+    // El permiso de cada operación y quién la pide, en el token (ADR-021).
+    implementation 'org.springframework.security:spring-security-oauth2-resource-server'
+    implementation 'org.springframework.security:spring-security-oauth2-jose'
+    // F13-H02, D-101: el PDF/A del documento firmable, con el camino probado en B00-S01.
+    implementation "org.apache.pdfbox:pdfbox:${versionPdfbox}"
+    implementation "io.github.openhtmltopdf:openhtmltopdf-pdfbox:${versionOpenHtmlToPdf}"
+}
+
 testing {
     suites {
         test {
             dependencies {
-                // Solo en pruebas: spike B00-S01 (D-44). No entran al runtimeClasspath ni a la imagen.
-                implementation "org.apache.pdfbox:pdfbox:${versionPdfbox}"
+                // Solo en pruebas: la validación del spike B00-S01 (D-44) y la verificación de
+                // PDF/A con veraPDF, que necesita JAXB 2.3 (D-46, D-101). No entran a la imagen.
                 implementation "org.bouncycastle:bcpkix-jdk18on:${versionBouncyCastle}"
-                implementation "io.github.openhtmltopdf:openhtmltopdf-pdfbox:${versionOpenHtmlToPdf}"
                 implementation "org.verapdf:validation-model:${versionVeraPdf}"
             }
         }

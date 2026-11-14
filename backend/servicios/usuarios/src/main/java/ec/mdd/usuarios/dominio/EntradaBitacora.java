@@ -40,7 +40,14 @@ public final class EntradaBitacora {
     public static final int TAMANO_MAXIMO = 64 * 1024;
 
     private static final Set<String> SERVICIOS =
-            Set.of("generacion", "academico", "docentes", "normativa", "roles", "validacionocs");
+            Set.of(
+                    "generacion",
+                    "academico",
+                    "docentes",
+                    "normativa",
+                    "roles",
+                    "validacionocs",
+                    "firma");
     private static final Set<String> CAMPOS =
             Set.of("usuario", "accion", "momento", "periodo", "objeto", "anterior", "nuevo");
     private static final Pattern ACCION = Pattern.compile("^[A-Z][A-Z_]{2,39}$");

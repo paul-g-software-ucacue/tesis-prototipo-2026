@@ -220,6 +220,12 @@ delete from generacion.parcial_carrera where version_id in (select v.id from gen
 delete from generacion.version_distributivo where distributivo_id in (select id from generacion.distributivo where periodo in ($periodos));
 delete from generacion.distributivo where periodo in ($periodos);
 delete from validacionocs.proceso_aprobacion where periodo in ($periodos);
+delete from firma.documento_firmable where periodo in ($periodos);
+-- El proceso no puede cambiar los documentos (V2 de firma), así que tampoco pasa la verificación de
+-- la clave foránea al borrar su generación; sin documentos ya, se borra sin los disparadores.
+set session_replication_role = replica;
+delete from firma.generacion_documento where periodo in ($periodos);
+set session_replication_role = origin;
 delete from generacion.registro_cambio where momento >= '$inicio';
 delete from docentes.proyecto where codigo in ($proyectos);
 delete from docentes.cargo where docente in ($docentes);
@@ -251,10 +257,11 @@ delete from eventos_datos.event_publication where serialized_event::jsonb -> 'co
     quedan=$(consultar_base "select (select count(*) from generacion.distributivo)
         + (select count(*) from generacion.registro_cambio where momento >= '$inicio')
         + (select count(*) from validacionocs.proceso_aprobacion where periodo in ($periodos))
+        + (select count(*) from firma.generacion_documento where periodo in ($periodos))
         + (select count(*) from docentes.docente where identificacion in ($docentes))
         + (select count(*) from academico.periodo_academico where codigo in ($periodos))" 2>/dev/null || echo '?')
     [[ $quedan == 0 ]] || echo "AVISO  Quedaron $quedan filas creadas por el script"
-    docker compose exec -T distributivo sh -c 'rm -f /var/mdd/archivos/*' >/dev/null 2>&1 \
+    docker compose exec -T distributivo sh -c 'rm -rf /var/mdd/archivos/*' >/dev/null 2>&1 \
         || echo "AVISO  No se pudo vaciar el almacén de archivos"
     rm -rf "$carpeta"
 }
@@ -267,7 +274,8 @@ ya_estan=$(consultar_base "select (select count(*) from academico.unidad_organic
     + (select count(*) from docentes.proyecto where codigo in ($proyectos))
     + (select count(*) from roles.carrera_de_coordinador)
     + (select count(*) from generacion.distributivo)
-    + (select count(*) from validacionocs.proceso_aprobacion where periodo in ($periodos))")
+    + (select count(*) from validacionocs.proceso_aprobacion where periodo in ($periodos))
+    + (select count(*) from firma.generacion_documento where periodo in ($periodos))")
 if [[ $ya_estan != 0 ]]; then
     echo "FALLA  0. La base ya tiene $ya_estan unidades, carreras, datos de prueba, carreras de coordinadores o distributivos: no se tocan."
     rm -rf "$carpeta"

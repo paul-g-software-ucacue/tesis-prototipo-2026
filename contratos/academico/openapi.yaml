@@ -935,6 +935,29 @@ paths:
           $ref: '#/components/responses/NoEncontrado'
         '500':
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+  /interno/academico/carreras:
+    get:
+      tags: [Interno]
+      operationId: consultarNombresDeCarreras
+      summary: Devuelve el código y el nombre de cada carrera.
+      description: >-
+        Solo entre procesos, con el token de proceso: lo usa Generación para el contenido del
+        documento firmable, que nombra cada carrera (F13-H02, ADR-023). Sin mallas ni asignaturas.
+      responses:
+        '200':
+          description: Las carreras, por código.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NombreDeCarrera'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
   /interno/academico/periodos/{codigo}/asignaturas-ofertadas:
     parameters:
       - $ref: '#/components/parameters/Codigo'
@@ -1254,6 +1277,15 @@ components:
           type: string
         estado:
           $ref: '#/components/schemas/EstadoPeriodo'
+    NombreDeCarrera:
+      type: object
+      additionalProperties: false
+      required: [codigo, nombre]
+      properties:
+        codigo:
+          type: string
+        nombre:
+          type: string
     ParaleloDeLaOferta:
       description: Lo que Generación necesita de una asignatura-paralelo (principio IX).
       type: object

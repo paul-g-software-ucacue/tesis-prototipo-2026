@@ -8,6 +8,7 @@ import ec.mdd.roles.dominio.NombreRepetido;
 import ec.mdd.roles.dominio.RolAsignado;
 import ec.mdd.roles.dominio.RolPredefinido;
 import ec.mdd.roles.dominio.SinAdministrador;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /** Los errores de Roles coinciden con contratos/comun/errores.md (ADR-016). */
@@ -40,13 +41,17 @@ class ErroresRolesTest {
                                 ec.mdd.roles.puertos.entrada.UsuarioSinCarrera.class,
                                 "ROLES_USUARIO_SIN_CARRERA"),
                         org.assertj.core.groups.Tuple.tuple(
+                                ec.mdd.roles.puertos.entrada.SinResponsable.class,
+                                "ROLES_SIN_RESPONSABLE"),
+                        org.assertj.core.groups.Tuple.tuple(
                                 ec.mdd.roles.aplicacion.EventoNoReconocido.class,
                                 "COMUN_EVENTO_NO_RECONOCIDO"));
         assertThat(new ErroresRoles().entradas())
                 .filteredOn(entrada -> entrada.definicion().codigo().startsWith("ROLES_"))
                 .filteredOn(
                         entrada ->
-                                !"ROLES_USUARIO_SIN_CARRERA".equals(entrada.definicion().codigo()))
+                                !List.of("ROLES_USUARIO_SIN_CARRERA", "ROLES_SIN_RESPONSABLE")
+                                        .contains(entrada.definicion().codigo()))
                 .allMatch(entrada -> entrada.definicion().estado() == 409);
     }
 }

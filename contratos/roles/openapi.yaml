@@ -468,6 +468,45 @@ paths:
           $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
         '500':
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+  /interno/roles/periodos/{periodo}/responsable:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2026-I
+    get:
+      tags: [Autorizacion]
+      operationId: consultarResponsableDelPeriodo
+      summary: Devuelve el Responsable de consolidación designado en el periodo y su nombre.
+      description: >-
+        Solo entre procesos, con un token de proceso: lo usa Firma para el bloque de firmas del
+        documento firmable (F13-H02, D-101). El nombre es el nombre para mostrar del usuario; si no
+        tiene, el nombre de usuario. No lleva más datos del usuario (principio IX).
+      responses:
+        '200':
+          description: El Responsable del periodo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsableDelPeriodo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: El periodo no tiene Responsable de consolidación designado (ROLES_SIN_RESPONSABLE).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
   /interno/roles/autorizaciones/{usuario}:
     parameters:
       - $ref: '#/components/parameters/Usuario'
@@ -688,6 +727,16 @@ components:
         responsableDesignado:
           description: Si el periodo tiene Responsable de consolidación designado.
           type: boolean
+    ResponsableDelPeriodo:
+      type: object
+      additionalProperties: false
+      required: [usuario, nombre]
+      properties:
+        usuario:
+          type: string
+        nombre:
+          description: El nombre para mostrar; si no tiene, el nombre de usuario.
+          type: string
     Autorizacion:
       type: object
       required: [usuario, roles, permisos]

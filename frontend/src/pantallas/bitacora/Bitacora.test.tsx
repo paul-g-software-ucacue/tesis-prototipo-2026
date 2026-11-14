@@ -184,6 +184,16 @@ describe('Bitácora', () => {
     ).toEqual(['Todas', 'ACTIVIDAD_GUARDADA', 'ACTIVIDAD_QUITADA']);
   });
 
+  it('el filtro por servicio ofrece Firma (F13-H02)', async () => {
+    await abrir();
+
+    expect(
+      within(screen.getByLabelText('Servicio'))
+        .getAllByRole('option')
+        .map((una) => una.textContent),
+    ).toContain('Firma');
+  });
+
   it('el identificador solo admite sus caracteres mientras se escribe', async () => {
     await abrir();
 

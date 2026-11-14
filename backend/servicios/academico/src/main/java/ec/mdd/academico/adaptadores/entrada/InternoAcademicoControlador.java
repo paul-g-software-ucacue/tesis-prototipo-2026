@@ -5,8 +5,10 @@ import ec.mdd.academico.adaptadores.entrada.api.EstadoDeAsignaturaParalelo;
 import ec.mdd.academico.adaptadores.entrada.api.EstadoDelPeriodo;
 import ec.mdd.academico.adaptadores.entrada.api.EstadoPeriodo;
 import ec.mdd.academico.adaptadores.entrada.api.InternoApi;
+import ec.mdd.academico.adaptadores.entrada.api.NombreDeCarrera;
 import ec.mdd.academico.adaptadores.entrada.api.ParaleloDeLaOferta;
 import ec.mdd.academico.puertos.entrada.ConsultarAsignaturasOfertadas;
+import ec.mdd.academico.puertos.entrada.ConsultarCarreras;
 import ec.mdd.academico.puertos.entrada.ConsultarParaleloDeLaOferta;
 import ec.mdd.academico.puertos.entrada.ConsultarPeriodos;
 import ec.mdd.academico.puertos.entrada.ParaleloConCampos;
@@ -28,14 +30,29 @@ class InternoAcademicoControlador implements InternoApi {
     private final ConsultarAsignaturasOfertadas consultar;
     private final ConsultarParaleloDeLaOferta paralelos;
     private final ConsultarPeriodos periodos;
+    private final ConsultarCarreras carreras;
 
     InternoAcademicoControlador(
             ConsultarAsignaturasOfertadas consultar,
             ConsultarParaleloDeLaOferta paralelos,
-            ConsultarPeriodos periodos) {
+            ConsultarPeriodos periodos,
+            ConsultarCarreras carreras) {
         this.consultar = consultar;
         this.paralelos = paralelos;
         this.periodos = periodos;
+        this.carreras = carreras;
+    }
+
+    // F13-H02: solo el código y el nombre, para el documento firmable.
+    @Override
+    public ResponseEntity<List<NombreDeCarrera>> consultarNombresDeCarreras() {
+        return ResponseEntity.ok(
+                carreras.carreras().stream()
+                        .map(
+                                una ->
+                                        new NombreDeCarrera(
+                                                una.carrera().codigo(), una.carrera().nombre()))
+                        .toList());
     }
 
     @Override
