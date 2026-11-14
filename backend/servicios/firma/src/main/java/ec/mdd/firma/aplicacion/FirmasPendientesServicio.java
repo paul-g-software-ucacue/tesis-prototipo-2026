@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -40,9 +39,6 @@ import org.slf4j.LoggerFactory;
  */
 public final class FirmasPendientesServicio
         implements ConsultarFirmasPendientes, DescargarArchivoVigente {
-
-    // Sin la subida de firmas (F14-H02), ningún paso está firmado todavía.
-    private static final Set<Integer> SIN_FIRMAS = Set.of();
 
     private static final Logger LOG = LoggerFactory.getLogger(FirmasPendientesServicio.class);
 
@@ -69,7 +65,7 @@ public final class FirmasPendientesServicio
         Supplier<Optional<String>> identificacion = unaVez(quien.usuario());
         List<FirmaPendiente> pendientes = new ArrayList<>();
         for (FirmasDelDocumento firmas : documentos.generados()) {
-            firmas.pasoEnTurno(SIN_FIRMAS)
+            firmas.pasoEnTurno()
                     .filter(turno -> reconoce(turno, quien, identificacion))
                     .ifPresent(
                             turno ->
@@ -89,7 +85,7 @@ public final class FirmasPendientesServicio
     public ArchivoVigente archivo(UUID documento, Solicitante quien) {
         FirmasDelDocumento firmas = documentos.firmas(documento).orElseThrow(SinTurnoDeFirma::new);
         Supplier<Optional<String>> identificacion = unaVez(quien.usuario());
-        firmas.pasoEnTurno(SIN_FIRMAS)
+        firmas.pasoEnTurno()
                 .filter(turno -> reconoce(turno, quien, identificacion))
                 .orElseThrow(SinTurnoDeFirma::new);
         ArchivoDelDocumento vigente = firmas.archivoVigente();

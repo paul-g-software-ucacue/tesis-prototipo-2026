@@ -98,7 +98,7 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
   - `ComprobacionDeDocumentoTest`: más corto y otro prefijo (rechazadas); igual y más largo con el mismo prefijo (aprobadas: sin firma nueva, la rechaza la comprobación siguiente).
 
   Luego, en `FIR/main/.../dominio/`: `Comprobacion`, `Resultado`, `ResultadoDeComprobacion`, `CertificadoDeLaFirma`, `ResultadoValidacion` y `ComprobacionDeDocumento`. Las excepciones: `ArchivoFirmadoRechazado` (con el informe), `ArchivoVacio` y `ArchivoDemasiadoGrande`.
-- [ ] T007 [P] Las firmas en `FirmasDelDocumento`. Ver fallar primero en `FirmasDelDocumentoTest`, con 0, 1, 2 y 3 firmas:
+- [X] T007 [P] Las firmas en `FirmasDelDocumento`. Ver fallar primero en `FirmasDelDocumentoTest`, con 0, 1, 2 y 3 firmas:
   - el paso en turno es el primero sin firma;
   - el archivo vigente es el de la firma de mayor orden;
   - con todo firmado, nadie está en turno.
