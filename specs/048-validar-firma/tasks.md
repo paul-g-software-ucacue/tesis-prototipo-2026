@@ -162,7 +162,7 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
   - 413.
 
   `PermisosFirmaTest` con las cinco operaciones. Luego, `subirFirma` en `FirmasPendientesControlador`, la configuración `mdd.firma.raices` y los beans en `ConfiguracionFirma`. En `apps/distributivo`, la configuración por defecto con las dos raíces, y en las pruebas, solo la CA de prueba.
-- [ ] T012 [US1] En `apps/distributivo`, `DocumentoFirmableIntegrationTest`: con PostgreSQL real y el documento generado, F1, F2 y F3 se suben firmados por `FirmadorDePrueba` y se aceptan. Después de cada una:
+- [X] T012 [US1] En `apps/distributivo`, `DocumentoFirmableIntegrationTest`: con PostgreSQL real y el documento generado, F1, F2 y F3 se suben firmados por `FirmadorDePrueba` y se aceptan. Después de cada una:
   - el archivo vigente es el nuevo;
   - el siguiente está en turno;
   - el archivo anterior sigue en el almacén.
@@ -172,6 +172,8 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
 - `SubirFirmaServicioTest` (11) se escribió de una vez con los casos de T013, T014 y T015, porque prueban el mismo servicio.
 - El turno se comprueba antes que el tamaño: a quien no está en turno, un archivo vacío también le da 403, sin decir nada del documento.
 - La configuración: `mdd.firma.raices` en `apps/distributivo`, con `MDD_FIRMA_RAICES` para reemplazarla.
+
+  **Resultado (2026-11-14):** 3/3 en `DocumentoFirmableIntegrationTest`. La prueba usa una CA en memoria como única raíz (`mdd.firma.raices` a un archivo temporal), así que también prueba que la propiedad reemplaza la lista por defecto. Se escribió con la implementación ya hecha: no se vio fallar. `ModulosTest` en verde.
 
 **Checkpoint**: la cadena de tres firmas se completa por la API.
 

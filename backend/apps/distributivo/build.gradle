@@ -20,3 +20,14 @@ dependencies {
     implementation project(':servicios:validacionocs')
     implementation project(':servicios:firma')
 }
+
+testing {
+    suites {
+        integrationTest {
+            dependencies {
+                // F14-H02: el firmador de prueba de Firma, para subir las tres firmas de punta a punta.
+                implementation testFixtures(project(':servicios:firma'))
+            }
+        }
+    }
+}
