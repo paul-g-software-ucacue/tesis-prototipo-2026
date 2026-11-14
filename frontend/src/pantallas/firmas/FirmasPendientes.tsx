@@ -114,7 +114,7 @@ function FirmaRegistrada({
       />
       {resultado.certificado && (
         <Typography variant="body2">
-          {`Certificado de ${resultado.certificado.nombre}, emitido por ${resultado.certificado.emisor}, vigente hasta ${fecha(resultado.certificado.validoHasta)}.`}
+          {`Certificado de ${resultado.certificado.nombre}, emitido por ${resultado.certificado.emisor}, vigente hasta el ${fecha(resultado.certificado.validoHasta)}`}
         </Typography>
       )}
     </Alert>

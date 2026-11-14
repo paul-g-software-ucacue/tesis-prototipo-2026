@@ -21,6 +21,7 @@ import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
@@ -315,8 +316,15 @@ public final class ValidadorPades implements ValidadorDeFirmas {
 
     private static CertificadoDeLaFirma datos(X509Certificate certificado) {
         X500Name sujeto = X500Name.getInstance(certificado.getSubjectX500Principal().getEncoded());
-        var cn = sujeto.getRDNs(BCStyle.CN);
-        String nombre = cn.length == 0 ? sujeto.toString() : cn[0].getFirst().getValue().toString();
+        // El CN puede compartir su componente con otros valores (en los certificados de la ECIBCE,
+        // con el SERIALNUMBER): se busca por su tipo, no se toma el primer valor del componente.
+        String nombre =
+                Arrays.stream(sujeto.getRDNs(BCStyle.CN))
+                        .flatMap(rdn -> Arrays.stream(rdn.getTypesAndValues()))
+                        .filter(valor -> BCStyle.CN.equals(valor.getType()))
+                        .findFirst()
+                        .map(valor -> valor.getValue().toString())
+                        .orElseGet(sujeto::toString);
         return new CertificadoDeLaFirma(
                 recortar(nombre, 200),
                 recortar(certificado.getIssuerX500Principal().getName(), 400),
