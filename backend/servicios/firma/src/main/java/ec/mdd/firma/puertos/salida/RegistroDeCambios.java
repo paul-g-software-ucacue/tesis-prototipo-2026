@@ -30,6 +30,12 @@ public interface RegistroDeCambios {
         /** El documento firmable generado (F13-H02). */
         public static final String DOCUMENTO_FIRMABLE_GENERADO = "DOCUMENTO_FIRMABLE_GENERADO";
 
+        /** Esqueleto (F14-H02, T010). */
+        public static final String FIRMA_ACEPTADA = "";
+
+        /** Esqueleto (F14-H02, T010). */
+        public static final String FIRMA_RECHAZADA = "";
+
         /** Exige todo y copia los mapas. */
         public CambioDeFirma {
             Objects.requireNonNull(momento, "momento");

@@ -87,4 +87,9 @@ public record ResultadoValidacion(
                 .map(ResultadoDeComprobacion::comprobacion)
                 .findFirst();
     }
+
+    /** Esqueleto (F14-H02, T010). */
+    public ResultadoValidacion ganadaPorOtraSubida() {
+        throw new UnsupportedOperationException();
+    }
 }

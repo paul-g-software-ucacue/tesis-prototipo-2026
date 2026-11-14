@@ -17,6 +17,7 @@ import ec.mdd.firma.dominio.FirmanteEsperado;
 import ec.mdd.firma.dominio.FirmasDelDocumento;
 import ec.mdd.firma.dominio.GeneracionDeDocumento;
 import ec.mdd.firma.dominio.GeneracionFallida;
+import ec.mdd.firma.dominio.ResultadoValidacion;
 import ec.mdd.firma.dominio.SinRolDeFirma;
 import ec.mdd.firma.puertos.entrada.EstadoDelDocumento;
 import ec.mdd.firma.puertos.entrada.PasoDeLaCadena;

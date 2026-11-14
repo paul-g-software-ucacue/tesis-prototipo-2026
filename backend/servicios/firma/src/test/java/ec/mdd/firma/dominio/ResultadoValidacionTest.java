@@ -213,4 +213,18 @@ class ResultadoValidacionTest {
         assertThatThrownBy(() -> ArchivoFirmadoRechazado.de(aceptado))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void dadaUnaAceptadaQueOtraSubidaGano_cuandoSeConvierte_entoncesEsUnRechazoPorNoSerLaVigente() {
+        ResultadoValidacion aceptada = con(todasAprobadas(), Optional.of(CERTIFICADO));
+
+        ResultadoValidacion rechazada = aceptada.ganadaPorOtraSubida();
+
+        assertThat(rechazada.aceptada()).isFalse();
+        assertThat(rechazada.primerRechazo()).contains(MISMO_DOCUMENTO);
+        assertThat(rechazada.id()).isEqualTo(aceptada.id());
+        assertThat(rechazada.sha256Subido()).isEqualTo(aceptada.sha256Subido());
+        assertThat(rechazada.comprobaciones().getFirst().motivo()).isPresent();
+        assertThat(rechazada.certificado()).isEqualTo(aceptada.certificado());
+    }
 }
