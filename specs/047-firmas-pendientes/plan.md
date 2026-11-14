@@ -167,6 +167,7 @@ docs/decisiones.md                         D-102
 | Un perfil local con un documento de F13-H02 no muestra pendientes. | Está documentado (research §1); `down -v` y otra vez el script. |
 | La descarga de un binario rompe el contrato generado o el manejador de errores, que esperan JSON. | Prueba de contrato de la descarga con sus cabeceras. Un error antes de escribir el cuerpo sale como JSON del catálogo. |
 | `CargaUsuariosDemo` choca con la unicidad si dos usuarios del YAML tienen la misma identificación. | Validarlo al leer el YAML y fallar al arrancar, con prueba. |
+| La limpieza de los scripts no borra `firmante_esperado` y el siguiente encuentra filas viejas, o no puede borrar `documento_firmable` por la clave foránea. | T017: borrarla primero en `probar_documento_firmable.sh` y `probar_aprobacion.sh`, y contarla en el paso 0 y al final. |
 | El rol del proceso de Firma no puede leer `firmante_esperado` si la V3 olvida los permisos. | Prueba de integración del esquema con un rol que no es superusuario, como en V2. |
 
 ## Complexity Tracking

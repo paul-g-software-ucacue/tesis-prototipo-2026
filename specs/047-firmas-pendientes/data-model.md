@@ -14,12 +14,14 @@ create table firmante_esperado (
     usuario        varchar(64),                                    -- el Responsable designado
     identificacion varchar(13) check (identificacion ~ '^[0-9A-Z]{1,13}$'),  -- el docente del cargo
     primary key (periodo, version, tipo, orden),
-    foreign key (periodo, version, tipo) references documento_firmable (periodo, version, tipo),
+    foreign key (periodo, version, tipo) references generacion_documento (periodo, version, tipo),
     check ((usuario is null) <> (identificacion is null))
 );
 ```
 
 Como `documento_firmable`, el rol del proceso solo puede insertar y leer: sin `update` ni `delete` (principio VII). Las filas se insertan en la misma transacción que el documento, una por paso de la cadena.
+
+La clave foránea apunta a `generacion_documento`, no a `documento_firmable`. PostgreSQL verifica una clave foránea bloqueando la fila apuntada con `FOR KEY SHARE`, como dueño de esa tabla, y eso exige UPDATE. V2 se lo quitó al dueño de `documento_firmable`: con la clave hacia esa tabla, insertar los firmantes fallaría con «permission denied» (el hallazgo de T023 de F13-H02). La generación tiene la misma clave, y se registra antes.
 
 ### FirmanteEsperado (valor nuevo, dominio)
 

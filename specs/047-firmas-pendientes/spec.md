@@ -101,7 +101,7 @@ Como Rector o Vicerrector académico, quiero que el sistema me reconozca como qu
 
 ### Edge Cases
 
-- **El paso en turno no tiene a nadie**: el cargo quedó sin titular, o ninguna cuenta tiene esa identificación. El documento no aparece para nadie y nadie lo descarga, sin error. El dato se corrige fuera de esta historia.
+- **El paso en turno no tiene a nadie**: ninguna cuenta tiene la identificación del docente del cargo. El documento no aparece para nadie y nadie lo descarga, sin error. El dato se corrige fuera de esta historia. Un cargo sin titular no llega a este caso: la generación falla antes (FR-008 de F13-H02).
 - **Cambia la designación o el cargo después de generar el PDF**: en turno sigue la persona que imprime el PDF, fijada al generarlo, para que la firma coincida con el nombre impreso. Rehacer el documento con otros firmantes es de F12-H04.
 - **Varios periodos en firma a la vez**: la pantalla muestra una fila por cada documento en turno del usuario.
 - **El archivo vigente falta o no coincide con su SHA-256 registrado**: la descarga falla con un error del catálogo y no entrega un archivo distinto del registrado.

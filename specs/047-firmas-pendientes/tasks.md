@@ -63,10 +63,10 @@ description: "Tareas de F14-H01: ver mis firmas pendientes y descargar el PDF vi
 - [ ] T004 [P] Migraciones, con pruebas de integración primero:
   - `FIR/main/resources/db/migration/firma/V3__firmante_esperado.sql`, según `data-model.md`:
     - el `check` de exactamente una persona;
-    - la clave foránea a `documento_firmable`;
+    - la clave foránea a `generacion_documento`, no a `documento_firmable`: verificarla bloquea la fila apuntada con `FOR KEY SHARE`, y el dueño de `documento_firmable` no tiene UPDATE (data-model.md);
     - solo `insert` y `select` para el rol del proceso.
     
-    Ampliar `DocumentoFirmableEsquemaIntegrationTest`.
+    Ampliar `DocumentoFirmableEsquemaIntegrationTest`, insertando con el rol del proceso: una generación, su documento y sus firmantes en la misma transacción.
   - `USU/main/resources/db/migration/usuarios/V7__identificacion.sql`: la columna con el patrón `^[0-9A-Z]{1,13}$` y el índice único parcial. La prueba de integración del esquema de Usuarios: dos cuentas con la misma identificación fallan; varias sin identificación, no.
 - [ ] T005 [P] En el dominio de Firma, ver fallar primero:
   - `FirmanteEsperadoTest`:
@@ -109,7 +109,7 @@ description: "Tareas de F14-H01: ver mis firmas pendientes y descargar el PDF vi
   - 404 `USUARIOS_SIN_IDENTIFICACION`, igual sin cuenta que sin identificación;
   - solo con token de proceso.
 
-  Comprobar que `UsuarioResumen` y la sesión no la llevan. Después:
+  Comprobar que `UsuarioResumen`, la sesión y las claims del token no la llevan (FR-013). Después:
   - `IdentificacionControlador` en `USU/main/.../adaptadores/entrada/`;
   - su caso de uso, con el puerto de entrada.
 - [ ] T008 [P] [US3] En Firma, el puerto `IdentificacionDeUsuarios.de(usuario)` → `Optional<String>`. Ver fallar primero `IdentificacionDesdeUsuariosTest`, con el servidor de pruebas de los adaptadores entre procesos:
@@ -215,6 +215,8 @@ description: "Tareas de F14-H01: ver mis firmas pendientes y descargar el PDF vi
   - shellcheck.
 
   Actualizar el encabezado del script.
+
+  La limpieza de `probar_documento_firmable.sh` y de `probar_aprobacion.sh` borra `firma.firmante_esperado` de los periodos de prueba antes que `documento_firmable` y `generacion_documento`, con el superusuario. Si el dueño no puede verificar las claves foráneas, se borra con `session_replication_role = replica`, como `generacion_documento`. La revisión de «base sin datos» del paso 0 y el conteo del final la cuentan también.
 - [ ] T018 Correr todos los scripts del workflow, en su orden, sobre un perfil construido desde la rama; `probar_autenticacion.sh` debe seguir igual. Recorrer `quickstart.md` §3 a mano (autor) y medir SC-001.
 - [ ] T019 Correr completos:
   - `./gradlew build integrationTest`;
