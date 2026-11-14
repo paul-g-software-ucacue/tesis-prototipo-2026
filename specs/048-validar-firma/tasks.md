@@ -237,7 +237,9 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
   - con 422, el aviso con el título y las cuatro comprobaciones desde `detalles`;
   - otro error, con `AvisoDeError`;
   - los dos botones de la fila desactivados mientras sube.
-- [ ] T017 [P] Playwright en `frontend/e2e/firmas-pendientes.spec.ts`, con la API simulada: la subida aceptada y la rechazada, con axe-core (WCAG 2.1 AA) sin fallas en las dos (SC-006).
+- [X] T017 [P] Playwright en `frontend/e2e/firmas-pendientes.spec.ts`, con la API simulada: la subida aceptada y la rechazada, con axe-core (WCAG 2.1 AA) sin fallas en las dos (SC-006).
+
+  **Resultado (2026-11-14):** 5/5 en `firmas-pendientes.spec.ts`, con axe-core sin fallas en la subida aceptada y en la rechazada. Las dos pruebas nuevas se escribieron después del código de la pantalla, como en F14-H01.
 - [ ] T018 [P] La herramienta `deploy/herramientas/FirmarDePrueba.java`, según `contracts/demostracion.md` y research §6:
   - copia las bibliotecas de `/app/BOOT-INF/lib` del contenedor `distributivo` y falla con un mensaje claro si no están;
   - la contraseña ficticia, por `MDD_CLAVE_P12`, sin imprimirla.
