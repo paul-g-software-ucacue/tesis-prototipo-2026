@@ -10,7 +10,7 @@ En `contratos/firma/openapi.yaml`, tag `FirmasPendientes`.
 
 | Respuesta | Cuándo |
 |---|---|
-| `201` `InformeDeValidacion` | Las cuatro comprobaciones aprobadas: la firma quedó registrada |
+| `201` `ResultadoValidacion` | Las cuatro comprobaciones aprobadas: la firma quedó registrada |
 | `400` `SolicitudInvalida` | El uuid mal formado o sin la parte `archivo` |
 | `400` `FIRMA_ARCHIVO_VACIO` | La parte `archivo` sin bytes |
 | `401`, `403` | Los comunes. El 403 también para quien no está en turno, o si el documento no existe o no está generado (FR-002) |
@@ -22,7 +22,7 @@ En `contratos/firma/openapi.yaml`, tag `FirmasPendientes`.
 ### Esquemas
 
 ```yaml
-InformeDeValidacion:
+ResultadoValidacion:
   type: object
   additionalProperties: false
   required: [id, documento, orden, aceptada, sha256Subido, subidoEn, comprobaciones]

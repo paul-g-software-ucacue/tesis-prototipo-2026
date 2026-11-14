@@ -38,7 +38,7 @@ revoke update, delete, truncate on validacion_firma from current_user;
 | `Resultado` (enum) | `APROBADA`, `RECHAZADA`, `NO_EVALUADA` |
 | `ResultadoDeComprobacion` | `comprobacion`, `resultado`, `motivo` (texto fijo del sistema; vacío si aprobada) |
 | `CertificadoDeLaFirma` | `nombre` (CN), `emisor`, `serie` (hexadecimal), `validoDesde`, `validoHasta` |
-| `InformeDeValidacion` | `id`, `documento`, `orden`, `subidoPor`, `subidoEn`, `sha256Subido`, `tamano`, las cuatro comprobaciones en orden, `certificado` opcional. `aceptada()` si las cuatro están aprobadas. `primerRechazo()` dice la comprobación del código del 422 |
+| `ResultadoValidacion` | `id`, `documento`, `orden`, `subidoPor`, `subidoEn`, `sha256Subido`, `tamano`, las cuatro comprobaciones en orden, `certificado` opcional. `aceptada()` si las cuatro están aprobadas. `primerRechazo()` dice la comprobación del código del 422 |
 | `FirmaRegistrada` | `orden`, `sha256`, `tamano`, `subidoPor`, `subidoEn`: la validación aceptada de un paso |
 
 **Reglas del informe:**
@@ -58,14 +58,14 @@ revoke update, delete, truncate on validacion_firma from current_user;
 ### Puertos
 
 **Entrada:**
-- `SubirFirma.subir(UUID documento, byte[] archivo, Solicitante quien)` → `InformeDeValidacion`. Si se rechaza, lanza `FirmaRechazada(informe)`.
+- `SubirFirma.subir(UUID documento, byte[] archivo, Solicitante quien)` → `ResultadoValidacion`. Si se rechaza, lanza `ArchivoFirmadoRechazado(informe)`.
 - Lanza `SinTurnoDeFirma` (403), `ArchivoNoDisponible` (500), `ArchivoVacio` (400) y `ArchivoDemasiadoGrande` (413).
 
 **Salida:**
 - `ValidadorDeFirmas.validar(byte[] vigente, byte[] subido)` → `HallazgosDeLaFirma`: el resultado de una sola firma nueva, la integridad y la confianza, con el certificado si hay una sola firma nueva. El mismo documento lo decide el dominio antes.
 - `RepositorioDocumentos`:
   - `firmas(UUID)` lee también las firmas registradas;
-  - `registrarValidacion(InformeDeValidacion, Set<Integer> firmasEsperadas)` bloquea la generación, comprueba que las firmas no cambiaron y guarda (research §4). Devuelve si se registró como se pidió o se convirtió en rechazo.
+  - `registrarValidacion(ResultadoValidacion, Set<Integer> firmasEsperadas)` bloquea la generación, comprueba que las firmas no cambiaron y guarda (research §4). Devuelve si se registró como se pidió o se convirtió en rechazo.
 - `AlmacenDeDocumentos.guardar(byte[], String sha256)`: ya existe (F13-H02), sin cambios. Nombra el archivo por su SHA-256, nunca sobrescribe, y si el nombre ya existe no escribe otra vez: es el mismo contenido.
 - `RegistroDeCambios`: las acciones `FIRMA_ACEPTADA` y `FIRMA_RECHAZADA` (research §9).
 
@@ -73,7 +73,7 @@ revoke update, delete, truncate on validacion_firma from current_user;
 
 | Excepción | Código | HTTP |
 |---|---|---|
-| `FirmaRechazada` (con el informe) | `FIRMA_NO_ES_LA_VERSION_VIGENTE`, `FIRMA_SIN_UNA_FIRMA_NUEVA`, `FIRMA_NO_INTEGRA` o `FIRMA_SIN_CONFIANZA`, según `primerRechazo()` | 422 |
+| `ArchivoFirmadoRechazado` (con el informe) | `FIRMA_NO_ES_LA_VERSION_VIGENTE`, `FIRMA_SIN_UNA_FIRMA_NUEVA`, `FIRMA_NO_INTEGRA` o `FIRMA_SIN_CONFIANZA`, según `primerRechazo()` | 422 |
 | `ArchivoVacio` | `FIRMA_ARCHIVO_VACIO` | 400 |
 | `ArchivoDemasiadoGrande` | `FIRMA_ARCHIVO_DEMASIADO_GRANDE` | 413 |
 

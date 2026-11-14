@@ -41,7 +41,7 @@
 
 **Testing**:
 - **Dominio:**
-  - `InformeDeValidacion`: las cuatro en orden, «no evaluada» después de un rechazo, `aceptada` y `primerRechazo`;
+  - `ResultadoValidacion`: las cuatro en orden, «no evaluada» después de un rechazo, `aceptada` y `primerRechazo`;
   - `ComprobacionDeDocumento.mismoDocumento`: igual, más corto, otro prefijo y más largo;
   - `FirmasDelDocumento`: el turno y el archivo vigente con 0, 1, 2 y 3 firmas.
 - **Aplicación (Mockito), `SubirFirmaServicio`:**
@@ -144,20 +144,20 @@ specs/048-validar-firma/
 ### Source Code (repository root)
 
 ```text
-contratos/firma/openapi.yaml               subirFirma, InformeDeValidacion
+contratos/firma/openapi.yaml               subirFirma, ResultadoValidacion
 contratos/comun/errores.md                 6 códigos
 
 backend/servicios/firma/
 ├── dominio/                               Comprobacion, Resultado, ResultadoDeComprobacion,
-│                                          CertificadoDeLaFirma, InformeDeValidacion, FirmaRegistrada,
+│                                          CertificadoDeLaFirma, ResultadoValidacion, FirmaRegistrada,
 │                                          ComprobacionDeDocumento, FirmasDelDocumento (firmas),
-│                                          FirmaRechazada, ArchivoVacio, ArchivoDemasiadoGrande
+│                                          ArchivoFirmadoRechazado, ArchivoVacio, ArchivoDemasiadoGrande
 ├── puertos/entrada/                       SubirFirma
 ├── puertos/salida/                        ValidadorDeFirmas (HallazgosDeLaFirma);
 │                                          RepositorioDocumentos (firmas, registrarValidacion)
 ├── aplicacion/                            SubirFirmaServicio; FirmasPendientesServicio con las firmas
 ├── adaptadores/entrada/                   FirmasPendientesControlador (subir), ErroresFirma
-├── adaptadores/salida/                    ValidadorPades, ListaDeConfianza, RepositorioDocumentosJdbc
+├── adaptadores/salida/                    ValidadorPades, ListaConfianza, RepositorioDocumentosJdbc
 ├── infraestructura/                       ConfiguracionFirma (mdd.firma.raices)
 ├── src/main/resources/firma/raices/       ca-prueba.crt, bce-raiz.crt
 └── src/main/resources/db/migration/firma/ V4__validacion_firma.sql

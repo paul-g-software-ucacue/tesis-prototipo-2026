@@ -40,7 +40,7 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
 
 ## Phase 1: Setup
 
-- [ ] T001 Escribir **D-103** en `docs/decisiones.md`, en la fila del índice y en su sección:
+- [X] T001 Escribir **D-103** en `docs/decisiones.md`, en la fila del índice y en su sección:
   - la validación de F14-H02: las cuatro comprobaciones, su orden y «no evaluada» (research §3);
   - la cadena se verifica a la fecha del `signingTime` firmado, y la vigencia al subir es de F14-H03;
   - una sola tabla, `validacion_firma`, donde la firma es la validación aceptada (research §1);
@@ -55,6 +55,8 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
   Luego, la enmienda en `.specify/memory/constitution.md`: la versión 2.2.1 en la cabecera, con su línea de historia, y el texto del principio IX.
 
   Revisar el glosario (`~/Downloads/MDD_artefactos_desarrollo/requerimientos_mdd/sdd/modelo_dominio.md` §7) por «Firma», «Informe de validación», «Comprobación», «Firma nueva» y «Lista de confianza» (principio III). Los que falten van a «Documentos que hay que poner al día» de D-103, con su definición, como en D-102. Anotar aquí el resultado.
+
+  **Resultado (2026-11-14):** el glosario (§7.5) ya tiene «Firma» (`Firma`), «Validación básica» (`ResultadoValidacion`, «el informe de validación»), «Lista de confianza» (`ListaConfianza`) y «Archivo firmado rechazado» (`ArchivoFirmadoRechazado`). Para no tener sinónimos (principio III), el diseño cambió `InformeDeValidacion` por `ResultadoValidacion`, `ListaDeConfianza` por `ListaConfianza` y `FirmaRechazada` por `ArchivoFirmadoRechazado`. Faltan «Comprobación» y «Firma nueva», y `Firma` como validación aceptada difiere de la entidad de `PasoCadena`: quedan en «Documentos que hay que poner al día» de D-103. La constitución pasó a 2.2.1.
 - [ ] T002 Las raíces de confianza, después de T001:
   - en `.gitleaks.toml`, una excepción para la regla `certificado-o-llave` solo en `^backend/servicios/firma/src/main/resources/firma/raices/[^/]+\.crt$`, con su comentario;
   - la misma excepción en el hook `certificado-o-llave` de `.pre-commit-config.yaml` (se cambian juntos);
@@ -70,7 +72,7 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
 
 - [ ] T003 [P] En `contratos/firma/openapi.yaml`, según `contracts/firma.md`:
   - `subirFirma` (`POST /api/firma/documentos/{documento}/firmas`, `multipart/form-data` con la parte `archivo`), con `x-mdd-permiso: DISTRIBUTIVO:FIRMA`;
-  - los esquemas `InformeDeValidacion`, `ResultadoDeComprobacion` («`motivo` maxLength 200») y `CertificadoDeLaFirma` («`serie` pattern `^[0-9a-f]{1,64}$`»);
+  - los esquemas `ResultadoValidacion`, `ResultadoDeComprobacion` («`motivo` maxLength 200») y `CertificadoDeLaFirma` («`serie` pattern `^[0-9a-f]{1,64}$`»);
   - las respuestas 201, 400, 401, 403, 413, 422, 500, 502 y 504.
 
   Actualizar el comentario de cabecera. Compilar `mdd.contrato` para ver la interfaz generada.
@@ -88,14 +90,14 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
   - la clave foránea no da «permission denied»;
   - una segunda aceptada del mismo paso viola el índice, y una rechazada no.
 - [ ] T006 [P] El dominio del informe. Ver fallar primero:
-  - `InformeDeValidacionTest`:
+  - `ResultadoValidacionTest`:
     - exige las cuatro comprobaciones, una de cada una y en orden;
     - `aceptada()` solo con las cuatro aprobadas;
     - `primerRechazo()`;
     - rechaza una aprobada después de una rechazada de la que depende;
   - `ComprobacionDeDocumentoTest`: igual (rechazada), más corto, otro prefijo y más largo con el mismo prefijo (aprobada).
 
-  Luego, en `FIR/main/.../dominio/`: `Comprobacion`, `Resultado`, `ResultadoDeComprobacion`, `CertificadoDeLaFirma`, `InformeDeValidacion` y `ComprobacionDeDocumento`. Las excepciones: `FirmaRechazada` (con el informe), `ArchivoVacio` y `ArchivoDemasiadoGrande`.
+  Luego, en `FIR/main/.../dominio/`: `Comprobacion`, `Resultado`, `ResultadoDeComprobacion`, `CertificadoDeLaFirma`, `ResultadoValidacion` y `ComprobacionDeDocumento`. Las excepciones: `ArchivoFirmadoRechazado` (con el informe), `ArchivoVacio` y `ArchivoDemasiadoGrande`.
 - [ ] T007 [P] Las firmas en `FirmasDelDocumento`. Ver fallar primero en `FirmasDelDocumentoTest`, con 0, 1, 2 y 3 firmas:
   - el paso en turno es el primero sin firma;
   - el archivo vigente es el de la firma de mayor orden;
@@ -111,7 +113,7 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
     - de la CA ajena: `CONFIANZA` rechazada;
     - un PDF dañado después del prefijo: `UNA_FIRMA_NUEVA` rechazada, con un motivo fijo y sin el mensaje de la excepción;
     - las tres firmas sucesivas, todas aprobadas, y `ValidadorPadesDePrueba` del spike las da válidas (SC-005).
-  - **`ListaDeConfianzaTest`:**
+  - **`ListaConfianzaTest`:**
     - carga los PEM;
     - sin raíces, o con un archivo ilegible, falla: no hay forma de arrancar sin validar (FR-009);
     - `bce-raiz.crt` tiene la huella de D-103;
@@ -119,7 +121,7 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
     - la propiedad `mdd.firma.raices` reemplaza la lista: con solo la CA de prueba, una firma de una raíz del BCE no es de confianza (C2).
   - **Arquitectura:** en la prueba de ArchUnit de Firma, `org.bouncycastle` y `org.apache.pdfbox` solo en los adaptadores; nunca en el dominio, los puertos ni la aplicación.
 
-  `FirmadorDePrueba` sale del paquete `spike` a uno compartido de pruebas, o se le agrega lo que falte: firmar en un campo existente, `adbe.pkcs7.detached` y alterar. Luego, el puerto `ValidadorDeFirmas` (`HallazgosDeLaFirma`), `ValidadorPades` y `ListaDeConfianza` en `FIR/main/.../adaptadores/salida/`.
+  `FirmadorDePrueba` sale del paquete `spike` a uno compartido de pruebas, o se le agrega lo que falte: firmar en un campo existente, `adbe.pkcs7.detached` y alterar. Luego, el puerto `ValidadorDeFirmas` (`HallazgosDeLaFirma`), `ValidadorPades` y `ListaConfianza` en `FIR/main/.../adaptadores/salida/`.
 
 **Checkpoint**: el dominio decide y el validador dice qué encontró, sin persistencia ni HTTP.
 
@@ -171,10 +173,10 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
 **Independent Test**: los PDF de los escenarios del issue y sin firma nueva se rechazan con su código; el turno y el archivo vigente siguen iguales.
 
 - [ ] T013 [US2] Ver fallar primero en `SubirFirmaServicioTest`:
-  - cada comprobación rechazada lanza `FirmaRechazada` con el informe, y su código es el de `primerRechazo()`;
+  - cada comprobación rechazada lanza `ArchivoFirmadoRechazado` con el informe, y su código es el de `primerRechazo()`;
   - no guarda el archivo;
   - registra la validación rechazada;
-  - las firmas cambiaron entre validar y registrar: `FirmaRechazada` por «mismo documento».
+  - las firmas cambiaron entre validar y registrar: `ArchivoFirmadoRechazado` por «mismo documento».
 
   En `SubirFirmaContratoTest`: el 422 de cada código, con las cuatro comprobaciones en `detalles` (`campo` y `descripcion`). Luego, la traducción en `ErroresFirma` o en el controlador.
 

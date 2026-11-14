@@ -116,7 +116,7 @@ Las dos firmas nuevas se hacen firmando dos veces. Sin firma nueva, se sube el v
 ## §8. La respuesta: 201 con el informe, o 422 con las comprobaciones en los detalles
 
 **Decisión:**
-- **Aceptada:** `201`, con el informe de validación (`InformeDeValidacion`).
+- **Aceptada:** `201`, con el informe de validación (`ResultadoValidacion`).
 - **Rechazada:** `422` con el código de la primera comprobación que falló. Los `detalles` del error llevan una entrada por comprobación: `campo` es la comprobación, y `descripcion`, su resultado con el texto del sistema.
 
 **Códigos nuevos:**
