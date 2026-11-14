@@ -473,7 +473,8 @@ class DocumentoFirmableServicioTest {
                                     new FirmasDelDocumento(
                                             uno,
                                             generacion(uno.periodo(), uno.version()).cadena(),
-                                            firmantes.getOrDefault(uno.id(), List.of())));
+                                            firmantes.getOrDefault(uno.id(), List.of()),
+                                            List.of()));
         }
 
         /** Registra un documento de antes de F14-H01, sin firmantes esperados. */

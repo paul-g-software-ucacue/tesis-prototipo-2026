@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -36,11 +35,25 @@ class FirmasDelDocumentoTest {
                     FirmanteEsperado.porIdentificacion(2, "VICERRECTOR", "0109990028"),
                     FirmanteEsperado.porIdentificacion(3, "RECTOR", "0109990010"));
 
-    private final FirmasDelDocumento firmas = new FirmasDelDocumento(DOCUMENTO, CADENA, FIRMANTES);
+    private final FirmasDelDocumento firmas =
+            new FirmasDelDocumento(DOCUMENTO, CADENA, FIRMANTES, List.of());
+
+    private static FirmaRegistrada firma(int orden, char hash) {
+        return new FirmaRegistrada(
+                orden,
+                String.valueOf(hash).repeat(64),
+                2048 + orden,
+                "firmante" + orden,
+                Instant.parse("2026-11-14T09:00:00Z").plusSeconds(orden));
+    }
+
+    private static FirmasDelDocumento conFirmas(FirmaRegistrada... registradas) {
+        return new FirmasDelDocumento(DOCUMENTO, CADENA, FIRMANTES, List.of(registradas));
+    }
 
     @Test
     void dadoUnDocumentoSinFirmas_cuandoSeBuscaElTurno_entoncesEsElPrimerPaso() {
-        assertThat(firmas.pasoEnTurno(Set.of()))
+        assertThat(firmas.pasoEnTurno())
                 .get()
                 .satisfies(
                         turno -> {
@@ -53,7 +66,7 @@ class FirmasDelDocumentoTest {
 
     @Test
     void dadoElPrimerPasoFirmado_cuandoSeBuscaElTurno_entoncesEsElSegundo() {
-        assertThat(firmas.pasoEnTurno(Set.of(1)))
+        assertThat(conFirmas(firma(1, 'c')).pasoEnTurno())
                 .get()
                 .extracting(turno -> turno.paso().orden())
                 .isEqualTo(2);
@@ -61,23 +74,25 @@ class FirmasDelDocumentoTest {
 
     @Test
     void dadosTodosLosPasosFirmados_cuandoSeBuscaElTurno_entoncesNoHay() {
-        assertThat(firmas.pasoEnTurno(Set.of(1, 2, 3))).isEmpty();
+        assertThat(conFirmas(firma(1, 'c'), firma(2, 'd'), firma(3, 'e')).pasoEnTurno()).isEmpty();
     }
 
     @Test
     void dadoUnDocumentoSinFirmantesEsperados_cuandoSeBuscaElTurno_entoncesNoHay() {
-        assertThat(new FirmasDelDocumento(DOCUMENTO, CADENA, List.of()).pasoEnTurno(Set.of()))
+        assertThat(new FirmasDelDocumento(DOCUMENTO, CADENA, List.of(), List.of()).pasoEnTurno())
                 .isEmpty();
     }
 
     @Test
     void dadoElTurnoEnElPrimerPaso_cuandoPreguntanQuienesNoSonSuFirmante_entoncesNoEstanEnTurno() {
-        assertThat(firmas.enTurno("docente.demo", Optional.empty(), Set.of())).isTrue();
-        assertThat(firmas.enTurno("consolidacion.demo", Optional.empty(), Set.of())).isFalse();
-        assertThat(firmas.enTurno("vicerrectorado.demo", Optional.of("0109990028"), Set.of()))
-                .isFalse();
-        assertThat(firmas.enTurno("vicerrectorado.demo", Optional.of("0109990028"), Set.of(1)))
+        assertThat(firmas.enTurno("docente.demo", Optional.empty())).isTrue();
+        assertThat(firmas.enTurno("consolidacion.demo", Optional.empty())).isFalse();
+        assertThat(firmas.enTurno("vicerrectorado.demo", Optional.of("0109990028"))).isFalse();
+        assertThat(
+                        conFirmas(firma(1, 'c'))
+                                .enTurno("vicerrectorado.demo", Optional.of("0109990028")))
                 .isTrue();
+        assertThat(conFirmas(firma(1, 'c')).enTurno("docente.demo", Optional.empty())).isFalse();
     }
 
     @Test
@@ -85,5 +100,43 @@ class FirmasDelDocumentoTest {
         assertThat(firmas.archivoVigente())
                 .isEqualTo(
                         new ArchivoDelDocumento(DOCUMENTO.archivo(), DOCUMENTO.sha256Original()));
+    }
+
+    @Test
+    void dadaLaPrimeraFirma_cuandoSePideElArchivoVigente_entoncesEsElDeEsaFirma() {
+        assertThat(conFirmas(firma(1, 'c')).archivoVigente())
+                .isEqualTo(
+                        new ArchivoDelDocumento(
+                                "documentos/" + "c".repeat(64) + ".pdf", "c".repeat(64)));
+    }
+
+    @Test
+    void
+            dadasDosFirmasEnCualquierOrden_cuandoSePideElArchivoVigente_entoncesEsElDeLaDeMayorOrden() {
+        assertThat(conFirmas(firma(2, 'd'), firma(1, 'c')).archivoVigente().sha256())
+                .isEqualTo("d".repeat(64));
+        assertThat(conFirmas(firma(2, 'd'), firma(1, 'c')).pasoEnTurno())
+                .get()
+                .extracting(turno -> turno.paso().orden())
+                .isEqualTo(3);
+    }
+
+    @Test
+    void dadasLasTresFirmas_cuandoSePideElArchivoVigente_entoncesEsElDeLaTercera() {
+        assertThat(conFirmas(firma(1, 'c'), firma(2, 'd'), firma(3, 'e')).archivoVigente().sha256())
+                .isEqualTo("e".repeat(64));
+    }
+
+    @Test
+    void dadasDosFirmasDelMismoPaso_cuandoSeCrea_entoncesSeRechaza() {
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                        () -> conFirmas(firma(1, 'c'), firma(1, 'd')))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void dadaUnaFirmaDeUnPasoQueNoEstaEnLaCadena_cuandoSeCrea_entoncesSeRechaza() {
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> conFirmas(firma(4, 'c')))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }

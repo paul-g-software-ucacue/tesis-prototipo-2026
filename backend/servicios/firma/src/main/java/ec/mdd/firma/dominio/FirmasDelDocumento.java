@@ -20,13 +20,27 @@ import java.util.Set;
  * @param firmantes el firmante esperado de cada paso, fijado al generar
  */
 public record FirmasDelDocumento(
-        DocumentoFirmable documento, List<PasoDeFirma> cadena, List<FirmanteEsperado> firmantes) {
+        DocumentoFirmable documento,
+        List<PasoDeFirma> cadena,
+        List<FirmanteEsperado> firmantes,
+        List<FirmaRegistrada> firmas) {
 
     /** Exige los datos y copia las listas. */
     public FirmasDelDocumento {
         Objects.requireNonNull(documento, "documento");
         cadena = List.copyOf(cadena);
         firmantes = List.copyOf(firmantes);
+        firmas = List.copyOf(firmas);
+    }
+
+    /** Esqueleto (F14-H02, T007). */
+    public Optional<PasoEnTurno> pasoEnTurno() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** Esqueleto (F14-H02, T007). */
+    public boolean enTurno(String usuario, Optional<String> identificacion) {
+        throw new UnsupportedOperationException();
     }
 
     /**

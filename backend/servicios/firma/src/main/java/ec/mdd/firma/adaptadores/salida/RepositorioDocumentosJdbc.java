@@ -181,8 +181,9 @@ public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
                                                 una.getString("usuario"),
                                                 una.getString("identificacion")))
                         .list();
+        // Las firmas registradas llegan con T009 (F14-H02).
         return new FirmasDelDocumento(
-                documento, JSON.readValue(fila.getString("cadena"), CADENA), firmantes);
+                documento, JSON.readValue(fila.getString("cadena"), CADENA), firmantes, List.of());
     }
 
     private static DocumentoFirmable documento(ResultSet fila) throws SQLException {
