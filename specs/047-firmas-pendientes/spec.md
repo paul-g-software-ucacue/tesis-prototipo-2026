@@ -165,7 +165,7 @@ Como Rector o Vicerrector académico, quiero que el sistema me reconozca como qu
 ## Assumptions
 
 - **El primer paso**: sin la subida de firmas (F14-H02), el paso en turno es siempre el primero. La regla del turno se escribe para la cadena completa, y F14-H03 la ejercitará con los pasos siguientes.
-- **El firmante esperado se fija al generar**, junto con el nombre impreso (D-101). Para los documentos generados antes de esta historia, se calcula una vez con la designación y los cargos vigentes de ese momento. En la demo no hay ninguno, porque 2026-I está en consolidación.
+- **El firmante esperado se fija al generar**, junto con el nombre impreso (D-101). Los documentos generados antes de esta historia no lo tienen, así que no aparecen como pendientes de nadie. En la demo no hay ninguno, porque 2026-I está en consolidación (research §1).
 - **La identificación de la cuenta** se carga con los usuarios de la demostración. No hay pantalla de administración de usuarios que la edite: hoy las cuentas solo se listan. Editarla queda para cuando exista esa administración.
 - **El Responsable designado** se reconoce por su cuenta: la designación ya es de un usuario (ADR-003). No necesita su identificación para esta historia. F14-H03 la pedirá para comparar con el certificado.
 - **Quién ve la entrada del menú**: los usuarios con alguno de los roles del árbol de firmas, más el docente designado, que recibe los permisos del Responsable mientras dure su designación. Para los demás, la entrada no aparece y la ruta responde como las demás sin permiso.
