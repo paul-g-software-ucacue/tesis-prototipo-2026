@@ -213,7 +213,7 @@ description: "Tareas de F14-H01: ver mis firmas pendientes y descargar el PDF vi
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T016 En `frontend/e2e/firmas-pendientes.spec.ts` (nuevo), con la API simulada:
+- [X] T016 En `frontend/e2e/firmas-pendientes.spec.ts` (nuevo), con la API simulada:
   - el designado ve su fila y descarga (el evento `download` con el nombre esperado);
   - sin pendientes, el mensaje;
   - un 403 en la descarga muestra el aviso;
