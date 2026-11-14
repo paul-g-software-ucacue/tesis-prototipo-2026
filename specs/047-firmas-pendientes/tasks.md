@@ -218,7 +218,7 @@ description: "Tareas de F14-H01: ver mis firmas pendientes y descargar el PDF vi
   - sin pendientes, el mensaje;
   - un 403 en la descarga muestra el aviso;
   - axe-core sin fallas con pendientes y sin ellos.
-- [ ] T017 Ampliar `deploy/probar_documento_firmable.sh` con los pasos 7 y 8 de `contracts/demostracion.md`:
+- [X] T017 Ampliar `deploy/probar_documento_firmable.sh` con los pasos 7 y 8 de `contracts/demostracion.md`:
   - el SHA-256 del archivo descargado comparado con el registrado y con el `ETag`;
   - la lista y el 403 para `consolidacion.demo`, `vicerrectorado.demo`, `rectorado.demo` y `coordinacion.demo`;
   - sin imprimir claves, tokens ni la identificación;
