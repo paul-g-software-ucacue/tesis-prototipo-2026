@@ -266,7 +266,7 @@ description: "Tareas de F13-H02: generar el PDF/A del consolidado con su hash"
   - la tabla del script y el resultado de veraPDF;
   - la comprobación a mano;
   - las desviaciones y los criterios de terminado.
-- [ ] T028 Fusionar solo con la aprobación del autor y con todas las comprobaciones en verde. Verificar el despliegue en el equipo de demostración (`quickstart.md` §4) y abrir el PR de evidencia con `Closes #61`. Borrar las ramas solo si el autor lo pide.
+- [X] T028 Fusionar solo con la aprobación del autor y con todas las comprobaciones en verde. Verificar el despliegue en el equipo de demostración (`quickstart.md` §4) y abrir el PR de evidencia con `Closes #61`. Borrar las ramas solo si el autor lo pide.
 
 ---
 

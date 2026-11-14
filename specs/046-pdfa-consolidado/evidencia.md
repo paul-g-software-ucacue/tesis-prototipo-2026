@@ -87,4 +87,12 @@ El PDF todavía no se descarga por la pantalla (F14-H01): se sacó del volumen c
 
 ## Equipo de demostración (T028)
 
-Pendiente de la fusión.
+| Comprobación | Resultado |
+|---|---|
+| Imágenes | La primera corrida del cd del #221 falló en «5 · imágenes»: Grype encontró tres altas en `libxslt` 1.1.43-r3 de la base del frontend, ya corregidas en r4 y ajenas a esta rama. Se corrigieron aparte, en el #222 (`e45afaf`, con las 12 comprobaciones en verde), y se trajo `main` a la rama |
+| `perfil-consolidado` | En la corrida después de traer `main`, el contenedor `identidad` se cayó sin dejar error en su registro, en el primer script (autenticación), y todo lo demás respondió 503. Relanzado, pasó los 47 pasos en 23 min. En la demo, `identidad` usa 478 de sus 512 MiB y no se reinicia solo: queda para una historia aparte |
+| Fusión | PR #221 (`bd2b503`), con las 12 comprobaciones en verde |
+| Despliegue | `cd` exitoso; `mdd-actualizar` tomó `bd2b503` y dice «Sano en 51 s», con los 5 pasos de la demo en OK; los 8 contenedores sanos con las imágenes `*-bd2b503d0345`, sin reinicios |
+| Nada cambió en la demo (`quickstart.md` §4, por lectura de la base) | 2026-I sigue en EN_CONSOLIDACION, sin transiciones hacia CONGELADO_EN_FIRMA, así que la tarjeta no muestra la sección del documento. Las tablas de Firma existen (migraciones 1 y 2), vacías: 0 generaciones y 0 documentos, y no hay carpeta `documentos/` en el volumen |
+
+En la demo no se llega a la firma: 2026-I está en consolidación. El documento firmable lo cubren el script en la CI y la comprobación del autor en el perfil local.
