@@ -18,4 +18,5 @@ repos:
         language: fail
         entry: "Certificado o llave fuera de la CA de prueba; el certificado real no entra al repositorio:"
         files: '(?i)\.(p12|pfx|pem|key|jks|keystore|crt|cer)$'
-        exclude: '^(backend/.+/src/test/resources/ca-prueba/|pruebas/ca-prueba/)'
+        # Las raíces públicas de confianza de Firma, solo .crt (D-103, constitución 2.2.1).
+        exclude: '^(backend/.+/src/test/resources/ca-prueba/|pruebas/ca-prueba/|backend/servicios/firma/src/main/resources/firma/raices/[^/]+\.crt$)'
