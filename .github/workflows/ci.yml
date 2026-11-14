@@ -252,7 +252,7 @@ jobs:
       # Grype en una versión exacta: con un tag, la acción usa el instalador de ese tag, que verifica
       # el SHA-256 del binario. Sin grype-version instalaría la que trae por defecto (B00-H07, FR-014).
       - id: grype
-        uses: anchore/scan-action/download-grype@8576240a41341d866dbd7ebc72cd9fc0ef023f54 # v7.4.2
+        uses: anchore/scan-action/download-grype@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
         with: { grype-version: v0.120.1 }
       - name: Excepciones de Grype (D-54)
         run: |
