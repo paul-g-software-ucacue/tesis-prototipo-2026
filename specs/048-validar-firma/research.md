@@ -72,9 +72,11 @@ Como la firma solo se acepta si el archivo empieza con los bytes del vigente, la
 ## §5. La lista de confianza
 
 **Decisión:**
-- **Formato:** archivos PEM en una carpeta de recursos de Firma, `firma/raices/`, leída al arrancar. La propiedad `mdd.firma.raices` dice qué archivos se cargan. Sin raíces, o con un archivo ilegible, el proceso no arranca (FR-021 y el caso borde).
+- **Formato:** archivos PEM en una carpeta de recursos de Firma, `backend/servicios/firma/src/main/resources/firma/raices/`, leída al arrancar.
+- **Gitleaks:** su regla `certificado-o-llave` y el hook de pre-commit rechazan cualquier `.crt` fuera de `src/test/resources/ca-prueba/`, y el principio IX lo dice así. Se agrega una excepción solo para esa carpeta y solo para `.crt`, y una prueba comprueba que cada archivo es un certificado sin llave privada. El principio IX se enmienda en parche (2.2.1, D-103): las raíces públicas de confianza viven en su carpeta, y el certificado real del autor y cualquier llave siguen prohibidos. La propiedad `mdd.firma.raices` dice qué archivos se cargan. Sin raíces, o con un archivo ilegible, el proceso no arranca (FR-021 y el caso borde).
 - **La imagen del proceso** trae `ca-prueba.crt` (la CA de prueba del spike) y `bce-raiz.crt` (la raíz pública del BCE), y la configuración por defecto carga las dos. Así el perfil local, la CI de `perfil-consolidado` y la demo confían en ambas sin cambiar el `compose` de la demo.
 - **Las pruebas automáticas** (unitarias y de integración) cargan solo la CA de prueba. La CI no tiene ningún certificado real.
+- **La CA de prueba solo en demo** (principio IX, S-10): la configuración por defecto de la imagen es la de demostración. Una instalación de producción cambia `mdd.firma.raices` por las raíces de las entidades acreditadas; una prueba comprueba que la propiedad reemplaza la lista. Queda en D-103.
 - **La raíz del BCE la entrega el autor**, la misma que usó en el spike (D-46), descargada del sitio oficial. Su huella SHA-256 se anota en D-103 y en una prueba que lee el archivo. Ningún certificado de una persona entra al repositorio (principio IX).
 
 **Por qué:**
@@ -85,6 +87,7 @@ Como la firma solo se acepta si el archivo empieza con los bytes del vigente, la
 **Alternativas:**
 - Montar las raíces con `compose`: obligaría a cambiar `/opt/mdd` en la demo, que no se toca.
 - Un archivo local fuera del repositorio: descartado por el autor.
+- Guardar la raíz del BCE en `src/test/resources/ca-prueba/` y copiarla a la imagen al construirla: evita la enmienda, pero mezcla una raíz real con la CA de prueba.
 
 ## §6. Cómo firma el script de punta a punta
 

@@ -83,6 +83,8 @@ revoke update, delete, truncate on validacion_firma from current_user;
   - Por defecto: `classpath:firma/raices/ca-prueba.crt` y `classpath:firma/raices/bce-raiz.crt`.
   - En las pruebas: solo la CA de prueba.
   - Vacía o ilegible: el proceso no arranca (research §5).
+  - Es la configuración de demostración. Producción la reemplaza, sin la CA de prueba (principio IX).
+- **Los archivos** viven en `backend/servicios/firma/src/main/resources/firma/raices/`, con su excepción en `.gitleaks.toml` y en el hook de pre-commit (solo `.crt`).
 - **El límite de 10 MB** lo comprueba Firma. El proceso ya corta a 11 MB con `COMUN_CONTENIDO_DEMASIADO_GRANDE`.
 
 ### Dependencias

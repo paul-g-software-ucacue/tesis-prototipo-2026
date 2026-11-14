@@ -77,6 +77,7 @@
 
 **Constraints**:
 - **ADR-017:** la validación no se apaga en ningún entorno; lo que cambia es la lista de confianza.
+- **Principio IX y Gitleaks:** los `.crt` solo se admiten en la CA de prueba. Las raíces públicas necesitan su excepción y el parche 2.2.1 de la constitución (research §5).
 - **Principio VII:** `validacion_firma` es inmutable; los archivos nunca se sobrescriben.
 - **Principio IX:**
   - ningún certificado ni PDF del autor en el repositorio;
@@ -112,14 +113,14 @@
 | VI. Las reglas son datos | La lista de confianza es configuración por entorno, sin interruptores (ADR-017). | ✅ |
 | VII. Inmutabilidad y trazabilidad | `validacion_firma` solo se inserta; cada archivo se guarda por su hash, sin sobrescribir; cada subida, aceptada o rechazada, queda en el informe y en la bitácora. | ✅ |
 | VIII. Pruebas | Primero el dominio y la aplicación, viéndolos fallar; el adaptador con PDF firmados de verdad por la CA de prueba; integración con PostgreSQL; script de punta a punta. | ✅ |
-| IX. Seguridad | El turno y las comprobaciones, en el servidor. 403 común. Ningún dato del certificado real en el repositorio. Textos fijos en el informe. Límite de tamaño. | ✅ |
+| IX. Seguridad | El turno y las comprobaciones, en el servidor. 403 común. Ningún dato del certificado real en el repositorio. Textos fijos en el informe. Límite de tamaño. Las raíces públicas en su carpeta, con la excepción de Gitleaks solo para `.crt` y la enmienda de parche 2.2.1 (D-103). La CA de prueba solo en la configuración de demo. | ✅ con enmienda |
 | X. Simplicidad | Una tabla para firmas y validaciones. Sin EU DSS, sin sello de tiempo ni revocación (ADR-007). | ✅ |
 | XI. Diseño pragmático | La herramienta del script reutiliza las bibliotecas del proceso, sin dependencias nuevas. | ✅ |
 | XII. JavaDoc | El orden de las comprobaciones y por qué; la fecha de la cadena; el relleno de ceros; el bloqueo; la lista de confianza. | ✅ |
 | XIII. Errores | Seis códigos nuevos con sus 8 columnas. | ✅ |
 | XIV. Validación | El uuid en la ruta, el archivo vacío y el tamaño, antes de validar. | ✅ |
 
-**Post-diseño:** sin cambios. D-103 queda registrada antes de implementar, con research §1, §3, §5 y §6.
+**Post-diseño:** el análisis encontró que Gitleaks y el principio IX rechazan los `.crt` fuera de la CA de prueba. Se resuelve con la enmienda de parche 2.2.1, registrada en D-103 antes de implementar, junto con research §1, §3, §5 y §6.
 
 ## Project Structure
 
@@ -168,6 +169,8 @@ deploy/herramientas/FirmarDePrueba.java    firma de prueba para los scripts
 deploy/probar_documento_firmable.sh        pasos 9 a 12
 deploy/probar_aprobacion.sh                la limpieza de validacion_firma
 docs/decisiones.md                         D-103
+.specify/memory/constitution.md            2.2.1 (principio IX)
+.gitleaks.toml, .pre-commit-config.yaml    la excepción de firma/raices/ (solo .crt)
 ```
 
 **Structure Decision**: Firma suma la subida a su controlador y a un servicio nuevo, como F14-H01 sumó la consulta. La validación criptográfica queda en un adaptador, para que el dominio no dependa de las bibliotecas.

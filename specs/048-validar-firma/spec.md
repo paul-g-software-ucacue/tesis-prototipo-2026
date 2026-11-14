@@ -166,8 +166,9 @@ Como Rector, quiero que solo el firmante en turno pueda subir un PDF firmado, pa
 **Confianza y datos personales**
 
 - **FR-021**: La lista de confianza DEBE ser un archivo de configuración por entorno, leído al arrancar:
-  - la CI y las pruebas automáticas confían solo en la CA de prueba;
-  - el perfil local y la demo confían en la CA de prueba y en la raíz pública del BCE.
+  - las pruebas automáticas del servicio confían solo en la CA de prueba;
+  - los perfiles que corren la imagen del sistema (el local, el de la CI de punta a punta y la demo) confían en la CA de prueba y en la raíz pública del BCE;
+  - una instalación de producción reemplaza la lista por la de las entidades acreditadas, sin la CA de prueba (principio IX, S-10).
 - **FR-022**: El certificado real del autor y los PDF firmados con él NO DEBEN entrar al repositorio (principio IX). Las pruebas automáticas firman con los certificados ficticios de la CA de prueba.
 
 **Errores y seguridad**
@@ -177,7 +178,7 @@ Como Rector, quiero que solo el firmante en turno pueda subir un PDF firmado, pa
 
 ### Key Entities
 
-- **Firma** (nueva): la firma aceptada de un paso de un documento. Guarda el orden del paso, quién subió, cuándo, el SHA-256 del archivo resultante y los datos del certificado. Es una por paso y no cambia.
+- **Firma** (nueva): la firma aceptada de un paso de un documento; es su informe de validación aceptado. Guarda el orden del paso, quién subió, cuándo, el SHA-256 del archivo resultante y los datos del certificado. Es una por paso y no cambia.
 - **Informe de validación** (nuevo): el resultado de una subida del firmante en turno, aceptada o rechazada. Guarda el documento, el paso, el SHA-256 del archivo subido, quién y cuándo, el resultado de cada comprobación y, si hay firma nueva, los datos de su certificado.
 - **Documento firmable** (de F13-H02 y F14-H01): su archivo vigente pasa a ser el de la última firma aceptada; sin firmas, el original.
 - **Lista de confianza**: las raíces en las que confía el entorno, en un archivo de configuración.

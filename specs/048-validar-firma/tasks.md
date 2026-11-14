@@ -46,12 +46,21 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
   - una sola tabla, `validacion_firma`, donde la firma es la validación aceptada (research §1);
   - validar fuera de la transacción y volver a comprobar con el bloqueo (research §4);
   - la lista de confianza en los recursos de la imagen, con la CA de prueba y la raíz del BCE, y su huella (research §5);
-  - la herramienta de firma de los scripts (research §6).
+  - la configuración por defecto es la de demostración: producción reemplaza `mdd.firma.raices` sin la CA de prueba (principio IX, S-10);
+  - la herramienta de firma de los scripts (research §6);
+  - **la enmienda de parche 2.2.1 de la constitución:** en el principio IX, las raíces públicas de confianza viven en `backend/servicios/firma/src/main/resources/firma/raices/`, con su excepción en Gitleaks solo para `.crt`; el certificado real del autor y cualquier llave siguen prohibidos.
 
   Relacionadas: RF-39, D-23, D-46, ADR-017, ADR-007, D-101, D-102.
 
-  Revisar el glosario (`~/Downloads/MDD_artefactos_desarrollo/requerimientos_mdd/sdd/modelo_dominio.md` §7: «Firma», «Informe de validación», «Comprobación») y anotar aquí el resultado.
-- [ ] T002 **Lo entrega el autor:** el certificado raíz del BCE que usó en el spike, del sitio oficial. Copiarlo a `FIR/main/resources/firma/raices/bce-raiz.crt` en PEM, y `ca-prueba.crt` (de `FIR/test/resources/ca-prueba/`) a la misma carpeta. Anotar en D-103 el sujeto, la vigencia y la huella SHA-256 de los dos. Comprobar que ninguno trae llave privada.
+  Luego, la enmienda en `.specify/memory/constitution.md`: la versión 2.2.1 en la cabecera, con su línea de historia, y el texto del principio IX.
+
+  Revisar el glosario (`~/Downloads/MDD_artefactos_desarrollo/requerimientos_mdd/sdd/modelo_dominio.md` §7) por «Firma», «Informe de validación», «Comprobación», «Firma nueva» y «Lista de confianza» (principio III). Los que falten van a «Documentos que hay que poner al día» de D-103, con su definición, como en D-102. Anotar aquí el resultado.
+- [ ] T002 Las raíces de confianza, después de T001:
+  - en `.gitleaks.toml`, una excepción para la regla `certificado-o-llave` solo en `^backend/servicios/firma/src/main/resources/firma/raices/[^/]+\.crt$`, con su comentario;
+  - la misma excepción en el hook `certificado-o-llave` de `.pre-commit-config.yaml` (se cambian juntos);
+  - comprobar que un `.p12` o un `.pem` en esa carpeta sigue rechazado.
+
+  **Lo entrega el autor:** el certificado raíz del BCE que usó en el spike, del sitio oficial. Copiarlo a `FIR/main/resources/firma/raices/bce-raiz.crt` en PEM, y `ca-prueba.crt` (de `FIR/test/resources/ca-prueba/`) a la misma carpeta. Anotar en D-103 el sujeto, la vigencia y la huella SHA-256 de los dos. Comprobar que ninguno trae llave privada. Gitleaks sobre el commit, sin hallazgos.
 
 ---
 
@@ -104,8 +113,11 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
     - las tres firmas sucesivas, todas aprobadas, y `ValidadorPadesDePrueba` del spike las da válidas (SC-005).
   - **`ListaDeConfianzaTest`:**
     - carga los PEM;
-    - sin raíces, o con un archivo ilegible, falla;
-    - `bce-raiz.crt` tiene la huella de D-103.
+    - sin raíces, o con un archivo ilegible, falla: no hay forma de arrancar sin validar (FR-009);
+    - `bce-raiz.crt` tiene la huella de D-103;
+    - cada archivo de `firma/raices/` es solo un certificado, sin llave privada;
+    - la propiedad `mdd.firma.raices` reemplaza la lista: con solo la CA de prueba, una firma de una raíz del BCE no es de confianza (C2).
+  - **Arquitectura:** en la prueba de ArchUnit de Firma, `org.bouncycastle` y `org.apache.pdfbox` solo en los adaptadores; nunca en el dominio, los puertos ni la aplicación.
 
   `FirmadorDePrueba` sale del paquete `spike` a uno compartido de pruebas, o se le agrega lo que falte: firmar en un campo existente, `adbe.pkcs7.detached` y alterar. Luego, el puerto `ValidadorDeFirmas` (`HallazgosDeLaFirma`), `ValidadorPades` y `ListaDeConfianza` en `FIR/main/.../adaptadores/salida/`.
 
@@ -136,7 +148,7 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
   - el vigente falta o no coincide: `ArchivoNoDisponible`, sin registrar;
   - la consulta de la identificación, fuera de la transacción.
 
-  Usar la misma regla del turno de `FirmasPendientesServicio`, sin copiarla. `FirmasPendientesServicio` pasa a usar las firmas registradas, en lugar de `SIN_FIRMAS`.
+  La regla del turno no se copia: el cálculo de «¿está este solicitante en turno en este documento?», con la identificación pedida una sola vez, sale de `FirmasPendientesServicio` a un componente de aplicación compartido por los dos servicios. `FirmasPendientesServicio` pasa a usar las firmas registradas, en lugar de `SIN_FIRMAS`, y sus pruebas siguen pasando.
 - [ ] T011 [US1] El controlador. Ver fallar primero en `SubirFirmaContratoTest`:
   - 201 con el informe según el esquema;
   - 400 sin la parte `archivo`, con un uuid mal formado y con un archivo vacío;
