@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ec.mdd.firma.dominio.ContenidoDelDocumento;
 import ec.mdd.firma.puertos.salida.ContenidoDelDistributivo;
 import ec.mdd.firma.puertos.salida.FirmantesDelPeriodo;
+import ec.mdd.firma.puertos.salida.FirmantesDelPeriodo.FirmanteDelPeriodo;
 import ec.mdd.validacionocs.puertos.salida.AvisoDeFirma;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -187,9 +188,12 @@ class DocumentoFirmableIntegrationTest {
                     Thread.currentThread().interrupt();
                 }
                 return Map.of(
-                        "RESPONSABLE_CONSOLIDACION", "PÉREZ ANA",
-                        "VICERRECTOR", "LÓPEZ LUIS",
-                        "RECTOR", "MORA EVA");
+                        "RESPONSABLE_CONSOLIDACION",
+                        FirmanteDelPeriodo.porUsuario("PÉREZ ANA", "docente.demo"),
+                        "VICERRECTOR",
+                        FirmanteDelPeriodo.porIdentificacion("LÓPEZ LUIS", "0109990028"),
+                        "RECTOR",
+                        FirmanteDelPeriodo.porIdentificacion("MORA EVA", "0109990010"));
             };
         }
     }

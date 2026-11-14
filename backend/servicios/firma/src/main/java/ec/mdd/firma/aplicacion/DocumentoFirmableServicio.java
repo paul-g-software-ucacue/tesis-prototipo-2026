@@ -5,6 +5,7 @@ import ec.mdd.firma.dominio.DocumentoFirmable;
 import ec.mdd.firma.dominio.EstadoDeGeneracion;
 import ec.mdd.firma.dominio.EtapaNoAdmiteGeneracion;
 import ec.mdd.firma.dominio.Firmante;
+import ec.mdd.firma.dominio.FirmanteEsperado;
 import ec.mdd.firma.dominio.FirmanteSinNombre;
 import ec.mdd.firma.dominio.GeneracionDeDocumento;
 import ec.mdd.firma.dominio.GeneracionFallida;
@@ -19,6 +20,7 @@ import ec.mdd.firma.puertos.entrada.SolicitudDeDocumento;
 import ec.mdd.firma.puertos.salida.AlmacenDeDocumentos;
 import ec.mdd.firma.puertos.salida.ContenidoDelDistributivo;
 import ec.mdd.firma.puertos.salida.FirmantesDelPeriodo;
+import ec.mdd.firma.puertos.salida.FirmantesDelPeriodo.FirmanteDelPeriodo;
 import ec.mdd.firma.puertos.salida.GeneradorDePdf;
 import ec.mdd.firma.puertos.salida.RegistroDeCambios;
 import ec.mdd.firma.puertos.salida.RegistroDeCambios.CambioDeFirma;
@@ -28,6 +30,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -217,8 +221,11 @@ public final class DocumentoFirmableServicio
         byte[] pdf;
         String sha256;
         String archivo;
+        List<FirmanteEsperado> esperados;
         try {
-            pdf = generador.generar(contenidoConFirmantes(generacion));
+            Preparado preparado = preparar(generacion);
+            esperados = preparado.esperados();
+            pdf = generador.generar(preparado.contenido());
             sha256 = sha256(pdf);
             archivo = almacen.guardar(pdf, sha256);
         } catch (RuntimeException fallo) {
@@ -265,7 +272,7 @@ public final class DocumentoFirmableServicio
                                     pdf.length,
                                     quien,
                                     ahora);
-                    documentos.registrar(documento);
+                    documentos.registrar(documento, esperados);
                     bloqueada.completar(ahora);
                     documentos.guardar(bloqueada);
                     registro.registrar(cambio(documento));
@@ -274,30 +281,54 @@ public final class DocumentoFirmableServicio
         return Optional.empty();
     }
 
-    // El contenido de Generación con los firmantes de la cadena. Si la versión o el hash no son los
-    // que Aprobación congeló, no se genera.
-    private ContenidoDelDocumento contenidoConFirmantes(GeneracionDeDocumento generacion) {
+    // El contenido de Generación con los firmantes de la cadena, y la persona que debe firmar cada
+    // paso (D-102). Si la versión o el hash no son los que Aprobación congeló, no se genera.
+    private Preparado preparar(GeneracionDeDocumento generacion) {
         ContenidoDelDocumento leido = contenido.contenido(generacion.periodo());
         if (leido.version() != generacion.version()
                 || !leido.hashContenido().equals(generacion.hashContenido())) {
             throw new ContenidoDeOtraVersion(generacion.version());
         }
-        Map<String, String> nombres =
-                firmantes.nombres(
+        Map<String, FirmanteDelPeriodo> delPeriodo =
+                firmantes.firmantes(
                         generacion.periodo(),
                         generacion.cadena().stream()
                                 .map(PasoDeFirma::rol)
                                 .collect(Collectors.toSet()));
+        Map<String, String> nombres = new HashMap<>();
+        delPeriodo.forEach((rol, firmante) -> nombres.put(rol, firmante.nombre()));
         List<Firmante> bloque = Firmante.de(generacion.cadena(), nombres);
-        return new ContenidoDelDocumento(
-                leido.periodo(),
-                leido.version(),
-                leido.hashContenido(),
-                leido.carreras(),
-                leido.totales(),
-                leido.docentes(),
-                bloque);
+        List<FirmanteEsperado> esperados =
+                generacion.cadena().stream()
+                        .sorted(Comparator.comparingInt(PasoDeFirma::orden))
+                        .map(paso -> esperado(paso, delPeriodo.get(paso.rol())))
+                        .toList();
+        return new Preparado(
+                new ContenidoDelDocumento(
+                        leido.periodo(),
+                        leido.version(),
+                        leido.hashContenido(),
+                        leido.carreras(),
+                        leido.totales(),
+                        leido.docentes(),
+                        bloque),
+                esperados);
     }
+
+    // La persona que firma un paso. Sin ella no se sabría a quién le toca: falla como sin nombre.
+    private static FirmanteEsperado esperado(PasoDeFirma paso, FirmanteDelPeriodo firmante) {
+        if (firmante != null && firmante.usuario().isPresent()) {
+            return FirmanteEsperado.porUsuario(paso.orden(), paso.rol(), firmante.usuario().get());
+        }
+        if (firmante != null && firmante.identificacion().isPresent()) {
+            return FirmanteEsperado.porIdentificacion(
+                    paso.orden(), paso.rol(), firmante.identificacion().get());
+        }
+        throw new FirmanteSinNombre(Firmante.cargoDe(paso.rol()));
+    }
+
+    /** El contenido que se imprime y los firmantes esperados que se registran con él. */
+    private record Preparado(ContenidoDelDocumento contenido, List<FirmanteEsperado> esperados) {}
 
     // El motivo que ve la pantalla: el de las reglas, tal cual; el de lo inesperado, sin detalles
     // internos (principio IX), que quedan en el registro del proceso.

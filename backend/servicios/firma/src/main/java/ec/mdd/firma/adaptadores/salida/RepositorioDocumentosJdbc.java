@@ -2,6 +2,8 @@ package ec.mdd.firma.adaptadores.salida;
 
 import ec.mdd.firma.dominio.DocumentoFirmable;
 import ec.mdd.firma.dominio.EstadoDeGeneracion;
+import ec.mdd.firma.dominio.FirmanteEsperado;
+import ec.mdd.firma.dominio.FirmasDelDocumento;
 import ec.mdd.firma.dominio.GeneracionDeDocumento;
 import ec.mdd.firma.dominio.PasoDeFirma;
 import ec.mdd.firma.puertos.salida.RepositorioDocumentos;
@@ -30,6 +32,15 @@ public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
             "SELECT periodo, version, hash_contenido, cadena::text AS cadena, rol_de_etapa,"
                     + " estado, motivo, pedida_por, actualizada_en"
                     + " FROM firma.generacion_documento";
+
+    // Solo los documentos de una generación GENERADA: un registro sin su generación completa no se
+    // firma.
+    private static final String DOCUMENTO_CON_CADENA =
+            "SELECT d.id, d.periodo, d.version, d.tipo, d.hash_contenido, d.sha256_original,"
+                    + " d.archivo, d.tamano, d.generado_por, d.generado_en, g.cadena::text AS cadena"
+                    + " FROM firma.documento_firmable d JOIN firma.generacion_documento g"
+                    + " ON g.periodo = d.periodo AND g.version = d.version AND g.tipo = d.tipo"
+                    + " AND g.estado = 'GENERADA'";
 
     private final JdbcClient jdbc;
 
@@ -89,7 +100,22 @@ public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
     }
 
     @Override
-    public void registrar(DocumentoFirmable documento) {
+    public List<FirmasDelDocumento> generados() {
+        return jdbc.sql(DOCUMENTO_CON_CADENA + " ORDER BY d.periodo, d.version")
+                .query(this::firmasDe)
+                .list();
+    }
+
+    @Override
+    public Optional<FirmasDelDocumento> firmas(UUID documento) {
+        return jdbc.sql(DOCUMENTO_CON_CADENA + " WHERE d.id = :id")
+                .param("id", documento)
+                .query(this::firmasDe)
+                .optional();
+    }
+
+    @Override
+    public void registrar(DocumentoFirmable documento, List<FirmanteEsperado> firmantes) {
         jdbc.sql(
                         "INSERT INTO firma.documento_firmable (id, periodo, version, tipo,"
                                 + " hash_contenido, sha256_original, archivo, tamano, generado_por,"
@@ -106,6 +132,20 @@ public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
                 .param("por", documento.generadoPor())
                 .param("en", Timestamp.from(documento.generadoEn()))
                 .update();
+        for (FirmanteEsperado firmante : firmantes) {
+            jdbc.sql(
+                            "INSERT INTO firma.firmante_esperado (periodo, version, tipo, orden,"
+                                    + " rol, usuario, identificacion) VALUES (:periodo, :version,"
+                                    + " :tipo, :orden, :rol, :usuario, :identificacion)")
+                    .param("periodo", documento.periodo())
+                    .param("version", documento.version())
+                    .param("tipo", documento.tipo())
+                    .param("orden", firmante.orden())
+                    .param("rol", firmante.rol())
+                    .param("usuario", firmante.usuario())
+                    .param("identificacion", firmante.identificacion())
+                    .update();
+        }
     }
 
     @Override
@@ -118,20 +158,45 @@ public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
                 .param("periodo", periodo)
                 .param("version", version)
                 .param("tipo", TIPO)
-                .query(
-                        (fila, numero) ->
-                                new DocumentoFirmable(
-                                        fila.getObject("id", UUID.class),
-                                        fila.getString("periodo"),
-                                        fila.getInt("version"),
-                                        fila.getString("tipo"),
-                                        fila.getString("hash_contenido"),
-                                        fila.getString("sha256_original"),
-                                        fila.getString("archivo"),
-                                        fila.getInt("tamano"),
-                                        fila.getString("generado_por"),
-                                        fila.getTimestamp("generado_en").toInstant()))
+                .query((fila, numero) -> documento(fila))
                 .optional();
+    }
+
+    // El documento, la cadena de su generación y sus firmantes esperados.
+    private FirmasDelDocumento firmasDe(ResultSet fila, int numero) throws SQLException {
+        DocumentoFirmable documento = documento(fila);
+        List<FirmanteEsperado> firmantes =
+                jdbc.sql(
+                                "SELECT orden, rol, usuario, identificacion"
+                                        + " FROM firma.firmante_esperado WHERE periodo = :periodo"
+                                        + " AND version = :version AND tipo = :tipo ORDER BY orden")
+                        .param("periodo", documento.periodo())
+                        .param("version", documento.version())
+                        .param("tipo", documento.tipo())
+                        .query(
+                                (una, n) ->
+                                        new FirmanteEsperado(
+                                                una.getInt("orden"),
+                                                una.getString("rol"),
+                                                una.getString("usuario"),
+                                                una.getString("identificacion")))
+                        .list();
+        return new FirmasDelDocumento(
+                documento, JSON.readValue(fila.getString("cadena"), CADENA), firmantes);
+    }
+
+    private static DocumentoFirmable documento(ResultSet fila) throws SQLException {
+        return new DocumentoFirmable(
+                fila.getObject("id", UUID.class),
+                fila.getString("periodo"),
+                fila.getInt("version"),
+                fila.getString("tipo"),
+                fila.getString("hash_contenido"),
+                fila.getString("sha256_original"),
+                fila.getString("archivo"),
+                fila.getInt("tamano"),
+                fila.getString("generado_por"),
+                fila.getTimestamp("generado_en").toInstant());
     }
 
     private static GeneracionDeDocumento generacion(ResultSet fila, int numero)

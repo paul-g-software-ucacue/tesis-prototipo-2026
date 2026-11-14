@@ -118,13 +118,13 @@ description: "Tareas de F14-H01: ver mis firmas pendientes y descargar el PDF vi
   Comprobar que `UsuarioResumen`, la sesión y las claims del token no la llevan (FR-013). Después:
   - `IdentificacionControlador` en `USU/main/.../adaptadores/entrada/`;
   - su caso de uso, con el puerto de entrada.
-- [ ] T008 [P] [US3] En Firma, el puerto `IdentificacionDeUsuarios.de(usuario)` → `Optional<String>`. Ver fallar primero `IdentificacionDesdeUsuariosTest`, con el servidor de pruebas de los adaptadores entre procesos:
+- [X] T008 [P] [US3] En Firma, el puerto `IdentificacionDeUsuarios.de(usuario)` → `Optional<String>`. Ver fallar primero `IdentificacionDesdeUsuariosTest`, con el servidor de pruebas de los adaptadores entre procesos:
   - 200 da la identificación;
   - 404 da vacío;
   - otro error se propaga.
 
   Después, el adaptador `FIR/main/.../adaptadores/salida/IdentificacionDesdeUsuarios.java` y su registro en `ConfiguracionFirma`.
-- [ ] T009 [US3] Los firmantes con su persona. Ver fallar primero:
+- [X] T009 [US3] Los firmantes con su persona. Ver fallar primero:
   - `FirmantesDesdeProcesosTest`:
     - el Responsable trae su usuario;
     - el Rector y el Vicerrector, la identificación del cargo;

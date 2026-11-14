@@ -4,6 +4,7 @@ import ec.mdd.firma.adaptadores.salida.AlmacenDeDocumentosEnDisco;
 import ec.mdd.firma.adaptadores.salida.ContenidoDesdeGeneracion;
 import ec.mdd.firma.adaptadores.salida.FirmantesDesdeProcesos;
 import ec.mdd.firma.adaptadores.salida.GeneradorPdfa;
+import ec.mdd.firma.adaptadores.salida.IdentificacionDesdeUsuarios;
 import ec.mdd.firma.adaptadores.salida.PublicadorDeCambios;
 import ec.mdd.firma.adaptadores.salida.RepositorioDocumentosJdbc;
 import ec.mdd.firma.adaptadores.salida.TransaccionSpring;
@@ -12,6 +13,7 @@ import ec.mdd.firma.puertos.salida.AlmacenDeDocumentos;
 import ec.mdd.firma.puertos.salida.ContenidoDelDistributivo;
 import ec.mdd.firma.puertos.salida.FirmantesDelPeriodo;
 import ec.mdd.firma.puertos.salida.GeneradorDePdf;
+import ec.mdd.firma.puertos.salida.IdentificacionDeUsuarios;
 import ec.mdd.firma.puertos.salida.RegistroDeCambios;
 import ec.mdd.firma.puertos.salida.RepositorioDocumentos;
 import ec.mdd.firma.puertos.salida.Transaccion;
@@ -56,6 +58,13 @@ public class ConfiguracionFirma {
             @Value("${mdd.procesos.datos}") URI datos,
             @Value("${mdd.procesos.identidad}") URI identidad) {
         return new FirmantesDesdeProcesos(consultas, datos, identidad);
+    }
+
+    /** La identificación de una cuenta, de Usuarios en el proceso identidad (F14-H01, ADR-023). */
+    @Bean
+    public IdentificacionDeUsuarios identificacionDeUsuarios(
+            ConsultasEntreProcesos consultas, @Value("${mdd.procesos.identidad}") URI identidad) {
+        return new IdentificacionDesdeUsuarios(consultas, identidad);
     }
 
     /** El PDF/A-2b con OpenHTMLtoPDF y PDFBox. */

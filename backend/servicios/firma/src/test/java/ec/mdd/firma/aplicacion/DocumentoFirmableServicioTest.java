@@ -13,6 +13,8 @@ import ec.mdd.firma.dominio.ContenidoDelDocumento;
 import ec.mdd.firma.dominio.DocumentoFirmable;
 import ec.mdd.firma.dominio.EstadoDeGeneracion;
 import ec.mdd.firma.dominio.EtapaNoAdmiteGeneracion;
+import ec.mdd.firma.dominio.FirmanteEsperado;
+import ec.mdd.firma.dominio.FirmasDelDocumento;
 import ec.mdd.firma.dominio.GeneracionDeDocumento;
 import ec.mdd.firma.dominio.GeneracionFallida;
 import ec.mdd.firma.dominio.SinRolDeFirma;
@@ -23,6 +25,7 @@ import ec.mdd.firma.puertos.entrada.SolicitudDeDocumento;
 import ec.mdd.firma.puertos.salida.AlmacenDeDocumentos;
 import ec.mdd.firma.puertos.salida.ContenidoDelDistributivo;
 import ec.mdd.firma.puertos.salida.FirmantesDelPeriodo;
+import ec.mdd.firma.puertos.salida.FirmantesDelPeriodo.FirmanteDelPeriodo;
 import ec.mdd.firma.puertos.salida.GeneradorDePdf;
 import ec.mdd.firma.puertos.salida.RegistroDeCambios;
 import ec.mdd.firma.puertos.salida.RegistroDeCambios.CambioDeFirma;
@@ -41,6 +44,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,11 +67,14 @@ class DocumentoFirmableServicioTest {
                     new PasoDeLaCadena(1, "Elaborado", "RESPONSABLE_CONSOLIDACION"),
                     new PasoDeLaCadena(2, "Revisado", "VICERRECTOR"),
                     new PasoDeLaCadena(3, "Aprobado", "RECTOR"));
-    private static final Map<String, String> NOMBRES =
+    private static final Map<String, FirmanteDelPeriodo> NOMBRES =
             Map.of(
-                    "RESPONSABLE_CONSOLIDACION", "PÉREZ ANA",
-                    "VICERRECTOR", "LÓPEZ LUIS",
-                    "RECTOR", "MORA EVA");
+                    "RESPONSABLE_CONSOLIDACION",
+                    FirmanteDelPeriodo.porUsuario("PÉREZ ANA", "docente.demo"),
+                    "VICERRECTOR",
+                    FirmanteDelPeriodo.porIdentificacion("LÓPEZ LUIS", "0109990028"),
+                    "RECTOR",
+                    FirmanteDelPeriodo.porIdentificacion("MORA EVA", "0109990010"));
 
     private final DocumentosEnMemoria documentos = new DocumentosEnMemoria();
     private final ContenidoDelDistributivo contenido = mock(ContenidoDelDistributivo.class);
@@ -109,7 +116,7 @@ class DocumentoFirmableServicioTest {
                             eventos.add(dentro ? "contenido dentro" : "contenido");
                             return contenidoDe(1, HASH);
                         });
-        when(firmantes.nombres(
+        when(firmantes.firmantes(
                         PERIODO, Set.of("RESPONSABLE_CONSOLIDACION", "VICERRECTOR", "RECTOR")))
                 .thenAnswer(
                         uso -> {
@@ -210,12 +217,14 @@ class DocumentoFirmableServicioTest {
             new Solicitante("vicerrectorado.demo", Set.of("VICERRECTOR"));
 
     private void sinNombreDelRector() {
-        when(firmantes.nombres(
+        when(firmantes.firmantes(
                         PERIODO, Set.of("RESPONSABLE_CONSOLIDACION", "VICERRECTOR", "RECTOR")))
                 .thenReturn(
                         Map.of(
-                                "RESPONSABLE_CONSOLIDACION", "PÉREZ ANA",
-                                "VICERRECTOR", "LÓPEZ LUIS"));
+                                "RESPONSABLE_CONSOLIDACION",
+                                NOMBRES.get("RESPONSABLE_CONSOLIDACION"),
+                                "VICERRECTOR",
+                                NOMBRES.get("VICERRECTOR")));
     }
 
     @Test
@@ -229,6 +238,40 @@ class DocumentoFirmableServicioTest {
         assertThat(generacion.motivo()).contains("Falta el nombre del Rector.");
         assertThat(documentos.documento(PERIODO, 1)).isEmpty();
         assertThat(registrado()).isEmpty();
+    }
+
+    @Test
+    void dadoElDocumentoGenerado_cuandoSeRegistra_entoncesLlevaElFirmanteEsperadoDeCadaPaso() {
+        servicio.preparar(solicitud());
+
+        DocumentoFirmable documento = documentos.documento(PERIODO, 1).orElseThrow();
+        assertThat(documentos.firmantesDe(documento.id()))
+                .containsExactly(
+                        FirmanteEsperado.porUsuario(1, "RESPONSABLE_CONSOLIDACION", "docente.demo"),
+                        FirmanteEsperado.porIdentificacion(2, "VICERRECTOR", "0109990028"),
+                        FirmanteEsperado.porIdentificacion(3, "RECTOR", "0109990010"));
+    }
+
+    @Test
+    void dadoUnFirmanteConNombrePeroSinPersona_cuandoSePrepara_entoncesFallaComoSinNombre() {
+        when(firmantes.firmantes(
+                        PERIODO, Set.of("RESPONSABLE_CONSOLIDACION", "VICERRECTOR", "RECTOR")))
+                .thenReturn(
+                        Map.of(
+                                "RESPONSABLE_CONSOLIDACION",
+                                NOMBRES.get("RESPONSABLE_CONSOLIDACION"),
+                                "VICERRECTOR",
+                                NOMBRES.get("VICERRECTOR"),
+                                "RECTOR",
+                                new FirmanteDelPeriodo(
+                                        "MORA EVA", Optional.empty(), Optional.empty())));
+
+        servicio.preparar(solicitud());
+
+        GeneracionDeDocumento generacion = documentos.generacion(PERIODO, 1);
+        assertThat(generacion.estado()).isEqualTo(EstadoDeGeneracion.FALLIDA);
+        assertThat(generacion.motivo()).contains("Falta el nombre del Rector.");
+        assertThat(documentos.documento(PERIODO, 1)).isEmpty();
     }
 
     @Test
@@ -249,7 +292,7 @@ class DocumentoFirmableServicioTest {
     void dadaUnaGeneracionFallida_cuandoElResponsableReintentaYYaEstaCorregida_entoncesGenerado() {
         sinNombreDelRector();
         servicio.preparar(solicitud());
-        when(firmantes.nombres(
+        when(firmantes.firmantes(
                         PERIODO, Set.of("RESPONSABLE_CONSOLIDACION", "VICERRECTOR", "RECTOR")))
                 .thenReturn(NOMBRES);
 
@@ -325,7 +368,7 @@ class DocumentoFirmableServicioTest {
         assertThat(fallida.acciones()).containsExactly("GENERAR");
         assertThat(servicio.estado(PERIODO, VICERRECTOR).acciones()).isEmpty();
 
-        when(firmantes.nombres(
+        when(firmantes.firmantes(
                         PERIODO, Set.of("RESPONSABLE_CONSOLIDACION", "VICERRECTOR", "RECTOR")))
                 .thenReturn(NOMBRES);
         servicio.generar(PERIODO, RESPONSABLE);
@@ -379,6 +422,7 @@ class DocumentoFirmableServicioTest {
 
         private final Map<String, GeneracionDeDocumento> generaciones = new TreeMap<>();
         private final Map<String, DocumentoFirmable> registrados = new TreeMap<>();
+        private final Map<UUID, List<FirmanteEsperado>> firmantes = new java.util.HashMap<>();
 
         @Override
         public Optional<GeneracionDeDocumento> bloquear(String periodo, int version) {
@@ -399,11 +443,41 @@ class DocumentoFirmableServicioTest {
         }
 
         @Override
-        public void registrar(DocumentoFirmable documento) {
+        public void registrar(DocumentoFirmable documento, List<FirmanteEsperado> esperados) {
             if (registrados.putIfAbsent(documento.periodo() + "/" + documento.version(), documento)
                     != null) {
                 throw new IllegalStateException("Ya hay un documento de esa versión");
             }
+            firmantes.put(documento.id(), List.copyOf(esperados));
+        }
+
+        @Override
+        public List<FirmasDelDocumento> generados() {
+            return registrados.values().stream()
+                    .map(documento -> firmas(documento.id()).orElseThrow())
+                    .toList();
+        }
+
+        @Override
+        public Optional<FirmasDelDocumento> firmas(UUID documento) {
+            return registrados.values().stream()
+                    .filter(uno -> uno.id().equals(documento))
+                    .findFirst()
+                    .map(
+                            uno ->
+                                    new FirmasDelDocumento(
+                                            uno,
+                                            generacion(uno.periodo(), uno.version()).cadena(),
+                                            firmantes.getOrDefault(uno.id(), List.of())));
+        }
+
+        /** Registra un documento de antes de F14-H01, sin firmantes esperados. */
+        void registrarSinFirmantes(DocumentoFirmable documento) {
+            registrados.put(documento.periodo() + "/" + documento.version(), documento);
+        }
+
+        List<FirmanteEsperado> firmantesDe(UUID documento) {
+            return firmantes.getOrDefault(documento, List.of());
         }
 
         @Override
