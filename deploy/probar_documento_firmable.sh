@@ -21,7 +21,7 @@
 #
 # MDD_CONSERVAR=1 (solo en el perfil local): deja el distributivo en EN_REVISION_VRA, con
 # docente.demo designado Responsable, y no borra nada, para recorrer a mano
-# specs/046-pdfa-consolidado/quickstart.md §3. Al terminar dice cómo limpiar.
+# specs/047-firmas-pendientes/quickstart.md §3. Al terminar dice cómo limpiar.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -618,7 +618,7 @@ if [[ -n $CONSERVAR ]]; then
         echo "No quedó en revisión. Para limpiar: docker compose -p tesis-prototipo-2026 down -v"
         exit 1
     fi
-    echo "Quedó en EN_REVISION_VRA, sin limpiar. Recorre specs/046-pdfa-consolidado/quickstart.md §3."
+    echo "Quedó en EN_REVISION_VRA, sin limpiar. Recorre specs/047-firmas-pendientes/quickstart.md §3."
     echo "Para limpiar al terminar: docker compose -p tesis-prototipo-2026 down -v"
     exit 0
 fi

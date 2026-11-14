@@ -227,9 +227,9 @@ description: "Tareas de F14-H01: ver mis firmas pendientes y descargar el PDF vi
   Actualizar el encabezado del script.
 
   La limpieza de `probar_documento_firmable.sh` y de `probar_aprobacion.sh` borra `firma.firmante_esperado` de los periodos de prueba antes que `documento_firmable` y `generacion_documento`, con el superusuario. Si el dueño no puede verificar las claves foráneas, se borra con `session_replication_role = replica`, como `generacion_documento`. La revisión de «base sin datos» del paso 0 y el conteo del final la cuentan también.
-- [ ] T018 Correr todos los scripts del workflow, en su orden, sobre un perfil construido desde la rama; `probar_autenticacion.sh` debe seguir igual. Recorrer `quickstart.md` §3 a mano (autor) y medir SC-001.
+- [X] T018 Correr todos los scripts del workflow, en su orden, sobre un perfil construido desde la rama; `probar_autenticacion.sh` debe seguir igual. Recorrer `quickstart.md` §3 a mano (autor) y medir SC-001.
 
-  **Resultado de los scripts (2026-11-14):** los 35 de `perfil-consolidado` pasan, en su orden, sobre un perfil construido desde la rama y con la base vacía (sin `probar_equipo.sh`, que simula el equipo de demostración). `probar_autenticacion.sh` pasa igual; `probar_documento_firmable.sh`, 8/8 en 44 s. Corrido solo, antes, 8/8 en 56 s, y en la base quedan la identificación de `rectorado.demo` y de `vicerrectorado.demo` y ningún firmante esperado. **Pendiente:** el recorrido a mano de `quickstart.md` §3 y SC-001, del autor.
+  **Resultado de los scripts (2026-11-14):** los 35 de `perfil-consolidado` pasan, en su orden, sobre un perfil construido desde la rama y con la base vacía (sin `probar_equipo.sh`, que simula el equipo de demostración). `probar_autenticacion.sh` pasa igual; `probar_documento_firmable.sh`, 8/8 en 44 s. Corrido solo, antes, 8/8 en 56 s, y en la base quedan la identificación de `rectorado.demo` y de `vicerrectorado.demo` y ningún firmante esperado. El recorrido a mano de `quickstart.md` §3, del autor: todo bien, y SC-001 en 35 s desde el inicio de sesión hasta la descarga (ver `evidencia.md`).
 - [X] T019 Correr completos:
   - `./gradlew build integrationTest`;
   - `:apps:distributivo:test` y `:apps:identidad:test` (Spring Modulith);
@@ -247,7 +247,7 @@ description: "Tareas de F14-H01: ver mis firmas pendientes y descargar el PDF vi
   - `IdentificacionDeUsuarios` (por qué no viaja en el token);
   - `DescargarArchivoVigente` (por qué recalcula el SHA-256 y el 403 común);
   - la identificación de la cuenta.
-- [ ] T021 Crear `specs/047-firmas-pendientes/evidencia.md`, como la de 046, con:
+- [X] T021 Crear `specs/047-firmas-pendientes/evidencia.md`, como la de 046, con:
   - las pruebas, la cobertura, la arquitectura, la SPA, los scripts, shellcheck y Gitleaks;
   - la tabla del script;
   - la comprobación a mano;
