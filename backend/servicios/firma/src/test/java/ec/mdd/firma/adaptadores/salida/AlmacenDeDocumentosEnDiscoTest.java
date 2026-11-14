@@ -74,4 +74,36 @@ class AlmacenDeDocumentosEnDiscoTest {
                 .isInstanceOf(IllegalArgumentException.class);
         assertThat(raiz.resolve("documentos")).doesNotExist();
     }
+
+    @Test
+    void dadoUnPdfGuardado_cuandoSeLeePorSuNombre_entoncesDevuelveLosMismosBytes() {
+        AlmacenDeDocumentosEnDisco almacen = new AlmacenDeDocumentosEnDisco(raiz);
+        String nombre = almacen.guardar(PDF, SHA);
+
+        assertThat(almacen.leer(nombre)).isEqualTo(PDF);
+    }
+
+    @Test
+    void dadoUnNombreSinArchivo_cuandoSeLee_entoncesFalla() {
+        AlmacenDeDocumentosEnDisco almacen = new AlmacenDeDocumentosEnDisco(raiz);
+
+        assertThatThrownBy(() -> almacen.leer("documentos/" + "b".repeat(64) + ".pdf"))
+                .isInstanceOf(java.io.UncheckedIOException.class);
+    }
+
+    @Test
+    void dadoUnNombreQueSaleDeDocumentos_cuandoSeLee_entoncesSeRechazaSinLeer() throws Exception {
+        Files.writeString(raiz.resolve("secreto.txt"), "no");
+        AlmacenDeDocumentosEnDisco almacen = new AlmacenDeDocumentosEnDisco(raiz);
+
+        for (String nombre :
+                java.util.List.of(
+                        "../secreto.txt",
+                        "documentos/../secreto.txt",
+                        "secreto.txt",
+                        "documentos/" + SHA + ".pdf/../../secreto.txt")) {
+            assertThatThrownBy(() -> almacen.leer(nombre))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
 }

@@ -17,6 +17,7 @@ import ec.mdd.usuarios.adaptadores.salida.RepositorioUsuariosJpa;
 import ec.mdd.usuarios.adaptadores.salida.UsuarioJpaRepositorio;
 import ec.mdd.usuarios.adaptadores.salida.VerificadorArgon2;
 import ec.mdd.usuarios.aplicacion.ConsultarBitacoraServicio;
+import ec.mdd.usuarios.aplicacion.ConsultarIdentificacionServicio;
 import ec.mdd.usuarios.aplicacion.EmitirTokenDeProcesoServicio;
 import ec.mdd.usuarios.aplicacion.IniciarSesionServicio;
 import ec.mdd.usuarios.aplicacion.ListarUsuariosServicio;
@@ -24,6 +25,7 @@ import ec.mdd.usuarios.aplicacion.RegistrarEventoRecibidoServicio;
 import ec.mdd.usuarios.aplicacion.RenovarSesionServicio;
 import ec.mdd.usuarios.dominio.PoliticaDeIntentos;
 import ec.mdd.usuarios.puertos.entrada.ConsultarBitacora;
+import ec.mdd.usuarios.puertos.entrada.ConsultarIdentificacion;
 import ec.mdd.usuarios.puertos.entrada.EmitirTokenDeProceso;
 import ec.mdd.usuarios.puertos.entrada.IniciarSesion;
 import ec.mdd.usuarios.puertos.entrada.ListarUsuarios;
@@ -137,6 +139,12 @@ public class ConfiguracionUsuarios {
     @Bean
     public ListarUsuarios listarUsuarios(RepositorioUsuarios repositorio) {
         return new ListarUsuariosServicio(repositorio);
+    }
+
+    /** La identificación de una cuenta, para Firma (F14-H01, D-102). */
+    @Bean
+    public ConsultarIdentificacion consultarIdentificacion(RepositorioUsuarios repositorio) {
+        return new ConsultarIdentificacionServicio(repositorio);
     }
 
     /** Renovación hasta {@code mdd.usuarios.token.maximo} desde el inicio (ADR-020). */

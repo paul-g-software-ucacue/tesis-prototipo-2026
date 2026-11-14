@@ -6,6 +6,8 @@ import ec.mdd.firma.adaptadores.salida.RepositorioDocumentosJdbc;
 import ec.mdd.firma.adaptadores.salida.TransaccionSpring;
 import ec.mdd.firma.dominio.DocumentoFirmable;
 import ec.mdd.firma.dominio.EstadoDeGeneracion;
+import ec.mdd.firma.dominio.FirmanteEsperado;
+import ec.mdd.firma.dominio.FirmasDelDocumento;
 import ec.mdd.firma.dominio.GeneracionDeDocumento;
 import ec.mdd.firma.dominio.PasoDeFirma;
 import ec.mdd.firma.infraestructura.FirmaFlywayConfig;
@@ -42,6 +44,10 @@ class RepositorioDocumentosIntegrationTest {
             List.of(
                     new PasoDeFirma(1, "Elaborado", "RESPONSABLE_CONSOLIDACION"),
                     new PasoDeFirma(2, "Revisado", "VICERRECTOR"));
+    private static final List<FirmanteEsperado> FIRMANTES =
+            List.of(
+                    FirmanteEsperado.porUsuario(1, "RESPONSABLE_CONSOLIDACION", "docente.demo"),
+                    FirmanteEsperado.porIdentificacion(2, "VICERRECTOR", "0109990028"));
 
     private static PostgreSQLContainer postgres;
     private static RepositorioDocumentosJdbc repositorio;
@@ -99,12 +105,54 @@ class RepositorioDocumentosIntegrationTest {
         transaccion.ejecutar(
                 () -> {
                     repositorio.guardar(generacion);
-                    repositorio.registrar(documento);
+                    repositorio.registrar(documento, FIRMANTES);
                     return null;
                 });
 
         assertThat(repositorio.documento(periodo, 1)).contains(documento);
         assertThat(repositorio.documento(periodo, 2)).isEmpty();
+    }
+
+    @Test
+    void dadoUnDocumentoConSusFirmantes_cuandoSeLeenSusFirmas_entoncesTraeCadenaYFirmantes() {
+        String periodo = periodo();
+        DocumentoFirmable documento = documento(periodo);
+        GeneracionDeDocumento generada = nueva(periodo);
+        generada.completar(MOMENTO);
+
+        transaccion.ejecutar(
+                () -> {
+                    repositorio.guardar(generada);
+                    repositorio.registrar(documento, FIRMANTES);
+                    return null;
+                });
+
+        FirmasDelDocumento firmas = repositorio.firmas(documento.id()).orElseThrow();
+        assertThat(firmas.documento()).isEqualTo(documento);
+        assertThat(firmas.cadena()).isEqualTo(CADENA);
+        assertThat(firmas.firmantes()).containsExactlyElementsOf(FIRMANTES);
+        assertThat(repositorio.generados())
+                .filteredOn(una -> una.documento().periodo().equals(periodo))
+                .singleElement()
+                .isEqualTo(firmas);
+        assertThat(repositorio.firmas(UUID.randomUUID())).isEmpty();
+    }
+
+    @Test
+    void dadoUnDocumentoDeUnaGeneracionQueNoEstaGenerada_cuandoSeLeen_entoncesNoAparece() {
+        String periodo = periodo();
+        DocumentoFirmable documento = documento(periodo);
+
+        transaccion.ejecutar(
+                () -> {
+                    repositorio.guardar(nueva(periodo));
+                    repositorio.registrar(documento, FIRMANTES);
+                    return null;
+                });
+
+        assertThat(repositorio.firmas(documento.id())).isEmpty();
+        assertThat(repositorio.generados())
+                .noneMatch(una -> una.documento().periodo().equals(periodo));
     }
 
     @Test
@@ -137,7 +185,8 @@ class RepositorioDocumentosIntegrationTest {
                                                     return null;
                                                 }
                                                 pausa();
-                                                repositorio.registrar(documento(periodo));
+                                                repositorio.registrar(
+                                                        documento(periodo), FIRMANTES);
                                                 una.completar(MOMENTO);
                                                 repositorio.guardar(una);
                                                 resultados.add("registró");

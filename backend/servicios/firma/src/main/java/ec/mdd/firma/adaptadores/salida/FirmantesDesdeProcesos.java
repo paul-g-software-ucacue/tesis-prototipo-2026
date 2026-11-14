@@ -11,14 +11,15 @@ import java.util.stream.Collectors;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /**
- * Los nombres de los firmantes del periodo, por las rutas internas de otros procesos (principio V,
- * ADR-023, F13-H02, research §6):
+ * Quién firma en el periodo, por las rutas internas de otros procesos (principio V, ADR-023,
+ * F13-H02, research §6; F14-H01, D-102): el nombre que se imprime y la persona que queda como
+ * firmante esperado.
  *
  * <ul>
- *   <li>el Rector y el Vicerrector académico: su cargo vigente y el nombre de ese docente, en
- *       Docentes (proceso datos);
- *   <li>el Responsable de consolidación: su designación del periodo y su nombre, en Roles (proceso
- *       identidad), porque no es un cargo de la carga de autoridades (ADR-003).
+ *   <li>el Rector y el Vicerrector académico: su cargo vigente, con el nombre y la identificación
+ *       de ese docente, en Docentes (proceso datos);
+ *   <li>el Responsable de consolidación: su designación del periodo, con su usuario y su nombre, en
+ *       Roles (proceso identidad), porque no es un cargo de la carga de autoridades (ADR-003).
  * </ul>
  *
  * <p>Un rol sin titular o sin nombre no está en la respuesta: el dominio falla con su cargo. Solo
@@ -45,25 +46,30 @@ public final class FirmantesDesdeProcesos implements FirmantesDelPeriodo {
     }
 
     @Override
-    public Map<String, String> nombres(String periodo, Set<String> roles) {
-        Map<String, String> nombres = new HashMap<>();
+    public Map<String, FirmanteDelPeriodo> firmantes(String periodo, Set<String> roles) {
+        Map<String, FirmanteDelPeriodo> firmantes = new HashMap<>();
         if (roles.stream().anyMatch(CARGOS_DE_AUTORIDAD::contains)) {
-            nombres.putAll(autoridades(roles));
+            firmantes.putAll(autoridades(roles));
         }
         if (roles.contains(RESPONSABLE)) {
             consultas
                     .obtener(
                             ruta(identidad, "roles", "periodos", periodo, "responsable"),
                             Responsable.class)
-                    .map(Responsable::nombre)
-                    .filter(nombre -> !nombre.isBlank())
-                    .ifPresent(nombre -> nombres.put(RESPONSABLE, nombre));
+                    .filter(responsable -> !responsable.nombre().isBlank())
+                    .ifPresent(
+                            responsable ->
+                                    firmantes.put(
+                                            RESPONSABLE,
+                                            FirmanteDelPeriodo.porUsuario(
+                                                    responsable.nombre(), responsable.usuario())));
         }
-        return Map.copyOf(nombres);
+        return Map.copyOf(firmantes);
     }
 
-    // El docente de cada cargo de autoridad vigente, por su nombre entre los activos.
-    private Map<String, String> autoridades(Set<String> roles) {
+    // El docente de cada cargo de autoridad vigente, por su nombre entre los activos y con su
+    // identificación, que reconoce a la cuenta firmante (D-102).
+    private Map<String, FirmanteDelPeriodo> autoridades(Set<String> roles) {
         List<Cargo> cargos =
                 consultas
                         .obtener(ruta(datos, "docentes", "cargos-vigentes"), Cargo[].class)
@@ -84,17 +90,20 @@ public final class FirmantesDesdeProcesos implements FirmantesDelPeriodo {
                                         Activo::identificacion,
                                         Activo::nombre,
                                         (una, otra) -> una));
-        Map<String, String> nombres = new HashMap<>();
+        Map<String, FirmanteDelPeriodo> firmantes = new HashMap<>();
         cargos.stream()
                 .filter(cargo -> roles.contains(cargo.tipo()))
                 .forEach(
                         cargo -> {
                             String nombre = activos.get(cargo.docente());
                             if (nombre != null && !nombre.isBlank()) {
-                                nombres.putIfAbsent(cargo.tipo(), nombre);
+                                firmantes.putIfAbsent(
+                                        cargo.tipo(),
+                                        FirmanteDelPeriodo.porIdentificacion(
+                                                nombre, cargo.docente()));
                             }
                         });
-        return nombres;
+        return firmantes;
     }
 
     private static URI ruta(URI base, String... segmentos) {

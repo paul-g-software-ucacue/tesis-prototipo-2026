@@ -10,14 +10,18 @@
 # aprueba. Sin que nadie lo pida, Firma genera el PDF/A con los tres campos de firma vacíos, lo
 # guarda en el volumen por su SHA-256 y lo registra; veraPDF (verapdf/cli:v1.30.2, perfil 2b) lo da
 # conforme. Pedirlo otra vez devuelve el mismo, sin otro
-# archivo ni otra entrada en la bitácora. Si la base ya tiene alguno de esos datos, falla sin tocar
+# archivo ni otra entrada en la bitácora. Desde F14-H01 (D-102;
+# specs/047-firmas-pendientes/contracts/demostracion.md): docente.demo, el designado, ve su firma
+# pendiente y descarga el PDF vigente con su SHA-256; quien no está en turno (consolidacion.demo,
+# con el rol pero sin la designación, y vicerrectorado.demo y rectorado.demo) no la ve y recibe
+# 403, y coordinacion.demo, sin el permiso, también. Si la base ya tiene alguno de esos datos, falla sin tocar
 # nada. Al terminar, aunque un paso falle, borra lo que creó (también los archivos del volumen),
 # salvo las entradas de la bitácora, que no se pueden borrar. Termina con 0 si todos los pasos pasan
 # y con 1 si alguno falla. Nunca imprime una clave ni un token.
 #
 # MDD_CONSERVAR=1 (solo en el perfil local): deja el distributivo en EN_REVISION_VRA, con
 # docente.demo designado Responsable, y no borra nada, para recorrer a mano
-# specs/046-pdfa-consolidado/quickstart.md §3. Al terminar dice cómo limpiar.
+# specs/047-firmas-pendientes/quickstart.md §3. Al terminar dice cómo limpiar.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -36,6 +40,7 @@ readonly TEXTO='Aceptada por la coordinación académica para este periodo'
 readonly VICERRECTOR=vicerrectorado.demo
 readonly APROBACION="$GATEWAY/api/validacionocs/periodos/$PERIODO/aprobacion"
 readonly DOCUMENTO="$GATEWAY/api/firma/periodos/$PERIODO/documento"
+readonly PENDIENTES="$GATEWAY/api/firma/pendientes"
 readonly VERAPDF=verapdf/cli:v1.30.2
 readonly CONSERVAR="${MDD_CONSERVAR:-}"
 
@@ -224,9 +229,11 @@ delete from generacion.parcial_carrera where version_id in (select v.id from gen
 delete from generacion.version_distributivo where distributivo_id in (select id from generacion.distributivo where periodo in ($periodos));
 delete from generacion.distributivo where periodo in ($periodos);
 delete from validacionocs.proceso_aprobacion where periodo in ($periodos);
+delete from firma.firmante_esperado where periodo in ($periodos);
 delete from firma.documento_firmable where periodo in ($periodos);
--- El proceso no puede cambiar los documentos (V2 de firma), así que tampoco pasa la verificación de
--- la clave foránea al borrar su generación; sin documentos ya, se borra sin los disparadores.
+-- El proceso no puede cambiar los documentos ni sus firmantes (V2 y V3 de firma), así que tampoco
+-- pasa la verificación de la clave foránea al borrar su generación; sin ellos ya, se borra sin los
+-- disparadores.
 set session_replication_role = replica;
 delete from firma.generacion_documento where periodo in ($periodos);
 set session_replication_role = origin;
@@ -263,6 +270,7 @@ delete from eventos_datos.event_publication where serialized_event::jsonb -> 'co
         + (select count(*) from generacion.registro_cambio where momento >= '$inicio')
         + (select count(*) from validacionocs.proceso_aprobacion where periodo in ($periodos))
         + (select count(*) from firma.generacion_documento where periodo in ($periodos))
+        + (select count(*) from firma.firmante_esperado where periodo in ($periodos))
         + (select count(*) from roles.designacion_responsable where periodo in ($periodos))
         + (select count(*) from docentes.docente where identificacion in ($docentes))
         + (select count(*) from academico.periodo_academico where codigo in ($periodos))" 2>/dev/null || echo '?')
@@ -282,6 +290,7 @@ ya_estan=$(consultar_base "select (select count(*) from academico.unidad_organic
     + (select count(*) from generacion.distributivo)
     + (select count(*) from validacionocs.proceso_aprobacion where periodo in ($periodos))
     + (select count(*) from firma.generacion_documento where periodo in ($periodos))
+    + (select count(*) from firma.firmante_esperado where periodo in ($periodos))
     + (select count(*) from roles.designacion_responsable where periodo in ($periodos))")
 if [[ $ya_estan != 0 ]]; then
     echo "FALLA  0. La base ya tiene $ya_estan unidades, carreras, datos de prueba, carreras de coordinadores o distributivos: no se tocan."
@@ -549,13 +558,67 @@ bitacora() {
     hay_entradas 1 "$condicion"
 }
 
+# descargar <url>: el archivo en $carpeta/descargado.pdf y las cabeceras en $carpeta/cabeceras, con
+# el token de $token; deja el estado en $estado.
+descargar() {
+    estado=$(curl -s -D "$carpeta/cabeceras" -o "$carpeta/descargado.pdf" -w '%{http_code}' \
+        -H "Authorization: Bearer $token" "$1" || echo '000')
+}
+
+cabecera() {  # cabecera <nombre>: su valor en la última descarga, sin el fin de línea
+    grep -i "^$1:" "$carpeta/cabeceras" | head -1 | cut -d' ' -f2- | tr -d '\r'
+}
+
+id_del_documento() {
+    consultar_base "select id from firma.documento_firmable where periodo = '$PERIODO'"
+}
+
+# --- 7. El designado ve su firma pendiente y descarga el PDF vigente, con su SHA-256 ---
+pendiente_del_designado() {
+    local id
+    id=$(id_del_documento)
+    [[ -n $id ]] || return 1
+    iniciar "$DESIGNADO"
+    pedir GET "$PENDIENTES" "Bearer $token"
+    [[ $estado == 200 ]] || return 1
+    [[ $(jq -c --arg p "$PERIODO" '[.[] | select(.periodo == $p) | [.documento, .version, .orden, .rotulo]]' \
+        <<<"$cuerpo") == "[[\"$id\",1,1,\"Elaborado por\"]]" ]] || return 1
+    descargar "$GATEWAY/api/firma/documentos/$id/archivo"
+    [[ $estado == 200 ]] || return 1
+    [[ $(cabecera Content-Type) == application/pdf* ]] || return 1
+    [[ $(cabecera Content-Disposition) == *"filename=\"distributivo-$PERIODO-v1.pdf\""* ]] || return 1
+    [[ $(cabecera ETag) == "\"$sha\"" ]] || return 1
+    [[ $(sha256sum "$carpeta/descargado.pdf" | cut -d' ' -f1) == "$sha" ]]
+}
+
+# --- 8. Quien no está en turno no la ve y recibe 403; sin el permiso, 403 en las dos ---
+nadie_mas() {
+    local id usuario
+    id=$(id_del_documento)
+    [[ -n $id ]] || return 1
+    for usuario in "$RESPONSABLE" "$VICERRECTOR" rectorado.demo; do
+        iniciar "$usuario"
+        pedir GET "$PENDIENTES" "Bearer $token"
+        [[ $estado == 200 && $(jq -c --arg p "$PERIODO" '[.[] | select(.periodo == $p)]' <<<"$cuerpo") == '[]' ]] \
+            || { echo "       $usuario ve la firma pendiente" >&2; return 1; }
+        pedir GET "$GATEWAY/api/firma/documentos/$id/archivo" "Bearer $token"
+        es_codigo 403 SEGURIDAD_ACCESO_NO_AUTORIZADO \
+            || { echo "       $usuario descarga ($estado)" >&2; return 1; }
+    done
+    iniciar "$COORDINADOR"
+    pedir GET "$PENDIENTES" "Bearer $token"
+    es_codigo 403 SEGURIDAD_ACCESO_NO_AUTORIZADO || return 1
+    pedir GET "$GATEWAY/api/firma/documentos/$id/archivo" "Bearer $token"
+    es_codigo 403 SEGURIDAD_ACCESO_NO_AUTORIZADO
+}
+
 if [[ -n $CONSERVAR ]]; then
     verificar 1 "El consolidado listo, enviado a revisión y con $DESIGNADO designado: EN_REVISION_VRA" en_revision_y_designado
     if ((fallas > 0)); then
         echo "No quedó en revisión. Para limpiar: docker compose -p tesis-prototipo-2026 down -v"
         exit 1
     fi
-    echo "Quedó en EN_REVISION_VRA, sin limpiar. Recorre specs/046-pdfa-consolidado/quickstart.md §3."
+    echo "Quedó en EN_REVISION_VRA, sin limpiar. Recorre specs/047-firmas-pendientes/quickstart.md §3."
     echo "Para limpiar al terminar: docker compose -p tesis-prototipo-2026 down -v"
     exit 0
 fi
@@ -566,6 +629,8 @@ verificar 3 "El archivo del volumen es documentos/<sha256>.pdf y su SHA-256 es e
 verificar 4 "veraPDF ($VERAPDF, PDF/A-2b) lo da conforme, con los tres campos de firma vacíos" conforme
 verificar 5 "Un POST del Responsable devuelve el mismo, sin otro archivo ni fila; coordinacion.demo, 403" idempotente
 verificar 6 "La bitácora: una DOCUMENTO_FIRMABLE_GENERADO con la versión, el hash y el SHA-256" bitacora
+verificar 7 "$DESIGNADO ve su firma pendiente («Elaborado por») y descarga el PDF con el SHA-256 registrado" pendiente_del_designado
+verificar 8 "$RESPONSABLE, $VICERRECTOR y rectorado.demo no la ven y reciben 403; $COORDINADOR, sin permiso, 403" nadie_mas
 
 if ((fallas > 0)); then
     echo "El documento firmable de punta a punta: $fallas paso(s) fallan."

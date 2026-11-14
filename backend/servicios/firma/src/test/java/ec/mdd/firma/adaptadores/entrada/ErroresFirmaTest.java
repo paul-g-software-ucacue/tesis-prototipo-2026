@@ -3,6 +3,7 @@ package ec.mdd.firma.adaptadores.entrada;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
+import ec.mdd.firma.dominio.ArchivoNoDisponible;
 import ec.mdd.firma.dominio.EtapaNoAdmiteGeneracion;
 import ec.mdd.firma.dominio.GeneracionFallida;
 import ec.mdd.plataforma.errores.nucleo.DetalleRespuesta;
@@ -30,7 +31,8 @@ class ErroresFirmaTest {
                                 EtapaNoAdmiteGeneracion.class,
                                 "FIRMA_ETAPA_NO_ADMITE_GENERACION",
                                 409),
-                        tuple(GeneracionFallida.class, "FIRMA_GENERACION_FALLIDA", 409));
+                        tuple(GeneracionFallida.class, "FIRMA_GENERACION_FALLIDA", 409),
+                        tuple(ArchivoNoDisponible.class, "FIRMA_ARCHIVO_NO_DISPONIBLE", 500));
     }
 
     @Test

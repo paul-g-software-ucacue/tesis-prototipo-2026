@@ -19,6 +19,7 @@ import {
   LECTURA_DE_LA_ESTRUCTURA,
   LECTURA_DE_LA_OFERTA,
   LECTURA_DE_LOS_DOCENTES,
+  FIRMA_DEL_DISTRIBUTIVO,
   LECTURA_DEL_FLUJO,
   LECTURA_DEL_PANEL,
   PREPARACION_DEL_PERIODO,
@@ -61,6 +62,11 @@ const ENTRADAS: Entrada[] = [
   { ruta: '/inconsistencias', texto: 'Panel de inconsistencias', permiso: LECTURA_DEL_PANEL },
   { ruta: '/consolidado', texto: 'Consolidado del periodo', permiso: LECTURA_DEL_PANEL },
   { ruta: '/flujo', texto: 'Flujo y firmas', permiso: LECTURA_DEL_FLUJO },
+  {
+    ruta: '/firmas-pendientes',
+    texto: 'Pendientes de firma',
+    permiso: FIRMA_DEL_DISTRIBUTIVO,
+  },
   { ruta: '/bitacora', texto: 'Bitácora', permiso: { funcionalidad: 'BITACORA', tipo: 'LECTURA' } },
 ];
 

@@ -1,6 +1,7 @@
 package ec.mdd.usuarios;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ec.mdd.usuarios.infraestructura.UsuariosFlywayConfig;
 import java.sql.Connection;
@@ -9,8 +10,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
@@ -47,6 +51,38 @@ class UsuariosEsquemaIntegrationTest {
                             "usuarios.intento_fallido");
             assertThat(tablas).allMatch(tabla -> tabla.startsWith("usuarios."));
         }
+    }
+
+    @Test
+    void dadasDosCuentas_cuandoTienenLaMismaIdentificacion_entoncesSeRechazaLaSegunda() {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+            postgres.start();
+            DataSource dataSource =
+                    new DriverManagerDataSource(
+                            postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+            new UsuariosFlywayConfig().flywayUsuarios(dataSource).migrate();
+            JdbcClient jdbc = JdbcClient.create(dataSource);
+
+            cuenta(jdbc, "sin.uno", null);
+            cuenta(jdbc, "sin.dos", null);
+            cuenta(jdbc, "vicerrectorado.demo", "0109990028");
+
+            assertThatThrownBy(() -> cuenta(jdbc, "otra.cuenta", "0109990028"))
+                    .isInstanceOf(DataAccessException.class);
+            assertThatThrownBy(() -> cuenta(jdbc, "mal.formada", "abc-1"))
+                    .isInstanceOf(DataAccessException.class);
+        }
+    }
+
+    private static void cuenta(JdbcClient jdbc, String usuario, String identificacion) {
+        jdbc.sql(
+                        "insert into usuarios.usuario (id, nombre_usuario, clave_hash, activo,"
+                                + " nombre_para_mostrar, identificacion) values (:id, :usuario,"
+                                + " 'x', true, :usuario, :identificacion)")
+                .param("id", UUID.randomUUID())
+                .param("usuario", usuario)
+                .param("identificacion", identificacion)
+                .update();
     }
 
     private static List<String> tablasDeUsuario(DataSource dataSource) throws SQLException {

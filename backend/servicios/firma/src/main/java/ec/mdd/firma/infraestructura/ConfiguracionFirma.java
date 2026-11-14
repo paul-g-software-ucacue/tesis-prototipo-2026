@@ -4,14 +4,17 @@ import ec.mdd.firma.adaptadores.salida.AlmacenDeDocumentosEnDisco;
 import ec.mdd.firma.adaptadores.salida.ContenidoDesdeGeneracion;
 import ec.mdd.firma.adaptadores.salida.FirmantesDesdeProcesos;
 import ec.mdd.firma.adaptadores.salida.GeneradorPdfa;
+import ec.mdd.firma.adaptadores.salida.IdentificacionDesdeUsuarios;
 import ec.mdd.firma.adaptadores.salida.PublicadorDeCambios;
 import ec.mdd.firma.adaptadores.salida.RepositorioDocumentosJdbc;
 import ec.mdd.firma.adaptadores.salida.TransaccionSpring;
 import ec.mdd.firma.aplicacion.DocumentoFirmableServicio;
+import ec.mdd.firma.aplicacion.FirmasPendientesServicio;
 import ec.mdd.firma.puertos.salida.AlmacenDeDocumentos;
 import ec.mdd.firma.puertos.salida.ContenidoDelDistributivo;
 import ec.mdd.firma.puertos.salida.FirmantesDelPeriodo;
 import ec.mdd.firma.puertos.salida.GeneradorDePdf;
+import ec.mdd.firma.puertos.salida.IdentificacionDeUsuarios;
 import ec.mdd.firma.puertos.salida.RegistroDeCambios;
 import ec.mdd.firma.puertos.salida.RepositorioDocumentos;
 import ec.mdd.firma.puertos.salida.Transaccion;
@@ -58,6 +61,13 @@ public class ConfiguracionFirma {
         return new FirmantesDesdeProcesos(consultas, datos, identidad);
     }
 
+    /** La identificación de una cuenta, de Usuarios en el proceso identidad (F14-H01, ADR-023). */
+    @Bean
+    public IdentificacionDeUsuarios identificacionDeUsuarios(
+            ConsultasEntreProcesos consultas, @Value("${mdd.procesos.identidad}") URI identidad) {
+        return new IdentificacionDesdeUsuarios(consultas, identidad);
+    }
+
     /** El PDF/A-2b con OpenHTMLtoPDF y PDFBox. */
     @Bean
     public GeneradorDePdf generadorDePdf() {
@@ -98,5 +108,18 @@ public class ConfiguracionFirma {
                 registroDeCambiosFirma,
                 transaccionFirma,
                 Clock.systemUTC());
+    }
+
+    /**
+     * Las firmas pendientes de cada usuario y la descarga del archivo vigente, solo para el
+     * firmante en turno (F14-H01, D-102).
+     */
+    @Bean
+    public FirmasPendientesServicio firmasPendientes(
+            RepositorioDocumentos repositorioDocumentos,
+            AlmacenDeDocumentos almacenDeDocumentos,
+            IdentificacionDeUsuarios identificacionDeUsuarios) {
+        return new FirmasPendientesServicio(
+                repositorioDocumentos, almacenDeDocumentos, identificacionDeUsuarios);
     }
 }

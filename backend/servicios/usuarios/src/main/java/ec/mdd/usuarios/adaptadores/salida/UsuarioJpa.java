@@ -5,6 +5,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -30,6 +31,9 @@ public class UsuarioJpa {
     @Column(nullable = false)
     private boolean activo;
 
+    @Column(length = 13)
+    private String identificacion;
+
     /** Para JPA. */
     protected UsuarioJpa() {}
 
@@ -47,10 +51,16 @@ public class UsuarioJpa {
         nombreParaMostrar = usuario.nombreParaMostrar();
         claveHash = usuario.claveHash();
         activo = usuario.activo();
+        identificacion = usuario.identificacion().orElse(null);
     }
 
     /** El usuario del dominio que representa esta fila. */
     Usuario aDominio() {
-        return new Usuario(nombreUsuario, nombreParaMostrar, claveHash, activo);
+        return new Usuario(
+                nombreUsuario,
+                nombreParaMostrar,
+                claveHash,
+                activo,
+                Optional.ofNullable(identificacion));
     }
 }

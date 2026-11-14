@@ -14,6 +14,7 @@ import { Proyectos } from './pantallas/proyectos/Proyectos';
 import { Actividades } from './pantallas/actividades/Actividades';
 import { Bitacora } from './pantallas/bitacora/Bitacora';
 import { Consolidado } from './pantallas/consolidado/Consolidado';
+import { FirmasPendientes } from './pantallas/firmas/FirmasPendientes';
 import { Flujo } from './pantallas/flujo/Flujo';
 import { Inconsistencias } from './pantallas/inconsistencias/Inconsistencias';
 import { Oferta } from './pantallas/oferta/Oferta';
@@ -29,6 +30,7 @@ import {
   LECTURA_DE_LA_ESTRUCTURA,
   LECTURA_DE_LA_OFERTA,
   LECTURA_DE_LOS_DOCENTES,
+  FIRMA_DEL_DISTRIBUTIVO,
   LECTURA_DEL_FLUJO,
   LECTURA_DEL_PANEL,
 } from './sesion/funcionalidades';
@@ -96,6 +98,14 @@ export const rutasDeLaSpa: RouteObject[] = [
         element: (
           <RutaConPermiso cualquieraDe={LECTURA_DEL_FLUJO}>
             <Flujo />
+          </RutaConPermiso>
+        ),
+      },
+      {
+        path: 'firmas-pendientes',
+        element: (
+          <RutaConPermiso cualquieraDe={FIRMA_DEL_DISTRIBUTIVO}>
+            <FirmasPendientes />
           </RutaConPermiso>
         ),
       },

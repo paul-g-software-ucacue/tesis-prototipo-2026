@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import ec.mdd.firma.dominio.ContenidoDelDocumento;
 import ec.mdd.firma.puertos.salida.ContenidoDelDistributivo;
 import ec.mdd.firma.puertos.salida.FirmantesDelPeriodo;
+import ec.mdd.firma.puertos.salida.FirmantesDelPeriodo.FirmanteDelPeriodo;
 import ec.mdd.validacionocs.puertos.salida.AvisoDeFirma;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -75,6 +76,16 @@ class DocumentoFirmableIntegrationTest {
         String sha = (String) documento.get("sha256_original");
         assertThat(documento.get("archivo")).isEqualTo("documentos/" + sha + ".pdf");
         assertThat(ARCHIVOS.resolve("documentos/" + sha + ".pdf")).exists();
+        // F14-H01: el firmante esperado de cada paso, registrado con el documento. Con el rol del
+        // proceso lo prueba DocumentoFirmableEsquemaIntegrationTest de Firma.
+        assertThat(
+                        jdbc.queryForList(
+                                "SELECT orden || ':' || coalesce(usuario, identificacion)"
+                                        + " FROM firma.firmante_esperado WHERE periodo = ?"
+                                        + " ORDER BY orden",
+                                String.class,
+                                periodo))
+                .containsExactly("1:docente.demo", "2:0109990028", "3:0109990010");
         assertThat(
                         jdbc.queryForObject(
                                 "SELECT count(*) FROM eventos_distributivo.event_publication"
@@ -187,9 +198,12 @@ class DocumentoFirmableIntegrationTest {
                     Thread.currentThread().interrupt();
                 }
                 return Map.of(
-                        "RESPONSABLE_CONSOLIDACION", "PÉREZ ANA",
-                        "VICERRECTOR", "LÓPEZ LUIS",
-                        "RECTOR", "MORA EVA");
+                        "RESPONSABLE_CONSOLIDACION",
+                        FirmanteDelPeriodo.porUsuario("PÉREZ ANA", "docente.demo"),
+                        "VICERRECTOR",
+                        FirmanteDelPeriodo.porIdentificacion("LÓPEZ LUIS", "0109990028"),
+                        "RECTOR",
+                        FirmanteDelPeriodo.porIdentificacion("MORA EVA", "0109990010"));
             };
         }
     }

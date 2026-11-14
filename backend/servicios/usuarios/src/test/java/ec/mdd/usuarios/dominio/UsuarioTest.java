@@ -3,6 +3,7 @@ package ec.mdd.usuarios.dominio;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class UsuarioTest {
@@ -45,5 +46,31 @@ class UsuarioTest {
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new Usuario("docente.demo", null, "hash", true))
                 .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    void dadoUnUsuarioSinIdentificacion_cuandoSeCrea_entoncesNoLaTiene() {
+        assertThat(new Usuario("docente.demo", "Docente", "hash", true).identificacion()).isEmpty();
+    }
+
+    @Test
+    void dadaUnaIdentificacionConElFormatoDeDocentes_cuandoSeCreaElUsuario_entoncesLaGuarda() {
+        Usuario usuario =
+                new Usuario(
+                        "vicerrectorado.demo",
+                        "Vicerrectorado",
+                        "hash",
+                        true,
+                        Optional.of("0109990028"));
+
+        assertThat(usuario.identificacion()).contains("0109990028");
+        assertThat(usuario.toString()).doesNotContain("0109990028");
+    }
+
+    @Test
+    void dadaUnaIdentificacionMalFormada_cuandoSeCreaElUsuario_entoncesSeRechaza() {
+        assertThatThrownBy(
+                        () -> new Usuario("otro.demo", "Otro", "hash", true, Optional.of("abc-1")))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }

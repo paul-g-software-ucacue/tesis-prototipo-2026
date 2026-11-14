@@ -8,14 +8,9 @@ import ec.mdd.firma.puertos.entrada.ConsultarDocumentoFirmable;
 import ec.mdd.firma.puertos.entrada.GenerarDocumentoFirmable;
 import ec.mdd.firma.puertos.entrada.Solicitante;
 import java.time.ZoneOffset;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -26,8 +21,6 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 class DocumentoControlador implements DocumentoFirmableApi {
-
-    private static final String ROL = "ROLE_";
 
     private final ConsultarDocumentoFirmable consultar;
     private final GenerarDocumentoFirmable generar;
@@ -57,14 +50,7 @@ class DocumentoControlador implements DocumentoFirmableApi {
 
     // Quién es y sus roles, del token.
     private static Solicitante solicitante() {
-        Authentication autenticacion = SecurityContextHolder.getContext().getAuthentication();
-        Set<String> roles =
-                autenticacion.getAuthorities().stream()
-                        .map(GrantedAuthority::getAuthority)
-                        .filter(una -> una.startsWith(ROL))
-                        .map(una -> una.substring(ROL.length()))
-                        .collect(Collectors.toSet());
-        return new Solicitante(autenticacion.getName(), roles);
+        return SolicitanteDelToken.actual();
     }
 
     private static EstadoDelDocumento respuesta(

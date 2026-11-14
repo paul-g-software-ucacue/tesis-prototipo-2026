@@ -3,6 +3,7 @@ package ec.mdd.firma.adaptadores.salida;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
+import ec.mdd.firma.puertos.salida.FirmantesDelPeriodo.FirmanteDelPeriodo;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
 import ec.mdd.plataforma.eventos.ProveedorDeTokenDeProceso;
 import ec.mdd.plataforma.pruebas.ReceptorSimulado;
@@ -48,11 +49,17 @@ class FirmantesDesdeProcesosTest {
                 200,
                 "{\"usuario\":\"consolidacion.demo\",\"nombre\":\"PÉREZ ANA\"}");
 
-        assertThat(firmantes.nombres("2026-I", CADENA))
+        assertThat(firmantes.firmantes("2026-I", CADENA))
                 .containsOnly(
-                        entry("RESPONSABLE_CONSOLIDACION", "PÉREZ ANA"),
-                        entry("VICERRECTOR", "LÓPEZ LUIS"),
-                        entry("RECTOR", "MORA EVA"));
+                        entry(
+                                "RESPONSABLE_CONSOLIDACION",
+                                FirmanteDelPeriodo.porUsuario("PÉREZ ANA", "consolidacion.demo")),
+                        entry(
+                                "VICERRECTOR",
+                                FirmanteDelPeriodo.porIdentificacion("LÓPEZ LUIS", "0109990028")),
+                        entry(
+                                "RECTOR",
+                                FirmanteDelPeriodo.porIdentificacion("MORA EVA", "0109990010")));
     }
 
     @Test
@@ -63,7 +70,7 @@ class FirmantesDesdeProcesosTest {
                 404,
                 "{\"codigo\":\"ROLES_SIN_RESPONSABLE\"}");
 
-        assertThat(firmantes.nombres("2026-I", CADENA))
+        assertThat(firmantes.firmantes("2026-I", CADENA))
                 .doesNotContainKey("RESPONSABLE_CONSOLIDACION")
                 .containsKeys("VICERRECTOR", "RECTOR");
     }
@@ -76,14 +83,14 @@ class FirmantesDesdeProcesosTest {
                 "[{\"docente\":\"0109990010\",\"tipo\":\"RECTOR\"}]");
         receptor.responderConsulta("/interno/docentes/activos", 200, "[]");
 
-        assertThat(firmantes.nombres("2026-I", Set.of("RECTOR"))).isEmpty();
+        assertThat(firmantes.firmantes("2026-I", Set.of("RECTOR"))).isEmpty();
     }
 
     @Test
     void dadaUnaCadenaSinResponsable_cuandoSePidenLosNombres_entoncesNoConsultaARoles() {
         conCargos();
 
-        firmantes.nombres("2026-I", Set.of("VICERRECTOR", "RECTOR"));
+        firmantes.firmantes("2026-I", Set.of("VICERRECTOR", "RECTOR"));
 
         assertThat(receptor.direccionesConsultadas())
                 .noneMatch(direccion -> direccion.contains("/interno/roles/"));

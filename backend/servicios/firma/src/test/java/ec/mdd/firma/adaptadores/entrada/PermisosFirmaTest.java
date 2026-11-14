@@ -17,11 +17,16 @@ import org.springframework.test.web.servlet.MockMvc;
 
 /**
  * Cada operación de Firma exige el permiso de su {@code x-mdd-permiso} (ADR-021): sin él responde
- * 403, y con él pasa (F13-H02).
+ * 403, y con él pasa (F13-H02, F14-H01).
  */
-@WebMvcTest(DocumentoControlador.class)
+@WebMvcTest({DocumentoControlador.class, FirmasPendientesControlador.class})
 @ImportAutoConfiguration({SeguridadProcesoAutoConfiguracion.class, ErroresAutoConfiguracion.class})
-@Import({DocumentoContratoTest.Dobles.class, ErroresFirma.class, ErroresEntreProcesos.class})
+@Import({
+    DocumentoContratoTest.Dobles.class,
+    FirmasPendientesContratoTest.Dobles.class,
+    ErroresFirma.class,
+    ErroresEntreProcesos.class
+})
 @TestPropertySource(
         properties =
                 "spring.security.oauth2.resourceserver.jwt.jwk-set-uri=http://127.0.0.1:9/jwks")
@@ -37,10 +42,14 @@ class PermisosFirmaTest {
     void dadoElContrato_cuandoSeVerificaCadaOperacion_entoncesExigeSuPermiso() {
         assertThat(verificador.operaciones())
                 .extracting(VerificadorDePermisos.OperacionProtegida::toString)
-                .hasSize(2)
+                .hasSize(4)
                 .anySatisfy(operacion -> assertThat(operacion).contains("CONSOLIDACION:LECTURA"))
+                .anySatisfy(operacion -> assertThat(operacion).contains("CONSOLIDACION:APROBACION"))
                 .anySatisfy(
-                        operacion -> assertThat(operacion).contains("CONSOLIDACION:APROBACION"));
+                        operacion ->
+                                assertThat(operacion)
+                                        .contains(
+                                                "GET /api/firma/pendientes (DISTRIBUTIVO:FIRMA)"));
 
         verificador.verificar(mvc, conversor);
     }
