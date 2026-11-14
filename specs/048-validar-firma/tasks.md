@@ -151,7 +151,7 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
   - la consulta de la identificación, fuera de la transacción.
 
   La regla del turno no se copia: el cálculo de «¿está este solicitante en turno en este documento?», con la identificación pedida una sola vez, sale de `FirmasPendientesServicio` a un componente de aplicación compartido por los dos servicios. `FirmasPendientesServicio` pasa a usar las firmas registradas, en lugar de `SIN_FIRMAS`, y sus pruebas siguen pasando.
-- [ ] T011 [US1] El controlador. Ver fallar primero en `SubirFirmaContratoTest`:
+- [X] T011 [US1] El controlador. Ver fallar primero en `SubirFirmaContratoTest`:
   - 201 con el informe según el esquema;
   - 400 sin la parte `archivo`, con un uuid mal formado y con un archivo vacío;
   - 413.
@@ -161,6 +161,12 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
   - el archivo vigente es el nuevo;
   - el siguiente está en turno;
   - el archivo anterior sigue en el almacén.
+
+**Resultado de T010 y T011 (2026-11-14):**
+- La regla del turno quedó en `FirmanteEnTurno` (aplicación), compartida por `FirmasPendientesServicio` y `SubirFirmaServicio`. Las 11 pruebas de `FirmasPendientesServicioTest` siguen igual.
+- `SubirFirmaServicioTest` (11) se escribió de una vez con los casos de T013, T014 y T015, porque prueban el mismo servicio.
+- El turno se comprueba antes que el tamaño: a quien no está en turno, un archivo vacío también le da 403, sin decir nada del documento.
+- La configuración: `mdd.firma.raices` en `apps/distributivo`, con `MDD_FIRMA_RAICES` para reemplazarla.
 
 **Checkpoint**: la cadena de tres firmas se completa por la API.
 
@@ -172,7 +178,7 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
 
 **Independent Test**: los PDF de los escenarios del issue y sin firma nueva se rechazan con su código; el turno y el archivo vigente siguen iguales.
 
-- [ ] T013 [US2] Ver fallar primero en `SubirFirmaServicioTest`:
+- [X] T013 [US2] Ver fallar primero en `SubirFirmaServicioTest`:
   - cada comprobación rechazada lanza `ArchivoFirmadoRechazado` con el informe, y su código es el de `primerRechazo()`;
   - no guarda el archivo;
   - registra la validación rechazada;
@@ -190,12 +196,14 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
 
 **Independent Test**: después de una aceptada y una rechazada, las dos tienen su fila en `validacion_firma` y su entrada en la bitácora.
 
-- [ ] T014 [US3] Ver fallar primero:
+- [X] T014 [US3] Ver fallar primero:
   - en `SubirFirmaServicioTest`: `FIRMA_RECHAZADA` con el detalle de research §9, en la misma transacción que la validación;
   - en `PublicadorDeCambiosTest`: las dos acciones nuevas;
   - en el informe rechazado, el certificado si había una sola firma nueva, y sin él si no.
 
   Luego, las acciones en `RegistroDeCambios.CambioDeFirma` y su publicación.
+
+**Resultado (2026-11-14):** `PublicadorDeCambiosTest` con las dos acciones pasó sin cambiar código: el publicador ya acepta cualquier acción. Es una prueba de confirmación, no una vista fallar.
 
 **Checkpoint**: cada subida es trazable.
 
@@ -207,7 +215,7 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
 
 **Independent Test**: el Vicerrector, el Rector, otro usuario con el rol de Responsable y uno sin permiso suben con F1 en turno, y reciben 403 sin fila.
 
-- [ ] T015 [US4] Ver fallar primero en `SubirFirmaServicioTest`: fuera de turno, otro con el rol, un documento inexistente, EN_CURSO o FALLIDO lanzan `SinTurnoDeFirma`. No validan, no guardan, no registran y no publican.
+- [X] T015 [US4] Ver fallar primero en `SubirFirmaServicioTest`: fuera de turno, otro con el rol, un documento inexistente, EN_CURSO o FALLIDO lanzan `SinTurnoDeFirma`. No validan, no guardan, no registran y no publican.
 
   En `SubirFirmaContratoTest`: el 403 tiene el mismo cuerpo que sin permiso y no menciona el documento.
 

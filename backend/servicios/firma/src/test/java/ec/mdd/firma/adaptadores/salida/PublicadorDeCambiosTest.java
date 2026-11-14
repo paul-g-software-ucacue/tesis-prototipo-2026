@@ -45,4 +45,39 @@ class PublicadorDeCambiosTest {
                 .containsEntry("nuevo", Map.of("estado", "GENERADO"))
                 .doesNotContainKey("anterior");
     }
+
+    @Test
+    void dadasLasSubidasDeFirma_cuandoSeRegistran_entoncesSusAccionesConLasComprobaciones() {
+        Map<String, Object> detalle =
+                Map.of(
+                        "periodo",
+                        "2026-I",
+                        "orden",
+                        1,
+                        "comprobaciones",
+                        Map.of("MISMO_DOCUMENTO", "RECHAZADA", "UNA_FIRMA_NUEVA", "NO_EVALUADA"));
+
+        publicador.registrar(
+                new CambioDeFirma(
+                        MOMENTO,
+                        "docente.demo",
+                        CambioDeFirma.FIRMA_RECHAZADA,
+                        detalle,
+                        Map.of("rechazo", "MISMO_DOCUMENTO")));
+        publicador.registrar(
+                new CambioDeFirma(
+                        MOMENTO,
+                        "docente.demo",
+                        CambioDeFirma.FIRMA_ACEPTADA,
+                        detalle,
+                        Map.of("sha256Vigente", "c".repeat(64))));
+
+        assertThat(publicados)
+                .extracting(evento -> ((EventoEntreProcesos) evento).contenido().get("accion"))
+                .containsExactly("FIRMA_RECHAZADA", "FIRMA_ACEPTADA");
+        assertThat(((EventoEntreProcesos) publicados.getFirst()).contenido())
+                .containsEntry("usuario", "docente.demo")
+                .containsEntry("periodo", "2026-I")
+                .containsEntry("objeto", detalle);
+    }
 }
