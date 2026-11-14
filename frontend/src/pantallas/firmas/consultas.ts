@@ -1,5 +1,6 @@
-// Las firmas pendientes del usuario y la descarga del archivo vigente (contratos/firma, F14-H01,
-// D-102). El servidor decide quién está en turno; la pantalla solo lo refleja.
+// Las firmas pendientes del usuario, la descarga del archivo vigente (contratos/firma, F14-H01,
+// D-102) y la subida del PDF firmado (F14-H02, D-103). El servidor decide quién está en turno y si
+// la firma se acepta; la pantalla solo lo refleja.
 import { useQuery } from '@tanstack/react-query';
 import { apiFirma, llamar } from '../../api/cliente';
 import type { components } from '../../api/generado/firma';
@@ -7,6 +8,7 @@ import { FalloDeApi } from '../../errores/traducir';
 import { guardar, nombreDelServidor } from '../plantillas/consultas';
 
 export type FirmaPendiente = components['schemas']['FirmaPendiente'];
+export type ResultadoValidacion = components['schemas']['ResultadoValidacion'];
 
 export const CLAVE_PENDIENTES = ['firma', 'pendientes'] as const;
 
@@ -34,5 +36,24 @@ export async function descargarArchivoVigente(pendiente: FirmaPendiente): Promis
     data,
     nombreDelServidor(response) ??
       `distributivo-${pendiente.periodo}-v${String(pendiente.version)}.pdf`,
+  );
+}
+
+/**
+ * Sube el PDF firmado del paso en turno. El servidor responde 201 con el resultado si lo acepta, o
+ * 422 con las cuatro comprobaciones en los detalles si lo rechaza.
+ */
+export function subirFirma(documento: string, archivo: File): Promise<ResultadoValidacion> {
+  return llamar(
+    apiFirma.POST('/api/firma/documentos/{documento}/firmas', {
+      params: { path: { documento } },
+      // El contrato tipa la parte binaria como texto; va el archivo tal cual, en un FormData.
+      body: { archivo: archivo as unknown as string },
+      bodySerializer: (cuerpo: { archivo: string }) => {
+        const formulario = new FormData();
+        formulario.append('archivo', cuerpo.archivo as unknown as File);
+        return formulario;
+      },
+    }),
   );
 }

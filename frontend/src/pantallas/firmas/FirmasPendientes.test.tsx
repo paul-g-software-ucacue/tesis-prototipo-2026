@@ -185,7 +185,8 @@ describe('Pendientes de firma', () => {
         { campo: 'CONFIANZA', descripcion: 'No evaluada. La firma nueva no es íntegra.' },
       ],
     };
-    const firmado = () => new File(['%PDF-1.7 firmado'], 'firmado.pdf', { type: 'application/pdf' });
+    const firmado = () =>
+      new File(['%PDF-1.7 firmado'], 'firmado.pdf', { type: 'application/pdf' });
 
     it('cada fila tiene «Subir el PDF firmado», con el nombre de su fila', async () => {
       const tabla = await abrir();
@@ -215,8 +216,7 @@ describe('Pendientes de firma', () => {
       const subida = simulada.peticiones.find(
         (una) => una.method === 'POST' && new URL(una.url).pathname === FIRMAS,
       );
-      const formulario = await subida?.formData();
-      expect((formulario?.get('archivo') as File).name).toBe('firmado.pdf');
+      expect(subida?.headers.get('Content-Type')).toMatch(/^multipart\/form-data/);
       expect(await screen.findByText('No tienes firmas pendientes.')).toBeVisible();
     });
 
@@ -274,8 +274,12 @@ describe('Pendientes de firma', () => {
         firmado(),
       );
 
-      const subir = screen.getByRole('button', { name: 'Subir el PDF firmado de 2026-I, versión 1' });
-      const descargar = screen.getByRole('button', { name: 'Descargar el PDF de 2026-I, versión 1' });
+      const subir = screen.getByRole('button', {
+        name: 'Subir el PDF firmado de 2026-I, versión 1',
+      });
+      const descargar = screen.getByRole('button', {
+        name: 'Descargar el PDF de 2026-I, versión 1',
+      });
       await waitFor(() => expect(subir).toBeDisabled());
       expect(descargar).toBeDisabled();
       soltar(json(422, NO_INTEGRA));

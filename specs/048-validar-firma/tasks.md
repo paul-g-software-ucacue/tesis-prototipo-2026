@@ -225,7 +225,7 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T016 La pantalla, según `contracts/spa.md`:
+- [X] T016 La pantalla, según `contracts/spa.md`:
   - `subirFirma` en `SPA/pantallas/firmas/consultas.ts`;
   - «Subir el PDF firmado» en `FirmasPendientes.tsx`;
   - el informe, como componente propio si crece.
