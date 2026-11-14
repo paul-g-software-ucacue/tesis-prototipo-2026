@@ -263,12 +263,12 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
   Actualizar la cabecera. La limpieza borra `validacion_firma` primero, también en `probar_aprobacion.sh`, y la cuenta en el paso 0 y al final. Los archivos temporales, en la carpeta temporal del script. shellcheck sin hallazgos.
 
   **Resultado (2026-11-14):** 13/13 (pasos 0 a 12) en la primera corrida sobre un perfil construido desde la rama. shellcheck sin hallazgos en `probar_documento_firmable.sh` y `probar_aprobacion.sh`. Después de la limpieza, `validacion_firma`, `firmante_esperado` y `documento_firmable` quedan en 0.
-- [ ] T020 Correr todos los scripts del workflow, en su orden, sobre un perfil construido desde la rama. Recorrer `quickstart.md` §3 a mano con FirmaEC (autor):
+- [X] T020 Correr todos los scripts del workflow, en su orden, sobre un perfil construido desde la rama. Recorrer `quickstart.md` §3 a mano con FirmaEC (autor):
   - medir SC-001;
   - anotar cómo firma FirmaEC (research §7);
   - abrir el PDF final con las tres firmas (SC-005).
 
-  **Resultado de los scripts (2026-11-14):** los 35 de `perfil-consolidado` pasan, en su orden, sobre un perfil construido desde la rama; `probar_documento_firmable.sh` en 98 s. **Pendiente:** el recorrido a mano con FirmaEC, del autor.
+  **Resultado de los scripts (2026-11-14):** los 35 de `perfil-consolidado` pasan, en su orden, sobre un perfil construido desde la rama; `probar_documento_firmable.sh` en 98 s. El recorrido a mano con FirmaEC, del autor: las tres firmas reales se aceptaron y SC-001 en 40 s. Encontró que FirmaEC agrega sus propios campos y un defecto en el nombre del certificado, corregido (ver `evidencia.md` y research §7).
 - [X] T021 Correr completos:
   - `./gradlew build integrationTest`;
   - `:apps:distributivo:test` (Spring Modulith);
@@ -288,7 +288,7 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
   - el bloqueo y la nueva comprobación;
   - la lista de confianza sin interruptores (ADR-017);
   - por qué la firma es la validación aceptada.
-- [ ] T023 Crear `specs/048-validar-firma/evidencia.md`, como la de 047, con:
+- [X] T023 Crear `specs/048-validar-firma/evidencia.md`, como la de 047, con:
   - las pruebas, la cobertura, la arquitectura, la SPA, los scripts, shellcheck y Gitleaks;
   - la tabla del script;
   - el recorrido con FirmaEC;
