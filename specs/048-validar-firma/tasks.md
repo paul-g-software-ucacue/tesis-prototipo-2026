@@ -133,7 +133,7 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
 
 **Independent Test**: con el paso en F1, `docente.demo` sube el vigente firmado con F1; recibe 201 con las cuatro aprobadas; el Vicerrector ve el documento y descarga el PDF con la primera firma.
 
-- [ ] T009 [US1] `RepositorioDocumentosJdbc`. Ver fallar primero en `RepositorioDocumentosIntegrationTest`:
+- [X] T009 [US1] `RepositorioDocumentosJdbc`. Ver fallar primero en `RepositorioDocumentosIntegrationTest`:
   - `firmas(id)` trae las firmas registradas, por orden;
   - `registrarValidacion` inserta la aceptada y la rechazada;
   - si las firmas cambiaron desde la validación, devuelve que se convirtió en rechazo y lo guarda así;
