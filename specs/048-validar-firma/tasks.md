@@ -140,7 +140,7 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
   - dos registros a la vez del mismo paso: uno se acepta.
 
   Luego, `registrarValidacion` con `FOR UPDATE` sobre `generacion_documento` (research §4) y la lectura de las firmas en `firmas` y en `generados`.
-- [ ] T010 [US1] `SubirFirmaServicio`, en `FIR/main/.../aplicacion/`, con el puerto de entrada `SubirFirma`. Ver fallar primero en `SubirFirmaServicioTest` (Mockito):
+- [X] T010 [US1] `SubirFirmaServicio`, en `FIR/main/.../aplicacion/`, con el puerto de entrada `SubirFirma`. Ver fallar primero en `SubirFirmaServicioTest` (Mockito):
   - en turno y aceptada:
     - guarda el archivo por su SHA-256;
     - registra la validación aceptada;

@@ -88,8 +88,25 @@ public record ResultadoValidacion(
                 .findFirst();
     }
 
-    /** Esqueleto (F14-H02, T010). */
+    /**
+     * El mismo resultado, rechazado porque otra subida registró la firma del paso entre la
+     * validación y el registro: el archivo ya no empieza con el vigente (D-103). Conserva el
+     * identificador, el archivo y el certificado.
+     */
     public ResultadoValidacion ganadaPorOtraSubida() {
-        throw new UnsupportedOperationException();
+        return new ResultadoValidacion(
+                id,
+                documento,
+                orden,
+                subidoPor,
+                subidoEn,
+                sha256Subido,
+                tamano,
+                ResultadoDeComprobacion.desde(
+                        ResultadoDeComprobacion.rechazada(
+                                Comprobacion.MISMO_DOCUMENTO,
+                                "Otra subida firmó este paso antes: el archivo ya no es la versión"
+                                        + " vigente.")),
+                certificado);
     }
 }
