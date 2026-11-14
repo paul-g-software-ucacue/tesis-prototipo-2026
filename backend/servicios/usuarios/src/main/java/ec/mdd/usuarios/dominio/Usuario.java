@@ -2,6 +2,8 @@ package ec.mdd.usuarios.dominio;
 
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.regex.Pattern;
 
 /**
  * Usuario del MDD que puede iniciar sesión.
@@ -16,16 +18,36 @@ import java.util.Objects;
  * @param activo si puede iniciar sesión
  */
 public record Usuario(
-        String nombreUsuario, String nombreParaMostrar, String claveHash, boolean activo) {
+        String nombreUsuario,
+        String nombreParaMostrar,
+        String claveHash,
+        boolean activo,
+        Optional<String> identificacion) {
 
-    /** Exige nombre, nombre para mostrar y hash, y normaliza el nombre. */
+    // El formato de Docentes: cédula de 10 dígitos o pasaporte de hasta 13 letras o dígitos.
+    private static final Pattern IDENTIFICACION = Pattern.compile("^[0-9A-Z]{1,13}$");
+
+    /** Un usuario sin identificación. */
+    public Usuario(
+            String nombreUsuario, String nombreParaMostrar, String claveHash, boolean activo) {
+        this(nombreUsuario, nombreParaMostrar, claveHash, activo, Optional.empty());
+    }
+
+    /**
+     * Exige nombre, nombre para mostrar y hash, y normaliza el nombre. La identificación es
+     * opcional; si está, tiene el formato de Docentes (F14-H01, D-102).
+     */
     public Usuario {
         Objects.requireNonNull(nombreUsuario, "nombreUsuario");
         Objects.requireNonNull(nombreParaMostrar, "nombreParaMostrar");
         Objects.requireNonNull(claveHash, "claveHash");
+        Objects.requireNonNull(identificacion, "identificacion");
         nombreUsuario = normalizar(nombreUsuario);
         if (nombreUsuario.isEmpty() || nombreParaMostrar.isBlank()) {
             throw new IllegalArgumentException("El usuario necesita nombre y nombre para mostrar");
+        }
+        if (identificacion.filter(una -> !IDENTIFICACION.matcher(una).matches()).isPresent()) {
+            throw new IllegalArgumentException("La identificación no tiene el formato de Docentes");
         }
     }
 

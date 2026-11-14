@@ -98,7 +98,7 @@ description: "Tareas de F14-H01: ver mis firmas pendientes y descargar el PDF vi
 
 **Independent Test**: `CargaUsuariosDemoTest`, la prueba de contrato de la ruta interna y `IdentificacionDesdeUsuariosTest`.
 
-- [ ] T006 [US3] En Usuarios, ver fallar primero:
+- [X] T006 [US3] En Usuarios, ver fallar primero:
   - `UsuarioTest` (o el del dominio de la cuenta): la identificación es opcional y cumple el patrón;
   - `CargaUsuariosDemoTest`:
     - pone la identificación del YAML;
@@ -110,7 +110,7 @@ description: "Tareas de F14-H01: ver mis firmas pendientes y descargar el PDF vi
   Después:
   - el dominio, el repositorio y `CargaUsuariosDemo`;
   - `identificacion: '0109990010'` y `'0109990028'` en `USU/main/resources/usuarios-demo.yaml`.
-- [ ] T007 [US3] La ruta interna. Ver fallar primero su prueba de contrato:
+- [X] T007 [US3] La ruta interna. Ver fallar primero su prueba de contrato:
   - 200 con la identificación;
   - 404 `USUARIOS_SIN_IDENTIFICACION`, igual sin cuenta que sin identificación;
   - solo con token de proceso.

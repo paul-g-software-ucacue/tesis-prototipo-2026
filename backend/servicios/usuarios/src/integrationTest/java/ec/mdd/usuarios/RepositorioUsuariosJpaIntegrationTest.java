@@ -7,6 +7,7 @@ import ec.mdd.usuarios.adaptadores.salida.RepositorioUsuariosJpa;
 import ec.mdd.usuarios.adaptadores.salida.UsuarioJpaRepositorio;
 import ec.mdd.usuarios.dominio.Usuario;
 import ec.mdd.usuarios.infraestructura.UsuariosFlywayConfig;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -65,6 +66,21 @@ class RepositorioUsuariosJpaIntegrationTest {
         assertThat(filas.count()).isEqualTo(1);
         assertThatThrownBy(() -> repositorio.actualizar(new Usuario("nadie", "Nadie", "h", true)))
                 .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void dadoUnUsuarioConIdentificacion_cuandoSeGuardaYSeCorrige_entoncesLaConserva() {
+        RepositorioUsuariosJpa repositorio = new RepositorioUsuariosJpa(filas);
+        repositorio.guardar(
+                new Usuario(
+                        "rectorado.demo", "Rectorado", "hash", true, Optional.of("0999999999")));
+        Usuario corregido =
+                new Usuario("rectorado.demo", "Rectorado", "hash", true, Optional.of("0109990010"));
+
+        repositorio.actualizar(corregido);
+        filas.flush();
+
+        assertThat(repositorio.buscarPorNombre("rectorado.demo")).contains(corregido);
     }
 
     @Test

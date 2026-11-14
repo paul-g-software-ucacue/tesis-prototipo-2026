@@ -92,6 +92,26 @@ class EmisorJwtTest {
     }
 
     @Test
+    void dadoUnUsuarioConIdentificacion_cuandoSeEmiteSuToken_entoncesNoLaLleva() throws Exception {
+        Usuario usuario =
+                new Usuario(
+                        "vicerrectorado.demo",
+                        "Vicerrectorado",
+                        "hash",
+                        true,
+                        java.util.Optional.of("0109990028"));
+
+        TokenEmitido token =
+                emisor.emitir(
+                        usuario,
+                        new AutorizacionDeUsuario(List.of("VICERRECTOR"), List.of(), null),
+                        ahora);
+
+        assertThat(SignedJWT.parse(token.valor()).getPayload().toString())
+                .doesNotContain("0109990028");
+    }
+
+    @Test
     void dadoUnProceso_cuandoSeEmiteSuToken_entoncesLlevaElRolDeProcesoYVidaCorta()
             throws Exception {
         TokenEmitido token = emisor.emitirParaProceso("distributivo");

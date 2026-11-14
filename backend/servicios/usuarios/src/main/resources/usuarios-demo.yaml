@@ -2,6 +2,8 @@
 # rol de la matriz D-16 y uno con dos roles. Aquí no hay contraseñas: en el equipo de demostración
 # salen de secretos/claves-demo, que genera deploy/equipo/preparar.sh; en local y en la CI, de
 # MDD_USUARIOS_DEMO_CLAVE. Si se agrega un usuario, hay que volver a correr preparar.sh en el equipo.
+# identificacion (opcional, F14-H01, D-102): la del docente del cargo vigente que representa la
+# cuenta, en los datos de prueba (08_cargos_autoridades.csv). Así Firma la reconoce como firmante.
 usuarios:
   - usuario: admin.demo
     nombre: Administración del sistema (demo)
@@ -21,9 +23,11 @@ usuarios:
   - usuario: vicerrectorado.demo
     nombre: Vicerrectorado académico (demo)
     roles: [VICERRECTOR]
+    identificacion: '0109990028'
   - usuario: rectorado.demo
     nombre: Rectorado (demo)
     roles: [RECTOR]
+    identificacion: '0109990010'
   - usuario: ocs.demo
     nombre: Miembro del OCS (demo)
     roles: [MIEMBRO_OCS]

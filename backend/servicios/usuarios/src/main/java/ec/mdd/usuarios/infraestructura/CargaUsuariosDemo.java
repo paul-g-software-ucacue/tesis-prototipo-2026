@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -59,12 +60,19 @@ public final class CargaUsuariosDemo implements ApplicationRunner {
      * @param usuario nombre de usuario
      * @param nombre nombre para mostrar
      * @param roles sus roles iniciales (identificadores de Roles)
+     * @param identificacion la de la persona que representa, si firma por un cargo (D-102)
      */
-    public record UsuarioDemo(String usuario, String nombre, Set<String> roles) {
+    public record UsuarioDemo(
+            String usuario, String nombre, Set<String> roles, Optional<String> identificacion) {
 
         /** Copia los roles. */
         public UsuarioDemo {
             roles = Set.copyOf(roles);
+        }
+
+        /** Un usuario de la demo sin identificación. */
+        public UsuarioDemo(String usuario, String nombre, Set<String> roles) {
+            this(usuario, nombre, roles, Optional.empty());
         }
     }
 
@@ -95,23 +103,32 @@ public final class CargaUsuariosDemo implements ApplicationRunner {
     }
 
     /**
-     * Lee la lista {@code usuarios} de un YAML con {@code usuario}, {@code nombre} y {@code roles}.
-     * Los roles los valida Roles al asignarlos.
+     * Lee la lista {@code usuarios} de un YAML con {@code usuario}, {@code nombre}, {@code roles}
+     * y, opcional, {@code identificacion}. Los roles los valida Roles al asignarlos.
+     *
+     * @throws IllegalArgumentException si dos usuarios tienen la misma identificación, que en la
+     *     base es única
      */
     public static List<UsuarioDemo> leer(InputStream yaml) {
         Map<String, Object> raiz = new Yaml(new SafeConstructor(new LoaderOptions())).load(yaml);
         List<UsuarioDemo> leidos = new ArrayList<>();
+        Set<String> identificaciones = new HashSet<>();
         for (Object elemento : (List<?>) raiz.get("usuarios")) {
             Map<?, ?> fila = (Map<?, ?>) elemento;
             Set<String> roles = new LinkedHashSet<>();
             for (Object rol : (List<?>) fila.get("roles")) {
                 roles.add(String.valueOf(rol));
             }
+            String usuario = String.valueOf(fila.get("usuario"));
+            Optional<String> identificacion =
+                    Optional.ofNullable(fila.get("identificacion")).map(String::valueOf);
+            if (identificacion.filter(una -> !identificaciones.add(una)).isPresent()) {
+                throw new IllegalArgumentException(
+                        "Identificación repetida en " + ARCHIVO + ": " + usuario);
+            }
             leidos.add(
                     new UsuarioDemo(
-                            String.valueOf(fila.get("usuario")),
-                            String.valueOf(fila.get("nombre")),
-                            roles));
+                            usuario, String.valueOf(fila.get("nombre")), roles, identificacion));
         }
         return leidos;
     }
@@ -137,7 +154,8 @@ public final class CargaUsuariosDemo implements ApplicationRunner {
                                 demo.usuario(),
                                 demo.nombre(),
                                 verificador.calcularHash(clave),
-                                true));
+                                true,
+                                demo.identificacion()));
                 creados++;
             } else if (actualizar(existente.get(), demo, clave)) {
                 actualizados++;
@@ -151,7 +169,8 @@ public final class CargaUsuariosDemo implements ApplicationRunner {
         boolean mismaClave = verificador.coincide(clave, existente.claveHash());
         if (mismaClave
                 && existente.puedeIniciarSesion()
-                && existente.nombreParaMostrar().equals(demo.nombre())) {
+                && existente.nombreParaMostrar().equals(demo.nombre())
+                && existente.identificacion().equals(demo.identificacion())) {
             return false;
         }
         repositorio.actualizar(
@@ -159,7 +178,8 @@ public final class CargaUsuariosDemo implements ApplicationRunner {
                         demo.usuario(),
                         demo.nombre(),
                         mismaClave ? existente.claveHash() : verificador.calcularHash(clave),
-                        true));
+                        true,
+                        demo.identificacion()));
         return true;
     }
 

@@ -10,7 +10,10 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -169,6 +172,89 @@ class CargaUsuariosDemoTest {
                 .contains("/run/mdd/claves-demo");
     }
 
+    @Test
+    void dadoElArchivoVersionado_cuandoSeLee_entoncesLasAutoridadesTienenLaIdentificacionDeSuCargo()
+            throws IOException {
+        // Los cargos vigentes de los datos de prueba, que cargan el perfil local y la demo.
+        Map<String, String> cargos = new HashMap<>();
+        for (String linea :
+                Files.readAllLines(
+                        Path.of(
+                                "../cargas/src/test/resources/cargas/datos-de-prueba/"
+                                        + "08_cargos_autoridades.csv"),
+                        StandardCharsets.UTF_8)) {
+            String[] columnas = linea.split(",", -1);
+            if (columnas.length > 7 && "VIGENTE".equals(columnas[7].strip())) {
+                cargos.putIfAbsent(columnas[1], columnas[0]);
+            }
+        }
+        try (InputStream archivo =
+                CargaUsuariosDemo.class.getResourceAsStream("/" + CargaUsuariosDemo.ARCHIVO)) {
+            Map<String, Optional<String>> identificaciones = new HashMap<>();
+            CargaUsuariosDemo.leer(archivo)
+                    .forEach(demo -> identificaciones.put(demo.usuario(), demo.identificacion()));
+
+            assertThat(identificaciones.get("rectorado.demo")).contains(cargos.get("RECTOR"));
+            assertThat(identificaciones.get("vicerrectorado.demo"))
+                    .contains(cargos.get("VICERRECTOR"));
+        }
+    }
+
+    @Test
+    void dadaUnaIdentificacionEnElArchivo_cuandoArranca_entoncesLaPone() {
+        carga(new PropiedadesUsuarios.Demo(null, CLAVE_COMUN)).run(null);
+
+        assertThat(repositorio.buscarPorNombre("docente.demo").orElseThrow().identificacion())
+                .contains("0100000001");
+        assertThat(
+                        repositorio
+                                .buscarPorNombre("docente.coordinador.demo")
+                                .orElseThrow()
+                                .identificacion())
+                .isEmpty();
+    }
+
+    @Test
+    void dadaOtraIdentificacionGuardada_cuandoVuelveAArrancar_entoncesLaCorrige() {
+        repositorio.guardar(
+                new Usuario(
+                        "docente.demo",
+                        "Docente (demo)",
+                        "hash:" + CLAVE_COMUN,
+                        true,
+                        Optional.of("0999999999")));
+
+        carga(new PropiedadesUsuarios.Demo(null, CLAVE_COMUN)).run(null);
+
+        assertThat(repositorio.buscarPorNombre("docente.demo").orElseThrow().identificacion())
+                .contains("0100000001");
+        assertThat(repositorio.actualizaciones).isEqualTo(1);
+    }
+
+    @Test
+    void dadaUnaIdentificacionRepetidaEnElArchivo_cuandoSeLee_entoncesFallaYDiceCual() {
+        String yaml =
+                """
+                usuarios:
+                  - usuario: uno.demo
+                    nombre: Uno
+                    roles: [DOCENTE]
+                    identificacion: '0100000001'
+                  - usuario: dos.demo
+                    nombre: Dos
+                    roles: [DOCENTE]
+                    identificacion: '0100000001'
+                """;
+
+        assertThatThrownBy(
+                        () ->
+                                CargaUsuariosDemo.leer(
+                                        new ByteArrayInputStream(
+                                                yaml.getBytes(StandardCharsets.UTF_8))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("dos.demo");
+    }
+
     private CargaUsuariosDemo carga(PropiedadesUsuarios.Demo demo) {
         return new CargaUsuariosDemo(
                 repositorio,
@@ -176,7 +262,10 @@ class CargaUsuariosDemoTest {
                 autorizacion,
                 List.of(
                         new CargaUsuariosDemo.UsuarioDemo(
-                                "docente.demo", "Docente (demo)", Set.of("DOCENTE")),
+                                "docente.demo",
+                                "Docente (demo)",
+                                Set.of("DOCENTE"),
+                                Optional.of("0100000001")),
                         new CargaUsuariosDemo.UsuarioDemo(
                                 "docente.coordinador.demo",
                                 "Docente y coordinador (demo)",
