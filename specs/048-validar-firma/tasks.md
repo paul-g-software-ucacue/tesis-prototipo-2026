@@ -269,11 +269,18 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
   - abrir el PDF final con las tres firmas (SC-005).
 
   **Resultado de los scripts (2026-11-14):** los 35 de `perfil-consolidado` pasan, en su orden, sobre un perfil construido desde la rama; `probar_documento_firmable.sh` en 98 s. **Pendiente:** el recorrido a mano con FirmaEC, del autor.
-- [ ] T021 Correr completos:
+- [X] T021 Correr completos:
   - `./gradlew build integrationTest`;
   - `:apps:distributivo:test` (Spring Modulith);
   - la cobertura por módulo (D-32), Spotless y SpotBugs;
   - en la SPA, los tipos, ESLint, Prettier, Vitest y Playwright (SC-007).
+
+  **Resultado (2026-11-14):**
+  - `./gradlew build integrationTest jacocoTestReport jacocoTestCoverageVerification --rerun-tasks --continue`: 3 110 pruebas unitarias y 306 de integración. Firma 161 y 21; `apps:distributivo` con la cadena de tres firmas; Spring Modulith en verde.
+  - Fallaron 2, las mismas de F13-H02 y F14-H01, en módulos que esta rama no toca, y las dos pasan corridas solas: `ClienteDeEventosLocalTest` (5/5) y `ConfirmarLasDiezCargasIntegrationTest` (9/9).
+  - La primera corrida encontró dos fallas propias, ya corregidas: `BitacoraSinBorradoContratoTest` (la descripción de `subirFirma` nombraba la bitácora) y SpotBugs en los test fixtures (la contraseña ficticia de la CA de prueba; la convención ya no revisaba las pruebas y ahora tampoco los fixtures).
+  - Cobertura de líneas: Firma 82,3 %, Usuarios 84,8 %; la más baja, Roles, 77,2 %.
+  - SPA: tipos, ESLint y Prettier en verde; Vitest 574/574 en 42 archivos; Playwright 128/128.
 - [X] T022 Revisar el JavaDoc (principio XII):
   - el orden de las comprobaciones y «no evaluada»;
   - la fecha de la cadena;
