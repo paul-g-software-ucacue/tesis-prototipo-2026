@@ -146,13 +146,13 @@ description: "Tareas de F14-H01: ver mis firmas pendientes y descargar el PDF vi
 
 **Independent Test**: `DocumentoFirmableServicioTest`, `FirmasPendientesContratoTest`, Vitest de la pantalla y `probar_documento_firmable.sh`, paso 7.
 
-- [ ] T010 [US1] `AlmacenDeDocumentos.leer(nombre)`. Ver fallar primero en `AlmacenDeDocumentosEnDiscoTest`:
+- [X] T010 [US1] `AlmacenDeDocumentos.leer(nombre)`. Ver fallar primero en `AlmacenDeDocumentosEnDiscoTest`:
   - lee lo guardado;
   - sin el archivo, una excepción;
   - no sale de la carpeta `documentos/` con un nombre con `..` o `/`.
 
   Después, el método.
-- [ ] T011 [US1] En la aplicación de Firma, ver fallar primero en `DocumentoFirmableServicioTest` (Mockito):
+- [X] T011 [US1] En la aplicación de Firma, ver fallar primero en `DocumentoFirmableServicioTest` (Mockito):
   - **`pendientes(quien)`:**
     - lista los documentos generados cuyo paso en turno reconoce al usuario, con el periodo, la versión, el orden, el rótulo («Elaborado por») y la fecha;
     - pide la identificación a Usuarios solo si algún paso en turno es por identificación, y una sola vez;
@@ -162,6 +162,8 @@ description: "Tareas de F14-H01: ver mis firmas pendientes y descargar el PDF vi
     - recalcula el SHA-256 y, si no coincide o falta el archivo, lanza `ArchivoNoDisponible`.
 
   Después: `ConsultarFirmasPendientes`, `DescargarArchivoVigente`, `FirmaPendiente`, `ArchivoVigente` y el servicio. Leer el archivo y pedir la identificación, fuera de transacciones.
+
+  **Resultado (2026-11-14):** el servicio es uno nuevo, `FirmasPendientesServicio`, y no `DocumentoFirmableServicio`, que ya genera, consulta y reintenta: no comparten dependencias más allá del repositorio y el almacén. Sus 11 pruebas, en `FirmasPendientesServicioTest`, cubren también los casos de T014: los otros dos firmantes, otro usuario con el rol, un usuario sin identificación, un documento inexistente, FALLIDO o sin firmantes esperados, y un árbol con el Vicerrector primero, que ejercita el reconocimiento por identificación sin la subida de firmas. Varios periodos a la vez (hallazgo E1 del análisis), también.
 - [ ] T012 [US1] `FirmasPendientesControlador` y su contrato. Ver fallar primero:
   - `FirmasPendientesContratoTest`:
     - la lista según el esquema;

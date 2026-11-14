@@ -9,6 +9,7 @@ import ec.mdd.firma.adaptadores.salida.PublicadorDeCambios;
 import ec.mdd.firma.adaptadores.salida.RepositorioDocumentosJdbc;
 import ec.mdd.firma.adaptadores.salida.TransaccionSpring;
 import ec.mdd.firma.aplicacion.DocumentoFirmableServicio;
+import ec.mdd.firma.aplicacion.FirmasPendientesServicio;
 import ec.mdd.firma.puertos.salida.AlmacenDeDocumentos;
 import ec.mdd.firma.puertos.salida.ContenidoDelDistributivo;
 import ec.mdd.firma.puertos.salida.FirmantesDelPeriodo;
@@ -107,5 +108,18 @@ public class ConfiguracionFirma {
                 registroDeCambiosFirma,
                 transaccionFirma,
                 Clock.systemUTC());
+    }
+
+    /**
+     * Las firmas pendientes de cada usuario y la descarga del archivo vigente, solo para el
+     * firmante en turno (F14-H01, D-102).
+     */
+    @Bean
+    public FirmasPendientesServicio firmasPendientes(
+            RepositorioDocumentos repositorioDocumentos,
+            AlmacenDeDocumentos almacenDeDocumentos,
+            IdentificacionDeUsuarios identificacionDeUsuarios) {
+        return new FirmasPendientesServicio(
+                repositorioDocumentos, almacenDeDocumentos, identificacionDeUsuarios);
     }
 }

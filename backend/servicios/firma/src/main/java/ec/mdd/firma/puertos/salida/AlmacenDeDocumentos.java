@@ -16,4 +16,14 @@ public interface AlmacenDeDocumentos {
      * @throws java.io.UncheckedIOException si no se puede escribir
      */
     String guardar(byte[] pdf, String sha256);
+
+    /**
+     * Lee un archivo guardado (F14-H01).
+     *
+     * @param nombre el que devolvió {@link #guardar}: {@code documentos/<sha256>.pdf}
+     * @return su contenido
+     * @throws IllegalArgumentException si el nombre no es de un documento
+     * @throws java.io.UncheckedIOException si no se puede leer
+     */
+    byte[] leer(String nombre);
 }

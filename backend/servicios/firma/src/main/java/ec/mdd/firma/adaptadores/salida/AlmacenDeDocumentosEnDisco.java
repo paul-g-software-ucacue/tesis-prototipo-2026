@@ -20,6 +20,7 @@ public final class AlmacenDeDocumentosEnDisco implements AlmacenDeDocumentos {
 
     private static final String CARPETA = "documentos";
     private static final Pattern HASH = Pattern.compile("[0-9a-f]{64}");
+    private static final Pattern NOMBRE = Pattern.compile(CARPETA + "/[0-9a-f]{64}\\.pdf");
 
     private final Path raiz;
 
@@ -53,5 +54,18 @@ public final class AlmacenDeDocumentosEnDisco implements AlmacenDeDocumentos {
             throw new UncheckedIOException("No se pudo guardar el documento firmable", error);
         }
         return nombre;
+    }
+
+    // Solo un nombre que devolvió guardar: sin «..» ni otra carpeta, no sale de documentos/.
+    @Override
+    public byte[] leer(String nombre) {
+        if (!NOMBRE.matcher(nombre).matches()) {
+            throw new IllegalArgumentException("No es el nombre de un documento firmable");
+        }
+        try {
+            return Files.readAllBytes(raiz.resolve(nombre));
+        } catch (IOException error) {
+            throw new UncheckedIOException("No se pudo leer el documento firmable", error);
+        }
     }
 }

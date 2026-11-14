@@ -451,10 +451,11 @@ class DocumentoFirmableServicioTest {
             firmantes.put(documento.id(), List.copyOf(esperados));
         }
 
+        // Como RepositorioDocumentosJdbc: solo los de una generación GENERADA.
         @Override
         public List<FirmasDelDocumento> generados() {
             return registrados.values().stream()
-                    .map(documento -> firmas(documento.id()).orElseThrow())
+                    .flatMap(documento -> firmas(documento.id()).stream())
                     .toList();
         }
 
@@ -462,6 +463,10 @@ class DocumentoFirmableServicioTest {
         public Optional<FirmasDelDocumento> firmas(UUID documento) {
             return registrados.values().stream()
                     .filter(uno -> uno.id().equals(documento))
+                    .filter(
+                            uno ->
+                                    generacion(uno.periodo(), uno.version()).estado()
+                                            == EstadoDeGeneracion.GENERADA)
                     .findFirst()
                     .map(
                             uno ->
