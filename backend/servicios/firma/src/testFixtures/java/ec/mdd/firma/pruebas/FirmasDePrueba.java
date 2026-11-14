@@ -192,6 +192,20 @@ public final class FirmasDePrueba {
      * @throws GeneralSecurityException si no se puede emitir
      */
     public static Identidad firmante(Identidad ca, String nombre) throws GeneralSecurityException {
+        return firmante(ca, new X500Name("CN=" + nombre + ",O=MDD Demo,C=EC"));
+    }
+
+    /**
+     * Emite un firmante ficticio con el sujeto que se pida, por ejemplo con el CN y el número de
+     * serie en el mismo componente, como los certificados de la ECIBCE.
+     *
+     * @param ca la CA emisora
+     * @param sujeto el nombre completo del sujeto
+     * @return su identidad, con su certificado y el de la CA en la cadena
+     * @throws GeneralSecurityException si no se puede emitir
+     */
+    public static Identidad firmante(Identidad ca, X500Name sujeto)
+            throws GeneralSecurityException {
         Instant ahora = Instant.now();
         KeyPair par = llaves();
         X500Name emisor =
@@ -199,7 +213,7 @@ public final class FirmasDePrueba {
         X509Certificate certificado =
                 emitir(
                         emisor,
-                        new X500Name("CN=" + nombre + ",O=MDD Demo,C=EC"),
+                        sujeto,
                         par,
                         ca.llave(),
                         ahora.minus(Duration.ofDays(1)),

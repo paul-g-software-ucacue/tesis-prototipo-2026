@@ -210,4 +210,29 @@ class ValidadorPadesTest {
         assertThat(new ValidadorPades(lista(raiz)).validar(original, firmado).evaluadas())
                 .allMatch(una -> una.resultado() == Resultado.APROBADA);
     }
+
+    @Test
+    void
+            dadoUnSujetoConElCnYElNumeroDeSerieEnElMismoComponente_cuandoSeValida_entoncesElNombreEsElCn()
+                    throws Exception {
+        // Como los certificados de la ECIBCE: el CN y el SERIALNUMBER en un RDN de varios valores.
+        // El nombre del resultado es el CN, no el primer valor del componente.
+        org.bouncycastle.asn1.x500.X500NameBuilder sujeto =
+                new org.bouncycastle.asn1.x500.X500NameBuilder(
+                                org.bouncycastle.asn1.x500.style.BCStyle.INSTANCE)
+                        .addRDN(org.bouncycastle.asn1.x500.style.BCStyle.C, "EC")
+                        .addMultiValuedRDN(
+                                new org.bouncycastle.asn1.ASN1ObjectIdentifier[] {
+                                    org.bouncycastle.asn1.x500.style.BCStyle.SERIALNUMBER,
+                                    org.bouncycastle.asn1.x500.style.BCStyle.CN
+                                },
+                                new String[] {"0123456789", "NOMBRE FICTICIO DE PRUEBA"});
+        Identidad conSerie = FirmasDePrueba.firmante(ca, sujeto.build());
+        byte[] firmado = FirmasDePrueba.firmar(original, conSerie, F1);
+
+        assertThat(validador.validar(original, firmado).certificado())
+                .get()
+                .extracting(certificado -> certificado.nombre())
+                .isEqualTo("NOMBRE FICTICIO DE PRUEBA");
+    }
 }
