@@ -113,6 +113,10 @@ Las dos firmas nuevas se hacen firmando dos veces. Sin firma nueva, se sube el v
 
 **Decisión:** la validación no depende de eso (§3). El firmador de prueba llena el campo del paso. El autor lo averigua en su recorrido a mano con FirmaEC (`quickstart.md` §3), y se anota en la evidencia. Exigir el campo del paso es de F14-H03.
 
+**Resultado del recorrido del autor (2026-11-14):** FirmaEC **no** llena los campos vacíos. Agrega los suyos (`Signature1`, `Signature2` y `Signature3`), con `adbe.pkcs7.detached`, un `/Contents` de 16 384 bytes y la cadena completa en el CMS, y pone el sello visible donde el firmante lo ubica. Los tres campos `firma-<orden>-<rol>` quedan vacíos. La validación, que cuenta firmas y no campos, aceptó las tres. Para F14-H03: el paso no se puede reconocer por el nombre del campo.
+
+**Otro hallazgo:** en los certificados de la ECIBCE, el CN y el `SERIALNUMBER` van en el mismo componente del sujeto (un RDN de varios valores). El validador del spike tomaba el primer valor del componente y mostraba el número de serie como nombre. Se corrigió buscando el CN por su tipo, con una prueba que lo reproduce. Importa para F14-H03, que compara el CN con el nombre del firmante (D-23).
+
 ## §8. La respuesta: 201 con el informe, o 422 con las comprobaciones en los detalles
 
 **Decisión:**
