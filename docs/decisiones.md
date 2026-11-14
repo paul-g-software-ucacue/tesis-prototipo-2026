@@ -100,6 +100,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-99 | 2026-11-08 | Generación pregunta a Aprobación por un puerto propio si el consolidado admite cambios; desde EN_REVISION_VRA no cambia | Aceptada | RF-32, RF-34, D-97, MD-04 |
 | D-100 | 2026-11-10 | Aprobar el contenido congela la versión: Generación congela por orden de Aprobación y Aprobación registra el paso a CONGELADO_EN_FIRMA; no notifica todavía | Aceptada | RF-38, RF-40, RF-59, MD-04, D-95, D-99 |
 | D-101 | 2026-11-11 | El documento firmable se genera al entrar en firma: Aprobación le entrega la cadena a Firma después de confirmar; Firma genera el PDF/A, lo guarda por su hash y reintenta a pedido | Aceptada | RF-38, RF-58, RNF-POR-01, MD-05, ADR-018, D-46, D-88, D-100 |
+| D-102 | 2026-11-14 | El firmante esperado de cada paso se fija al generar el documento; la cuenta de usuario guarda la identificación de la persona | Aceptada | RF-38, RF-58, ADR-003, ADR-007, ADR-023, D-101 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -1989,3 +1990,40 @@ Con la base de datos de Grype del 2026-11-07, la CI encontró además dos altas 
 - La bitácora admite el servicio `firma`.
 
 **Documentos que hay que poner al día.** Ninguno.
+
+---
+
+## D-102. El firmante esperado de cada paso se fija al generar el documento; la cuenta de usuario guarda la identificación de la persona
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-14 · **Decidido por:** autor de la tesis
+- **Origen:** F14-H01 (#62); aclaraciones de `specs/047-firmas-pendientes/spec.md` y su plan (`research.md` §1 a §4)
+- **Relacionadas:** RF-38, RF-58, ADR-003, ADR-007, ADR-023, D-101; diseño de firmas §5.1 y §9
+
+**Decisión.**
+- **Quién firma cada paso.** Al generar el documento firmable, Firma guarda el firmante esperado de cada paso. Es la misma persona cuyo nombre imprime el PDF:
+  - el usuario designado Responsable del periodo, para «Elaborado por»;
+  - la identificación del docente del cargo vigente de Vicerrector o de Rector, para «Revisado por» y «Aprobado por».
+  
+  No cambia si después cambian la designación o el cargo. Rehacer el documento es de F12-H04.
+- **La persona, no el rol.** Está en turno quien es el firmante esperado del primer paso sin firma. Tener el rol del paso no basta.
+- **La identificación de la cuenta.** La cuenta de usuario guarda la identificación de la persona, opcional y única, con el formato de Docentes. Firma la pide a Usuarios por una ruta interna con token de proceso. No viaja en el token ni en las respuestas públicas, porque es un dato personal (principio IX). Los usuarios de la demostración del Rectorado y del Vicerrectorado reciben la de los cargos vigentes de los datos de prueba.
+- **El archivo vigente.** Es el resultante de la última firma, o el original. Solo lo descarga el firmante en turno, y Firma recalcula su SHA-256 antes de entregarlo.
+- **El 403 común.** Lo recibe cualquier otro, sin saber si el documento existe ni de quién es el turno.
+
+**Por qué.**
+- El firmante debe ser quien figura en el PDF. Si el turno siguiera al cargo vigente, podría tocarle a alguien cuyo nombre no está impreso.
+- Las cuentas no tenían cómo enlazarse con el docente de un cargo. La identificación es el dato que ya usan Docentes y la carga de autoridades.
+- Una ruta interna, y no el token, para que la identificación no llegue al navegador.
+
+**Alternativas.**
+- Cualquiera con el rol del paso: lo vería alguien distinto de quien figura en el PDF.
+- Calcular el firmante en cada consulta: sigue al cargo vigente, no al nombre impreso.
+- La identificación en el token: la expone al navegador y a todos los servicios.
+- Una entidad que enlace usuario y docente en Docentes: F03-H04 traerá la entidad docente; hoy basta el dato en la cuenta.
+
+**Consecuencias.**
+- Los documentos generados antes de F14-H01 no tienen firmante esperado y no aparecen como pendientes de nadie. En la demostración no hay ninguno.
+- La identificación de las cuentas se carga con los usuarios de la demostración. No hay pantalla para editarla.
+- `firmante_esperado` es inmutable para el rol del proceso. Su clave foránea apunta a la generación, cuyo dueño conserva UPDATE para la verificación con `FOR KEY SHARE`.
+
+**Documentos que hay que poner al día.** El modelo de dominio (§6 y §7): `PasoCadena` y «Firmante en turno» hablan de un «usuario asignado». Para los pasos de autoridad, el asignado es una identificación que se resuelve a la cuenta al consultar.

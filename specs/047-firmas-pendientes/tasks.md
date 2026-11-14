@@ -35,13 +35,17 @@ description: "Tareas de F14-H01: ver mis firmas pendientes y descargar el PDF vi
 
 ## Phase 1: Setup
 
-- [ ] T001 Revisar el glosario (`~/Downloads/MDD_artefactos_desarrollo/requerimientos_mdd/sdd/modelo_dominio.md` §7: «Firmante», «Paso de firma», «Documento firmable») y anotar aquí el resultado. Escribir **D-102** en `docs/decisiones.md`, en la fila del índice y en su sección:
+- [X] T001 Revisar el glosario (`~/Downloads/MDD_artefactos_desarrollo/requerimientos_mdd/sdd/modelo_dominio.md` §7: «Firmante», «Paso de firma», «Documento firmable») y anotar aquí el resultado. Escribir **D-102** en `docs/decisiones.md`, en la fila del índice y en su sección:
   - el firmante esperado de cada paso se fija al generar el documento y es la persona impresa: el usuario designado o la identificación del docente del cargo vigente (research §1);
   - la cuenta de usuario guarda una identificación opcional y única; Firma la pide por ruta interna, nunca en el token (research §2);
   - el turno es el primer paso sin firma; el archivo vigente, el último de la cadena (research §3);
   - fuera del turno, el 403 común, también para un documento inexistente (research §4).
 
   Relacionadas: RF-38, RF-58, ADR-003, ADR-007, ADR-023, D-101.
+
+  **Resultado (2026-11-14):**
+  - El glosario define «Firmante en turno» como el usuario asignado al primer paso pendiente, y `PasoCadena` lleva un «usuario asignado». Para los pasos de autoridad, el asignado es aquí una identificación que se resuelve a la cuenta al consultar. Queda anotado en D-102, en «Documentos que hay que poner al día».
+  - `IdentidadFirmante` (D-23) compara el **nombre** normalizado con el CN del certificado, no la cédula. Lo que dicen la spec y el research («F14-H03 la usará para comparar con el certificado») es una posibilidad, no un hecho: lo decide F14-H03.
 
 ---
 
