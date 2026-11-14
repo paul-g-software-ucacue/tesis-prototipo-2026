@@ -7,7 +7,8 @@ import org.junit.jupiter.api.Test;
 
 class ComprobacionDeDocumentoTest {
 
-    private static final byte[] VIGENTE = "%PDF-1.7 vigente %%EOF".getBytes(StandardCharsets.US_ASCII);
+    private static final byte[] VIGENTE =
+            "%PDF-1.7 vigente %%EOF".getBytes(StandardCharsets.US_ASCII);
 
     private static byte[] bytes(String texto) {
         return texto.getBytes(StandardCharsets.US_ASCII);

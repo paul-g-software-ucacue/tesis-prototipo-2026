@@ -55,7 +55,8 @@ class ResultadoValidacionTest {
     }
 
     @Test
-    void dadaLaIntegridadRechazada_cuandoSeConsulta_entoncesNoEstaAceptadaYElRechazoEsLaIntegridad() {
+    void
+            dadaLaIntegridadRechazada_cuandoSeConsulta_entoncesNoEstaAceptadaYElRechazoEsLaIntegridad() {
         ResultadoValidacion resultado =
                 con(
                         List.of(
@@ -81,7 +82,8 @@ class ResultadoValidacionTest {
                         Optional.empty());
 
         assertThat(resultado.comprobaciones())
-                .extracting(ResultadoDeComprobacion::comprobacion, ResultadoDeComprobacion::resultado)
+                .extracting(
+                        ResultadoDeComprobacion::comprobacion, ResultadoDeComprobacion::resultado)
                 .containsExactly(
                         org.assertj.core.groups.Tuple.tuple(MISMO_DOCUMENTO, Resultado.RECHAZADA),
                         org.assertj.core.groups.Tuple.tuple(UNA_FIRMA_NUEVA, Resultado.NO_EVALUADA),
@@ -114,9 +116,11 @@ class ResultadoValidacionTest {
         List<ResultadoDeComprobacion> imposible =
                 List.of(
                         ResultadoDeComprobacion.aprobada(MISMO_DOCUMENTO),
-                        ResultadoDeComprobacion.rechazada(UNA_FIRMA_NUEVA, "Tiene dos firmas nuevas."),
+                        ResultadoDeComprobacion.rechazada(
+                                UNA_FIRMA_NUEVA, "Tiene dos firmas nuevas."),
                         ResultadoDeComprobacion.aprobada(INTEGRIDAD),
-                        ResultadoDeComprobacion.noEvaluada(CONFIANZA, "No hay una sola firma nueva."));
+                        ResultadoDeComprobacion.noEvaluada(
+                                CONFIANZA, "No hay una sola firma nueva."));
 
         assertThatThrownBy(() -> con(imposible, Optional.empty()))
                 .isInstanceOf(IllegalArgumentException.class);
