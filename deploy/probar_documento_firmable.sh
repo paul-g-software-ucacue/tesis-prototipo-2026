@@ -15,9 +15,9 @@
 # salvo las entradas de la bitácora, que no se pueden borrar. Termina con 0 si todos los pasos pasan
 # y con 1 si alguno falla. Nunca imprime una clave ni un token.
 #
-# MDD_CONSERVAR=1 (solo en el perfil local): deja el distributivo en EN_REVISION_VRA y no borra
-# nada, para recorrer a mano specs/046-pdfa-consolidado/quickstart.md §3. Al terminar dice cómo
-# limpiar.
+# MDD_CONSERVAR=1 (solo en el perfil local): deja el distributivo en EN_REVISION_VRA, con
+# docente.demo designado Responsable, y no borra nada, para recorrer a mano
+# specs/046-pdfa-consolidado/quickstart.md §3. Al terminar dice cómo limpiar.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -446,6 +446,13 @@ listo_y_en_revision() {
 }
 
 # --- 1. Listo, enviado a revisión y aprobado por el Vicerrector: CONGELADO_EN_FIRMA ---
+# Para el recorrido a mano: en revisión y con el Responsable designado, sin aprobar.
+en_revision_y_designado() {
+    listo_y_en_revision || return 1
+    iniciar "$VICERRECTOR"
+    esperar 15 designa "$DESIGNADO" || { echo "       no se pudo designar al Responsable" >&2; return 1; }
+}
+
 aprobado_y_congelado() {
     listo_y_en_revision || return 1
     iniciar "$VICERRECTOR"
@@ -543,7 +550,7 @@ bitacora() {
 }
 
 if [[ -n $CONSERVAR ]]; then
-    verificar 1 "El consolidado listo y enviado a revisión: EN_REVISION_VRA" listo_y_en_revision
+    verificar 1 "El consolidado listo, enviado a revisión y con $DESIGNADO designado: EN_REVISION_VRA" en_revision_y_designado
     if ((fallas > 0)); then
         echo "No quedó en revisión. Para limpiar: docker compose -p tesis-prototipo-2026 down -v"
         exit 1

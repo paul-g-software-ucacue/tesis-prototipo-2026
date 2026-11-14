@@ -20,10 +20,10 @@ deploy/probar_documento_firmable.sh        # 6/6
 
 ## 3. A mano, en el perfil local (http://localhost:8081)
 
-Con una base sin datos, dejar el distributivo en EN_REVISION_VRA:
+Con una base sin datos, dejar el distributivo en EN_REVISION_VRA, con `docente.demo` designado Responsable de 2026-I (sin designación el PDF no se genera):
 
 ```bash
-MDD_CONSERVAR=1 deploy/probar_aprobacion.sh
+MDD_CONSERVAR=1 deploy/probar_documento_firmable.sh
 ```
 
 1. Como `vicerrectorado.demo`, aprobar el contenido. En unos segundos, la tarjeta pasa de «Generando el documento firmable…» a «Documento firmable generado el …», con la huella del PDF.
@@ -35,7 +35,7 @@ MDD_CONSERVAR=1 deploy/probar_aprobacion.sh
    ```
 
    Abrirlo: el resumen por carrera, los totales, el detalle por docente, el pie con la versión y el hash en cada página, y el bloque «Elaborado por», «Revisado por» y «Aprobado por» con el cargo, el nombre y el campo de firma.
-3. El camino de fallo (SC-006), con otra base sin datos:
+3. El camino de fallo (SC-006), con otra base sin datos (`down -v`, `up -d --wait` y otra vez `MDD_CONSERVAR=1 deploy/probar_documento_firmable.sh`):
    - antes de aprobar, quitar la designación del Responsable de 2026-I. No hay operación para quitarla (solo para designar o reemplazar), así que se hace en la base del perfil local, nunca en la demo:
 
      ```bash
@@ -44,7 +44,7 @@ MDD_CONSERVAR=1 deploy/probar_aprobacion.sh
      ```
 
    - aprobar: la tarjeta dice «El PDF no se pudo generar» con el cargo que falta;
-   - como `vicerrectorado.demo`, designar otra vez a `consolidacion.demo` (`designarResponsable`, desde su pantalla) y, como `consolidacion.demo`, pulsar «Generar el PDF»; medir desde que se abre la pantalla (menos de 1 minuto).
+   - como `vicerrectorado.demo`, designar otra vez a `docente.demo` (`designarResponsable`, desde su pantalla; solo se designa a un DOCENTE) y, como `consolidacion.demo`, pulsar «Generar el PDF»; medir desde que se abre la pantalla (menos de 1 minuto).
 4. Limpiar con el proyecto nombrado (la demo, `mdd`, corre en el mismo equipo):
 
    ```bash
