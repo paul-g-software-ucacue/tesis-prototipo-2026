@@ -101,6 +101,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-100 | 2026-11-10 | Aprobar el contenido congela la versión: Generación congela por orden de Aprobación y Aprobación registra el paso a CONGELADO_EN_FIRMA; no notifica todavía | Aceptada | RF-38, RF-40, RF-59, MD-04, D-95, D-99 |
 | D-101 | 2026-11-11 | El documento firmable se genera al entrar en firma: Aprobación le entrega la cadena a Firma después de confirmar; Firma genera el PDF/A, lo guarda por su hash y reintenta a pedido | Aceptada | RF-38, RF-58, RNF-POR-01, MD-05, ADR-018, D-46, D-88, D-100 |
 | D-102 | 2026-11-14 | El firmante esperado de cada paso se fija al generar el documento; la cuenta de usuario guarda la identificación de la persona | Aceptada | RF-38, RF-58, ADR-003, ADR-007, ADR-023, D-101 |
+| D-103 | 2026-11-14 | La validación del PDF firmado: cuatro comprobaciones en orden, la firma es la validación aceptada y la lista de confianza va en la imagen como configuración de demostración; constitución 2.2.1 | Aceptada | RF-39, D-23, D-46, ADR-017, ADR-007, D-101, D-102 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -2027,3 +2028,60 @@ Con la base de datos de Grype del 2026-11-07, la CI encontró además dos altas 
 - `firmante_esperado` es inmutable para el rol del proceso. Su clave foránea apunta a la generación, cuyo dueño conserva UPDATE para la verificación con `FOR KEY SHARE`.
 
 **Documentos que hay que poner al día.** El modelo de dominio (§6 y §7): `PasoCadena` y «Firmante en turno» hablan de un «usuario asignado». Para los pasos de autoridad, el asignado es una identificación que se resuelve a la cuenta al consultar.
+
+---
+
+## D-103. La validación del PDF firmado: cuatro comprobaciones en orden, la firma es la validación aceptada y la lista de confianza va en la imagen
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-14 · **Decidido por:** autor de la tesis
+- **Origen:** F14-H02 (#63); aclaraciones de `specs/048-validar-firma/spec.md`, su plan (`research.md` §1 a §9) y su análisis (C1 y C2)
+- **Relacionadas:** RF-39, D-23, D-46, ADR-017, ADR-007, D-101, D-102; diseño de firmas §5.1, §6 y §9
+- **Modifica a:** constitución, principio IX (enmienda de parche 2.2.0 → 2.2.1)
+
+**Decisión.**
+- **Las comprobaciones de F14-H02**, en este orden:
+  1. el mismo documento: el archivo subido empieza con todos los bytes del vigente (si es igual, la comprobación siguiente lo rechaza por no tener firma nueva);
+  2. una sola firma nueva: un diccionario de firma más que el vigente, así que vale si el firmante llena el campo vacío del paso o agrega uno;
+  3. la integridad: la firma nueva termina en el final del archivo, su CMS se lee sin el relleno de ceros y se verifica con la llave pública (D-46);
+  4. la confianza: PKIX hasta una raíz de la lista, sin revocación, a la fecha del `signingTime` firmado.
+
+  Una comprobación que depende de otra rechazada queda «no evaluada». La vigencia al subir, la persona por el CN y el orden por la persona son de F14-H03.
+- **La firma es la validación aceptada.** Una sola tabla, `validacion_firma`, guarda cada subida del firmante en turno, aceptada o rechazada. La firma de un paso es su fila aceptada; un índice único parcial impide dos. El archivo vigente es el de la firma de mayor orden; sin firmas, el original.
+- **Validar fuera de la transacción.** El turno, la lectura del vigente y la validación van fuera (D-83). Al registrar, se bloquea la generación y se vuelve a comprobar que nadie firmó entretanto; si alguien lo hizo, la subida se rechaza por «mismo documento».
+- **La lista de confianza** son certificados PEM en `backend/servicios/firma/src/main/resources/firma/raices/`, cargados al arrancar según `mdd.firma.raices`:
+  - por defecto, la CA de prueba y la raíz pública del BCE: es la **configuración de demostración**, la del perfil local, la CI de punta a punta y la demo;
+  - las pruebas del servicio cargan solo la CA de prueba;
+  - una instalación de producción reemplaza la lista por las raíces de las entidades acreditadas, sin la CA de prueba (principio IX, S-10);
+  - sin raíces, o con un archivo ilegible, el proceso no arranca. No hay interruptor que apague la validación (ADR-017).
+- **Gitleaks** admite `.crt` solo en esa carpeta, además de la CA de prueba. Un `.p12`, `.pem` o una llave siguen rechazados ahí. El principio IX se enmienda en parche (2.2.1) para decirlo.
+- **La firma de los scripts** la hace `deploy/herramientas/FirmarDePrueba.java`, con los certificados ficticios de la CA de prueba y las bibliotecas del contenedor `distributivo`, sin dependencias nuevas.
+
+**Las raíces versionadas** (una prueba de Firma comprueba sus huellas):
+
+| Archivo | Sujeto | Vigencia | SHA-256 del certificado |
+|---|---|---|---|
+| `ca-prueba.crt` | CN=CA de Prueba MDD Demo, O=MDD Demo, C=EC (la del spike, `ca-prueba/generar.sh`) | 2026-10-13 a 2036-10-10 | `60ca4684e97b094971d432f6fe59b244c42f83af1dfcc8df7d40979d6349e406` |
+| `bce-raiz.crt` | CN=AUTORIDAD DE CERTIFICACION RAIZ DEL BANCO CENTRAL DEL ECUADOR, OU=ENTIDAD DE CERTIFICACION DE INFORMACION-ECIBCE, O=BANCO CENTRAL DEL ECUADOR, L=QUITO, C=EC | 2011-08-08 a 2031-08-08 | `11c7c59be9d21d216f0e8151378d53d03b314060559adc49da161ec4f7829bec` |
+
+La raíz del BCE se sacó de la cadena que trae el certificado de firma del autor (`openssl pkcs12 -cacerts -nokeys`): solo el certificado público de la raíz, autofirmado, con `CA:TRUE` y sin llave. Ni el certificado del autor ni su intermedia entran al repositorio.
+
+**Por qué.**
+- La validación del spike ya funcionó con las firmas reales de FirmaEC (D-46). Contar firmas, no campos, no depende de cómo firma FirmaEC un PDF con campos vacíos, que el spike no vio.
+- Separar la firma de su informe obligaría a una clave foránea entre dos tablas inmutables, que PostgreSQL rechaza para el dueño sin UPDATE (F13-H02).
+- Poner las raíces en la imagen evita cambiar el `compose` de la demo, y la raíz del BCE es pública.
+
+**Alternativas.**
+- EU DSS para la validación y el informe: queda como trabajo futuro (ADR-007).
+- La cadena a la fecha de la subida: mezclaría la vigencia (F14-H03) con la confianza.
+- Montar las raíces con `compose`, o tenerlas en un archivo local fuera del repositorio.
+- Guardar la raíz del BCE en la carpeta de la CA de prueba: evita la enmienda, pero mezcla una raíz real con la de prueba.
+
+**Consecuencias.**
+- `bcpkix-jdk18on` pasa al código de Firma, solo en sus adaptadores (ArchUnit).
+- La bitácora suma `FIRMA_ACEPTADA` y `FIRMA_RECHAZADA` del servicio `firma`.
+- La limpieza de los scripts borra `validacion_firma` antes que las otras tablas de Firma.
+
+**Documentos que hay que poner al día.** El modelo de dominio (§5.4 y §7.5):
+- `Firma` es una entidad de `PasoCadena`; aquí es la validación aceptada del paso;
+- `ResultadoValidacion` incluye la vigencia, el paso en turno y la identidad, que llegan con F14-H03;
+- faltan «Comprobación» (cada una de las de la validación básica, con su resultado: aprobada, rechazada o no evaluada) y «Firma nueva» (la firma que el archivo subido tiene de más sobre el vigente).

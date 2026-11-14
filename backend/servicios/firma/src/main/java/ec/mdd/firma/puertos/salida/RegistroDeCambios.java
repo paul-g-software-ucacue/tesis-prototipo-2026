@@ -15,7 +15,7 @@ public interface RegistroDeCambios {
      * Un cambio de Firma.
      *
      * @param momento cuándo
-     * @param usuario quién: {@code sistema} o quien pidió el reintento
+     * @param usuario quién: {@code sistema}, quien pidió el reintento o quien subió la firma
      * @param accion qué
      * @param detalle sobre qué: el periodo, la versión y los hashes
      * @param nuevo cómo queda
@@ -29,6 +29,12 @@ public interface RegistroDeCambios {
 
         /** El documento firmable generado (F13-H02). */
         public static final String DOCUMENTO_FIRMABLE_GENERADO = "DOCUMENTO_FIRMABLE_GENERADO";
+
+        /** Una subida del firmante en turno aceptada: la firma del paso (F14-H02). */
+        public static final String FIRMA_ACEPTADA = "FIRMA_ACEPTADA";
+
+        /** Una subida del firmante en turno rechazada, con sus comprobaciones (F14-H02). */
+        public static final String FIRMA_RECHAZADA = "FIRMA_RECHAZADA";
 
         /** Exige todo y copia los mapas. */
         public CambioDeFirma {

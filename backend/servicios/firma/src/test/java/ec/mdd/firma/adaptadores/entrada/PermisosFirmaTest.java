@@ -17,7 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 /**
  * Cada operación de Firma exige el permiso de su {@code x-mdd-permiso} (ADR-021): sin él responde
- * 403, y con él pasa (F13-H02, F14-H01).
+ * 403, y con él pasa (F13-H02, F14-H01, F14-H02).
  */
 @WebMvcTest({DocumentoControlador.class, FirmasPendientesControlador.class})
 @ImportAutoConfiguration({SeguridadProcesoAutoConfiguracion.class, ErroresAutoConfiguracion.class})
@@ -42,14 +42,18 @@ class PermisosFirmaTest {
     void dadoElContrato_cuandoSeVerificaCadaOperacion_entoncesExigeSuPermiso() {
         assertThat(verificador.operaciones())
                 .extracting(VerificadorDePermisos.OperacionProtegida::toString)
-                .hasSize(4)
+                .hasSize(5)
                 .anySatisfy(operacion -> assertThat(operacion).contains("CONSOLIDACION:LECTURA"))
                 .anySatisfy(operacion -> assertThat(operacion).contains("CONSOLIDACION:APROBACION"))
                 .anySatisfy(
                         operacion ->
                                 assertThat(operacion)
-                                        .contains(
-                                                "GET /api/firma/pendientes (DISTRIBUTIVO:FIRMA)"));
+                                        .contains("GET /api/firma/pendientes (DISTRIBUTIVO:FIRMA)"))
+                .anySatisfy(
+                        operacion ->
+                                assertThat(operacion)
+                                        .startsWith("POST /api/firma/documentos/")
+                                        .endsWith("/firmas (DISTRIBUTIVO:FIRMA)"));
 
         verificador.verificar(mvc, conversor);
     }

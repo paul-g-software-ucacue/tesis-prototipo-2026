@@ -1,16 +1,25 @@
 package ec.mdd.firma.adaptadores.salida;
 
+import ec.mdd.firma.dominio.CertificadoDeLaFirma;
+import ec.mdd.firma.dominio.Comprobacion;
 import ec.mdd.firma.dominio.DocumentoFirmable;
 import ec.mdd.firma.dominio.EstadoDeGeneracion;
+import ec.mdd.firma.dominio.FirmaRegistrada;
 import ec.mdd.firma.dominio.FirmanteEsperado;
 import ec.mdd.firma.dominio.FirmasDelDocumento;
 import ec.mdd.firma.dominio.GeneracionDeDocumento;
 import ec.mdd.firma.dominio.PasoDeFirma;
+import ec.mdd.firma.dominio.Resultado;
+import ec.mdd.firma.dominio.ResultadoDeComprobacion;
+import ec.mdd.firma.dominio.ResultadoValidacion;
 import ec.mdd.firma.puertos.salida.RepositorioDocumentos;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -18,14 +27,17 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Las generaciones y los documentos firmables en el esquema {@code firma} (F13-H02, data-model.md).
- * La cadena de firmas va en jsonb. El documento solo se inserta: el rol del proceso no puede
- * cambiarlo ni borrarlo (V2).
+ * Las generaciones, los documentos firmables y las validaciones de las firmas en el esquema {@code
+ * firma} (F13-H02, F14-H02, data-model.md). La cadena de firmas y las comprobaciones van en jsonb.
+ * El documento, sus firmantes y las validaciones solo se insertan: el rol del proceso no puede
+ * cambiarlos ni borrarlos (V2 a V4). Las firmas de un documento son sus validaciones aceptadas.
  */
 public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
     private static final TypeReference<List<PasoDeFirma>> CADENA = new TypeReference<>() {};
+    private static final TypeReference<List<Map<String, String>>> FILAS = new TypeReference<>() {};
+    private static final TypeReference<Map<String, String>> FILA = new TypeReference<>() {};
     private static final String TIPO = DocumentoFirmable.CONSOLIDADO;
 
     private static final String GENERACION =
@@ -162,6 +174,142 @@ public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
                 .optional();
     }
 
+    /**
+     * Registra el resultado de una subida (F14-H02, D-103). Si se aceptó, bloquea la generación de
+     * la versión y comprueba que las firmas siguen siendo las que tenía el documento al validar: si
+     * otra subida firmó entretanto, no registra nada y devuelve falso. El índice único de V4
+     * garantiza además una sola firma por paso.
+     */
+    @Override
+    public boolean registrarValidacion(
+            ResultadoValidacion resultado, FirmasDelDocumento validadoContra) {
+        DocumentoFirmable documento = validadoContra.documento();
+        if (resultado.aceptada()) {
+            bloquear(documento.periodo(), documento.version()).orElseThrow();
+            if (!firmasRegistradas(documento).equals(validadoContra.firmas())) {
+                return false;
+            }
+        }
+        jdbc.sql(
+                        "INSERT INTO firma.validacion_firma (id, periodo, version, tipo, orden,"
+                                + " subido_por, subido_en, sha256_subido, tamano, aceptada,"
+                                + " comprobaciones, certificado) VALUES (:id, :periodo, :version,"
+                                + " :tipo, :orden, :por, :en, :sha, :tamano, :aceptada,"
+                                + " CAST(:comprobaciones AS jsonb), CAST(:certificado AS jsonb))")
+                .param("id", resultado.id())
+                .param("periodo", documento.periodo())
+                .param("version", documento.version())
+                .param("tipo", documento.tipo())
+                .param("orden", resultado.orden())
+                .param("por", resultado.subidoPor())
+                .param("en", Timestamp.from(resultado.subidoEn()))
+                .param("sha", resultado.sha256Subido())
+                .param("tamano", resultado.tamano())
+                .param("aceptada", resultado.aceptada())
+                .param("comprobaciones", JSON.writeValueAsString(comprobaciones(resultado)))
+                .param(
+                        "certificado",
+                        resultado
+                                .certificado()
+                                .map(RepositorioDocumentosJdbc::certificado)
+                                .map(JSON::writeValueAsString)
+                                .orElse(null))
+                .update();
+        return true;
+    }
+
+    @Override
+    public List<ResultadoValidacion> validaciones(UUID documento) {
+        return jdbc.sql(
+                        "SELECT v.id, v.orden, v.subido_por, v.subido_en, v.sha256_subido,"
+                                + " v.tamano, v.comprobaciones::text AS comprobaciones,"
+                                + " v.certificado::text AS certificado"
+                                + " FROM firma.validacion_firma v JOIN firma.documento_firmable d"
+                                + " ON d.periodo = v.periodo AND d.version = v.version"
+                                + " AND d.tipo = v.tipo WHERE d.id = :id"
+                                + " ORDER BY v.subido_en, v.id")
+                .param("id", documento)
+                .query(
+                        (fila, numero) ->
+                                new ResultadoValidacion(
+                                        fila.getObject("id", UUID.class),
+                                        documento,
+                                        fila.getInt("orden"),
+                                        fila.getString("subido_por"),
+                                        fila.getTimestamp("subido_en").toInstant(),
+                                        fila.getString("sha256_subido"),
+                                        fila.getInt("tamano"),
+                                        comprobaciones(fila.getString("comprobaciones")),
+                                        Optional.ofNullable(fila.getString("certificado"))
+                                                .map(RepositorioDocumentosJdbc::certificado)))
+                .list();
+    }
+
+    // Las firmas del documento: sus validaciones aceptadas, por orden.
+    private List<FirmaRegistrada> firmasRegistradas(DocumentoFirmable documento) {
+        return jdbc.sql(
+                        "SELECT orden, sha256_subido, tamano, subido_por, subido_en"
+                                + " FROM firma.validacion_firma WHERE periodo = :periodo"
+                                + " AND version = :version AND tipo = :tipo AND aceptada"
+                                + " ORDER BY orden")
+                .param("periodo", documento.periodo())
+                .param("version", documento.version())
+                .param("tipo", documento.tipo())
+                .query(
+                        (fila, numero) ->
+                                new FirmaRegistrada(
+                                        fila.getInt("orden"),
+                                        fila.getString("sha256_subido"),
+                                        fila.getInt("tamano"),
+                                        fila.getString("subido_por"),
+                                        fila.getTimestamp("subido_en").toInstant()))
+                .list();
+    }
+
+    private static List<Map<String, String>> comprobaciones(ResultadoValidacion resultado) {
+        return resultado.comprobaciones().stream()
+                .map(
+                        una -> {
+                            Map<String, String> fila = new LinkedHashMap<>();
+                            fila.put("comprobacion", una.comprobacion().name());
+                            fila.put("resultado", una.resultado().name());
+                            una.motivo().ifPresent(motivo -> fila.put("motivo", motivo));
+                            return fila;
+                        })
+                .toList();
+    }
+
+    private static List<ResultadoDeComprobacion> comprobaciones(String json) {
+        return JSON.readValue(json, FILAS).stream()
+                .map(
+                        fila ->
+                                new ResultadoDeComprobacion(
+                                        Comprobacion.valueOf(fila.get("comprobacion")),
+                                        Resultado.valueOf(fila.get("resultado")),
+                                        Optional.ofNullable(fila.get("motivo"))))
+                .toList();
+    }
+
+    private static Map<String, String> certificado(CertificadoDeLaFirma certificado) {
+        Map<String, String> fila = new LinkedHashMap<>();
+        fila.put("nombre", certificado.nombre());
+        fila.put("emisor", certificado.emisor());
+        fila.put("serie", certificado.serie());
+        fila.put("validoDesde", certificado.validoDesde().toString());
+        fila.put("validoHasta", certificado.validoHasta().toString());
+        return fila;
+    }
+
+    private static CertificadoDeLaFirma certificado(String json) {
+        Map<String, String> fila = JSON.readValue(json, FILA);
+        return new CertificadoDeLaFirma(
+                fila.get("nombre"),
+                fila.get("emisor"),
+                fila.get("serie"),
+                Instant.parse(fila.get("validoDesde")),
+                Instant.parse(fila.get("validoHasta")));
+    }
+
     // El documento, la cadena de su generación y sus firmantes esperados.
     private FirmasDelDocumento firmasDe(ResultSet fila, int numero) throws SQLException {
         DocumentoFirmable documento = documento(fila);
@@ -182,7 +330,10 @@ public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
                                                 una.getString("identificacion")))
                         .list();
         return new FirmasDelDocumento(
-                documento, JSON.readValue(fila.getString("cadena"), CADENA), firmantes);
+                documento,
+                JSON.readValue(fila.getString("cadena"), CADENA),
+                firmantes,
+                firmasRegistradas(documento));
     }
 
     private static DocumentoFirmable documento(ResultSet fila) throws SQLException {

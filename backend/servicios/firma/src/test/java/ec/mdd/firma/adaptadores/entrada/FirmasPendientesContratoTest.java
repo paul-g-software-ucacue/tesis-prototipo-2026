@@ -4,12 +4,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
+import ec.mdd.firma.dominio.ArchivoDemasiadoGrande;
+import ec.mdd.firma.dominio.ArchivoFirmadoRechazado;
 import ec.mdd.firma.dominio.ArchivoNoDisponible;
+import ec.mdd.firma.dominio.ArchivoVacio;
+import ec.mdd.firma.dominio.ResultadoValidacion;
 import ec.mdd.firma.dominio.SinTurnoDeFirma;
 import ec.mdd.firma.puertos.entrada.ArchivoVigente;
 import ec.mdd.firma.puertos.entrada.ConsultarFirmasPendientes;
 import ec.mdd.firma.puertos.entrada.DescargarArchivoVigente;
 import ec.mdd.firma.puertos.entrada.FirmaPendiente;
+import ec.mdd.firma.puertos.entrada.SubirFirma;
 import ec.mdd.plataforma.errores.ErroresAutoConfiguracion;
 import ec.mdd.plataforma.eventos.ErroresEntreProcesos;
 import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
@@ -187,6 +192,32 @@ class FirmasPendientesContratoTest {
                     throw new SinTurnoDeFirma();
                 }
                 return new ArchivoVigente("distributivo-2026-I-v1.pdf", SHA, PDF);
+            };
+        }
+
+        /**
+         * La subida (F14-H02): el contenido del archivo dice qué responde. SIN_TURNO no es de
+         * nadie; EN_TURNO, el ejemplo del contrato, acepta un archivo cualquiera para que
+         * PermisosFirmaTest vea pasar el permiso.
+         */
+        @Bean
+        SubirFirma subirFirma() {
+            return (documento, archivo, quien) -> {
+                if (!documento.equals(EN_TURNO)) {
+                    throw new SinTurnoDeFirma();
+                }
+                if (archivo.length == 0) {
+                    throw new ArchivoVacio();
+                }
+                if (archivo.length > ArchivoDemasiadoGrande.LIMITE_EN_BYTES) {
+                    throw new ArchivoDemasiadoGrande(archivo.length);
+                }
+                String texto = new String(archivo, StandardCharsets.US_ASCII);
+                ResultadoValidacion resultado = SubirFirmaContratoTest.resultado(texto);
+                if (!resultado.aceptada()) {
+                    throw ArchivoFirmadoRechazado.de(resultado);
+                }
+                return resultado;
             };
         }
     }

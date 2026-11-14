@@ -13,6 +13,14 @@ description = "CA de prueba y certificados ficticios de los firmantes de la demo
 targetRules = ["certificado-o-llave", "pkcs12-file"]
 paths = ['''^backend/.+/src/test/resources/ca-prueba/''', '''^pruebas/ca-prueba/''']
 
+# Raíces públicas de confianza de Firma (D-103, constitución 2.2.1): solo los .crt de su carpeta.
+# Un .p12, .pem o una llave en esa carpeta sigue rechazado. Una prueba de Firma comprueba que cada
+# archivo es un certificado sin llave privada.
+[[allowlists]]
+description = "Raíces públicas de la lista de confianza de Firma"
+targetRules = ["certificado-o-llave"]
+paths = ['''^backend/servicios/firma/src/main/resources/firma/raices/[^/]+\.crt$''']
+
 # Certificados y llaves por su extensión, fuera de la CA de prueba. La misma expresión está en el
 # hook certificado-o-llave de .pre-commit-config.yaml: se cambian juntas.
 [[rules]]

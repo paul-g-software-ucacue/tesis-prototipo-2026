@@ -315,7 +315,12 @@ public final class ValidadorPadesDePrueba {
      */
     static String nombreComun(X509Certificate certificado) {
         X500Name nombre = X500Name.getInstance(certificado.getSubjectX500Principal().getEncoded());
-        var cn = nombre.getRDNs(BCStyle.CN);
-        return cn.length == 0 ? nombre.toString() : cn[0].getFirst().getValue().toString();
+        // El CN puede compartir su componente con otros valores (ECIBCE, con el SERIALNUMBER).
+        return Arrays.stream(nombre.getRDNs(BCStyle.CN))
+                .flatMap(rdn -> Arrays.stream(rdn.getTypesAndValues()))
+                .filter(valor -> BCStyle.CN.equals(valor.getType()))
+                .findFirst()
+                .map(valor -> valor.getValue().toString())
+                .orElseGet(nombre::toString);
     }
 }

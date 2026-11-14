@@ -17,6 +17,7 @@ import ec.mdd.firma.dominio.FirmanteEsperado;
 import ec.mdd.firma.dominio.FirmasDelDocumento;
 import ec.mdd.firma.dominio.GeneracionDeDocumento;
 import ec.mdd.firma.dominio.GeneracionFallida;
+import ec.mdd.firma.dominio.ResultadoValidacion;
 import ec.mdd.firma.dominio.SinRolDeFirma;
 import ec.mdd.firma.puertos.entrada.EstadoDelDocumento;
 import ec.mdd.firma.puertos.entrada.PasoDeLaCadena;
@@ -473,7 +474,8 @@ class DocumentoFirmableServicioTest {
                                     new FirmasDelDocumento(
                                             uno,
                                             generacion(uno.periodo(), uno.version()).cadena(),
-                                            firmantes.getOrDefault(uno.id(), List.of())));
+                                            firmantes.getOrDefault(uno.id(), List.of()),
+                                            List.of()));
         }
 
         /** Registra un documento de antes de F14-H01, sin firmantes esperados. */
@@ -488,6 +490,18 @@ class DocumentoFirmableServicioTest {
         @Override
         public Optional<DocumentoFirmable> documento(String periodo, int version) {
             return Optional.ofNullable(registrados.get(periodo + "/" + version));
+        }
+
+        @Override
+        public boolean registrarValidacion(
+                ResultadoValidacion resultado, FirmasDelDocumento validadoContra) {
+            // La generación del documento no registra firmas (F14-H02 las prueba aparte).
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<ResultadoValidacion> validaciones(UUID documento) {
+            throw new UnsupportedOperationException();
         }
 
         GeneracionDeDocumento generacion(String periodo, int version) {

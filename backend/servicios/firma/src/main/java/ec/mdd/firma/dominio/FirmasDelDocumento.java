@@ -1,41 +1,61 @@
 package ec.mdd.firma.dominio;
 
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
- * Un documento firmable con su cadena y sus firmantes esperados (F14-H01, D-102): de aquí salen el
- * paso en turno, quién lo firma y el archivo vigente.
+ * Un documento firmable con su cadena, sus firmantes esperados y sus firmas registradas (F14-H01,
+ * F14-H02, D-102, D-103): de aquí salen el paso en turno, quién lo firma y el archivo vigente.
  *
  * <p>El paso en turno es el primero de la cadena, en su orden, que todavía no tiene firma: la
- * cadena se firma en orden (RF-38). Las firmas llegan con F14-H02; hasta entonces el conjunto de
- * firmados está vacío y el turno es el primer paso. Un documento sin firmantes esperados (generado
- * antes de F14-H01) no tiene turno: no se adivina quién firma.
+ * cadena se firma en orden (RF-38). Un documento sin firmantes esperados (generado antes de
+ * F14-H01) no tiene turno: no se adivina quién firma.
+ *
+ * <p>El archivo vigente es el de la firma de mayor orden; sin firmas, el original. Como una firma
+ * solo se acepta si el archivo subido empieza con los bytes del vigente, la de mayor orden es
+ * siempre la última de la cadena.
  *
  * @param documento el documento registrado
  * @param cadena los pasos que entregó Aprobación (MD-05)
  * @param firmantes el firmante esperado de cada paso, fijado al generar
+ * @param firmas las firmas aceptadas, a lo sumo una por paso de la cadena
  */
 public record FirmasDelDocumento(
-        DocumentoFirmable documento, List<PasoDeFirma> cadena, List<FirmanteEsperado> firmantes) {
+        DocumentoFirmable documento,
+        List<PasoDeFirma> cadena,
+        List<FirmanteEsperado> firmantes,
+        List<FirmaRegistrada> firmas) {
 
-    /** Exige los datos y copia las listas. */
+    /** Exige los datos, copia las listas y exige a lo sumo una firma por paso de la cadena. */
     public FirmasDelDocumento {
         Objects.requireNonNull(documento, "documento");
         cadena = List.copyOf(cadena);
         firmantes = List.copyOf(firmantes);
+        firmas = List.copyOf(firmas);
+        Set<Integer> pasos =
+                cadena.stream().map(PasoDeFirma::orden).collect(Collectors.toUnmodifiableSet());
+        Set<Integer> firmados = new HashSet<>();
+        for (FirmaRegistrada firma : firmas) {
+            if (!pasos.contains(firma.orden()) || !firmados.add(firma.orden())) {
+                throw new IllegalArgumentException(
+                        "una firma por paso de la cadena: " + firma.orden());
+            }
+        }
     }
 
     /**
      * El primer paso sin firma y su firmante esperado.
      *
-     * @param firmados los órdenes de los pasos ya firmados
      * @return vacío si todos firmaron o si el paso no tiene firmante esperado
      */
-    public Optional<PasoEnTurno> pasoEnTurno(Set<Integer> firmados) {
+    public Optional<PasoEnTurno> pasoEnTurno() {
+        Set<Integer> firmados =
+                firmas.stream().map(FirmaRegistrada::orden).collect(Collectors.toSet());
         return cadena.stream()
                 .sorted(Comparator.comparingInt(PasoDeFirma::orden))
                 .filter(paso -> !firmados.contains(paso.orden()))
@@ -53,21 +73,23 @@ public record FirmasDelDocumento(
      *
      * @param usuario su usuario
      * @param identificacion su identificación, si la tiene
-     * @param firmados los órdenes ya firmados
      * @return verdadero solo para esa persona
      */
-    public boolean enTurno(String usuario, Optional<String> identificacion, Set<Integer> firmados) {
-        return pasoEnTurno(firmados)
+    public boolean enTurno(String usuario, Optional<String> identificacion) {
+        return pasoEnTurno()
                 .filter(turno -> turno.firmante().reconoce(usuario, identificacion))
                 .isPresent();
     }
 
-    /**
-     * El archivo que se firma ahora: el resultante de la última firma o, sin firmas, el original.
-     * Hasta F14-H02 no hay firmas, así que es el original.
-     */
+    /** El archivo que se firma ahora: el de la última firma o, sin firmas, el original. */
     public ArchivoDelDocumento archivoVigente() {
-        return new ArchivoDelDocumento(documento.archivo(), documento.sha256Original());
+        return firmas.stream()
+                .max(Comparator.comparingInt(FirmaRegistrada::orden))
+                .map(FirmaRegistrada::archivo)
+                .orElseGet(
+                        () ->
+                                new ArchivoDelDocumento(
+                                        documento.archivo(), documento.sha256Original()));
     }
 
     /**

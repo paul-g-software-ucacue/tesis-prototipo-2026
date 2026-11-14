@@ -4,13 +4,14 @@ import ec.mdd.firma.dominio.DocumentoFirmable;
 import ec.mdd.firma.dominio.FirmanteEsperado;
 import ec.mdd.firma.dominio.FirmasDelDocumento;
 import ec.mdd.firma.dominio.GeneracionDeDocumento;
+import ec.mdd.firma.dominio.ResultadoValidacion;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 /**
- * La generación, el documento firmable y sus firmantes esperados de cada versión, en el esquema
- * {@code firma} (F13-H02, F14-H01).
+ * La generación, el documento firmable, sus firmantes esperados y las validaciones de sus firmas,
+ * en el esquema {@code firma} (F13-H02, F14-H01, F14-H02).
  */
 public interface RepositorioDocumentos {
 
@@ -45,4 +46,25 @@ public interface RepositorioDocumentos {
 
     /** El documento de esa versión, si se generó. */
     Optional<DocumentoFirmable> documento(String periodo, int version);
+
+    /**
+     * Registra el resultado de una subida del firmante en turno (F14-H02, D-103); no se cambia ni
+     * se borra. Se llama dentro de la transacción que publica su cambio para la bitácora.
+     *
+     * <p>Si el resultado se aceptó, es la firma del paso: antes de registrarlo se bloquea la
+     * generación de la versión y se comprueba que las firmas del documento siguen siendo las de
+     * {@code validadoContra}. Si otra subida firmó entretanto, no registra nada y devuelve falso:
+     * el archivo ya no empieza con el vigente. Un resultado rechazado se registra siempre.
+     *
+     * @param resultado el resultado de la validación
+     * @param validadoContra el documento, con las firmas contra las que se validó
+     * @return falso solo si un resultado aceptado llegó tarde y no se registró
+     */
+    boolean registrarValidacion(ResultadoValidacion resultado, FirmasDelDocumento validadoContra);
+
+    /**
+     * Los resultados de las subidas de un documento, aceptadas y rechazadas, en el orden en que
+     * llegaron (F14-H02): el informe de validación de cada una.
+     */
+    List<ResultadoValidacion> validaciones(UUID documento);
 }

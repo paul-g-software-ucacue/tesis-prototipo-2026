@@ -4,6 +4,8 @@
 plugins {
     id 'mdd.servicio'
     id 'mdd.contrato'
+    // El firmador de prueba (F14-H02), compartido con las pruebas del proceso distributivo.
+    id 'java-test-fixtures'
 }
 
 def versionBouncyCastle = providers.gradleProperty('versionBouncyCastle').get()
@@ -26,16 +28,28 @@ dependencies {
     // F13-H02, D-101: el PDF/A del documento firmable, con el camino probado en B00-S01.
     implementation "org.apache.pdfbox:pdfbox:${versionPdfbox}"
     implementation "io.github.openhtmltopdf:openhtmltopdf-pdfbox:${versionOpenHtmlToPdf}"
+    // F14-H02, D-103: la validación del PDF firmado (integridad del CMS y cadena hasta la raíz),
+    // con el camino probado en B00-S01 (D-46). Solo en los adaptadores (ArquitecturaTest).
+    implementation "org.bouncycastle:bcpkix-jdk18on:${versionBouncyCastle}"
+
+    // El firmador de prueba firma como FirmaEC, con una CA en memoria (F14-H02). Bouncy Castle va
+    // como api: FirmasDePrueba.firmante recibe un X500Name, así que quien la usa lo necesita.
+    testFixturesImplementation "org.apache.pdfbox:pdfbox:${versionPdfbox}"
+    testFixturesApi "org.bouncycastle:bcpkix-jdk18on:${versionBouncyCastle}"
 }
 
 testing {
     suites {
         test {
             dependencies {
-                // Solo en pruebas: la validación del spike B00-S01 (D-44) y la verificación de
-                // PDF/A con veraPDF, que necesita JAXB 2.3 (D-46, D-101). No entran a la imagen.
-                implementation "org.bouncycastle:bcpkix-jdk18on:${versionBouncyCastle}"
+                // Solo en pruebas: la verificación de PDF/A con veraPDF, que necesita JAXB 2.3
+                // (D-46, D-101). No entra a la imagen. Bouncy Castle ya está en el código (D-103).
                 implementation "org.verapdf:validation-model:${versionVeraPdf}"
+            }
+        }
+        integrationTest {
+            dependencies {
+                implementation testFixtures(project())
             }
         }
     }

@@ -5,11 +5,14 @@ import ec.mdd.firma.adaptadores.salida.ContenidoDesdeGeneracion;
 import ec.mdd.firma.adaptadores.salida.FirmantesDesdeProcesos;
 import ec.mdd.firma.adaptadores.salida.GeneradorPdfa;
 import ec.mdd.firma.adaptadores.salida.IdentificacionDesdeUsuarios;
+import ec.mdd.firma.adaptadores.salida.ListaConfianza;
 import ec.mdd.firma.adaptadores.salida.PublicadorDeCambios;
 import ec.mdd.firma.adaptadores.salida.RepositorioDocumentosJdbc;
 import ec.mdd.firma.adaptadores.salida.TransaccionSpring;
+import ec.mdd.firma.adaptadores.salida.ValidadorPades;
 import ec.mdd.firma.aplicacion.DocumentoFirmableServicio;
 import ec.mdd.firma.aplicacion.FirmasPendientesServicio;
+import ec.mdd.firma.aplicacion.SubirFirmaServicio;
 import ec.mdd.firma.puertos.salida.AlmacenDeDocumentos;
 import ec.mdd.firma.puertos.salida.ContenidoDelDistributivo;
 import ec.mdd.firma.puertos.salida.FirmantesDelPeriodo;
@@ -18,19 +21,25 @@ import ec.mdd.firma.puertos.salida.IdentificacionDeUsuarios;
 import ec.mdd.firma.puertos.salida.RegistroDeCambios;
 import ec.mdd.firma.puertos.salida.RepositorioDocumentos;
 import ec.mdd.firma.puertos.salida.Transaccion;
+import ec.mdd.firma.puertos.salida.ValidadorDeFirmas;
 import ec.mdd.generacion.puertos.entrada.ContenidoCongelado;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.transaction.support.TransactionOperations;
 
-/** Ensambla el documento firmable (F13-H02, D-101). */
+/**
+ * Ensambla el documento firmable (F13-H02, D-101), las firmas pendientes (F14-H01) y la subida
+ * (F14-H02).
+ */
 @Configuration(proxyBeanMethods = false)
 public class ConfiguracionFirma {
 
@@ -121,5 +130,40 @@ public class ConfiguracionFirma {
             IdentificacionDeUsuarios identificacionDeUsuarios) {
         return new FirmasPendientesServicio(
                 repositorioDocumentos, almacenDeDocumentos, identificacionDeUsuarios);
+    }
+
+    /**
+     * La lista de confianza del entorno (F14-H02, D-103), leída al arrancar de {@code
+     * mdd.firma.raices}. Sin raíces, o con un archivo ilegible, el proceso no arranca. Por defecto,
+     * la de demostración: la CA de prueba y la raíz pública del BCE.
+     */
+    @Bean
+    public ListaConfianza listaConfianza(@Value("${mdd.firma.raices}") List<Resource> raices) {
+        return ListaConfianza.desde(raices);
+    }
+
+    /** La validación de la firma nueva, con PDFBox y Bouncy Castle. */
+    @Bean
+    public ValidadorDeFirmas validadorDeFirmas(ListaConfianza listaConfianza) {
+        return new ValidadorPades(listaConfianza);
+    }
+
+    /** La subida del PDF firmado y su validación básica (F14-H02). */
+    @Bean
+    public SubirFirmaServicio subirFirma(
+            RepositorioDocumentos repositorioDocumentos,
+            AlmacenDeDocumentos almacenDeDocumentos,
+            IdentificacionDeUsuarios identificacionDeUsuarios,
+            ValidadorDeFirmas validadorDeFirmas,
+            RegistroDeCambios registroDeCambiosFirma,
+            Transaccion transaccionFirma) {
+        return new SubirFirmaServicio(
+                repositorioDocumentos,
+                almacenDeDocumentos,
+                identificacionDeUsuarios,
+                validadorDeFirmas,
+                registroDeCambiosFirma,
+                transaccionFirma,
+                Clock.systemUTC());
     }
 }

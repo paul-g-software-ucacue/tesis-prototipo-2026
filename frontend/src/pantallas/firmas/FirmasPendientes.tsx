@@ -1,9 +1,11 @@
 // La pantalla «Pendientes de firma» (F14-H01, RF-38, D-102): los documentos que le toca firmar al
 // usuario, en turno según el servidor, y la descarga del PDF vigente para firmarlo con FirmaEC.
-// Subir la firma es de F14-H02.
+// Desde F14-H02 (RF-39, D-103), la subida del PDF firmado con el resultado de cada comprobación.
 import Alert from '@mui/material/Alert';
+import AlertTitle from '@mui/material/AlertTitle';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -11,11 +13,19 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
-import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useId, useRef, useState, type ChangeEvent } from 'react';
 import { AvisoDeError } from '../../errores/AvisoDeError';
-import { traducirError, type MensajeDeError } from '../../errores/traducir';
+import { FalloDeApi, traducirError, type MensajeDeError } from '../../errores/traducir';
 import { useTitulo } from '../../navegacion/useTitulo';
-import { descargarArchivoVigente, useFirmasPendientes, type FirmaPendiente } from './consultas';
+import {
+  CLAVE_PENDIENTES,
+  descargarArchivoVigente,
+  subirFirma,
+  useFirmasPendientes,
+  type FirmaPendiente,
+  type ResultadoValidacion,
+} from './consultas';
 
 // Solo para los lectores de pantalla, como en «Roles».
 const visuallyHidden = {
@@ -30,6 +40,24 @@ const visuallyHidden = {
   width: 1,
 } as const;
 
+// Los nombres de las comprobaciones de la validación básica, en su orden (D-103).
+const COMPROBACIONES: Record<string, string> = {
+  MISMO_DOCUMENTO: 'Es la versión vigente',
+  UNA_FIRMA_NUEVA: 'Tiene una sola firma nueva',
+  INTEGRIDAD: 'La firma es íntegra',
+  CONFIANZA: 'El certificado es de confianza',
+};
+
+const RESULTADOS: Record<string, string> = {
+  APROBADA: 'Aprobada',
+  RECHAZADA: 'Rechazada',
+  NO_EVALUADA: 'No evaluada',
+};
+
+type Aviso =
+  | { tipo: 'aceptada'; resultado: ResultadoValidacion }
+  | { tipo: 'rechazada'; mensaje: MensajeDeError };
+
 function fecha(instante: string) {
   return new Date(instante).toLocaleString('es-EC', {
     dateStyle: 'medium',
@@ -41,21 +69,151 @@ function nombreDeLaFila(pendiente: FirmaPendiente) {
   return `${pendiente.periodo}, versión ${String(pendiente.version)}`;
 }
 
+/** Las cuatro comprobaciones, cada una con su nombre y su resultado. */
+function Comprobaciones({ filas }: { filas: { campo: string; resultado: string }[] }) {
+  return (
+    <Box component="ul" sx={{ my: 1, pl: 3 }}>
+      {filas.map((fila) => (
+        <li key={fila.campo}>
+          <Typography component="span" variant="body2" sx={{ fontWeight: 'bold' }}>
+            {COMPROBACIONES[fila.campo] ?? fila.campo}
+          </Typography>
+          {': '}
+          <Typography component="span" variant="body2">
+            {fila.resultado}
+          </Typography>
+        </li>
+      ))}
+    </Box>
+  );
+}
+
+function FirmaRegistrada({
+  resultado,
+  alCerrar,
+}: {
+  resultado: ResultadoValidacion;
+  alCerrar: () => void;
+}) {
+  const titulo = useId();
+  return (
+    <Alert
+      severity="success"
+      role="status"
+      aria-labelledby={titulo}
+      onClose={alCerrar}
+      sx={{ my: 2 }}
+    >
+      <AlertTitle id={titulo}>Firma registrada</AlertTitle>
+      El PDF firmado pasó la validación y es ahora el archivo vigente del documento.
+      <Comprobaciones
+        filas={resultado.comprobaciones.map((una) => ({
+          campo: una.comprobacion,
+          resultado: RESULTADOS[una.resultado] + (una.motivo ? `. ${una.motivo}` : ''),
+        }))}
+      />
+      {resultado.certificado && (
+        <Typography variant="body2">
+          {`Certificado de ${resultado.certificado.nombre}, emitido por ${resultado.certificado.emisor}, vigente hasta el ${fecha(resultado.certificado.validoHasta)}`}
+        </Typography>
+      )}
+    </Alert>
+  );
+}
+
+function FilaPendiente({
+  pendiente,
+  ocupada,
+  alDescargar,
+  alSubir,
+}: {
+  pendiente: FirmaPendiente;
+  ocupada: boolean;
+  alDescargar: () => void;
+  alSubir: (archivo: File) => void;
+}) {
+  const selector = useRef<HTMLInputElement>(null);
+  const elegir = (evento: ChangeEvent<HTMLInputElement>) => {
+    const archivo = evento.target.files?.[0];
+    evento.target.value = '';
+    if (archivo) {
+      alSubir(archivo);
+    }
+  };
+  return (
+    <TableRow>
+      <TableCell>{pendiente.periodo}</TableCell>
+      <TableCell>{pendiente.version}</TableCell>
+      <TableCell>{pendiente.rotulo}</TableCell>
+      <TableCell>{fecha(pendiente.generadoEn)}</TableCell>
+      <TableCell>
+        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+          <Button
+            variant="contained"
+            disabled={ocupada}
+            aria-label={`Descargar el PDF de ${nombreDeLaFila(pendiente)}`}
+            onClick={alDescargar}
+          >
+            Descargar el PDF
+          </Button>
+          <Button
+            variant="outlined"
+            disabled={ocupada}
+            aria-label={`Subir el PDF firmado de ${nombreDeLaFila(pendiente)}`}
+            onClick={() => selector.current?.click()}
+          >
+            Subir el PDF firmado
+          </Button>
+          <input
+            ref={selector}
+            type="file"
+            hidden
+            accept="application/pdf,.pdf"
+            aria-label={`Archivo firmado de ${nombreDeLaFila(pendiente)}`}
+            onChange={elegir}
+          />
+        </Stack>
+      </TableCell>
+    </TableRow>
+  );
+}
+
 export function FirmasPendientes() {
   useTitulo('Pendientes de firma');
   const pendientes = useFirmasPendientes();
-  const [descargando, setDescargando] = useState<string | null>(null);
+  const consultas = useQueryClient();
+  const [ocupado, setOcupado] = useState<string | null>(null);
   const [fallo, setFallo] = useState<MensajeDeError | null>(null);
+  const [aviso, setAviso] = useState<Aviso | null>(null);
 
   const descargar = async (pendiente: FirmaPendiente) => {
     setFallo(null);
-    setDescargando(pendiente.documento);
+    setOcupado(pendiente.documento);
     try {
       await descargarArchivoVigente(pendiente);
     } catch (error) {
       setFallo(traducirError(error));
     } finally {
-      setDescargando(null);
+      setOcupado(null);
+    }
+  };
+
+  const subir = async (pendiente: FirmaPendiente, archivo: File) => {
+    setFallo(null);
+    setAviso(null);
+    setOcupado(pendiente.documento);
+    try {
+      const resultado = await subirFirma(pendiente.documento, archivo);
+      setAviso({ tipo: 'aceptada', resultado });
+      await consultas.invalidateQueries({ queryKey: CLAVE_PENDIENTES });
+    } catch (error) {
+      if (error instanceof FalloDeApi && error.estado === 422) {
+        setAviso({ tipo: 'rechazada', mensaje: traducirError(error) });
+      } else {
+        setFallo(traducirError(error));
+      }
+    } finally {
+      setOcupado(null);
     }
   };
 
@@ -66,6 +224,19 @@ export function FirmasPendientes() {
       </Typography>
       {pendientes.error && <AvisoDeError mensaje={traducirError(pendientes.error)} />}
       {fallo && <AvisoDeError mensaje={fallo} />}
+      {aviso?.tipo === 'aceptada' && (
+        <FirmaRegistrada resultado={aviso.resultado} alCerrar={() => setAviso(null)} />
+      )}
+      {aviso?.tipo === 'rechazada' && (
+        <AvisoDeError mensaje={aviso.mensaje}>
+          <Comprobaciones
+            filas={aviso.mensaje.detalles.map((detalle) => ({
+              campo: detalle.campo,
+              resultado: detalle.descripcion,
+            }))}
+          />
+        </AvisoDeError>
+      )}
       {pendientes.data?.length === 0 && (
         <Alert severity="info" role="status" sx={{ my: 2 }}>
           No tienes firmas pendientes.
@@ -82,29 +253,20 @@ export function FirmasPendientes() {
                 <TableCell>Generado el</TableCell>
                 <TableCell>
                   <Box component="span" sx={visuallyHidden}>
-                    Acción
+                    Acciones
                   </Box>
                 </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {pendientes.data.map((pendiente) => (
-                <TableRow key={pendiente.documento}>
-                  <TableCell>{pendiente.periodo}</TableCell>
-                  <TableCell>{pendiente.version}</TableCell>
-                  <TableCell>{pendiente.rotulo}</TableCell>
-                  <TableCell>{fecha(pendiente.generadoEn)}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant="contained"
-                      disabled={descargando === pendiente.documento}
-                      aria-label={`Descargar el PDF de ${nombreDeLaFila(pendiente)}`}
-                      onClick={() => void descargar(pendiente)}
-                    >
-                      Descargar el PDF
-                    </Button>
-                  </TableCell>
-                </TableRow>
+                <FilaPendiente
+                  key={pendiente.documento}
+                  pendiente={pendiente}
+                  ocupada={ocupado === pendiente.documento}
+                  alDescargar={() => void descargar(pendiente)}
+                  alSubir={(archivo) => void subir(pendiente, archivo)}
+                />
               ))}
             </TableBody>
           </Table>
