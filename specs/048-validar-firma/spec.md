@@ -116,7 +116,7 @@ Como Rector, quiero que solo el firmante en turno pueda subir un PDF firmado, pa
 ### Edge Cases
 
 - **Dos subidas a la vez para el mismo paso**: se valida contra el archivo vigente en el momento de registrar. Se acepta una sola. La otra se rechaza con un 422 porque ya no empieza con los bytes del vigente.
-- **El mismo PDF firmado se sube otra vez después de aceptado**: ya no es la versión vigente más una firma, así que se rechaza con un 422. El paso siguiente no lo ve como suyo.
+- **El mismo PDF firmado se sube otra vez después de aceptado**: quien lo firmó ya no está en turno y recibe el 403 común. Si lo sube el firmante siguiente sin firmarlo, no tiene firma nueva y se rechaza con un 422.
 - **El archivo subido no es un PDF o está dañado**: se rechaza con un 422; las comprobaciones que no se pudieron hacer quedan como no evaluadas.
 - **Un archivo vacío o más grande que el límite de subida**: se rechaza antes de validar, con un error del catálogo, sin informe.
 - **La firma nueva usa un campo de firma distinto del de su paso** (por ejemplo, el de F3 cuando el turno es F1): en esta historia se acepta si pasa las comprobaciones. Comprobar el paso por la persona y el campo es de F14-H03.
