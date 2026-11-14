@@ -28,7 +28,7 @@ Como la firma solo se acepta si el archivo empieza con los bytes del vigente, la
 ## §3. Las comprobaciones: dónde y cómo
 
 **Decisión:**
-- **Mismo documento**, en el dominio: el archivo subido empieza con los bytes del vigente y es más largo. Es una comparación de bytes, sin bibliotecas.
+- **Mismo documento**, en el dominio: el archivo subido empieza con todos los bytes del vigente. Es una comparación de bytes, sin bibliotecas. Un archivo igual al vigente pasa: lo rechaza «una sola firma nueva», que dice mejor qué falta.
 - **Lo que necesita leer el PDF**, detrás de un puerto de salida nuevo, `ValidadorDeFirmas`, con un adaptador sobre PDFBox y Bouncy Castle (`ValidadorPades`), que parte del validador del spike (D-44):
   - **una sola firma nueva:** la cantidad de diccionarios de firma del subido es la del vigente más uno. Los campos vacíos del PDF/A de F13-H02 no cuentan, porque no tienen diccionario de firma. Así vale si el firmante llena el campo de su paso o agrega uno nuevo;
   - **integridad:**

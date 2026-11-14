@@ -2040,7 +2040,7 @@ Con la base de datos de Grype del 2026-11-07, la CI encontró además dos altas 
 
 **Decisión.**
 - **Las comprobaciones de F14-H02**, en este orden:
-  1. el mismo documento: el archivo subido empieza con los bytes del vigente y es más largo;
+  1. el mismo documento: el archivo subido empieza con todos los bytes del vigente (si es igual, la comprobación siguiente lo rechaza por no tener firma nueva);
   2. una sola firma nueva: un diccionario de firma más que el vigente, así que vale si el firmante llena el campo vacío del paso o agrega uno;
   3. la integridad: la firma nueva termina en el final del archivo, su CMS se lee sin el relleno de ceros y se verifica con la llave pública (D-46);
   4. la confianza: PKIX hasta una raíz de la lista, sin revocación, a la fecha del `signingTime` firmado.

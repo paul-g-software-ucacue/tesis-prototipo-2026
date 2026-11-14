@@ -95,7 +95,7 @@ description: "Tareas de F14-H02: validar que el PDF subido es el mismo documento
     - `aceptada()` solo con las cuatro aprobadas;
     - `primerRechazo()`;
     - rechaza una aprobada después de una rechazada de la que depende;
-  - `ComprobacionDeDocumentoTest`: igual (rechazada), más corto, otro prefijo y más largo con el mismo prefijo (aprobada).
+  - `ComprobacionDeDocumentoTest`: más corto y otro prefijo (rechazadas); igual y más largo con el mismo prefijo (aprobadas: sin firma nueva, la rechaza la comprobación siguiente).
 
   Luego, en `FIR/main/.../dominio/`: `Comprobacion`, `Resultado`, `ResultadoDeComprobacion`, `CertificadoDeLaFirma`, `ResultadoValidacion` y `ComprobacionDeDocumento`. Las excepciones: `ArchivoFirmadoRechazado` (con el informe), `ArchivoVacio` y `ArchivoDemasiadoGrande`.
 - [ ] T007 [P] Las firmas en `FirmasDelDocumento`. Ver fallar primero en `FirmasDelDocumentoTest`, con 0, 1, 2 y 3 firmas:

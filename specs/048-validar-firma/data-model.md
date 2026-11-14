@@ -53,7 +53,7 @@ revoke update, delete, truncate on validacion_firma from current_user;
 
 ### `ComprobacionDeDocumento` (dominio, nuevo)
 
-`mismoDocumento(byte[] vigente, byte[] subido)` → `ResultadoDeComprobacion`: aprobada si el subido es más largo y empieza con los bytes del vigente.
+`mismoDocumento(byte[] vigente, byte[] subido)` → `ResultadoDeComprobacion`: aprobada si el subido empieza con todos los bytes del vigente. Si es igual al vigente, también: la falta de firma nueva la rechaza la comprobación siguiente, con su propio código.
 
 ### Puertos
 
