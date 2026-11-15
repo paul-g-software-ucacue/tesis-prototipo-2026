@@ -119,7 +119,7 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
   Luego, `ParcialesDelDistributivo.crearVersionNueva`, `VersionNuevaEnGeneracion` y el servicio, con la versión bloqueada (`bloquearVigente`).
 
   **Resultado (2026-11-15):** 5 pruebas nuevas en `ParcialesDelDistributivoServicioTest`. Contra el esqueleto fallaron 4; la de «otra situación» pasaba porque el esqueleto devolvía vacío. Pasan con la implementación y las de Generación siguen en verde. La idempotencia mira el número y que la anterior esté ANULADA, no el motivo: hoy hay uno solo (está en el comentario).
-- [ ] T011 [US1] Aprobación ordena la versión nueva. Ver fallar primero en `OCS/test/.../aplicacion/RegistrarRechazoEnFirmaServicioTest.java`:
+- [X] T011 [US1] Aprobación ordena la versión nueva. Ver fallar primero en `OCS/test/.../aplicacion/RegistrarRechazoEnFirmaServicioTest.java`:
   - fuera de firma o con otra versión: no llama a Generación ni guarda nada;
   - en firma: llama a Generación y después, con el proceso bloqueado, guarda `RECHAZO_EN_FIRMA` y `VERSION_NUEVA`, sus dos cambios para la bitácora (`DISTRIBUTIVO_RECHAZADO_EN_FIRMA` y `DISTRIBUTIVO_VERSION_NUEVA`) y el aviso `FirmasPorAnular`;
   - un reintento con la versión ya creada en Generación completa las transiciones;
@@ -130,6 +130,12 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
   - `AvisoDeFirma.avisar(FirmasPorAnular)`, sin oyente todavía;
   - `CambioDeFlujo.Accion.DISTRIBUTIVO_VERSION_NUEVA` y su rama en `FlujoDelDistributivoServicio.cambio`;
   - el servicio con los tres pasos de research §1.
+
+  **Resultado (2026-11-15):** `RegistrarRechazoEnFirmaServicioTest` reescrita con 5 pruebas, más una de `admiteRechazoEnFirma` en `ProcesoAprobacionTest`. Contra los esqueletos fallaron 4. Las de «otro aviso ganó mientras tanto» y «sin proceso» pasaron porque el esqueleto conservaba el comportamiento de F14-H04. Pasan con la implementación, y las 385 de Validación OCS siguen en verde. Desvíos:
+  - **El paso 1** necesita una pregunta al agregado sin bloquearlo: `ProcesoAprobacion.admiteRechazoEnFirma(version)`, que `rechazarEnFirma` también usa.
+  - **El aviso a Firma** es `avisarAnulacion(FirmasPorAnular)`, no una sobrecarga de `avisar`: la sobrecarga volvía ambiguos los `any()` de las pruebas de F13-H02, y `AvisoDeFirma` deja de ser `@FunctionalInterface`. `FirmasPorAnular` lleva periodo, versión y momento, sin motivo: el único que Aprobación ordena hoy es el rechazo en firma.
+  - **La bitácora** de `DISTRIBUTIVO_VERSION_NUEVA` lleva la versión anulada (la anterior a la nueva) y el motivo en el detalle, con `version` antes y después.
+  - **`FlujoEnMemoria`** suma `crearVersionNueva` (vacío) y deja de usar una lambda para el aviso.
 - [ ] T012 [US1] El repositorio de Aprobación. Ver fallar primero en `OCS/integrationTest/.../RepositorioProcesoIntegrationTest.java`: la transición `VERSION_NUEVA` se guarda y se lee, después del rechazo. Luego, lo que haga falta en `RepositorioProcesoJdbc`.
 
 **Checkpoint**: el rechazo deja la versión nueva y el flujo en EN_REVISION_VRA con ella; las firmas todavía no se anulan.

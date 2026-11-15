@@ -174,14 +174,23 @@ public class ConfiguracionValidacionocs {
                 repositorioProceso, registroDeCambiosValidacionocs, transaccionValidacionocs);
     }
 
-    /** La vuelta a revisión con un rechazo en firma (F14-H04, D-105). */
+    /**
+     * La vuelta a revisión con un rechazo en firma (F14-H04, D-105), con la versión nueva y la
+     * orden de anular las firmas (F12-H04, D-106).
+     */
     @Bean
     public RegistrarRechazoEnFirmaServicio registrarRechazoEnFirma(
             RepositorioProceso repositorioProceso,
+            Distributivo distributivoDeGeneracion,
             RegistroDeCambios registroDeCambiosValidacionocs,
-            Transaccion transaccionValidacionocs) {
+            Transaccion transaccionValidacionocs,
+            ApplicationEventPublisher eventos) {
         return new RegistrarRechazoEnFirmaServicio(
-                repositorioProceso, registroDeCambiosValidacionocs, transaccionValidacionocs);
+                repositorioProceso,
+                distributivoDeGeneracion,
+                new AvisoDeFirmaSpring(eventos),
+                registroDeCambiosValidacionocs,
+                transaccionValidacionocs);
     }
 
     /**

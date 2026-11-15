@@ -14,6 +14,7 @@ import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
 import ec.mdd.validacionocs.dominio.RechazoDelFirmante;
 import ec.mdd.validacionocs.dominio.Transicion;
 import ec.mdd.validacionocs.puertos.entrada.SinDistributivo;
+import ec.mdd.validacionocs.puertos.salida.AvisoDeFirma;
 import ec.mdd.validacionocs.puertos.salida.DatosDelPeriodo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo;
 import ec.mdd.validacionocs.puertos.salida.RepositorioConfiguracion;
@@ -132,7 +133,13 @@ final class FlujoEnMemoria {
                     }
                 },
                 Clock.fixed(AHORA, ZoneOffset.UTC),
-                aviso -> {});
+                new AvisoDeFirma() {
+                    @Override
+                    public void avisar(AvisoDeFirma.DistributivoEnFirma aviso) {}
+
+                    @Override
+                    public void avisarAnulacion(AvisoDeFirma.FirmasPorAnular aviso) {}
+                });
     }
 
     private Distributivo distributivo() {
@@ -178,6 +185,12 @@ final class FlujoEnMemoria {
                     throw new SinDistributivo();
                 }
                 return new VersionCongeladaEnAprobacion(1, "b".repeat(64));
+            }
+
+            @Override
+            public java.util.Optional<VersionNuevaEnAprobacion> crearVersionNueva(
+                    String periodo, int anulada, Instant momento) {
+                return java.util.Optional.empty();
             }
 
             @Override

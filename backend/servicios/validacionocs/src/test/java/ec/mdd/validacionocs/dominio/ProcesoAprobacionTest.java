@@ -1263,7 +1263,8 @@ class ProcesoAprobacionTest {
     }
 
     @Test
-    void dadoUnRechazoEnFirma_cuandoSeRegistraLaVersionNueva_entoncesQuedaSuTransicionPorElSistema() {
+    void
+            dadoUnRechazoEnFirma_cuandoSeRegistraLaVersionNueva_entoncesQuedaSuTransicionPorElSistema() {
         ProcesoAprobacion proceso = rechazado();
 
         List<Transicion> nuevas = proceso.registrarVersionNueva(2, 3, HASH_NUEVA, NUEVA);
@@ -1320,7 +1321,8 @@ class ProcesoAprobacionTest {
     }
 
     @Test
-    void dadaLaRevisionDesactivada_cuandoSeRegistraLaVersionNueva_entoncesQuedaEnLaEtapaALaQueVolvio() {
+    void
+            dadaLaRevisionDesactivada_cuandoSeRegistraLaVersionNueva_entoncesQuedaEnLaEtapaALaQueVolvio() {
         ProcesoAprobacion proceso = enConsolidacion(sinRevision());
         revisar(proceso, LISTO);
         proceso.rechazarEnFirma(2, RECHAZO, RECHAZADA);
@@ -1370,5 +1372,14 @@ class ProcesoAprobacionTest {
         assertThat(proceso.rechazoVigente()).contains(segundo);
         assertThat(proceso.acciones(VICERRECTOR))
                 .containsExactly(AccionDelProceso.APROBAR_CONTENIDO);
+    }
+
+    @Test
+    void dadoElProceso_cuandoSePreguntaSiAdmiteElRechazo_entoncesSoloEnFirmaConLaCongelada() {
+        ProcesoAprobacion enFirma = enFirma();
+        assertThat(enFirma.admiteRechazoEnFirma(2)).isTrue();
+        assertThat(enFirma.admiteRechazoEnFirma(3)).isFalse();
+        assertThat(rechazado().admiteRechazoEnFirma(2)).isFalse();
+        assertThat(enRevision(etapas(false)).admiteRechazoEnFirma(2)).isFalse();
     }
 }

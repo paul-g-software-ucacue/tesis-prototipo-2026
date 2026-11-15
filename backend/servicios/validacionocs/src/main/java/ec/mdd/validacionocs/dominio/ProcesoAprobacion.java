@@ -561,6 +561,19 @@ public final class ProcesoAprobacion {
     }
 
     /**
+     * Si un rechazo en firma de {@code version} cambiaría algo (F12-H04): el distributivo está en
+     * CONGELADO_EN_FIRMA con esa versión congelada. Aprobación lo pregunta antes de ordenar a
+     * Generación la versión nueva, sin bloquear el proceso; {@link #rechazarEnFirma} lo vuelve a
+     * comprobar con el proceso bloqueado.
+     *
+     * @param version la versión del aviso
+     */
+    public boolean admiteRechazoEnFirma(int version) {
+        return estado == TipoDeEtapa.CONGELADO_EN_FIRMA
+                && congelacion().filter(una -> una.version() == version).isPresent();
+    }
+
+    /**
      * El firmante en turno rechazó en firma la versión congelada: el distributivo vuelve de
      * CONGELADO_EN_FIRMA a la etapa activa anterior, EN_REVISION_VRA con la configuración por
      * defecto (F14-H04, D-105). Es la regla de {@link #siguienteActiva} al revés: si la copia de la
@@ -576,11 +589,10 @@ public final class ProcesoAprobacion {
     public List<Transicion> rechazarEnFirma(
             int version, RechazoDelFirmante rechazo, Instant ahora) {
         Objects.requireNonNull(rechazo, "rechazo");
-        Optional<Transicion> congelada = congelacion();
-        if (estado != TipoDeEtapa.CONGELADO_EN_FIRMA
-                || congelada.filter(una -> una.version() == version).isEmpty()) {
+        if (!admiteRechazoEnFirma(version)) {
             return List.of();
         }
+        Optional<Transicion> congelada = congelacion();
         TipoDeEtapa desde = estado;
         estado = anteriorActiva(desde);
         Transicion vuelta =
@@ -614,8 +626,8 @@ public final class ProcesoAprobacion {
      * Generación anuló la versión rechazada en firma y creó la siguiente (F12-H04, D-106): queda la
      * transición {@code VERSION_NUEVA}, de la etapa a la que volvió el distributivo a la misma, por
      * {@value #SISTEMA}. Con ella el rechazo deja de estar pendiente y se puede aprobar otra vez,
-     * sin cambiar la regla de D-105. Solo corresponde justo después del rechazo de {@code
-     * anulada}: un reintento, un rechazo de otra versión o ninguno no hacen nada.
+     * sin cambiar la regla de D-105. Solo corresponde justo después del rechazo de {@code anulada}:
+     * un reintento, un rechazo de otra versión o ninguno no hacen nada.
      *
      * @param anulada la versión rechazada en firma
      * @param nueva la versión que creó Generación

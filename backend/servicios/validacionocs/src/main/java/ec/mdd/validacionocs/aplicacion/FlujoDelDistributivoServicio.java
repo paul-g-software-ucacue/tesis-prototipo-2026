@@ -409,6 +409,18 @@ public final class FlujoDelDistributivoServicio
                     Map.of("estado", transicion.desde().name()),
                     Map.of("estado", transicion.hacia().name()));
         }
+        // F12-H04: la versión anulada es la anterior a la nueva; hoy el único motivo es el rechazo.
+        if (transicion.tipo() == TipoDeTransicion.VERSION_NUEVA) {
+            detalle.put("versionAnulada", transicion.version() - 1);
+            detalle.put("motivo", "RECHAZO_EN_FIRMA");
+            return new CambioDeFlujo(
+                    transicion.momento(),
+                    transicion.quien(),
+                    CambioDeFlujo.Accion.DISTRIBUTIVO_VERSION_NUEVA,
+                    detalle,
+                    Map.of("version", transicion.version() - 1),
+                    Map.of("version", transicion.version()));
+        }
         return new CambioDeFlujo(
                 transicion.momento(),
                 transicion.quien(),

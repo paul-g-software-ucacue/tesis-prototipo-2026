@@ -21,4 +21,9 @@ public final class AvisoDeFirmaSpring implements AvisoDeFirma {
     public void avisar(DistributivoEnFirma aviso) {
         eventos.publishEvent(aviso);
     }
+
+    @Override
+    public void avisarAnulacion(FirmasPorAnular aviso) {
+        eventos.publishEvent(aviso);
+    }
 }

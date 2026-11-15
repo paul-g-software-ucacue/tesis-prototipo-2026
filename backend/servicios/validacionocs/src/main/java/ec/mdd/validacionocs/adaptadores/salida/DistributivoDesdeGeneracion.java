@@ -77,6 +77,23 @@ public final class DistributivoDesdeGeneracion implements Distributivo {
         }
     }
 
+    // F12-H04: el único motivo que Aprobación ordena hoy es el rechazo en firma.
+    @Override
+    public Optional<VersionNuevaEnAprobacion> crearVersionNueva(
+            String periodo, int anulada, java.time.Instant momento) {
+        try {
+            return parciales
+                    .crearVersionNueva(
+                            periodo,
+                            anulada,
+                            ec.mdd.generacion.puertos.entrada.MotivoDeVersion.RECHAZO_EN_FIRMA,
+                            momento)
+                    .map(nueva -> new VersionNuevaEnAprobacion(nueva.numero(), nueva.hash()));
+        } catch (DistributivoNoEncontrado sinDistributivo) {
+            throw new SinDistributivo();
+        }
+    }
+
     @Override
     public String hash(String periodo) {
         try {
