@@ -410,7 +410,8 @@ class SubirFirmaServicioTest {
                                     ResultadoDeComprobacion.rechazada(
                                             CONFIANZA, "No llega a una raíz de confianza.")),
                             Optional.of(CERTIFICADO));
-            case MISMO_DOCUMENTO -> throw new IllegalArgumentException("lo decide el dominio");
+            case MISMO_DOCUMENTO, VIGENCIA, ORDEN, FIRMANTE ->
+                    throw new IllegalArgumentException("lo decide el dominio");
         };
     }
 

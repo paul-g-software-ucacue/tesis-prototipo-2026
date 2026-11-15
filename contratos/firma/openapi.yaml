@@ -2,8 +2,8 @@
 # PDF/A del consolidado con su hash (RF-38, RNF-POR-01, D-101). Se genera solo al entrar en firma;
 # el rol de la etapa lo reintenta si falló. Desde F14-H01: las firmas pendientes del usuario y la
 # descarga del archivo vigente, solo para el firmante en turno (RF-38, D-102). Desde F14-H02: la
-# subida del PDF firmado con su validación básica (RF-39, D-23, D-103). El firmante por su
-# certificado, la vigencia y el paso a EN_OCS, de F14-H03.
+# subida del PDF firmado con su validación básica (RF-39, D-23, D-103). Desde F14-H03: la vigencia,
+# el orden y el firmante por el CN del certificado, y la cadena completa (D-104).
 openapi: 3.0.3
 info:
   title: MDD · firma
@@ -121,9 +121,11 @@ paths:
       summary: Sube el PDF firmado del paso en turno y lo valida; solo el firmante en turno.
       description: >-
         Valida en este orden: el mismo documento (empieza con los bytes del archivo vigente), una
-        sola firma nueva, su integridad sobre el ByteRange y que su certificado llega a una raíz de
-        la lista de confianza (D-23, D-103). Una comprobación que depende de otra rechazada queda
-        NO_EVALUADA. Si las cuatro pasan, registra la firma del paso en turno: el PDF subido pasa a
+        sola firma nueva, su integridad sobre el ByteRange, que su certificado llega a una raíz de
+        la lista de confianza (D-23, D-103), que está vigente al subir, que no es la firma de la
+        persona de un paso posterior y que su CN es el nombre que el PDF imprime en el paso en
+        turno (D-104). Una comprobación que depende de otra rechazada queda NO_EVALUADA. Con la
+        última firma de la cadena, la cadena queda completa. Si las cuatro pasan, registra la firma del paso en turno: el PDF subido pasa a
         ser el archivo vigente, guardado por su SHA-256, y el turno pasa al siguiente paso. Si no,
         responde 422 con el código de la primera comprobación rechazada y las cuatro en los
         detalles, sin guardar el archivo. Cada subida del firmante en turno deja su resultado
@@ -169,12 +171,21 @@ paths:
             application/json:
               schema:
                 $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '409':
+          description: >-
+            El paso en turno no tiene registrado el nombre de quien lo firma: un documento generado
+            antes de F14-H03 (FIRMA_PASO_SIN_NOMBRE). No se valida nada.
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
         '422':
           description: >-
             Se rechazó, con el código de la primera comprobación rechazada:
-            FIRMA_NO_ES_LA_VERSION_VIGENTE, FIRMA_SIN_UNA_FIRMA_NUEVA, FIRMA_NO_INTEGRA o
-            FIRMA_SIN_CONFIANZA. Los detalles llevan las cuatro comprobaciones en orden: campo es la
-            comprobación y descripcion su resultado.
+            FIRMA_NO_ES_LA_VERSION_VIGENTE, FIRMA_SIN_UNA_FIRMA_NUEVA, FIRMA_NO_INTEGRA,
+            FIRMA_SIN_CONFIANZA, FIRMA_CERTIFICADO_NO_VIGENTE, FIRMA_FUERA_DE_ORDEN o
+            FIRMA_FIRMANTE_EQUIVOCADO. Los detalles llevan las siete comprobaciones en orden: campo
+            es la comprobación y descripcion su resultado.
           content:
             application/json:
               schema:
@@ -371,10 +382,10 @@ components:
           type: string
           format: date-time
         comprobaciones:
-          description: Las cuatro comprobaciones, en orden.
+          description: Las siete comprobaciones, en orden.
           type: array
-          minItems: 4
-          maxItems: 4
+          minItems: 7
+          maxItems: 7
           items:
             $ref: '#/components/schemas/ResultadoDeComprobacion'
         certificado:
@@ -386,7 +397,7 @@ components:
       properties:
         comprobacion:
           type: string
-          enum: [MISMO_DOCUMENTO, UNA_FIRMA_NUEVA, INTEGRIDAD, CONFIANZA]
+          enum: [MISMO_DOCUMENTO, UNA_FIRMA_NUEVA, INTEGRIDAD, CONFIANZA, VIGENCIA, ORDEN, FIRMANTE]
         resultado:
           type: string
           enum: [APROBADA, RECHAZADA, NO_EVALUADA]

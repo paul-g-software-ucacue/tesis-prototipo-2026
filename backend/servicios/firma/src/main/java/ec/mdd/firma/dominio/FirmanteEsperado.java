@@ -20,10 +20,16 @@ import java.util.regex.Pattern;
  * @param usuario el usuario esperado, o {@code null} si se reconoce por la identificación
  * @param identificacion la identificación esperada, o {@code null} si se reconoce por el usuario
  */
-public record FirmanteEsperado(int orden, String rol, String usuario, String identificacion) {
+public record FirmanteEsperado(
+        int orden, String rol, String usuario, String identificacion, Optional<String> nombre) {
 
     // El formato de Docentes: cédula de 10 dígitos o pasaporte de hasta 13 letras o dígitos.
     private static final Pattern IDENTIFICACION = Pattern.compile("^[0-9A-Z]{1,13}$");
+
+    /** Esqueleto (F14-H03, T006). */
+    public FirmanteEsperado(int orden, String rol, String usuario, String identificacion) {
+        this(orden, rol, usuario, identificacion, Optional.empty());
+    }
 
     /** Exige el orden, el rol y exactamente una de las dos personas. */
     public FirmanteEsperado {
@@ -50,6 +56,18 @@ public record FirmanteEsperado(int orden, String rol, String usuario, String ide
     /** El firmante que se reconoce por su identificación: el docente de un cargo. */
     public static FirmanteEsperado porIdentificacion(int orden, String rol, String identificacion) {
         return new FirmanteEsperado(orden, rol, null, identificacion);
+    }
+
+    /** Esqueleto (F14-H03, T006). */
+    public static FirmanteEsperado porUsuario(
+            int orden, String rol, String usuario, String nombre) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** Esqueleto (F14-H03, T006). */
+    public static FirmanteEsperado porIdentificacion(
+            int orden, String rol, String identificacion, String nombre) {
+        throw new UnsupportedOperationException();
     }
 
     /** Si para reconocerlo hace falta la identificación de quien pide. */

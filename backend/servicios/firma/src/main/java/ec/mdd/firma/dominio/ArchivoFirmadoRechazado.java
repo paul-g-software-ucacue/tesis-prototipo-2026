@@ -14,7 +14,10 @@ public abstract sealed class ArchivoFirmadoRechazado extends RuntimeException
         permits ArchivoFirmadoRechazado.NoEsLaVersionVigente,
                 ArchivoFirmadoRechazado.SinUnaFirmaNueva,
                 ArchivoFirmadoRechazado.NoIntegra,
-                ArchivoFirmadoRechazado.SinConfianza {
+                ArchivoFirmadoRechazado.SinConfianza,
+                ArchivoFirmadoRechazado.NoVigente,
+                ArchivoFirmadoRechazado.FueraDeOrden,
+                ArchivoFirmadoRechazado.FirmanteEquivocado {
 
     @Serial private static final long serialVersionUID = 1L;
 
@@ -44,6 +47,7 @@ public abstract sealed class ArchivoFirmadoRechazado extends RuntimeException
             case UNA_FIRMA_NUEVA -> new SinUnaFirmaNueva(resultado);
             case INTEGRIDAD -> new NoIntegra(resultado);
             case CONFIANZA -> new SinConfianza(resultado);
+            case VIGENCIA, ORDEN, FIRMANTE -> throw new UnsupportedOperationException("T006");
         };
     }
 
@@ -84,6 +88,33 @@ public abstract sealed class ArchivoFirmadoRechazado extends RuntimeException
         @Serial private static final long serialVersionUID = 1L;
 
         private SinConfianza(ResultadoValidacion resultado) {
+            super(resultado);
+        }
+    }
+
+    /** Esqueleto (F14-H03, T006). */
+    public static final class NoVigente extends ArchivoFirmadoRechazado {
+        @Serial private static final long serialVersionUID = 1L;
+
+        private NoVigente(ResultadoValidacion resultado) {
+            super(resultado);
+        }
+    }
+
+    /** Esqueleto (F14-H03, T006). */
+    public static final class FueraDeOrden extends ArchivoFirmadoRechazado {
+        @Serial private static final long serialVersionUID = 1L;
+
+        private FueraDeOrden(ResultadoValidacion resultado) {
+            super(resultado);
+        }
+    }
+
+    /** Esqueleto (F14-H03, T006). */
+    public static final class FirmanteEquivocado extends ArchivoFirmadoRechazado {
+        @Serial private static final long serialVersionUID = 1L;
+
+        private FirmanteEquivocado(ResultadoValidacion resultado) {
             super(resultado);
         }
     }

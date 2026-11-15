@@ -40,4 +40,32 @@ class FirmanteEsperadoTest {
                 .isFalse();
         assertThat(vicerrector.reconoce("vicerrectorado.demo", Optional.empty())).isFalse();
     }
+
+    @Test
+    void dadoUnFirmanteConSuNombreImpreso_cuandoSeCrea_entoncesLoGuarda() {
+        assertThat(
+                        FirmanteEsperado.porIdentificacion(
+                                        2,
+                                        "VICERRECTOR",
+                                        "0109990028",
+                                        "CABRERA VAZQUEZ ANA GABRIELA")
+                                .nombre())
+                .contains("CABRERA VAZQUEZ ANA GABRIELA");
+        assertThat(
+                        FirmanteEsperado.porUsuario(1, "RESPONSABLE_CONSOLIDACION", "docente.demo")
+                                .nombre())
+                .isEmpty();
+    }
+
+    @Test
+    void dadoUnNombreDeMasDe200Caracteres_cuandoSeCrea_entoncesSeRechaza() {
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                        () ->
+                                FirmanteEsperado.porUsuario(
+                                        1,
+                                        "RESPONSABLE_CONSOLIDACION",
+                                        "docente.demo",
+                                        "x".repeat(201)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
 }

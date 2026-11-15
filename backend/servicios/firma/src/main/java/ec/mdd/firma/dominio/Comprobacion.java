@@ -18,5 +18,14 @@ public enum Comprobacion {
     INTEGRIDAD,
 
     /** El certificado de la firma nueva llega a una raíz de la lista de confianza. */
-    CONFIANZA
+    CONFIANZA,
+
+    /** Esqueleto (F14-H03, T006). */
+    VIGENCIA,
+
+    /** Esqueleto (F14-H03, T006). */
+    ORDEN,
+
+    /** Esqueleto (F14-H03, T006). */
+    FIRMANTE
 }

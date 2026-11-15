@@ -1,9 +1,12 @@
 package ec.mdd.firma.dominio;
 
 import static ec.mdd.firma.dominio.Comprobacion.CONFIANZA;
+import static ec.mdd.firma.dominio.Comprobacion.FIRMANTE;
 import static ec.mdd.firma.dominio.Comprobacion.INTEGRIDAD;
 import static ec.mdd.firma.dominio.Comprobacion.MISMO_DOCUMENTO;
+import static ec.mdd.firma.dominio.Comprobacion.ORDEN;
 import static ec.mdd.firma.dominio.Comprobacion.UNA_FIRMA_NUEVA;
+import static ec.mdd.firma.dominio.Comprobacion.VIGENCIA;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -43,7 +46,10 @@ class ResultadoValidacionTest {
                 ResultadoDeComprobacion.aprobada(MISMO_DOCUMENTO),
                 ResultadoDeComprobacion.aprobada(UNA_FIRMA_NUEVA),
                 ResultadoDeComprobacion.aprobada(INTEGRIDAD),
-                ResultadoDeComprobacion.aprobada(CONFIANZA));
+                ResultadoDeComprobacion.aprobada(CONFIANZA),
+                ResultadoDeComprobacion.aprobada(VIGENCIA),
+                ResultadoDeComprobacion.aprobada(ORDEN),
+                ResultadoDeComprobacion.aprobada(FIRMANTE));
     }
 
     @Test
@@ -59,13 +65,11 @@ class ResultadoValidacionTest {
             dadaLaIntegridadRechazada_cuandoSeConsulta_entoncesNoEstaAceptadaYElRechazoEsLaIntegridad() {
         ResultadoValidacion resultado =
                 con(
-                        List.of(
+                        ResultadoDeComprobacion.desde(
                                 ResultadoDeComprobacion.aprobada(MISMO_DOCUMENTO),
                                 ResultadoDeComprobacion.aprobada(UNA_FIRMA_NUEVA),
                                 ResultadoDeComprobacion.rechazada(
-                                        INTEGRIDAD, "La firma no corresponde al contenido."),
-                                ResultadoDeComprobacion.noEvaluada(
-                                        CONFIANZA, "La firma no es íntegra.")),
+                                        INTEGRIDAD, "La firma no corresponde al contenido.")),
                         Optional.of(CERTIFICADO));
 
         assertThat(resultado.aceptada()).isFalse();
@@ -94,7 +98,7 @@ class ResultadoValidacionTest {
 
     @Test
     void dadasMenosDeCuatroComprobaciones_cuandoSeCrea_entoncesSeRechaza() {
-        assertThatThrownBy(() -> con(todasAprobadas().subList(0, 3), Optional.empty()))
+        assertThatThrownBy(() -> con(todasAprobadas().subList(0, 6), Optional.empty()))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -105,9 +109,12 @@ class ResultadoValidacionTest {
                         ResultadoDeComprobacion.aprobada(UNA_FIRMA_NUEVA),
                         ResultadoDeComprobacion.aprobada(MISMO_DOCUMENTO),
                         ResultadoDeComprobacion.aprobada(INTEGRIDAD),
-                        ResultadoDeComprobacion.aprobada(CONFIANZA));
+                        ResultadoDeComprobacion.aprobada(CONFIANZA),
+                        ResultadoDeComprobacion.aprobada(VIGENCIA),
+                        ResultadoDeComprobacion.aprobada(ORDEN),
+                        ResultadoDeComprobacion.aprobada(FIRMANTE));
 
-        assertThatThrownBy(() -> con(fueraDeOrden, Optional.empty()))
+        assertThatThrownBy(() -> con(fueraDeOrden, Optional.of(CERTIFICADO)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -120,7 +127,12 @@ class ResultadoValidacionTest {
                                 UNA_FIRMA_NUEVA, "Tiene dos firmas nuevas."),
                         ResultadoDeComprobacion.aprobada(INTEGRIDAD),
                         ResultadoDeComprobacion.noEvaluada(
-                                CONFIANZA, "No hay una sola firma nueva."));
+                                CONFIANZA, "No hay una sola firma nueva."),
+                        ResultadoDeComprobacion.noEvaluada(
+                                VIGENCIA, "No hay una sola firma nueva."),
+                        ResultadoDeComprobacion.noEvaluada(ORDEN, "No hay una sola firma nueva."),
+                        ResultadoDeComprobacion.noEvaluada(
+                                FIRMANTE, "No hay una sola firma nueva."));
 
         assertThatThrownBy(() -> con(imposible, Optional.empty()))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -133,7 +145,10 @@ class ResultadoValidacionTest {
                         ResultadoDeComprobacion.aprobada(MISMO_DOCUMENTO),
                         ResultadoDeComprobacion.noEvaluada(UNA_FIRMA_NUEVA, "Sin motivo."),
                         ResultadoDeComprobacion.noEvaluada(INTEGRIDAD, "Sin motivo."),
-                        ResultadoDeComprobacion.noEvaluada(CONFIANZA, "Sin motivo."));
+                        ResultadoDeComprobacion.noEvaluada(CONFIANZA, "Sin motivo."),
+                        ResultadoDeComprobacion.noEvaluada(VIGENCIA, "Sin motivo."),
+                        ResultadoDeComprobacion.noEvaluada(ORDEN, "Sin motivo."),
+                        ResultadoDeComprobacion.noEvaluada(FIRMANTE, "Sin motivo."));
 
         assertThatThrownBy(() -> con(sinMotivo, Optional.empty()))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -161,7 +176,7 @@ class ResultadoValidacionTest {
     void dadoUnResultadoRechazado_cuandoSeLanzaElRechazo_entoncesEsLaExcepcionDeSuPrimerRechazo() {
         ResultadoValidacion sinConfianza =
                 con(
-                        List.of(
+                        ResultadoDeComprobacion.desde(
                                 ResultadoDeComprobacion.aprobada(MISMO_DOCUMENTO),
                                 ResultadoDeComprobacion.aprobada(UNA_FIRMA_NUEVA),
                                 ResultadoDeComprobacion.aprobada(INTEGRIDAD),
@@ -226,5 +241,49 @@ class ResultadoValidacionTest {
         assertThat(rechazada.sha256Subido()).isEqualTo(aceptada.sha256Subido());
         assertThat(rechazada.comprobaciones().getFirst().motivo()).isPresent();
         assertThat(rechazada.certificado()).isEqualTo(aceptada.certificado());
+    }
+
+    @Test
+    void dadasLasComprobacionesDeF14H03_cuandoSeRechazan_entoncesCadaUnaTieneSuSubclase() {
+        List<ResultadoDeComprobacion> previas =
+                List.of(
+                        ResultadoDeComprobacion.aprobada(MISMO_DOCUMENTO),
+                        ResultadoDeComprobacion.aprobada(UNA_FIRMA_NUEVA),
+                        ResultadoDeComprobacion.aprobada(INTEGRIDAD),
+                        ResultadoDeComprobacion.aprobada(CONFIANZA));
+        java.util.function.Function<List<ResultadoDeComprobacion>, ResultadoValidacion> armar =
+                cola -> {
+                    List<ResultadoDeComprobacion> todas = new java.util.ArrayList<>(previas);
+                    todas.addAll(cola);
+                    return con(
+                            ResultadoDeComprobacion.desde(
+                                    todas.toArray(ResultadoDeComprobacion[]::new)),
+                            Optional.of(CERTIFICADO));
+                };
+
+        assertThat(
+                        ArchivoFirmadoRechazado.de(
+                                armar.apply(
+                                        List.of(
+                                                ResultadoDeComprobacion.rechazada(
+                                                        VIGENCIA, "Vencido.")))))
+                .isInstanceOf(ArchivoFirmadoRechazado.NoVigente.class);
+        assertThat(
+                        ArchivoFirmadoRechazado.de(
+                                armar.apply(
+                                        List.of(
+                                                ResultadoDeComprobacion.aprobada(VIGENCIA),
+                                                ResultadoDeComprobacion.rechazada(
+                                                        ORDEN, "Fuera de orden.")))))
+                .isInstanceOf(ArchivoFirmadoRechazado.FueraDeOrden.class);
+        assertThat(
+                        ArchivoFirmadoRechazado.de(
+                                armar.apply(
+                                        List.of(
+                                                ResultadoDeComprobacion.aprobada(VIGENCIA),
+                                                ResultadoDeComprobacion.aprobada(ORDEN),
+                                                ResultadoDeComprobacion.rechazada(
+                                                        FIRMANTE, "Otra persona.")))))
+                .isInstanceOf(ArchivoFirmadoRechazado.FirmanteEquivocado.class);
     }
 }
