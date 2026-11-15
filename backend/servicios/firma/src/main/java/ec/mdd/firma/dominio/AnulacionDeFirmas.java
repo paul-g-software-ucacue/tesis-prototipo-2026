@@ -7,6 +7,8 @@ import java.util.Objects;
  * Las firmas de un documento quedaron anuladas por orden de Aprobación, porque la versión firmada
  * se reemplazó (F12-H04, D-106, glosario «Anular firmas»). Las firmas, sus archivos y sus
  * validaciones no cambian: se conservan en el historial, anuladas porque el documento lo está.
+ * Marcar cada firma exigiría reescribir {@code validacion_firma}, que es solo de inserción
+ * (principio VII); por eso la anulación es una fila aparte, del documento.
  *
  * @param motivo por qué, el nombre del motivo de la API publicada
  * @param firmasAnuladas cuántas firmas aceptadas tenía el documento

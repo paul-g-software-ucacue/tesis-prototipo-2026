@@ -38,7 +38,8 @@ public class CierreDeLaFirma {
 
     /**
      * El firmante en turno rechazó en firma (F14-H04, D-105): el distributivo vuelve a la etapa
-     * activa anterior. La observación ya la validó Firma con la misma regla (RF-36).
+     * activa anterior con la versión nueva, y las firmas de la rechazada se anulan (F12-H04,
+     * D-106). La observación ya la validó Firma con la misma regla (RF-36).
      *
      * @param aviso el periodo, la versión, el paso, su rol, quién, cuándo y la observación
      */
