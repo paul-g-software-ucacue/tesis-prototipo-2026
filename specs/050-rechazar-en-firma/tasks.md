@@ -149,7 +149,9 @@ description: "Tareas de F14-H04: rechazar en firma con una observación"
   Luego `FlujoControlador` y el caso de uso de aprobar, si hace falta.
 
   **Resultado (2026-11-15):** tres pruebas nuevas en `FlujoContratoTest`, con `FlujoEnMemoria.rechazarEnFirma`. Se vio fallar la de `rechazoEnFirma` en el estado del flujo; el 409 y la ausencia del campo sin rechazo pasaron al escribirse, porque el bloqueo ya estaba en el dominio (T007) y el campo es opcional. El caso de uso de aprobar no cambió: llama a `validarAprobacion` antes de pedir a Generación que congele (F13-H01). `PermisosValidacionocsTest` sigue en verde con el constructor de antes de la vista.
-- [ ] T014 [US2] En `apps:distributivo`, `DocumentoFirmableIntegrationTest`: F1 aceptada, el rechazo de F2, y Aprobación recibe el aviso una sola vez aunque se publique otra vez. Después del rechazo, la firma F1 y el archivo vigente siguen iguales (FR-007). `ModulosTest` sin ciclos.
+- [X] T014 [US2] En `apps:distributivo`, `DocumentoFirmableIntegrationTest`: F1 aceptada, el rechazo de F2, y Aprobación recibe el aviso una sola vez aunque se publique otra vez. Después del rechazo, la firma F1 y el archivo vigente siguen iguales (FR-007). `ModulosTest` sin ciclos.
+
+  **Resultado (2026-11-15):** `dadaF1Aceptada_cuandoElVicerrectorRechazaEnF2_entoncesSeCierraYAprobacionRecibeElAviso`, con el PDF/A real, la CA en memoria y un doble de `RegistrarRechazoEnFirma`, como la cadena completa de F14-H03. Comprueba el aviso una sola vez después de confirmar, la subida y el segundo rechazo con `SinTurnoDeFirma`, F1 y su archivo iguales, y una sola entrada `RECHAZO_EN_FIRMA` para la bitácora. Se escribió con la implementación hecha: no se vio fallar. `ModulosTest` sin ciclos.
 
 **Checkpoint**: el rechazo devuelve el distributivo a revisión.
 
