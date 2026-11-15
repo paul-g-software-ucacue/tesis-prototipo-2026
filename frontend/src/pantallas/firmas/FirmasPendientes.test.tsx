@@ -164,6 +164,9 @@ describe('Pendientes de firma', () => {
         { comprobacion: 'UNA_FIRMA_NUEVA', resultado: 'APROBADA' },
         { comprobacion: 'INTEGRIDAD', resultado: 'APROBADA' },
         { comprobacion: 'CONFIANZA', resultado: 'APROBADA' },
+        { comprobacion: 'VIGENCIA', resultado: 'APROBADA' },
+        { comprobacion: 'ORDEN', resultado: 'APROBADA' },
+        { comprobacion: 'FIRMANTE', resultado: 'APROBADA' },
       ],
       certificado: {
         nombre: 'Firmante Uno Prueba (F1)',
@@ -183,6 +186,9 @@ describe('Pendientes de firma', () => {
         { campo: 'UNA_FIRMA_NUEVA', descripcion: 'Aprobada.' },
         { campo: 'INTEGRIDAD', descripcion: 'Rechazada. La firma nueva no es íntegra.' },
         { campo: 'CONFIANZA', descripcion: 'No evaluada. La firma nueva no es íntegra.' },
+        { campo: 'VIGENCIA', descripcion: 'No evaluada. La firma nueva no es íntegra.' },
+        { campo: 'ORDEN', descripcion: 'No evaluada. La firma nueva no es íntegra.' },
+        { campo: 'FIRMANTE', descripcion: 'No evaluada. La firma nueva no es íntegra.' },
       ],
     };
     const firmado = () =>
@@ -211,7 +217,10 @@ describe('Pendientes de firma', () => {
       expect(within(aviso).getByText('Tiene una sola firma nueva')).toBeVisible();
       expect(within(aviso).getByText('La firma es íntegra')).toBeVisible();
       expect(within(aviso).getByText('El certificado es de confianza')).toBeVisible();
-      expect(within(aviso).getAllByText('Aprobada')).toHaveLength(4);
+      expect(within(aviso).getByText('El certificado está vigente')).toBeVisible();
+      expect(within(aviso).getByText('La firma está en su orden')).toBeVisible();
+      expect(within(aviso).getByText('Firma la persona del paso')).toBeVisible();
+      expect(within(aviso).getAllByText('Aprobada')).toHaveLength(7);
       expect(within(aviso).getByText(/Firmante Uno Prueba \(F1\)/)).toBeVisible();
       const subida = simulada.peticiones.find(
         (una) => una.method === 'POST' && new URL(una.url).pathname === FIRMAS,
@@ -220,7 +229,7 @@ describe('Pendientes de firma', () => {
       expect(await screen.findByText('No tienes firmas pendientes.')).toBeVisible();
     });
 
-    it('si se rechaza, muestra el motivo y las cuatro comprobaciones, y la fila sigue', async () => {
+    it('si se rechaza, muestra el motivo y las siete comprobaciones, y la fila sigue', async () => {
       simulada.responder('POST', FIRMAS, json(422, NO_INTEGRA));
       await abrir();
 
@@ -233,7 +242,8 @@ describe('Pendientes de firma', () => {
       expect(within(aviso).getByText('Firma no íntegra')).toBeVisible();
       expect(within(aviso).getByText('La firma es íntegra')).toBeVisible();
       expect(within(aviso).getByText('Rechazada. La firma nueva no es íntegra.')).toBeVisible();
-      expect(within(aviso).getByText('No evaluada. La firma nueva no es íntegra.')).toBeVisible();
+      expect(within(aviso).getAllByText('No evaluada. La firma nueva no es íntegra.')).toHaveLength(4);
+      expect(within(aviso).getByText('Firma la persona del paso')).toBeVisible();
       expect(screen.getByRole('table', { name: 'Firmas pendientes' })).toBeVisible();
     });
 
