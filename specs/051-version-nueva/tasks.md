@@ -56,7 +56,7 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
   Regenerar los tipos de la SPA (`npm run generar:api`). Pasan `verificar:ruptura` y `BitacoraSinBorradoContratoTest`.
 
   **Resultado (2026-11-15):** los dos contratos actualizados; los tipos de la SPA regenerados; `verificar:ruptura` y `BitacoraSinBorradoContratoTest` pasan. Como `versionAnulada` es obligatorio, el DTO generado cambió su constructor: para compilar, la vista del flujo ya lleva `versionAnulada` (la versión de la transición del rechazo) y `versionNueva` vacío; el resto es de T018. `FlujoContratoTest` sigue en verde.
-- [ ] T003 [P] La migración `GEN/main/resources/db/migration/generacion/V8__version_nueva.sql`:
+- [X] T003 [P] La migración `GEN/main/resources/db/migration/generacion/V8__version_nueva.sql`:
   - `version_distributivo` suma `motivo varchar(20)` («`RECHAZO_EN_FIRMA`; `check ((numero = 1) = (motivo is null))`»), `creada_por varchar(64)` y `creada_en timestamptz`;
   - el índice único de `informe_sustentado.clave` pasa a `(version_id, clave)`.
 
@@ -64,6 +64,8 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
   - una versión 2 sin motivo falla por el `check`;
   - una versión 1 con motivo, también;
   - la misma `clave` en dos versiones se admite, y dos veces en la misma, no.
+
+  **Resultado (2026-11-15):** la prueba nueva de `GeneracionEsquemaIntegrationTest` se vio fallar sin las columnas y pasa con V8. Además del `check` entre número y motivo, la columna solo admite `RECHAZO_EN_FIRMA`. El `check` entre número y motivo se llama `version_distributivo_motivo_solo_desde_la_2`: el nombre por defecto choca con el `check` de la columna.
 - [ ] T004 [P] La migración `FIR/main/resources/db/migration/firma/V7__anulacion_de_firmas.sql`, según `data-model.md`: `anulacion_de_firmas` con su clave `(periodo, version, tipo)`, la foránea a `generacion_documento`, «`firmas_anuladas >= 0`», el motivo y `revoke update, delete, truncate`. Antes, ver fallar en `FIR/integrationTest/.../DocumentoFirmableEsquemaIntegrationTest.java`:
   - inserta una anulación;
   - una segunda del mismo documento falla por la clave;
