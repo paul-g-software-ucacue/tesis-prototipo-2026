@@ -563,6 +563,12 @@ describe('EstadoDelFlujo', () => {
           ...rechazado,
           version: 2,
           acciones: ['APROBAR_CONTENIDO'],
+          congelacion: {
+            version: 1,
+            hash: 'b'.repeat(64),
+            quien: 'vicerrectorado.demo',
+            momento: '2026-11-15T15:00:00Z',
+          },
           rechazoEnFirma: { ...rechazado.rechazoEnFirma, versionNueva: 2 },
         }),
       );
@@ -577,6 +583,8 @@ describe('EstadoDelFlujo', () => {
       expect(within(aviso).queryByText(/hace falta una versión nueva/)).not.toBeInTheDocument();
       expect(within(aviso).getByText('Falta la carga de un docente de Software.')).toBeVisible();
       expect(await screen.findByRole('button', { name: 'Aprobar el contenido' })).toBeVisible();
+      // La constancia es de la versión anulada: no se muestra con la versión 2 vigente.
+      expect(screen.queryByText(/congelada por/)).not.toBeInTheDocument();
     });
 
     it('sin rechazo no muestra el aviso', async () => {

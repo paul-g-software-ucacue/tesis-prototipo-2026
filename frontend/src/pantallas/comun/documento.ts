@@ -14,9 +14,11 @@ const CONSULTAS_MAXIMAS = 20;
 
 /**
  * El estado del documento firmable del periodo. Mientras está en curso o sin generar, vuelve a
- * consultar cada {@code intervalo} milisegundos, hasta {@link CONSULTAS_MAXIMAS} veces.
+ * consultar cada {@code intervalo} milisegundos, hasta {@link CONSULTAS_MAXIMAS} veces. Con
+ * {@code version}, también mientras el documento sea de otra versión (F12-H04): al aprobar la
+ * versión nueva, Firma responde con el de la anulada hasta que empieza a generar el suyo.
  */
-export function useDocumentoFirmable(periodo: string, intervalo = 3000) {
+export function useDocumentoFirmable(periodo: string, intervalo = 3000, version?: number) {
   return useQuery({
     queryKey: [...CLAVE_DOCUMENTO, periodo],
     queryFn: () =>
@@ -26,8 +28,11 @@ export function useDocumentoFirmable(periodo: string, intervalo = 3000) {
         }),
       ),
     refetchInterval: (consulta) => {
-      const estado = consulta.state.data?.estado;
-      const esperando = estado === 'EN_CURSO' || estado === 'SIN_GENERAR';
+      const datos = consulta.state.data;
+      const esperando =
+        datos?.estado === 'EN_CURSO' ||
+        datos?.estado === 'SIN_GENERAR' ||
+        (version !== undefined && datos !== undefined && datos.version !== version);
       return esperando && consulta.state.dataUpdateCount < CONSULTAS_MAXIMAS ? intervalo : false;
     },
   });

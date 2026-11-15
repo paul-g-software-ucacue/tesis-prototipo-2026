@@ -37,11 +37,11 @@ const enCurso: EstadoDelDocumento = {
   acciones: [],
 };
 
-function montar() {
+function montar(version?: number) {
   const consultas = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={consultas}>
-      <DocumentoFirmable periodo="2026-I" intervalo={20} />
+      <DocumentoFirmable periodo="2026-I" intervalo={20} version={version} />
     </QueryClientProvider>,
   );
 }
@@ -67,6 +67,33 @@ describe('DocumentoFirmable', () => {
     await usuario.click(screen.getByRole('button', { name: 'Copiar la huella' }));
     expect(await navigator.clipboard.readText()).toBe(SHA);
     expect(screen.queryByRole('button', { name: 'Generar el PDF' })).not.toBeInTheDocument();
+  });
+
+  // F12-H04: al aprobar la versión 2, Firma todavía responde con el documento de la 1 hasta que
+  // empieza a generar el de la 2; mientras tanto, la tarjeta espera y vuelve a consultar.
+  it('con el documento de otra versión, dice que se está generando y espera el de la congelada', async () => {
+    const deLaDos: EstadoDelDocumento = {
+      ...generado,
+      version: 2,
+      documento: {
+        sha256: 'f'.repeat(64),
+        hashContenido: 'd'.repeat(64),
+        generadoPor: 'sistema',
+        generadoEn: '2026-11-15T21:27:29Z',
+      },
+    };
+    let consultas = 0;
+    simulada.responder('GET', RUTA, () => {
+      consultas++;
+      return json(200, consultas < 3 ? generado : deLaDos);
+    });
+    montar(2);
+
+    expect(await screen.findByText('Generando el documento firmable…')).toBeVisible();
+    expect(screen.queryByText(/11\/11\/26/)).not.toBeInTheDocument();
+    expect(await screen.findByText('Documento firmable generado el 15/11/26, 16:27')).toBeVisible();
+    expect(screen.getByText('Huella del PDF: ffffffffffff…')).toBeVisible();
+    expect(consultas).toBeGreaterThanOrEqual(3);
   });
 
   it('en curso: lo dice y vuelve a consultar hasta que está generado', async () => {

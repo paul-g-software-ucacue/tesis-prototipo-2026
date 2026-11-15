@@ -251,6 +251,14 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
 
   shellcheck sin hallazgos.
 - [ ] T023 Los scripts de `perfil-consolidado`, en su orden, sobre un perfil construido desde la rama (SC-005). Después, el recorrido a mano de `quickstart.md` §3, del autor.
+
+  **Resultado (2026-11-15):** los 36 pasan (T024). En el recorrido a mano del autor, el rechazo, la versión 2 con el aviso, «Aprobar el contenido» y F1 de la versión 2 en turno salieron como se esperaba. Salieron dos fallas de la pantalla, corregidas en la rama:
+  1. **La tarjeta del documento mostraba el PDF de la versión 1** después de aprobar la 2. La pantalla consultó antes de que Firma empezara a generar el de la 2, recibió el último que había, el de la 1, ya generado, y dejó de consultar.
+
+     `DocumentoFirmable` recibe ahora la versión congelada: mientras el documento sea de otra versión, dice «Generando el documento firmable…» y sigue consultando.
+  2. **Después del rechazo seguía la constancia «Versión 1 congelada…»**, de la versión anulada. La constancia solo se muestra si su versión es la vigente.
+
+  Una prueba nueva en `DocumentoFirmable.test.tsx` y una comprobación más en `EstadoDelFlujo.test.tsx`, vistas fallar. Tipos, ESLint, Prettier y Vitest 583/583; Playwright de las tres pantallas, 14/14.
 - [X] T024 Correr completos:
   - `./gradlew build integrationTest jacocoTestReport jacocoTestCoverageVerification`;
   - en la SPA, los tipos, ESLint, Prettier, Vitest y Playwright.

@@ -180,8 +180,11 @@ export function EstadoDelFlujoDelPeriodo({
         {`Etapa ${etapa}`}
       </Typography>
       {rechazoEnFirma && <RechazoEnFirma rechazo={rechazoEnFirma} />}
-      {congelacion && <Constancia congelacion={congelacion} />}
-      {etapa === 'CONGELADO_EN_FIRMA' && <DocumentoFirmable periodo={periodo} />}
+      {/* F12-H04: la constancia es de la versión vigente; la de una anulada ya no vale. */}
+      {congelacion?.version === version && <Constancia congelacion={congelacion} />}
+      {etapa === 'CONGELADO_EN_FIRMA' && (
+        <DocumentoFirmable periodo={periodo} version={congelacion?.version} />
+      )}
       <Box component="ul" sx={{ m: 0, pl: 3 }}>
         {parciales.map((parcial) => (
           <Typography component="li" variant="body2" key={parcial.carrera}>
