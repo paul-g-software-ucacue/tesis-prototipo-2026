@@ -522,6 +522,50 @@ describe('EstadoDelFlujo', () => {
     });
   });
 
+  describe('rechazo en firma (F14-H04)', () => {
+    const rechazado = flujo({
+      etapa: 'EN_REVISION_VRA',
+      nombreDeEtapa: 'Revisión del Vicerrectorado',
+      parciales: [{ carrera: 'DS', enviado: true, pendienteDeConfirmar: false }],
+      rechazoEnFirma: {
+        orden: 3,
+        rol: 'RECTOR',
+        por: 'rectorado.demo',
+        en: '2026-11-15T15:30:00Z',
+        observacion: 'Falta la carga de un docente de Software.',
+      },
+    });
+
+    it('dice quién rechazó, en qué paso, cuándo, la observación y que hace falta otra versión', async () => {
+      simulada.responder('GET', RUTA, json(200, rechazado));
+      montar();
+
+      const aviso = await screen.findByRole('status', { name: 'Rechazado en firma' });
+      expect(
+        within(aviso).getByText('Paso 3 · RECTOR, por rectorado.demo el 15/11/26, 10:30'),
+      ).toBeVisible();
+      expect(within(aviso).getByText('Falta la carga de un docente de Software.')).toBeVisible();
+      expect(
+        within(aviso).getByText('Para aprobar otra vez hace falta una versión nueva.'),
+      ).toBeVisible();
+      expect(
+        screen.queryByRole('button', { name: 'Aprobar el contenido' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('sin rechazo no muestra el aviso', async () => {
+      simulada.responder(
+        'GET',
+        RUTA,
+        json(200, { ...rechazado, rechazoEnFirma: undefined, acciones: ['APROBAR_CONTENIDO'] }),
+      );
+      montar();
+
+      expect(await screen.findByRole('button', { name: 'Aprobar el contenido' })).toBeVisible();
+      expect(screen.queryByRole('status', { name: 'Rechazado en firma' })).not.toBeInTheDocument();
+    });
+  });
+
   it('sin distributivo no muestra nada', async () => {
     simulada.responder(
       'GET',
