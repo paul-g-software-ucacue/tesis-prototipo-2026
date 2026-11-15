@@ -82,4 +82,12 @@ Hecho por el autor el 2026-11-15, con `quickstart.md` §3, sobre un perfil const
 
 ## Equipo de demostración (T023)
 
-Pendiente: se completa después de fusionar, solo de lectura (`quickstart.md` §4).
+| Comprobación | Resultado |
+|---|---|
+| Fusión | PR #232 (`6971ba3`), con las 12 comprobaciones en verde en la primera corrida |
+| Despliegue | `cd` exitoso; `mdd-actualizar` tomó `6971ba3` y dice «Sano en 59 s», con los 5 pasos de la demo en OK; los 8 contenedores sanos con las imágenes `*-6971ba33d6b7` |
+| Las migraciones | En la base, `firma` tiene la V6 (`rechazo en firma`) y `validacionocs` la V5 (`rechazo en firma`), con `transicion.tipo` en `varchar(20)` |
+| Nada rechazado | `firma.rechazo_en_firma` y `validacionocs.rechazo_en_firma` vacías: 2026-I sigue en EN_CONSOLIDACION |
+| Memoria | `distributivo` usa 233 de sus 512 MiB; `identidad`, 475 (#224; 445 después de F14-H03) |
+
+En la demo no se llega a la firma: 2026-I está en consolidación. El rechazo de punta a punta lo cubren el script en la CI y el recorrido del autor en el perfil local.

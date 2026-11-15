@@ -202,7 +202,7 @@ description: "Tareas de F14-H04: rechazar en firma con una observación"
 
   **Resultado (2026-11-15):** el cierre del documento en `FirmasDelDocumento` y `FirmanteEnTurno`; la carrera con la subida en `RepositorioDocumentos.registrarRechazo` y en `SubirFirmaServicio`; el orden turno → observación en `RechazarEnFirmaServicio` y su puerto; la etapa activa anterior y la idempotencia en `ProcesoAprobacion.rechazarEnFirma`; el bloqueo en `validarAprobacion`, `validarRevision` y `validarAvance`, con su `@throws`; el evento en `RechazoEnFirma`. Se completaron el `@throws` de `validarAvance` y la mención del rechazo en `FirmanteEnTurno`.
 - [X] T022 Crear `specs/050-rechazar-en-firma/evidencia.md`, como la de 049.
-- [ ] T023 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde. Verificar la demo (`quickstart.md` §4, solo lectura) y abrir el PR de evidencia con `Closes #65`. Cerrar la épica F14 (#13) si el autor lo aprueba. Borrar las ramas solo si el autor lo pide.
+- [X] T023 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde. Verificar la demo (`quickstart.md` §4, solo lectura) y abrir el PR de evidencia con `Closes #65`. Cerrar la épica F14 (#13) si el autor lo aprueba. Borrar las ramas solo si el autor lo pide.
 
 ---
 
