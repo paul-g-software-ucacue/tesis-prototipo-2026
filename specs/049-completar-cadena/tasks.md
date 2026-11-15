@@ -35,7 +35,7 @@ description: "Tareas de F14-H03: validar firmante, turno y vigencia, y completar
 
 ## Phase 1: Setup
 
-- [ ] T001 Escribir **D-104** en `docs/decisiones.md`, en la fila del índice y en su sección:
+- [X] T001 Escribir **D-104** en `docs/decisiones.md`, en la fila del índice y en su sección:
   - las tres comprobaciones, su orden y la normalización del nombre (research §1);
   - el nombre impreso guardado con el firmante esperado (research §2);
   - el aviso `CadenaDeFirmasCompleta` y el paso a EN_OCS por el sistema (research §3 y §4);
@@ -45,6 +45,8 @@ description: "Tareas de F14-H03: validar firmante, turno y vigencia, y completar
   Relacionadas: RF-38, RF-39, RF-58, D-23, D-102, D-103, ADR-017, MD-05.
 
   Revisar en el glosario «Firmante en turno», «Cadena de firmas completa» (`CadenaDeFirmasCompleta`, §6) y «Vigencia», y anotar aquí el resultado.
+
+  **Resultado (2026-11-14):** el glosario tiene «Firmante en turno» (§7.5, «usuario asignado al primer paso pendiente») y el evento `CadenaDeFirmasCompleta` (§6: «Se acepta la última firma» → Aprobación pasa a EN_OCS), el mismo nombre que se usa. No hay entrada para la vigencia del certificado. Las dos quedan en «Documentos que hay que poner al día» de D-104.
 - [ ] T002 Regenerar la CA de prueba (research §5):
   - en `FIR/test/resources/ca-prueba/generar.sh`:
     - los CN «Docente (demo)», «CABRERA VAZQUEZ ANA GABRIELA» y «PERALTA MALDONADO JUAN ANDRES»;
