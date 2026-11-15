@@ -52,6 +52,8 @@ description: "Tareas de F14-H03: validar firmante, turno y vigencia, y completar
     - la llave de la CA sigue sin guardarse;
   - correrlo, y copiar `ca-prueba.crt` a `FIR/main/resources/firma/raices/`;
   - anotar en D-103 la huella nueva y actualizarla en `ListaConfianzaTest`;
+  - actualizar los CN esperados en `FIR/test/.../spike/FirmasFirmaecTest.java` («Firmante Uno Prueba (F1)» y «Firmante Dos Prueba (F2)»); `CasosNegativosTest` usa una CA en memoria y no cambia;
+  - correr todas las pruebas de Firma después de regenerar;
   - comprobar que ningún archivo trae una llave fuera de los `.p12` de la CA de prueba, y Gitleaks sin hallazgos.
 
 ---
@@ -64,14 +66,15 @@ description: "Tareas de F14-H03: validar firmante, turno y vigencia, y completar
   - `VIGENCIA`, `ORDEN` y `FIRMANTE` en el enum;
   - `minItems` y `maxItems` 7;
   - el 409 de `subirFirma`;
-  - la descripción.
+  - la descripción, sin nombrar la bitácora: `BitacoraSinBorradoContratoTest` falla si una operación que escribe la nombra (pasó en F14-H02).
 - [ ] T004 [P] Los cuatro códigos en `contratos/comun/errores.md`, con sus 8 columnas. Ver fallar primero `ErroresFirmaTest` con las subclases nuevas y `PasoSinNombre`; luego, `ErroresFirma`.
 - [ ] T005 [P] La migración `FIR/main/resources/db/migration/firma/V5__nombre_del_firmante.sql` («`nombre` varchar(200)», nula). Antes, ver fallar en `DocumentoFirmableEsquemaIntegrationTest`, con el rol del proceso: inserta un firmante con nombre y sin él, y sigue sin poder actualizarlo.
 - [ ] T006 [P] El dominio de Firma. Ver fallar primero:
   - `NombreDeFirmanteTest`: mayúsculas, tildes, diéresis, la Ñ, espacios dobles, al inicio y al final, y paréntesis;
   - `ComprobacionDelFirmanteTest`:
     - vigente, vencido y todavía no vigente;
-    - el CN del paso en turno; uno de un paso posterior (fuera de orden); uno de un paso anterior (firmante equivocado); otro nombre; sin CN;
+    - el CN del paso en turno; uno de un paso posterior (fuera de orden); uno de un paso anterior (firmante equivocado); otro nombre;
+    - un sujeto sin CN: el certificado trae el nombre completo del sujeto (F14-H02), que nunca es un nombre impreso, así que da firmante equivocado;
     - la misma persona en dos pasos;
     - después de una rechazada, las siguientes no se evalúan;
   - `ResultadoValidacionTest`, con siete comprobaciones;

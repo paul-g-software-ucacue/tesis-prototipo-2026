@@ -45,7 +45,7 @@ Debe terminar 13/13 (`contracts/demostracion.md`).
    - como `vicerrectorado.demo`, subir el PDF firmado con un certificado ficticio de la CA de prueba (`firmante-1.p12`): «Firmante equivocado». Es opcional: necesita firmar con la herramienta de prueba.
 5. **F2 y F3:** como `vicerrectorado.demo` y `rectorado.demo`, descargar, firmar con FirmaEC y subir. Después de F3, en menos de 30 s, «Consolidado del periodo» muestra EN_OCS (SC-002).
 6. Validar el PDF final con FirmaEC: tres firmas válidas (SC-003).
-7. Quitar `MDD_FIRMA_NOMBRE_LOCAL` del `.env` y limpiar:
+7. Quitar `MDD_FIRMA_NOMBRE_LOCAL` del `.env` y limpiar. Con la variable, tu nombre quedó en la base local (el firmante esperado de cada paso y la bitácora); no sale del equipo, y `down -v` lo borra:
 
    ```bash
    docker compose -p tesis-prototipo-2026 down -v
