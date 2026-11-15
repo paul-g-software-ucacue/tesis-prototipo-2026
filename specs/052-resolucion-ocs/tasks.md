@@ -205,13 +205,15 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T016 El script `deploy/probar_documento_firmable.sh`, según `contracts/demostracion.md`:
+- [X] T016 El script `deploy/probar_documento_firmable.sh`, según `contracts/demostracion.md`:
   - los pasos 13 a 15 después del 12;
   - `MDD_CONSERVAR=EN_OCS`, que se detiene después del paso 12;
   - la cabecera y el comentario del workflow, con F15-H01;
   - la limpieza, que borra también `validacionocs.resolucion_ocs` (o la deja ir en cascada) y `resoluciones/`.
 
   Correrlo sobre un perfil construido desde la rama: 16/16. shellcheck sin hallazgos.
+
+  **Resultado (2026-11-15):** 16/16 en la primera corrida, en 90 s, sobre un perfil construido desde la rama. El PDF de prueba de la resolución es mínimo y ficticio («%PDF-1.7 … %%EOF»). El de más de 10 MB entra en el límite del proceso, de 11 MB, y lo rechaza el dominio con su 413. La fecha anterior a EN_OCS sale de la transición, en `America/Guayaquil`. shellcheck sin hallazgos. El comentario del paso en `perfil-consolidado.yml` nombra F15-H01.
 - [ ] T017 Los scripts de `perfil-consolidado`, en su orden, sobre un perfil construido desde la rama (SC-004). Después, el recorrido a mano de `quickstart.md` §3, del autor (SC-003).
 - [ ] T018 Correr completos:
   - `./gradlew build integrationTest jacocoTestReport jacocoTestCoverageVerification`;
