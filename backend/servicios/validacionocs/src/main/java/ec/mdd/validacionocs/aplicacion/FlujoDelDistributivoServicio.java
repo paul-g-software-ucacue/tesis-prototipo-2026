@@ -390,6 +390,25 @@ public final class FlujoDelDistributivoServicio
                     Map.of("estado", transicion.desde().name()),
                     Map.of("estado", transicion.hacia().name()));
         }
+        // F14-H04: el paso, su rol, quién rechazó y la observación (D-105).
+        if (transicion.tipo() == TipoDeTransicion.RECHAZO_EN_FIRMA) {
+            transicion
+                    .rechazo()
+                    .ifPresent(
+                            rechazo -> {
+                                detalle.put("orden", rechazo.orden());
+                                detalle.put("rol", rechazo.rol());
+                                detalle.put("rechazadoPor", rechazo.rechazadoPor());
+                                detalle.put("observacion", rechazo.observacion().texto());
+                            });
+            return new CambioDeFlujo(
+                    transicion.momento(),
+                    transicion.quien(),
+                    CambioDeFlujo.Accion.DISTRIBUTIVO_RECHAZADO_EN_FIRMA,
+                    detalle,
+                    Map.of("estado", transicion.desde().name()),
+                    Map.of("estado", transicion.hacia().name()));
+        }
         return new CambioDeFlujo(
                 transicion.momento(),
                 transicion.quien(),

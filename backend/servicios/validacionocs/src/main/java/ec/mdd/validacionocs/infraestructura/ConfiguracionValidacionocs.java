@@ -22,9 +22,11 @@ import ec.mdd.validacionocs.aplicacion.ConsultarConfiguracionServicio;
 import ec.mdd.validacionocs.aplicacion.EtapaDelConsolidadoServicio;
 import ec.mdd.validacionocs.aplicacion.EtapasAlCrearse;
 import ec.mdd.validacionocs.aplicacion.FlujoDelDistributivoServicio;
+import ec.mdd.validacionocs.aplicacion.RegistrarRechazoEnFirmaServicio;
 import ec.mdd.validacionocs.puertos.entrada.CargarConfiguracion;
 import ec.mdd.validacionocs.puertos.entrada.CompletarFirmas;
 import ec.mdd.validacionocs.puertos.entrada.ConsultarConfiguracion;
+import ec.mdd.validacionocs.puertos.entrada.RegistrarRechazoEnFirma;
 import ec.mdd.validacionocs.puertos.salida.DatosDelPeriodo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo;
 import ec.mdd.validacionocs.puertos.salida.LectorDeConfiguracion;
@@ -172,9 +174,23 @@ public class ConfiguracionValidacionocs {
                 repositorioProceso, registroDeCambiosValidacionocs, transaccionValidacionocs);
     }
 
-    /** Escucha el aviso de cadena completa de Firma después de confirmar (MD-05, F14-H03). */
+    /** La vuelta a revisión con un rechazo en firma (F14-H04, D-105). */
     @Bean
-    public CierreDeLaFirma cierreDeLaFirma(CompletarFirmas completarFirmas) {
-        return new CierreDeLaFirma(completarFirmas);
+    public RegistrarRechazoEnFirmaServicio registrarRechazoEnFirma(
+            RepositorioProceso repositorioProceso,
+            RegistroDeCambios registroDeCambiosValidacionocs,
+            Transaccion transaccionValidacionocs) {
+        return new RegistrarRechazoEnFirmaServicio(
+                repositorioProceso, registroDeCambiosValidacionocs, transaccionValidacionocs);
+    }
+
+    /**
+     * Escucha los avisos de cadena completa y de rechazo en firma de Firma después de confirmar
+     * (MD-05, F14-H03, F14-H04).
+     */
+    @Bean
+    public CierreDeLaFirma cierreDeLaFirma(
+            CompletarFirmas completarFirmas, RegistrarRechazoEnFirma registrarRechazoEnFirma) {
+        return new CierreDeLaFirma(completarFirmas, registrarRechazoEnFirma);
     }
 }

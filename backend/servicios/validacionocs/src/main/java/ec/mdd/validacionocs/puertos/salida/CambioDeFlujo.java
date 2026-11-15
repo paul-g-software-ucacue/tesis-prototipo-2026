@@ -110,6 +110,12 @@ public record CambioDeFlujo(
          * La cadena de firmas completa (F14-H03, D-104): el paso desde CONGELADO_EN_FIRMA a EN_OCS,
          * por el sistema, con la etapa antes y después, y la versión y el hash en el detalle.
          */
-        CADENA_DE_FIRMAS_COMPLETA
+        CADENA_DE_FIRMAS_COMPLETA,
+        /**
+         * El rechazo en firma (F14-H04, D-105): la vuelta desde CONGELADO_EN_FIRMA a la etapa
+         * activa anterior, por el sistema, con la etapa antes y después, y la versión, el hash, el
+         * paso, su rol, quién rechazó y la observación en el detalle.
+         */
+        DISTRIBUTIVO_RECHAZADO_EN_FIRMA
     }
 }

@@ -4,6 +4,7 @@ import ec.mdd.validacionocs.dominio.EstadoDeEnvio;
 import ec.mdd.validacionocs.dominio.EtapaDelProceso;
 import ec.mdd.validacionocs.dominio.Observacion;
 import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
+import ec.mdd.validacionocs.dominio.RechazoDelFirmante;
 import ec.mdd.validacionocs.dominio.TipoDeEtapa;
 import ec.mdd.validacionocs.dominio.TipoDeTransicion;
 import ec.mdd.validacionocs.dominio.Transicion;
@@ -146,6 +147,24 @@ public final class RepositorioProcesoJdbc implements RepositorioProceso {
                                         .param("carrera", carrera)
                                         .param("texto", observacion.texto())
                                         .update());
+        // El rechazo en firma (F14-H04), también solo de inserción.
+        transicion
+                .rechazo()
+                .ifPresent(
+                        rechazo ->
+                                jdbc.sql(
+                                                "INSERT INTO validacionocs.rechazo_en_firma"
+                                                        + " (transicion_id, orden, rol,"
+                                                        + " rechazado_por, rechazado_en,"
+                                                        + " observacion) VALUES (:id, :orden,"
+                                                        + " :rol, :por, :en, :observacion)")
+                                        .param("id", id)
+                                        .param("orden", rechazo.orden())
+                                        .param("rol", rechazo.rol())
+                                        .param("por", rechazo.rechazadoPor())
+                                        .param("en", Timestamp.from(rechazo.rechazadoEn()))
+                                        .param("observacion", rechazo.observacion().texto())
+                                        .update());
     }
 
     private Optional<ProcesoAprobacion> leer(String consulta, String periodo) {
@@ -188,6 +207,7 @@ public final class RepositorioProcesoJdbc implements RepositorioProceso {
 
     private List<Transicion> transiciones(String periodo) {
         Map<UUID, Map<String, Observacion>> observaciones = observaciones(periodo);
+        Map<UUID, RechazoDelFirmante> rechazos = rechazos(periodo);
         // El orden de inserción dentro de un mismo momento: el envío antes que su paso de etapa.
         return jdbc.sql(
                         "SELECT id, tipo, desde, hacia, carrera, version, hash, quien, momento"
@@ -207,8 +227,32 @@ public final class RepositorioProcesoJdbc implements RepositorioProceso {
                                         fila.getString("quien"),
                                         fila.getTimestamp("momento").toInstant(),
                                         observaciones.getOrDefault(
-                                                fila.getObject("id", UUID.class), Map.of())))
+                                                fila.getObject("id", UUID.class), Map.of()),
+                                        Optional.ofNullable(
+                                                rechazos.get(fila.getObject("id", UUID.class)))))
                 .list();
+    }
+
+    private Map<UUID, RechazoDelFirmante> rechazos(String periodo) {
+        Map<UUID, RechazoDelFirmante> porTransicion = new HashMap<>();
+        jdbc.sql(
+                        "SELECT r.transicion_id, r.orden, r.rol, r.rechazado_por, r.rechazado_en,"
+                                + " r.observacion FROM validacionocs.rechazo_en_firma r"
+                                + " JOIN validacionocs.transicion t ON t.id = r.transicion_id"
+                                + " WHERE t.periodo = :periodo")
+                .param("periodo", periodo)
+                .query(
+                        (fila, numero) ->
+                                porTransicion.put(
+                                        fila.getObject("transicion_id", UUID.class),
+                                        new RechazoDelFirmante(
+                                                fila.getInt("orden"),
+                                                fila.getString("rol"),
+                                                fila.getString("rechazado_por"),
+                                                fila.getTimestamp("rechazado_en").toInstant(),
+                                                new Observacion(fila.getString("observacion")))))
+                .list();
+        return porTransicion;
     }
 
     private Map<UUID, Map<String, Observacion>> observaciones(String periodo) {

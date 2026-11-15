@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import ec.mdd.validacionocs.adaptadores.salida.RepositorioProcesoJdbc;
 import ec.mdd.validacionocs.dominio.EstadoDeEnvio;
 import ec.mdd.validacionocs.dominio.EtapaDelProceso;
+import ec.mdd.validacionocs.dominio.Observacion;
 import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
+import ec.mdd.validacionocs.dominio.RechazoDelFirmante;
 import ec.mdd.validacionocs.dominio.Solicitante;
 import ec.mdd.validacionocs.dominio.TipoDeEtapa;
 import ec.mdd.validacionocs.dominio.TipoDeTransicion;
@@ -195,6 +197,47 @@ class RepositorioProcesoIntegrationTest {
                                     AHORA);
                     repositorio.guardar(proceso, nuevas);
                 });
+    }
+
+    @Test
+    void dadoUnRechazoEnFirma_cuandoSeGuarda_entoncesSeLeeConSuRechazoYQuedaPendiente() {
+        String periodo = periodo();
+        ProcesoAprobacion enRevision =
+                ProcesoAprobacion.de(
+                        periodo,
+                        etapas(),
+                        TipoDeEtapa.EN_REVISION_VRA,
+                        CREADO,
+                        java.util.Map.of("DS", EstadoDeEnvio.ENVIADO),
+                        List.of());
+        repositorio.crear(enRevision, AHORA);
+        ProcesoAprobacion proceso = repositorio.de(periodo).orElseThrow();
+        repositorio.guardar(
+                proceso,
+                proceso.aprobarContenido(
+                        new Solicitante(
+                                "vicerrectorado.demo", Set.of("VICERRECTOR"), Optional.empty()),
+                        1,
+                        HASH,
+                        AHORA));
+        RechazoDelFirmante rechazo =
+                new RechazoDelFirmante(
+                        3,
+                        "RECTOR",
+                        "rectorado.demo",
+                        AHORA.plusSeconds(60),
+                        new Observacion("Falta la carga de un docente de Software."));
+        ProcesoAprobacion enFirma = repositorio.de(periodo).orElseThrow();
+
+        repositorio.guardar(enFirma, enFirma.rechazarEnFirma(1, rechazo, AHORA.plusSeconds(61)));
+
+        ProcesoAprobacion leido = repositorio.de(periodo).orElseThrow();
+        assertThat(leido.estado()).isEqualTo(TipoDeEtapa.EN_REVISION_VRA);
+        assertThat(leido.transiciones().getLast().tipo())
+                .isEqualTo(TipoDeTransicion.RECHAZO_EN_FIRMA);
+        assertThat(leido.transiciones().getLast().quien()).isEqualTo("sistema");
+        assertThat(leido.transiciones().getLast().rechazo()).contains(rechazo);
+        assertThat(leido.rechazoPendiente()).isPresent();
     }
 
     private static void esperar(CountDownLatch salida) {

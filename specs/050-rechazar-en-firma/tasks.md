@@ -135,11 +135,13 @@ description: "Tareas de F14-H04: rechazar en firma con una observación"
 
 **Independent Test**: tras el rechazo, el flujo está en EN_REVISION_VRA con `rechazoEnFirma`, y aprobar da 409.
 
-- [ ] T012 [US2] Aprobación. Ver fallar primero:
+- [X] T012 [US2] Aprobación. Ver fallar primero:
   - en `RegistrarRechazoEnFirmaServicioTest` (Mockito): guarda la transición con su rechazo y registra `DISTRIBUTIVO_RECHAZADO_EN_FIRMA` en la bitácora; repetido o en otra etapa, no guarda nada ni lanza;
   - en `RepositorioProcesoIntegrationTest` (PostgreSQL real): guarda y lee una transición `RECHAZO_EN_FIRMA` con su rechazo, y el proceso leído tiene el rechazo pendiente.
 
   Luego `RegistrarRechazoEnFirma`, `RegistrarRechazoEnFirmaServicio`, `CierreDeLaFirma.alRechazar`, `CambioDeFlujo.Accion.DISTRIBUTIVO_RECHAZADO_EN_FIRMA`, el repositorio de procesos con `rechazo_en_firma` y la configuración.
+
+  **Resultado (2026-11-15):** `RegistrarRechazoEnFirmaServicioTest` (3) y la prueba nueva de `RepositorioProcesoIntegrationTest` se vieron fallar contra los esqueletos (una cada una; las de aviso repetido y sin proceso pasaban porque el esqueleto no hacía nada) y pasan con la implementación. El oyente se llama `alRechazarseEnFirma`, junto a `alCompletarseLaCadena`. La transición usa como momento el del rechazo, como la cadena completa usa el de la última firma. Las pruebas unitarias y de integración de Validación OCS siguen en verde.
 - [ ] T013 [US2] El flujo y la aprobación. Ver fallar primero en `FlujoContratoTest` (con `FlujoEnMemoria`) y `PermisosValidacionocsTest`:
   - `rechazoEnFirma` en el estado del flujo con un rechazo pendiente, y sin `APROBAR_CONTENIDO`;
   - aprobar con un rechazo pendiente: 409 `VALIDACIONOCS_REQUIERE_VERSION_NUEVA`, sin pedir a Generación que congele.
