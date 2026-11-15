@@ -20,8 +20,8 @@
 
 ### Dominio
 
-- **`RechazoEnFirma`** (objeto de valor del dominio, `dominio/`): orden, quién, cuándo y la observación. La observación se recorta y debe tener de 10 a 500 caracteres; si no, `ObservacionInvalida` (→ `FIRMA_OBSERVACION_INVALIDA`).
-- **`FirmasDelDocumento`** suma `Optional<RechazoEnFirma> rechazo`. Con rechazo, `pasoEnTurno()` está vacío. El constructor de cuatro componentes se conserva, sin rechazo.
+- **`RechazoDelFirmante`** (objeto de valor del dominio, `dominio/`; `RechazoEnFirma` es el evento): orden, quién, cuándo y la observación. La observación se recorta y debe tener de 10 a 500 caracteres; si no, `ObservacionInvalida` (→ `FIRMA_OBSERVACION_INVALIDA`).
+- **`FirmasDelDocumento`** suma `Optional<RechazoDelFirmante> rechazo`. Con rechazo, `pasoEnTurno()` está vacío. El constructor de cuatro componentes se conserva, sin rechazo.
 - **`DocumentoFirmable.rechazarEnFirma`** no hace falta como método aparte: la operación del glosario es el caso de uso `RechazarEnFirma` sobre `FirmasDelDocumento`.
 
 ### Puertos
@@ -30,7 +30,7 @@
   - `RechazarEnFirma.rechazar(UUID documento, String observacion, Solicitante quien)` → `RechazoRegistrado`;
   - el evento **`RechazoEnFirma`** (API publicada): periodo, versión, orden, rol, rechazado por, rechazado en, observación.
 - **Salida:**
-  - `RepositorioDocumentos.registrarRechazo(RechazoEnFirma, FirmasDelDocumento vistas)` → `boolean`: bloquea la generación, comprueba firmas iguales y sin rechazo, inserta;
+  - `RepositorioDocumentos.registrarRechazo(RechazoDelFirmante, FirmasDelDocumento vistas)` → `boolean`: bloquea la generación, comprueba firmas iguales y sin rechazo, inserta;
   - `registrarValidacion` comprueba también que no hay rechazo antes de aceptar;
   - `AvisoDeRechazoEnFirma.avisar(RechazoEnFirma)`.
 

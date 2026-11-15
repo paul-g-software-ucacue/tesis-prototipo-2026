@@ -52,6 +52,29 @@ class FirmasDelDocumentoTest {
     }
 
     @Test
+    void dadoUnDocumentoRechazado_cuandoSeBuscaElTurno_entoncesNadieEstaEnTurno() {
+        RechazoDelFirmante rechazo =
+                new RechazoDelFirmante(
+                        2,
+                        "firmante2",
+                        Instant.parse("2026-11-15T10:00:00Z"),
+                        "Falta la carga de Software.");
+        FirmasDelDocumento rechazado =
+                new FirmasDelDocumento(
+                        DOCUMENTO, CADENA, FIRMANTES, List.of(firma(1, 'c')), Optional.of(rechazo));
+
+        assertThat(rechazado.pasoEnTurno()).isEmpty();
+        assertThat(rechazado.enTurno("firmante2", Optional.of("0109990028"))).isFalse();
+        assertThat(rechazado.rechazo()).contains(rechazo);
+        assertThat(rechazado.archivoVigente()).isEqualTo(firma(1, 'c').archivo());
+    }
+
+    @Test
+    void dadoElConstructorSinRechazo_cuandoSeCrea_entoncesNoTieneRechazo() {
+        assertThat(firmas.rechazo()).isEmpty();
+    }
+
+    @Test
     void dadoUnDocumentoSinFirmas_cuandoSeBuscaElTurno_entoncesEsElPrimerPaso() {
         assertThat(firmas.pasoEnTurno())
                 .get()

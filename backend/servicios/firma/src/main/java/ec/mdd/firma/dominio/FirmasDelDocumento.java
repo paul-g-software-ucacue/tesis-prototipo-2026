@@ -20,16 +20,31 @@ import java.util.stream.Collectors;
  * solo se acepta si el archivo subido empieza con los bytes del vigente, la de mayor orden es
  * siempre la última de la cadena.
  *
+ * <p>Un documento rechazado en firma está cerrado (F14-H04, D-105): no tiene turno, así que nadie
+ * lo ve pendiente, lo descarga, sube una firma ni lo rechaza otra vez. Sus firmas aceptadas y su
+ * archivo vigente se conservan.
+ *
  * @param documento el documento registrado
  * @param cadena los pasos que entregó Aprobación (MD-05)
  * @param firmantes el firmante esperado de cada paso, fijado al generar
  * @param firmas las firmas aceptadas, a lo sumo una por paso de la cadena
+ * @param rechazo el rechazo en firma, si lo hubo
  */
 public record FirmasDelDocumento(
         DocumentoFirmable documento,
         List<PasoDeFirma> cadena,
         List<FirmanteEsperado> firmantes,
-        List<FirmaRegistrada> firmas) {
+        List<FirmaRegistrada> firmas,
+        Optional<RechazoDelFirmante> rechazo) {
+
+    /** Un documento sin rechazo en firma. */
+    public FirmasDelDocumento(
+            DocumentoFirmable documento,
+            List<PasoDeFirma> cadena,
+            List<FirmanteEsperado> firmantes,
+            List<FirmaRegistrada> firmas) {
+        this(documento, cadena, firmantes, firmas, Optional.empty());
+    }
 
     /** Exige los datos, copia las listas y exige a lo sumo una firma por paso de la cadena. */
     public FirmasDelDocumento {
@@ -37,6 +52,7 @@ public record FirmasDelDocumento(
         cadena = List.copyOf(cadena);
         firmantes = List.copyOf(firmantes);
         firmas = List.copyOf(firmas);
+        Objects.requireNonNull(rechazo, "rechazo");
         Set<Integer> pasos =
                 cadena.stream().map(PasoDeFirma::orden).collect(Collectors.toUnmodifiableSet());
         Set<Integer> firmados = new HashSet<>();
@@ -51,9 +67,13 @@ public record FirmasDelDocumento(
     /**
      * El primer paso sin firma y su firmante esperado.
      *
-     * @return vacío si todos firmaron o si el paso no tiene firmante esperado
+     * @return vacío si todos firmaron, si el documento se rechazó en firma o si el paso no tiene
+     *     firmante esperado
      */
     public Optional<PasoEnTurno> pasoEnTurno() {
+        if (rechazo.isPresent()) {
+            return Optional.empty();
+        }
         Set<Integer> firmados =
                 firmas.stream().map(FirmaRegistrada::orden).collect(Collectors.toSet());
         return cadena.stream()

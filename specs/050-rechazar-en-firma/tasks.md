@@ -71,11 +71,13 @@ description: "Tareas de F14-H04: rechazar en firma con una observación"
   **Resultado (2026-11-15):**
   - Hallazgo: `transicion.tipo` era `varchar(15)` y `RECHAZO_EN_FIRMA` tiene 16 caracteres; V5 lo ensancha a 20.
   - Validación OCS no revoca permisos en ninguna de sus tablas, y sus migraciones de prueba corren como superusuario: «solo de inserción» lo cumple el código, como `observacion_de_devolucion` (V4). La prueba comprueba la tabla, una fila por transición y el `check` de la observación, no el `revoke`. En Firma sí se revoca (V6), como en V2 a V5.
-- [ ] T006 [P] El dominio de Firma. Ver fallar primero:
-  - `RechazoEnFirmaTest`: la observación vacía, de 9 y de 501 caracteres, y con espacios en los extremos (se recorta);
+- [X] T006 [P] El dominio de Firma. Ver fallar primero:
+  - `RechazoDelFirmanteTest`: la observación vacía, de 9 y de 501 caracteres, y con espacios en los extremos (se recorta);
   - `FirmasDelDocumentoTest`: con rechazo, `pasoEnTurno()` vacío y `enTurno` falso; el constructor de cuatro componentes, sin rechazo.
 
   Luego, `RechazoEnFirma`, `ObservacionInvalida` y `FirmasDelDocumento.rechazo`.
+
+  **Resultado (2026-11-15):** el objeto de valor del dominio se llama `RechazoDelFirmante` (`RechazoDelFirmanteTest`), no `RechazoEnFirma`: el glosario usa ese nombre para el evento hacia Aprobación (§6), que va en `puertos.entrada`, y dos clases con el mismo nombre en Firma confundirían. Las pruebas se vieron fallar contra un esqueleto (4 fallas) y pasan con la implementación; las demás de Firma siguen en verde.
 - [ ] T007 [P] El dominio de Aprobación. Ver fallar primero:
   - `ProcesoAprobacionTest` `rechazarEnFirma`:
     - en CONGELADO_EN_FIRMA con esa versión: una transición `RECHAZO_EN_FIRMA` a EN_REVISION_VRA por `sistema`, con el hash de la congelación y el rechazo;
