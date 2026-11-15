@@ -76,3 +76,16 @@ Hecha por el autor el 2026-11-15, con `quickstart.md` §3, sobre un perfil const
 | JavaDoc | La normalización, por qué «orden» va antes que «firmante», el evento, su idempotencia y el nombre local (T020) |
 | Seguridad (FR-016) | Las siete comprobaciones, en el servidor; la SPA solo las muestra. El CN se busca por su tipo; el número de serie no se usa (D-23). El nombre real del autor, solo en su `.env`. La CA de prueba, ficticia y sin llave guardada. `validacion_firma` y `firmante_esperado`, sin reescrituras |
 | Decisión registrada | D-104, y la huella nueva de la CA de prueba en D-103, antes de implementar |
+
+## Equipo de demostración (T022)
+
+| Comprobación | Resultado |
+|---|---|
+| Fusión | PR #230 (`bf904c8`), con las 12 comprobaciones en verde en la primera corrida |
+| Despliegue | `cd` exitoso; `mdd-actualizar` tomó `bf904c8` y dice «Sano en 57 s», con los 5 pasos de la demo en OK; los 8 contenedores sanos con las imágenes `*-bf904c856a0c` |
+| La migración | En la base, `firma` tiene la V5 (`nombre del firmante`): `firmante_esperado.nombre`, `varchar(200)` |
+| Nada en firma | `firma.validacion_firma` y `firma.firmante_esperado` vacías: 2026-I sigue en EN_CONSOLIDACION |
+| El nombre local | `MDD_FIRMA_NOMBRE_LOCAL` no está definida en el contenedor `distributivo`: la demo imprime los nombres de los datos del periodo |
+| Memoria | `distributivo` usa 238 de sus 512 MiB; `identidad`, 445 (#224) |
+
+En la demo no se llega a la firma: 2026-I está en consolidación. La cadena completa la cubren el script en la CI y la comprobación del autor con FirmaEC en el perfil local.
