@@ -140,11 +140,13 @@ description: "Tareas de F14-H03: validar firmante, turno y vigencia, y completar
   - repetido o en otra etapa, no guarda nada ni lanza.
 
   Luego `CompletarFirmas`, `CompletarFirmasServicio`, `CierreDeLaFirma` (`@ApplicationModuleListener`) y la configuración.
-- [ ] T014 [US2] En `apps:distributivo`, `DocumentoFirmableIntegrationTest`:
+- [X] T014 [US2] En `apps:distributivo`, `DocumentoFirmableIntegrationTest`:
   - después de las tres firmas, el proceso de aprobación del periodo está en EN_OCS en menos de 30 s, con la transición por `sistema`;
   - publicar el aviso otra vez no agrega otra.
 
   `ModulosTest` sin ciclos.
+
+  **Resultado (2026-11-14):** la prueba del proceso no tiene un proceso de aprobación real del periodo (publica el paso a firma directamente), así que comprueba que Aprobación recibe el aviso una sola vez después de la tercera firma, con un doble de `CompletarFirmas`. El paso a EN_OCS en la base lo prueban `CompletarFirmasServicioTest`, `ProcesoAprobacionTest` y el script (paso 12). Se escribió con la implementación hecha: no se vio fallar. `ModulosTest` sin ciclos.
 
 **Checkpoint**: la cadena completa avanza sola.
 
