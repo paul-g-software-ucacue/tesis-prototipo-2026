@@ -94,13 +94,15 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
 
 **Independent Test**: `secretaria.demo` registra con el distributivo en EN_OCS; queda APROBADO, con la resolución, el archivo en el volumen y la entrada en la bitácora; el avance genérico desde EN_OCS da 409.
 
-- [ ] T007 [US1] El almacén. Ver fallar primero en `OCS/integrationTest/.../AlmacenDeResolucionesEnDiscoIntegrationTest.java` (o una prueba unitaria con una carpeta temporal):
+- [X] T007 [US1] El almacén. Ver fallar primero en `OCS/integrationTest/.../AlmacenDeResolucionesEnDiscoIntegrationTest.java` (o una prueba unitaria con una carpeta temporal):
   - guarda en `resoluciones/<sha256>.pdf`;
   - otra vez el mismo, sin reescribir;
   - leer devuelve los bytes;
   - un archivo que falta o no coincide con su huella: `ResolucionIlegible`.
 
   Luego, `puertos/salida/AlmacenDeResoluciones` y `adaptadores/salida/AlmacenDeResolucionesEnDisco` (temporal y movimiento atómico), y su bean con `mdd.archivos.raiz`.
+
+  **Resultado (2026-11-15):** `AlmacenDeResolucionesEnDiscoTest` (3, unitaria con una carpeta temporal), vista fallar contra el esqueleto. Pasa con el almacén: temporal y enlace, como `AlmacenDeDocumentosEnDisco` de Firma; la huella se comprueba al leer; una huella mal formada no sale de la carpeta. El bean usa `mdd.archivos.raiz`.
 - [ ] T008 [US1] El repositorio. Ver fallar primero en `OCS/integrationTest/.../RepositorioProcesoIntegrationTest.java`: la transición a APROBADO con su resolución se guarda y se lee; `resolucion()` la devuelve. Luego, `RepositorioProcesoJdbc` inserta y lee `resolucion_ocs`.
 - [ ] T009 [US1] El caso de uso. Ver fallar primero en `OCS/test/.../aplicacion/RegistrarResolucionServicioTest.java`:
   - el archivo inválido se rechaza sin guardar ni bloquear;
