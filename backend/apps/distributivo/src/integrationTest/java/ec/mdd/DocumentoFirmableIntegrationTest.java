@@ -154,6 +154,9 @@ class DocumentoFirmableIntegrationTest {
                         new Solicitante("docente.demo", Set.of("DOCENTE")),
                         new Solicitante("vicerrectorado.demo", Set.of("VICERRECTOR")),
                         new Solicitante("rectorado.demo", Set.of("RECTOR")));
+        // F14-H03: el CN de cada firma es el nombre que el PDF imprime en su paso (los de los
+        // dobles).
+        List<String> nombres = List.of("PÉREZ ANA", "LÓPEZ LUIS", "MORA EVA");
         List<String> campos =
                 List.of(
                         "firma-1-RESPONSABLE_CONSOLIDACION",
@@ -163,9 +166,7 @@ class DocumentoFirmableIntegrationTest {
         for (int i = 0; i < 3; i++) {
             byte[] firmado =
                     FirmasDePrueba.firmar(
-                            vigente,
-                            FirmasDePrueba.firmante(CA, "Firmante " + (i + 1)),
-                            campos.get(i));
+                            vigente, FirmasDePrueba.firmante(CA, nombres.get(i)), campos.get(i));
 
             ResultadoValidacion resultado = subir.subir(id, firmado, firmantes.get(i));
 
