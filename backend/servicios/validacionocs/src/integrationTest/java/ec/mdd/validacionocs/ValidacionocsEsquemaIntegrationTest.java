@@ -97,6 +97,41 @@ class ValidacionocsEsquemaIntegrationTest {
         }
     }
 
+    // F12-H04, V6: la versión nueva queda como transición, de la etapa a la misma.
+    @Test
+    void dadaUnaVersionNueva_cuandoSeGuardaSuTransicion_entoncesQueda() {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+            postgres.start();
+            DataSource dataSource =
+                    new DriverManagerDataSource(
+                            postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+            new ValidacionocsFlywayConfig().flywayValidacionocs(dataSource).migrate();
+            JdbcClient jdbc = JdbcClient.create(dataSource);
+            jdbc.sql(
+                            "insert into validacionocs.proceso_aprobacion (periodo, estado, etapas,"
+                                    + " distributivo_creado_en, creado_en) values ('2026-I',"
+                                    + " 'EN_REVISION_VRA', '[]'::jsonb, now(), now())")
+                    .update();
+
+            jdbc.sql(
+                            "insert into validacionocs.transicion (id, periodo, tipo, desde, hacia,"
+                                    + " version, hash, quien, momento) values (:id, '2026-I',"
+                                    + " 'VERSION_NUEVA', 'EN_REVISION_VRA', 'EN_REVISION_VRA', 2,"
+                                    + " :hash, 'sistema', now())")
+                    .param("id", UUID.randomUUID())
+                    .param("hash", "b".repeat(64))
+                    .update();
+
+            assertThat(
+                            jdbc.sql(
+                                            "select version from validacionocs.transicion"
+                                                    + " where tipo = 'VERSION_NUEVA'")
+                                    .query(Integer.class)
+                                    .single())
+                    .isEqualTo(2);
+        }
+    }
+
     private static void rechazo(JdbcClient jdbc, UUID transicion, String observacion) {
         jdbc.sql(
                         "insert into validacionocs.rechazo_en_firma (transicion_id, orden, rol,"

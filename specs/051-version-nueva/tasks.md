@@ -73,8 +73,10 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
   - no puede actualizar ni borrar.
 
   **Resultado (2026-11-15):** tres pruebas nuevas; se vieron fallar las dos que insertan una anulación válida. La de los valores inválidos pasaba sin la tabla, porque cualquier inserción fallaba: pasa con V7 por sus `check` y su foránea.
-- [ ] T005 [P] La migración `OCS/main/resources/db/migration/validacionocs/V6__version_nueva.sql`: `VERSION_NUEVA` en `transicion_tipo_check`. Antes, ver fallar en `OCS/integrationTest/.../ValidacionocsEsquemaIntegrationTest.java` una transición `VERSION_NUEVA`.
-- [ ] T006 [P] El tipo del motivo en la interfaz publicada de Generación: `GEN/main/.../puertos/entrada/MotivoDeVersion.java` (`RECHAZO_EN_FIRMA`), no en el dominio, porque lo usa Aprobación (principio V, análisis C2). Sin regla propia: no lleva prueba.
+- [X] T005 [P] La migración `OCS/main/resources/db/migration/validacionocs/V6__version_nueva.sql`: `VERSION_NUEVA` en `transicion_tipo_check`. Antes, ver fallar en `OCS/integrationTest/.../ValidacionocsEsquemaIntegrationTest.java` una transición `VERSION_NUEVA`.
+
+  **Resultado (2026-11-15):** la prueba nueva se vio fallar por el `check` y pasa con V6.
+- [X] T006 [P] El tipo del motivo en la interfaz publicada de Generación: `GEN/main/.../puertos/entrada/MotivoDeVersion.java` (`RECHAZO_EN_FIRMA`), no en el dominio, porque lo usa Aprobación (principio V, análisis C2). Sin regla propia: no lleva prueba.
 - [ ] T007 [P] El dominio de Aprobación. Ver fallar primero en `OCS/test/.../dominio/ProcesoAprobacionTest.java`:
   - `registrarVersionNueva` después del `RECHAZO_EN_FIRMA` de esa versión: una transición `VERSION_NUEVA` por `sistema`, de EN_REVISION_VRA a EN_REVISION_VRA, con la versión nueva y su hash;
   - repetida, sin rechazo antes, o con otra versión anulada: vacía;
