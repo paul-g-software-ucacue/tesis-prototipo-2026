@@ -175,7 +175,9 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
 - [X] T015 [US2] El estado del documento. Ver fallar primero en la prueba de contrato del documento de `FIR/test/.../adaptadores/entrada/`: con anulación, `anulacion` con el motivo, cuántas y cuándo; sin ella, el campo falta. Luego, `EstadoDelDocumento.anulacion`, el servicio que lo consulta y `DocumentoControlador`.
 
   **Resultado (2026-11-15):** una prueba nueva en `DocumentoContratoTest`, vista fallar sin el mapeo; valida el contrato y que el campo falta sin anulación. `EstadoDelDocumento` suma `anulacion` y conserva el constructor de seis componentes. La consulta de `DocumentoFirmableServicio` lee la anulación de las firmas del documento generado. Esa lectura no tiene prueba unitaria propia, porque el doble en memoria no registra anulaciones: la cubre la prueba de punta a punta de T017.
-- [ ] T016 [US2] El oyente de Aprobación. Ver fallar primero en `OCS/test/.../adaptadores/salida/AnulacionDeLasFirmasTest.java`: el aviso llama a `AnularFirmas` con el periodo, la versión, el motivo y el momento. Luego, `AnulacionDeLasFirmas` (`@ApplicationModuleListener`) y su bean en `ConfiguracionValidacionocs`.
+- [X] T016 [US2] El oyente de Aprobación. Ver fallar primero en `OCS/test/.../adaptadores/salida/AnulacionDeLasFirmasTest.java`: el aviso llama a `AnularFirmas` con el periodo, la versión, el motivo y el momento. Luego, `AnulacionDeLasFirmas` (`@ApplicationModuleListener`) y su bean en `ConfiguracionValidacionocs`.
+
+  **Resultado (2026-11-15):** `AnulacionDeLasFirmasTest`, vista fallar contra el esqueleto; pasa con el oyente, que pasa `MotivoDeAnulacion.RECHAZO_EN_FIRMA` a Firma. El aviso es `AvisoDeAnulacion.FirmasPorAnular` (T011).
 - [ ] T017 [US2] De punta a punta en el proceso. Ver fallar primero en `APP/integrationTest/.../DocumentoFirmableIntegrationTest.java` (con el PDF/A real y la CA en memoria, como F14-H04): con F1 aceptada, el rechazo en F2 deja:
   - la v1 ANULADA y la v2 EDITABLE;
   - EN_REVISION_VRA con `VERSION_NUEVA`;

@@ -1,11 +1,13 @@
 package ec.mdd.validacionocs.infraestructura;
 
+import ec.mdd.firma.puertos.entrada.AnularFirmas;
 import ec.mdd.firma.puertos.entrada.PrepararDocumentoFirmable;
 import ec.mdd.generacion.puertos.entrada.ParcialesDelDistributivo;
 import ec.mdd.generacion.puertos.requeridos.EtapaDelConsolidado;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
 import ec.mdd.validacionocs.adaptadores.entrada.CierreDeLaFirma;
 import ec.mdd.validacionocs.adaptadores.entrada.EtapaParaGeneracion;
+import ec.mdd.validacionocs.adaptadores.salida.AnulacionDeLasFirmas;
 import ec.mdd.validacionocs.adaptadores.salida.AvisoDeFirmaSpring;
 import ec.mdd.validacionocs.adaptadores.salida.DatosDesdeProcesos;
 import ec.mdd.validacionocs.adaptadores.salida.DistributivoDesdeGeneracion;
@@ -85,6 +87,15 @@ public class ConfiguracionValidacionocs {
     @Bean
     public PreparacionDelDocumento preparacionDelDocumento(PrepararDocumentoFirmable firma) {
         return new PreparacionDelDocumento(firma);
+    }
+
+    /**
+     * Con la versión nueva, le ordena a Firma anular las firmas de la rechazada después de
+     * confirmar (MD-05, F12-H04).
+     */
+    @Bean
+    public AnulacionDeLasFirmas anulacionDeLasFirmas(AnularFirmas anularFirmas) {
+        return new AnulacionDeLasFirmas(anularFirmas);
     }
 
     /** Las transacciones de Validación OCS (F17-H01). */
