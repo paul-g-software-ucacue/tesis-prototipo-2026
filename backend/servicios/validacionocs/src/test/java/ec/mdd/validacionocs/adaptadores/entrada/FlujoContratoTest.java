@@ -555,6 +555,22 @@ class FlujoContratoTest {
                 .isFalse();
     }
 
+    // La resolución del OCS (F15-H01): a APROBADO solo se pasa registrándola.
+
+    @Test
+    void dadoElDistributivoEnOcs_cuandoSeUsaElAvanceGenerico_entonces409RequiereResolucion()
+            throws Exception {
+        enRevision(PERIODO);
+        aprobar(PERIODO, "VICERRECTOR");
+        MEMORIA.enOcs(PERIODO);
+
+        MvcResult resultado = pedir(post(AVANCE.formatted(PERIODO)), "SECRETARIA_GENERAL", null);
+
+        assertCodigo(resultado, 409, "VALIDACIONOCS_REQUIERE_RESOLUCION");
+        assertThat(etapa(PERIODO)).isEqualTo("EN_OCS");
+        contrato.validar(resultado);
+    }
+
     @Test
     void dadoUnDistributivoSinRechazo_cuandoSeConsulta_entoncesNoTraeRechazoEnFirma()
             throws Exception {
@@ -948,6 +964,12 @@ class FlujoContratoTest {
         @Bean
         FlujoDelDistributivoServicio flujoDelDistributivo() {
             return MEMORIA.servicio();
+        }
+
+        /** F15-H01: la resolución, con su caso de uso real sobre la memoria. */
+        @Bean
+        ec.mdd.validacionocs.puertos.entrada.RegistrarResolucion registrarResolucion() {
+            return MEMORIA.registrarResolucion();
         }
     }
 }

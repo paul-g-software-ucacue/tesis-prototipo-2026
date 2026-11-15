@@ -24,6 +24,7 @@ import ec.mdd.validacionocs.puertos.entrada.DevolverParciales;
 import ec.mdd.validacionocs.puertos.entrada.EnviarARevision;
 import ec.mdd.validacionocs.puertos.entrada.EnviarParcial;
 import ec.mdd.validacionocs.puertos.entrada.FlujoDelDistributivo;
+import ec.mdd.validacionocs.puertos.entrada.RegistrarResolucion;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -57,6 +58,7 @@ class FlujoControlador implements AprobacionApi {
     private final EnviarARevision revisar;
     private final DevolverParciales devolver;
     private final AprobarContenido aprobar;
+    private final RegistrarResolucion registrar;
 
     FlujoControlador(
             ConsultarFlujo consultar,
@@ -64,13 +66,15 @@ class FlujoControlador implements AprobacionApi {
             AvanzarEtapa avanzar,
             EnviarARevision revisar,
             DevolverParciales devolver,
-            AprobarContenido aprobar) {
+            AprobarContenido aprobar,
+            RegistrarResolucion registrar) {
         this.consultar = consultar;
         this.enviar = enviar;
         this.avanzar = avanzar;
         this.revisar = revisar;
         this.devolver = devolver;
         this.aprobar = aprobar;
+        this.registrar = registrar;
     }
 
     @Override
@@ -131,7 +135,8 @@ class FlujoControlador implements AprobacionApi {
                 respuesta(sinPermiso(() -> aprobar.aprobarContenido(periodo, quien))));
     }
 
-    // Esqueleto de F15-H01: lo completa la implementación (T010).
+    // F15-H01, D-107: solo el rol de EN_OCS en la copia de la configuración; registrar es aprobar.
+    // El PDF llega entero: el proceso corta en 11 MB y el dominio, en 10.
     @Override
     @PreAuthorize("hasAuthority('PERMISO_RESOLUCION_OCS:ESCRITURA')")
     public ResponseEntity<EstadoDelFlujo> registrarResolucion(
@@ -139,7 +144,24 @@ class FlujoControlador implements AprobacionApi {
             String numero,
             java.time.LocalDate fecha,
             org.springframework.web.multipart.MultipartFile archivo) {
-        throw new UnsupportedOperationException("F15-H01");
+        Solicitante quien = solicitante(true);
+        byte[] bytes;
+        try {
+            bytes = archivo.getBytes();
+        } catch (java.io.IOException error) {
+            throw new java.io.UncheckedIOException("No se pudo leer el archivo recibido", error);
+        }
+        return ResponseEntity.ok(
+                respuesta(
+                        sinPermiso(
+                                () ->
+                                        registrar.registrar(
+                                                periodo,
+                                                numero,
+                                                fecha,
+                                                archivo.getOriginalFilename(),
+                                                bytes,
+                                                quien))));
     }
 
     // Esqueleto de F15-H01: lo completa la implementación (T012).

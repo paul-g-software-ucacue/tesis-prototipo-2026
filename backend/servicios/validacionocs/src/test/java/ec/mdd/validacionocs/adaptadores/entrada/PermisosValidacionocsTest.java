@@ -93,5 +93,12 @@ class PermisosValidacionocsTest {
             when(servicio.aprobarContenido(anyString(), any())).thenReturn(fijo);
             return servicio;
         }
+
+        /** F15-H01: solo el permiso del contrato. */
+        @Bean
+        ec.mdd.validacionocs.puertos.entrada.RegistrarResolucion registrarResolucion() {
+            return org.mockito.Mockito.mock(
+                    ec.mdd.validacionocs.puertos.entrada.RegistrarResolucion.class);
+        }
     }
 }

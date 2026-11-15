@@ -118,7 +118,7 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
   Luego, `puertos/entrada/RegistrarResolucion`, `CambioDeFlujo.Accion.RESOLUCION_REGISTRADA` con su rama en `FlujoDelDistributivoServicio.cambio`, y `RegistrarResolucionServicio` con su bean.
 
   **Resultado (2026-11-15):** `RegistrarResolucionServicioTest` (5), vista fallar contra el esqueleto; pasa con la implementación. Para que un rechazo no deje ni el archivo, el agregado suma `validarResolucion` (las mismas reglas, sin cambiar nada), que `registrarResolucion` reutiliza; lo cubren sus pruebas de T006. Sin proceso todavía, el distributivo no llegó a EN_OCS: `EtapaNoAdmiteResolucion`. El servicio responde el estado del flujo con `ConsultarFlujo`. La bitácora lleva el número, la fecha (texto ISO) y la huella.
-- [ ] T010 [US1] El controlador. Ver fallar primero en `OCS/test/.../adaptadores/entrada/RegistrarResolucionContratoTest.java`:
+- [X] T010 [US1] El controlador. Ver fallar primero en `OCS/test/.../adaptadores/entrada/RegistrarResolucionContratoTest.java`:
   - el 200 con el flujo en APROBADO;
   - cada 400, el 413 y el 403 (sin permiso y sin rol);
   - el 409 de la etapa;
@@ -126,6 +126,13 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
   - el 409 `VALIDACIONOCS_REQUIERE_RESOLUCION` del avance desde EN_OCS.
 
   Todos validados contra el contrato. Luego, el endpoint multipart, en `FlujoControlador`, junto a aprobar y avanzar (análisis A1). `PermisosValidacionocsTest` en verde.
+
+  **Resultado (2026-11-15):** `RegistrarResolucionContratoTest` (4), con el caso de uso simulado. Contra el esqueleto fallaron el 200 y los siete rechazos del caso de uso; el 400 común (una parte que falta, una fecha mal formada) y el 403 sin permiso ya pasaban, porque los dan la validación del contrato y `@PreAuthorize`. Pasan con el endpoint.
+  - **El 409 del avance desde EN_OCS** va en `FlujoContratoTest`, con el dominio real (`FlujoEnMemoria.enOcs`). Pasó al escribirse, porque el bloqueo estaba en el dominio desde T006.
+  - **`FlujoEnMemoria`** suma un `RegistrarResolucion` real sobre la memoria, que usará T012.
+  - **`PermisosValidacionocsTest`** suma un doble de `RegistrarResolucion`.
+
+  Las de Validación OCS en verde.
 - [ ] T011 [US1] Dos registros a la vez. Ver fallar primero en `OCS/integrationTest/...` (como la concurrencia de F12-H02): dos hilos registran sobre el mismo proceso en EN_OCS; queda una resolución y una transición, y el otro recibe `EtapaNoAdmiteResolucion`.
 
 **Checkpoint**: la resolución se registra por la API y el distributivo queda en APROBADO.
