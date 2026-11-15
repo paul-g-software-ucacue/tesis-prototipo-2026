@@ -100,13 +100,15 @@ description: "Tareas de F14-H04: rechazar en firma con una observación"
 
 **Independent Test**: con F3 en turno, el Rector rechaza sin observación (400) y con una (201); después nadie está en turno.
 
-- [ ] T008 [US1] El repositorio. Ver fallar primero en `RepositorioDocumentosIntegrationTest`:
+- [X] T008 [US1] El repositorio. Ver fallar primero en `RepositorioDocumentosIntegrationTest`:
   - `registrarRechazo` guarda y `firmas` lo lee;
   - con una firma registrada entretanto, devuelve falso sin guardar;
   - un rechazo y una subida aceptada a la vez, en dos hilos: queda solo uno;
   - `registrarValidacion` aceptada con un rechazo registrado devuelve falso.
 
   Luego `RepositorioDocumentos.registrarRechazo` y `RepositorioDocumentosJdbc`.
+
+  **Resultado (2026-11-15):** las 4 pruebas nuevas, vistas fallar contra un esqueleto, pasan; las de integración y unitarias de Firma siguen en verde. El doble en memoria de `DocumentoFirmableServicioTest` suma el método sin usarlo.
 - [ ] T009 [US1] `RechazarEnFirmaServicio`. Ver fallar primero en `RechazarEnFirmaServicioTest`:
   - fuera de turno: `SinTurnoDeFirma`, sin mirar la observación ni registrar;
   - la observación inválida: `ObservacionInvalida`, sin registrar;
