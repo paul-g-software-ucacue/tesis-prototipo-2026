@@ -130,7 +130,7 @@ description: "Tareas de F14-H03: validar firmante, turno y vigencia, y completar
 
 **Independent Test**: con F1 y F2 aceptadas, se acepta F3 y el distributivo queda en EN_OCS por `sistema`.
 
-- [ ] T012 [US2] El aviso de Firma. Ver fallar primero en `SubirFirmaServicioTest`:
+- [X] T012 [US2] El aviso de Firma. Ver fallar primero en `SubirFirmaServicioTest`:
   - con la última firma aceptada, `AvisoDeCadenaCompleta.avisar` con el periodo y la versión, dentro de la transacción;
   - con F1 o F2, o un rechazo, nada.
 

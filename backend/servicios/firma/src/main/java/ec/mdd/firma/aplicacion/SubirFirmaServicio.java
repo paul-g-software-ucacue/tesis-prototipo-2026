@@ -10,10 +10,12 @@ import ec.mdd.firma.dominio.ComprobacionDeDocumento;
 import ec.mdd.firma.dominio.ComprobacionDelFirmante;
 import ec.mdd.firma.dominio.DocumentoFirmable;
 import ec.mdd.firma.dominio.FirmasDelDocumento;
+import ec.mdd.firma.dominio.PasoDeFirma;
 import ec.mdd.firma.dominio.PasoSinNombre;
 import ec.mdd.firma.dominio.Resultado;
 import ec.mdd.firma.dominio.ResultadoDeComprobacion;
 import ec.mdd.firma.dominio.ResultadoValidacion;
+import ec.mdd.firma.puertos.entrada.CadenaDeFirmasCompleta;
 import ec.mdd.firma.puertos.entrada.Solicitante;
 import ec.mdd.firma.puertos.entrada.SubirFirma;
 import ec.mdd.firma.puertos.salida.AlmacenDeDocumentos;
@@ -53,7 +55,8 @@ import java.util.UUID;
  *       bloqueada, que nadie firmó el paso entretanto; si alguien lo hizo, la subida se registra
  *       como rechazada por no ser la versión vigente (FR-014). Si la transacción falla después de
  *       guardar el archivo, queda un archivo sin registro, que no es vigente ni se entrega
- *       (research §4).
+ *       (research §4). Con la firma del último paso, en la misma transacción, avisa que la cadena
+ *       está completa; Aprobación decide qué pasa con el distributivo (F14-H03, MD-05).
  * </ol>
  */
 public final class SubirFirmaServicio implements SubirFirma {
@@ -64,6 +67,7 @@ public final class SubirFirmaServicio implements SubirFirma {
     private final ValidadorDeFirmas validador;
     private final RegistroDeCambios registro;
     private final Transaccion transaccion;
+    private final AvisoDeCadenaCompleta aviso;
     private final Clock reloj;
 
     /**
@@ -73,6 +77,7 @@ public final class SubirFirmaServicio implements SubirFirma {
      * @param validador la revisión de la firma nueva
      * @param registro los cambios para la bitácora
      * @param transaccion la transacción del registro
+     * @param aviso el aviso de cadena completa, para Aprobación (F14-H03)
      * @param reloj el momento de la subida
      */
     public SubirFirmaServicio(
@@ -90,6 +95,7 @@ public final class SubirFirmaServicio implements SubirFirma {
         this.validador = validador;
         this.registro = registro;
         this.transaccion = transaccion;
+        this.aviso = aviso;
         this.reloj = reloj;
     }
 
@@ -121,6 +127,14 @@ public final class SubirFirmaServicio implements SubirFirma {
                                 documentos.registrarValidacion(aRegistrar, firmas);
                             }
                             registro.registrar(cambio(aRegistrar, firmas.documento()));
+                            if (aRegistrar.aceptada()
+                                    && esElUltimoPaso(firmas, aRegistrar.orden())) {
+                                aviso.avisar(
+                                        new CadenaDeFirmasCompleta(
+                                                firmas.documento().periodo(),
+                                                firmas.documento().version(),
+                                                aRegistrar.subidoEn()));
+                            }
                             return aRegistrar;
                         });
         if (!registrado.aceptada()) {
@@ -162,6 +176,12 @@ public final class SubirFirmaServicio implements SubirFirma {
                 archivo.length,
                 ResultadoDeComprobacion.desde(evaluadas.toArray(ResultadoDeComprobacion[]::new)),
                 certificado);
+    }
+
+    // La cadena se completa con la firma del paso de mayor orden (F14-H03): el turno no se salta
+    // pasos, así que los anteriores ya están firmados.
+    private static boolean esElUltimoPaso(FirmasDelDocumento firmas, int orden) {
+        return firmas.cadena().stream().mapToInt(PasoDeFirma::orden).max().orElse(0) == orden;
     }
 
     // El cambio para la bitácora: el documento, el paso, el archivo y el resultado de cada
