@@ -172,8 +172,10 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
 
 **Independent Test**: en EN_OCS, `secretaria.demo` completa y confirma; ve APROBADO y la constancia, y descarga el PDF.
 
-- [ ] T013 [P] [US3] La consulta y la descarga en `SPA/pantallas/comun/flujo.ts`: `registrarResolucion(periodo, numero, fecha, archivo)` (multipart) y `descargarResolucion(periodo)`, como la descarga del PDF de «Pendientes de firma».
-- [ ] T014 [US3] El formulario y la constancia. Ver fallar primero en `SPA/pantallas/comun/EstadoDelFlujo.test.tsx`:
+- [X] T013 [P] [US3] La consulta y la descarga en `SPA/pantallas/comun/flujo.ts`: `registrarResolucion(periodo, numero, fecha, archivo)` (multipart) y `descargarResolucion(periodo)`, como la descarga del PDF de «Pendientes de firma».
+
+  **Resultado (2026-11-15):** como `adjuntarInforme` y `descargarInforme` de «Consolidado del periodo». El archivo va con su nombre explícito en el `FormData`.
+- [X] T014 [US3] El formulario y la constancia. Ver fallar primero en `SPA/pantallas/comun/EstadoDelFlujo.test.tsx`:
   - con `REGISTRAR_RESOLUCION`: los tres campos con su etiqueta;
   - la confirmación «El distributivo quedará aprobado con esta resolución. Después no se corrige.»;
   - la solicitud multipart con los tres datos;
@@ -182,6 +184,12 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
   - con `resolucion`: la constancia «Resolución del OCS n.º …», la fecha, quién, cuándo, la huella copiable y «Descargar la resolución», que pide el archivo.
 
   Luego, el formulario y la constancia en `EstadoDelFlujo.tsx` (o en un componente aparte en `comun/`).
+
+  **Resultado (2026-11-15):** cuatro pruebas nuevas en `EstadoDelFlujo.test.tsx`. Se vieron fallar tres; la de «sin la acción no hay formulario» pasaba sin el componente. Pasan con `comun/ResolucionDelOcs.tsx` (`RegistroDeLaResolucion` y `ConstanciaDeLaResolucion`), que `EstadoDelFlujo.tsx` muestra.
+  - **Los campos** no llevan `required`, porque MUI agrega « *» a la etiqueta; el botón se habilita con los tres datos y el servidor los comprueba.
+  - **El cuerpo multipart** se comprueba como texto: en jsdom, `formData()` no lee el archivo, y la API simulada pierde su nombre («blob») al copiar la petición.
+
+  Tipos, ESLint, Prettier y Vitest 587/587.
 - [ ] T015 [US3] Playwright en `frontend/e2e/consolidado.spec.ts`: el registro completo con el teclado, la constancia y la descarga, y axe-core sin fallas en EN_OCS y en APROBADO.
 
 **Checkpoint**: las tres historias funcionan en la API y en la SPA.

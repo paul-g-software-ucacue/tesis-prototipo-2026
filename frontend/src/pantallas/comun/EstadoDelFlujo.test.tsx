@@ -600,6 +600,153 @@ describe('EstadoDelFlujo', () => {
     });
   });
 
+  // La resolución del OCS (F15-H01, D-107, contracts/spa.md).
+  describe('resolución del OCS (F15-H01)', () => {
+    const RESOLUCION = '/api/validacionocs/periodos/2026-I/resolucion';
+    const enOcs = flujo({
+      etapa: 'EN_OCS',
+      nombreDeEtapa: 'Resolución del OCS',
+      version: 2,
+      parciales: [{ carrera: 'DS', enviado: true, pendienteDeConfirmar: false }],
+      acciones: ['REGISTRAR_RESOLUCION'],
+    });
+    const pdf = () =>
+      new File(['%PDF-1.7\nresolucion\n%%EOF\n'], 'resolucion 123.pdf', {
+        type: 'application/pdf',
+      });
+
+    async function completar() {
+      await userEvent.type(
+        await screen.findByLabelText('Número de la resolución'),
+        'RPC-SO-12-No.123-2026',
+      );
+      await userEvent.type(screen.getByLabelText('Fecha de la resolución'), '2026-11-14');
+      await userEvent.upload(screen.getByLabelText('PDF de la resolución'), pdf());
+    }
+
+    it('con la acción, completa el formulario, confirma y envía los tres datos', async () => {
+      simulada.responder('GET', RUTA, json(200, enOcs));
+      simulada.responder(
+        'POST',
+        RESOLUCION,
+        json(200, { ...enOcs, etapa: 'APROBADO', acciones: [] }),
+      );
+      const { alCambiar } = montar();
+
+      const registrar = await screen.findByRole('button', { name: 'Registrar la resolución' });
+      expect(registrar).toBeDisabled();
+      await completar();
+      expect(registrar).toBeEnabled();
+      await userEvent.click(registrar);
+      const dialogo = await screen.findByRole('dialog', {
+        name: 'Registrar la resolución del OCS',
+      });
+      expect(
+        within(dialogo).getByText(
+          'El distributivo quedará aprobado con esta resolución. Después no se corrige.',
+        ),
+      ).toBeVisible();
+      await userEvent.click(within(dialogo).getByRole('button', { name: 'Registrar y aprobar' }));
+
+      await waitFor(() => expect(alCambiar).toHaveBeenCalled());
+      const envio = simulada.peticiones.find(
+        (una) => una.method === 'POST' && new URL(una.url).pathname === RESOLUCION,
+      );
+      // En jsdom, formData() no lee el archivo de la petición: se mira el cuerpo multipart.
+      expect(envio?.headers.get('Content-Type')).toMatch(/^multipart\/form-data/);
+      const cuerpo = (await envio?.text()) ?? '';
+      expect(cuerpo).toMatch(/name="numero"\r\n\r\nRPC-SO-12-No\.123-2026\r\n/);
+      expect(cuerpo).toMatch(/name="fecha"\r\n\r\n2026-11-14\r\n/);
+      // El nombre del archivo se pierde al copiar la petición de jsdom a undici en la API
+      // simulada («blob»); en el navegador llega. Aquí basta con que vaya la parte del archivo.
+      expect(cuerpo).toMatch(/name="archivo"; filename="[^"]+"\r\nContent-Type: application\/pdf/);
+    });
+
+    it('un 400 del servidor se muestra en el formulario, sin cerrar la etapa', async () => {
+      simulada.responder('GET', RUTA, json(200, enOcs));
+      simulada.responder(
+        'POST',
+        RESOLUCION,
+        json(400, {
+          titulo: 'Fecha fuera de rango',
+          descripcion:
+            'La fecha de la resolución va desde el día en que el distributivo llegó al OCS hasta hoy.',
+          codigo: 'VALIDACIONOCS_FECHA_DE_RESOLUCION_FUERA_DE_RANGO',
+        }),
+      );
+      const { alCambiar } = montar();
+      await completar();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Registrar la resolución' }));
+      await userEvent.click(
+        within(await screen.findByRole('dialog')).getByRole('button', {
+          name: 'Registrar y aprobar',
+        }),
+      );
+
+      expect(
+        await screen.findByText(
+          'La fecha de la resolución va desde el día en que el distributivo llegó al OCS hasta hoy.',
+        ),
+      ).toBeVisible();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(screen.getByLabelText('Número de la resolución')).toHaveValue('RPC-SO-12-No.123-2026');
+      expect(alCambiar).not.toHaveBeenCalled();
+    });
+
+    it('sin la acción no hay formulario', async () => {
+      simulada.responder('GET', RUTA, json(200, { ...enOcs, acciones: [] }));
+      montar();
+
+      expect(await screen.findByText('Etapa EN_OCS')).toBeVisible();
+      expect(screen.queryByLabelText('Número de la resolución')).not.toBeInTheDocument();
+    });
+
+    it('con la resolución, muestra su constancia y la descarga', async () => {
+      const crear = vi.fn(() => 'blob:pdf');
+      Object.assign(URL, { createObjectURL: crear, revokeObjectURL: vi.fn() });
+      simulada.responder(
+        'GET',
+        RUTA,
+        json(200, {
+          ...enOcs,
+          etapa: 'APROBADO',
+          nombreDeEtapa: 'Aprobado',
+          acciones: [],
+          resolucion: {
+            numero: 'RPC-SO-12-No.123-2026',
+            fecha: '2026-11-14',
+            registradaPor: 'secretaria.demo',
+            registradaEn: '2026-11-15T15:30:00Z',
+            sha256: 'b'.repeat(64),
+            nombre: 'resolucion 123.pdf',
+            tamano: 2048,
+          },
+        }),
+      );
+      simulada.responder(
+        'GET',
+        `${RESOLUCION}/archivo`,
+        new Response(new Blob(['%PDF-1.7']), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename="resolucion 123.pdf"',
+          },
+        }),
+      );
+      montar();
+
+      expect(await screen.findByText('Resolución del OCS n.º RPC-SO-12-No.123-2026')).toBeVisible();
+      expect(
+        screen.getByText('Del 14/11/26, registrada por secretaria.demo el 15/11/26, 10:30'),
+      ).toBeVisible();
+      expect(screen.getByText(/Huella del PDF: bbbbbbbbbbbb…/)).toBeVisible();
+      await userEvent.click(screen.getByRole('button', { name: 'Descargar la resolución' }));
+      await waitFor(() => expect(crear).toHaveBeenCalled());
+    });
+  });
+
   it('sin distributivo no muestra nada', async () => {
     simulada.responder(
       'GET',

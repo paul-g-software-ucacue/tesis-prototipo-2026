@@ -24,6 +24,7 @@ import { DialogoDeAprobacion } from './DialogoDeAprobacion';
 import { DocumentoFirmable } from './DocumentoFirmable';
 import { DialogoDeDevolucion } from './DialogoDeDevolucion';
 import { HuellaCopiable } from './HuellaCopiable';
+import { ConstanciaDeLaResolucion, RegistroDeLaResolucion } from './ResolucionDelOcs';
 import {
   CLAVE_FLUJO,
   avanzarEtapa,
@@ -137,8 +138,16 @@ export function EstadoDelFlujoDelPeriodo({
   if (!flujo.data || !periodo) {
     return null;
   }
-  const { etapa, nombreDeEtapa, version, parciales, acciones, congelacion, rechazoEnFirma } =
-    flujo.data;
+  const {
+    etapa,
+    nombreDeEtapa,
+    version,
+    parciales,
+    acciones,
+    congelacion,
+    rechazoEnFirma,
+    resolucion,
+  } = flujo.data;
   if (soloEn && !soloEn.includes(etapa)) {
     return null;
   }
@@ -184,6 +193,17 @@ export function EstadoDelFlujoDelPeriodo({
       {congelacion?.version === version && <Constancia congelacion={congelacion} />}
       {etapa === 'CONGELADO_EN_FIRMA' && (
         <DocumentoFirmable periodo={periodo} version={congelacion?.version} />
+      )}
+      {/* F15-H01: la resolución del OCS; el formulario, solo con la acción. */}
+      {resolucion && <ConstanciaDeLaResolucion periodo={periodo} resolucion={resolucion} />}
+      {acciones.includes('REGISTRAR_RESOLUCION') && (
+        <RegistroDeLaResolucion
+          periodo={periodo}
+          alRegistrar={async () => {
+            await consultas.invalidateQueries({ queryKey: CLAVE_FLUJO });
+            alCambiar?.();
+          }}
+        />
       )}
       <Box component="ul" sx={{ m: 0, pl: 3 }}>
         {parciales.map((parcial) => (

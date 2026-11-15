@@ -3,6 +3,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiValidacionocs, llamar } from '../../api/cliente';
 import type { components } from '../../api/generado/validacionocs';
+import { FalloDeApi } from '../../errores/traducir';
+import { guardar, nombreDelServidor } from '../plantillas/consultas';
 
 export type EstadoDelFlujo = components['schemas']['EstadoDelFlujo'];
 export type ParcialDelFlujo = components['schemas']['ParcialDelFlujo'];
@@ -82,4 +84,40 @@ export function aprobarContenido(periodo: string) {
       params: { path: { periodo } },
     }),
   );
+}
+
+export type ResolucionDelOcs = components['schemas']['ResolucionDelOcs'];
+
+/**
+ * Registra la resolución del OCS y aprueba el distributivo (F15-H01, D-107): número, fecha
+ * (AAAA-MM-DD) y el PDF. El servidor exige el rol de la etapa y comprueba todo.
+ */
+export function registrarResolucion(periodo: string, numero: string, fecha: string, archivo: File) {
+  return llamar(
+    apiValidacionocs.POST('/api/validacionocs/periodos/{periodo}/resolucion', {
+      params: { path: { periodo } },
+      // El contrato tipa la parte binaria como texto; va el archivo tal cual, en un FormData.
+      body: { numero, fecha, archivo: archivo as unknown as string },
+      bodySerializer: (cuerpo: { numero: string; fecha: string; archivo: string }) => {
+        const formulario = new FormData();
+        formulario.append('numero', cuerpo.numero);
+        formulario.append('fecha', cuerpo.fecha);
+        // Con el nombre explícito: es el que se guarda y se muestra en la constancia.
+        formulario.append('archivo', cuerpo.archivo as unknown as File, archivo.name);
+        return formulario;
+      },
+    }),
+  );
+}
+
+/** Pide el PDF de la resolución con el token, que está solo en memoria (D-51), y lo guarda. */
+export async function descargarResolucion(periodo: string): Promise<void> {
+  const { data, error, response } = await apiValidacionocs.GET(
+    '/api/validacionocs/periodos/{periodo}/resolucion/archivo',
+    { params: { path: { periodo } }, parseAs: 'blob' },
+  );
+  if (!response.ok || !data) {
+    throw new FalloDeApi(response.status, error);
+  }
+  guardar(data, nombreDelServidor(response) ?? `resolucion-${periodo}.pdf`);
 }
