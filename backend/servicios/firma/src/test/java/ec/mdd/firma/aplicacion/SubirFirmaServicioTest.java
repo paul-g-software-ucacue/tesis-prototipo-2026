@@ -27,6 +27,7 @@ import ec.mdd.firma.dominio.FirmaRegistrada;
 import ec.mdd.firma.dominio.FirmanteEsperado;
 import ec.mdd.firma.dominio.FirmasDelDocumento;
 import ec.mdd.firma.dominio.PasoDeFirma;
+import ec.mdd.firma.dominio.PasoSinNombre;
 import ec.mdd.firma.dominio.Resultado;
 import ec.mdd.firma.dominio.ResultadoDeComprobacion;
 import ec.mdd.firma.dominio.ResultadoValidacion;
@@ -69,7 +70,7 @@ class SubirFirmaServicioTest {
             "%PDF-1.7 vigente %%EOF firma nueva %%EOF".getBytes(StandardCharsets.US_ASCII);
     private static final CertificadoDeLaFirma CERTIFICADO =
             new CertificadoDeLaFirma(
-                    "Firmante Uno Prueba (F1)",
+                    "Docente (demo)",
                     "CN=CA de Prueba MDD Demo,O=MDD Demo,C=EC",
                     "1a2b",
                     AHORA.minusSeconds(86_400),
@@ -133,9 +134,12 @@ class SubirFirmaServicioTest {
                         new PasoDeFirma(2, "Revisado", "VICERRECTOR"),
                         new PasoDeFirma(3, "Aprobado", "RECTOR")),
                 List.of(
-                        FirmanteEsperado.porUsuario(1, "RESPONSABLE_CONSOLIDACION", "docente.demo"),
-                        FirmanteEsperado.porIdentificacion(2, "VICERRECTOR", "0109990028"),
-                        FirmanteEsperado.porIdentificacion(3, "RECTOR", "0109990010")),
+                        FirmanteEsperado.porUsuario(
+                                1, "RESPONSABLE_CONSOLIDACION", "docente.demo", "Docente (demo)"),
+                        FirmanteEsperado.porIdentificacion(
+                                2, "VICERRECTOR", "0109990028", "CABRERA VAZQUEZ ANA GABRIELA"),
+                        FirmanteEsperado.porIdentificacion(
+                                3, "RECTOR", "0109990010", "PERALTA MALDONADO JUAN ANDRES")),
                 List.of(registradas));
     }
 
@@ -145,12 +149,25 @@ class SubirFirmaServicioTest {
     }
 
     private static HallazgosDeLaFirma aprobados() {
+        return aprobados(CERTIFICADO);
+    }
+
+    private static HallazgosDeLaFirma aprobados(CertificadoDeLaFirma certificado) {
         return new HallazgosDeLaFirma(
                 List.of(
                         ResultadoDeComprobacion.aprobada(UNA_FIRMA_NUEVA),
                         ResultadoDeComprobacion.aprobada(INTEGRIDAD),
                         ResultadoDeComprobacion.aprobada(CONFIANZA)),
-                Optional.of(CERTIFICADO));
+                Optional.of(certificado));
+    }
+
+    private static CertificadoDeLaFirma de(String cn) {
+        return new CertificadoDeLaFirma(
+                cn,
+                CERTIFICADO.emisor(),
+                CERTIFICADO.serie(),
+                CERTIFICADO.validoDesde(),
+                CERTIFICADO.validoHasta());
     }
 
     private CambioDeFirma cambioPublicado() {
@@ -194,7 +211,7 @@ class SubirFirmaServicioTest {
                 .containsEntry("version", 1)
                 .containsEntry("orden", 1)
                 .containsEntry("sha256Subido", sha256(FIRMADO))
-                .containsEntry("certificado", "Firmante Uno Prueba (F1)")
+                .containsEntry("certificado", "Docente (demo)")
                 .containsEntry("serie", "1a2b")
                 .containsEntry(
                         "comprobaciones",
@@ -202,7 +219,10 @@ class SubirFirmaServicioTest {
                                 "MISMO_DOCUMENTO", "APROBADA",
                                 "UNA_FIRMA_NUEVA", "APROBADA",
                                 "INTEGRIDAD", "APROBADA",
-                                "CONFIANZA", "APROBADA"));
+                                "CONFIANZA", "APROBADA",
+                                "VIGENCIA", "APROBADA",
+                                "ORDEN", "APROBADA",
+                                "FIRMANTE", "APROBADA"));
         assertThat(cambio.nuevo()).containsEntry("sha256Vigente", sha256(FIRMADO));
         assertThat(transaccion.veces).isEqualTo(1);
     }
@@ -221,7 +241,8 @@ class SubirFirmaServicioTest {
                             assertThat(transaccion.dentro).isFalse();
                             return Optional.of("0109990028");
                         });
-        when(validador.validar(any(), any())).thenReturn(aprobados());
+        when(validador.validar(any(), any()))
+                .thenReturn(aprobados(de("CABRERA VAZQUEZ ANA GABRIELA")));
         when(documentos.registrarValidacion(any(), any())).thenReturn(true);
 
         ResultadoValidacion resultado = servicio.subir(documento.id(), FIRMADO, VICERRECTOR);
@@ -349,6 +370,73 @@ class SubirFirmaServicioTest {
         assertThat(registradas.getAllValues().getLast().primerRechazo()).contains(MISMO_DOCUMENTO);
         assertThat(cambioPublicado().accion()).isEqualTo(CambioDeFirma.FIRMA_RECHAZADA);
         assertThat(transaccion.veces).isEqualTo(1);
+    }
+
+    // --- F14-H03: el paso sin nombre, la vigencia, el orden y el firmante.
+
+    @Test
+    void dadoElPasoEnTurnoSinNombreImpreso_cuandoSube_entoncesPasoSinNombreSinValidarNiRegistrar() {
+        FirmasDelDocumento sinNombres =
+                new FirmasDelDocumento(
+                        documento,
+                        firmas().cadena(),
+                        List.of(
+                                FirmanteEsperado.porUsuario(
+                                        1, "RESPONSABLE_CONSOLIDACION", "docente.demo")),
+                        List.of());
+        when(documentos.firmas(documento.id())).thenReturn(Optional.of(sinNombres));
+
+        assertThatThrownBy(() -> servicio.subir(documento.id(), FIRMADO, DESIGNADO))
+                .isInstanceOf(PasoSinNombre.class);
+        verifyNoInteractions(validador, registro, almacen);
+        verify(documentos, never()).registrarValidacion(any(), any());
+    }
+
+    @Test
+    void dadaLaFirmaDeLaPersonaDeF3EnElTurnoDeF1_cuandoSube_entoncesFueraDeOrdenYRegistrada() {
+        enF1();
+        when(validador.validar(any(), any()))
+                .thenReturn(aprobados(de("Peralta Maldonado Juan Andrés")));
+        when(documentos.registrarValidacion(any(), any())).thenReturn(true);
+
+        assertThatThrownBy(() -> servicio.subir(documento.id(), FIRMADO, DESIGNADO))
+                .isInstanceOf(ArchivoFirmadoRechazado.FueraDeOrden.class);
+        verify(almacen, never()).guardar(any(), anyString());
+        assertThat(validacionRegistrada().primerRechazo()).contains(Comprobacion.ORDEN);
+        assertThat(cambioPublicado().accion()).isEqualTo(CambioDeFirma.FIRMA_RECHAZADA);
+    }
+
+    @Test
+    void dadoUnCertificadoVencidoAlSubir_cuandoSube_entoncesNoVigente() {
+        enF1();
+        when(validador.validar(any(), any()))
+                .thenReturn(
+                        aprobados(
+                                new CertificadoDeLaFirma(
+                                        "Docente (demo)",
+                                        CERTIFICADO.emisor(),
+                                        CERTIFICADO.serie(),
+                                        Instant.parse("2025-01-01T00:00:00Z"),
+                                        Instant.parse("2025-02-01T00:00:00Z"))));
+        when(documentos.registrarValidacion(any(), any())).thenReturn(true);
+
+        assertThatThrownBy(() -> servicio.subir(documento.id(), FIRMADO, DESIGNADO))
+                .isInstanceOf(ArchivoFirmadoRechazado.NoVigente.class);
+        assertThat(validacionRegistrada().primerRechazo()).contains(Comprobacion.VIGENCIA);
+    }
+
+    @Test
+    void dadoElCertificadoDeOtraPersona_cuandoSube_entoncesFirmanteEquivocado() {
+        enF1();
+        when(validador.validar(any(), any())).thenReturn(aprobados(de("Alguien Distinto")));
+        when(documentos.registrarValidacion(any(), any())).thenReturn(true);
+
+        assertThatThrownBy(() -> servicio.subir(documento.id(), FIRMADO, DESIGNADO))
+                .isInstanceOf(ArchivoFirmadoRechazado.FirmanteEquivocado.class);
+        assertThat(validacionRegistrada().comprobaciones())
+                .extracting(ResultadoDeComprobacion::resultado)
+                .last()
+                .isEqualTo(Resultado.RECHAZADA);
     }
 
     // --- US4: quien no está en turno.
