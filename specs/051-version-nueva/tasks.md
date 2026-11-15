@@ -151,13 +151,15 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
 
 **Independent Test**: tras el rechazo en F3, el documento de la versión 1 está anulado con 2 firmas, sus archivos y validaciones intactos; al aprobar la versión 2, su documento pide F1.
 
-- [ ] T013 [US2] El repositorio de Firma. Ver fallar primero en `FIR/integrationTest/.../RepositorioDocumentosIntegrationTest.java`:
+- [X] T013 [US2] El repositorio de Firma. Ver fallar primero en `FIR/integrationTest/.../RepositorioDocumentosIntegrationTest.java`:
   - `registrarAnulacion` inserta con el número de firmas aceptadas, y la segunda vez devuelve `false`;
   - `firmasDe` trae la anulación;
   - con una anulación, `registrarValidacion` aceptada y `registrarRechazo` devuelven `false`;
   - las filas de `validacion_firma` no cambian.
 
   Luego, `RepositorioDocumentos.registrarAnulacion` y las comprobaciones en `RepositorioDocumentosJdbc`, con la generación bloqueada.
+
+  **Resultado (2026-11-15):** 3 pruebas nuevas en `RepositorioDocumentosIntegrationTest`, vistas fallar contra el esqueleto: la anulación con F1, idempotente; una firma y un rechazo después de anular; una anulación y una firma a la vez. En la última, la anulación cuenta las firmas que quedaron, gane quien gane. `registrarAnulacion` recibe el documento y devuelve la anulación con las firmas contadas dentro del bloqueo, o vacío si ya había una. El doble en memoria de `DocumentoFirmableServicioTest` suma el método sin usarlo. Las de Firma siguen en verde.
 - [ ] T014 [US2] El caso de uso. Ver fallar primero en `FIR/test/.../aplicacion/AnularFirmasServicioTest.java`:
   - anula, anota `FIRMAS_ANULADAS` en la bitácora y publica `FirmasAnuladas` en la transacción;
   - ya anulado: nada;

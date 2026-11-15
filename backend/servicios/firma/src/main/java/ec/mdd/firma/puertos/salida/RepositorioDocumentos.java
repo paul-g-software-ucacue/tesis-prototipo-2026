@@ -83,4 +83,18 @@ public interface RepositorioDocumentos {
      * llegaron (F14-H02): el informe de validación de cada una.
      */
     List<ResultadoValidacion> validaciones(UUID documento);
+
+    /**
+     * Registra la anulación de las firmas del documento (F12-H04, D-106), con la generación
+     * bloqueada, como el rechazo: cuenta las firmas aceptadas que quedaron. Se llama dentro de una
+     * transacción.
+     *
+     * @param documento el documento
+     * @param motivo por qué
+     * @param quien quién la registra
+     * @param momento cuándo
+     * @return la anulación registrada; vacío si el documento ya tenía una
+     */
+    Optional<ec.mdd.firma.dominio.AnulacionDeFirmas> registrarAnulacion(
+            DocumentoFirmable documento, String motivo, String quien, java.time.Instant momento);
 }
