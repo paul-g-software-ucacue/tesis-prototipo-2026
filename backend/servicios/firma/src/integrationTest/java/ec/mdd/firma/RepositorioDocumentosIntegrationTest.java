@@ -52,18 +52,21 @@ class RepositorioDocumentosIntegrationTest {
                     new PasoDeFirma(2, "Revisado", "VICERRECTOR"));
     private static final List<FirmanteEsperado> FIRMANTES =
             List.of(
-                    FirmanteEsperado.porUsuario(1, "RESPONSABLE_CONSOLIDACION", "docente.demo"),
-                    FirmanteEsperado.porIdentificacion(2, "VICERRECTOR", "0109990028"));
+                    FirmanteEsperado.porUsuario(
+                            1, "RESPONSABLE_CONSOLIDACION", "docente.demo", "Docente (demo)"),
+                    FirmanteEsperado.porIdentificacion(
+                            2, "VICERRECTOR", "0109990028", "CABRERA VAZQUEZ ANA GABRIELA"));
 
     private static PostgreSQLContainer postgres;
     private static RepositorioDocumentosJdbc repositorio;
+    private static DataSource dataSource;
     private static TransaccionSpring transaccion;
 
     @BeforeAll
     static void levantar() {
         postgres = new PostgreSQLContainer("postgres:18.6-alpine");
         postgres.start();
-        DataSource dataSource =
+        dataSource =
                 new DriverManagerDataSource(
                         postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
         new FirmaFlywayConfig().flywayFirma(dataSource).migrate();
@@ -310,6 +313,48 @@ class RepositorioDocumentosIntegrationTest {
         assertThat(repositorio.firmas(antes.documento().id()).orElseThrow().firmas()).hasSize(1);
     }
 
+    @Test
+    void
+            dadaUnaValidacionDeF14H02ConCuatroComprobaciones_cuandoSeLee_entoncesLasNuevasQuedanNoEvaluadas() {
+        FirmasDelDocumento antes = generado(periodo());
+        UUID id = UUID.randomUUID();
+        JdbcClient.create(dataSource)
+                .sql(
+                        "insert into firma.validacion_firma (id, periodo, version, tipo, orden,"
+                                + " subido_por, subido_en, sha256_subido, tamano, aceptada,"
+                                + " comprobaciones) values (:id, :periodo, 1, 'CONSOLIDADO', 1,"
+                                + " 'docente.demo', :momento, :sha, 10, false, cast(:comprobaciones"
+                                + " as jsonb))")
+                .param("id", id)
+                .param("periodo", antes.documento().periodo())
+                .param("momento", java.sql.Timestamp.from(MOMENTO))
+                .param("sha", "f".repeat(64))
+                .param(
+                        "comprobaciones",
+                        "[{\"comprobacion\":\"MISMO_DOCUMENTO\",\"resultado\":\"RECHAZADA\","
+                                + "\"motivo\":\"Otro.\"},{\"comprobacion\":\"UNA_FIRMA_NUEVA\","
+                                + "\"resultado\":\"NO_EVALUADA\",\"motivo\":\"Otro.\"},"
+                                + "{\"comprobacion\":\"INTEGRIDAD\",\"resultado\":\"NO_EVALUADA\","
+                                + "\"motivo\":\"Otro.\"},{\"comprobacion\":\"CONFIANZA\","
+                                + "\"resultado\":\"NO_EVALUADA\",\"motivo\":\"Otro.\"}]")
+                .update();
+
+        assertThat(repositorio.validaciones(antes.documento().id()))
+                .singleElement()
+                .satisfies(
+                        una ->
+                                assertThat(una.comprobaciones())
+                                        .hasSize(7)
+                                        .last()
+                                        .satisfies(
+                                                ultima ->
+                                                        assertThat(ultima.resultado())
+                                                                .isEqualTo(
+                                                                        ec.mdd.firma.dominio
+                                                                                .Resultado
+                                                                                .NO_EVALUADA)));
+    }
+
     private FirmasDelDocumento generado(String periodo) {
         DocumentoFirmable documento = documento(periodo);
         GeneracionDeDocumento generada = nueva(periodo);
@@ -332,11 +377,9 @@ class RepositorioDocumentosIntegrationTest {
                 MOMENTO,
                 hash.repeat(64),
                 4096,
-                List.of(
-                        ResultadoDeComprobacion.aprobada(Comprobacion.MISMO_DOCUMENTO),
-                        ResultadoDeComprobacion.aprobada(Comprobacion.UNA_FIRMA_NUEVA),
-                        ResultadoDeComprobacion.aprobada(Comprobacion.INTEGRIDAD),
-                        ResultadoDeComprobacion.aprobada(Comprobacion.CONFIANZA)),
+                java.util.Arrays.stream(Comprobacion.values())
+                        .map(ResultadoDeComprobacion::aprobada)
+                        .toList(),
                 Optional.of(
                         new CertificadoDeLaFirma(
                                 "Firmante Uno Prueba (F1)",

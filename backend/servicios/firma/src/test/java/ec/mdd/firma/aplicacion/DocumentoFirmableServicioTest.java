@@ -248,9 +248,11 @@ class DocumentoFirmableServicioTest {
         DocumentoFirmable documento = documentos.documento(PERIODO, 1).orElseThrow();
         assertThat(documentos.firmantesDe(documento.id()))
                 .containsExactly(
-                        FirmanteEsperado.porUsuario(1, "RESPONSABLE_CONSOLIDACION", "docente.demo"),
-                        FirmanteEsperado.porIdentificacion(2, "VICERRECTOR", "0109990028"),
-                        FirmanteEsperado.porIdentificacion(3, "RECTOR", "0109990010"));
+                        FirmanteEsperado.porUsuario(
+                                1, "RESPONSABLE_CONSOLIDACION", "docente.demo", "PÉREZ ANA"),
+                        FirmanteEsperado.porIdentificacion(
+                                2, "VICERRECTOR", "0109990028", "LÓPEZ LUIS"),
+                        FirmanteEsperado.porIdentificacion(3, "RECTOR", "0109990010", "MORA EVA"));
     }
 
     @Test
