@@ -358,9 +358,9 @@ public final class FlujoDelDistributivoServicio
     // Una entrada por transición (D-95). Un paso desde EN_CONSOLIDACION solo viene del envío a
     // revisión, porque el avance genérico rechaza esa etapa: lleva su propia acción y la huella del
     // informe (F10-H03, research §5). Uno desde EN_REVISION_VRA solo viene de aprobar el contenido
-    // (F13-H01, research §5).
-    private static CambioDeFlujo cambio(
-            String periodo, Transicion transicion, Optional<String> informe) {
+    // (F13-H01, research §5). Uno desde CONGELADO_EN_FIRMA, de la cadena de firmas completa
+    // (F14-H03).
+    static CambioDeFlujo cambio(String periodo, Transicion transicion, Optional<String> informe) {
         Map<String, Object> detalle = new LinkedHashMap<>();
         detalle.put("periodo", periodo);
         transicion.carrera().ifPresent(carrera -> detalle.put("carrera", carrera));
@@ -396,6 +396,7 @@ public final class FlujoDelDistributivoServicio
                 switch (transicion.desde()) {
                     case EN_CONSOLIDACION -> CambioDeFlujo.Accion.CONSOLIDADO_ENVIADO_A_REVISION;
                     case EN_REVISION_VRA -> CambioDeFlujo.Accion.CONTENIDO_APROBADO;
+                    case CONGELADO_EN_FIRMA -> CambioDeFlujo.Accion.CADENA_DE_FIRMAS_COMPLETA;
                     default -> CambioDeFlujo.Accion.ETAPA_AVANZADA;
                 },
                 detalle,

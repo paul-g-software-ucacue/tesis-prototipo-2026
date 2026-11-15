@@ -135,7 +135,7 @@ description: "Tareas de F14-H03: validar firmante, turno y vigencia, y completar
   - con F1 o F2, o un rechazo, nada.
 
   Luego, `CadenaDeFirmasCompleta` (en `puertos.entrada`), el puerto `AvisoDeCadenaCompleta`, su adaptador con el publicador de Spring y el bean.
-- [ ] T013 [US2] Aprobación. Ver fallar primero en `CompletarFirmasServicioTest` (Mockito):
+- [X] T013 [US2] Aprobación. Ver fallar primero en `CompletarFirmasServicioTest` (Mockito):
   - guarda la transición y registra el cambio en la bitácora;
   - repetido o en otra etapa, no guarda nada ni lanza.
 
