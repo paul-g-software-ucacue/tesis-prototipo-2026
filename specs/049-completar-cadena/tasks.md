@@ -180,9 +180,17 @@ description: "Tareas de F14-H03: validar firmante, turno y vigencia, y completar
 
   **Resultado (2026-11-14):** 13/13 en la primera corrida sobre un perfil construido desde la rama: siete rechazos en el paso 9 (con fuera de orden y vencido), el firmante equivocado en el paso 11, y en el paso 12 el proceso en EN_OCS con su transición por `sistema` y la entrada `CADENA_DE_FIRMAS_COMPLETA`. shellcheck sin hallazgos.
 - [ ] T018 Correr todos los scripts del workflow sobre un perfil construido desde la rama. Recorrer `quickstart.md` §3 a mano con FirmaEC (autor): SC-002, SC-003 y SC-004.
-- [ ] T019 Correr completos:
+
+  **Resultado de los scripts (2026-11-15):** los 35 de `perfil-consolidado` pasan, en su orden, sobre un perfil construido desde la rama; `probar_documento_firmable.sh` en 74 s. **Pendiente:** el recorrido a mano con FirmaEC, del autor.
+- [X] T019 Correr completos:
   - `./gradlew build integrationTest jacocoTestReport jacocoTestCoverageVerification`;
   - en la SPA, los tipos, ESLint, Prettier, Vitest y Playwright (SC-005).
+
+  **Resultado (2026-11-15):**
+  - `./gradlew build integrationTest jacocoTestReport jacocoTestCoverageVerification --rerun-tasks --continue`: 3 146 pruebas unitarias y 308 de integración. Fallaron 2, las intermitentes de siempre (`ClienteDeEventosLocalTest` y `ConfirmarLasDiezCargasIntegrationTest`), en módulos que esta rama no toca; las dos pasan corridas solas (5/5 y 9/9). Spring Modulith en verde.
+  - Cobertura de líneas: Firma 82,6 %, Validación OCS 83,8 %; la más baja, Roles, 77,2 %.
+  - Spotless y SpotBugs en verde.
+  - SPA: tipos, ESLint y Prettier en verde; Vitest 574/574; Playwright 128/128.
 - [X] T020 Revisar el JavaDoc (principio XII): la normalización, por qué «orden» va antes que «firmante», el evento, su idempotencia y el nombre local.
 - [ ] T021 Crear `specs/049-completar-cadena/evidencia.md`, como la de 048.
 - [ ] T022 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde. Verificar la demo (`quickstart.md` §4, solo lectura) y abrir el PR de evidencia con `Closes #64`. Borrar las ramas solo si el autor lo pide.
