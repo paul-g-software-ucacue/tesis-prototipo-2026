@@ -516,6 +516,11 @@ public final class ProcesoAprobacion {
                 .reduce((primera, ultima) -> ultima);
     }
 
+    /** Esqueleto (F14-H03, T007). */
+    public List<Transicion> completarFirmas(int version, Instant ahora) {
+        throw new UnsupportedOperationException();
+    }
+
     /** Lo que {@code quien} puede hacer ahora (FR-014). */
     public List<AccionDelProceso> acciones(Solicitante quien) {
         if (estado == TipoDeEtapa.BORRADOR_CARRERA
