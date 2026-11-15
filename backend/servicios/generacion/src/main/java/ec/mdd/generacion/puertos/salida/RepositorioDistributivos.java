@@ -1,11 +1,13 @@
 package ec.mdd.generacion.puertos.salida;
 
 import ec.mdd.generacion.dominio.ActividadNoLectiva;
+import ec.mdd.generacion.dominio.EstadoDeVersion;
 import ec.mdd.generacion.dominio.EstadoDelParcial;
 import ec.mdd.generacion.dominio.ParcialCarrera;
 import ec.mdd.generacion.dominio.Propuesta;
 import ec.mdd.generacion.dominio.VersionDistributivo;
 import ec.mdd.generacion.puertos.entrada.DistributivoRepetido;
+import ec.mdd.generacion.puertos.entrada.MotivoDeVersion;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -90,4 +92,25 @@ public interface RepositorioDistributivos {
      * @return el número; vacío si no está congelada o el periodo no tiene distributivo
      */
     OptionalInt versionCongelada(String periodo);
+
+    /**
+     * Anula la versión y crea la siguiente con todo su contenido, por orden de Aprobación (F12-H04,
+     * D-106). Se llama dentro de la transacción que la bloqueó.
+     *
+     * @param anulada la versión que se anula, la vigente
+     * @param motivo por qué se crea la nueva
+     * @param quien quién la crea
+     * @param momento cuándo
+     * @return el id de la versión nueva
+     */
+    UUID crearVersionNueva(UUID anulada, MotivoDeVersion motivo, String quien, Instant momento);
+
+    /**
+     * El estado de una versión del periodo (F12-H04).
+     *
+     * @param periodo el código del periodo
+     * @param numero el número de la versión
+     * @return vacío si no existe
+     */
+    Optional<EstadoDeVersion> estadoDe(String periodo, int numero);
 }

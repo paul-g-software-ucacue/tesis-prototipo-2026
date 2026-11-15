@@ -10,6 +10,7 @@ import ec.mdd.generacion.dominio.Propuesta;
 import ec.mdd.generacion.dominio.TipoDeJustificacion;
 import ec.mdd.generacion.dominio.VersionDistributivo;
 import ec.mdd.generacion.puertos.entrada.DistributivoRepetido;
+import ec.mdd.generacion.puertos.entrada.MotivoDeVersion;
 import ec.mdd.generacion.puertos.salida.RepositorioDistributivos;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -315,5 +316,88 @@ public final class RepositorioDistributivosJdbc implements RepositorioDistributi
                                         : OptionalInt.empty())
                 .optional()
                 .orElse(OptionalInt.empty());
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Copia con {@code INSERT … SELECT}, en la transacción en curso, cada tabla que cuelga de la
+     * versión, con ids nuevos donde los hay: los parciales (antes, por sus foráneas), las
+     * propuestas, las actividades, las justificaciones, las consolidaciones y los informes. Los
+     * momentos y los autores se conservan, así que la consolidación copiada no queda
+     * desactualizada. El informe comparte su archivo, que el almacén no reescribe ni borra (V8).
+     * Una tabla nueva que dependa de la versión tiene que sumarse aquí.
+     */
+    @Override
+    public UUID crearVersionNueva(
+            UUID anulada, MotivoDeVersion motivo, String quien, Instant momento) {
+        UUID nueva = UUID.randomUUID();
+        jdbc.sql(
+                        "UPDATE generacion.version_distributivo SET estado = 'ANULADA'"
+                                + " WHERE id = :anulada")
+                .param("anulada", anulada)
+                .update();
+        jdbc.sql(
+                        "INSERT INTO generacion.version_distributivo (id, distributivo_id, numero,"
+                                + " estado, motivo, creada_por, creada_en) SELECT :nueva,"
+                                + " distributivo_id, numero + 1, 'EDITABLE', :motivo, :quien, :en"
+                                + " FROM generacion.version_distributivo WHERE id = :anulada")
+                .param("nueva", nueva)
+                .param("motivo", motivo.name())
+                .param("quien", quien)
+                .param("en", Timestamp.from(momento))
+                .param("anulada", anulada)
+                .update();
+        for (String copia : COPIAS) {
+            jdbc.sql(copia).param("nueva", nueva).param("anulada", anulada).update();
+        }
+        return nueva;
+    }
+
+    // F12-H04: las tablas de la versión, en el orden de sus foráneas.
+    private static final List<String> COPIAS =
+            List.of(
+                    "INSERT INTO generacion.parcial_carrera (version_id, carrera, estado)"
+                            + " SELECT :nueva, carrera, estado FROM generacion.parcial_carrera"
+                            + " WHERE version_id = :anulada",
+                    "INSERT INTO generacion.propuesta (version_id, asignatura, paralelo, carrera,"
+                            + " docente, nombre_docente, justificacion, texto, propuesta_en,"
+                            + " propuesta_por) SELECT :nueva, asignatura, paralelo, carrera,"
+                            + " docente, nombre_docente, justificacion, texto, propuesta_en,"
+                            + " propuesta_por FROM generacion.propuesta WHERE version_id ="
+                            + " :anulada",
+                    "INSERT INTO generacion.actividad_no_lectiva (id, version_id, carrera,"
+                            + " docente, nombre_docente, actividad, nombre_actividad, componente,"
+                            + " proyecto, nombre_proyecto, horas, asignada_en, asignada_por)"
+                            + " SELECT gen_random_uuid(), :nueva, carrera, docente,"
+                            + " nombre_docente, actividad, nombre_actividad, componente, proyecto,"
+                            + " nombre_proyecto, horas, asignada_en, asignada_por FROM"
+                            + " generacion.actividad_no_lectiva WHERE version_id = :anulada",
+                    "INSERT INTO generacion.justificacion_inconsistencia (id, version_id, tipo,"
+                            + " objeto, texto, justificada_por, justificada_en) SELECT"
+                            + " gen_random_uuid(), :nueva, tipo, objeto, texto, justificada_por,"
+                            + " justificada_en FROM generacion.justificacion_inconsistencia"
+                            + " WHERE version_id = :anulada",
+                    "INSERT INTO generacion.consolidacion (id, version_id, consolidada_por,"
+                            + " consolidada_en) SELECT gen_random_uuid(), :nueva,"
+                            + " consolidada_por, consolidada_en FROM generacion.consolidacion"
+                            + " WHERE version_id = :anulada",
+                    "INSERT INTO generacion.informe_sustentado (id, version_id, nombre, tamano,"
+                            + " huella, clave, adjuntado_por, adjuntado_en) SELECT"
+                            + " gen_random_uuid(), :nueva, nombre, tamano, huella, clave,"
+                            + " adjuntado_por, adjuntado_en FROM generacion.informe_sustentado"
+                            + " WHERE version_id = :anulada");
+
+    @Override
+    public Optional<EstadoDeVersion> estadoDe(String periodo, int numero) {
+        return jdbc.sql(
+                        "SELECT v.estado FROM generacion.version_distributivo v"
+                                + " JOIN generacion.distributivo d ON d.id = v.distributivo_id"
+                                + " WHERE d.periodo = :periodo AND v.numero = :numero")
+                .param("periodo", periodo)
+                .param("numero", numero)
+                .query(String.class)
+                .optional()
+                .map(EstadoDeVersion::valueOf);
     }
 }

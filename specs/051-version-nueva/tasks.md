@@ -101,13 +101,15 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
 
 **Independent Test**: con F1 y F2 aceptadas, el Rector rechaza en F3; sin nada más, la versión 1 queda ANULADA, la 2 EDITABLE con las mismas asignaciones, y el distributivo en EN_REVISION_VRA con la versión 2.
 
-- [ ] T009 [US1] El repositorio de Generación. Ver fallar primero en `GEN/integrationTest/.../RepositorioDistributivosIntegrationTest.java` (o el que prueba ese repositorio), con una versión congelada que tiene de todo:
+- [X] T009 [US1] El repositorio de Generación. Ver fallar primero en `GEN/integrationTest/.../RepositorioDistributivosIntegrationTest.java` (o el que prueba ese repositorio), con una versión congelada que tiene de todo:
   - `crearVersionNueva` deja la anterior ANULADA, sin cambios en su contenido;
   - crea la siguiente EDITABLE con el motivo, `sistema` y el momento;
   - compara tabla por tabla: parciales con su estado, propuestas, actividades, justificaciones, consolidaciones e informes (la misma `clave` y huella);
   - el consolidado de la nueva no queda desactualizado, y el hash de la nueva difiere del de la anulada (lleva el número).
 
   Luego, `RepositorioDistributivos.crearVersionNueva` y su implementación con `INSERT … SELECT` en `RepositorioDistributivosJdbc`, en la transacción que bloquea la versión (D-83): nadie edita mientras se copia, y en EN_REVISION_VRA el consolidado tampoco admite cambios (D-99). El JavaDoc dice que una tabla nueva de la versión exige su copia.
+
+  **Resultado (2026-11-15):** `VersionNuevaIntegrationTest` (nueva, en lugar de sumarla a `RepositorioDistributivosIntegrationTest`, por su preparación propia) arma una versión congelada con dos parciales enviados, una propuesta, una actividad, una justificación, una consolidación y su informe. Se vio fallar contra el esqueleto y pasa con la copia: las seis tablas iguales en las dos versiones, la anulada intacta, el motivo, quién y cuándo de la nueva, la misma consolidación (así no queda desactualizada) y un hash distinto. Se sumó `estadoDe(periodo, numero)` al repositorio, para la idempotencia de T010.
 - [ ] T010 [US1] La operación publicada. Ver fallar primero en `GEN/test/.../aplicacion/ParcialesDelDistributivoServicioTest.java`:
   - la vigente congelada es la del aviso: anula, crea y devuelve el número y el hash;
   - la vigente es la siguiente, creada por ese motivo: la devuelve sin cambiar nada;
