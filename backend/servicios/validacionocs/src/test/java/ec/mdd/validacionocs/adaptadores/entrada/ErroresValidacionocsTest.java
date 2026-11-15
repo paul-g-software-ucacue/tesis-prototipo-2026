@@ -22,6 +22,7 @@ import ec.mdd.validacionocs.dominio.ParcialNoEncontrado;
 import ec.mdd.validacionocs.dominio.ParcialNoEnviado;
 import ec.mdd.validacionocs.dominio.ParcialYaEnviado;
 import ec.mdd.validacionocs.dominio.ParcialesPendientes;
+import ec.mdd.validacionocs.dominio.RequiereVersionNueva;
 import ec.mdd.validacionocs.dominio.SinConsolidar;
 import ec.mdd.validacionocs.dominio.SinInforme;
 import ec.mdd.validacionocs.puertos.entrada.ConfiguracionInvalida;
@@ -66,6 +67,10 @@ class ErroresValidacionocsTest {
                                 "VALIDACIONOCS_PERIODO_NO_ENCONTRADO",
                                 404),
                         tuple(SinDistributivo.class, "VALIDACIONOCS_SIN_DISTRIBUTIVO", 404),
+                        tuple(
+                                RequiereVersionNueva.class,
+                                "VALIDACIONOCS_REQUIERE_VERSION_NUEVA",
+                                409),
                         tuple(EtapaNoAdmiteEnvio.class, "VALIDACIONOCS_ETAPA_NO_ADMITE_ENVIO", 409),
                         tuple(ParcialYaEnviado.class, "VALIDACIONOCS_PARCIAL_YA_ENVIADO", 409),
                         tuple(
