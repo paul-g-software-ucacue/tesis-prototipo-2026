@@ -359,12 +359,33 @@ components:
           maxLength: 200
         documento:
           $ref: '#/components/schemas/DocumentoFirmable'
+        anulacion:
+          $ref: '#/components/schemas/AnulacionDeFirmas'
         acciones:
           type: array
           description: Lo que puede hacer ahora quien consulta; vacía si nada.
           items:
             type: string
             enum: [GENERAR]
+    AnulacionDeFirmas:
+      description: >-
+        Las firmas del documento de esta versión quedaron anuladas por orden de Aprobación (F12-H04,
+        D-106): se conservan, y nadie está en turno.
+      type: object
+      additionalProperties: false
+      required: [motivo, firmasAnuladas, anuladaEn]
+      properties:
+        motivo:
+          type: string
+          enum: [RECHAZO_EN_FIRMA]
+        firmasAnuladas:
+          description: Cuántas firmas aceptadas tenía el documento.
+          type: integer
+          format: int32
+          minimum: 0
+        anuladaEn:
+          type: string
+          format: date-time
     DocumentoFirmable:
       description: El PDF/A registrado; solo con GENERADO.
       type: object

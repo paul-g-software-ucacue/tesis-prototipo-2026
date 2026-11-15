@@ -193,7 +193,8 @@ class FlujoControlador implements AprobacionApi {
                                                 una.rol(),
                                                 una.por(),
                                                 una.en().atOffset(ZoneOffset.UTC),
-                                                una.observacion())));
+                                                una.observacion(),
+                                                una.versionAnulada())));
         return respuesta;
     }
 

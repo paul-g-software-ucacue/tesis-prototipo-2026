@@ -49,11 +49,13 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
 
 **⚠️ CRITICAL**: ninguna historia empieza antes de T008.
 
-- [ ] T002 [P] Los contratos, según `contracts/firma.md` y `contracts/validacionocs.md`:
+- [X] T002 [P] Los contratos, según `contracts/firma.md` y `contracts/validacionocs.md`:
   - en `contratos/firma/openapi.yaml`: `AnulacionDeFirmas` («`motivo` enum `[RECHAZO_EN_FIRMA]`, `firmasAnuladas` `minimum: 0`, `anuladaEn` `date-time`», `additionalProperties: false`) y `EstadoDelDocumento.anulacion`;
   - en `contratos/validacionocs/openapi.yaml`: `RechazoEnFirmaDelFlujo.versionAnulada` (obligatorio, `minimum: 1`) y `versionNueva` (`minimum: 2`), su descripción («presente desde el rechazo hasta la siguiente congelación») y `VERSION_NUEVA` en el tipo de transición.
 
   Regenerar los tipos de la SPA (`npm run generar:api`). Pasan `verificar:ruptura` y `BitacoraSinBorradoContratoTest`.
+
+  **Resultado (2026-11-15):** los dos contratos actualizados; los tipos de la SPA regenerados; `verificar:ruptura` y `BitacoraSinBorradoContratoTest` pasan. Como `versionAnulada` es obligatorio, el DTO generado cambió su constructor: para compilar, la vista del flujo ya lleva `versionAnulada` (la versión de la transición del rechazo) y `versionNueva` vacío; el resto es de T018. `FlujoContratoTest` sigue en verde.
 - [ ] T003 [P] La migración `GEN/main/resources/db/migration/generacion/V8__version_nueva.sql`:
   - `version_distributivo` suma `motivo varchar(20)` («`RECHAZO_EN_FIRMA`; `check ((numero = 1) = (motivo is null))`»), `creada_por varchar(64)` y `creada_en timestamptz`;
   - el índice único de `informe_sustentado.clave` pasa a `(version_id, clave)`.

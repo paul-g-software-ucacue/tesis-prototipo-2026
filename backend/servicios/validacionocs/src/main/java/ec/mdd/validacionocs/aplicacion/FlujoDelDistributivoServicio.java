@@ -452,15 +452,23 @@ public final class FlujoDelDistributivoServicio
                                                 una.quien(),
                                                 una.momento())),
                 proceso.rechazoPendiente()
-                        .flatMap(Transicion::rechazo)
-                        .map(
-                                rechazo ->
-                                        new FlujoDelDistributivo.RechazoEnFirma(
-                                                rechazo.orden(),
-                                                rechazo.rol(),
-                                                rechazo.rechazadoPor(),
-                                                rechazo.rechazadoEn(),
-                                                rechazo.observacion().texto())));
+                        .flatMap(
+                                transicion ->
+                                        transicion
+                                                .rechazo()
+                                                .map(
+                                                        rechazo ->
+                                                                new FlujoDelDistributivo
+                                                                        .RechazoEnFirma(
+                                                                        rechazo.orden(),
+                                                                        rechazo.rol(),
+                                                                        rechazo.rechazadoPor(),
+                                                                        rechazo.rechazadoEn(),
+                                                                        rechazo.observacion()
+                                                                                .texto(),
+                                                                        transicion.version(),
+                                                                        java.util.OptionalInt
+                                                                                .empty()))));
     }
 
     // Enviado: con su transición registrada. Pendiente de confirmar: Generación lo marcó y la

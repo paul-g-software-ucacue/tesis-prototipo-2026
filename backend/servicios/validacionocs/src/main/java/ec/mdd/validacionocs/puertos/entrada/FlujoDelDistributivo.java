@@ -87,9 +87,17 @@ public record FlujoDelDistributivo(
      * @param por quién rechazó
      * @param en cuándo
      * @param observacion qué hay que corregir
+     * @param versionAnulada la versión rechazada, que quedó anulada (F12-H04)
+     * @param versionNueva la versión creada por el rechazo, si ya existe
      */
     public record RechazoEnFirma(
-            int orden, String rol, String por, Instant en, String observacion) {}
+            int orden,
+            String rol,
+            String por,
+            Instant en,
+            String observacion,
+            int versionAnulada,
+            java.util.OptionalInt versionNueva) {}
 
     /**
      * El envío de un parcial.
