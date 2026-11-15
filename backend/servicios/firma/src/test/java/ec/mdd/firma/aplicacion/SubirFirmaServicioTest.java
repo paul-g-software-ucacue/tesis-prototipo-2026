@@ -32,8 +32,10 @@ import ec.mdd.firma.dominio.Resultado;
 import ec.mdd.firma.dominio.ResultadoDeComprobacion;
 import ec.mdd.firma.dominio.ResultadoValidacion;
 import ec.mdd.firma.dominio.SinTurnoDeFirma;
+import ec.mdd.firma.puertos.entrada.CadenaDeFirmasCompleta;
 import ec.mdd.firma.puertos.entrada.Solicitante;
 import ec.mdd.firma.puertos.salida.AlmacenDeDocumentos;
+import ec.mdd.firma.puertos.salida.AvisoDeCadenaCompleta;
 import ec.mdd.firma.puertos.salida.IdentificacionDeUsuarios;
 import ec.mdd.firma.puertos.salida.RegistroDeCambios;
 import ec.mdd.firma.puertos.salida.RegistroDeCambios.CambioDeFirma;
@@ -85,6 +87,7 @@ class SubirFirmaServicioTest {
     private final ValidadorDeFirmas validador = mock(ValidadorDeFirmas.class);
     private final RegistroDeCambios registro = mock(RegistroDeCambios.class);
     private final TransaccionDePrueba transaccion = new TransaccionDePrueba();
+    private final AvisoDeCadenaCompleta aviso = mock(AvisoDeCadenaCompleta.class);
 
     private final SubirFirmaServicio servicio =
             new SubirFirmaServicio(
@@ -94,6 +97,7 @@ class SubirFirmaServicioTest {
                     validador,
                     registro,
                     transaccion,
+                    aviso,
                     Clock.fixed(AHORA, ZoneOffset.UTC));
 
     private final DocumentoFirmable documento =
@@ -437,6 +441,68 @@ class SubirFirmaServicioTest {
                 .extracting(ResultadoDeComprobacion::resultado)
                 .last()
                 .isEqualTo(Resultado.RECHAZADA);
+    }
+
+    // --- F14-H03, US2: la última firma completa la cadena.
+
+    @Test
+    void
+            dadaLaTerceraFirmaAceptada_cuandoSeRegistra_entoncesAvisaQueLaCadenaEstaCompletaEnLaTransaccion() {
+        FirmaRegistrada primera = new FirmaRegistrada(1, "c".repeat(64), 10, "docente.demo", AHORA);
+        FirmaRegistrada segunda =
+                new FirmaRegistrada(
+                        2, sha256(VIGENTE), VIGENTE.length, "vicerrectorado.demo", AHORA);
+        when(documentos.firmas(documento.id())).thenReturn(Optional.of(firmas(primera, segunda)));
+        when(almacen.leer("documentos/" + sha256(VIGENTE) + ".pdf")).thenReturn(VIGENTE.clone());
+        when(identificaciones.de("rectorado.demo")).thenReturn(Optional.of("0109990010"));
+        when(validador.validar(any(), any()))
+                .thenReturn(aprobados(de("PERALTA MALDONADO JUAN ANDRES")));
+        when(documentos.registrarValidacion(any(), any())).thenReturn(true);
+        org.mockito.Mockito.doAnswer(
+                        invocacion -> {
+                            assertThat(transaccion.dentro).isTrue();
+                            return null;
+                        })
+                .when(aviso)
+                .avisar(any());
+
+        servicio.subir(
+                documento.id(), FIRMADO, new Solicitante("rectorado.demo", Set.of("RECTOR")));
+
+        verify(aviso).avisar(new CadenaDeFirmasCompleta("2026-I", 1, AHORA));
+    }
+
+    @Test
+    void dadaLaPrimeraFirmaAceptada_cuandoSeRegistra_entoncesNoAvisa() {
+        enF1();
+        when(validador.validar(any(), any())).thenReturn(aprobados());
+        when(documentos.registrarValidacion(any(), any())).thenReturn(true);
+
+        servicio.subir(documento.id(), FIRMADO, DESIGNADO);
+
+        verifyNoInteractions(aviso);
+    }
+
+    @Test
+    void dadaLaTerceraFirmaRechazada_cuandoSeRegistra_entoncesNoAvisa() {
+        FirmaRegistrada primera = new FirmaRegistrada(1, "c".repeat(64), 10, "docente.demo", AHORA);
+        FirmaRegistrada segunda =
+                new FirmaRegistrada(
+                        2, sha256(VIGENTE), VIGENTE.length, "vicerrectorado.demo", AHORA);
+        when(documentos.firmas(documento.id())).thenReturn(Optional.of(firmas(primera, segunda)));
+        when(almacen.leer("documentos/" + sha256(VIGENTE) + ".pdf")).thenReturn(VIGENTE.clone());
+        when(identificaciones.de("rectorado.demo")).thenReturn(Optional.of("0109990010"));
+        when(validador.validar(any(), any())).thenReturn(aprobados(de("Otra Persona")));
+        when(documentos.registrarValidacion(any(), any())).thenReturn(true);
+
+        assertThatThrownBy(
+                        () ->
+                                servicio.subir(
+                                        documento.id(),
+                                        FIRMADO,
+                                        new Solicitante("rectorado.demo", Set.of("RECTOR"))))
+                .isInstanceOf(ArchivoFirmadoRechazado.FirmanteEquivocado.class);
+        verifyNoInteractions(aviso);
     }
 
     // --- US4: quien no está en turno.

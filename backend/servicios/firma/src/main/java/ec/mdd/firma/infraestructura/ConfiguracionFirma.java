@@ -164,6 +164,9 @@ public class ConfiguracionFirma {
                 validadorDeFirmas,
                 registroDeCambiosFirma,
                 transaccionFirma,
+                aviso -> {
+                    throw new UnsupportedOperationException("T012");
+                },
                 Clock.systemUTC());
     }
 }

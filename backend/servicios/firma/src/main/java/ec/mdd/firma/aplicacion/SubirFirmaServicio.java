@@ -17,6 +17,7 @@ import ec.mdd.firma.dominio.ResultadoValidacion;
 import ec.mdd.firma.puertos.entrada.Solicitante;
 import ec.mdd.firma.puertos.entrada.SubirFirma;
 import ec.mdd.firma.puertos.salida.AlmacenDeDocumentos;
+import ec.mdd.firma.puertos.salida.AvisoDeCadenaCompleta;
 import ec.mdd.firma.puertos.salida.IdentificacionDeUsuarios;
 import ec.mdd.firma.puertos.salida.RegistroDeCambios;
 import ec.mdd.firma.puertos.salida.RegistroDeCambios.CambioDeFirma;
@@ -81,6 +82,7 @@ public final class SubirFirmaServicio implements SubirFirma {
             ValidadorDeFirmas validador,
             RegistroDeCambios registro,
             Transaccion transaccion,
+            AvisoDeCadenaCompleta aviso,
             Clock reloj) {
         this.enTurno = new FirmanteEnTurno(documentos, almacen, identificaciones);
         this.documentos = documentos;
