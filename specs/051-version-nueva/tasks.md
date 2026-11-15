@@ -77,7 +77,7 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
 
   **Resultado (2026-11-15):** la prueba nueva se vio fallar por el `check` y pasa con V6.
 - [X] T006 [P] El tipo del motivo en la interfaz publicada de Generación: `GEN/main/.../puertos/entrada/MotivoDeVersion.java` (`RECHAZO_EN_FIRMA`), no en el dominio, porque lo usa Aprobación (principio V, análisis C2). Sin regla propia: no lleva prueba.
-- [ ] T007 [P] El dominio de Aprobación. Ver fallar primero en `OCS/test/.../dominio/ProcesoAprobacionTest.java`:
+- [X] T007 [P] El dominio de Aprobación. Ver fallar primero en `OCS/test/.../dominio/ProcesoAprobacionTest.java`:
   - `registrarVersionNueva` después del `RECHAZO_EN_FIRMA` de esa versión: una transición `VERSION_NUEVA` por `sistema`, de EN_REVISION_VRA a EN_REVISION_VRA, con la versión nueva y su hash;
   - repetida, sin rechazo antes, o con otra versión anulada: vacía;
   - después, `rechazoPendiente()` vacío, `acciones` con APROBAR_CONTENIDO y `validarAprobacion` sin `RequiereVersionNueva`;
@@ -85,6 +85,8 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
   - un segundo rechazo, sobre la versión 2 aprobada: vuelve a EN_REVISION_VRA, `registrarVersionNueva(2, 3, …)` y `rechazoVigente()` es el segundo.
 
   Luego, `TipoDeTransicion.VERSION_NUEVA` y los dos métodos.
+
+  **Resultado (2026-11-15):** 7 pruebas nuevas en `ProcesoAprobacionTest`, también la de la revisión desactivada. Fallaron 6 contra el esqueleto; la de «sin rechazo de esa versión» pasaba porque el esqueleto no hacía nada. Pasan con la implementación, y las 95 de Validación OCS siguen en verde. `registrarVersionNueva` exige que el rechazo de `anulada` sea la última transición: así la idempotencia sale de la regla de D-105.
 - [ ] T008 [P] El dominio de Firma. Ver fallar primero en `FIR/test/.../dominio/FirmasDelDocumentoTest.java`: con anulación, `pasoEnTurno()` vacío y nadie en turno; los constructores de antes, sin anulación. Luego, `AnulacionDeFirmas` y `FirmasDelDocumento.anulacion`.
 
 **Checkpoint**: los contratos, las migraciones y el dominio están; ninguna operación nueva funciona todavía.

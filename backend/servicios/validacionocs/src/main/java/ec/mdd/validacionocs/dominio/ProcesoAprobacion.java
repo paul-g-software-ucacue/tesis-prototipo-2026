@@ -601,13 +601,64 @@ public final class ProcesoAprobacion {
 
     /**
      * El rechazo en firma por el que volvió el distributivo, mientras sea la última transición
-     * (F14-H04). La versión nueva de F12-H04 agregará otra transición y lo dejará atrás.
+     * (F14-H04). La versión nueva de F12-H04 agrega otra transición y lo deja atrás.
      */
     public Optional<Transicion> rechazoPendiente() {
         return transiciones.isEmpty()
                 ? Optional.empty()
                 : Optional.of(transiciones.getLast())
                         .filter(una -> una.tipo() == TipoDeTransicion.RECHAZO_EN_FIRMA);
+    }
+
+    /**
+     * Generación anuló la versión rechazada en firma y creó la siguiente (F12-H04, D-106): queda la
+     * transición {@code VERSION_NUEVA}, de la etapa a la que volvió el distributivo a la misma, por
+     * {@value #SISTEMA}. Con ella el rechazo deja de estar pendiente y se puede aprobar otra vez,
+     * sin cambiar la regla de D-105. Solo corresponde justo después del rechazo de {@code
+     * anulada}: un reintento, un rechazo de otra versión o ninguno no hacen nada.
+     *
+     * @param anulada la versión rechazada en firma
+     * @param nueva la versión que creó Generación
+     * @param hash el hash del distributivo de la versión nueva
+     * @param ahora cuándo se registra
+     * @return la transición nueva, o vacío si no corresponde
+     */
+    public List<Transicion> registrarVersionNueva(
+            int anulada, int nueva, String hash, Instant ahora) {
+        if (rechazoPendiente().filter(una -> una.version() == anulada).isEmpty()) {
+            return List.of();
+        }
+        Transicion version =
+                new Transicion(
+                        TipoDeTransicion.VERSION_NUEVA,
+                        estado,
+                        estado,
+                        Optional.empty(),
+                        nueva,
+                        hash,
+                        SISTEMA,
+                        ahora);
+        transiciones.add(version);
+        return List.of(version);
+    }
+
+    /**
+     * El rechazo en firma de la versión vigente (F12-H04): el último, si no hubo una congelación
+     * después. A diferencia de {@link #rechazoPendiente}, sigue presente con la versión nueva, para
+     * que el Vicerrector vea por qué se anuló la anterior, hasta que la apruebe.
+     */
+    public Optional<Transicion> rechazoVigente() {
+        for (int i = transiciones.size() - 1; i >= 0; i--) {
+            Transicion una = transiciones.get(i);
+            if (una.tipo() == TipoDeTransicion.RECHAZO_EN_FIRMA) {
+                return Optional.of(una);
+            }
+            if (una.tipo() == TipoDeTransicion.PASO_DE_ETAPA
+                    && una.hacia() == TipoDeEtapa.CONGELADO_EN_FIRMA) {
+                return Optional.empty();
+            }
+        }
+        return Optional.empty();
     }
 
     /**

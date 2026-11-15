@@ -1250,4 +1250,125 @@ class ProcesoAprobacionTest {
         assertThat(enFirma().rechazoPendiente()).isEmpty();
         assertThat(enRevision(etapas(false)).rechazoPendiente()).isEmpty();
     }
+
+    // La versión nueva tras el rechazo en firma (F12-H04, D-106).
+
+    private static final String HASH_NUEVA = "e".repeat(64);
+    private static final Instant NUEVA = RECHAZADA.plusSeconds(1);
+
+    private static ProcesoAprobacion rechazado() {
+        ProcesoAprobacion proceso = enFirma();
+        proceso.rechazarEnFirma(2, RECHAZO, RECHAZADA);
+        return proceso;
+    }
+
+    @Test
+    void dadoUnRechazoEnFirma_cuandoSeRegistraLaVersionNueva_entoncesQuedaSuTransicionPorElSistema() {
+        ProcesoAprobacion proceso = rechazado();
+
+        List<Transicion> nuevas = proceso.registrarVersionNueva(2, 3, HASH_NUEVA, NUEVA);
+
+        assertThat(nuevas)
+                .containsExactly(
+                        new Transicion(
+                                TipoDeTransicion.VERSION_NUEVA,
+                                TipoDeEtapa.EN_REVISION_VRA,
+                                TipoDeEtapa.EN_REVISION_VRA,
+                                Optional.empty(),
+                                3,
+                                HASH_NUEVA,
+                                "sistema",
+                                NUEVA));
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_REVISION_VRA);
+        assertThat(proceso.transiciones()).hasSize(3).endsWith(nuevas.get(0));
+    }
+
+    @Test
+    void dadaLaVersionNueva_cuandoElVicerrectorAprueba_entoncesYaNoRequiereVersionNueva() {
+        ProcesoAprobacion proceso = rechazado();
+        proceso.registrarVersionNueva(2, 3, HASH_NUEVA, NUEVA);
+
+        assertThat(proceso.rechazoPendiente()).isEmpty();
+        assertThat(proceso.acciones(VICERRECTOR))
+                .containsExactly(AccionDelProceso.APROBAR_CONTENIDO);
+        proceso.validarAprobacion(VICERRECTOR);
+        List<Transicion> aprobada =
+                proceso.aprobarContenido(VICERRECTOR, 3, HASH_NUEVA, NUEVA.plusSeconds(60));
+
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.CONGELADO_EN_FIRMA);
+        assertThat(aprobada).singleElement().extracting(Transicion::version).isEqualTo(3);
+    }
+
+    @Test
+    void dadaLaVersionNuevaYaRegistrada_cuandoSeRepite_entoncesNoAgregaOtra() {
+        ProcesoAprobacion proceso = rechazado();
+        proceso.registrarVersionNueva(2, 3, HASH_NUEVA, NUEVA);
+
+        assertThat(proceso.registrarVersionNueva(2, 3, HASH_NUEVA, NUEVA.plusSeconds(5))).isEmpty();
+        assertThat(proceso.transiciones()).hasSize(3);
+    }
+
+    @Test
+    void dadoQueNoHayRechazoDeEsaVersion_cuandoSeRegistraLaVersionNueva_entoncesNoCambiaNada() {
+        ProcesoAprobacion sinRechazo = enFirma();
+        assertThat(sinRechazo.registrarVersionNueva(2, 3, HASH_NUEVA, NUEVA)).isEmpty();
+        assertThat(sinRechazo.transiciones()).hasSize(1);
+
+        ProcesoAprobacion otraVersion = rechazado();
+        assertThat(otraVersion.registrarVersionNueva(1, 2, HASH_NUEVA, NUEVA)).isEmpty();
+        assertThat(otraVersion.transiciones()).hasSize(2);
+    }
+
+    @Test
+    void dadaLaRevisionDesactivada_cuandoSeRegistraLaVersionNueva_entoncesQuedaEnLaEtapaALaQueVolvio() {
+        ProcesoAprobacion proceso = enConsolidacion(sinRevision());
+        revisar(proceso, LISTO);
+        proceso.rechazarEnFirma(2, RECHAZO, RECHAZADA);
+
+        List<Transicion> nuevas = proceso.registrarVersionNueva(2, 3, HASH_NUEVA, NUEVA);
+
+        assertThat(nuevas)
+                .singleElement()
+                .satisfies(
+                        una -> {
+                            assertThat(una.desde()).isEqualTo(TipoDeEtapa.EN_CONSOLIDACION);
+                            assertThat(una.hacia()).isEqualTo(TipoDeEtapa.EN_CONSOLIDACION);
+                        });
+        proceso.validarRevision(RESPONSABLE);
+    }
+
+    @Test
+    void dadoUnRechazo_cuandoSePideElRechazoVigente_entoncesEstaHastaLaCongelacionSiguiente() {
+        ProcesoAprobacion proceso = enFirma();
+        assertThat(proceso.rechazoVigente()).isEmpty();
+
+        proceso.rechazarEnFirma(2, RECHAZO, RECHAZADA);
+        Transicion rechazo = proceso.transiciones().getLast();
+        assertThat(proceso.rechazoVigente()).contains(rechazo);
+
+        proceso.registrarVersionNueva(2, 3, HASH_NUEVA, NUEVA);
+        assertThat(proceso.rechazoVigente()).contains(rechazo);
+
+        proceso.aprobarContenido(VICERRECTOR, 3, HASH_NUEVA, NUEVA.plusSeconds(60));
+        assertThat(proceso.rechazoVigente()).isEmpty();
+    }
+
+    @Test
+    void dadaLaVersionNuevaAprobada_cuandoSeRechazaOtraVez_entoncesHayOtraVersionNueva() {
+        ProcesoAprobacion proceso = rechazado();
+        proceso.registrarVersionNueva(2, 3, HASH_NUEVA, NUEVA);
+        proceso.aprobarContenido(VICERRECTOR, 3, HASH_NUEVA, NUEVA.plusSeconds(60));
+        Instant otraVez = NUEVA.plusSeconds(120);
+
+        assertThat(proceso.rechazarEnFirma(3, RECHAZO, otraVez)).hasSize(1);
+        Transicion segundo = proceso.transiciones().getLast();
+        assertThat(proceso.registrarVersionNueva(3, 4, "f".repeat(64), otraVez))
+                .singleElement()
+                .extracting(Transicion::version)
+                .isEqualTo(4);
+
+        assertThat(proceso.rechazoVigente()).contains(segundo);
+        assertThat(proceso.acciones(VICERRECTOR))
+                .containsExactly(AccionDelProceso.APROBAR_CONTENIDO);
+    }
 }
