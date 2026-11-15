@@ -92,7 +92,10 @@ class ResultadoValidacionTest {
                         org.assertj.core.groups.Tuple.tuple(MISMO_DOCUMENTO, Resultado.RECHAZADA),
                         org.assertj.core.groups.Tuple.tuple(UNA_FIRMA_NUEVA, Resultado.NO_EVALUADA),
                         org.assertj.core.groups.Tuple.tuple(INTEGRIDAD, Resultado.NO_EVALUADA),
-                        org.assertj.core.groups.Tuple.tuple(CONFIANZA, Resultado.NO_EVALUADA));
+                        org.assertj.core.groups.Tuple.tuple(CONFIANZA, Resultado.NO_EVALUADA),
+                        org.assertj.core.groups.Tuple.tuple(VIGENCIA, Resultado.NO_EVALUADA),
+                        org.assertj.core.groups.Tuple.tuple(ORDEN, Resultado.NO_EVALUADA),
+                        org.assertj.core.groups.Tuple.tuple(FIRMANTE, Resultado.NO_EVALUADA));
         assertThat(resultado.primerRechazo()).contains(MISMO_DOCUMENTO);
     }
 

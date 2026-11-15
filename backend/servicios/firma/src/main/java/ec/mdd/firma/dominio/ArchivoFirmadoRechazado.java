@@ -47,7 +47,9 @@ public abstract sealed class ArchivoFirmadoRechazado extends RuntimeException
             case UNA_FIRMA_NUEVA -> new SinUnaFirmaNueva(resultado);
             case INTEGRIDAD -> new NoIntegra(resultado);
             case CONFIANZA -> new SinConfianza(resultado);
-            case VIGENCIA, ORDEN, FIRMANTE -> throw new UnsupportedOperationException("T006");
+            case VIGENCIA -> new NoVigente(resultado);
+            case ORDEN -> new FueraDeOrden(resultado);
+            case FIRMANTE -> new FirmanteEquivocado(resultado);
         };
     }
 
@@ -92,7 +94,7 @@ public abstract sealed class ArchivoFirmadoRechazado extends RuntimeException
         }
     }
 
-    /** Esqueleto (F14-H03, T006). */
+    /** El certificado no está vigente al subir ({@code FIRMA_CERTIFICADO_NO_VIGENTE}). */
     public static final class NoVigente extends ArchivoFirmadoRechazado {
         @Serial private static final long serialVersionUID = 1L;
 
@@ -101,7 +103,7 @@ public abstract sealed class ArchivoFirmadoRechazado extends RuntimeException
         }
     }
 
-    /** Esqueleto (F14-H03, T006). */
+    /** La firma es de la persona de un paso posterior ({@code FIRMA_FUERA_DE_ORDEN}). */
     public static final class FueraDeOrden extends ArchivoFirmadoRechazado {
         @Serial private static final long serialVersionUID = 1L;
 
@@ -110,7 +112,7 @@ public abstract sealed class ArchivoFirmadoRechazado extends RuntimeException
         }
     }
 
-    /** Esqueleto (F14-H03, T006). */
+    /** El CN no es el nombre impreso del paso en turno ({@code FIRMA_FIRMANTE_EQUIVOCADO}). */
     public static final class FirmanteEquivocado extends ArchivoFirmadoRechazado {
         @Serial private static final long serialVersionUID = 1L;
 
