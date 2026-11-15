@@ -176,6 +176,13 @@ class EtapaDelConsolidadoIntegrationTest {
 
     private static Distributivo generacion() {
         return new Distributivo() {
+            // F12-H04: estas pruebas no rechazan en firma.
+            @Override
+            public java.util.Optional<VersionNuevaEnAprobacion> crearVersionNueva(
+                    String periodo, int anulada, java.time.Instant momento) {
+                return java.util.Optional.empty();
+            }
+
             @Override
             public Optional<DistributivoActual> actual(String periodo) {
                 return Optional.ofNullable(ENVIADOS.get(periodo))

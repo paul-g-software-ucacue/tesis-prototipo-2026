@@ -6,9 +6,9 @@ import java.util.Objects;
 
 /**
  * Avisa que el distributivo entró en CONGELADO_EN_FIRMA, en la transacción que registra el paso
- * (F13-H02, D-101). Después de confirmar, Aprobación le entrega la cadena a Firma (MD-05). Desde
- * F12-H04, también la orden de anular las firmas de una versión rechazada (D-106).
+ * (F13-H02, D-101). Después de confirmar, Aprobación le entrega la cadena a Firma (MD-05).
  */
+@FunctionalInterface
 public interface AvisoDeFirma {
 
     /**
@@ -17,32 +17,6 @@ public interface AvisoDeFirma {
      * @param aviso la versión, su hash, la cadena y el rol de la etapa
      */
     void avisar(DistributivoEnFirma aviso);
-
-    /**
-     * Guarda la orden de anular las firmas en la transacción en curso: si la transacción no
-     * confirma, no sale (F12-H04, D-106).
-     *
-     * @param aviso el periodo, la versión rechazada y cuándo
-     */
-    void avisarAnulacion(FirmasPorAnular aviso);
-
-    /**
-     * La versión firmada se reemplazó por un rechazo en firma: hay que anular las firmas de su
-     * documento (F12-H04, D-106). El motivo es el rechazo en firma, el único que Aprobación ordena
-     * hoy.
-     *
-     * @param periodo el código del periodo
-     * @param version la versión rechazada
-     * @param momento cuándo se rechazó
-     */
-    record FirmasPorAnular(String periodo, int version, Instant momento) {
-
-        /** Exige los datos. */
-        public FirmasPorAnular {
-            Objects.requireNonNull(periodo, "periodo");
-            Objects.requireNonNull(momento, "momento");
-        }
-    }
 
     /**
      * El distributivo pasó a CONGELADO_EN_FIRMA con su versión congelada.

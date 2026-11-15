@@ -240,6 +240,57 @@ class RepositorioProcesoIntegrationTest {
         assertThat(leido.rechazoPendiente()).isPresent();
     }
 
+    // F12-H04: el rechazo y la versión nueva se guardan juntos y se leen en orden.
+    @Test
+    void dadoUnRechazoConSuVersionNueva_cuandoSeGuardan_entoncesSeLeenYYaNoHayRechazoPendiente() {
+        String periodo = periodo();
+        repositorio.crear(
+                ProcesoAprobacion.de(
+                        periodo,
+                        etapas(),
+                        TipoDeEtapa.EN_REVISION_VRA,
+                        CREADO,
+                        java.util.Map.of("DS", EstadoDeEnvio.ENVIADO),
+                        List.of()),
+                AHORA);
+        ProcesoAprobacion proceso = repositorio.de(periodo).orElseThrow();
+        repositorio.guardar(
+                proceso,
+                proceso.aprobarContenido(
+                        new Solicitante(
+                                "vicerrectorado.demo", Set.of("VICERRECTOR"), Optional.empty()),
+                        1,
+                        HASH,
+                        AHORA));
+        RechazoDelFirmante rechazo =
+                new RechazoDelFirmante(
+                        2,
+                        "VICERRECTOR",
+                        "vicerrectorado.demo",
+                        AHORA.plusSeconds(60),
+                        new Observacion("Falta la carga de un docente de Software."));
+        ProcesoAprobacion enFirma = repositorio.de(periodo).orElseThrow();
+        List<ec.mdd.validacionocs.dominio.Transicion> nuevas =
+                new java.util.ArrayList<>(
+                        enFirma.rechazarEnFirma(1, rechazo, AHORA.plusSeconds(61)));
+        nuevas.addAll(enFirma.registrarVersionNueva(1, 2, "e".repeat(64), AHORA.plusSeconds(61)));
+
+        repositorio.guardar(enFirma, nuevas);
+
+        ProcesoAprobacion leido = repositorio.de(periodo).orElseThrow();
+        assertThat(leido.estado()).isEqualTo(TipoDeEtapa.EN_REVISION_VRA);
+        assertThat(leido.transiciones())
+                .extracting(ec.mdd.validacionocs.dominio.Transicion::tipo)
+                .containsExactly(
+                        TipoDeTransicion.PASO_DE_ETAPA,
+                        TipoDeTransicion.RECHAZO_EN_FIRMA,
+                        TipoDeTransicion.VERSION_NUEVA);
+        assertThat(leido.transiciones().getLast().version()).isEqualTo(2);
+        assertThat(leido.transiciones().getLast().quien()).isEqualTo("sistema");
+        assertThat(leido.rechazoPendiente()).isEmpty();
+        assertThat(leido.rechazoVigente()).contains(leido.transiciones().get(1));
+    }
+
     private static void esperar(CountDownLatch salida) {
         try {
             salida.await();

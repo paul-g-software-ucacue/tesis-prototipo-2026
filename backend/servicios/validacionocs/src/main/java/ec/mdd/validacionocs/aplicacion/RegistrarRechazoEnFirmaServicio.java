@@ -4,8 +4,8 @@ import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
 import ec.mdd.validacionocs.dominio.RechazoDelFirmante;
 import ec.mdd.validacionocs.dominio.Transicion;
 import ec.mdd.validacionocs.puertos.entrada.RegistrarRechazoEnFirma;
-import ec.mdd.validacionocs.puertos.salida.AvisoDeFirma;
-import ec.mdd.validacionocs.puertos.salida.AvisoDeFirma.FirmasPorAnular;
+import ec.mdd.validacionocs.puertos.salida.AvisoDeAnulacion;
+import ec.mdd.validacionocs.puertos.salida.AvisoDeAnulacion.FirmasPorAnular;
 import ec.mdd.validacionocs.puertos.salida.Distributivo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo.VersionNuevaEnAprobacion;
 import ec.mdd.validacionocs.puertos.salida.RegistroDeCambios;
@@ -43,7 +43,7 @@ public final class RegistrarRechazoEnFirmaServicio implements RegistrarRechazoEn
 
     private final RepositorioProceso procesos;
     private final Distributivo distributivo;
-    private final AvisoDeFirma aviso;
+    private final AvisoDeAnulacion aviso;
     private final RegistroDeCambios registro;
     private final Transaccion transaccion;
 
@@ -57,7 +57,7 @@ public final class RegistrarRechazoEnFirmaServicio implements RegistrarRechazoEn
     public RegistrarRechazoEnFirmaServicio(
             RepositorioProceso procesos,
             Distributivo distributivo,
-            AvisoDeFirma aviso,
+            AvisoDeAnulacion aviso,
             RegistroDeCambios registro,
             Transaccion transaccion) {
         this.procesos = procesos;
@@ -118,8 +118,7 @@ public final class RegistrarRechazoEnFirmaServicio implements RegistrarRechazoEn
                                     registro.registrar(
                                             FlujoDelDistributivoServicio.cambio(
                                                     periodo, una, Optional.empty())));
-                    aviso.avisarAnulacion(
-                            new FirmasPorAnular(periodo, version, rechazo.rechazadoEn()));
+                    aviso.avisar(new FirmasPorAnular(periodo, version, rechazo.rechazadoEn()));
                     return null;
                 });
     }

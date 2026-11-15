@@ -14,7 +14,6 @@ import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
 import ec.mdd.validacionocs.dominio.RechazoDelFirmante;
 import ec.mdd.validacionocs.dominio.Transicion;
 import ec.mdd.validacionocs.puertos.entrada.SinDistributivo;
-import ec.mdd.validacionocs.puertos.salida.AvisoDeFirma;
 import ec.mdd.validacionocs.puertos.salida.DatosDelPeriodo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo;
 import ec.mdd.validacionocs.puertos.salida.RepositorioConfiguracion;
@@ -133,13 +132,7 @@ final class FlujoEnMemoria {
                     }
                 },
                 Clock.fixed(AHORA, ZoneOffset.UTC),
-                new AvisoDeFirma() {
-                    @Override
-                    public void avisar(AvisoDeFirma.DistributivoEnFirma aviso) {}
-
-                    @Override
-                    public void avisarAnulacion(AvisoDeFirma.FirmasPorAnular aviso) {}
-                });
+                aviso -> {});
     }
 
     private Distributivo distributivo() {

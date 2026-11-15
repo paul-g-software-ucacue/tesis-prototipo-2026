@@ -14,8 +14,8 @@ import ec.mdd.validacionocs.dominio.RechazoDelFirmante;
 import ec.mdd.validacionocs.dominio.TipoDeEtapa;
 import ec.mdd.validacionocs.dominio.TipoDeTransicion;
 import ec.mdd.validacionocs.dominio.Transicion;
-import ec.mdd.validacionocs.puertos.salida.AvisoDeFirma;
-import ec.mdd.validacionocs.puertos.salida.AvisoDeFirma.FirmasPorAnular;
+import ec.mdd.validacionocs.puertos.salida.AvisoDeAnulacion;
+import ec.mdd.validacionocs.puertos.salida.AvisoDeAnulacion.FirmasPorAnular;
 import ec.mdd.validacionocs.puertos.salida.CambioDeFlujo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo.VersionNuevaEnAprobacion;
@@ -72,7 +72,7 @@ class RegistrarRechazoEnFirmaServicioTest {
     private final RepositorioProceso procesos = mock(RepositorioProceso.class);
     private final RegistroDeCambios registro = mock(RegistroDeCambios.class);
     private final Distributivo distributivo = mock(Distributivo.class);
-    private final AvisoDeFirma aviso = mock(AvisoDeFirma.class);
+    private final AvisoDeAnulacion aviso = mock(AvisoDeAnulacion.class);
     private final ProcesoAprobacion leido = mock(ProcesoAprobacion.class);
     private final ProcesoAprobacion proceso = mock(ProcesoAprobacion.class);
     private boolean dentro;
@@ -119,12 +119,12 @@ class RegistrarRechazoEnFirmaServicioTest {
                             return null;
                         })
                 .when(aviso)
-                .avisarAnulacion(any(FirmasPorAnular.class));
+                .avisar(any(FirmasPorAnular.class));
 
         servicio.registrar("2026-I", 1, RECHAZO);
 
         verify(procesos).guardar(proceso, List.of(A_REVISION, VERSION_NUEVA));
-        verify(aviso).avisarAnulacion(new FirmasPorAnular("2026-I", 1, RECHAZADA));
+        verify(aviso).avisar(new FirmasPorAnular("2026-I", 1, RECHAZADA));
         ArgumentCaptor<CambioDeFlujo> cambio = ArgumentCaptor.forClass(CambioDeFlujo.class);
         verify(registro, org.mockito.Mockito.times(2)).registrar(cambio.capture());
         CambioDeFlujo rechazo = cambio.getAllValues().get(0);
@@ -163,7 +163,7 @@ class RegistrarRechazoEnFirmaServicioTest {
                 .crearVersionNueva(any(), org.mockito.ArgumentMatchers.anyInt(), any());
         verify(procesos, never()).bloquear(any());
         verify(registro, never()).registrar(any());
-        verify(aviso, never()).avisarAnulacion(any(FirmasPorAnular.class));
+        verify(aviso, never()).avisar(any(FirmasPorAnular.class));
     }
 
     @Test
@@ -176,7 +176,7 @@ class RegistrarRechazoEnFirmaServicioTest {
 
         verify(procesos, never()).bloquear(any());
         verify(registro, never()).registrar(any());
-        verify(aviso, never()).avisarAnulacion(any(FirmasPorAnular.class));
+        verify(aviso, never()).avisar(any(FirmasPorAnular.class));
     }
 
     @Test
@@ -192,7 +192,7 @@ class RegistrarRechazoEnFirmaServicioTest {
 
         verify(procesos, never()).guardar(any(), anyList());
         verify(registro, never()).registrar(any());
-        verify(aviso, never()).avisarAnulacion(any(FirmasPorAnular.class));
+        verify(aviso, never()).avisar(any(FirmasPorAnular.class));
     }
 
     @Test
