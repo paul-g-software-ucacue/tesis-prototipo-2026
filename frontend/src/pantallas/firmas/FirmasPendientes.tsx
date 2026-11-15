@@ -141,7 +141,7 @@ function RechazoRegistrado({
     <Alert severity="info" role="status" aria-labelledby={titulo} onClose={alCerrar} sx={{ my: 2 }}>
       <AlertTitle id={titulo}>Rechazo registrado</AlertTitle>
       <Typography variant="body2">
-        {`${rechazo.rotulo}, ${rechazo.periodo}, versión ${String(rechazo.version)}: el documento vuelve a la revisión del Vicerrectorado con tu observación.`}
+        {`${rechazo.periodo}, versión ${String(rechazo.version)} (paso «${rechazo.rotulo}»): el documento vuelve a la revisión del Vicerrectorado con tu observación.`}
       </Typography>
       <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
         {rechazo.observacion}

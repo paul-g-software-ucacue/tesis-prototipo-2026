@@ -329,6 +329,11 @@ describe('Pendientes de firma', () => {
       const confirmar = within(dialogo).getByRole('button', { name: 'Rechazar en firma' });
 
       expect(confirmar).toBeDisabled();
+      expect(
+        within(dialogo).getByText(
+          /^2026-I, versión 1 \(paso «Elaborado por»\)\. El documento no se firma/,
+        ),
+      ).toBeVisible();
       await userEvent.type(within(dialogo).getByLabelText(/Observación/), '  corta   ');
 
       expect(confirmar).toBeDisabled();
@@ -345,7 +350,11 @@ describe('Pendientes de firma', () => {
       await userEvent.click(within(dialogo).getByRole('button', { name: 'Rechazar en firma' }));
 
       const aviso = await screen.findByRole('status', { name: /Rechazo registrado/ });
-      expect(within(aviso).getByText(/Elaborado por/)).toBeVisible();
+      expect(
+        within(aviso).getByText(
+          '2026-I, versión 1 (paso «Elaborado por»): el documento vuelve a la revisión del Vicerrectorado con tu observación.',
+        ),
+      ).toBeVisible();
       expect(within(aviso).getByText(OBSERVACION)).toBeVisible();
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
       expect(await screen.findByText('No tienes firmas pendientes.')).toBeVisible();

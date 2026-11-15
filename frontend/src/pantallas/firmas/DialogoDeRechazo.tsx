@@ -66,7 +66,7 @@ export function DialogoDeRechazo({
       <DialogTitle id="titulo-rechazar">Rechazar en firma</DialogTitle>
       <DialogContent>
         <Typography variant="body2" sx={{ mb: 2 }}>
-          {`${pendiente.rotulo}, ${pendiente.periodo}, versión ${String(pendiente.version)}. El documento no se firma y vuelve a la revisión del Vicerrectorado con tu observación. Las firmas ya hechas se conservan.`}
+          {`${pendiente.periodo}, versión ${String(pendiente.version)} (paso «${pendiente.rotulo}»). El documento no se firma y vuelve a la revisión del Vicerrectorado con tu observación. Las firmas ya hechas se conservan.`}
         </Typography>
         {aviso && <AvisoDeError mensaje={aviso} />}
         <TextField

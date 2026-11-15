@@ -20,6 +20,7 @@ import { Link as RouterLink } from 'react-router';
 import { AvisoDeError } from '../../errores/AvisoDeError';
 import { traducirError, type MensajeDeError } from '../../errores/traducir';
 import { useTitulo } from '../../navegacion/useTitulo';
+import { AvisoDeVersionCongelada } from '../comun/AvisoDeVersionCongelada';
 import { EstadoDelFlujoDelPeriodo } from '../comun/EstadoDelFlujo';
 import { ESCRITURA_DEL_PANEL } from '../../sesion/funcionalidades';
 import { tieneAlguno } from '../../sesion/permisos';
@@ -301,9 +302,7 @@ export function Consolidado() {
         <>
           {/* F13-H01: el aviso de la versión congelada reemplaza al de la revisión (#215). */}
           {datos.versionCongelada ? (
-            <Alert severity="info" role="status" sx={{ my: 2 }}>
-              {`La versión ${String(datos.version ?? '')} está congelada para la firma: ya no cambia.`}
-            </Alert>
+            <AvisoDeVersionCongelada periodo={periodo} version={datos.version} />
           ) : (
             datos.enRevision && (
               <Alert severity="info" role="status" sx={{ my: 2 }}>

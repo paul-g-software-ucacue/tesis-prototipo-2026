@@ -9,6 +9,7 @@
   - con 400 del servidor, el mensaje del catálogo junto al campo;
   - con 403, el mensaje común y la lista se vuelve a pedir.
 - Con 201: el aviso «Rechazo registrado» con el paso y la observación; la lista se vuelve a pedir y la fila ya no está.
+- En «Consolidado del periodo» y en el panel de inconsistencias, con un rechazo pendiente en el flujo, el aviso de la versión congelada dice «La versión N sigue congelada: para cambiarla hace falta una versión nueva.» en lugar de «… está congelada para la firma: ya no cambia.» (corrección del recorrido a mano).
 - Teclado y lector de pantalla: el diálogo atrapa el foco, el campo tiene su etiqueta y su ayuda asociadas, y el foco vuelve al botón al cerrar. axe-core sin fallas (WCAG 2.1 AA).
 
 ## Estado del flujo (`EstadoDelFlujo.tsx`)
