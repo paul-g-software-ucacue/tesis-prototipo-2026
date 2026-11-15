@@ -171,12 +171,14 @@ description: "Tareas de F14-H03: validar firmante, turno y vigencia, y completar
 ## Phase 6: Polish & Cross-Cutting Concerns
 
 - [X] T016 La pantalla: los tres nombres en `SPA/pantallas/firmas/FirmasPendientes.tsx`, con Vitest y Playwright de siete comprobaciones, y axe-core sin fallas.
-- [ ] T017 `deploy/probar_documento_firmable.sh` según `contracts/demostracion.md`:
+- [X] T017 `deploy/probar_documento_firmable.sh` según `contracts/demostracion.md`:
   - en el paso 9, fuera de orden y vencido;
   - en el paso 11, firmante equivocado;
   - en el paso 12, las cuentas nuevas y EN_OCS en menos de 30 s.
 
   La herramienta de firma ya lee cualquier `.p12`. La limpieza: comprobar que borra la transición a EN_OCS con el proceso. shellcheck sin hallazgos.
+
+  **Resultado (2026-11-14):** 13/13 en la primera corrida sobre un perfil construido desde la rama: siete rechazos en el paso 9 (con fuera de orden y vencido), el firmante equivocado en el paso 11, y en el paso 12 el proceso en EN_OCS con su transición por `sistema` y la entrada `CADENA_DE_FIRMAS_COMPLETA`. shellcheck sin hallazgos.
 - [ ] T018 Correr todos los scripts del workflow sobre un perfil construido desde la rama. Recorrer `quickstart.md` §3 a mano con FirmaEC (autor): SC-002, SC-003 y SC-004.
 - [ ] T019 Correr completos:
   - `./gradlew build integrationTest jacocoTestReport jacocoTestCoverageVerification`;
