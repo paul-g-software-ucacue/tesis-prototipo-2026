@@ -274,7 +274,7 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
 - [X] T025 [P] Revisar el JavaDoc: los tres pasos y su reintento en `RegistrarRechazoEnFirmaServicio`; la copia y la idempotencia en `crearVersionNueva`; la anulación y por qué no toca `validacion_firma`; `rechazoVigente` frente a `rechazoPendiente`.
 
   **Resultado (2026-11-15):** ya estaban los tres pasos y el reintento (`RegistrarRechazoEnFirmaServicio`), la copia y la idempotencia (`crearVersionNueva`), y `rechazoVigente` frente a `rechazoPendiente`. Se completaron `RegistrarRechazoEnFirma` y `CierreDeLaFirma`, que solo hablaban de la vuelta a revisión, y `AnulacionDeFirmas`, que ahora explica por qué la anulación es una fila del documento y no toca `validacion_firma` (principio VII).
-- [ ] T026 Crear `specs/051-version-nueva/evidencia.md`, como la de 050.
+- [X] T026 Crear `specs/051-version-nueva/evidencia.md`, como la de 050.
 - [ ] T027 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde. Verificar la demo (`contracts/demostracion.md`, solo lectura) y abrir el PR de evidencia con `Closes #59`. F12 (#11) sigue abierta por F12-H03 (#58). Borrar las ramas solo si el autor lo pide.
 
 ---
