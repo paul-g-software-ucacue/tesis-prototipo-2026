@@ -193,7 +193,9 @@ description: "Tareas de F14-H03: validar firmante, turno y vigencia, y completar
   - SPA: tipos, ESLint y Prettier en verde; Vitest 574/574; Playwright 128/128.
 - [X] T020 Revisar el JavaDoc (principio XII): la normalización, por qué «orden» va antes que «firmante», el evento, su idempotencia y el nombre local.
 - [X] T021 Crear `specs/049-completar-cadena/evidencia.md`, como la de 048.
-- [ ] T022 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde. Verificar la demo (`quickstart.md` §4, solo lectura) y abrir el PR de evidencia con `Closes #64`. Borrar las ramas solo si el autor lo pide.
+- [X] T022 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde. Verificar la demo (`quickstart.md` §4, solo lectura) y abrir el PR de evidencia con `Closes #64`. Borrar las ramas solo si el autor lo pide.
+
+  **Resultado (2026-11-15):** PR #230 fusionado (`bf904c8`) con las 12 comprobaciones en verde. La demo, «Sano en 57 s» con `bf904c8`; `firma` en la V5, `validacion_firma` y `firmante_esperado` vacías, y `MDD_FIRMA_NOMBRE_LOCAL` sin definir en `distributivo`. Ramas conservadas.
 
 ---
 
