@@ -86,7 +86,7 @@ description: "Tareas de F14-H03: validar firmante, turno y vigencia, y completar
   - `FirmanteEsperadoTest`, con el nombre.
 
   Luego, `Comprobacion` (+3), `NombreDeFirmante`, `ComprobacionDelFirmante`, `FirmanteEsperado.nombre`, `ArchivoFirmadoRechazado` (+3) y `PasoSinNombre`. Ajustar las pruebas de F14-H02 que construyen resultados de cuatro comprobaciones.
-- [ ] T007 [P] El dominio de Aprobación. Ver fallar primero en `ProcesoAprobacionTest` `completarFirmas`:
+- [X] T007 [P] El dominio de Aprobación. Ver fallar primero en `ProcesoAprobacionTest` `completarFirmas`:
   - en CONGELADO_EN_FIRMA con esa versión: una transición a EN_OCS por `sistema`, con el hash de la versión congelada;
   - ya en EN_OCS con esa versión: vacío;
   - en otra etapa o con otra versión: vacío.
