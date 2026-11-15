@@ -21,7 +21,12 @@
 # firmas (F1, F2 y F3) se aceptan en orden, cada una sobre el vigente que deja la anterior, con su
 # resultado en la base y en la bitácora. Firma con deploy/herramientas/FirmarDePrueba.java en
 # eclipse-temurin:25-jdk, con las bibliotecas del contenedor distributivo y los certificados
-# ficticios de la CA de prueba. Si la base ya tiene alguno de esos datos, falla sin tocar nada. Al terminar, aunque un paso falle, borra lo que creó (también los archivos del volumen),
+# ficticios de la CA de prueba. Desde F14-H03 (D-104; specs/049-completar-cadena/contracts/
+# demostracion.md): los certificados ficticios tienen el CN del nombre impreso de cada paso; se
+# rechazan además la firma de la persona de F2 en el turno de F1 (fuera de orden), un certificado
+# vencido al subir y, en el turno de F2, la de la persona de F1 (firmante equivocado); con la
+# tercera firma, el distributivo pasa a EN_OCS por el sistema en menos de 30 s. Si la base ya tiene
+# alguno de esos datos, falla sin tocar nada. Al terminar, aunque un paso falle, borra lo que creó (también los archivos del volumen),
 # salvo las entradas de la bitácora, que no se pueden borrar. Termina con 0 si todos los pasos pasan
 # y con 1 si alguno falla. Nunca imprime una clave ni un token.
 #
@@ -319,7 +324,8 @@ firmador="$carpeta/firmador"
 preparar_firmador() {
     [[ -d $firmador/lib ]] && return 0
     mkdir -p "$firmador"
-    cp deploy/herramientas/FirmarDePrueba.java "$CA_PRUEBA"/firmante-[123].p12 "$firmador/"
+    cp deploy/herramientas/FirmarDePrueba.java "$CA_PRUEBA"/firmante-[123].p12 \
+        "$CA_PRUEBA"/firmante-vencido.p12 "$firmador/"
     if ! docker compose cp distributivo:/app/BOOT-INF/lib "$firmador/lib" >/dev/null 2>&1 \
         || ! compgen -G "$firmador/lib/bcpkix-*.jar" >/dev/null; then
         echo "       no se pudieron copiar PDFBox y Bouncy Castle del contenedor distributivo" >&2
@@ -328,7 +334,8 @@ preparar_firmador() {
     chmod -R a+rX "$firmador"
 }
 
-# firmar <entrada> <salida> <firmante 1|2|3> <campo|-> [--ca-ajena] [--alterar]: en $firmador.
+# firmar <entrada> <salida> <firmante 1|2|3|vencido> <campo|-> [--ca-ajena] [--alterar]
+# [--momento=<instante>]: en $firmador.
 firmar() {
     local entrada=$1 salida=$2 numero=$3 campo=$4
     shift 4
@@ -347,10 +354,10 @@ subir() {
         -F "archivo=@$1;type=application/pdf"
 }
 
-# rechazada <código>: un 422 con el código y las cuatro comprobaciones en orden en los detalles.
+# rechazada <código>: un 422 con el código y las siete comprobaciones en orden en los detalles.
 rechazada() {
     es_codigo 422 "$1" && [[ $(jq -c '[.detalles[].campo]' <<<"$cuerpo") \
-        == '["MISMO_DOCUMENTO","UNA_FIRMA_NUEVA","INTEGRIDAD","CONFIANZA"]' ]]
+        == '["MISMO_DOCUMENTO","UNA_FIRMA_NUEVA","INTEGRIDAD","CONFIANZA","VIGENCIA","ORDEN","FIRMANTE"]' ]]
 }
 
 # vigente_de <usuario>: lo descarga a $carpeta/descargado.pdf; falla si no está en turno.
@@ -394,11 +401,20 @@ rechazos() {
     firmar "$vigente" "$carpeta/ajena.pdf" 1 "$campo" --ca-ajena || return 1
     subir "$carpeta/ajena.pdf"
     rechazada FIRMA_SIN_CONFIANZA || { echo "       CA ajena: $estado" >&2; return 1; }
+    # F14-H03: la persona de F2 en el turno de F1, y un certificado vencido al subir que era
+    # vigente al firmar.
+    firmar "$vigente" "$carpeta/de-f2.pdf" 2 - || return 1
+    subir "$carpeta/de-f2.pdf"
+    rechazada FIRMA_FUERA_DE_ORDEN || { echo "       fuera de orden: $estado" >&2; return 1; }
+    firmar "$vigente" "$carpeta/vencido.pdf" vencido "$campo" --momento=2025-01-15T12:00:00Z \
+        || return 1
+    subir "$carpeta/vencido.pdf"
+    rechazada FIRMA_CERTIFICADO_NO_VIGENTE || { echo "       vencido: $estado" >&2; return 1; }
     turno_de "$DESIGNADO" 1 "Elaborado por" || return 1
     vigente_de "$DESIGNADO" || return 1
     [[ $(sha256sum "$carpeta/descargado.pdf" | cut -d' ' -f1) == "$sha" ]] || return 1
     [[ $(consultar_base "select count(*) from firma.validacion_firma where periodo = '$PERIODO'
-        and not aceptada") == 5 ]]
+        and not aceptada") == 7 ]]
 }
 
 # --- 10. Quien no está en turno sube un PDF bien firmado y recibe 403, sin dejar fila ---
@@ -410,10 +426,10 @@ fuera_de_turno() {
         subir "$carpeta/una.pdf"
         es_codigo 403 SEGURIDAD_ACCESO_NO_AUTORIZADO || { echo "       $usuario sube ($estado)" >&2; return 1; }
     done
-    [[ $(consultar_base "select count(*) from firma.validacion_firma where periodo = '$PERIODO'") == 5 ]]
+    [[ $(consultar_base "select count(*) from firma.validacion_firma where periodo = '$PERIODO'") == 7 ]]
 }
 
-# aceptada: un 201 con las cuatro comprobaciones aprobadas y el certificado.
+# aceptada: un 201 con las siete comprobaciones aprobadas y el certificado.
 aceptada() {
     [[ $estado == 201 && $(jq -r '.aceptada' <<<"$cuerpo") == true ]] \
         && [[ $(jq -c '[.comprobaciones[].resultado] | unique' <<<"$cuerpo") == '["APROBADA"]' ]] \
@@ -430,6 +446,14 @@ tres_firmas() {
         turno_de "${usuarios[$i]}" $((i + 1)) "${rotulos[$i]}" \
             || { echo "       no es el turno de ${usuarios[$i]}" >&2; return 1; }
         vigente_de "${usuarios[$i]}" || return 1
+        if ((i == 1)); then
+            # F14-H03: la Vicerrectora sube el vigente firmado por la persona de F1.
+            firmar "$carpeta/descargado.pdf" "$carpeta/equivocado.pdf" 1 - || return 1
+            iniciar "${usuarios[$i]}"
+            subir "$carpeta/equivocado.pdf"
+            rechazada FIRMA_FIRMANTE_EQUIVOCADO \
+                || { echo "       firmante equivocado: $estado" >&2; return 1; }
+        fi
         firmar "$carpeta/descargado.pdf" "$carpeta/firmado-$i.pdf" $((i + 1)) "${campos[$i]}" || return 1
         iniciar "${usuarios[$i]}"
         subir "$carpeta/firmado-$i.pdf"
@@ -444,22 +468,33 @@ tres_firmas() {
     done
 }
 
-# --- 12. La base, los archivos y la bitácora ---
+en_ocs() {
+    [[ $(consultar_base "select estado from validacionocs.proceso_aprobacion where periodo = '$PERIODO'") \
+        == EN_OCS ]]
+}
+
+# --- 12. La base, los archivos, la bitácora y EN_OCS ---
 registro_de_firmas() {
     local hash
     ((${#firmados[@]} == 3)) || return 1
     [[ $(consultar_base "select string_agg(orden::text, ',' order by orden) from firma.validacion_firma
         where periodo = '$PERIODO' and aceptada") == 1,2,3 ]] || return 1
     [[ $(consultar_base "select count(*) from firma.validacion_firma where periodo = '$PERIODO'
-        and not aceptada") == 5 ]] || return 1
+        and not aceptada") == 8 ]] || return 1
     for hash in "$sha" "${firmados[@]}"; do
         docker compose exec -T distributivo test -f "/var/mdd/archivos/documentos/$hash.pdf" \
             || { echo "       falta documentos/$hash.pdf" >&2; return 1; }
     done
     esperar 15 hay_entradas 3 "servicio = 'firma' and accion = 'FIRMA_ACEPTADA'" || return 1
-    esperar 15 hay_entradas 5 "servicio = 'firma' and accion = 'FIRMA_RECHAZADA'" || return 1
+    esperar 15 hay_entradas 8 "servicio = 'firma' and accion = 'FIRMA_RECHAZADA'" || return 1
     [[ $(entradas "servicio = 'firma' and accion like 'FIRMA_%' and periodo = '$PERIODO'
-        and objeto -> 'comprobaciones' ? 'CONFIANZA'") == 8 ]]
+        and objeto -> 'comprobaciones' ? 'FIRMANTE'") == 11 ]] || return 1
+    # F14-H03: la cadena completa pasa a EN_OCS por el sistema, en menos de 30 s (SC-002).
+    esperar 30 en_ocs || { echo "       el proceso no llegó a EN_OCS" >&2; return 1; }
+    [[ $(consultar_base "select count(*) from validacionocs.transicion where periodo = '$PERIODO'
+        and desde = 'CONGELADO_EN_FIRMA' and hacia = 'EN_OCS' and quien = 'sistema'") == 1 ]] || return 1
+    esperar 15 hay_entradas 1 "servicio = 'validacionocs' and accion = 'CADENA_DE_FIRMAS_COMPLETA'
+        and periodo = '$PERIODO'"
 }
 
 if [[ -n $CONSERVAR ]]; then
@@ -796,10 +831,10 @@ verificar 5 "Un POST del Responsable devuelve el mismo, sin otro archivo ni fila
 verificar 6 "La bitácora: una DOCUMENTO_FIRMABLE_GENERADO con la versión, el hash y el SHA-256" bitacora
 verificar 7 "$DESIGNADO ve su firma pendiente («Elaborado por») y descarga el PDF con el SHA-256 registrado" pendiente_del_designado
 verificar 8 "$RESPONSABLE, $VICERRECTOR y rectorado.demo no la ven y reciben 403; $COORDINADOR, sin permiso, 403" nadie_mas
-verificar 9 "Cinco PDF rechazados con su 422 y las cuatro comprobaciones; el turno y el vigente no cambian" rechazos
+verificar 9 "Siete PDF rechazados con su 422 y las siete comprobaciones; el turno y el vigente no cambian" rechazos
 verificar 10 "$VICERRECTOR y $RESPONSABLE, fuera de turno, reciben 403 al subir, sin dejar fila" fuera_de_turno
-verificar 11 "F1, F2 y F3 se aceptan en orden, cada una sobre el vigente anterior; al final nadie está en turno" tres_firmas
-verificar 12 "validacion_firma: 3 aceptadas y 5 rechazadas; los 4 archivos; 3 FIRMA_ACEPTADA y 5 FIRMA_RECHAZADA" registro_de_firmas
+verificar 11 "F2 de la persona de F1 se rechaza; F1, F2 y F3 se aceptan en orden; al final nadie está en turno" tres_firmas
+verificar 12 "3 aceptadas y 8 rechazadas, los 4 archivos y la bitácora; el proceso en EN_OCS por sistema" registro_de_firmas
 
 if ((fallas > 0)); then
     echo "El documento firmable de punta a punta: $fallas paso(s) fallan."
