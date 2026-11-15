@@ -5,9 +5,12 @@ import ec.mdd.firma.dominio.ArchivoDemasiadoGrande;
 import ec.mdd.firma.dominio.ArchivoFirmadoRechazado;
 import ec.mdd.firma.dominio.ArchivoVacio;
 import ec.mdd.firma.dominio.CertificadoDeLaFirma;
+import ec.mdd.firma.dominio.Comprobacion;
 import ec.mdd.firma.dominio.ComprobacionDeDocumento;
+import ec.mdd.firma.dominio.ComprobacionDelFirmante;
 import ec.mdd.firma.dominio.DocumentoFirmable;
 import ec.mdd.firma.dominio.FirmasDelDocumento;
+import ec.mdd.firma.dominio.PasoSinNombre;
 import ec.mdd.firma.dominio.Resultado;
 import ec.mdd.firma.dominio.ResultadoDeComprobacion;
 import ec.mdd.firma.dominio.ResultadoValidacion;
@@ -22,6 +25,7 @@ import ec.mdd.firma.puertos.salida.Transaccion;
 import ec.mdd.firma.puertos.salida.ValidadorDeFirmas;
 import ec.mdd.firma.puertos.salida.ValidadorDeFirmas.HallazgosDeLaFirma;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,10 +40,13 @@ import java.util.UUID;
  *   <li><b>El turno</b>, primero: a quien no es el firmante en turno, y por un documento que no
  *       existe o no está generado, {@code SinTurnoDeFirma}, sin mirar el archivo ni dejar rastro.
  *       Así el 403 no dice nada del documento (FR-002).
+ *   <li><b>El nombre impreso del paso</b>: sin él no se puede comprobar al firmante (F14-H03); un
+ *       documento anterior da {@code PasoSinNombre}, sin resultado.
  *   <li><b>El archivo</b>: vacío o de más de 10 MB se rechaza sin resultado.
  *   <li><b>La validación</b>, fuera de transacciones, como la consulta a Usuarios (D-83): el mismo
  *       documento lo decide el dominio contra el vigente verificado por su SHA-256; si pasa, el
- *       validador revisa la firma nueva.
+ *       validador revisa la firma nueva; si es íntegra y de confianza, el dominio comprueba la
+ *       vigencia al subir, el orden y el firmante (F14-H03, D-104).
  *   <li><b>El registro</b>, en una transacción con su cambio para la bitácora. Si se aceptó, el
  *       archivo se guarda antes por su SHA-256 y el repositorio comprueba, con la generación
  *       bloqueada, que nadie firmó el paso entretanto; si alguien lo hizo, la subida se registra
@@ -87,6 +94,9 @@ public final class SubirFirmaServicio implements SubirFirma {
     @Override
     public ResultadoValidacion subir(UUID documento, byte[] archivo, Solicitante quien) {
         DocumentoEnTurno turno = enTurno.documentoEnTurno(documento, quien);
+        if (turno.turno().firmante().nombre().isEmpty()) {
+            throw new PasoSinNombre();
+        }
         if (archivo.length == 0) {
             throw new ArchivoVacio();
         }
@@ -95,7 +105,8 @@ public final class SubirFirmaServicio implements SubirFirma {
         }
         FirmasDelDocumento firmas = turno.firmas();
         byte[] vigente = enTurno.leerVerificado(firmas.archivoVigente());
-        ResultadoValidacion resultado = validar(documento, turno, vigente, archivo, quien);
+        ResultadoValidacion resultado =
+                validar(documento, turno, vigente, archivo, quien, reloj.instant());
         if (resultado.aceptada()) {
             almacen.guardar(archivo, resultado.sha256Subido());
         }
@@ -121,7 +132,8 @@ public final class SubirFirmaServicio implements SubirFirma {
             DocumentoEnTurno turno,
             byte[] vigente,
             byte[] archivo,
-            Solicitante quien) {
+            Solicitante quien,
+            Instant ahora) {
         ResultadoDeComprobacion mismo = ComprobacionDeDocumento.mismoDocumento(vigente, archivo);
         List<ResultadoDeComprobacion> evaluadas = new ArrayList<>(List.of(mismo));
         Optional<CertificadoDeLaFirma> certificado = Optional.empty();
@@ -130,12 +142,20 @@ public final class SubirFirmaServicio implements SubirFirma {
             evaluadas.addAll(hallazgos.evaluadas());
             certificado = hallazgos.certificado();
         }
+        // F14-H03 (D-104): la vigencia al subir, el orden y el firmante, si la firma nueva ya es
+        // íntegra y de confianza.
+        if (evaluadas.getLast().comprobacion() == Comprobacion.CONFIANZA
+                && evaluadas.getLast().resultado() == Resultado.APROBADA) {
+            evaluadas.addAll(
+                    ComprobacionDelFirmante.evaluar(
+                            certificado.orElseThrow(), ahora, turno.firmas()));
+        }
         return new ResultadoValidacion(
                 UUID.randomUUID(),
                 documento,
                 turno.turno().paso().orden(),
                 quien.usuario(),
-                reloj.instant(),
+                ahora,
                 FirmanteEnTurno.sha256(archivo),
                 archivo.length,
                 ResultadoDeComprobacion.desde(evaluadas.toArray(ResultadoDeComprobacion[]::new)),

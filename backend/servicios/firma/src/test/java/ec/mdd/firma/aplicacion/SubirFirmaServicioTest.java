@@ -343,12 +343,12 @@ class SubirFirmaServicioTest {
             ResultadoValidacion registrada = prueba.validacionRegistrada();
             assertThat(registrada.primerRechazo()).contains(caso.falla());
             assertThat(registrada.comprobaciones())
+                    .filteredOn(una -> una.comprobacion() == caso.falla())
+                    .singleElement()
                     .extracting(ResultadoDeComprobacion::resultado)
-                    .last()
-                    .isEqualTo(
-                            caso.falla() == CONFIANZA
-                                    ? Resultado.RECHAZADA
-                                    : Resultado.NO_EVALUADA);
+                    .isEqualTo(Resultado.RECHAZADA);
+            assertThat(registrada.comprobaciones().getLast().resultado())
+                    .isEqualTo(Resultado.NO_EVALUADA);
             CambioDeFirma cambio = prueba.cambioPublicado();
             assertThat(cambio.accion()).isEqualTo(CambioDeFirma.FIRMA_RECHAZADA);
             assertThat(cambio.nuevo()).doesNotContainKey("sha256Vigente");

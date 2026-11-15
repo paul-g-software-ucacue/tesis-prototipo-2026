@@ -109,7 +109,7 @@ description: "Tareas de F14-H03: validar firmante, turno y vigencia, y completar
   - en `RepositorioDocumentosIntegrationTest`, que las validaciones de cuatro comprobaciones se leen con las tres nuevas «no evaluadas» (research §8).
 
   Luego, en `DocumentoFirmableServicio.preparar` y `RepositorioDocumentosJdbc`.
-- [ ] T009 [US1] `SubirFirmaServicio`. Ver fallar primero en `SubirFirmaServicioTest`:
+- [X] T009 [US1] `SubirFirmaServicio`. Ver fallar primero en `SubirFirmaServicioTest`:
   - el paso en turno sin nombre: `PasoSinNombre`, sin validar ni registrar;
   - cada rechazo nuevo, con su subclase, el resultado registrado y `FIRMA_RECHAZADA`;
   - la vigencia contra el momento de la subida del reloj.
