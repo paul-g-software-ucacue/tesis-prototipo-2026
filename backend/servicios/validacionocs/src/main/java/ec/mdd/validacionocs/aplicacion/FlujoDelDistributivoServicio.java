@@ -450,7 +450,17 @@ public final class FlujoDelDistributivoServicio
                                                 una.version(),
                                                 una.hash(),
                                                 una.quien(),
-                                                una.momento())));
+                                                una.momento())),
+                proceso.rechazoPendiente()
+                        .flatMap(Transicion::rechazo)
+                        .map(
+                                rechazo ->
+                                        new FlujoDelDistributivo.RechazoEnFirma(
+                                                rechazo.orden(),
+                                                rechazo.rol(),
+                                                rechazo.rechazadoPor(),
+                                                rechazo.rechazadoEn(),
+                                                rechazo.observacion().texto())));
     }
 
     // Enviado: con su transición registrada. Pendiente de confirmar: Generación lo marcó y la

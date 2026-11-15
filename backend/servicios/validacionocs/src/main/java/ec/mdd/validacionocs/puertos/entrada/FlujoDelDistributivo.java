@@ -21,6 +21,8 @@ import java.util.Optional;
  * @param transiciones las transiciones, en orden
  * @param congelacion la congelación de la versión, desde que el distributivo llegó a
  *     CONGELADO_EN_FIRMA (F13-H01)
+ * @param rechazoEnFirma el rechazo en firma por el que volvió, mientras sea la última transición
+ *     (F14-H04)
  */
 public record FlujoDelDistributivo(
         String periodo,
@@ -30,13 +32,15 @@ public record FlujoDelDistributivo(
         List<Parcial> parciales,
         List<AccionDelProceso> acciones,
         List<Transicion> transiciones,
-        Optional<Congelacion> congelacion) {
+        Optional<Congelacion> congelacion,
+        Optional<RechazoEnFirma> rechazoEnFirma) {
 
     /** Exige los datos y copia las listas. */
     public FlujoDelDistributivo {
         Objects.requireNonNull(periodo, "periodo");
         Objects.requireNonNull(etapa, "etapa");
         Objects.requireNonNull(congelacion, "congelacion");
+        Objects.requireNonNull(rechazoEnFirma, "rechazoEnFirma");
         parciales = List.copyOf(parciales);
         acciones = List.copyOf(acciones);
         transiciones = List.copyOf(transiciones);
@@ -59,6 +63,7 @@ public record FlujoDelDistributivo(
                 parciales,
                 acciones,
                 transiciones,
+                Optional.empty(),
                 Optional.empty());
     }
 
@@ -72,6 +77,19 @@ public record FlujoDelDistributivo(
      * @param momento cuándo
      */
     public record Congelacion(int version, String hash, String quien, Instant momento) {}
+
+    /**
+     * El rechazo en firma por el que volvió el distributivo (F14-H04, esquema {@code
+     * RechazoEnFirmaDelFlujo}).
+     *
+     * @param orden el paso que se rechazó
+     * @param rol su rol
+     * @param por quién rechazó
+     * @param en cuándo
+     * @param observacion qué hay que corregir
+     */
+    public record RechazoEnFirma(
+            int orden, String rol, String por, Instant en, String observacion) {}
 
     /**
      * El envío de un parcial.

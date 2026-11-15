@@ -8,6 +8,7 @@ import ec.mdd.validacionocs.adaptadores.entrada.api.CongelacionDeLaVersion;
 import ec.mdd.validacionocs.adaptadores.entrada.api.DevolucionDelParcial;
 import ec.mdd.validacionocs.adaptadores.entrada.api.EstadoDelFlujo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.ParcialDelFlujo;
+import ec.mdd.validacionocs.adaptadores.entrada.api.RechazoEnFirmaDelFlujo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.SolicitudDeDevolucion;
 import ec.mdd.validacionocs.adaptadores.entrada.api.TipoDeEtapa;
 import ec.mdd.validacionocs.adaptadores.entrada.api.TransicionDelFlujo;
@@ -183,6 +184,16 @@ class FlujoControlador implements AprobacionApi {
                                                 una.hash(),
                                                 una.quien(),
                                                 una.momento().atOffset(ZoneOffset.UTC))));
+        flujo.rechazoEnFirma()
+                .ifPresent(
+                        una ->
+                                respuesta.rechazoEnFirma(
+                                        new RechazoEnFirmaDelFlujo(
+                                                una.orden(),
+                                                una.rol(),
+                                                una.por(),
+                                                una.en().atOffset(ZoneOffset.UTC),
+                                                una.observacion())));
         return respuesta;
     }
 

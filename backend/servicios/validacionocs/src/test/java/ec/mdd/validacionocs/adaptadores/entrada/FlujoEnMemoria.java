@@ -8,8 +8,10 @@ import ec.mdd.validacionocs.dominio.CargaGuardada;
 import ec.mdd.validacionocs.dominio.CondicionesDeRevision;
 import ec.mdd.validacionocs.dominio.EstadoDelPeriodo;
 import ec.mdd.validacionocs.dominio.Firmantes;
+import ec.mdd.validacionocs.dominio.Observacion;
 import ec.mdd.validacionocs.dominio.ParcialNoEncontrado;
 import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
+import ec.mdd.validacionocs.dominio.RechazoDelFirmante;
 import ec.mdd.validacionocs.dominio.Transicion;
 import ec.mdd.validacionocs.puertos.entrada.SinDistributivo;
 import ec.mdd.validacionocs.puertos.salida.DatosDelPeriodo;
@@ -80,6 +82,23 @@ final class FlujoEnMemoria {
 
     FlujoEnMemoria() {
         reiniciar();
+    }
+
+    /**
+     * El aviso de rechazo en firma de Firma (F14-H04): el proceso de {@code periodo}, en
+     * CONGELADO_EN_FIRMA con la versión 1, vuelve a revisión con el rechazo del Rector en F3.
+     */
+    void rechazarEnFirma(String periodo) {
+        procesos.get(periodo)
+                .rechazarEnFirma(
+                        1,
+                        new RechazoDelFirmante(
+                                3,
+                                "RECTOR",
+                                "rectorado.demo",
+                                AHORA,
+                                new Observacion("Falta la carga de un docente de Software.")),
+                        AHORA);
     }
 
     /** Todo como al empezar: distributivos sin parciales enviados y sin procesos. */

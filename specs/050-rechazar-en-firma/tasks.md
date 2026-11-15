@@ -142,11 +142,13 @@ description: "Tareas de F14-H04: rechazar en firma con una observación"
   Luego `RegistrarRechazoEnFirma`, `RegistrarRechazoEnFirmaServicio`, `CierreDeLaFirma.alRechazar`, `CambioDeFlujo.Accion.DISTRIBUTIVO_RECHAZADO_EN_FIRMA`, el repositorio de procesos con `rechazo_en_firma` y la configuración.
 
   **Resultado (2026-11-15):** `RegistrarRechazoEnFirmaServicioTest` (3) y la prueba nueva de `RepositorioProcesoIntegrationTest` se vieron fallar contra los esqueletos (una cada una; las de aviso repetido y sin proceso pasaban porque el esqueleto no hacía nada) y pasan con la implementación. El oyente se llama `alRechazarseEnFirma`, junto a `alCompletarseLaCadena`. La transición usa como momento el del rechazo, como la cadena completa usa el de la última firma. Las pruebas unitarias y de integración de Validación OCS siguen en verde.
-- [ ] T013 [US2] El flujo y la aprobación. Ver fallar primero en `FlujoContratoTest` (con `FlujoEnMemoria`) y `PermisosValidacionocsTest`:
+- [X] T013 [US2] El flujo y la aprobación. Ver fallar primero en `FlujoContratoTest` (con `FlujoEnMemoria`) y `PermisosValidacionocsTest`:
   - `rechazoEnFirma` en el estado del flujo con un rechazo pendiente, y sin `APROBAR_CONTENIDO`;
   - aprobar con un rechazo pendiente: 409 `VALIDACIONOCS_REQUIERE_VERSION_NUEVA`, sin pedir a Generación que congele.
 
   Luego `FlujoControlador` y el caso de uso de aprobar, si hace falta.
+
+  **Resultado (2026-11-15):** tres pruebas nuevas en `FlujoContratoTest`, con `FlujoEnMemoria.rechazarEnFirma`. Se vio fallar la de `rechazoEnFirma` en el estado del flujo; el 409 y la ausencia del campo sin rechazo pasaron al escribirse, porque el bloqueo ya estaba en el dominio (T007) y el campo es opcional. El caso de uso de aprobar no cambió: llama a `validarAprobacion` antes de pedir a Generación que congele (F13-H01). `PermisosValidacionocsTest` sigue en verde con el constructor de antes de la vista.
 - [ ] T014 [US2] En `apps:distributivo`, `DocumentoFirmableIntegrationTest`: F1 aceptada, el rechazo de F2, y Aprobación recibe el aviso una sola vez aunque se publique otra vez. Después del rechazo, la firma F1 y el archivo vigente siguen iguales (FR-007). `ModulosTest` sin ciclos.
 
 **Checkpoint**: el rechazo devuelve el distributivo a revisión.
