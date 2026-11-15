@@ -160,7 +160,7 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
   Luego, `RepositorioDocumentos.registrarAnulacion` y las comprobaciones en `RepositorioDocumentosJdbc`, con la generación bloqueada.
 
   **Resultado (2026-11-15):** 3 pruebas nuevas en `RepositorioDocumentosIntegrationTest`, vistas fallar contra el esqueleto: la anulación con F1, idempotente; una firma y un rechazo después de anular; una anulación y una firma a la vez. En la última, la anulación cuenta las firmas que quedaron, gane quien gane. `registrarAnulacion` recibe el documento y devuelve la anulación con las firmas contadas dentro del bloqueo, o vacío si ya había una. El doble en memoria de `DocumentoFirmableServicioTest` suma el método sin usarlo. Las de Firma siguen en verde.
-- [ ] T014 [US2] El caso de uso. Ver fallar primero en `FIR/test/.../aplicacion/AnularFirmasServicioTest.java`:
+- [X] T014 [US2] El caso de uso. Ver fallar primero en `FIR/test/.../aplicacion/AnularFirmasServicioTest.java`:
   - anula, anota `FIRMAS_ANULADAS` en la bitácora y publica `FirmasAnuladas` en la transacción;
   - ya anulado: nada;
   - sin documento para esa versión: nada, en el log.
@@ -170,6 +170,8 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
   - `puertos/salida/AvisoDeFirmasAnuladas` y `AvisoDeFirmasAnuladasSpring`;
   - `CambioDeFirma.FIRMAS_ANULADAS`;
   - `AnularFirmasServicio` y su bean en `ConfiguracionFirma`.
+
+  **Resultado (2026-11-15):** `AnularFirmasServicioTest` (3). Contra el esqueleto falló la de la anulación; las de «ya anulado» y «sin documento» pasaban porque el esqueleto no hacía nada. Pasan con la implementación, y las de Firma siguen en verde. La anulación guarda como momento el del rechazo, que trae la orden, como las transiciones de Aprobación. El aviso Spring se arma dentro del bean, sin bean propio.
 - [ ] T015 [US2] El estado del documento. Ver fallar primero en la prueba de contrato del documento de `FIR/test/.../adaptadores/entrada/`: con anulación, `anulacion` con el motivo, cuántas y cuándo; sin ella, el campo falta. Luego, `EstadoDelDocumento.anulacion`, el servicio que lo consulta y `DocumentoControlador`.
 - [ ] T016 [US2] El oyente de Aprobación. Ver fallar primero en `OCS/test/.../adaptadores/salida/AnulacionDeLasFirmasTest.java`: el aviso llama a `AnularFirmas` con el periodo, la versión, el motivo y el momento. Luego, `AnulacionDeLasFirmas` (`@ApplicationModuleListener`) y su bean en `ConfiguracionValidacionocs`.
 - [ ] T017 [US2] De punta a punta en el proceso. Ver fallar primero en `APP/integrationTest/.../DocumentoFirmableIntegrationTest.java` (con el PDF/A real y la CA en memoria, como F14-H04): con F1 aceptada, el rechazo en F2 deja:
