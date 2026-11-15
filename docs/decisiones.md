@@ -103,6 +103,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-102 | 2026-11-14 | El firmante esperado de cada paso se fija al generar el documento; la cuenta de usuario guarda la identificación de la persona | Aceptada | RF-38, RF-58, ADR-003, ADR-007, ADR-023, D-101 |
 | D-103 | 2026-11-14 | La validación del PDF firmado: cuatro comprobaciones en orden, la firma es la validación aceptada y la lista de confianza va en la imagen como configuración de demostración; constitución 2.2.1 | Aceptada | RF-39, D-23, D-46, ADR-017, ADR-007, D-101, D-102 |
 | D-104 | 2026-11-14 | El firmante se reconoce por el CN igual al nombre impreso, que se guarda al generar; la última firma avisa a Aprobación, que pasa a EN_OCS; la CA de prueba con los nombres de los datos de prueba | Aceptada | RF-38, RF-39, RF-58, D-23, D-102, D-103, ADR-017, MD-05 |
+| D-105 | 2026-11-15 | El rechazo en firma lo registra Firma y cierra el documento; Aprobación vuelve a la etapa activa anterior como el sistema, y aprobar otra vez espera la versión nueva | Aceptada | RF-36, RF-59, D-98, D-101, D-102, D-103, D-104, ADR-018, MD-05 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -2124,3 +2125,37 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 - El autor, con `MDD_FIRMA_NOMBRE_LOCAL`, deja su nombre en la base local; `down -v` lo borra.
 
 **Documentos que hay que poner al día.** El modelo de dominio (§7.5): «Firmante en turno» dice «usuario asignado»; aquí es la persona cuyo nombre impreso coincide con el CN. No hay entrada para «Vigencia» del certificado.
+
+---
+
+## D-105. El rechazo en firma lo registra Firma y cierra el documento; el distributivo vuelve a revisión como el sistema y no se aprueba otra vez sin versión nueva
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-15 · **Decidido por:** autor de la tesis
+- **Origen:** F14-H04 (#65); aclaraciones de `specs/050-rechazar-en-firma/spec.md` y su plan (`research.md` §1 a §9)
+- **Relacionadas:** RF-36, RF-59, D-98, D-101, D-102, D-103, D-104, ADR-018, MD-05; diseño de firmas §2 y §7
+
+**Decisión.**
+- **Firma registra el rechazo** (`rechazarEnFirma()`), solo del firmante en turno de D-102; a los demás, el 403 común. La observación, de 10 a 500 caracteres recortada (como D-98), se valida después del turno.
+- **Un rechazo por documento,** en `firma.rechazo_en_firma` (V6), solo de inserción. Con él nadie está en turno: el documento queda cerrado para la lista, la descarga, la subida y otro rechazo, que reciben el 403 común.
+- **La carrera con la subida.** El rechazo bloquea la generación como la subida (D-103) y se registra solo si las firmas son las que vio; si no, quien rechaza ya no está en turno. Una subida aceptada que llega después del rechazo se registra como rechazada por «mismo documento», como la subida tardía.
+- **El aviso.** En la misma transacción, Firma publica `RechazoEnFirma` (periodo, versión, paso, rol, quién, cuándo y la observación) en su API publicada. Aprobación lo escucha después de confirmar y pasa el distributivo de CONGELADO_EN_FIRMA a la etapa activa anterior, EN_REVISION_VRA con la configuración por defecto, como `sistema`, con una transición `RECHAZO_EN_FIRMA` y el rechazo en `validacionocs.rechazo_en_firma` (V5). Repetido, en otra etapa o con otra versión, no hace nada.
+- **Aprobar otra vez se bloquea** con `VALIDACIONOCS_REQUIERE_VERSION_NUEVA` mientras la última transición sea el rechazo: al aprobar el contenido y al enviar a revisión cuando eso congela la versión. La versión nueva y la anulación de las firmas son de F12-H04.
+- **Las firmas aceptadas** antes del rechazo y el archivo vigente se conservan.
+- **La prueba de punta a punta** va en un script aparte, `probar_rechazo_en_firma.sh`.
+
+**Por qué.**
+- El turno ya es de Firma; cerrar el documento con su propia fila hace que la regla «nadie en turno» se cumpla en todas las operaciones sin tocarlas.
+- El evento sigue el camino de `CadenaDeFirmasCompleta` (D-104): Firma no conoce el flujo y el registro de publicaciones lo reintenta (MD-05, ADR-018).
+- Congelar otra vez la misma versión pediría a Firma el mismo documento, que devolvería el rechazado (D-101).
+
+**Alternativas.**
+- Una transición «rechazar» en Aprobación que pregunte el turno a Firma: Aprobación conocería al firmante esperado y Firma no sabría que el documento está cerrado.
+- Generar un documento nuevo para la misma versión al aprobar otra vez: adelanta parte de F12-H04 sin una versión que lo justifique.
+- Volver siempre a EN_REVISION_VRA: rompería el flujo si una copia de la configuración la desactiva.
+
+**Consecuencias.**
+- Dos códigos nuevos: `FIRMA_OBSERVACION_INVALIDA` y `VALIDACIONOCS_REQUIERE_VERSION_NUEVA`.
+- Hasta F12-H04, un distributivo rechazado en firma no sale de la etapa a la que volvió. **Límite:** si una copia desactiva EN_CONSOLIDACION y EN_REVISION_VRA, vuelve a BORRADOR_CARRERA con todos los parciales enviados, y tampoco hay acciones hasta la versión nueva.
+- La notificación del rechazo es de F16-H01.
+
+**Documentos que hay que poner al día.** Ninguno: el glosario ya tiene «Rechazo en firma», `RechazoEnFirma` (§6), `rechazarEnFirma()` (§5) y `Observacion`, con los mismos nombres. Dice que vuelve «a EN_REVISION_VRA»; con la configuración por defecto es así.

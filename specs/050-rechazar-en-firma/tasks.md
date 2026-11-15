@@ -35,7 +35,7 @@ description: "Tareas de F14-H04: rechazar en firma con una observación"
 
 ## Phase 1: Setup
 
-- [ ] T001 Escribir **D-105** en `docs/decisiones.md`, en la fila del índice y en su sección:
+- [X] T001 Escribir **D-105** en `docs/decisiones.md`, en la fila del índice y en su sección:
   - el rechazo en Firma, en `rechazo_en_firma`, que cierra el documento (research §1);
   - la carrera con la subida: el bloqueo de la generación y la regla de la subida tardía (research §2);
   - la observación de 10 a 500, después del turno (research §3);
@@ -46,6 +46,8 @@ description: "Tareas de F14-H04: rechazar en firma con una observación"
   Relacionadas: RF-36, RF-59, D-98, D-101, D-102, D-103, D-104, ADR-018, MD-05.
 
   Revisar en el glosario «Rechazo en firma», `RechazoEnFirma` (§6), `rechazarEnFirma()` (§5) y `Observacion`, y anotar aquí el resultado.
+
+  **Resultado (2026-11-15):** el glosario tiene «Rechazo en firma» («Es una devolución a EN_REVISION_VRA», §9), el evento `RechazoEnFirma` (§6: «El firmante en turno no firma» → Aprobación devuelve a EN_REVISION_VRA), la operación `rechazarEnFirma()` de `DocumentoFirmable` (§5) y `Observacion` («de una devolución o de un rechazo en firma»). Se usan esos nombres. Con la configuración por defecto la etapa de llegada es EN_REVISION_VRA, como dice el glosario; D-105 anota el caso desactivado.
 
 ---
 
