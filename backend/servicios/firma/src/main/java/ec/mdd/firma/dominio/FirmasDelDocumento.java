@@ -29,21 +29,33 @@ import java.util.stream.Collectors;
  * @param firmantes el firmante esperado de cada paso, fijado al generar
  * @param firmas las firmas aceptadas, a lo sumo una por paso de la cadena
  * @param rechazo el rechazo en firma, si lo hubo
+ * @param anulacion la anulación de sus firmas, si la hubo (F12-H04)
  */
 public record FirmasDelDocumento(
         DocumentoFirmable documento,
         List<PasoDeFirma> cadena,
         List<FirmanteEsperado> firmantes,
         List<FirmaRegistrada> firmas,
-        Optional<RechazoDelFirmante> rechazo) {
+        Optional<RechazoDelFirmante> rechazo,
+        Optional<AnulacionDeFirmas> anulacion) {
 
-    /** Un documento sin rechazo en firma. */
+    /** Un documento sin rechazo en firma ni anulación. */
     public FirmasDelDocumento(
             DocumentoFirmable documento,
             List<PasoDeFirma> cadena,
             List<FirmanteEsperado> firmantes,
             List<FirmaRegistrada> firmas) {
         this(documento, cadena, firmantes, firmas, Optional.empty());
+    }
+
+    /** Un documento sin anulación de sus firmas. */
+    public FirmasDelDocumento(
+            DocumentoFirmable documento,
+            List<PasoDeFirma> cadena,
+            List<FirmanteEsperado> firmantes,
+            List<FirmaRegistrada> firmas,
+            Optional<RechazoDelFirmante> rechazo) {
+        this(documento, cadena, firmantes, firmas, rechazo, Optional.empty());
     }
 
     /** Exige los datos, copia las listas y exige a lo sumo una firma por paso de la cadena. */
@@ -53,6 +65,7 @@ public record FirmasDelDocumento(
         firmantes = List.copyOf(firmantes);
         firmas = List.copyOf(firmas);
         Objects.requireNonNull(rechazo, "rechazo");
+        Objects.requireNonNull(anulacion, "anulacion");
         Set<Integer> pasos =
                 cadena.stream().map(PasoDeFirma::orden).collect(Collectors.toUnmodifiableSet());
         Set<Integer> firmados = new HashSet<>();
@@ -67,11 +80,11 @@ public record FirmasDelDocumento(
     /**
      * El primer paso sin firma y su firmante esperado.
      *
-     * @return vacío si todos firmaron, si el documento se rechazó en firma o si el paso no tiene
-     *     firmante esperado
+     * @return vacío si todos firmaron, si el documento se rechazó en firma, si sus firmas se
+     *     anularon o si el paso no tiene firmante esperado
      */
     public Optional<PasoEnTurno> pasoEnTurno() {
-        if (rechazo.isPresent()) {
+        if (rechazo.isPresent() || anulacion.isPresent()) {
             return Optional.empty();
         }
         Set<Integer> firmados =

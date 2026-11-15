@@ -87,7 +87,9 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
   Luego, `TipoDeTransicion.VERSION_NUEVA` y los dos métodos.
 
   **Resultado (2026-11-15):** 7 pruebas nuevas en `ProcesoAprobacionTest`, también la de la revisión desactivada. Fallaron 6 contra el esqueleto; la de «sin rechazo de esa versión» pasaba porque el esqueleto no hacía nada. Pasan con la implementación, y las 95 de Validación OCS siguen en verde. `registrarVersionNueva` exige que el rechazo de `anulada` sea la última transición: así la idempotencia sale de la regla de D-105.
-- [ ] T008 [P] El dominio de Firma. Ver fallar primero en `FIR/test/.../dominio/FirmasDelDocumentoTest.java`: con anulación, `pasoEnTurno()` vacío y nadie en turno; los constructores de antes, sin anulación. Luego, `AnulacionDeFirmas` y `FirmasDelDocumento.anulacion`.
+- [X] T008 [P] El dominio de Firma. Ver fallar primero en `FIR/test/.../dominio/FirmasDelDocumentoTest.java`: con anulación, `pasoEnTurno()` vacío y nadie en turno; los constructores de antes, sin anulación. Luego, `AnulacionDeFirmas` y `FirmasDelDocumento.anulacion`.
+
+  **Resultado (2026-11-15):** 3 pruebas nuevas en `FirmasDelDocumentoTest`. Contra el esqueleto (el record y el componente, sin la regla del turno) falló la del turno; las de los constructores de antes y de la anulación inválida pasaron con él, porque el esqueleto ya traía esas reglas. Se conservan los constructores de cuatro y cinco componentes. `AnulacionDeFirmas` guarda el motivo como texto: el enum es de la API publicada, y el dominio no depende de los puertos.
 
 **Checkpoint**: los contratos, las migraciones y el dominio están; ninguna operación nueva funciona todavía.
 

@@ -1,6 +1,7 @@
 package ec.mdd.firma.dominio;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
 import java.util.List;
@@ -72,6 +73,46 @@ class FirmasDelDocumentoTest {
     @Test
     void dadoElConstructorSinRechazo_cuandoSeCrea_entoncesNoTieneRechazo() {
         assertThat(firmas.rechazo()).isEmpty();
+    }
+
+    // F12-H04, D-106: con las firmas anuladas, nadie está en turno, y las firmas se conservan.
+    @Test
+    void dadoUnDocumentoConLasFirmasAnuladas_cuandoSeBuscaElTurno_entoncesNadieEstaEnTurno() {
+        AnulacionDeFirmas anulacion =
+                new AnulacionDeFirmas(
+                        "RECHAZO_EN_FIRMA", 1, "sistema", Instant.parse("2026-11-15T10:00:01Z"));
+        FirmasDelDocumento anulado =
+                new FirmasDelDocumento(
+                        DOCUMENTO,
+                        CADENA,
+                        FIRMANTES,
+                        List.of(firma(1, 'c')),
+                        Optional.empty(),
+                        Optional.of(anulacion));
+
+        assertThat(anulado.pasoEnTurno()).isEmpty();
+        assertThat(anulado.enTurno("firmante2", Optional.of("0109990028"))).isFalse();
+        assertThat(anulado.anulacion()).contains(anulacion);
+        assertThat(anulado.firmas()).containsExactly(firma(1, 'c'));
+    }
+
+    @Test
+    void dadosLosConstructoresDeAntes_cuandoSeCrean_entoncesNoTienenAnulacion() {
+        assertThat(firmas.anulacion()).isEmpty();
+        assertThat(
+                        new FirmasDelDocumento(
+                                        DOCUMENTO, CADENA, FIRMANTES, List.of(), Optional.empty())
+                                .anulacion())
+                .isEmpty();
+    }
+
+    @Test
+    void dadaUnaAnulacionInvalida_cuandoSeCrea_entoncesSeRechaza() {
+        Instant momento = Instant.parse("2026-11-15T10:00:01Z");
+        assertThatThrownBy(() -> new AnulacionDeFirmas("RECHAZO_EN_FIRMA", -1, "sistema", momento))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new AnulacionDeFirmas(" ", 0, "sistema", momento))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
