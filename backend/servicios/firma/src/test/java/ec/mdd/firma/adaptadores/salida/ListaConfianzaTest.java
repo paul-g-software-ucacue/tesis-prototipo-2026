@@ -117,7 +117,7 @@ class ListaConfianzaTest {
         assertThat(huella("firma/raices/bce-raiz.crt"))
                 .isEqualTo("11c7c59be9d21d216f0e8151378d53d03b314060559adc49da161ec4f7829bec");
         assertThat(huella("firma/raices/ca-prueba.crt"))
-                .isEqualTo("60ca4684e97b094971d432f6fe59b244c42f83af1dfcc8df7d40979d6349e406");
+                .isEqualTo("06d4975906b5daab705a32c50822fdcfce2a473318bc91f0004c4ff66a04bf17");
     }
 
     private static String huella(String recurso) throws Exception {

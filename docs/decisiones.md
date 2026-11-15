@@ -2061,7 +2061,7 @@ Con la base de datos de Grype del 2026-11-07, la CI encontró además dos altas 
 
 | Archivo | Sujeto | Vigencia | SHA-256 del certificado |
 |---|---|---|---|
-| `ca-prueba.crt` | CN=CA de Prueba MDD Demo, O=MDD Demo, C=EC (la del spike, `ca-prueba/generar.sh`) | 2026-10-13 a 2036-10-10 | `60ca4684e97b094971d432f6fe59b244c42f83af1dfcc8df7d40979d6349e406` |
+| `ca-prueba.crt` | CN=CA de Prueba MDD Demo, O=MDD Demo, C=EC (`ca-prueba/generar.sh`; regenerada en F14-H03, D-104, con los firmantes de los nombres impresos) | 2024-01-01 a 2036-12-31 | `06d4975906b5daab705a32c50822fdcfce2a473318bc91f0004c4ff66a04bf17` |
 | `bce-raiz.crt` | CN=AUTORIDAD DE CERTIFICACION RAIZ DEL BANCO CENTRAL DEL ECUADOR, OU=ENTIDAD DE CERTIFICACION DE INFORMACION-ECIBCE, O=BANCO CENTRAL DEL ECUADOR, L=QUITO, C=EC | 2011-08-08 a 2031-08-08 | `11c7c59be9d21d216f0e8151378d53d03b314060559adc49da161ec4f7829bec` |
 
 La raíz del BCE se sacó de la cadena que trae el certificado de firma del autor (`openssl pkcs12 -cacerts -nokeys`): solo el certificado público de la raíz, autofirmado, con `CA:TRUE` y sin llave. Ni el certificado del autor ni su intermedia entran al repositorio.

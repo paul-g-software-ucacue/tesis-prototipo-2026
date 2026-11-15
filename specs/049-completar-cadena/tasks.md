@@ -47,7 +47,7 @@ description: "Tareas de F14-H03: validar firmante, turno y vigencia, y completar
   Revisar en el glosario «Firmante en turno», «Cadena de firmas completa» (`CadenaDeFirmasCompleta`, §6) y «Vigencia», y anotar aquí el resultado.
 
   **Resultado (2026-11-14):** el glosario tiene «Firmante en turno» (§7.5, «usuario asignado al primer paso pendiente») y el evento `CadenaDeFirmasCompleta` (§6: «Se acepta la última firma» → Aprobación pasa a EN_OCS), el mismo nombre que se usa. No hay entrada para la vigencia del certificado. Las dos quedan en «Documentos que hay que poner al día» de D-104.
-- [ ] T002 Regenerar la CA de prueba (research §5):
+- [X] T002 Regenerar la CA de prueba (research §5):
   - en `FIR/test/resources/ca-prueba/generar.sh`:
     - los CN «Docente (demo)», «CABRERA VAZQUEZ ANA GABRIELA» y «PERALTA MALDONADO JUAN ANDRES»;
     - `firmante-vencido.p12`, con el CN de F1, `-not_before` y `-not_after` en el pasado;
@@ -58,6 +58,9 @@ description: "Tareas de F14-H03: validar firmante, turno y vigencia, y completar
   - correr todas las pruebas de Firma después de regenerar;
   - comprobar que ningún archivo trae una llave fuera de los `.p12` de la CA de prueba, y Gitleaks sin hallazgos.
 
+  **Resultado (2026-11-14):**
+  - Hallazgo: la confianza se comprueba a la fecha de la firma (D-103), así que un certificado vencido firmado hoy fallaría en la confianza, no en la vigencia. El caso real es firmar con el certificado vigente y subir después de que venció. Por eso la CA es válida desde 2024 (`-not_before`) y el vencido, de enero de 2025; la herramienta de firma suma `--momento=<instante>` para firmar con esa fecha.
+  - Huella nueva de `ca-prueba.crt`: `06d49759…bf17`, en D-103 y `ListaConfianzaTest`. Las 162 pruebas de Firma y las 21 de integración pasan con la CA nueva.
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
