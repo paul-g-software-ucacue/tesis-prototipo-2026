@@ -122,6 +122,12 @@ public record CambioDeFlujo(
          * versión anulada antes y la nueva después, y la versión nueva, su hash, la anulada y el
          * motivo en el detalle.
          */
-        DISTRIBUTIVO_VERSION_NUEVA
+        DISTRIBUTIVO_VERSION_NUEVA,
+        /**
+         * La resolución del OCS registrada (F15-H01, D-107): el paso de EN_OCS a APROBADO, por
+         * quien la registra, con la etapa antes y después, y la versión, el hash, el número, la
+         * fecha y la huella del PDF en el detalle.
+         */
+        RESOLUCION_REGISTRADA
     }
 }

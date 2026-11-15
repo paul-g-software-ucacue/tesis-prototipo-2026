@@ -106,7 +106,7 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
 - [X] T008 [US1] El repositorio. Ver fallar primero en `OCS/integrationTest/.../RepositorioProcesoIntegrationTest.java`: la transición a APROBADO con su resolución se guarda y se lee; `resolucion()` la devuelve. Luego, `RepositorioProcesoJdbc` inserta y lee `resolucion_ocs`.
 
   **Resultado (2026-11-15):** la prueba nueva se vio fallar al leer: sin la resolución, la transición a APROBADO no cumple su regla. Pasa con la inserción y la lectura de `resolucion_ocs`. En las etapas de esta prueba, EN_OCS es del VICERRECTOR, así que registra con ese rol. Las de integración de Validación OCS en verde.
-- [ ] T009 [US1] El caso de uso. Ver fallar primero en `OCS/test/.../aplicacion/RegistrarResolucionServicioTest.java`:
+- [X] T009 [US1] El caso de uso. Ver fallar primero en `OCS/test/.../aplicacion/RegistrarResolucionServicioTest.java`:
   - el archivo inválido se rechaza sin guardar ni bloquear;
   - el archivo se guarda antes de la transacción;
   - con el proceso bloqueado, el agregado decide;
@@ -116,6 +116,8 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
   - el periodo cerrado: `PeriodoCerrado`, sin guardar el archivo (análisis U1).
 
   Luego, `puertos/entrada/RegistrarResolucion`, `CambioDeFlujo.Accion.RESOLUCION_REGISTRADA` con su rama en `FlujoDelDistributivoServicio.cambio`, y `RegistrarResolucionServicio` con su bean.
+
+  **Resultado (2026-11-15):** `RegistrarResolucionServicioTest` (5), vista fallar contra el esqueleto; pasa con la implementación. Para que un rechazo no deje ni el archivo, el agregado suma `validarResolucion` (las mismas reglas, sin cambiar nada), que `registrarResolucion` reutiliza; lo cubren sus pruebas de T006. Sin proceso todavía, el distributivo no llegó a EN_OCS: `EtapaNoAdmiteResolucion`. El servicio responde el estado del flujo con `ConsultarFlujo`. La bitácora lleva el número, la fecha (texto ISO) y la huella.
 - [ ] T010 [US1] El controlador. Ver fallar primero en `OCS/test/.../adaptadores/entrada/RegistrarResolucionContratoTest.java`:
   - el 200 con el flujo en APROBADO;
   - cada 400, el 413 y el 403 (sin permiso y sin rol);

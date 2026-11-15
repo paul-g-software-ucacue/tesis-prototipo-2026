@@ -280,21 +280,7 @@ public final class ProcesoAprobacion {
      */
     public List<Transicion> registrarResolucion(
             Solicitante quien, ResolucionOcs resolucion, Instant ahora) {
-        Objects.requireNonNull(resolucion, "resolucion");
-        if (estado != TipoDeEtapa.EN_OCS) {
-            throw new EtapaNoAdmiteResolucion();
-        }
-        exigirRol(quien, estado);
-        LocalDate llegada =
-                transiciones.stream()
-                        .filter(una -> una.hacia() == TipoDeEtapa.EN_OCS)
-                        .reduce((primera, ultima) -> ultima)
-                        .map(una -> LocalDate.ofInstant(una.momento(), ZONA))
-                        .orElseThrow(() -> new IllegalStateException("En EN_OCS sin llegar"));
-        LocalDate hoy = LocalDate.ofInstant(ahora, ZONA);
-        if (resolucion.fecha().isBefore(llegada) || resolucion.fecha().isAfter(hoy)) {
-            throw new ResolucionFueraDeRango();
-        }
+        validarResolucion(quien, resolucion, ahora);
         Transicion congelada =
                 congelacion().orElseThrow(() -> new IllegalStateException("En EN_OCS sin firma"));
         TipoDeEtapa desde = estado;
@@ -314,6 +300,36 @@ public final class ProcesoAprobacion {
                         Optional.of(resolucion));
         transiciones.add(paso);
         return List.of(paso);
+    }
+
+    /**
+     * Comprueba, sin cambiar nada, que {@code quien} puede registrar esa resolución ahora: las
+     * mismas reglas de {@link #registrarResolucion}. El caso de uso lo llama antes de guardar el
+     * PDF, para que un rechazo no deje ni el archivo (F15-H01).
+     *
+     * @param quien quien registra
+     * @param resolucion el número, la fecha y el PDF
+     * @param ahora cuándo se registra
+     * @throws EtapaNoAdmiteResolucion si el distributivo no está en EN_OCS
+     * @throws RolDeOtraEtapa si no tiene el rol de EN_OCS
+     * @throws ResolucionFueraDeRango si la fecha es futura o anterior a la llegada a EN_OCS
+     */
+    public void validarResolucion(Solicitante quien, ResolucionOcs resolucion, Instant ahora) {
+        Objects.requireNonNull(resolucion, "resolucion");
+        if (estado != TipoDeEtapa.EN_OCS) {
+            throw new EtapaNoAdmiteResolucion();
+        }
+        exigirRol(quien, estado);
+        LocalDate llegada =
+                transiciones.stream()
+                        .filter(una -> una.hacia() == TipoDeEtapa.EN_OCS)
+                        .reduce((primera, ultima) -> ultima)
+                        .map(una -> LocalDate.ofInstant(una.momento(), ZONA))
+                        .orElseThrow(() -> new IllegalStateException("En EN_OCS sin llegar"));
+        LocalDate hoy = LocalDate.ofInstant(ahora, ZONA);
+        if (resolucion.fecha().isBefore(llegada) || resolucion.fecha().isAfter(hoy)) {
+            throw new ResolucionFueraDeRango();
+        }
     }
 
     /** La transición que aprobó el distributivo con la resolución del OCS, si ya se registró. */

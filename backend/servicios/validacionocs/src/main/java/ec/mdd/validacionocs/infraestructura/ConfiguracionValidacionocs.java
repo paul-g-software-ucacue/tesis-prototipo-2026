@@ -26,6 +26,7 @@ import ec.mdd.validacionocs.aplicacion.EtapaDelConsolidadoServicio;
 import ec.mdd.validacionocs.aplicacion.EtapasAlCrearse;
 import ec.mdd.validacionocs.aplicacion.FlujoDelDistributivoServicio;
 import ec.mdd.validacionocs.aplicacion.RegistrarRechazoEnFirmaServicio;
+import ec.mdd.validacionocs.aplicacion.RegistrarResolucionServicio;
 import ec.mdd.validacionocs.puertos.entrada.CargarConfiguracion;
 import ec.mdd.validacionocs.puertos.entrada.CompletarFirmas;
 import ec.mdd.validacionocs.puertos.entrada.ConsultarConfiguracion;
@@ -98,6 +99,27 @@ public class ConfiguracionValidacionocs {
     @Bean
     public AnulacionDeLasFirmas anulacionDeLasFirmas(AnularFirmas anularFirmas) {
         return new AnulacionDeLasFirmas(anularFirmas);
+    }
+
+    /** Registrar la resolución del OCS y aprobar el distributivo (F15-H01, D-107). */
+    @Bean
+    public RegistrarResolucionServicio registrarResolucion(
+            RepositorioProceso repositorioProceso,
+            Distributivo distributivoDeGeneracion,
+            DatosDelPeriodo datos,
+            AlmacenDeResoluciones almacenDeResoluciones,
+            RegistroDeCambios registroDeCambiosValidacionocs,
+            Transaccion transaccionValidacionocs,
+            FlujoDelDistributivoServicio flujoDelDistributivo) {
+        return new RegistrarResolucionServicio(
+                repositorioProceso,
+                distributivoDeGeneracion,
+                datos,
+                almacenDeResoluciones,
+                registroDeCambiosValidacionocs,
+                transaccionValidacionocs,
+                flujoDelDistributivo,
+                Clock.systemUTC());
     }
 
     /** Los PDF de las resoluciones del OCS, en el volumen del proceso (F15-H01, D-88). */

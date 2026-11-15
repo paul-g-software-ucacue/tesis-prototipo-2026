@@ -409,6 +409,19 @@ public final class FlujoDelDistributivoServicio
                     Map.of("estado", transicion.desde().name()),
                     Map.of("estado", transicion.hacia().name()));
         }
+        // F15-H01: la resolución del OCS, con su número, su fecha y la huella del PDF (D-107).
+        if (transicion.resolucion().isPresent()) {
+            detalle.put("numero", transicion.resolucion().get().numero());
+            detalle.put("fecha", transicion.resolucion().get().fecha().toString());
+            detalle.put("sha256", transicion.resolucion().get().sha256());
+            return new CambioDeFlujo(
+                    transicion.momento(),
+                    transicion.quien(),
+                    CambioDeFlujo.Accion.RESOLUCION_REGISTRADA,
+                    detalle,
+                    Map.of("estado", transicion.desde().name()),
+                    Map.of("estado", transicion.hacia().name()));
+        }
         // F12-H04: la versión anulada es la anterior a la nueva; hoy el único motivo es el rechazo.
         if (transicion.tipo() == TipoDeTransicion.VERSION_NUEVA) {
             detalle.put("versionAnulada", transicion.version() - 1);
