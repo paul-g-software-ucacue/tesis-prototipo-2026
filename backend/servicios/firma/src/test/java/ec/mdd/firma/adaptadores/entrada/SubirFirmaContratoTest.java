@@ -32,8 +32,9 @@ import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequ
 
 /**
  * La subida del PDF firmado ({@code contratos/firma/openapi.yaml}, F14-H02): 201 con el resultado
- * según el esquema, el 422 de cada comprobación con las cuatro en los detalles, el 400 y el 413 del
- * catálogo, y el 403 común fuera de turno, igual que sin permiso.
+ * según el esquema, el 422 de cada comprobación con las siete en los detalles (F14-H03), el 409 del
+ * paso sin nombre, el 400 y el 413 del catálogo, y el 403 común fuera de turno, igual que sin
+ * permiso.
  */
 @WebMvcTest(FirmasPendientesControlador.class)
 @ImportAutoConfiguration({SeguridadProcesoAutoConfiguracion.class, ErroresAutoConfiguracion.class})
@@ -54,38 +55,33 @@ class SubirFirmaContratoTest {
      * la comprobación que falla.
      */
     static ResultadoValidacion resultado(String contenido) {
+        // El nombre de una comprobación la rechaza, con las anteriores aprobadas; otro contenido,
+        // todas aprobadas.
         List<ResultadoDeComprobacion> comprobaciones =
-                switch (contenido) {
-                    case "MISMO_DOCUMENTO" ->
-                            ResultadoDeComprobacion.desde(
-                                    ResultadoDeComprobacion.rechazada(
-                                            Comprobacion.MISMO_DOCUMENTO,
-                                            "No es la versión vigente."));
-                    case "UNA_FIRMA_NUEVA" ->
-                            ResultadoDeComprobacion.desde(
-                                    ResultadoDeComprobacion.aprobada(Comprobacion.MISMO_DOCUMENTO),
-                                    ResultadoDeComprobacion.rechazada(
-                                            Comprobacion.UNA_FIRMA_NUEVA, "Dos firmas nuevas."));
-                    case "INTEGRIDAD" ->
-                            ResultadoDeComprobacion.desde(
-                                    ResultadoDeComprobacion.aprobada(Comprobacion.MISMO_DOCUMENTO),
-                                    ResultadoDeComprobacion.aprobada(Comprobacion.UNA_FIRMA_NUEVA),
-                                    ResultadoDeComprobacion.rechazada(
-                                            Comprobacion.INTEGRIDAD, "No íntegra."));
-                    case "CONFIANZA" ->
-                            ResultadoDeComprobacion.desde(
-                                    ResultadoDeComprobacion.aprobada(Comprobacion.MISMO_DOCUMENTO),
-                                    ResultadoDeComprobacion.aprobada(Comprobacion.UNA_FIRMA_NUEVA),
-                                    ResultadoDeComprobacion.aprobada(Comprobacion.INTEGRIDAD),
-                                    ResultadoDeComprobacion.rechazada(
-                                            Comprobacion.CONFIANZA, "Sin raíz de confianza."));
-                    default ->
-                            List.of(
-                                    ResultadoDeComprobacion.aprobada(Comprobacion.MISMO_DOCUMENTO),
-                                    ResultadoDeComprobacion.aprobada(Comprobacion.UNA_FIRMA_NUEVA),
-                                    ResultadoDeComprobacion.aprobada(Comprobacion.INTEGRIDAD),
-                                    ResultadoDeComprobacion.aprobada(Comprobacion.CONFIANZA));
-                };
+                java.util.Arrays.stream(Comprobacion.values())
+                        .filter(una -> una.name().equals(contenido))
+                        .findFirst()
+                        .map(
+                                falla -> {
+                                    List<ResultadoDeComprobacion> evaluadas =
+                                            new java.util.ArrayList<>();
+                                    for (Comprobacion una : Comprobacion.values()) {
+                                        if (una == falla) {
+                                            evaluadas.add(
+                                                    ResultadoDeComprobacion.rechazada(
+                                                            una, "Rechazada en la prueba."));
+                                            break;
+                                        }
+                                        evaluadas.add(ResultadoDeComprobacion.aprobada(una));
+                                    }
+                                    return ResultadoDeComprobacion.desde(
+                                            evaluadas.toArray(ResultadoDeComprobacion[]::new));
+                                })
+                        .orElseGet(
+                                () ->
+                                        java.util.Arrays.stream(Comprobacion.values())
+                                                .map(ResultadoDeComprobacion::aprobada)
+                                                .toList());
         boolean conCertificado =
                 !contenido.equals("MISMO_DOCUMENTO") && !contenido.equals("UNA_FIRMA_NUEVA");
         return new ResultadoValidacion(
@@ -132,7 +128,10 @@ class SubirFirmaContratoTest {
                         new Caso("MISMO_DOCUMENTO", "FIRMA_NO_ES_LA_VERSION_VIGENTE"),
                         new Caso("UNA_FIRMA_NUEVA", "FIRMA_SIN_UNA_FIRMA_NUEVA"),
                         new Caso("INTEGRIDAD", "FIRMA_NO_INTEGRA"),
-                        new Caso("CONFIANZA", "FIRMA_SIN_CONFIANZA"))) {
+                        new Caso("CONFIANZA", "FIRMA_SIN_CONFIANZA"),
+                        new Caso("VIGENCIA", "FIRMA_CERTIFICADO_NO_VIGENTE"),
+                        new Caso("ORDEN", "FIRMA_FUERA_DE_ORDEN"),
+                        new Caso("FIRMANTE", "FIRMA_FIRMANTE_EQUIVOCADO"))) {
             MvcResult resultado =
                     subir(FirmasPendientesContratoTest.EN_TURNO, caso.falla(), "docente.demo");
 
@@ -143,9 +142,23 @@ class SubirFirmaContratoTest {
                     .contains("\"campo\":\"MISMO_DOCUMENTO\"")
                     .contains("\"campo\":\"UNA_FIRMA_NUEVA\"")
                     .contains("\"campo\":\"INTEGRIDAD\"")
-                    .contains("\"campo\":\"CONFIANZA\"");
+                    .contains("\"campo\":\"CONFIANZA\"")
+                    .contains("\"campo\":\"VIGENCIA\"")
+                    .contains("\"campo\":\"ORDEN\"")
+                    .contains("\"campo\":\"FIRMANTE\"");
             contrato.validar(resultado);
         }
+    }
+
+    @Test
+    void dadoElPasoEnTurnoSinNombreImpreso_cuandoSube_entonces409DelCatalogo() throws Exception {
+        MvcResult resultado =
+                subir(FirmasPendientesContratoTest.EN_TURNO, "SIN_NOMBRE", "docente.demo");
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(409);
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("\"codigo\":\"FIRMA_PASO_SIN_NOMBRE\"");
+        contrato.validar(resultado);
     }
 
     @Test

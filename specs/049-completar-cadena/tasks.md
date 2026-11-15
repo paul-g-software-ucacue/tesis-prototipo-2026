@@ -115,7 +115,9 @@ description: "Tareas de F14-H03: validar firmante, turno y vigencia, y completar
   - la vigencia contra el momento de la subida del reloj.
 
   Luego, `ComprobacionDelFirmante` en la subida.
-- [ ] T010 [US1] El contrato. En `SubirFirmaContratoTest`, ver fallar el 422 de los tres códigos con siete detalles y el 409. Ajustar el doble de `FirmasPendientesContratoTest`. Luego, el controlador si hace falta.
+- [X] T010 [US1] El contrato. En `SubirFirmaContratoTest`, ver fallar el 422 de los tres códigos con siete detalles y el 409. Ajustar el doble de `FirmasPendientesContratoTest`. Luego, el controlador si hace falta.
+
+  **Resultado (2026-11-14):** pasaron en la primera corrida: `ErroresFirma` ya tenía los códigos (T004) y el controlador traduce cualquier rechazo. Son pruebas de confirmación, no vistas fallar.
 - [ ] T011 [US1] `ValidadorPadesTest` y `DocumentoFirmableIntegrationTest` (`apps:distributivo`) con la CA de prueba regenerada: las firmas de los `.p12` nuevos se aceptan en su paso.
 
 **Checkpoint**: nadie firma por otro ni fuera de su turno.

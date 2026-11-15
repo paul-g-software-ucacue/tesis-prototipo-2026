@@ -8,6 +8,7 @@ import ec.mdd.firma.dominio.ArchivoDemasiadoGrande;
 import ec.mdd.firma.dominio.ArchivoFirmadoRechazado;
 import ec.mdd.firma.dominio.ArchivoNoDisponible;
 import ec.mdd.firma.dominio.ArchivoVacio;
+import ec.mdd.firma.dominio.PasoSinNombre;
 import ec.mdd.firma.dominio.ResultadoValidacion;
 import ec.mdd.firma.dominio.SinTurnoDeFirma;
 import ec.mdd.firma.puertos.entrada.ArchivoVigente;
@@ -213,6 +214,9 @@ class FirmasPendientesContratoTest {
                     throw new ArchivoDemasiadoGrande(archivo.length);
                 }
                 String texto = new String(archivo, StandardCharsets.US_ASCII);
+                if (texto.equals("SIN_NOMBRE")) {
+                    throw new PasoSinNombre();
+                }
                 ResultadoValidacion resultado = SubirFirmaContratoTest.resultado(texto);
                 if (!resultado.aceptada()) {
                     throw ArchivoFirmadoRechazado.de(resultado);
