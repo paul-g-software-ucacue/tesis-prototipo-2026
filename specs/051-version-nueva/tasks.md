@@ -133,10 +133,13 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
 
   **Resultado (2026-11-15):** `RegistrarRechazoEnFirmaServicioTest` reescrita con 5 pruebas, más una de `admiteRechazoEnFirma` en `ProcesoAprobacionTest`. Contra los esqueletos fallaron 4. Las de «otro aviso ganó mientras tanto» y «sin proceso» pasaron porque el esqueleto conservaba el comportamiento de F14-H04. Pasan con la implementación, y las 385 de Validación OCS siguen en verde. Desvíos:
   - **El paso 1** necesita una pregunta al agregado sin bloquearlo: `ProcesoAprobacion.admiteRechazoEnFirma(version)`, que `rechazarEnFirma` también usa.
-  - **El aviso a Firma** es `avisarAnulacion(FirmasPorAnular)`, no una sobrecarga de `avisar`: la sobrecarga volvía ambiguos los `any()` de las pruebas de F13-H02, y `AvisoDeFirma` deja de ser `@FunctionalInterface`. `FirmasPorAnular` lleva periodo, versión y momento, sin motivo: el único que Aprobación ordena hoy es el rechazo en firma.
+  - **El aviso a Firma** es un puerto propio, `AvisoDeAnulacion` (funcional), con `FirmasPorAnular`, y no un método más de `AvisoDeFirma`. Sumarlo a `AvisoDeFirma` le quitaba el `@FunctionalInterface` y rompía las lambdas de cuatro pruebas de integración y de `FlujoEnMemoria`. `AvisoDeFirmaSpring` implementa los dos. `FirmasPorAnular` lleva periodo, versión y momento, sin motivo: el único que Aprobación ordena hoy es el rechazo en firma.
+  - **Los dobles de `Distributivo`** de cuatro pruebas de integración (`Aprobacion`, `Devolucion`, `EnvioARevision`, `EtapaDelConsolidado`) suman `crearVersionNueva`, vacío.
   - **La bitácora** de `DISTRIBUTIVO_VERSION_NUEVA` lleva la versión anulada (la anterior a la nueva) y el motivo en el detalle, con `version` antes y después.
-  - **`FlujoEnMemoria`** suma `crearVersionNueva` (vacío) y deja de usar una lambda para el aviso.
-- [ ] T012 [US1] El repositorio de Aprobación. Ver fallar primero en `OCS/integrationTest/.../RepositorioProcesoIntegrationTest.java`: la transición `VERSION_NUEVA` se guarda y se lee, después del rechazo. Luego, lo que haga falta en `RepositorioProcesoJdbc`.
+  - **`FlujoEnMemoria`** suma `crearVersionNueva`, vacío.
+- [X] T012 [US1] El repositorio de Aprobación. Ver fallar primero en `OCS/integrationTest/.../RepositorioProcesoIntegrationTest.java`: la transición `VERSION_NUEVA` se guarda y se lee, después del rechazo. Luego, lo que haga falta en `RepositorioProcesoJdbc`.
+
+  **Resultado (2026-11-15):** la prueba nueva pasó al escribirse: `RepositorioProcesoJdbc` guarda y lee cualquier tipo de transición, y V6 ya admitía `VERSION_NUEVA`. Comprueba las tres transiciones en orden, `rechazoPendiente()` vacío y `rechazoVigente()` en el rechazo. Sin cambios en el repositorio.
 
 **Checkpoint**: el rechazo deja la versión nueva y el flujo en EN_REVISION_VRA con ella; las firmas todavía no se anulan.
 
