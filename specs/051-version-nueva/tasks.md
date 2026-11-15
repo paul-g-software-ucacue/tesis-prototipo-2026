@@ -260,7 +260,7 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
     - las dos intermitentes de siempre, `ClienteDeEventosLocalTest` y `ConfirmarLasDiezCargasIntegrationTest`, que pasan solas y con sus módulos completos;
     - `spotlessJavaCheck` de Validación OCS, por el formato del JavaDoc de T025. Después de `spotlessApply`, `:servicios:validacionocs:build integrationTest` pasa.
   - Con eso: 3 206 pruebas unitarias y 329 de integración, sin fallas.
-  - Cobertura de líneas: Generación, Firma (80,7 %) y Validación OCS (83,2 %) pasan el 60 %; la más baja, Roles, 77,2 %. Spotless, SpotBugs, ArchUnit y Spring Modulith en verde.
+  - Cobertura de líneas: Generación 90,1 %, Firma 80,7 % y Validación OCS 83,2 % (mínimo, 60 %); la más baja, Roles, 77,2 %. Spotless, SpotBugs, ArchUnit y Spring Modulith en verde.
   - SPA: tipos, ESLint, Prettier y Vitest 582/582 (T020); Playwright, en los tres archivos tocados, 14/14 (T021).
   - T023: los 36 scripts de `perfil-consolidado` pasan, en su orden; `probar_rechazo_en_firma.sh` en 51 s.
 - [X] T025 [P] Revisar el JavaDoc: los tres pasos y su reintento en `RegistrarRechazoEnFirmaServicio`; la copia y la idempotencia en `crearVersionNueva`; la anulación y por qué no toca `validacion_firma`; `rechazoVigente` frente a `rechazoPendiente`.
