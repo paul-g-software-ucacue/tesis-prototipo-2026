@@ -10,5 +10,10 @@ public enum TipoDeTransicion {
      * El distributivo volvió de EN_CONSOLIDACION a BORRADOR_CARRERA, con parciales devueltos y la
      * observación de cada uno (F12-H05, D-98).
      */
-    DEVOLUCION
+    DEVOLUCION,
+    /**
+     * El distributivo volvió de CONGELADO_EN_FIRMA a la etapa activa anterior porque el firmante en
+     * turno rechazó en firma; la registra el sistema, con el rechazo (F14-H04, D-105).
+     */
+    RECHAZO_EN_FIRMA
 }

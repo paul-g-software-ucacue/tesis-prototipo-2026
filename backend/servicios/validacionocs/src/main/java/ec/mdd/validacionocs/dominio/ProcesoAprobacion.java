@@ -35,6 +35,9 @@ import java.util.TreeMap;
  *       orden (F10-H03);
  *   <li>desde EN_REVISION_VRA, solo su rol aprueba el contenido y el distributivo pasa a
  *       CONGELADO_EN_FIRMA; todo paso hacia esa etapa congela antes la versión (F13-H01, D-100);
+ *   <li>un rechazo en firma devuelve el distributivo de CONGELADO_EN_FIRMA a la etapa activa
+ *       anterior, y ningún paso vuelve a congelar la versión hasta que haya una nueva ({@link
+ *       RequiereVersionNueva}, F14-H04, D-105);
  *   <li>un intento rechazado no cambia nada ni deja transición (FR-013).
  * </ul>
  */
@@ -267,6 +270,9 @@ public final class ProcesoAprobacion {
             throw new EtapaConOperacionPropia();
         }
         exigirRol(quien, estado);
+        if (congelaAlAvanzar()) {
+            exigirSinRechazoPendiente();
+        }
     }
 
     /**
@@ -326,6 +332,7 @@ public final class ProcesoAprobacion {
      * @throws RolDeOtraEtapa si no tiene el rol de EN_CONSOLIDACION en la copia de la configuración
      * @throws EtapaNoAdmiteRevision si el distributivo no está en EN_CONSOLIDACION
      * @throws ParcialesPendientes si algún parcial no está enviado
+     * @throws RequiereVersionNueva si el envío congelaría la versión de un rechazo en firma
      */
     public void validarRevision(Solicitante quien) {
         exigirRol(quien, TipoDeEtapa.EN_CONSOLIDACION);
@@ -335,6 +342,9 @@ public final class ProcesoAprobacion {
         // Pendiente o devuelto: su carrera todavía no lo envió (F12-H05).
         if (parciales.values().stream().anyMatch(uno -> uno != EstadoDeEnvio.ENVIADO)) {
             throw new ParcialesPendientes();
+        }
+        if (congelaAlAvanzar()) {
+            exigirSinRechazoPendiente();
         }
     }
 
@@ -467,12 +477,14 @@ public final class ProcesoAprobacion {
      * @param quien quien aprueba
      * @throws RolDeOtraEtapa si no tiene el rol de EN_REVISION_VRA en la copia de la configuración
      * @throws EtapaNoAdmiteAprobacion si el distributivo no está en EN_REVISION_VRA
+     * @throws RequiereVersionNueva si volvió por un rechazo en firma y no hay versión nueva
      */
     public void validarAprobacion(Solicitante quien) {
         exigirRol(quien, TipoDeEtapa.EN_REVISION_VRA);
         if (estado != TipoDeEtapa.EN_REVISION_VRA) {
             throw new EtapaNoAdmiteAprobacion();
         }
+        exigirSinRechazoPendiente();
     }
 
     /**
@@ -547,6 +559,76 @@ public final class ProcesoAprobacion {
         return List.of(paso);
     }
 
+    /**
+     * El firmante en turno rechazó en firma la versión congelada: el distributivo vuelve de
+     * CONGELADO_EN_FIRMA a la etapa activa anterior, EN_REVISION_VRA con la configuración por
+     * defecto (F14-H04, D-105). Es la regla de {@link #siguienteActiva} al revés: si la copia de la
+     * configuración desactiva la revisión, no vuelve a una etapa inactiva. Lo pide Firma con un
+     * aviso que puede llegar más de una vez, así que es idempotente, como {@link #completarFirmas}:
+     * fuera de CONGELADO_EN_FIRMA o con otra versión que la congelada, no hace nada.
+     *
+     * @param version la versión rechazada
+     * @param rechazo quién rechazó, en qué paso y por qué
+     * @param ahora cuándo se registra
+     * @return la transición nueva, por {@value #SISTEMA}, o vacío si no corresponde
+     */
+    public List<Transicion> rechazarEnFirma(
+            int version, RechazoDelFirmante rechazo, Instant ahora) {
+        Objects.requireNonNull(rechazo, "rechazo");
+        Optional<Transicion> congelada = congelacion();
+        if (estado != TipoDeEtapa.CONGELADO_EN_FIRMA
+                || congelada.filter(una -> una.version() == version).isEmpty()) {
+            return List.of();
+        }
+        TipoDeEtapa desde = estado;
+        estado = anteriorActiva(desde);
+        Transicion vuelta =
+                new Transicion(
+                        TipoDeTransicion.RECHAZO_EN_FIRMA,
+                        desde,
+                        estado,
+                        Optional.empty(),
+                        version,
+                        congelada.get().hash(),
+                        SISTEMA,
+                        ahora,
+                        Map.of(),
+                        Optional.of(rechazo));
+        transiciones.add(vuelta);
+        return List.of(vuelta);
+    }
+
+    /**
+     * El rechazo en firma por el que volvió el distributivo, mientras sea la última transición
+     * (F14-H04). La versión nueva de F12-H04 agregará otra transición y lo dejará atrás.
+     */
+    public Optional<Transicion> rechazoPendiente() {
+        return transiciones.isEmpty()
+                ? Optional.empty()
+                : Optional.of(transiciones.getLast())
+                        .filter(una -> una.tipo() == TipoDeTransicion.RECHAZO_EN_FIRMA);
+    }
+
+    /**
+     * La última etapa activa antes de {@code etapa}. Siempre existe después de BORRADOR_CARRERA,
+     * que es del esqueleto fijo.
+     */
+    public TipoDeEtapa anteriorActiva(TipoDeEtapa etapa) {
+        return etapas.stream()
+                .filter(una -> una.tipo().ordinal() < etapa.ordinal() && una.activa())
+                .map(EtapaDelProceso::tipo)
+                .reduce((primera, ultima) -> ultima)
+                .orElseThrow(() -> new IllegalStateException("BORRADOR_CARRERA es la primera"));
+    }
+
+    // F14-H04, D-105: congelar otra vez la versión de un rechazo en firma pediría a Firma el
+    // documento rechazado (D-101); hace falta la versión nueva de F12-H04.
+    private void exigirSinRechazoPendiente() {
+        if (rechazoPendiente().isPresent()) {
+            throw new RequiereVersionNueva();
+        }
+    }
+
     /** Lo que {@code quien} puede hacer ahora (FR-014). */
     public List<AccionDelProceso> acciones(Solicitante quien) {
         if (estado == TipoDeEtapa.BORRADOR_CARRERA
@@ -571,7 +653,10 @@ public final class ProcesoAprobacion {
                             AccionDelProceso.ENVIAR_A_REVISION, AccionDelProceso.DEVOLVER_PARCIALES)
                     : List.of(AccionDelProceso.ENVIAR_A_REVISION);
         }
-        if (estado == TipoDeEtapa.EN_REVISION_VRA && tieneRol(quien, TipoDeEtapa.EN_REVISION_VRA)) {
+        // Con un rechazo en firma pendiente no se aprueba hasta la versión nueva (F14-H04).
+        if (estado == TipoDeEtapa.EN_REVISION_VRA
+                && tieneRol(quien, TipoDeEtapa.EN_REVISION_VRA)
+                && rechazoPendiente().isEmpty()) {
             return List.of(AccionDelProceso.APROBAR_CONTENIDO);
         }
         return List.of();

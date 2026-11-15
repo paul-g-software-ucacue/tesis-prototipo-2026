@@ -78,7 +78,7 @@ description: "Tareas de F14-H04: rechazar en firma con una observación"
   Luego, `RechazoEnFirma`, `ObservacionInvalida` y `FirmasDelDocumento.rechazo`.
 
   **Resultado (2026-11-15):** el objeto de valor del dominio se llama `RechazoDelFirmante` (`RechazoDelFirmanteTest`), no `RechazoEnFirma`: el glosario usa ese nombre para el evento hacia Aprobación (§6), que va en `puertos.entrada`, y dos clases con el mismo nombre en Firma confundirían. Las pruebas se vieron fallar contra un esqueleto (4 fallas) y pasan con la implementación; las demás de Firma siguen en verde.
-- [ ] T007 [P] El dominio de Aprobación. Ver fallar primero:
+- [X] T007 [P] El dominio de Aprobación. Ver fallar primero:
   - `ProcesoAprobacionTest` `rechazarEnFirma`:
     - en CONGELADO_EN_FIRMA con esa versión: una transición `RECHAZO_EN_FIRMA` a EN_REVISION_VRA por `sistema`, con el hash de la congelación y el rechazo;
     - con EN_REVISION_VRA desactivada en la copia: a la etapa activa anterior;
@@ -87,6 +87,8 @@ description: "Tareas de F14-H04: rechazar en firma con una observación"
   - `TransicionTest`: el rechazo solo en `RECHAZO_EN_FIRMA`, y siempre.
 
   Luego `TipoDeTransicion.RECHAZO_EN_FIRMA`, `RechazoDelFirmante`, `Transicion.rechazo` (conservando los constructores de antes), `anteriorActiva`, `rechazoPendiente` y `RequiereVersionNueva`.
+
+  **Resultado (2026-11-15):** 6 pruebas vistas fallar contra los esqueletos; pasan con la implementación, y las demás de Validación OCS siguen en verde. El bloqueo está en `validarAprobacion`, en `validarRevision` y en `validarAvance` cuando congelan al avanzar: es la regla de D-100 («todo paso hacia CONGELADO_EN_FIRMA congela»), y el envío del último parcial no llega a congelar porque, después de un rechazo, todos los parciales ya están enviados.
 
 **Checkpoint**: el dominio decide, sin persistencia ni eventos.
 
