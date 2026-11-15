@@ -158,7 +158,7 @@ description: "Tareas de F14-H03: validar firmante, turno y vigencia, y completar
 
 **Independent Test**: con la variable, el PDF imprime ese nombre en los tres pasos; sin ella, los de siempre.
 
-- [ ] T015 [US3] Ver fallar primero `FirmantesConNombreLocalTest`:
+- [X] T015 [US3] Ver fallar primero `FirmantesConNombreLocalTest`:
   - con nombre, lo devuelve para cada rol y conserva el usuario o la identificación;
   - vacío, delega sin cambios.
 

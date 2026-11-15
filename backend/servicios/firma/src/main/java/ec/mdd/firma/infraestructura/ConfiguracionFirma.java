@@ -3,6 +3,7 @@ package ec.mdd.firma.infraestructura;
 import ec.mdd.firma.adaptadores.salida.AlmacenDeDocumentosEnDisco;
 import ec.mdd.firma.adaptadores.salida.AvisoDeCadenaCompletaSpring;
 import ec.mdd.firma.adaptadores.salida.ContenidoDesdeGeneracion;
+import ec.mdd.firma.adaptadores.salida.FirmantesConNombreLocal;
 import ec.mdd.firma.adaptadores.salida.FirmantesDesdeProcesos;
 import ec.mdd.firma.adaptadores.salida.GeneradorPdfa;
 import ec.mdd.firma.adaptadores.salida.IdentificacionDesdeUsuarios;
@@ -68,8 +69,11 @@ public class ConfiguracionFirma {
     public FirmantesDelPeriodo firmantesDelPeriodo(
             ConsultasEntreProcesos consultas,
             @Value("${mdd.procesos.datos}") URI datos,
-            @Value("${mdd.procesos.identidad}") URI identidad) {
-        return new FirmantesDesdeProcesos(consultas, datos, identidad);
+            @Value("${mdd.procesos.identidad}") URI identidad,
+            @Value("${mdd.firma.nombre-local:}") String nombreLocal) {
+        // El nombre local del autor (F14-H03, ADR-017): vacío en la demo y en la CI.
+        return new FirmantesConNombreLocal(
+                new FirmantesDesdeProcesos(consultas, datos, identidad), nombreLocal);
     }
 
     /** La identificación de una cuenta, de Usuarios en el proceso identidad (F14-H01, ADR-023). */
