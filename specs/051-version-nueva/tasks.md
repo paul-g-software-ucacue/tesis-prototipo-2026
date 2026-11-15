@@ -216,12 +216,16 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
   Luego, `FlujoDelDistributivo.RechazoEnFirma` con las dos versiones (de `rechazoVigente()`) y `FlujoControlador`.
 
   **Resultado (2026-11-15):** dos pruebas nuevas en `FlujoContratoTest`, con `FlujoEnMemoria.versionNueva`; la de F14-H04 suma `versionAnulada` sin `versionNueva`. Se vio fallar la de la versión nueva. La de «aprobada otra vez» pasaba antes, porque la vista usaba `rechazoPendiente`. La vista toma ahora `rechazoVigente()` y la versión de la transición `VERSION_NUEVA` que lo sigue. Las 56 de `FlujoContratoTest` y las de Validación OCS en verde.
-- [ ] T019 [P] [US3] El aviso de la SPA. Ver fallar primero en `SPA/pantallas/comun/EstadoDelFlujo.test.tsx`:
+- [X] T019 [P] [US3] El aviso de la SPA. Ver fallar primero en `SPA/pantallas/comun/EstadoDelFlujo.test.tsx`:
   - con `versionNueva`: «La versión 1 quedó anulada con sus firmas; el distributivo sigue con la versión 2.» y sin «Para aprobar otra vez…»;
   - sin ella: el texto de F14-H04.
 
   Luego, `EstadoDelFlujo.tsx` y los tipos de `comun/flujo.ts`.
-- [ ] T020 [P] [US3] Quitar la rama del rechazo de `SPA/pantallas/comun/AvisoDeVersionCongelada.tsx` (research §8), con sus dos pruebas en `Consolidado.test.tsx` e `Inconsistencias.test.tsx`. El aviso vuelve al texto de F13-H01, sin consultar el flujo. Si el componente queda trivial, se devuelve a cada pantalla como estaba.
+
+  **Resultado (2026-11-15):** una prueba nueva en `EstadoDelFlujo.test.tsx`, vista fallar; pasa con el texto que depende de `versionNueva`. El dato de F14-H04 suma `versionAnulada`, ahora obligatorio. `comun/flujo.ts` no cambió: toma el tipo del contrato generado.
+- [X] T020 [P] [US3] Quitar la rama del rechazo de `SPA/pantallas/comun/AvisoDeVersionCongelada.tsx` (research §8), con sus dos pruebas en `Consolidado.test.tsx` e `Inconsistencias.test.tsx`. El aviso vuelve al texto de F13-H01, sin consultar el flujo. Si el componente queda trivial, se devuelve a cada pantalla como estaba.
+
+  **Resultado (2026-11-15):** sin la rama, el componente solo era el `Alert` de F13-H01. Los cuatro archivos vuelven a como estaban antes de F14-H04 (`a8ac00e`), cuyo cambio en ellos era solo ese aviso, y se borra `AvisoDeVersionCongelada.tsx`. Tipos, ESLint y Prettier en verde; Vitest 582/582 (583, menos las dos quitadas, más la de T019).
 - [ ] T021 [US3] Playwright: correr `e2e/consolidado.spec.ts`, `e2e/firmas-pendientes.spec.ts` y `e2e/inconsistencias.spec.ts` con axe-core. Sin pruebas nuevas si nada cambió en los controles.
 
 **Checkpoint**: las tres historias funcionan en la API y en la SPA.

@@ -74,8 +74,9 @@ function Constancia({ congelacion }: { congelacion: CongelacionDeLaVersion }) {
   );
 }
 
-// El rechazo en firma por el que volvió el distributivo (F14-H04, D-105): quién, en qué paso,
-// cuándo y la observación. Hasta la versión nueva (F12-H04) no se aprueba otra vez.
+// El rechazo en firma de la versión vigente (F14-H04, D-105): quién, en qué paso, cuándo y la
+// observación. Desde F12-H04 (D-106), la versión que se anuló y con cuál se sigue; sin versión
+// nueva todavía, no se aprueba otra vez.
 function RechazoEnFirma({ rechazo }: { rechazo: RechazoEnFirmaDelFlujo }) {
   const titulo = useId();
   return (
@@ -88,7 +89,9 @@ function RechazoEnFirma({ rechazo }: { rechazo: RechazoEnFirmaDelFlujo }) {
         {rechazo.observacion}
       </Typography>
       <Typography variant="body2" sx={{ mt: 0.5 }}>
-        Para aprobar otra vez hace falta una versión nueva.
+        {rechazo.versionNueva === undefined
+          ? 'Para aprobar otra vez hace falta una versión nueva.'
+          : `La versión ${String(rechazo.versionAnulada)} quedó anulada con sus firmas; el distributivo sigue con la versión ${String(rechazo.versionNueva)}.`}
       </Typography>
     </Alert>
   );
