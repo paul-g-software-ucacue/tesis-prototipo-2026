@@ -54,4 +54,4 @@
 | `VALIDACIONOCS_RESOLUCION_NO_ES_PDF` | 400 | El archivo no es un PDF | Adjunta la resolución en PDF. | Validación |
 | `VALIDACIONOCS_RESOLUCION_DEMASIADO_GRANDE` | 413 | Resolución demasiado grande | La resolución pasa de 10 MB. Reduce su tamaño y vuelve a adjuntarla. | Validación |
 | `VALIDACIONOCS_RESOLUCION_NO_ENCONTRADA` | 404 | Sin resolución | Este periodo todavía no tiene resolución del OCS. | Negocio |
-| `VALIDACIONOCS_RESOLUCION_ILEGIBLE` | 500 | Resolución no disponible | No se pudo leer el PDF guardado de la resolución. Avisa al administrador. | Técnico |
+| `VALIDACIONOCS_RESOLUCION_ILEGIBLE` | 500 | Resolución no disponible | No se pudo leer el PDF guardado de la resolución. Avisa al administrador. | Sistema |
