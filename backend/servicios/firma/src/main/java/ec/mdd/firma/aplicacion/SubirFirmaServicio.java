@@ -52,11 +52,12 @@ import java.util.UUID;
  *       vigencia al subir, el orden y el firmante (F14-H03, D-104).
  *   <li><b>El registro</b>, en una transacción con su cambio para la bitácora. Si se aceptó, el
  *       archivo se guarda antes por su SHA-256 y el repositorio comprueba, con la generación
- *       bloqueada, que nadie firmó el paso ni rechazó el documento entretanto (F14-H04); si
- *       pasó, la subida se registra como rechazada por no ser la versión vigente (FR-014). Si la transacción falla después de
- *       guardar el archivo, queda un archivo sin registro, que no es vigente ni se entrega
- *       (research §4). Con la firma del último paso, en la misma transacción, avisa que la cadena
- *       está completa; Aprobación decide qué pasa con el distributivo (F14-H03, MD-05).
+ *       bloqueada, que nadie firmó el paso ni rechazó el documento entretanto (F14-H04); si pasó,
+ *       la subida se registra como rechazada por no ser la versión vigente (FR-014). Si la
+ *       transacción falla después de guardar el archivo, queda un archivo sin registro, que no es
+ *       vigente ni se entrega (research §4). Con la firma del último paso, en la misma transacción,
+ *       avisa que la cadena está completa; Aprobación decide qué pasa con el distributivo (F14-H03,
+ *       MD-05).
  * </ol>
  */
 public final class SubirFirmaServicio implements SubirFirma {
