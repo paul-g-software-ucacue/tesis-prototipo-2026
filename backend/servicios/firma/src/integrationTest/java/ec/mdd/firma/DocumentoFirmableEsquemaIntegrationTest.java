@@ -327,6 +327,75 @@ class DocumentoFirmableEsquemaIntegrationTest {
                 .isInstanceOf(DataAccessException.class);
     }
 
+    // F12-H04, V7: una anulación por documento, de un documento generado, sin reescrituras.
+    @Test
+    void dadaUnaAnulacionDeFirmas_cuandoSeRegistraOtraDelMismoDocumento_entoncesSeRechaza() {
+        generacion("P18", 1, "GENERADA", null);
+        documento("P18", 1, UUID.randomUUID());
+        anulacion("P18", 2);
+
+        assertThat(
+                        comoProceso
+                                .sql(
+                                        "select firmas_anuladas from firma.anulacion_de_firmas"
+                                                + " where periodo = 'P18'")
+                                .query(Integer.class)
+                                .single())
+                .isEqualTo(2);
+        assertThatThrownBy(() -> anulacion("P18", 2))
+                .as("una anulación por documento")
+                .isInstanceOf(DataAccessException.class);
+    }
+
+    @Test
+    void dadaUnaAnulacionInvalida_cuandoSeGuarda_entoncesSeRechaza() {
+        generacion("P19", 1, "GENERADA", null);
+        documento("P19", 1, UUID.randomUUID());
+
+        assertThatThrownBy(() -> anulacion("P19", -1)).isInstanceOf(DataAccessException.class);
+        assertThatThrownBy(() -> anulacion("P20", 0))
+                .as("sin generación")
+                .isInstanceOf(DataAccessException.class);
+    }
+
+    @Test
+    void dadaUnaAnulacionRegistrada_cuandoElProcesoLaCambiaOLaBorra_entoncesSeRechaza() {
+        generacion("P21", 1, "GENERADA", null);
+        documento("P21", 1, UUID.randomUUID());
+        anulacion("P21", 1);
+
+        assertThatThrownBy(
+                        () ->
+                                comoProceso
+                                        .sql(
+                                                "update firma.anulacion_de_firmas set"
+                                                        + " firmas_anuladas = 0 where periodo ="
+                                                        + " 'P21'")
+                                        .update())
+                .isInstanceOf(DataAccessException.class);
+        assertThatThrownBy(
+                        () ->
+                                comoProceso
+                                        .sql(
+                                                "delete from firma.anulacion_de_firmas"
+                                                        + " where periodo = 'P21'")
+                                        .update())
+                .isInstanceOf(DataAccessException.class);
+    }
+
+    private static void anulacion(String periodo, int anuladas) {
+        comoProceso
+                .sql(
+                        "insert into firma.anulacion_de_firmas (periodo, version, tipo, motivo,"
+                                + " firmas_anuladas, anulada_por, anulada_en) values (:periodo, 1,"
+                                + " 'CONSOLIDADO', 'RECHAZO_EN_FIRMA', :anuladas, 'sistema',"
+                                + " :momento)")
+                .param("periodo", periodo)
+                .param("anuladas", anuladas)
+                .param("momento", Timestamp.from(Instant.now()))
+                .update();
+    }
+
     private static void rechazo(String periodo, int orden, String observacion) {
         comoProceso
                 .sql(

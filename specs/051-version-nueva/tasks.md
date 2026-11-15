@@ -66,11 +66,13 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
   - la misma `clave` en dos versiones se admite, y dos veces en la misma, no.
 
   **Resultado (2026-11-15):** la prueba nueva de `GeneracionEsquemaIntegrationTest` se vio fallar sin las columnas y pasa con V8. Además del `check` entre número y motivo, la columna solo admite `RECHAZO_EN_FIRMA`. El `check` entre número y motivo se llama `version_distributivo_motivo_solo_desde_la_2`: el nombre por defecto choca con el `check` de la columna.
-- [ ] T004 [P] La migración `FIR/main/resources/db/migration/firma/V7__anulacion_de_firmas.sql`, según `data-model.md`: `anulacion_de_firmas` con su clave `(periodo, version, tipo)`, la foránea a `generacion_documento`, «`firmas_anuladas >= 0`», el motivo y `revoke update, delete, truncate`. Antes, ver fallar en `FIR/integrationTest/.../DocumentoFirmableEsquemaIntegrationTest.java`:
+- [X] T004 [P] La migración `FIR/main/resources/db/migration/firma/V7__anulacion_de_firmas.sql`, según `data-model.md`: `anulacion_de_firmas` con su clave `(periodo, version, tipo)`, la foránea a `generacion_documento`, «`firmas_anuladas >= 0`», el motivo y `revoke update, delete, truncate`. Antes, ver fallar en `FIR/integrationTest/.../DocumentoFirmableEsquemaIntegrationTest.java`:
   - inserta una anulación;
   - una segunda del mismo documento falla por la clave;
   - sin generación, falla por la foránea;
   - no puede actualizar ni borrar.
+
+  **Resultado (2026-11-15):** tres pruebas nuevas; se vieron fallar las dos que insertan una anulación válida. La de los valores inválidos pasaba sin la tabla, porque cualquier inserción fallaba: pasa con V7 por sus `check` y su foránea.
 - [ ] T005 [P] La migración `OCS/main/resources/db/migration/validacionocs/V6__version_nueva.sql`: `VERSION_NUEVA` en `transicion_tipo_check`. Antes, ver fallar en `OCS/integrationTest/.../ValidacionocsEsquemaIntegrationTest.java` una transición `VERSION_NUEVA`.
 - [ ] T006 [P] El tipo del motivo en la interfaz publicada de Generación: `GEN/main/.../puertos/entrada/MotivoDeVersion.java` (`RECHAZO_EN_FIRMA`), no en el dominio, porque lo usa Aprobación (principio V, análisis C2). Sin regla propia: no lleva prueba.
 - [ ] T007 [P] El dominio de Aprobación. Ver fallar primero en `OCS/test/.../dominio/ProcesoAprobacionTest.java`:
