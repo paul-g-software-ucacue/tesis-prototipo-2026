@@ -5,7 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ec.mdd.firma.dominio.ContenidoDelDocumento;
 import ec.mdd.firma.dominio.ResultadoValidacion;
+import ec.mdd.firma.dominio.SinTurnoDeFirma;
 import ec.mdd.firma.pruebas.FirmasDePrueba;
+import ec.mdd.firma.puertos.entrada.RechazarEnFirma;
+import ec.mdd.firma.puertos.entrada.RechazoRegistrado;
 import ec.mdd.firma.puertos.entrada.Solicitante;
 import ec.mdd.firma.puertos.entrada.SubirFirma;
 import ec.mdd.firma.puertos.salida.ContenidoDelDistributivo;
@@ -13,6 +16,7 @@ import ec.mdd.firma.puertos.salida.FirmantesDelPeriodo;
 import ec.mdd.firma.puertos.salida.FirmantesDelPeriodo.FirmanteDelPeriodo;
 import ec.mdd.firma.puertos.salida.IdentificacionDeUsuarios;
 import ec.mdd.validacionocs.puertos.entrada.CompletarFirmas;
+import ec.mdd.validacionocs.puertos.entrada.RegistrarRechazoEnFirma;
 import ec.mdd.validacionocs.puertos.salida.AvisoDeFirma;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -45,7 +49,8 @@ import org.springframework.transaction.support.TransactionTemplate;
  * le entrega la cadena a Firma (MD-05), que genera el PDF/A, lo guarda por su hash y lo registra.
  * El contenido de Generación, los nombres de los firmantes y la identificación de las cuentas van
  * con dobles: los procesos datos e identidad no están, y el contenido real necesita un distributivo
- * completo. Desde F14-H02, las tres firmas se suben en orden sobre el PDF/A real.
+ * completo. Desde F14-H02, las tres firmas se suben en orden sobre el PDF/A real; desde F14-H04, un
+ * rechazo en firma cierra el documento y avisa a Aprobación.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @Import({EsquemasIntegrationTest.Contenedores.class, DocumentoFirmableIntegrationTest.Dobles.class})
@@ -63,6 +68,7 @@ class DocumentoFirmableIntegrationTest {
     @Autowired private TransactionTemplate transacciones;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private SubirFirma subir;
+    @Autowired private RechazarEnFirma rechazar;
 
     @DynamicPropertySource
     static void propiedades(DynamicPropertyRegistry propiedades) {
@@ -205,6 +211,69 @@ class DocumentoFirmableIntegrationTest {
                 .isEqualTo(3);
     }
 
+    @Test
+    void dadaF1Aceptada_cuandoElVicerrectorRechazaEnF2_entoncesSeCierraYAprobacionRecibeElAviso()
+            throws Exception {
+        String periodo = periodo();
+        transacciones.executeWithoutResult(estado -> eventos.publishEvent(aviso(periodo)));
+        esperarGenerado(periodo);
+        Map<String, Object> documento =
+                jdbc.queryForMap(
+                        "SELECT id, archivo FROM firma.documento_firmable"
+                                + " WHERE periodo = ? AND version = 1",
+                        periodo);
+        UUID id = (UUID) documento.get("id");
+        byte[] original = Files.readAllBytes(ARCHIVOS.resolve((String) documento.get("archivo")));
+        byte[] conF1 =
+                FirmasDePrueba.firmar(
+                        original,
+                        FirmasDePrueba.firmante(CA, "PÉREZ ANA"),
+                        "firma-1-RESPONSABLE_CONSOLIDACION");
+        ResultadoValidacion f1 =
+                subir.subir(id, conF1, new Solicitante("docente.demo", Set.of("DOCENTE")));
+        Solicitante vicerrector = new Solicitante("vicerrectorado.demo", Set.of("VICERRECTOR"));
+
+        RechazoRegistrado rechazo =
+                rechazar.rechazar(id, "  Falta la carga de un docente de Software.  ", vicerrector);
+
+        assertThat(rechazo.orden()).isEqualTo(2);
+        assertThat(rechazo.rotulo()).isEqualTo("Revisado por");
+        assertThat(rechazo.observacion()).isEqualTo("Falta la carga de un docente de Software.");
+        // F14-H04: después de confirmar, Aprobación recibe el aviso una sola vez, con el paso.
+        esperar(() -> Dobles.RECHAZOS.stream().anyMatch(uno -> uno.startsWith(periodo)));
+        Thread.sleep(1000);
+        assertThat(Dobles.RECHAZOS)
+                .filteredOn(uno -> uno.startsWith(periodo))
+                .containsExactly(periodo + "/1/2/VICERRECTOR/vicerrectorado.demo");
+        // El documento queda cerrado: nadie firma ni rechaza otra vez (D-105).
+        byte[] conF2 =
+                FirmasDePrueba.firmar(
+                        conF1, FirmasDePrueba.firmante(CA, "LÓPEZ LUIS"), "firma-2-VICERRECTOR");
+        assertThatThrownBy(() -> subir.subir(id, conF2, vicerrector))
+                .isInstanceOf(SinTurnoDeFirma.class);
+        assertThatThrownBy(() -> rechazar.rechazar(id, "Otra observación cualquiera.", vicerrector))
+                .isInstanceOf(SinTurnoDeFirma.class);
+        // FR-007: la firma F1 y su archivo vigente se conservan.
+        assertThat(
+                        jdbc.queryForList(
+                                "SELECT sha256_subido FROM firma.validacion_firma"
+                                        + " WHERE periodo = ? AND aceptada",
+                                String.class,
+                                periodo))
+                .containsExactly(f1.sha256Subido());
+        assertThat(ARCHIVOS.resolve("documentos/" + f1.sha256Subido() + ".pdf"))
+                .hasBinaryContent(conF1);
+        assertThat(
+                        jdbc.queryForObject(
+                                "SELECT count(*) FROM eventos_distributivo.event_publication"
+                                        + " WHERE serialized_event LIKE ?"
+                                        + " AND serialized_event LIKE ?",
+                                Integer.class,
+                                "%RECHAZO_EN_FIRMA%",
+                                "%" + periodo + "%"))
+                .isEqualTo(1);
+    }
+
     private static void esperar(java.util.function.BooleanSupplier condicion)
             throws InterruptedException {
         Instant limite = Instant.now().plusSeconds(30);
@@ -292,6 +361,30 @@ class DocumentoFirmableIntegrationTest {
         @Primary
         CompletarFirmas completarFirmasDePrueba() {
             return (periodo, version, momento) -> CADENAS_COMPLETAS.add(periodo + "/" + version);
+        }
+
+        /** Los avisos de rechazo en firma que recibió Aprobación (F14-H04). */
+        static final List<String> RECHAZOS =
+                java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+
+        /**
+         * Aprobación, sin un proceso de aprobación real del periodo: anota el aviso. La vuelta a
+         * EN_REVISION_VRA la prueban RegistrarRechazoEnFirmaServicioTest y el script.
+         */
+        @Bean
+        @Primary
+        RegistrarRechazoEnFirma registrarRechazoEnFirmaDePrueba() {
+            return (periodo, version, rechazo) ->
+                    RECHAZOS.add(
+                            periodo
+                                    + "/"
+                                    + version
+                                    + "/"
+                                    + rechazo.orden()
+                                    + "/"
+                                    + rechazo.rol()
+                                    + "/"
+                                    + rechazo.rechazadoPor());
         }
 
         @Bean

@@ -4,6 +4,7 @@ import ec.mdd.firma.dominio.DocumentoFirmable;
 import ec.mdd.firma.dominio.FirmanteEsperado;
 import ec.mdd.firma.dominio.FirmasDelDocumento;
 import ec.mdd.firma.dominio.GeneracionDeDocumento;
+import ec.mdd.firma.dominio.RechazoDelFirmante;
 import ec.mdd.firma.dominio.ResultadoValidacion;
 import java.util.List;
 import java.util.Optional;
@@ -54,13 +55,28 @@ public interface RepositorioDocumentos {
      * <p>Si el resultado se aceptó, es la firma del paso: antes de registrarlo se bloquea la
      * generación de la versión y se comprueba que las firmas del documento siguen siendo las de
      * {@code validadoContra}. Si otra subida firmó entretanto, no registra nada y devuelve falso:
-     * el archivo ya no empieza con el vigente. Un resultado rechazado se registra siempre.
+     * el archivo ya no empieza con el vigente. Tampoco si el documento se rechazó en firma
+     * entretanto (F14-H04). Un resultado rechazado se registra siempre.
      *
      * @param resultado el resultado de la validación
      * @param validadoContra el documento, con las firmas contra las que se validó
      * @return falso solo si un resultado aceptado llegó tarde y no se registró
      */
     boolean registrarValidacion(ResultadoValidacion resultado, FirmasDelDocumento validadoContra);
+
+    /**
+     * Registra el rechazo en firma del documento (F14-H04, D-105); no se cambia ni se borra. Se
+     * llama dentro de la transacción que publica su cambio y su aviso.
+     *
+     * <p>Antes de registrarlo se bloquea la generación de la versión y se comprueba que las firmas
+     * siguen siendo las de {@code vistas} y que nadie rechazó: si alguien firmó o rechazó
+     * entretanto, quien rechaza ya no está en turno, y no registra nada.
+     *
+     * @param rechazo el paso, quién, cuándo y la observación
+     * @param vistas el documento, con las firmas que tenía cuando se comprobó el turno
+     * @return falso si las firmas cambiaron o ya había un rechazo
+     */
+    boolean registrarRechazo(RechazoDelFirmante rechazo, FirmasDelDocumento vistas);
 
     /**
      * Los resultados de las subidas de un documento, aceptadas y rechazadas, en el orden en que

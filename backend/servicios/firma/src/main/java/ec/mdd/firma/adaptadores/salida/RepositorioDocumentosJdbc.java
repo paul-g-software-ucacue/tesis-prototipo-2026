@@ -9,6 +9,7 @@ import ec.mdd.firma.dominio.FirmanteEsperado;
 import ec.mdd.firma.dominio.FirmasDelDocumento;
 import ec.mdd.firma.dominio.GeneracionDeDocumento;
 import ec.mdd.firma.dominio.PasoDeFirma;
+import ec.mdd.firma.dominio.RechazoDelFirmante;
 import ec.mdd.firma.dominio.Resultado;
 import ec.mdd.firma.dominio.ResultadoDeComprobacion;
 import ec.mdd.firma.dominio.ResultadoValidacion;
@@ -30,8 +31,9 @@ import tools.jackson.databind.json.JsonMapper;
 /**
  * Las generaciones, los documentos firmables y las validaciones de las firmas en el esquema {@code
  * firma} (F13-H02, F14-H02, data-model.md). La cadena de firmas y las comprobaciones van en jsonb.
- * El documento, sus firmantes y las validaciones solo se insertan: el rol del proceso no puede
- * cambiarlos ni borrarlos (V2 a V4). Las firmas de un documento son sus validaciones aceptadas.
+ * El documento, sus firmantes, las validaciones y el rechazo en firma solo se insertan: el rol del
+ * proceso no puede cambiarlos ni borrarlos (V2 a V6). Las firmas de un documento son sus
+ * validaciones aceptadas.
  */
 public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
 
@@ -189,7 +191,9 @@ public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
         DocumentoFirmable documento = validadoContra.documento();
         if (resultado.aceptada()) {
             bloquear(documento.periodo(), documento.version()).orElseThrow();
-            if (!firmasRegistradas(documento).equals(validadoContra.firmas())) {
+            // F14-H04: un documento rechazado entretanto está cerrado (D-105).
+            if (!firmasRegistradas(documento).equals(validadoContra.firmas())
+                    || rechazoDe(documento).isPresent()) {
                 return false;
             }
         }
@@ -217,6 +221,34 @@ public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
                                 .map(RepositorioDocumentosJdbc::certificado)
                                 .map(JSON::writeValueAsString)
                                 .orElse(null))
+                .update();
+        return true;
+    }
+
+    /**
+     * Registra el rechazo en firma (F14-H04, D-105) con la generación bloqueada, como una firma
+     * aceptada: si alguien firmó o rechazó entretanto, no registra nada y devuelve falso. La clave
+     * de V6 garantiza además un solo rechazo por documento.
+     */
+    @Override
+    public boolean registrarRechazo(RechazoDelFirmante rechazo, FirmasDelDocumento vistas) {
+        DocumentoFirmable documento = vistas.documento();
+        bloquear(documento.periodo(), documento.version()).orElseThrow();
+        if (!firmasRegistradas(documento).equals(vistas.firmas())
+                || rechazoDe(documento).isPresent()) {
+            return false;
+        }
+        jdbc.sql(
+                        "INSERT INTO firma.rechazo_en_firma (periodo, version, tipo, orden,"
+                                + " rechazado_por, rechazado_en, observacion) VALUES (:periodo,"
+                                + " :version, :tipo, :orden, :por, :en, :observacion)")
+                .param("periodo", documento.periodo())
+                .param("version", documento.version())
+                .param("tipo", documento.tipo())
+                .param("orden", rechazo.orden())
+                .param("por", rechazo.rechazadoPor())
+                .param("en", Timestamp.from(rechazo.rechazadoEn()))
+                .param("observacion", rechazo.observacion())
                 .update();
         return true;
     }
@@ -267,6 +299,25 @@ public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
                                         fila.getString("subido_por"),
                                         fila.getTimestamp("subido_en").toInstant()))
                 .list();
+    }
+
+    // El rechazo en firma del documento, si lo hubo (F14-H04).
+    private Optional<RechazoDelFirmante> rechazoDe(DocumentoFirmable documento) {
+        return jdbc.sql(
+                        "SELECT orden, rechazado_por, rechazado_en, observacion"
+                                + " FROM firma.rechazo_en_firma WHERE periodo = :periodo"
+                                + " AND version = :version AND tipo = :tipo")
+                .param("periodo", documento.periodo())
+                .param("version", documento.version())
+                .param("tipo", documento.tipo())
+                .query(
+                        (fila, numero) ->
+                                new RechazoDelFirmante(
+                                        fila.getInt("orden"),
+                                        fila.getString("rechazado_por"),
+                                        fila.getTimestamp("rechazado_en").toInstant(),
+                                        fila.getString("observacion")))
+                .optional();
     }
 
     private static List<Map<String, String>> comprobaciones(ResultadoValidacion resultado) {
@@ -347,7 +398,8 @@ public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
                 documento,
                 JSON.readValue(fila.getString("cadena"), CADENA),
                 firmantes,
-                firmasRegistradas(documento));
+                firmasRegistradas(documento),
+                rechazoDe(documento));
     }
 
     private static DocumentoFirmable documento(ResultSet fila) throws SQLException {

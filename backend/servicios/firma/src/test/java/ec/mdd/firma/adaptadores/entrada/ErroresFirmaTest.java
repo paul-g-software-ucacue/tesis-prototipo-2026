@@ -11,6 +11,7 @@ import ec.mdd.firma.dominio.CertificadoDeLaFirma;
 import ec.mdd.firma.dominio.Comprobacion;
 import ec.mdd.firma.dominio.EtapaNoAdmiteGeneracion;
 import ec.mdd.firma.dominio.GeneracionFallida;
+import ec.mdd.firma.dominio.ObservacionInvalida;
 import ec.mdd.firma.dominio.PasoSinNombre;
 import ec.mdd.firma.dominio.ResultadoDeComprobacion;
 import ec.mdd.firma.dominio.ResultadoValidacion;
@@ -70,6 +71,7 @@ class ErroresFirmaTest {
                                 "FIRMA_FIRMANTE_EQUIVOCADO",
                                 422),
                         tuple(PasoSinNombre.class, "FIRMA_PASO_SIN_NOMBRE", 409),
+                        tuple(ObservacionInvalida.class, "FIRMA_OBSERVACION_INVALIDA", 400),
                         tuple(ArchivoVacio.class, "FIRMA_ARCHIVO_VACIO", 400),
                         tuple(ArchivoDemasiadoGrande.class, "FIRMA_ARCHIVO_DEMASIADO_GRANDE", 413));
     }

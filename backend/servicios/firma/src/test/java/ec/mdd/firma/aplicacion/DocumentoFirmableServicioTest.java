@@ -17,6 +17,7 @@ import ec.mdd.firma.dominio.FirmanteEsperado;
 import ec.mdd.firma.dominio.FirmasDelDocumento;
 import ec.mdd.firma.dominio.GeneracionDeDocumento;
 import ec.mdd.firma.dominio.GeneracionFallida;
+import ec.mdd.firma.dominio.RechazoDelFirmante;
 import ec.mdd.firma.dominio.ResultadoValidacion;
 import ec.mdd.firma.dominio.SinRolDeFirma;
 import ec.mdd.firma.puertos.entrada.EstadoDelDocumento;
@@ -498,6 +499,12 @@ class DocumentoFirmableServicioTest {
         public boolean registrarValidacion(
                 ResultadoValidacion resultado, FirmasDelDocumento validadoContra) {
             // La generación del documento no registra firmas (F14-H02 las prueba aparte).
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean registrarRechazo(RechazoDelFirmante rechazo, FirmasDelDocumento vistas) {
+            // La generación del documento no registra rechazos (F14-H04 los prueba aparte).
             throw new UnsupportedOperationException();
         }
 

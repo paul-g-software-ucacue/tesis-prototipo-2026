@@ -20,6 +20,7 @@ import ec.mdd.validacionocs.dominio.ParcialNoEncontrado;
 import ec.mdd.validacionocs.dominio.ParcialNoEnviado;
 import ec.mdd.validacionocs.dominio.ParcialYaEnviado;
 import ec.mdd.validacionocs.dominio.ParcialesPendientes;
+import ec.mdd.validacionocs.dominio.RequiereVersionNueva;
 import ec.mdd.validacionocs.dominio.SinConsolidar;
 import ec.mdd.validacionocs.dominio.SinInforme;
 import ec.mdd.validacionocs.puertos.entrada.ConfiguracionInvalida;
@@ -129,6 +130,14 @@ class ErroresValidacionocs implements CatalogoDeErrores {
                         "Etapa sin aprobación",
                         "El distributivo no está en revisión del Vicerrectorado: no se puede"
                                 + " aprobar su contenido."),
+                // Volver a congelar después de un rechazo en firma (F14-H04, D-105).
+                EntradaCatalogo.de(
+                        RequiereVersionNueva.class,
+                        "VALIDACIONOCS_REQUIERE_VERSION_NUEVA",
+                        409,
+                        "Hace falta una versión nueva",
+                        "El documento se rechazó en firma. Para aprobarlo otra vez hace falta una"
+                                + " versión nueva del distributivo."),
                 // El envío a revisión (F10-H03, D-97), en el orden en que se comprueban.
                 EntradaCatalogo.de(
                         EtapaNoAdmiteRevision.class,

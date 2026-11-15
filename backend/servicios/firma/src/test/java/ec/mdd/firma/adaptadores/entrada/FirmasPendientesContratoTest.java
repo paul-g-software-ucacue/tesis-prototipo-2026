@@ -9,12 +9,15 @@ import ec.mdd.firma.dominio.ArchivoFirmadoRechazado;
 import ec.mdd.firma.dominio.ArchivoNoDisponible;
 import ec.mdd.firma.dominio.ArchivoVacio;
 import ec.mdd.firma.dominio.PasoSinNombre;
+import ec.mdd.firma.dominio.RechazoDelFirmante;
 import ec.mdd.firma.dominio.ResultadoValidacion;
 import ec.mdd.firma.dominio.SinTurnoDeFirma;
 import ec.mdd.firma.puertos.entrada.ArchivoVigente;
 import ec.mdd.firma.puertos.entrada.ConsultarFirmasPendientes;
 import ec.mdd.firma.puertos.entrada.DescargarArchivoVigente;
 import ec.mdd.firma.puertos.entrada.FirmaPendiente;
+import ec.mdd.firma.puertos.entrada.RechazarEnFirma;
+import ec.mdd.firma.puertos.entrada.RechazoRegistrado;
 import ec.mdd.firma.puertos.entrada.SubirFirma;
 import ec.mdd.plataforma.errores.ErroresAutoConfiguracion;
 import ec.mdd.plataforma.eventos.ErroresEntreProcesos;
@@ -193,6 +196,34 @@ class FirmasPendientesContratoTest {
                     throw new SinTurnoDeFirma();
                 }
                 return new ArchivoVigente("distributivo-2026-I-v1.pdf", SHA, PDF);
+            };
+        }
+
+        /**
+         * El rechazo en firma (F14-H04): SIN_TURNO no es de nadie; en EN_TURNO, el ejemplo del
+         * contrato, rechaza el paso 2 del Vicerrector, con la observación que exige el dominio.
+         */
+        @Bean
+        RechazarEnFirma rechazarEnFirma() {
+            return (documento, observacion, quien) -> {
+                if (!documento.equals(EN_TURNO)) {
+                    throw new SinTurnoDeFirma();
+                }
+                RechazoDelFirmante rechazo =
+                        new RechazoDelFirmante(
+                                2,
+                                quien.usuario(),
+                                Instant.parse("2026-11-15T10:00:00Z"),
+                                observacion);
+                return new RechazoRegistrado(
+                        documento,
+                        "2026-I",
+                        1,
+                        rechazo.orden(),
+                        "Revisado por",
+                        rechazo.rechazadoPor(),
+                        rechazo.rechazadoEn(),
+                        rechazo.observacion());
             };
         }
 

@@ -70,6 +70,7 @@ export function devolverParciales(periodo: string, devoluciones: ParcialADevolve
 }
 
 export type CongelacionDeLaVersion = components['schemas']['CongelacionDeLaVersion'];
+export type RechazoEnFirmaDelFlujo = components['schemas']['RechazoEnFirmaDelFlujo'];
 
 /**
  * Aprueba el contenido y congela la versión vigente (F13-H01, D-100). Sin cuerpo: no lleva

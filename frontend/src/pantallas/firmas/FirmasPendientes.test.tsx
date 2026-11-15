@@ -1,6 +1,7 @@
 // «Pendientes de firma» (F14-H01, D-102): el firmante en turno ve sus documentos y descarga el PDF
 // vigente; sin pendientes, lo dice; un error en la descarga se muestra con el aviso común. Desde
-// F14-H02 (D-103), sube el PDF firmado y ve el resultado de cada comprobación.
+// F14-H02 (D-103), sube el PDF firmado y ve el resultado de cada comprobación; desde F14-H04
+// (D-105), rechaza en firma con una observación.
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -297,6 +298,119 @@ describe('Pendientes de firma', () => {
       soltar(json(422, NO_INTEGRA));
       await waitFor(() => expect(subir).toBeEnabled());
       expect(descargar).toBeEnabled();
+    });
+  });
+
+  // F14-H04 (D-105, contracts/spa.md): rechazar en firma con una observación.
+  describe('rechazar en firma', () => {
+    const RECHAZOS = `/api/firma/documentos/${DOCUMENTO}/rechazos`;
+    const OBSERVACION = 'Falta la carga de un docente de Software.';
+    const RECHAZO = {
+      documento: DOCUMENTO,
+      periodo: '2026-I',
+      version: 1,
+      orden: 1,
+      rotulo: 'Elaborado por',
+      rechazadoPor: 'docente.demo',
+      rechazadoEn: '2026-11-15T10:00:00Z',
+      observacion: OBSERVACION,
+    };
+
+    async function abrirDialogo() {
+      await abrir();
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Rechazar en firma 2026-I, versión 1' }),
+      );
+      return screen.findByRole('dialog', { name: 'Rechazar en firma' });
+    }
+
+    it('sin observación o con menos de 10 caracteres no envía y dice el largo', async () => {
+      const dialogo = await abrirDialogo();
+      const confirmar = within(dialogo).getByRole('button', { name: 'Rechazar en firma' });
+
+      expect(confirmar).toBeDisabled();
+      expect(
+        within(dialogo).getByText(
+          /^2026-I, versión 1 \(paso «Elaborado por»\)\. El documento no se firma/,
+        ),
+      ).toBeVisible();
+      await userEvent.type(within(dialogo).getByLabelText(/Observación/), '  corta   ');
+
+      expect(confirmar).toBeDisabled();
+      expect(within(dialogo).getByText(/de 10 a 500 caracteres/)).toBeVisible();
+      expect(simulada.peticiones.some((una) => new URL(una.url).pathname === RECHAZOS)).toBe(false);
+    });
+
+    it('con una observación, rechaza, avisa con el paso y vuelve a pedir la lista', async () => {
+      simulada.responder('POST', RECHAZOS, json(201, RECHAZO));
+      const dialogo = await abrirDialogo();
+      simulada.responder('GET', '/api/firma/pendientes', json(200, []));
+
+      await userEvent.type(within(dialogo).getByLabelText(/Observación/), `  ${OBSERVACION}  `);
+      await userEvent.click(within(dialogo).getByRole('button', { name: 'Rechazar en firma' }));
+
+      const aviso = await screen.findByRole('status', { name: /Rechazo registrado/ });
+      expect(
+        within(aviso).getByText(
+          '2026-I, versión 1 (paso «Elaborado por»): el documento vuelve a la revisión del Vicerrectorado con tu observación.',
+        ),
+      ).toBeVisible();
+      expect(within(aviso).getByText(OBSERVACION)).toBeVisible();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(await screen.findByText('No tienes firmas pendientes.')).toBeVisible();
+      const rechazo = simulada.peticiones.find(
+        (una) => una.method === 'POST' && new URL(una.url).pathname === RECHAZOS,
+      );
+      expect(await rechazo?.json()).toEqual({ observacion: OBSERVACION });
+    });
+
+    it('si el servidor rechaza la observación, lo dice dentro del diálogo', async () => {
+      simulada.responder(
+        'POST',
+        RECHAZOS,
+        json(400, {
+          titulo: 'Observación no válida',
+          descripcion: 'Para rechazar en firma escribe una observación de 10 a 500 caracteres.',
+          codigo: 'FIRMA_OBSERVACION_INVALIDA',
+        }),
+      );
+      const dialogo = await abrirDialogo();
+
+      await userEvent.type(within(dialogo).getByLabelText(/Observación/), OBSERVACION);
+      await userEvent.click(within(dialogo).getByRole('button', { name: 'Rechazar en firma' }));
+
+      expect(await within(dialogo).findByText('Observación no válida')).toBeVisible();
+      expect(within(dialogo).getByRole('button', { name: 'Rechazar en firma' })).toBeEnabled();
+    });
+
+    it('si ya no está en turno, cierra el diálogo, avisa y vuelve a pedir la lista', async () => {
+      simulada.responder(
+        'POST',
+        RECHAZOS,
+        json(403, {
+          titulo: 'Acceso no autorizado',
+          descripcion: 'No tienes permiso para esta operación.',
+          codigo: 'SEGURIDAD_ACCESO_NO_AUTORIZADO',
+        }),
+      );
+      const dialogo = await abrirDialogo();
+      simulada.responder('GET', '/api/firma/pendientes', json(200, []));
+
+      await userEvent.type(within(dialogo).getByLabelText(/Observación/), OBSERVACION);
+      await userEvent.click(within(dialogo).getByRole('button', { name: 'Rechazar en firma' }));
+
+      expect(await screen.findByText('Acceso no autorizado')).toBeVisible();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(await screen.findByText('No tienes firmas pendientes.')).toBeVisible();
+    });
+
+    it('«Cancelar» cierra sin rechazar', async () => {
+      const dialogo = await abrirDialogo();
+
+      await userEvent.click(within(dialogo).getByRole('button', { name: 'Cancelar' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(simulada.peticiones.some((una) => new URL(una.url).pathname === RECHAZOS)).toBe(false);
     });
   });
 

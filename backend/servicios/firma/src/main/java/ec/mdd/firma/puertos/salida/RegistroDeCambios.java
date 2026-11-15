@@ -36,6 +36,9 @@ public interface RegistroDeCambios {
         /** Una subida del firmante en turno rechazada, con sus comprobaciones (F14-H02). */
         public static final String FIRMA_RECHAZADA = "FIRMA_RECHAZADA";
 
+        /** El firmante en turno rechazó en firma, con su observación (F14-H04, D-105). */
+        public static final String RECHAZO_EN_FIRMA = "RECHAZO_EN_FIRMA";
+
         /** Exige todo y copia los mapas. */
         public CambioDeFirma {
             Objects.requireNonNull(momento, "momento");

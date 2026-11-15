@@ -4,9 +4,12 @@
 // (el Responsable y el Vicerrector ven la etapa; desde F10-H03, el Responsable envía a revisión y ve
 // lo que falta; desde F12-H05, devuelve parciales, y el coordinador ve la observación; desde
 // F13-H01, el Vicerrector aprueba el contenido y todos ven la constancia de la versión congelada;
-// desde F13-H02, en firma, el documento firmable) y
+// desde F13-H02, en firma, el documento firmable; desde F14-H04, el rechazo en firma con su
+// observación) y
 // «Proyectos» (el Gestor de unidad avanza BORRADOR_UNIDADES). El servidor valida el permiso, el rol
 // de la etapa, la carrera y las condiciones.
+import Alert from '@mui/material/Alert';
+import AlertTitle from '@mui/material/AlertTitle';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
@@ -30,6 +33,7 @@ import {
   type CongelacionDeLaVersion,
   type EstadoDelFlujo,
   type ParcialDelFlujo,
+  type RechazoEnFirmaDelFlujo,
 } from './flujo';
 
 const MOMENTO = new Intl.DateTimeFormat('es-EC', {
@@ -67,6 +71,26 @@ function Constancia({ congelacion }: { congelacion: CongelacionDeLaVersion }) {
       </Typography>
       <HuellaCopiable etiqueta="Huella" hash={hash} />
     </Box>
+  );
+}
+
+// El rechazo en firma por el que volvió el distributivo (F14-H04, D-105): quién, en qué paso,
+// cuándo y la observación. Hasta la versión nueva (F12-H04) no se aprueba otra vez.
+function RechazoEnFirma({ rechazo }: { rechazo: RechazoEnFirmaDelFlujo }) {
+  const titulo = useId();
+  return (
+    <Alert severity="warning" role="status" aria-labelledby={titulo} sx={{ my: 1 }}>
+      <AlertTitle id={titulo}>Rechazado en firma</AlertTitle>
+      <Typography variant="body2">
+        {`Paso ${String(rechazo.orden)} · ${rechazo.rol}, por ${rechazo.por} el ${MOMENTO.format(new Date(rechazo.en))}`}
+      </Typography>
+      <Typography variant="body2" sx={{ mt: 0.5, whiteSpace: 'pre-line', fontStyle: 'italic' }}>
+        {rechazo.observacion}
+      </Typography>
+      <Typography variant="body2" sx={{ mt: 0.5 }}>
+        Para aprobar otra vez hace falta una versión nueva.
+      </Typography>
+    </Alert>
   );
 }
 
@@ -110,7 +134,8 @@ export function EstadoDelFlujoDelPeriodo({
   if (!flujo.data || !periodo) {
     return null;
   }
-  const { etapa, nombreDeEtapa, version, parciales, acciones, congelacion } = flujo.data;
+  const { etapa, nombreDeEtapa, version, parciales, acciones, congelacion, rechazoEnFirma } =
+    flujo.data;
   if (soloEn && !soloEn.includes(etapa)) {
     return null;
   }
@@ -151,6 +176,7 @@ export function EstadoDelFlujoDelPeriodo({
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
         {`Etapa ${etapa}`}
       </Typography>
+      {rechazoEnFirma && <RechazoEnFirma rechazo={rechazoEnFirma} />}
       {congelacion && <Constancia congelacion={congelacion} />}
       {etapa === 'CONGELADO_EN_FIRMA' && <DocumentoFirmable periodo={periodo} />}
       <Box component="ul" sx={{ m: 0, pl: 3 }}>

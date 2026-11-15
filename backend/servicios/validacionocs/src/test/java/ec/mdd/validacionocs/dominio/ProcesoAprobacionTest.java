@@ -1144,4 +1144,110 @@ class ProcesoAprobacionTest {
         assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_REVISION_VRA);
         assertThat(proceso.transiciones()).isEmpty();
     }
+
+    // El rechazo en firma vuelve a la etapa activa anterior (F14-H04, D-105).
+
+    private static final Instant RECHAZADA = FIRMADA.plusSeconds(60);
+    private static final RechazoDelFirmante RECHAZO =
+            new RechazoDelFirmante(
+                    2,
+                    "VICERRECTOR",
+                    "vicerrectorado.demo",
+                    RECHAZADA.minusSeconds(1),
+                    new Observacion("Falta la carga de un docente de Software."));
+
+    @Test
+    void dadoElDistributivoEnFirma_cuandoSeRechazaEnFirma_entoncesVuelveARevisionPorElSistema() {
+        ProcesoAprobacion proceso = enFirma();
+
+        List<Transicion> nuevas = proceso.rechazarEnFirma(2, RECHAZO, RECHAZADA);
+
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_REVISION_VRA);
+        assertThat(nuevas)
+                .containsExactly(
+                        new Transicion(
+                                TipoDeTransicion.RECHAZO_EN_FIRMA,
+                                TipoDeEtapa.CONGELADO_EN_FIRMA,
+                                TipoDeEtapa.EN_REVISION_VRA,
+                                Optional.empty(),
+                                2,
+                                HASH_CONGELADO,
+                                "sistema",
+                                RECHAZADA,
+                                Map.of(),
+                                Optional.of(RECHAZO)));
+        assertThat(proceso.rechazoPendiente()).contains(nuevas.get(0));
+    }
+
+    @Test
+    void dadaLaRevisionDesactivada_cuandoSeRechazaEnFirma_entoncesVuelveALaEtapaActivaAnterior() {
+        ProcesoAprobacion proceso = enConsolidacion(sinRevision());
+        revisar(proceso, LISTO);
+
+        List<Transicion> nuevas = proceso.rechazarEnFirma(2, RECHAZO, RECHAZADA);
+
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_CONSOLIDACION);
+        assertThat(nuevas)
+                .singleElement()
+                .extracting(Transicion::hash)
+                .isEqualTo(HASH_DISTRIBUTIVO);
+    }
+
+    @Test
+    void dadoElAvisoRepetido_cuandoYaVolvioARevision_entoncesNoAgregaOtraTransicion() {
+        ProcesoAprobacion proceso = enFirma();
+        proceso.rechazarEnFirma(2, RECHAZO, RECHAZADA);
+
+        assertThat(proceso.rechazarEnFirma(2, RECHAZO, RECHAZADA.plusSeconds(5))).isEmpty();
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_REVISION_VRA);
+        assertThat(proceso.transiciones()).hasSize(2);
+    }
+
+    @Test
+    void dadaOtraVersionUOtraEtapa_cuandoSeRechazaEnFirma_entoncesNoCambiaNada() {
+        ProcesoAprobacion enFirma = enFirma();
+        assertThat(enFirma.rechazarEnFirma(3, RECHAZO, RECHAZADA)).isEmpty();
+        assertThat(enFirma.estado()).isEqualTo(TipoDeEtapa.CONGELADO_EN_FIRMA);
+
+        ProcesoAprobacion enOcs = enFirma();
+        enOcs.completarFirmas(2, FIRMADA);
+        assertThat(enOcs.rechazarEnFirma(2, RECHAZO, RECHAZADA)).isEmpty();
+        assertThat(enOcs.estado()).isEqualTo(TipoDeEtapa.EN_OCS);
+
+        ProcesoAprobacion enRevision = enRevision(etapas(false));
+        assertThat(enRevision.rechazarEnFirma(2, RECHAZO, RECHAZADA)).isEmpty();
+        assertThat(enRevision.transiciones()).isEmpty();
+    }
+
+    @Test
+    void dadoUnRechazoPendiente_cuandoElVicerrectorAprueba_entoncesRequiereVersionNueva() {
+        ProcesoAprobacion proceso = enFirma();
+        proceso.rechazarEnFirma(2, RECHAZO, RECHAZADA);
+
+        assertThatThrownBy(() -> proceso.validarAprobacion(VICERRECTOR))
+                .isInstanceOf(RequiereVersionNueva.class);
+        assertThatThrownBy(() -> proceso.aprobarContenido(VICERRECTOR, 2, HASH_CONGELADO, AHORA))
+                .isInstanceOf(RequiereVersionNueva.class);
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_REVISION_VRA);
+        assertThat(proceso.transiciones()).hasSize(2);
+        assertThat(proceso.acciones(VICERRECTOR)).isEmpty();
+    }
+
+    @Test
+    void dadoUnRechazoPendienteSinRevision_cuandoSeEnviaARevision_entoncesRequiereVersionNueva() {
+        ProcesoAprobacion proceso = enConsolidacion(sinRevision());
+        revisar(proceso, LISTO);
+        proceso.rechazarEnFirma(2, RECHAZO, RECHAZADA);
+
+        assertThatThrownBy(() -> proceso.validarRevision(RESPONSABLE))
+                .isInstanceOf(RequiereVersionNueva.class);
+        assertThatThrownBy(() -> revisar(proceso, LISTO)).isInstanceOf(RequiereVersionNueva.class);
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_CONSOLIDACION);
+    }
+
+    @Test
+    void dadoUnProcesoSinRechazo_cuandoSePideElRechazoPendiente_entoncesNoHay() {
+        assertThat(enFirma().rechazoPendiente()).isEmpty();
+        assertThat(enRevision(etapas(false)).rechazoPendiente()).isEmpty();
+    }
 }

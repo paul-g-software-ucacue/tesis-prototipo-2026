@@ -2,6 +2,7 @@ package ec.mdd.firma.infraestructura;
 
 import ec.mdd.firma.adaptadores.salida.AlmacenDeDocumentosEnDisco;
 import ec.mdd.firma.adaptadores.salida.AvisoDeCadenaCompletaSpring;
+import ec.mdd.firma.adaptadores.salida.AvisoDeRechazoEnFirmaSpring;
 import ec.mdd.firma.adaptadores.salida.ContenidoDesdeGeneracion;
 import ec.mdd.firma.adaptadores.salida.FirmantesConNombreLocal;
 import ec.mdd.firma.adaptadores.salida.FirmantesDesdeProcesos;
@@ -14,9 +15,11 @@ import ec.mdd.firma.adaptadores.salida.TransaccionSpring;
 import ec.mdd.firma.adaptadores.salida.ValidadorPades;
 import ec.mdd.firma.aplicacion.DocumentoFirmableServicio;
 import ec.mdd.firma.aplicacion.FirmasPendientesServicio;
+import ec.mdd.firma.aplicacion.RechazarEnFirmaServicio;
 import ec.mdd.firma.aplicacion.SubirFirmaServicio;
 import ec.mdd.firma.puertos.salida.AlmacenDeDocumentos;
 import ec.mdd.firma.puertos.salida.AvisoDeCadenaCompleta;
+import ec.mdd.firma.puertos.salida.AvisoDeRechazoEnFirma;
 import ec.mdd.firma.puertos.salida.ContenidoDelDistributivo;
 import ec.mdd.firma.puertos.salida.FirmantesDelPeriodo;
 import ec.mdd.firma.puertos.salida.GeneradorDePdf;
@@ -179,5 +182,30 @@ public class ConfiguracionFirma {
     @Bean
     public AvisoDeCadenaCompleta avisoDeCadenaCompleta(ApplicationEventPublisher eventos) {
         return new AvisoDeCadenaCompletaSpring(eventos);
+    }
+
+    /** El rechazo en firma (F14-H04). */
+    @Bean
+    public RechazarEnFirmaServicio rechazarEnFirma(
+            RepositorioDocumentos repositorioDocumentos,
+            AlmacenDeDocumentos almacenDeDocumentos,
+            IdentificacionDeUsuarios identificacionDeUsuarios,
+            RegistroDeCambios registroDeCambiosFirma,
+            Transaccion transaccionFirma,
+            AvisoDeRechazoEnFirma avisoDeRechazoEnFirma) {
+        return new RechazarEnFirmaServicio(
+                repositorioDocumentos,
+                almacenDeDocumentos,
+                identificacionDeUsuarios,
+                registroDeCambiosFirma,
+                transaccionFirma,
+                avisoDeRechazoEnFirma,
+                Clock.systemUTC());
+    }
+
+    /** El aviso de rechazo en firma, para Aprobación (F14-H04, MD-05). */
+    @Bean
+    public AvisoDeRechazoEnFirma avisoDeRechazoEnFirma(ApplicationEventPublisher eventos) {
+        return new AvisoDeRechazoEnFirmaSpring(eventos);
     }
 }

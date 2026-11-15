@@ -219,6 +219,45 @@ describe('Consolidado del periodo', () => {
     expect(screen.queryByRole('button', { name: /onsolidar/ })).not.toBeInTheDocument();
   });
 
+  it('con un rechazo en firma, dice que la versión sigue congelada hasta la versión nueva (F14-H04)', async () => {
+    simulada.responder(
+      'GET',
+      '/api/validacionocs/periodos/2026-2/flujo',
+      json(200, {
+        periodo: '2026-2',
+        etapa: 'EN_REVISION_VRA',
+        nombreDeEtapa: 'Revisión del Vicerrectorado',
+        version: 1,
+        parciales: [],
+        acciones: [],
+        transiciones: [],
+        rechazoEnFirma: {
+          orden: 2,
+          rol: 'VICERRECTOR',
+          por: 'vicerrectorado.demo',
+          en: '2026-11-15T16:06:00Z',
+          observacion: 'Falta la carga de un docente de Software.',
+        },
+      }),
+    );
+    simulada.responder(
+      'GET',
+      RUTA,
+      json(200, { ...CON_INFORME, enRevision: true, versionCongelada: true }),
+    );
+    await abrir();
+
+    expect(
+      await screen.findByText(
+        'La versión 1 sigue congelada: para cambiarla hace falta una versión nueva.',
+      ),
+    ).toBeVisible();
+    expect(
+      screen.queryByText('La versión 1 está congelada para la firma: ya no cambia.'),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /onsolidar/ })).not.toBeInTheDocument();
+  });
+
   describe('desactualizado', () => {
     it('avisa que hay que repetirlo', async () => {
       simulada.responder('GET', RUTA, json(200, { ...CONSOLIDADO, desactualizado: true }));

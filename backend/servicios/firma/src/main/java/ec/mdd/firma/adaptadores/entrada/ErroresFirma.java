@@ -6,6 +6,7 @@ import ec.mdd.firma.dominio.ArchivoNoDisponible;
 import ec.mdd.firma.dominio.ArchivoVacio;
 import ec.mdd.firma.dominio.EtapaNoAdmiteGeneracion;
 import ec.mdd.firma.dominio.GeneracionFallida;
+import ec.mdd.firma.dominio.ObservacionInvalida;
 import ec.mdd.firma.dominio.PasoSinNombre;
 import ec.mdd.firma.dominio.ResultadoDeComprobacion;
 import ec.mdd.plataforma.errores.nucleo.CatalogoDeErrores;
@@ -101,6 +102,12 @@ class ErroresFirma implements CatalogoDeErrores {
                         "Paso sin firmante registrado",
                         "El documento no tiene registrado el nombre de quien firma este paso. Avisa"
                                 + " al Responsable de consolidación para generarlo otra vez."),
+                EntradaCatalogo.de(
+                        ObservacionInvalida.class,
+                        "FIRMA_OBSERVACION_INVALIDA",
+                        400,
+                        "Observación no válida",
+                        "Para rechazar en firma escribe una observación de 10 a 500 caracteres."),
                 EntradaCatalogo.de(
                         ArchivoVacio.class,
                         "FIRMA_ARCHIVO_VACIO",

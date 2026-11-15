@@ -13,6 +13,7 @@ import ec.mdd.firma.dominio.FirmanteEsperado;
 import ec.mdd.firma.dominio.FirmasDelDocumento;
 import ec.mdd.firma.dominio.GeneracionDeDocumento;
 import ec.mdd.firma.dominio.PasoDeFirma;
+import ec.mdd.firma.dominio.RechazoDelFirmante;
 import ec.mdd.firma.dominio.ResultadoDeComprobacion;
 import ec.mdd.firma.dominio.ResultadoValidacion;
 import ec.mdd.firma.infraestructura.FirmaFlywayConfig;
@@ -353,6 +354,97 @@ class RepositorioDocumentosIntegrationTest {
                                                                         ec.mdd.firma.dominio
                                                                                 .Resultado
                                                                                 .NO_EVALUADA)));
+    }
+
+    // El rechazo en firma (F14-H04, D-105).
+
+    private static RechazoDelFirmante rechazo(int orden) {
+        return new RechazoDelFirmante(
+                orden, "vicerrectorado.demo", MOMENTO, "Falta la carga de un docente de Software.");
+    }
+
+    @Test
+    void dadoUnRechazo_cuandoSeRegistraYSeLee_entoncesElDocumentoQuedaCerradoConSuRechazo() {
+        FirmasDelDocumento antes = generado(periodo());
+        transaccion.ejecutar(() -> repositorio.registrarValidacion(aceptada(antes, 1, "c"), antes));
+        FirmasDelDocumento conF1 = repositorio.firmas(antes.documento().id()).orElseThrow();
+
+        boolean registrado =
+                transaccion.ejecutar(() -> repositorio.registrarRechazo(rechazo(2), conF1));
+
+        FirmasDelDocumento despues = repositorio.firmas(antes.documento().id()).orElseThrow();
+        assertThat(registrado).isTrue();
+        assertThat(despues.rechazo()).contains(rechazo(2));
+        assertThat(despues.pasoEnTurno()).isEmpty();
+        assertThat(despues.firmas()).isEqualTo(conF1.firmas());
+        assertThat(despues.archivoVigente()).isEqualTo(conF1.archivoVigente());
+    }
+
+    @Test
+    void dadaUnaFirmaRegistradaEntretanto_cuandoSeRegistraElRechazo_entoncesNoSeGuarda() {
+        FirmasDelDocumento antes = generado(periodo());
+        transaccion.ejecutar(() -> repositorio.registrarValidacion(aceptada(antes, 1, "c"), antes));
+
+        boolean registrado =
+                transaccion.ejecutar(() -> repositorio.registrarRechazo(rechazo(1), antes));
+
+        assertThat(registrado).isFalse();
+        assertThat(repositorio.firmas(antes.documento().id()).orElseThrow().rechazo()).isEmpty();
+    }
+
+    @Test
+    void dadoUnRechazoRegistrado_cuandoLlegaUnaFirmaAceptada_entoncesNoSeRegistra() {
+        FirmasDelDocumento antes = generado(periodo());
+        transaccion.ejecutar(() -> repositorio.registrarRechazo(rechazo(1), antes));
+
+        boolean registrada =
+                transaccion.ejecutar(
+                        () -> repositorio.registrarValidacion(aceptada(antes, 1, "c"), antes));
+
+        assertThat(registrada).isFalse();
+        assertThat(repositorio.firmas(antes.documento().id()).orElseThrow().firmas()).isEmpty();
+    }
+
+    @Test
+    void dadosUnRechazoYUnaFirmaDelMismoPasoALaVez_cuandoSeRegistran_entoncesQuedaSoloUno()
+            throws Exception {
+        FirmasDelDocumento antes = generado(periodo());
+        CountDownLatch salida = new CountDownLatch(1);
+        ExecutorService hilos = Executors.newFixedThreadPool(2);
+        List<Boolean> resultados = Collections.synchronizedList(new ArrayList<>());
+        try {
+            List<Future<?>> tareas = new ArrayList<>();
+            tareas.add(
+                    hilos.submit(
+                            () -> {
+                                salida.await(10, TimeUnit.SECONDS);
+                                return resultados.add(
+                                        transaccion.ejecutar(
+                                                () ->
+                                                        repositorio.registrarRechazo(
+                                                                rechazo(1), antes)));
+                            }));
+            tareas.add(
+                    hilos.submit(
+                            () -> {
+                                salida.await(10, TimeUnit.SECONDS);
+                                return resultados.add(
+                                        transaccion.ejecutar(
+                                                () ->
+                                                        repositorio.registrarValidacion(
+                                                                aceptada(antes, 1, "c"), antes)));
+                            }));
+            salida.countDown();
+            for (Future<?> tarea : tareas) {
+                tarea.get(30, TimeUnit.SECONDS);
+            }
+        } finally {
+            hilos.shutdownNow();
+        }
+
+        FirmasDelDocumento despues = repositorio.firmas(antes.documento().id()).orElseThrow();
+        assertThat(resultados).containsExactlyInAnyOrder(true, false);
+        assertThat(despues.firmas().size() + (despues.rechazo().isPresent() ? 1 : 0)).isEqualTo(1);
     }
 
     private FirmasDelDocumento generado(String periodo) {

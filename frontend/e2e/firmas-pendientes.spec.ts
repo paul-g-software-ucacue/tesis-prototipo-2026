@@ -2,7 +2,8 @@
 // descarga el PDF vigente; sin pendientes, lo dice; un 403 en la descarga muestra el aviso; y la
 // pantalla es accesible con axe-core (WCAG 2.1 AA) con pendientes y sin ellos. F14-H02: la subida
 // del PDF firmado, aceptada y rechazada, con el resultado de cada comprobación y sin fallas de axe;
-// desde F14-H03, con las siete comprobaciones.
+// desde F14-H03, con las siete comprobaciones. F14-H04: el rechazo en firma con el teclado, el foco
+// al cerrar el diálogo y sin fallas de axe con el diálogo abierto y después del rechazo.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { ingresar, simularApi } from './simulacion';
@@ -187,5 +188,51 @@ test('si la firma se rechaza, dice el motivo y las cuatro comprobaciones (F14-H0
   await expect(aviso).toContainText('Es la versión vigente');
   await expect(aviso).toContainText('No evaluada');
   await expect(page.getByRole('table', { name: 'Firmas pendientes' })).toBeVisible();
+  await sinFallas(page);
+});
+
+test('el firmante rechaza en firma con el teclado y la pantalla es accesible', async ({ page }) => {
+  let rechazado = false;
+  await page.route(`**/api/firma/documentos/${DOCUMENTO}/rechazos`, (ruta) => {
+    rechazado = true;
+    return ruta.fulfill({
+      status: 201,
+      json: {
+        documento: DOCUMENTO,
+        periodo: '2026-I',
+        version: 1,
+        orden: 1,
+        rotulo: 'Elaborado por',
+        rechazadoPor: 'docente.demo',
+        rechazadoEn: '2026-11-15T10:00:00Z',
+        observacion: 'Falta la carga de un docente de Software.',
+      },
+    });
+  });
+  await abrir(page);
+  await page.route('**/api/firma/pendientes', (ruta) =>
+    ruta.fulfill({ json: rechazado ? [] : [PENDIENTE] }),
+  );
+
+  const boton = page.getByRole('button', { name: 'Rechazar en firma 2026-I, versión 1' });
+  await boton.focus();
+  await page.keyboard.press('Enter');
+  const dialogo = page.getByRole('dialog', { name: 'Rechazar en firma' });
+  await expect(dialogo).toBeVisible();
+  await sinFallas(page);
+
+  // «Cancelar» con Escape devuelve el foco al botón.
+  await page.keyboard.press('Escape');
+  await expect(dialogo).toBeHidden();
+  await expect(boton).toBeFocused();
+
+  await page.keyboard.press('Enter');
+  await expect(dialogo).toBeVisible();
+  await dialogo.getByLabel(/Observación/).fill('Falta la carga de un docente de Software.');
+  await dialogo.getByRole('button', { name: 'Rechazar en firma' }).focus();
+  await page.keyboard.press('Enter');
+
+  await expect(page.getByRole('status').filter({ hasText: 'Rechazo registrado' })).toBeVisible();
+  await expect(page.getByText('No tienes firmas pendientes.')).toBeVisible();
   await sinFallas(page);
 });

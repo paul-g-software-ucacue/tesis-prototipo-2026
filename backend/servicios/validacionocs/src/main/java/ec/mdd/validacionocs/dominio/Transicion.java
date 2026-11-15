@@ -23,6 +23,8 @@ import java.util.regex.Pattern;
  * @param momento cuándo
  * @param observaciones en una devolución, la observación de cada carrera devuelta, por carrera;
  *     vacío en los demás tipos (F12-H05)
+ * @param rechazo en un rechazo en firma, quién rechazó, en qué paso y su observación; vacío en los
+ *     demás tipos (F14-H04)
  */
 public record Transicion(
         TipoDeTransicion tipo,
@@ -33,7 +35,8 @@ public record Transicion(
         String hash,
         String quien,
         Instant momento,
-        Map<String, Observacion> observaciones) {
+        Map<String, Observacion> observaciones,
+        Optional<RechazoDelFirmante> rechazo) {
 
     private static final Pattern HASH = Pattern.compile("^[0-9a-f]{64}$");
 
@@ -56,6 +59,35 @@ public record Transicion(
             throw new IllegalArgumentException(
                     "Solo una devolución lleva observaciones, y siempre");
         }
+        Objects.requireNonNull(rechazo, "rechazo");
+        if ((tipo == TipoDeTransicion.RECHAZO_EN_FIRMA) != rechazo.isPresent()) {
+            throw new IllegalArgumentException(
+                    "Solo un rechazo en firma lleva su rechazo, y siempre");
+        }
+    }
+
+    /** Una transición sin rechazo en firma: un envío, un paso de etapa o una devolución. */
+    public Transicion(
+            TipoDeTransicion tipo,
+            TipoDeEtapa desde,
+            TipoDeEtapa hacia,
+            Optional<String> carrera,
+            int version,
+            String hash,
+            String quien,
+            Instant momento,
+            Map<String, Observacion> observaciones) {
+        this(
+                tipo,
+                desde,
+                hacia,
+                carrera,
+                version,
+                hash,
+                quien,
+                momento,
+                observaciones,
+                Optional.empty());
     }
 
     /** Un envío o un paso de etapa: sin observaciones. */
