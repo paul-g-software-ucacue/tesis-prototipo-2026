@@ -103,7 +103,9 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
   Luego, `puertos/salida/AlmacenDeResoluciones` y `adaptadores/salida/AlmacenDeResolucionesEnDisco` (temporal y movimiento atómico), y su bean con `mdd.archivos.raiz`.
 
   **Resultado (2026-11-15):** `AlmacenDeResolucionesEnDiscoTest` (3, unitaria con una carpeta temporal), vista fallar contra el esqueleto. Pasa con el almacén: temporal y enlace, como `AlmacenDeDocumentosEnDisco` de Firma; la huella se comprueba al leer; una huella mal formada no sale de la carpeta. El bean usa `mdd.archivos.raiz`.
-- [ ] T008 [US1] El repositorio. Ver fallar primero en `OCS/integrationTest/.../RepositorioProcesoIntegrationTest.java`: la transición a APROBADO con su resolución se guarda y se lee; `resolucion()` la devuelve. Luego, `RepositorioProcesoJdbc` inserta y lee `resolucion_ocs`.
+- [X] T008 [US1] El repositorio. Ver fallar primero en `OCS/integrationTest/.../RepositorioProcesoIntegrationTest.java`: la transición a APROBADO con su resolución se guarda y se lee; `resolucion()` la devuelve. Luego, `RepositorioProcesoJdbc` inserta y lee `resolucion_ocs`.
+
+  **Resultado (2026-11-15):** la prueba nueva se vio fallar al leer: sin la resolución, la transición a APROBADO no cumple su regla. Pasa con la inserción y la lectura de `resolucion_ocs`. En las etapas de esta prueba, EN_OCS es del VICERRECTOR, así que registra con ese rol. Las de integración de Validación OCS en verde.
 - [ ] T009 [US1] El caso de uso. Ver fallar primero en `OCS/test/.../aplicacion/RegistrarResolucionServicioTest.java`:
   - el archivo inválido se rechaza sin guardar ni bloquear;
   - el archivo se guarda antes de la transacción;

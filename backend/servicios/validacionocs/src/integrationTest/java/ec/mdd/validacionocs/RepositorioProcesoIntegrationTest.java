@@ -291,6 +291,58 @@ class RepositorioProcesoIntegrationTest {
         assertThat(leido.rechazoVigente()).contains(leido.transiciones().get(1));
     }
 
+    // F15-H01: el paso a APROBADO con su resolución se guarda y se lee.
+    @Test
+    void dadaLaResolucionDelOcs_cuandoSeGuarda_entoncesSeLeeConSuTransicion() {
+        String periodo = periodo();
+        repositorio.crear(
+                ProcesoAprobacion.de(
+                        periodo,
+                        etapas(),
+                        TipoDeEtapa.EN_REVISION_VRA,
+                        CREADO,
+                        java.util.Map.of("DS", EstadoDeEnvio.ENVIADO),
+                        List.of()),
+                AHORA);
+        ProcesoAprobacion proceso = repositorio.de(periodo).orElseThrow();
+        repositorio.guardar(
+                proceso,
+                proceso.aprobarContenido(
+                        new Solicitante(
+                                "vicerrectorado.demo", Set.of("VICERRECTOR"), Optional.empty()),
+                        1,
+                        HASH,
+                        AHORA));
+        ProcesoAprobacion enFirma = repositorio.de(periodo).orElseThrow();
+        repositorio.guardar(enFirma, enFirma.completarFirmas(1, AHORA.plusSeconds(60)));
+        ProcesoAprobacion enOcs = repositorio.de(periodo).orElseThrow();
+        ec.mdd.validacionocs.dominio.ResolucionOcs resolucion =
+                new ec.mdd.validacionocs.dominio.ResolucionOcs(
+                        "RPC-SO-12-No.123-2026",
+                        java.time.LocalDate.ofInstant(AHORA, ProcesoAprobacion.ZONA),
+                        "b".repeat(64),
+                        "resolucion.pdf",
+                        2048);
+
+        repositorio.guardar(
+                enOcs,
+                // En las etapas de esta prueba, EN_OCS es del VICERRECTOR.
+                enOcs.registrarResolucion(
+                        new Solicitante("secretaria.demo", Set.of("VICERRECTOR"), Optional.empty()),
+                        resolucion,
+                        AHORA.plusSeconds(120)));
+
+        ProcesoAprobacion leido = repositorio.de(periodo).orElseThrow();
+        assertThat(leido.estado()).isEqualTo(TipoDeEtapa.APROBADO);
+        assertThat(leido.resolucion())
+                .get()
+                .satisfies(
+                        una -> {
+                            assertThat(una.quien()).isEqualTo("secretaria.demo");
+                            assertThat(una.resolucion()).contains(resolucion);
+                        });
+    }
+
     private static void esperar(CountDownLatch salida) {
         try {
             salida.await();
