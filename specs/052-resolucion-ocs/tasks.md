@@ -56,10 +56,12 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
 - [X] T003 [P] Los ocho códigos en `contratos/comun/errores.md` (8 columnas, `contracts/validacionocs.md`) y en `OCS/main/.../adaptadores/entrada/ErroresValidacionocs.java`. Antes, ver fallar `ErroresValidacionocsTest`.
 
   **Resultado (2026-11-15):** `ErroresValidacionocsTest` se vio fallar con las ocho entradas nuevas y pasa con ellas en el código y en `errores.md`. `VALIDACIONOCS_RESOLUCION_ILEGIBLE` va con la clasificación «Sistema», como `GENERACION_INFORME_ILEGIBLE`: «Técnico», del contrato del plan, no es una de las admitidas. Las ocho excepciones se crearon aquí, vacías, para que el catálogo compile; las lanzan T005, T006, T007 y T012.
-- [ ] T004 [P] La migración `OCS/main/resources/db/migration/validacionocs/V7__resolucion_ocs.sql`, según `data-model.md`. Antes, ver fallar en `OCS/integrationTest/.../ValidacionocsEsquemaIntegrationTest.java`:
+- [X] T004 [P] La migración `OCS/main/resources/db/migration/validacionocs/V7__resolucion_ocs.sql`, según `data-model.md`. Antes, ver fallar en `OCS/integrationTest/.../ValidacionocsEsquemaIntegrationTest.java`:
   - inserta una resolución con su transición;
   - una segunda de la misma versión falla;
   - el número de solo espacios, de 61 caracteres, un `sha256` mal formado y un tamaño de 0 o de más de 10 MB, fallan.
+
+  **Resultado (2026-11-15):** la prueba nueva de `ValidacionocsEsquemaIntegrationTest` se vio fallar sin la tabla y pasa con V7.
 - [ ] T005 [P] El dominio de valores. Ver fallar primero:
   - `ResolucionOcsTest`: el número vacío, de espacios, de 60 y de 61, recortado;
   - `ArchivoDeResolucionTest`: vacío, sin `%PDF-`, sin `%%EOF` al final, de 10 MB justos y de 10 MB más 1 byte; la huella SHA-256; el nombre sin ruta.

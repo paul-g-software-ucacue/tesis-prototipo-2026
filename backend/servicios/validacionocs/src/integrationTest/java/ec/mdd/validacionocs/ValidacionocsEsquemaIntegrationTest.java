@@ -132,6 +132,93 @@ class ValidacionocsEsquemaIntegrationTest {
         }
     }
 
+    // F15-H01, V7: una resolución por versión aprobada, con sus reglas.
+    @Test
+    void dadaUnaResolucion_cuandoSeGuardaConSuTransicion_entoncesQuedaUnaPorVersion() {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+            postgres.start();
+            DataSource dataSource =
+                    new DriverManagerDataSource(
+                            postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+            new ValidacionocsFlywayConfig().flywayValidacionocs(dataSource).migrate();
+            JdbcClient jdbc = JdbcClient.create(dataSource);
+            jdbc.sql(
+                            "insert into validacionocs.proceso_aprobacion (periodo, estado, etapas,"
+                                    + " distributivo_creado_en, creado_en) values ('2026-I',"
+                                    + " 'APROBADO', '[]'::jsonb, now(), now())")
+                    .update();
+            UUID transicion = aprobado(jdbc);
+
+            resolucion(jdbc, transicion, 1, "RPC-SO-12-No.123-2026", "a".repeat(64), 2048);
+
+            assertThat(
+                            jdbc.sql(
+                                            "select numero from validacionocs.resolucion_ocs"
+                                                    + " where transicion_id = :id")
+                                    .param("id", transicion)
+                                    .query(String.class)
+                                    .single())
+                    .isEqualTo("RPC-SO-12-No.123-2026");
+            assertThatThrownBy(() -> resolucion(jdbc, aprobado(jdbc), 1, "Otra", "b".repeat(64), 1))
+                    .as("una por versión")
+                    .isInstanceOf(DataAccessException.class);
+            assertThatThrownBy(() -> resolucion(jdbc, aprobado(jdbc), 2, "   ", "b".repeat(64), 1))
+                    .isInstanceOf(DataAccessException.class);
+            assertThatThrownBy(
+                            () ->
+                                    resolucion(
+                                            jdbc,
+                                            aprobado(jdbc),
+                                            3,
+                                            "x".repeat(61),
+                                            "b".repeat(64),
+                                            1))
+                    .isInstanceOf(DataAccessException.class);
+            assertThatThrownBy(() -> resolucion(jdbc, aprobado(jdbc), 4, "N4", "B".repeat(64), 1))
+                    .isInstanceOf(DataAccessException.class);
+            assertThatThrownBy(() -> resolucion(jdbc, aprobado(jdbc), 5, "N5", "b".repeat(64), 0))
+                    .isInstanceOf(DataAccessException.class);
+            assertThatThrownBy(
+                            () ->
+                                    resolucion(
+                                            jdbc,
+                                            aprobado(jdbc),
+                                            6,
+                                            "N6",
+                                            "b".repeat(64),
+                                            10 * 1024 * 1024 + 1))
+                    .isInstanceOf(DataAccessException.class);
+        }
+    }
+
+    private static UUID aprobado(JdbcClient jdbc) {
+        UUID id = UUID.randomUUID();
+        jdbc.sql(
+                        "insert into validacionocs.transicion (id, periodo, tipo, desde, hacia,"
+                                + " version, hash, quien, momento) values (:id, '2026-I',"
+                                + " 'PASO_DE_ETAPA', 'EN_OCS', 'APROBADO', 1, :hash,"
+                                + " 'secretaria.demo', now())")
+                .param("id", id)
+                .param("hash", "c".repeat(64))
+                .update();
+        return id;
+    }
+
+    private static void resolucion(
+            JdbcClient jdbc, UUID transicion, int version, String numero, String sha, int tamano) {
+        jdbc.sql(
+                        "insert into validacionocs.resolucion_ocs (transicion_id, periodo, version,"
+                                + " numero, fecha, sha256, nombre, tamano) values (:id, '2026-I',"
+                                + " :version, :numero, current_date, :sha, 'resolucion.pdf',"
+                                + " :tamano)")
+                .param("id", transicion)
+                .param("version", version)
+                .param("numero", numero)
+                .param("sha", sha)
+                .param("tamano", tamano)
+                .update();
+    }
+
     private static void rechazo(JdbcClient jdbc, UUID transicion, String observacion) {
         jdbc.sql(
                         "insert into validacionocs.rechazo_en_firma (transicion_id, orden, rol,"
