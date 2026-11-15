@@ -242,7 +242,9 @@ describe('Pendientes de firma', () => {
       expect(within(aviso).getByText('Firma no íntegra')).toBeVisible();
       expect(within(aviso).getByText('La firma es íntegra')).toBeVisible();
       expect(within(aviso).getByText('Rechazada. La firma nueva no es íntegra.')).toBeVisible();
-      expect(within(aviso).getAllByText('No evaluada. La firma nueva no es íntegra.')).toHaveLength(4);
+      expect(within(aviso).getAllByText('No evaluada. La firma nueva no es íntegra.')).toHaveLength(
+        4,
+      );
       expect(within(aviso).getByText('Firma la persona del paso')).toBeVisible();
       expect(screen.getByRole('table', { name: 'Firmas pendientes' })).toBeVisible();
     });

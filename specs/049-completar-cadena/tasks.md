@@ -170,7 +170,7 @@ description: "Tareas de F14-H03: validar firmante, turno y vigencia, y completar
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T016 La pantalla: los tres nombres en `SPA/pantallas/firmas/FirmasPendientes.tsx`, con Vitest y Playwright de siete comprobaciones, y axe-core sin fallas.
+- [X] T016 La pantalla: los tres nombres en `SPA/pantallas/firmas/FirmasPendientes.tsx`, con Vitest y Playwright de siete comprobaciones, y axe-core sin fallas.
 - [ ] T017 `deploy/probar_documento_firmable.sh` según `contracts/demostracion.md`:
   - en el paso 9, fuera de orden y vencido;
   - en el paso 11, firmante equivocado;
