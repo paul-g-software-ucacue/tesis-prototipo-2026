@@ -133,7 +133,9 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
   - **`PermisosValidacionocsTest`** suma un doble de `RegistrarResolucion`.
 
   Las de Validación OCS en verde.
-- [ ] T011 [US1] Dos registros a la vez. Ver fallar primero en `OCS/integrationTest/...` (como la concurrencia de F12-H02): dos hilos registran sobre el mismo proceso en EN_OCS; queda una resolución y una transición, y el otro recibe `EtapaNoAdmiteResolucion`.
+- [X] T011 [US1] Dos registros a la vez. Ver fallar primero en `OCS/integrationTest/...` (como la concurrencia de F12-H02): dos hilos registran sobre el mismo proceso en EN_OCS; queda una resolución y una transición, y el otro recibe `EtapaNoAdmiteResolucion`.
+
+  **Resultado (2026-11-15):** la prueba nueva va en `RepositorioProcesoIntegrationTest`: dos hilos bloquean el proceso, esperan un momento y registran. Pasó al escribirse, porque el bloqueo (`FOR UPDATE`, F12-H02) y la regla de la etapa ya estaban: no se vio fallar.
 
 **Checkpoint**: la resolución se registra por la API y el distributivo queda en APROBADO.
 

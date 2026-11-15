@@ -343,6 +343,104 @@ class RepositorioProcesoIntegrationTest {
                         });
     }
 
+    // F15-H01, FR-010: dos registros a la vez; el segundo espera el bloqueo y encuentra APROBADO.
+    @Test
+    void dadosDosRegistrosDeLaResolucionALaVez_cuandoSeGuardan_entoncesQuedaUnaSola()
+            throws Exception {
+        String periodo = enOcs();
+        CountDownLatch salida = new CountDownLatch(1);
+        ExecutorService hilos = Executors.newFixedThreadPool(2);
+        List<Throwable> rechazos =
+                java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+        try {
+            List<Future<?>> tareas = new java.util.ArrayList<>();
+            for (String numero : List.of("RPC-SO-12-No.123-2026", "RPC-SO-12-No.124-2026")) {
+                tareas.add(
+                        hilos.submit(
+                                () -> {
+                                    esperar(salida);
+                                    try {
+                                        registrarEnUnaTransaccion(periodo, numero);
+                                    } catch (RuntimeException rechazo) {
+                                        rechazos.add(rechazo);
+                                    }
+                                }));
+            }
+            salida.countDown();
+            for (Future<?> tarea : tareas) {
+                tarea.get(30, TimeUnit.SECONDS);
+            }
+        } finally {
+            hilos.shutdownNow();
+        }
+
+        assertThat(rechazos)
+                .singleElement()
+                .isInstanceOf(ec.mdd.validacionocs.dominio.EtapaNoAdmiteResolucion.class);
+        ProcesoAprobacion leido = repositorio.de(periodo).orElseThrow();
+        assertThat(leido.estado()).isEqualTo(TipoDeEtapa.APROBADO);
+        assertThat(leido.transiciones()).filteredOn(una -> una.resolucion().isPresent()).hasSize(1);
+    }
+
+    private String enOcs() {
+        String periodo = periodo();
+        repositorio.crear(
+                ProcesoAprobacion.de(
+                        periodo,
+                        etapas(),
+                        TipoDeEtapa.EN_REVISION_VRA,
+                        CREADO,
+                        java.util.Map.of("DS", EstadoDeEnvio.ENVIADO),
+                        List.of()),
+                AHORA);
+        ProcesoAprobacion proceso = repositorio.de(periodo).orElseThrow();
+        repositorio.guardar(
+                proceso,
+                proceso.aprobarContenido(
+                        new Solicitante(
+                                "vicerrectorado.demo", Set.of("VICERRECTOR"), Optional.empty()),
+                        1,
+                        HASH,
+                        AHORA));
+        ProcesoAprobacion enFirma = repositorio.de(periodo).orElseThrow();
+        repositorio.guardar(enFirma, enFirma.completarFirmas(1, AHORA.plusSeconds(60)));
+        return periodo;
+    }
+
+    // Como RegistrarResolucionServicio: el proceso bloqueado, el agregado decide y se guarda.
+    private static void registrarEnUnaTransaccion(String periodo, String numero) {
+        transaccion.executeWithoutResult(
+                estado -> {
+                    ProcesoAprobacion bloqueado = repositorio.bloquear(periodo).orElseThrow();
+                    pausa();
+                    repositorio.guardar(
+                            bloqueado,
+                            bloqueado.registrarResolucion(
+                                    // En las etapas de esta prueba, EN_OCS es del VICERRECTOR.
+                                    new Solicitante(
+                                            "secretaria.demo",
+                                            Set.of("VICERRECTOR"),
+                                            Optional.empty()),
+                                    new ec.mdd.validacionocs.dominio.ResolucionOcs(
+                                            numero,
+                                            java.time.LocalDate.ofInstant(
+                                                    AHORA, ProcesoAprobacion.ZONA),
+                                            "b".repeat(64),
+                                            "resolucion.pdf",
+                                            2048),
+                                    AHORA.plusSeconds(120)));
+                });
+    }
+
+    private static void pausa() {
+        try {
+            Thread.sleep(300);
+        } catch (InterruptedException error) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(error);
+        }
+    }
+
     private static void esperar(CountDownLatch salida) {
         try {
             salida.await();
