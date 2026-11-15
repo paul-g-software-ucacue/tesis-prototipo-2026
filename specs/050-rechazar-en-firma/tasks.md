@@ -109,13 +109,15 @@ description: "Tareas de F14-H04: rechazar en firma con una observación"
   Luego `RepositorioDocumentos.registrarRechazo` y `RepositorioDocumentosJdbc`.
 
   **Resultado (2026-11-15):** las 4 pruebas nuevas, vistas fallar contra un esqueleto, pasan; las de integración y unitarias de Firma siguen en verde. El doble en memoria de `DocumentoFirmableServicioTest` suma el método sin usarlo.
-- [ ] T009 [US1] `RechazarEnFirmaServicio`. Ver fallar primero en `RechazarEnFirmaServicioTest`:
+- [X] T009 [US1] `RechazarEnFirmaServicio`. Ver fallar primero en `RechazarEnFirmaServicioTest`:
   - fuera de turno: `SinTurnoDeFirma`, sin mirar la observación ni registrar;
   - la observación inválida: `ObservacionInvalida`, sin registrar;
   - el registro, el cambio `RECHAZO_EN_FIRMA` para la bitácora y `AvisoDeRechazoEnFirma.avisar`, en la misma transacción;
   - perdido contra una firma: `SinTurnoDeFirma`, sin cambio ni aviso.
 
   Luego `RechazarEnFirma`, `RechazoRegistrado`, el evento `RechazoEnFirma` (en `puertos.entrada`), el puerto `AvisoDeRechazoEnFirma`, su adaptador con el publicador de Spring y el bean.
+
+  **Resultado (2026-11-15):** `RechazarEnFirmaServicioTest` (5), visto fallar contra los esqueletos, pasa; las demás de Firma siguen en verde. El cambio para la bitácora es `RECHAZO_EN_FIRMA`, con el periodo, la versión y el paso en el objeto y la observación como valor nuevo.
 - [ ] T010 [US1] `SubirFirmaServicio`. Ver fallar primero en `SubirFirmaServicioTest`: aceptada con el documento rechazado entretanto, se registra como rechazada por «mismo documento» (la regla de la subida tardía). Luego, si hace falta, el servicio.
 - [ ] T011 [US1] El controlador. Ver fallar primero en `RechazarEnFirmaContratoTest` y `PermisosFirmaTest`: el 201 con su cuerpo, los dos 400, el 403 sin permiso y fuera de turno, y el 401. Luego, el endpoint en `FirmasPendientesControlador`.
 
