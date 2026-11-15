@@ -62,11 +62,15 @@ description: "Tareas de F14-H04: rechazar en firma con una observación"
 
   **Resultado (2026-11-15):** los dos contratos actualizados; `BitacoraSinBorradoContratoTest` y `verificar:ruptura` pasan. La operación nueva la implementa `FirmasPendientesControlador`, el de la subida, no `DocumentoControlador`: queda un esqueleto que responde 500 hasta T011. `PermisosFirmaTest` cuenta seis operaciones.
 - [X] T003 [P] Los dos códigos en `contratos/comun/errores.md`, con sus 8 columnas. Ver fallar primero `ErroresFirmaTest` con `ObservacionInvalida` y `ErroresValidacionocsTest` con `RequiereVersionNueva`; luego, `ErroresFirma` y `ErroresValidacionocs`.
-- [ ] T004 [P] La migración `FIR/main/resources/db/migration/firma/V6__rechazo_en_firma.sql` según `data-model.md`. Antes, ver fallar en `DocumentoFirmableEsquemaIntegrationTest`, con el rol del proceso:
+- [X] T004 [P] La migración `FIR/main/resources/db/migration/firma/V6__rechazo_en_firma.sql` según `data-model.md`. Antes, ver fallar en `DocumentoFirmableEsquemaIntegrationTest`, con el rol del proceso:
   - inserta un rechazo; un segundo del mismo documento falla por la clave;
   - una observación de 9 caracteres, recortada, falla por el `check`;
   - no puede actualizar ni borrar.
-- [ ] T005 [P] La migración `OCS/main/resources/db/migration/validacionocs/V5__rechazo_en_firma.sql`: el tipo `RECHAZO_EN_FIRMA` en `transicion_tipo_check` y la tabla `rechazo_en_firma`. Antes, ver fallar en `OCS/integrationTest/.../ValidacionocsEsquemaIntegrationTest.java`: inserta una transición `RECHAZO_EN_FIRMA` con su rechazo, y el rol no puede actualizarlo.
+- [X] T005 [P] La migración `OCS/main/resources/db/migration/validacionocs/V5__rechazo_en_firma.sql`: el tipo `RECHAZO_EN_FIRMA` en `transicion_tipo_check` y la tabla `rechazo_en_firma`. Antes, ver fallar en `OCS/integrationTest/.../ValidacionocsEsquemaIntegrationTest.java`: inserta una transición `RECHAZO_EN_FIRMA` con su rechazo, y el rol no puede actualizarlo.
+
+  **Resultado (2026-11-15):**
+  - Hallazgo: `transicion.tipo` era `varchar(15)` y `RECHAZO_EN_FIRMA` tiene 16 caracteres; V5 lo ensancha a 20.
+  - Validación OCS no revoca permisos en ninguna de sus tablas, y sus migraciones de prueba corren como superusuario: «solo de inserción» lo cumple el código, como `observacion_de_devolucion` (V4). La prueba comprueba la tabla, una fila por transición y el `check` de la observación, no el `revoke`. En Firma sí se revoca (V6), como en V2 a V5.
 - [ ] T006 [P] El dominio de Firma. Ver fallar primero:
   - `RechazoEnFirmaTest`: la observación vacía, de 9 y de 501 caracteres, y con espacios en los extremos (se recorta);
   - `FirmasDelDocumentoTest`: con rechazo, `pasoEnTurno()` vacío y `enTurno` falso; el constructor de cuatro componentes, sin rechazo.

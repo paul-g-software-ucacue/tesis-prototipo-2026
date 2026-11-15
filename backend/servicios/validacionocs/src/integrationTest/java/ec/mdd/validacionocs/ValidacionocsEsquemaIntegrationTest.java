@@ -1,6 +1,7 @@
 package ec.mdd.validacionocs;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ec.mdd.validacionocs.infraestructura.ValidacionocsFlywayConfig;
 import java.sql.Connection;
@@ -9,8 +10,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
@@ -49,6 +53,58 @@ class ValidacionocsEsquemaIntegrationTest {
                             "validacionocs.parcial_del_proceso",
                             "validacionocs.transicion");
         }
+    }
+
+    @Test
+    void dadoUnRechazoEnFirma_cuandoSeGuardaConSuTransicion_entoncesQuedaYSuObservacionSeExige() {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+            postgres.start();
+            DataSource dataSource =
+                    new DriverManagerDataSource(
+                            postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+            new ValidacionocsFlywayConfig().flywayValidacionocs(dataSource).migrate();
+            JdbcClient jdbc = JdbcClient.create(dataSource);
+            jdbc.sql(
+                            "insert into validacionocs.proceso_aprobacion (periodo, estado, etapas,"
+                                    + " distributivo_creado_en, creado_en) values ('2026-I',"
+                                    + " 'EN_REVISION_VRA', '[]'::jsonb, now(), now())")
+                    .update();
+            UUID transicion = UUID.randomUUID();
+            jdbc.sql(
+                            "insert into validacionocs.transicion (id, periodo, tipo, desde, hacia,"
+                                    + " version, hash, quien, momento) values (:id, '2026-I',"
+                                    + " 'RECHAZO_EN_FIRMA', 'CONGELADO_EN_FIRMA', 'EN_REVISION_VRA',"
+                                    + " 1, :hash, 'sistema', now())")
+                    .param("id", transicion)
+                    .param("hash", "a".repeat(64))
+                    .update();
+
+            rechazo(jdbc, transicion, "Falta la carga de un docente de Software.");
+
+            assertThat(
+                            jdbc.sql(
+                                            "select observacion from validacionocs.rechazo_en_firma"
+                                                    + " where transicion_id = :id")
+                                    .param("id", transicion)
+                                    .query(String.class)
+                                    .single())
+                    .isEqualTo("Falta la carga de un docente de Software.");
+            assertThatThrownBy(() -> rechazo(jdbc, transicion, "Otra observación más."))
+                    .as("un rechazo por transición")
+                    .isInstanceOf(DataAccessException.class);
+            assertThatThrownBy(() -> rechazo(jdbc, UUID.randomUUID(), "   corta   "))
+                    .isInstanceOf(DataAccessException.class);
+        }
+    }
+
+    private static void rechazo(JdbcClient jdbc, UUID transicion, String observacion) {
+        jdbc.sql(
+                        "insert into validacionocs.rechazo_en_firma (transicion_id, orden, rol,"
+                                + " rechazado_por, rechazado_en, observacion) values (:id, 2,"
+                                + " 'VICERRECTOR', 'vicerrectorado.demo', now(), :observacion)")
+                .param("id", transicion)
+                .param("observacion", observacion)
+                .update();
     }
 
     private static List<String> tablasDeUsuario(DataSource dataSource) throws SQLException {

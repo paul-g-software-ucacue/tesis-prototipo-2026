@@ -269,6 +269,78 @@ class DocumentoFirmableEsquemaIntegrationTest {
                 .isInstanceOf(DataAccessException.class);
     }
 
+    @Test
+    void dadoUnRechazoEnFirma_cuandoSeRegistraOtroDelMismoDocumento_entoncesSeRechaza() {
+        generacion("P14", 1, "GENERADA", null);
+        documento("P14", 1, UUID.randomUUID());
+        rechazo("P14", 2, "Falta la carga de un docente de Software.");
+
+        assertThat(
+                        comoProceso
+                                .sql(
+                                        "select observacion from firma.rechazo_en_firma"
+                                                + " where periodo = 'P14'")
+                                .query(String.class)
+                                .single())
+                .isEqualTo("Falta la carga de un docente de Software.");
+        assertThatThrownBy(() -> rechazo("P14", 2, "Otra observación del mismo paso."))
+                .as("un rechazo por documento")
+                .isInstanceOf(DataAccessException.class);
+    }
+
+    @Test
+    void dadoUnRechazoInvalido_cuandoSeGuarda_entoncesSeRechaza() {
+        generacion("P15", 1, "GENERADA", null);
+        documento("P15", 1, UUID.randomUUID());
+
+        assertThatThrownBy(() -> rechazo("P15", 1, "   corta    "))
+                .as("menos de 10 caracteres sin los espacios de los extremos")
+                .isInstanceOf(DataAccessException.class);
+        assertThatThrownBy(() -> rechazo("P15", 0, "Una observación suficiente."))
+                .isInstanceOf(DataAccessException.class);
+        assertThatThrownBy(() -> rechazo("P16", 1, "Una observación suficiente."))
+                .as("sin generación")
+                .isInstanceOf(DataAccessException.class);
+    }
+
+    @Test
+    void dadoUnRechazoRegistrado_cuandoElProcesoLoCambiaOLoBorra_entoncesSeRechaza() {
+        generacion("P17", 1, "GENERADA", null);
+        documento("P17", 1, UUID.randomUUID());
+        rechazo("P17", 1, "Una observación suficiente.");
+
+        assertThatThrownBy(
+                        () ->
+                                comoProceso
+                                        .sql(
+                                                "update firma.rechazo_en_firma set observacion ="
+                                                        + " 'Otra observación cualquiera.'"
+                                                        + " where periodo = 'P17'")
+                                        .update())
+                .isInstanceOf(DataAccessException.class);
+        assertThatThrownBy(
+                        () ->
+                                comoProceso
+                                        .sql(
+                                                "delete from firma.rechazo_en_firma where periodo = 'P17'")
+                                        .update())
+                .isInstanceOf(DataAccessException.class);
+    }
+
+    private static void rechazo(String periodo, int orden, String observacion) {
+        comoProceso
+                .sql(
+                        "insert into firma.rechazo_en_firma (periodo, version, tipo, orden,"
+                                + " rechazado_por, rechazado_en, observacion) values (:periodo, 1,"
+                                + " 'CONSOLIDADO', :orden, 'vicerrectorado.demo', :momento,"
+                                + " :observacion)")
+                .param("periodo", periodo)
+                .param("orden", orden)
+                .param("momento", Timestamp.from(Instant.now()))
+                .param("observacion", observacion)
+                .update();
+    }
+
     private static void validacion(
             String periodo, int orden, boolean aceptada, String comprobaciones) {
         comoProceso
