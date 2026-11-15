@@ -67,7 +67,7 @@
 | VI. Las reglas son datos | El rol de EN_OCS sale de la copia de la configuración. | ✅ |
 | VII. Inmutabilidad | La resolución y su archivo no cambian; el archivo se nombra por su hash. | ✅ |
 | VIII. Pruebas | Dominio y aplicación, viéndolos fallar; la concurrencia con PostgreSQL real; el script. | ✅ |
-| IX. Seguridad | Permiso y rol en el servidor; el archivo comprobado por su contenido y su tamaño; el nombre sin ruta; la huella al leer. | ✅ |
+| IX. Seguridad | Permiso y rol en el servidor; leer la resolución exige `RESOLUCION_OCS:LECTURA` de D-16, ampliado con Roles V9 (análisis S1); el archivo comprobado por su contenido y su tamaño; el nombre sin ruta; la huella al leer. | ✅ |
 | X. Simplicidad | Sin evento hasta que alguien lo escuche (§8); reutiliza el patrón del informe y del rechazo. | ✅ |
 | XI. Diseño pragmático | Pasos en el script de la cadena completa, en lugar de un script nuevo (§10). | ✅ |
 | XII. JavaDoc | Registrar es aprobar, la fecha en la zona de la institución, por qué no se validan las firmas y el archivo por su hash. | ✅ |
@@ -99,9 +99,11 @@ backend/servicios/validacionocs/
 ├── puertos/entrada/    RegistrarResolucion, DescargarResolucion, FlujoDelDistributivo.Resolucion
 ├── puertos/salida/     AlmacenDeResoluciones; CambioDeFlujo.Accion.RESOLUCION_REGISTRADA
 ├── aplicacion/         RegistrarResolucionServicio, DescargarResolucionServicio
-├── adaptadores/        ResolucionControlador (o FlujoControlador), ErroresValidacionocs,
+├── adaptadores/        FlujoControlador, ErroresValidacionocs,
 │                       AlmacenDeResolucionesEnDisco, RepositorioProcesoJdbc
 └── resources/db/migration/validacionocs/V7__resolucion_ocs.sql
+
+backend/servicios/roles/src/main/resources/db/migration/roles/V9__resolucion_para_quien_aprueba.sql
 
 frontend/src/pantallas/comun/EstadoDelFlujo.tsx, flujo.ts; e2e/consolidado.spec.ts
 deploy/probar_documento_firmable.sh

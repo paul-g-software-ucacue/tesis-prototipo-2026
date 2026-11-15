@@ -4,8 +4,8 @@ Cada sección: decisión, por qué y alternativas. Todo parte del código de F12
 
 ## §1. La operación y su transición
 
-**Decisión.** `POST /api/validacionocs/periodos/{periodo}/resolucion` (multipart: `numero`, `fecha`, `archivo`), con `x-mdd-permiso: RESOLUCION_OCS:ESCRITURA` (D-16). `RegistrarResolucionServicio`:
-1. comprueba el PDF (§3) y lo guarda en el almacén (§4), fuera de la transacción;
+**Decisión.** `POST /api/validacionocs/periodos/{periodo}/resolucion` (multipart: `numero`, `fecha`, `archivo`), con `x-mdd-permiso: RESOLUCION_OCS:ESCRITURA` (D-16), en `FlujoControlador`, junto a aprobar y avanzar. `RegistrarResolucionServicio`:
+1. comprueba que el periodo no esté cerrado, como aprobar y avanzar (`exigirAbierto`, con Académico); comprueba el PDF (§3) y lo guarda en el almacén (§4), fuera de la transacción;
 2. bloquea el proceso; `ProcesoAprobacion.registrarResolucion(quien, resolucion, ahora)` exige el rol de EN_OCS de la copia de la configuración, la etapa EN_OCS y la fecha en rango (§2), y agrega un `PASO_DE_ETAPA` de EN_OCS a APROBADO por quien registra, con la versión y el hash de la congelación y la resolución;
 3. guarda la transición con su resolución y la entrada `RESOLUCION_REGISTRADA` para la bitácora, en la misma transacción.
 
@@ -50,7 +50,10 @@ Responde 200 con el estado del flujo, como aprobar el contenido.
 **Decisión.**
 - `EstadoDelFlujo` suma `resolucion` (`ResolucionDelOcs`: número, fecha, registrada por, registrada en, `sha256`, nombre y tamaño), presente desde que se registra.
 - `AccionDelProceso` suma `REGISTRAR_RESOLUCION`, para el rol de EN_OCS con el distributivo en EN_OCS.
-- `GET /api/validacionocs/periodos/{periodo}/resolucion/archivo` devuelve el PDF (`application/pdf`, `Content-Disposition` con el nombre guardado), con el mismo permiso que el estado del flujo.
+- **El permiso de leer la resolución** es `RESOLUCION_OCS:LECTURA` (D-16), no el del flujo.
+  - Roles V9 lo suma a VICERRECTOR, RECTOR y MIEMBRO_OCS; SECRETARIA_GENERAL y ADMINISTRADOR ya lo tenían (decisión del autor, análisis S1).
+  - El estado del flujo trae `resolucion` solo a quien tiene ese permiso: el controlador lo mira en la autenticación y lo pasa a la vista.
+- `GET /api/validacionocs/periodos/{periodo}/resolucion/archivo` devuelve el PDF (`application/pdf`, `Content-Disposition` con el nombre guardado), con `x-mdd-permiso: RESOLUCION_OCS:LECTURA`.
   - Sin resolución: `VALIDACIONOCS_RESOLUCION_NO_ENCONTRADA` (404).
   - El archivo falta o no coincide con su huella: `VALIDACIONOCS_RESOLUCION_ILEGIBLE` (500), como el informe.
 

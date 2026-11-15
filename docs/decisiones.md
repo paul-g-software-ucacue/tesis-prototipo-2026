@@ -105,7 +105,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-104 | 2026-11-14 | El firmante se reconoce por el CN igual al nombre impreso, que se guarda al generar; la última firma avisa a Aprobación, que pasa a EN_OCS; la CA de prueba con los nombres de los datos de prueba | Aceptada | RF-38, RF-39, RF-58, D-23, D-102, D-103, ADR-017, MD-05 |
 | D-105 | 2026-11-15 | El rechazo en firma lo registra Firma y cierra el documento; Aprobación vuelve a la etapa activa anterior como el sistema, y aprobar otra vez espera la versión nueva | Aceptada | RF-36, RF-59, D-98, D-101, D-102, D-103, D-104, ADR-018, MD-05 |
 | D-106 | 2026-11-15 | El rechazo en firma crea la versión nueva y anula las firmas: Aprobación ordena a Generación y, después de confirmar, a Firma; la transición VERSION_NUEVA levanta el bloqueo de D-105 | Aceptada | RF-34, RF-59, MD-01, MD-04, MD-05, D-83, D-95, D-99, D-100, D-101, D-105, ADR-018 |
-| D-107 | 2026-11-15 | La resolución del OCS la registra Aprobación con su PDF en el volumen, y registrarla pasa el distributivo a APROBADO | Aceptada | RF-37, D-16, D-19, D-88, D-95, D-104, ADR-007 |
+| D-107 | 2026-11-15 | La resolución del OCS la registra Aprobación con su PDF en el volumen, y registrarla pasa el distributivo a APROBADO; leerla exige RESOLUCION_OCS:LECTURA, que se suma a Vicerrector, Rector y OCS | Aceptada | RF-37, D-16, D-19, D-88, D-95, D-104, ADR-007 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -2223,7 +2223,7 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 - **El archivo** va al volumen del proceso (D-88), en `resoluciones/<sha256>.pdf`, antes de la transacción; el nombre por hash hace la escritura idempotente.
 - **Los datos.** La resolución va en `validacionocs.resolucion_ocs` (V7), con su transición y única por versión aprobada.
 - **El avance genérico desde EN_OCS** responde 409 `VALIDACIONOCS_REQUIERE_RESOLUCION`.
-- **La consulta.** El estado del flujo trae la resolución y la acción `REGISTRAR_RESOLUCION`. El PDF se descarga con el permiso del flujo.
+- **La consulta.** El estado del flujo trae la acción `REGISTRAR_RESOLUCION` y, solo a quien tiene `RESOLUCION_OCS:LECTURA` (D-16), la resolución; el PDF se descarga con ese permiso. Roles V9 lo suma a VICERRECTOR, RECTOR y MIEMBRO_OCS; SECRETARIA_GENERAL y ADMINISTRADOR ya lo tenían. Los coordinadores y el Responsable de consolidación no la ven.
 - **Sin evento por ahora.** `ResolucionRegistrada` no se publica todavía: lo agregará la historia que lo escuche (F18-H01 o F16).
 - **Ocho códigos nuevos** en el catálogo.
 
@@ -2236,6 +2236,7 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 - Guardar el PDF en Firma como documento `RESOLUCION_OCS`: Firma no valida esa firma, y la resolución no es un documento de la cadena.
 - Registrar y aprobar en dos pasos: permitiría corregir antes de aprobar, a cambio de una acción más.
 - Admitir cualquier fecha hasta hoy: una resolución anterior a las firmas no aprueba la versión firmada.
+- Mostrar la resolución con el permiso de leer el flujo: la verían los coordinadores y el Responsable de consolidación, contra la matriz D-16.
 
 **Consecuencias.**
 - `probar_documento_firmable.sh` suma tres pasos, y `MDD_CONSERVAR=EN_OCS` lo deja en EN_OCS para el recorrido a mano.

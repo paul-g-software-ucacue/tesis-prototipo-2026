@@ -13,7 +13,7 @@
 | Estado | Código | Cuándo |
 |---|---|---|
 | 200 | — | Registrada: el estado del flujo en APROBADO, con `resolucion` |
-| 400 | `COMUN_SOLICITUD_INVALIDA` | Falta una parte o la fecha no es una fecha |
+| 400 | `COMUN_SOLICITUD_INVALIDA` | Falta una parte o la fecha no es una fecha; la parte, en los detalles |
 | 400 | `VALIDACIONOCS_NUMERO_DE_RESOLUCION_INVALIDO` | El número, recortado, vacío o de más de 60 |
 | 400 | `VALIDACIONOCS_FECHA_DE_RESOLUCION_FUERA_DE_RANGO` | Futura o anterior al día de entrada en EN_OCS |
 | 400 | `VALIDACIONOCS_RESOLUCION_NO_ES_PDF` | Vacío o no es un PDF por su contenido |
@@ -25,7 +25,7 @@
 
 ## `GET /api/validacionocs/periodos/{periodo}/resolucion/archivo` (`descargarResolucion`, nueva)
 
-El mismo `x-mdd-permiso` que el estado del flujo. 200 `application/pdf`, con `Content-Disposition: attachment` y el nombre guardado.
+`x-mdd-permiso: RESOLUCION_OCS:LECTURA` (D-16; Roles V9 lo suma a VICERRECTOR, RECTOR y MIEMBRO_OCS). 200 `application/pdf`, con `Content-Disposition: attachment` y el nombre guardado. Sin el permiso, 403 común.
 
 | Estado | Código | Cuándo |
 |---|---|---|
@@ -40,7 +40,7 @@ El mismo `x-mdd-permiso` que el estado del flujo. 200 `application/pdf`, con `Co
 
 ## `GET …/flujo` (`EstadoDelFlujo`)
 
-- `resolucion` (`ResolucionDelOcs`): `numero`, `fecha`, `registradaPor`, `registradaEn`, `sha256`, `nombre`, `tamano`. Presente desde que se registra.
+- `resolucion` (`ResolucionDelOcs`): `numero`, `fecha`, `registradaPor`, `registradaEn`, `sha256`, `nombre`, `tamano`. Presente desde que se registra, y solo para quien tiene `RESOLUCION_OCS:LECTURA`.
 - `AccionDelProceso` suma `REGISTRAR_RESOLUCION`.
 
 ## Catálogo (8 columnas en `contratos/comun/errores.md`)

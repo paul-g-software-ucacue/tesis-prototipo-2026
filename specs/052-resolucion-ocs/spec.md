@@ -29,6 +29,7 @@
 
 - Q: ¿Dónde se guarda el PDF de la resolución? → A: En Aprobación, en el almacén de archivos del proceso, con su huella, junto con el número y la fecha. La resolución es parte del proceso de aprobación (glosario). Se comprueba que sea un PDF y su tamaño, como el informe sustentado, pero no sus firmas.
 - Q: ¿Qué reglas lleva la fecha? → A: No puede ser futura ni anterior al día en que el distributivo entró en EN_OCS: la resolución aprueba la versión ya firmada.
+- Q: ¿Quién puede leer la resolución y descargar su PDF? → A: Quien tiene `RESOLUCION_OCS:LECTURA` (D-16). Se suma a VICERRECTOR, RECTOR y MIEMBRO_OCS, además de SECRETARIA_GENERAL y ADMINISTRADOR, que ya lo tienen. No basta con leer el flujo (análisis S1).
 - Q: ¿Registrar y aprobar son pasos distintos? → A: No. Registrar la resolución pasa el distributivo a APROBADO en la misma operación. Después no se corrige; solo una reforma (F18-H02) cambia una versión aprobada.
 
 ## User Scenarios & Testing *(mandatory)*
@@ -45,7 +46,7 @@ Como Secretaría general académica, quiero registrar el número, la fecha y el 
 
 1. **Dado** el distributivo en EN_OCS, **cuando** intento pasarlo a APROBADO sin la resolución, **entonces** se rechaza con un error 409 del catálogo, y nada cambia. *(issue)*
 2. **Dado** el distributivo en EN_OCS, **cuando** registro el número, la fecha y el PDF de la resolución, **entonces** el distributivo pasa a APROBADO, **y** el MDD no valida las firmas del PDF de la resolución. *(issue)*
-3. **Dado** una solicitud sin número, sin fecha o sin PDF, **cuando** registro, **entonces** se rechaza con un error del catálogo que dice qué falta, y el distributivo sigue en EN_OCS.
+3. **Dado** una solicitud sin número, sin fecha o sin PDF, **cuando** registro, **entonces** se rechaza con el error común de solicitud inválida, con la parte que falta en sus detalles, y el distributivo sigue en EN_OCS.
 4. **Dado** una fecha futura o anterior al día en que el distributivo entró en EN_OCS, **cuando** registro, **entonces** se rechaza con un error del catálogo que dice el rango admitido.
 5. **Dado** un archivo que no es un PDF, o uno de más de 10 MB, **cuando** registro, **entonces** se rechaza con su error del catálogo, sin guardar nada.
 6. **Dado** un PDF firmado con un certificado cualquiera, o sin firmar, **cuando** registro, **entonces** se acepta: las firmas del PDF no se comprueban (D-19).
@@ -55,19 +56,19 @@ Como Secretaría general académica, quiero registrar el número, la fecha y el 
 
 ---
 
-### User Story 2 - Cualquiera que lee el distributivo ve la resolución y descarga su PDF (Priority: P2)
+### User Story 2 - Quien puede leer la resolución la ve y descarga su PDF (Priority: P2)
 
-Como Vicerrector, Rector o Secretaría, quiero ver la resolución que aprobó el distributivo y descargar su PDF, para tener a mano el respaldo de la aprobación.
+Como Vicerrector, Rector, miembro del OCS o Secretaría, quiero ver la resolución que aprobó el distributivo y descargar su PDF, para tener a mano el respaldo de la aprobación.
 
 **Why this priority**: la resolución es el respaldo de la aprobación; sin poder consultarla, solo queda en la base.
 
-**Independent Test**: con el distributivo en APROBADO, quien lee el distributivo ve en el estado del flujo el número, la fecha, quién la registró, cuándo y la huella, y descarga el PDF igual al que se subió.
+**Independent Test**: con el distributivo en APROBADO, quien tiene el permiso de leer la resolución ve en el estado del flujo el número, la fecha, quién la registró, cuándo y la huella, y descarga el PDF igual al que se subió.
 
 **Acceptance Scenarios**:
 
-1. **Dado** el distributivo en APROBADO, **cuando** se consulta el estado del flujo, **entonces** trae la resolución con el número, la fecha, quién la registró, cuándo y la huella del PDF.
-2. **Dado** la resolución registrada, **cuando** quien lee el distributivo descarga el PDF, **entonces** recibe el mismo archivo que se subió, byte a byte.
-3. **Dado** que no puedo leer el distributivo, **cuando** pido la resolución o su PDF, **entonces** recibo el error de acceso común.
+1. **Dado** el distributivo en APROBADO, **cuando** quien puede leer la resolución consulta el estado del flujo, **entonces** trae la resolución con el número, la fecha, quién la registró, cuándo y la huella del PDF; a quien lee el flujo sin ese permiso, sin la resolución.
+2. **Dado** la resolución registrada, **cuando** quien puede leer la resolución descarga el PDF, **entonces** recibe el mismo archivo que se subió, byte a byte.
+3. **Dado** que no tengo el permiso de leer la resolución (por ejemplo, un coordinador de carrera), **cuando** pido su PDF, **entonces** recibo el error de acceso común.
 4. **Dado** un distributivo sin resolución, **cuando** se pide su PDF, **entonces** se responde que no existe, con un error del catálogo.
 
 ---
@@ -120,8 +121,8 @@ Como Secretaría general académica, quiero un formulario en «Consolidado del p
 
 **Consultar**
 
-- **FR-012**: El estado del flujo DEBE mostrar, a quien lo lee, la resolución registrada con el número, la fecha, quién, cuándo y la huella del PDF.
-- **FR-013**: Quien lee el distributivo DEBE poder descargar el PDF de la resolución, igual al que se subió.
+- **FR-012**: El estado del flujo DEBE mostrar la resolución registrada, con el número, la fecha, quién, cuándo y la huella del PDF, solo a quien tiene el permiso de leer la resolución (D-16).
+- **FR-013**: Quien tiene el permiso de leer la resolución DEBE poder descargar su PDF, igual al que se subió; los demás reciben el error de acceso común.
 
 **Pantalla, errores y seguridad**
 
@@ -150,7 +151,7 @@ Como Secretaría general académica, quiero un formulario en «Consolidado del p
 - **El número** no tiene un formato fijo: cada institución numera sus resoluciones a su manera. No se exige que sea único entre periodos.
 - **«El día en que entró en EN_OCS»** es la fecha de la transición a EN_OCS en la zona horaria de la institución (America/Guayaquil).
 - **El almacén de archivos** es el del proceso, el mismo volumen que usan el informe sustentado y los documentos firmables.
-- **La descarga** la pueden pedir quienes leen el estado del flujo.
+- **Leer la resolución** exige el permiso `RESOLUCION_OCS:LECTURA` de la matriz D-16. Hoy lo tienen la Secretaría general y el Administrador; esta historia lo suma al Vicerrector, al Rector y a los miembros del OCS, que necesitan ver el respaldo de la aprobación (decisión del autor, análisis S1). Los coordinadores y el Responsable de consolidación no lo tienen.
 - **APROBADO** no dispara nada todavía: publicar es de F18-H01.
 - **En la demo**, 2026-I está en consolidación y no llega a EN_OCS.
 

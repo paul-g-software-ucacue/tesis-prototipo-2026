@@ -44,10 +44,11 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
 
 - [ ] T002 [P] El contrato `contratos/validacionocs/openapi.yaml`, según `contracts/validacionocs.md`:
   - `registrarResolucion`: `POST /api/validacionocs/periodos/{periodo}/resolucion`, `multipart/form-data` con «`numero` `maxLength: 60`», «`fecha` `format: date`» y «`archivo` `format: binary`», `x-mdd-permiso: RESOLUCION_OCS:ESCRITURA`, 200 `EstadoDelFlujo` y sus 400, 413, 403, 404 y 409;
-  - `descargarResolucion`: `GET …/resolucion/archivo`, `application/pdf`, con el permiso de `consultarFlujo`, y su 404 y 500;
+  - `descargarResolucion`: `GET …/resolucion/archivo`, `application/pdf`, con `x-mdd-permiso: RESOLUCION_OCS:LECTURA`, y su 404 y 500;
   - `ResolucionDelOcs` y `EstadoDelFlujo.resolucion`; `REGISTRAR_RESOLUCION` en `AccionDelProceso`; el 409 `VALIDACIONOCS_REQUIERE_RESOLUCION` del avance.
 
   Regenerar los tipos de la SPA. Pasan `verificar:ruptura` y `PermisosValidacionocsTest` (con las dos operaciones nuevas: puede hacer falta un esqueleto del controlador).
+- [ ] T002b [P] Roles V9, `backend/servicios/roles/src/main/resources/db/migration/roles/V9__resolucion_para_quien_aprueba.sql`: «`RESOLUCION_OCS:LECTURA`, `TODO`» para VICERRECTOR, RECTOR y MIEMBRO_OCS (análisis S1). Antes, ver fallar en `backend/servicios/roles/src/integrationTest/.../MatrizD16IntegrationTest.java` los permisos de esos tres roles.
 - [ ] T003 [P] Los ocho códigos en `contratos/comun/errores.md` (8 columnas, `contracts/validacionocs.md`) y en `OCS/main/.../adaptadores/entrada/ErroresValidacionocs.java`. Antes, ver fallar `ErroresValidacionocsTest`.
 - [ ] T004 [P] La migración `OCS/main/resources/db/migration/validacionocs/V7__resolucion_ocs.sql`, según `data-model.md`. Antes, ver fallar en `OCS/integrationTest/.../ValidacionocsEsquemaIntegrationTest.java`:
   - inserta una resolución con su transición;
@@ -95,16 +96,18 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
   - con el proceso bloqueado, el agregado decide;
   - la transición con su resolución y el cambio `RESOLUCION_REGISTRADA` (versión, hash, número, fecha y huella) en la misma transacción;
   - cada rechazo del agregado, sin guardar;
-  - sin distributivo: `SinDistributivo`.
+  - sin distributivo: `SinDistributivo`;
+  - el periodo cerrado: `PeriodoCerrado`, sin guardar el archivo (análisis U1).
 
   Luego, `puertos/entrada/RegistrarResolucion`, `CambioDeFlujo.Accion.RESOLUCION_REGISTRADA` con su rama en `FlujoDelDistributivoServicio.cambio`, y `RegistrarResolucionServicio` con su bean.
 - [ ] T010 [US1] El controlador. Ver fallar primero en `OCS/test/.../adaptadores/entrada/RegistrarResolucionContratoTest.java`:
   - el 200 con el flujo en APROBADO;
   - cada 400, el 413 y el 403 (sin permiso y sin rol);
   - el 409 de la etapa;
+  - el 409 del periodo cerrado;
   - el 409 `VALIDACIONOCS_REQUIERE_RESOLUCION` del avance desde EN_OCS.
 
-  Todos validados contra el contrato. Luego, el endpoint multipart, en `FlujoControlador` o en uno propio. `PermisosValidacionocsTest` en verde.
+  Todos validados contra el contrato. Luego, el endpoint multipart, en `FlujoControlador`, junto a aprobar y avanzar (análisis A1). `PermisosValidacionocsTest` en verde.
 - [ ] T011 [US1] Dos registros a la vez. Ver fallar primero en `OCS/integrationTest/...` (como la concurrencia de F12-H02): dos hilos registran sobre el mismo proceso en EN_OCS; queda una resolución y una transición, y el otro recibe `EtapaNoAdmiteResolucion`.
 
 **Checkpoint**: la resolución se registra por la API y el distributivo queda en APROBADO.
@@ -118,8 +121,9 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
 **Independent Test**: con APROBADO, el flujo trae número, fecha, quién, cuándo y huella; la descarga devuelve los mismos bytes; sin resolución, 404.
 
 - [ ] T012 [US2] La vista y la descarga. Ver fallar primero en `OCS/test/.../adaptadores/entrada/FlujoContratoTest.java` (con `FlujoEnMemoria`):
-  - `resolucion` en el estado del flujo, y `REGISTRAR_RESOLUCION` para el rol en EN_OCS;
-  - la descarga: 200 `application/pdf` con su nombre, el 404 sin resolución, el 500 si el archivo falta y el 403 sin permiso.
+  - `resolucion` en el estado del flujo para quien tiene `RESOLUCION_OCS:LECTURA`, y sin ella para quien solo lee el flujo (un coordinador);
+  - `REGISTRAR_RESOLUCION` para el rol en EN_OCS;
+  - la descarga: 200 `application/pdf` con su nombre, el 404 sin resolución, el 500 si el archivo falta y el 403 sin `RESOLUCION_OCS:LECTURA`.
 
   Luego, `FlujoDelDistributivo.Resolucion`, la vista en `FlujoDelDistributivoServicio`, `DescargarResolucion` y su servicio, y el endpoint de descarga.
 
@@ -176,9 +180,9 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
 ## Dependencies & Execution Order
 
 - **Setup:** T001, hecha.
-- **Fundacional:** T002 a T006 en paralelo.
+- **Fundacional:** T002 a T006 y T002b en paralelo.
 - **US1:** T007 sin dependencias; T008 después de T004 y T006; T009 después de T005, T006, T007 y T008; T010 después de T002, T003 y T009; T011 después de T009.
-- **US2:** T012 después de T002 y T009.
+- **US2:** T012 después de T002, T002b y T009.
 - **US3:** T013 después de T002; T014 después de T013; T015 después de T010, T012 y T014.
 - **Cierre:** T016 después de T010 y T012; T017 a T021, al final.
 
