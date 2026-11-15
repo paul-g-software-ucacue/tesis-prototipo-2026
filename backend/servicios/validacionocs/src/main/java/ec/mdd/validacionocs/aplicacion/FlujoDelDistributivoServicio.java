@@ -495,7 +495,23 @@ public final class FlujoDelDistributivoServicio
                                                                         transicion.version(),
                                                                         versionNueva(
                                                                                 proceso,
-                                                                                transicion)))));
+                                                                                transicion)))),
+                // F15-H01: la resolución del OCS, si ya se registró.
+                proceso.resolucion()
+                        .flatMap(
+                                transicion ->
+                                        transicion
+                                                .resolucion()
+                                                .map(
+                                                        una ->
+                                                                new FlujoDelDistributivo.Resolucion(
+                                                                        una.numero(),
+                                                                        una.fecha(),
+                                                                        transicion.quien(),
+                                                                        transicion.momento(),
+                                                                        una.sha256(),
+                                                                        una.nombre(),
+                                                                        una.tamano()))));
     }
 
     // F12-H04: la versión nueva registrada justo después del rechazo, si ya llegó.

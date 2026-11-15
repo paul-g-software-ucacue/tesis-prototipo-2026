@@ -147,12 +147,20 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
 
 **Independent Test**: con APROBADO, el flujo trae número, fecha, quién, cuándo y huella; la descarga devuelve los mismos bytes; sin resolución, 404.
 
-- [ ] T012 [US2] La vista y la descarga. Ver fallar primero en `OCS/test/.../adaptadores/entrada/FlujoContratoTest.java` (con `FlujoEnMemoria`):
+- [X] T012 [US2] La vista y la descarga. Ver fallar primero en `OCS/test/.../adaptadores/entrada/FlujoContratoTest.java` (con `FlujoEnMemoria`):
   - `resolucion` en el estado del flujo para quien tiene `RESOLUCION_OCS:LECTURA`, y sin ella para quien solo lee el flujo (un coordinador);
   - `REGISTRAR_RESOLUCION` para el rol en EN_OCS;
   - la descarga: 200 `application/pdf` con su nombre, el 404 sin resolución, el 500 si el archivo falta y el 403 sin `RESOLUCION_OCS:LECTURA`.
 
   Luego, `FlujoDelDistributivo.Resolucion`, la vista en `FlujoDelDistributivoServicio`, `DescargarResolucion` y su servicio, y el endpoint de descarga.
+
+  **Resultado (2026-11-15):** cuatro pruebas nuevas en `FlujoContratoTest`. Registran por el endpoint real, con el caso de uso real sobre `FlujoEnMemoria`.
+  - Se vieron fallar las dos que dependen de la vista y la descarga. La de «quien no puede leerla» y la de la acción en EN_OCS pasaban, por el `@PreAuthorize` y por T006.
+  - La vista trae siempre la resolución, y el controlador la quita a quien no tiene `RESOLUCION_OCS:LECTURA`: el permiso es de la entrada, no del dominio.
+  - La descarga responde con `Content-Disposition` en UTF-8, con el nombre guardado.
+  - La copia de la matriz D-16 de la prueba suma los permisos de Roles V9.
+
+  Las de Validación OCS (unitarias y de integración) y `ModulosTest` en verde.
 
 **Checkpoint**: la resolución se consulta y se descarga.
 

@@ -22,6 +22,7 @@ import ec.mdd.validacionocs.adaptadores.salida.TransaccionSpring;
 import ec.mdd.validacionocs.aplicacion.CargarConfiguracionServicio;
 import ec.mdd.validacionocs.aplicacion.CompletarFirmasServicio;
 import ec.mdd.validacionocs.aplicacion.ConsultarConfiguracionServicio;
+import ec.mdd.validacionocs.aplicacion.DescargarResolucionServicio;
 import ec.mdd.validacionocs.aplicacion.EtapaDelConsolidadoServicio;
 import ec.mdd.validacionocs.aplicacion.EtapasAlCrearse;
 import ec.mdd.validacionocs.aplicacion.FlujoDelDistributivoServicio;
@@ -120,6 +121,13 @@ public class ConfiguracionValidacionocs {
                 transaccionValidacionocs,
                 flujoDelDistributivo,
                 Clock.systemUTC());
+    }
+
+    /** Descargar el PDF de la resolución del OCS (F15-H01). */
+    @Bean
+    public DescargarResolucionServicio descargarResolucion(
+            RepositorioProceso repositorioProceso, AlmacenDeResoluciones almacenDeResoluciones) {
+        return new DescargarResolucionServicio(repositorioProceso, almacenDeResoluciones);
     }
 
     /** Los PDF de las resoluciones del OCS, en el volumen del proceso (F15-H01, D-88). */

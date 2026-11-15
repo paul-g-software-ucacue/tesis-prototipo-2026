@@ -225,5 +225,11 @@ class RegistrarResolucionContratoTest {
         RegistrarResolucion registrarResolucion() {
             return REGISTRAR;
         }
+
+        @Bean
+        ec.mdd.validacionocs.puertos.entrada.DescargarResolucion descargarResolucion() {
+            return org.mockito.Mockito.mock(
+                    ec.mdd.validacionocs.puertos.entrada.DescargarResolucion.class);
+        }
     }
 }

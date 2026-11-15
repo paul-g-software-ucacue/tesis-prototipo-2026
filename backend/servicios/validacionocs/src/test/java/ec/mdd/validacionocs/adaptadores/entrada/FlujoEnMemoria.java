@@ -117,27 +117,37 @@ final class FlujoEnMemoria {
         procesos.get(periodo).completarFirmas(1, AHORA);
     }
 
+    /** Descargar la resolución con el caso de uso real, sobre esta memoria (F15-H01). */
+    ec.mdd.validacionocs.puertos.entrada.DescargarResolucion descargarResolucion() {
+        return new ec.mdd.validacionocs.aplicacion.DescargarResolucionServicio(
+                repositorio(), almacen());
+    }
+
+    private ec.mdd.validacionocs.puertos.salida.AlmacenDeResoluciones almacen() {
+        return new ec.mdd.validacionocs.puertos.salida.AlmacenDeResoluciones() {
+            @Override
+            public void guardar(String sha256, byte[] contenido) {
+                resoluciones.put(sha256, contenido.clone());
+            }
+
+            @Override
+            public byte[] leer(String sha256) {
+                byte[] contenido = resoluciones.get(sha256);
+                if (contenido == null) {
+                    throw new ec.mdd.validacionocs.puertos.entrada.ResolucionIlegible();
+                }
+                return contenido.clone();
+            }
+        };
+    }
+
     /** Registrar la resolución con el caso de uso real, sobre esta memoria (F15-H01). */
     ec.mdd.validacionocs.puertos.entrada.RegistrarResolucion registrarResolucion() {
         return new ec.mdd.validacionocs.aplicacion.RegistrarResolucionServicio(
                 repositorio(),
                 distributivo(),
                 datos(),
-                new ec.mdd.validacionocs.puertos.salida.AlmacenDeResoluciones() {
-                    @Override
-                    public void guardar(String sha256, byte[] contenido) {
-                        resoluciones.put(sha256, contenido.clone());
-                    }
-
-                    @Override
-                    public byte[] leer(String sha256) {
-                        byte[] contenido = resoluciones.get(sha256);
-                        if (contenido == null) {
-                            throw new ec.mdd.validacionocs.puertos.entrada.ResolucionIlegible();
-                        }
-                        return contenido.clone();
-                    }
-                },
+                almacen(),
                 cambio -> {},
                 new Transaccion() {
                     @Override

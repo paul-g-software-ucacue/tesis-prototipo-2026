@@ -33,7 +33,8 @@ public record FlujoDelDistributivo(
         List<AccionDelProceso> acciones,
         List<Transicion> transiciones,
         Optional<Congelacion> congelacion,
-        Optional<RechazoEnFirma> rechazoEnFirma) {
+        Optional<RechazoEnFirma> rechazoEnFirma,
+        Optional<Resolucion> resolucion) {
 
     /** Exige los datos y copia las listas. */
     public FlujoDelDistributivo {
@@ -41,6 +42,7 @@ public record FlujoDelDistributivo(
         Objects.requireNonNull(etapa, "etapa");
         Objects.requireNonNull(congelacion, "congelacion");
         Objects.requireNonNull(rechazoEnFirma, "rechazoEnFirma");
+        Objects.requireNonNull(resolucion, "resolucion");
         parciales = List.copyOf(parciales);
         acciones = List.copyOf(acciones);
         transiciones = List.copyOf(transiciones);
@@ -64,8 +66,31 @@ public record FlujoDelDistributivo(
                 acciones,
                 transiciones,
                 Optional.empty(),
+                Optional.empty(),
                 Optional.empty());
     }
+
+    /**
+     * La resolución del OCS que aprobó el distributivo (F15-H01, esquema {@code ResolucionDelOcs}).
+     * La vista la trae siempre; el controlador la quita a quien no tiene el permiso de leerla
+     * (D-16, D-107).
+     *
+     * @param numero el número de la resolución
+     * @param fecha su fecha
+     * @param registradaPor quién la registró
+     * @param registradaEn cuándo
+     * @param sha256 la huella del PDF
+     * @param nombre el nombre del archivo, sin ruta
+     * @param tamano sus bytes
+     */
+    public record Resolucion(
+            String numero,
+            java.time.LocalDate fecha,
+            String registradaPor,
+            Instant registradaEn,
+            String sha256,
+            String nombre,
+            int tamano) {}
 
     /**
      * La congelación de la versión: el paso hacia CONGELADO_EN_FIRMA (F13-H01, esquema {@code

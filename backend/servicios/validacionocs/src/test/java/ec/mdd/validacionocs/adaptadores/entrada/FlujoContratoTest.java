@@ -557,6 +557,113 @@ class FlujoContratoTest {
 
     // La resolución del OCS (F15-H01): a APROBADO solo se pasa registrándola.
 
+    private static final String RESOLUCION = "/api/validacionocs/periodos/%s/resolucion";
+    private static final byte[] PDF =
+            "%PDF-1.7\nresolucion\n%%EOF\n".getBytes(StandardCharsets.US_ASCII);
+
+    private MvcResult registrar(String periodo) throws Exception {
+        return mvc.perform(
+                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                                .multipart(RESOLUCION.formatted(periodo))
+                                .file(
+                                        new org.springframework.mock.web.MockMultipartFile(
+                                                "archivo",
+                                                "resolucion 123.pdf",
+                                                "application/pdf",
+                                                PDF))
+                                .param("numero", "RPC-SO-12-No.123-2026")
+                                .param("fecha", "2026-11-07")
+                                .with(token("SECRETARIA_GENERAL", null)))
+                .andReturn();
+    }
+
+    @Test
+    void dadoElDistributivoEnOcs_cuandoLaSecretariaConsulta_entoncesPuedeRegistrarLaResolucion()
+            throws Exception {
+        enRevision(PERIODO);
+        aprobar(PERIODO, "VICERRECTOR");
+        MEMORIA.enOcs(PERIODO);
+
+        JsonNode secretaria =
+                cuerpo(pedir(get(FLUJO.formatted(PERIODO)), "SECRETARIA_GENERAL", null));
+        JsonNode vicerrector = cuerpo(pedir(get(FLUJO.formatted(PERIODO)), "VICERRECTOR", null));
+
+        assertThat(secretaria.get("acciones").get(0).asString()).isEqualTo("REGISTRAR_RESOLUCION");
+        assertThat(secretaria.has("resolucion")).isFalse();
+        assertThat(vicerrector.get("acciones")).isEmpty();
+    }
+
+    @Test
+    void dadaLaResolucionRegistrada_cuandoConsultaQuienPuedeLeerla_entoncesLaVeYLaDescarga()
+            throws Exception {
+        enRevision(PERIODO);
+        aprobar(PERIODO, "VICERRECTOR");
+        MEMORIA.enOcs(PERIODO);
+
+        MvcResult registrada = registrar(PERIODO);
+
+        assertThat(registrada.getResponse().getStatus()).isEqualTo(200);
+        assertThat(cuerpo(registrada).get("etapa").asString()).isEqualTo("APROBADO");
+        contrato.validar(registrada);
+        for (String rol : List.of("SECRETARIA_GENERAL", "VICERRECTOR", "RECTOR", "MIEMBRO_OCS")) {
+            MvcResult flujo = pedir(get(FLUJO.formatted(PERIODO)), rol, null);
+            JsonNode resolucion = cuerpo(flujo).get("resolucion");
+            assertThat(resolucion).as(rol).isNotNull();
+            assertThat(resolucion.get("numero").asString()).isEqualTo("RPC-SO-12-No.123-2026");
+            assertThat(resolucion.get("fecha").asString()).isEqualTo("2026-11-07");
+            assertThat(resolucion.get("registradaPor").asString())
+                    .isEqualTo("secretaria_general.demo");
+            assertThat(resolucion.get("nombre").asString()).isEqualTo("resolucion 123.pdf");
+            assertThat(resolucion.get("tamano").asInt()).isEqualTo(PDF.length);
+            contrato.validar(flujo);
+
+            MvcResult descarga = pedir(get(RESOLUCION.formatted(PERIODO) + "/archivo"), rol, null);
+            assertThat(descarga.getResponse().getStatus()).as(rol).isEqualTo(200);
+            assertThat(descarga.getResponse().getContentType()).isEqualTo("application/pdf");
+            assertThat(descarga.getResponse().getContentAsByteArray()).isEqualTo(PDF);
+            assertThat(descarga.getResponse().getHeader("Content-Disposition"))
+                    .contains("attachment")
+                    .contains("resolucion 123.pdf");
+            contrato.validar(descarga);
+        }
+    }
+
+    @Test
+    void dadaLaResolucionRegistrada_cuandoConsultaQuienNoPuedeLeerla_entoncesNoLaVeNiLaDescarga()
+            throws Exception {
+        enRevision(PERIODO);
+        aprobar(PERIODO, "VICERRECTOR");
+        MEMORIA.enOcs(PERIODO);
+        registrar(PERIODO);
+
+        MvcResult flujo = pedir(get(FLUJO.formatted(PERIODO)), RESPONSABLE, null);
+        MvcResult descarga =
+                pedir(get(RESOLUCION.formatted(PERIODO) + "/archivo"), RESPONSABLE, null);
+
+        assertThat(cuerpo(flujo).has("resolucion")).isFalse();
+        assertCodigo(descarga, 403, "SEGURIDAD_ACCESO_NO_AUTORIZADO");
+    }
+
+    @Test
+    void dadoUnPeriodoSinResolucionOConElArchivoPerdido_cuandoSeDescarga_entonces404O500()
+            throws Exception {
+        MvcResult sin =
+                pedir(get(RESOLUCION.formatted(PERIODO) + "/archivo"), "SECRETARIA_GENERAL", null);
+        assertCodigo(sin, 404, "VALIDACIONOCS_RESOLUCION_NO_ENCONTRADA");
+        contrato.validar(sin);
+
+        enRevision(PERIODO);
+        aprobar(PERIODO, "VICERRECTOR");
+        MEMORIA.enOcs(PERIODO);
+        registrar(PERIODO);
+        MEMORIA.resoluciones.clear();
+
+        MvcResult perdido =
+                pedir(get(RESOLUCION.formatted(PERIODO) + "/archivo"), "SECRETARIA_GENERAL", null);
+        assertCodigo(perdido, 500, "VALIDACIONOCS_RESOLUCION_ILEGIBLE");
+        contrato.validar(perdido);
+    }
+
     @Test
     void dadoElDistributivoEnOcs_cuandoSeUsaElAvanceGenerico_entonces409RequiereResolucion()
             throws Exception {
@@ -955,6 +1062,10 @@ class FlujoContratoTest {
                             + ("PROPIO".equals(fila.group(4)) ? ":PROPIO" : "");
             matriz.computeIfAbsent(fila.group(1), rol -> new ArrayList<>()).add(permiso);
         }
+        // V9 (F15-H01, D-107): la lectura de la resolución para quien aprueba.
+        for (String rol : List.of("VICERRECTOR", "RECTOR", "MIEMBRO_OCS")) {
+            matriz.computeIfAbsent(rol, otro -> new ArrayList<>()).add("RESOLUCION_OCS:LECTURA");
+        }
         return matriz;
     }
 
@@ -970,6 +1081,11 @@ class FlujoContratoTest {
         @Bean
         ec.mdd.validacionocs.puertos.entrada.RegistrarResolucion registrarResolucion() {
             return MEMORIA.registrarResolucion();
+        }
+
+        @Bean
+        ec.mdd.validacionocs.puertos.entrada.DescargarResolucion descargarResolucion() {
+            return MEMORIA.descargarResolucion();
         }
     }
 }
