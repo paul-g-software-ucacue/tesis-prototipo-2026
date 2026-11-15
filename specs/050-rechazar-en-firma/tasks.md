@@ -163,11 +163,13 @@ description: "Tareas de F14-H04: rechazar en firma con una observación"
 
 **Independent Test**: en «Pendientes de firma», rechazar con observación; la fila desaparece.
 
-- [ ] T015 [US3] Regenerar los tipos de la API. Ver fallar primero en `FirmasPendientes.test.tsx`:
+- [X] T015 [US3] Regenerar los tipos de la API. Ver fallar primero en `FirmasPendientes.test.tsx`:
   - «Rechazar» abre el diálogo; sin observación o con 9 caracteres no envía;
   - con 201, «Rechazo registrado» y la lista otra vez; con 400, el mensaje junto al campo; con 403, el mensaje común.
 
   Luego `SPA/pantallas/firmas/FirmasPendientes.tsx` y `consultas.ts`.
+
+  **Resultado (2026-11-15):** 5 pruebas nuevas en `FirmasPendientes.test.tsx`, vistas fallar (no había botón); pasan con «Rechazar» en cada fila, el diálogo nuevo `DialogoDeRechazo.tsx` (como el de devolución de F12-H05) y `rechazarEnFirma` en `consultas.ts`. Un 400 se muestra dentro del diálogo; cualquier otro fallo (el 403 de quien ya no está en turno) lo cierra, avisa y vuelve a pedir la lista. ESLint pidió quitar `autoFocus` (jsx-a11y): el diálogo de MUI ya lleva el foco adentro.
 - [ ] T016 [US3] Ver fallar primero en la prueba de `EstadoDelFlujo` el aviso «Rechazado en firma» con la observación y la nota de la versión nueva. Luego `SPA/pantallas/comun/EstadoDelFlujo.tsx`.
 - [ ] T017 [US3] `e2e/firmas-pendientes.spec.ts`: el rechazo con teclado, el foco al cerrar y axe-core sin fallas con el diálogo abierto y después del rechazo.
 

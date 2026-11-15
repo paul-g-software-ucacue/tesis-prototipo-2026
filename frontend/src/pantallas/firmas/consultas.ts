@@ -1,6 +1,7 @@
 // Las firmas pendientes del usuario, la descarga del archivo vigente (contratos/firma, F14-H01,
-// D-102) y la subida del PDF firmado (F14-H02, D-103). El servidor decide quién está en turno y si
-// la firma se acepta; la pantalla solo lo refleja.
+// D-102), la subida del PDF firmado (F14-H02, D-103) y el rechazo en firma (F14-H04, D-105). El
+// servidor decide quién está en turno, si la firma se acepta y si el rechazo cabe; la pantalla solo
+// lo refleja.
 import { useQuery } from '@tanstack/react-query';
 import { apiFirma, llamar } from '../../api/cliente';
 import type { components } from '../../api/generado/firma';
@@ -9,6 +10,7 @@ import { guardar, nombreDelServidor } from '../plantillas/consultas';
 
 export type FirmaPendiente = components['schemas']['FirmaPendiente'];
 export type ResultadoValidacion = components['schemas']['ResultadoValidacion'];
+export type RechazoEnFirma = components['schemas']['RechazoEnFirma'];
 
 export const CLAVE_PENDIENTES = ['firma', 'pendientes'] as const;
 
@@ -54,6 +56,20 @@ export function subirFirma(documento: string, archivo: File): Promise<ResultadoV
         formulario.append('archivo', cuerpo.archivo as unknown as File);
         return formulario;
       },
+    }),
+  );
+}
+
+/**
+ * Rechaza en firma el documento con la observación, sin los espacios de los extremos. El servidor
+ * responde 201 con el rechazo, 400 si la observación no cabe o 403 si quien rechaza ya no está en
+ * turno.
+ */
+export function rechazarEnFirma(documento: string, observacion: string): Promise<RechazoEnFirma> {
+  return llamar(
+    apiFirma.POST('/api/firma/documentos/{documento}/rechazos', {
+      params: { path: { documento } },
+      body: { observacion: observacion.trim() },
     }),
   );
 }

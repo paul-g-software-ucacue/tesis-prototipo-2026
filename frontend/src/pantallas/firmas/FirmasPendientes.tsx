@@ -1,6 +1,7 @@
 // La pantalla «Pendientes de firma» (F14-H01, RF-38, D-102): los documentos que le toca firmar al
 // usuario, en turno según el servidor, y la descarga del PDF vigente para firmarlo con FirmaEC.
 // Desde F14-H02 (RF-39, D-103), la subida del PDF firmado con el resultado de cada comprobación.
+// Desde F14-H04 (RF-36, D-105), el rechazo en firma con una observación.
 import Alert from '@mui/material/Alert';
 import AlertTitle from '@mui/material/AlertTitle';
 import Box from '@mui/material/Box';
@@ -24,8 +25,10 @@ import {
   subirFirma,
   useFirmasPendientes,
   type FirmaPendiente,
+  type RechazoEnFirma,
   type ResultadoValidacion,
 } from './consultas';
+import { DialogoDeRechazo } from './DialogoDeRechazo';
 
 // Solo para los lectores de pantalla, como en «Roles».
 const visuallyHidden = {
@@ -60,7 +63,8 @@ const RESULTADOS: Record<string, string> = {
 
 type Aviso =
   | { tipo: 'aceptada'; resultado: ResultadoValidacion }
-  | { tipo: 'rechazada'; mensaje: MensajeDeError };
+  | { tipo: 'rechazada'; mensaje: MensajeDeError }
+  | { tipo: 'rechazo'; rechazo: RechazoEnFirma };
 
 function fecha(instante: string) {
   return new Date(instante).toLocaleString('es-EC', {
@@ -125,16 +129,39 @@ function FirmaRegistrada({
   );
 }
 
+function RechazoRegistrado({
+  rechazo,
+  alCerrar,
+}: {
+  rechazo: RechazoEnFirma;
+  alCerrar: () => void;
+}) {
+  const titulo = useId();
+  return (
+    <Alert severity="info" role="status" aria-labelledby={titulo} onClose={alCerrar} sx={{ my: 2 }}>
+      <AlertTitle id={titulo}>Rechazo registrado</AlertTitle>
+      <Typography variant="body2">
+        {`${rechazo.rotulo}, ${rechazo.periodo}, versión ${String(rechazo.version)}: el documento vuelve a la revisión del Vicerrectorado con tu observación.`}
+      </Typography>
+      <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
+        {rechazo.observacion}
+      </Typography>
+    </Alert>
+  );
+}
+
 function FilaPendiente({
   pendiente,
   ocupada,
   alDescargar,
   alSubir,
+  alRechazar,
 }: {
   pendiente: FirmaPendiente;
   ocupada: boolean;
   alDescargar: () => void;
   alSubir: (archivo: File) => void;
+  alRechazar: () => void;
 }) {
   const selector = useRef<HTMLInputElement>(null);
   const elegir = (evento: ChangeEvent<HTMLInputElement>) => {
@@ -168,6 +195,15 @@ function FilaPendiente({
           >
             Subir el PDF firmado
           </Button>
+          <Button
+            variant="outlined"
+            color="error"
+            disabled={ocupada}
+            aria-label={`Rechazar en firma ${nombreDeLaFila(pendiente)}`}
+            onClick={alRechazar}
+          >
+            Rechazar
+          </Button>
           <input
             ref={selector}
             type="file"
@@ -189,6 +225,22 @@ export function FirmasPendientes() {
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [fallo, setFallo] = useState<MensajeDeError | null>(null);
   const [aviso, setAviso] = useState<Aviso | null>(null);
+  const [aRechazar, setARechazar] = useState<FirmaPendiente | null>(null);
+
+  const rechazado = async (rechazo: RechazoEnFirma) => {
+    setARechazar(null);
+    setFallo(null);
+    setAviso({ tipo: 'rechazo', rechazo });
+    await consultas.invalidateQueries({ queryKey: CLAVE_PENDIENTES });
+  };
+
+  // Un 403 de quien ya no está en turno, u otro fallo: se cierra y se vuelve a pedir la lista.
+  const rechazoFallido = async (error: unknown) => {
+    setARechazar(null);
+    setAviso(null);
+    setFallo(traducirError(error));
+    await consultas.invalidateQueries({ queryKey: CLAVE_PENDIENTES });
+  };
 
   const descargar = async (pendiente: FirmaPendiente) => {
     setFallo(null);
@@ -231,6 +283,9 @@ export function FirmasPendientes() {
       {aviso?.tipo === 'aceptada' && (
         <FirmaRegistrada resultado={aviso.resultado} alCerrar={() => setAviso(null)} />
       )}
+      {aviso?.tipo === 'rechazo' && (
+        <RechazoRegistrado rechazo={aviso.rechazo} alCerrar={() => setAviso(null)} />
+      )}
       {aviso?.tipo === 'rechazada' && (
         <AvisoDeError mensaje={aviso.mensaje}>
           <Comprobaciones
@@ -270,11 +325,24 @@ export function FirmasPendientes() {
                   ocupada={ocupado === pendiente.documento}
                   alDescargar={() => void descargar(pendiente)}
                   alSubir={(archivo) => void subir(pendiente, archivo)}
+                  alRechazar={() => {
+                    setFallo(null);
+                    setAviso(null);
+                    setARechazar(pendiente);
+                  }}
                 />
               ))}
             </TableBody>
           </Table>
         </TableContainer>
+      )}
+      {aRechazar && (
+        <DialogoDeRechazo
+          pendiente={aRechazar}
+          alCerrar={() => setARechazar(null)}
+          alRechazar={rechazado}
+          alFallar={rechazoFallido}
+        />
       )}
     </>
   );
