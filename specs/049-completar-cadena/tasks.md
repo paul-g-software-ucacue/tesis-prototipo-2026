@@ -183,7 +183,7 @@ description: "Tareas de F14-H03: validar firmante, turno y vigencia, y completar
 - [ ] T019 Correr completos:
   - `./gradlew build integrationTest jacocoTestReport jacocoTestCoverageVerification`;
   - en la SPA, los tipos, ESLint, Prettier, Vitest y Playwright (SC-005).
-- [ ] T020 Revisar el JavaDoc (principio XII): la normalización, por qué «orden» va antes que «firmante», el evento, su idempotencia y el nombre local.
+- [X] T020 Revisar el JavaDoc (principio XII): la normalización, por qué «orden» va antes que «firmante», el evento, su idempotencia y el nombre local.
 - [ ] T021 Crear `specs/049-completar-cadena/evidencia.md`, como la de 048.
 - [ ] T022 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde. Verificar la demo (`quickstart.md` §4, solo lectura) y abrir el PR de evidencia con `Closes #64`. Borrar las ramas solo si el autor lo pide.
 
