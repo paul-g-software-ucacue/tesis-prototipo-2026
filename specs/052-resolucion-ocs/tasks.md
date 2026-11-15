@@ -62,11 +62,13 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
   - el número de solo espacios, de 61 caracteres, un `sha256` mal formado y un tamaño de 0 o de más de 10 MB, fallan.
 
   **Resultado (2026-11-15):** la prueba nueva de `ValidacionocsEsquemaIntegrationTest` se vio fallar sin la tabla y pasa con V7.
-- [ ] T005 [P] El dominio de valores. Ver fallar primero:
+- [X] T005 [P] El dominio de valores. Ver fallar primero:
   - `ResolucionOcsTest`: el número vacío, de espacios, de 60 y de 61, recortado;
   - `ArchivoDeResolucionTest`: vacío, sin `%PDF-`, sin `%%EOF` al final, de 10 MB justos y de 10 MB más 1 byte; la huella SHA-256; el nombre sin ruta.
 
   Luego, `ResolucionOcs`, `ArchivoDeResolucion` y sus excepciones (`NumeroDeResolucionInvalido`, `ResolucionNoEsPdf`, `ResolucionDemasiadoGrande`).
+
+  **Resultado (2026-11-15):** `ResolucionOcsTest` (3) y `ArchivoDeResolucionTest` (3). Fallaron 5 contra los esqueletos; la del número de 60 pasaba porque el esqueleto no validaba nada. Pasan con la implementación. Las excepciones ya existían (T003). `ResolucionOcs` exige además la huella y un tamaño desde 1, como la tabla.
 - [ ] T006 [P] El agregado. Ver fallar primero en `OCS/test/.../dominio/ProcesoAprobacionTest.java`:
   - **en EN_OCS, el rol de la etapa registra:** un `PASO_DE_ETAPA` a APROBADO por quien registra, con la versión y el hash de la congelación y la resolución;
   - **la fecha:** del día de entrada en EN_OCS y de hoy (en `America/Guayaquil`, también cerca de la medianoche), y fuera de rango (`ResolucionFueraDeRango`);
