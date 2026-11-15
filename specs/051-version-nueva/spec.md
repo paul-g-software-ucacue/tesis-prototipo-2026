@@ -86,7 +86,7 @@ Como Vicerrector académico, quiero ver que la versión anterior quedó anulada 
 1. **Dado** la versión nueva, **cuando** el Vicerrector consulta el consolidado y el estado del flujo, **entonces** ve el número de la versión vigente y que la anterior quedó anulada por el rechazo en firma, con la observación, quién rechazó y en qué paso.
 2. **Dado** la versión nueva, **cuando** el Vicerrector aprueba el contenido, **entonces** ya no recibe el error de versión nueva: la versión nueva queda congelada, el distributivo pasa a CONGELADO_EN_FIRMA y se genera su documento.
 3. **Dado** la versión nueva, **cuando** el Vicerrector devuelve parciales (F12-H05), **entonces** la devolución funciona igual que sin rechazo, sobre la versión nueva.
-4. **Dado** que la versión nueva no se pudo crear (el aviso todavía no llegó o falló), **cuando** el Vicerrector aprueba, **entonces** sigue recibiendo el error de versión nueva de D-105.
+4. **Dado** que el aviso del rechazo todavía no llegó a Aprobación, **cuando** el Vicerrector intenta aprobar, **entonces** no puede: el distributivo sigue en CONGELADO_EN_FIRMA. La vuelta a revisión y la versión nueva llegan juntas.
 5. **Dado** un distributivo que pasó por firma sin rechazo, **cuando** se consulta, **entonces** nada cambia respecto de F14-H03.
 
 ---
@@ -112,7 +112,7 @@ Como Vicerrector académico, quiero ver que la versión anterior quedó anulada 
 - **FR-003**: La versión nueva DEBE tener las mismas asignaciones que la anulada: propuestas, actividades no lectivas, justificaciones de inconsistencias, parciales con su estado, consolidación e informe sustentado.
 - **FR-004**: La versión anulada NO DEBE cambiar ni borrarse: conserva su contenido, su hash de contenido y su congelación (principio VII).
 - **FR-005**: Crear la versión nueva DEBE ser idempotente: un aviso repetido o reintentado no crea otra versión ni otra transición.
-- **FR-006**: Una vez creada la versión nueva, aprobar el contenido o enviar a revisión cuando eso congela DEBE funcionar como antes del rechazo, sobre la versión nueva; el error de versión nueva de D-105 solo aplica mientras la versión rechazada sigue siendo la vigente.
+- **FR-006**: Una vez creada la versión nueva, aprobar el contenido o enviar a revisión cuando eso congela DEBE funcionar como antes del rechazo, sobre la versión nueva. La vuelta a revisión y la versión nueva se registran juntas, así que el bloqueo de D-105 ya no se ve; se conserva como regla del flujo para un rechazo sin versión nueva.
 
 **La anulación de las firmas**
 
@@ -157,7 +157,7 @@ Como Vicerrector académico, quiero ver que la versión anterior quedó anulada 
 - **El motivo** de la versión nueva es «rechazo en firma»; los otros motivos del glosario (ajuste, devolución, reforma) son de otras historias.
 - **La versión 1** de los periodos existentes no tiene motivo: es la inicial.
 - **La consolidación copiada** sigue válida: la versión nueva tiene el mismo contenido, así que no queda desactualizada.
-- **El hash de contenido** de la versión nueva se calcula al congelarla, como en D-100; puede coincidir con el de la anulada si nada cambió, y el documento nuevo se distingue por su versión.
+- **El hash de contenido** de la versión nueva se calcula al congelarla, como en D-100. Lleva el número de la versión, así que nunca coincide con el de la anulada, aunque el contenido sea el mismo.
 - **Las firmas anuladas** se consultan en el estado del documento de la versión anulada y en la bitácora; la vista de historial de versiones es de RF-42.
 - **En la demo**, 2026-I está en consolidación y no llega a firma.
 
