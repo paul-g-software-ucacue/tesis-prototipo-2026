@@ -52,13 +52,16 @@ class PermisosValidacionocsTest {
     void dadoElContrato_cuandoSeVerificaCadaOperacion_entoncesExigeSuPermiso() {
         assertThat(verificador.operaciones())
                 .extracting(VerificadorDePermisos.OperacionProtegida::toString)
-                .hasSize(8)
+                .hasSize(10)
                 .anySatisfy(operacion -> assertThat(operacion).contains("FLUJO_FIRMAS:LECTURA"))
                 .anySatisfy(operacion -> assertThat(operacion).contains("FLUJO_FIRMAS:ESCRITURA"))
                 .anySatisfy(operacion -> assertThat(operacion).contains("PROYECTOS:LECTURA"))
                 .anySatisfy(operacion -> assertThat(operacion).contains("OFERTA:APROBACION"))
                 .anySatisfy(operacion -> assertThat(operacion).contains("CONSOLIDACION:APROBACION"))
-                .anySatisfy(operacion -> assertThat(operacion).contains("DISTRIBUTIVO:APROBACION"));
+                .anySatisfy(operacion -> assertThat(operacion).contains("DISTRIBUTIVO:APROBACION"))
+                // F15-H01: registrar y descargar la resolución (D-16, D-107).
+                .anySatisfy(operacion -> assertThat(operacion).contains("RESOLUCION_OCS:ESCRITURA"))
+                .anySatisfy(operacion -> assertThat(operacion).contains("RESOLUCION_OCS:LECTURA"));
 
         verificador.verificar(mvc, conversor);
     }

@@ -131,6 +131,25 @@ class FlujoControlador implements AprobacionApi {
                 respuesta(sinPermiso(() -> aprobar.aprobarContenido(periodo, quien))));
     }
 
+    // Esqueleto de F15-H01: lo completa la implementación (T010).
+    @Override
+    @PreAuthorize("hasAuthority('PERMISO_RESOLUCION_OCS:ESCRITURA')")
+    public ResponseEntity<EstadoDelFlujo> registrarResolucion(
+            String periodo,
+            String numero,
+            java.time.LocalDate fecha,
+            org.springframework.web.multipart.MultipartFile archivo) {
+        throw new UnsupportedOperationException("F15-H01");
+    }
+
+    // Esqueleto de F15-H01: lo completa la implementación (T012).
+    @Override
+    @PreAuthorize("hasAuthority('PERMISO_RESOLUCION_OCS:LECTURA')")
+    public ResponseEntity<org.springframework.core.io.Resource> descargarResolucion(
+            String periodo) {
+        throw new UnsupportedOperationException("F15-H01");
+    }
+
     private static FlujoDelDistributivo sinPermiso(Supplier<FlujoDelDistributivo> caso) {
         try {
             return caso.get();
