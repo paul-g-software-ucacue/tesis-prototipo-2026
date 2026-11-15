@@ -105,6 +105,8 @@ public record CambioDeFlujo(
          * versión, el hash y la observación de cada carrera devuelta en el detalle
          * (contracts/bitacora.md, D-95, D-98). Una entrada aunque devuelva varias carreras.
          */
-        DISTRIBUTIVO_DEVUELTO
+        DISTRIBUTIVO_DEVUELTO,
+        /** Esqueleto (F14-H03, T013). */
+        CADENA_DE_FIRMAS_COMPLETA
     }
 }
