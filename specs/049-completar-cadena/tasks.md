@@ -67,14 +67,14 @@ description: "Tareas de F14-H03: validar firmante, turno y vigencia, y completar
 
 **⚠️ CRITICAL**: ninguna historia empieza antes de T007.
 
-- [ ] T003 [P] En `contratos/firma/openapi.yaml`, según `contracts/firma.md`:
+- [X] T003 [P] En `contratos/firma/openapi.yaml`, según `contracts/firma.md`:
   - `VIGENCIA`, `ORDEN` y `FIRMANTE` en el enum;
   - `minItems` y `maxItems` 7;
   - el 409 de `subirFirma`;
   - la descripción, sin nombrar la bitácora: `BitacoraSinBorradoContratoTest` falla si una operación que escribe la nombra (pasó en F14-H02).
-- [ ] T004 [P] Los cuatro códigos en `contratos/comun/errores.md`, con sus 8 columnas. Ver fallar primero `ErroresFirmaTest` con las subclases nuevas y `PasoSinNombre`; luego, `ErroresFirma`.
+- [X] T004 [P] Los cuatro códigos en `contratos/comun/errores.md`, con sus 8 columnas. Ver fallar primero `ErroresFirmaTest` con las subclases nuevas y `PasoSinNombre`; luego, `ErroresFirma`.
 - [ ] T005 [P] La migración `FIR/main/resources/db/migration/firma/V5__nombre_del_firmante.sql` («`nombre` varchar(200)», nula). Antes, ver fallar en `DocumentoFirmableEsquemaIntegrationTest`, con el rol del proceso: inserta un firmante con nombre y sin él, y sigue sin poder actualizarlo.
-- [ ] T006 [P] El dominio de Firma. Ver fallar primero:
+- [X] T006 [P] El dominio de Firma. Ver fallar primero:
   - `NombreDeFirmanteTest`: mayúsculas, tildes, diéresis, la Ñ, espacios dobles, al inicio y al final, y paréntesis;
   - `ComprobacionDelFirmanteTest`:
     - vigente, vencido y todavía no vigente;

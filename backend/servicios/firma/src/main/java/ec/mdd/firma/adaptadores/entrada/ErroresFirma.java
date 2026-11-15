@@ -6,6 +6,7 @@ import ec.mdd.firma.dominio.ArchivoNoDisponible;
 import ec.mdd.firma.dominio.ArchivoVacio;
 import ec.mdd.firma.dominio.EtapaNoAdmiteGeneracion;
 import ec.mdd.firma.dominio.GeneracionFallida;
+import ec.mdd.firma.dominio.PasoSinNombre;
 import ec.mdd.firma.dominio.ResultadoDeComprobacion;
 import ec.mdd.plataforma.errores.nucleo.CatalogoDeErrores;
 import ec.mdd.plataforma.errores.nucleo.DefinicionDeCodigo;
@@ -75,6 +76,31 @@ class ErroresFirma implements CatalogoDeErrores {
                         "Certificado no reconocido",
                         "El certificado de la firma no es de una entidad de certificación de"
                                 + " confianza. Firma con un certificado de una entidad acreditada."),
+                rechazo(
+                        ArchivoFirmadoRechazado.NoVigente.class,
+                        "FIRMA_CERTIFICADO_NO_VIGENTE",
+                        "Certificado no vigente",
+                        "El certificado de la firma no está vigente. Firma con un certificado"
+                                + " vigente y vuelve a subir el PDF."),
+                rechazo(
+                        ArchivoFirmadoRechazado.FueraDeOrden.class,
+                        "FIRMA_FUERA_DE_ORDEN",
+                        "Firma fuera de orden",
+                        "La firma es de la persona de un paso posterior. Primero firma la persona"
+                                + " del paso en turno."),
+                rechazo(
+                        ArchivoFirmadoRechazado.FirmanteEquivocado.class,
+                        "FIRMA_FIRMANTE_EQUIVOCADO",
+                        "Firmante equivocado",
+                        "El certificado no es de la persona que el documento indica para este paso."
+                                + " Firma con tu propio certificado."),
+                EntradaCatalogo.de(
+                        PasoSinNombre.class,
+                        "FIRMA_PASO_SIN_NOMBRE",
+                        409,
+                        "Paso sin firmante registrado",
+                        "El documento no tiene registrado el nombre de quien firma este paso. Avisa"
+                                + " al Responsable de consolidación para generarlo otra vez."),
                 EntradaCatalogo.de(
                         ArchivoVacio.class,
                         "FIRMA_ARCHIVO_VACIO",
