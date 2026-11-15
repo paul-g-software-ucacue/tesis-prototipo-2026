@@ -183,7 +183,9 @@ description: "Tareas de F14-H04: rechazar en firma con una observación"
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T018 `deploy/probar_rechazo_en_firma.sh` según `contracts/demostracion.md` (10 pasos, `MDD_CONSERVAR=1`), en `.github/workflows/perfil-consolidado.yml` después de `probar_documento_firmable.sh`. La limpieza borra las dos tablas nuevas. shellcheck sin hallazgos.
+- [X] T018 `deploy/probar_rechazo_en_firma.sh` según `contracts/demostracion.md` (10 pasos, `MDD_CONSERVAR=1`), en `.github/workflows/perfil-consolidado.yml` después de `probar_documento_firmable.sh`. La limpieza borra las dos tablas nuevas. shellcheck sin hallazgos.
+
+  **Resultado (2026-11-15):** 10/10 en la primera corrida, en 61 s, sobre un perfil construido desde la rama; EN_REVISION_VRA unos 1 s después del rechazo. La preparación (cargas, consolidado, aprobación, firma de prueba y limpieza) es la de `probar_documento_firmable.sh`, copiada como en los demás scripts; los pasos 2 a 9 son nuevos. En el paso 3, además de `rectorado.demo`, rechazan fuera de turno `docente.demo` (ya firmó F1) y `consolidacion.demo`. La limpieza borra `firma.rechazo_en_firma` antes de la generación; `validacionocs.rechazo_en_firma` se va en cascada con el proceso. shellcheck sin hallazgos.
 - [ ] T019 Correr todos los scripts del workflow sobre un perfil construido desde la rama. Recorrer `quickstart.md` §3 a mano: SC-002 y SC-003.
 - [ ] T020 Correr completos:
   - `./gradlew build integrationTest jacocoTestReport jacocoTestCoverageVerification`;
