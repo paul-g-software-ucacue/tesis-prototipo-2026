@@ -21,8 +21,8 @@ properties:
 | Estado | Cuándo | Cuerpo |
 |---|---|---|
 | 201 | Rechazo registrado | `RechazoEnFirma`: `documento`, `periodo`, `version`, `orden`, `rotulo` («Aprobado por»), `rechazadoPor`, `rechazadoEn`, `observacion` |
-| 400 | El cuerpo no cumple el contrato | `COMUN_SOLICITUD_INVALIDA` |
-| 400 | La observación, recortada, tiene menos de 10 caracteres | `FIRMA_OBSERVACION_INVALIDA` |
+| 400 | El cuerpo no cumple el contrato: sin `observacion`, o con más de 500 caracteres | `COMUN_SOLICITUD_INVALIDA` |
+| 400 | La observación, recortada, tiene menos de 10 caracteres (también vacía) | `FIRMA_OBSERVACION_INVALIDA` |
 | 401 | Sin sesión | `SEGURIDAD_NO_AUTENTICADO` |
 | 403 | Sin el permiso, fuera de turno, documento rechazado o con la cadena completa, o que no existe | `SEGURIDAD_ACCESO_NO_AUTORIZADO`, el 403 común de la subida (`SinTurnoDeFirma`); no dice cuál |
 

@@ -62,7 +62,7 @@ description: "Tareas de F14-H04: rechazar en firma con una observación"
   - inserta un rechazo; un segundo del mismo documento falla por la clave;
   - una observación de 9 caracteres, recortada, falla por el `check`;
   - no puede actualizar ni borrar.
-- [ ] T005 [P] La migración `OCS/main/resources/db/migration/validacionocs/V5__rechazo_en_firma.sql`: el tipo `RECHAZO_EN_FIRMA` en `transicion_tipo_check` y la tabla `rechazo_en_firma`. Antes, ver fallar en la prueba de esquema de Validación OCS: inserta una transición `RECHAZO_EN_FIRMA` con su rechazo, y el rol no puede actualizarlo.
+- [ ] T005 [P] La migración `OCS/main/resources/db/migration/validacionocs/V5__rechazo_en_firma.sql`: el tipo `RECHAZO_EN_FIRMA` en `transicion_tipo_check` y la tabla `rechazo_en_firma`. Antes, ver fallar en `OCS/integrationTest/.../ValidacionocsEsquemaIntegrationTest.java`: inserta una transición `RECHAZO_EN_FIRMA` con su rechazo, y el rol no puede actualizarlo.
 - [ ] T006 [P] El dominio de Firma. Ver fallar primero:
   - `RechazoEnFirmaTest`: la observación vacía, de 9 y de 501 caracteres, y con espacios en los extremos (se recorta);
   - `FirmasDelDocumentoTest`: con rechazo, `pasoEnTurno()` vacío y `enTurno` falso; el constructor de cuatro componentes, sin rechazo.
@@ -115,17 +115,17 @@ description: "Tareas de F14-H04: rechazar en firma con una observación"
 
 **Independent Test**: tras el rechazo, el flujo está en EN_REVISION_VRA con `rechazoEnFirma`, y aprobar da 409.
 
-- [ ] T012 [US2] Aprobación. Ver fallar primero en `RegistrarRechazoEnFirmaServicioTest` (Mockito):
-  - guarda la transición con su rechazo y registra `DISTRIBUTIVO_RECHAZADO_EN_FIRMA` en la bitácora;
-  - repetido o en otra etapa, no guarda nada ni lanza.
+- [ ] T012 [US2] Aprobación. Ver fallar primero:
+  - en `RegistrarRechazoEnFirmaServicioTest` (Mockito): guarda la transición con su rechazo y registra `DISTRIBUTIVO_RECHAZADO_EN_FIRMA` en la bitácora; repetido o en otra etapa, no guarda nada ni lanza;
+  - en `RepositorioProcesoIntegrationTest` (PostgreSQL real): guarda y lee una transición `RECHAZO_EN_FIRMA` con su rechazo, y el proceso leído tiene el rechazo pendiente.
 
   Luego `RegistrarRechazoEnFirma`, `RegistrarRechazoEnFirmaServicio`, `CierreDeLaFirma.alRechazar`, `CambioDeFlujo.Accion.DISTRIBUTIVO_RECHAZADO_EN_FIRMA`, el repositorio de procesos con `rechazo_en_firma` y la configuración.
-- [ ] T013 [US2] El flujo y la aprobación. Ver fallar primero en las pruebas de contrato de Validación OCS:
+- [ ] T013 [US2] El flujo y la aprobación. Ver fallar primero en `FlujoContratoTest` (con `FlujoEnMemoria`) y `PermisosValidacionocsTest`:
   - `rechazoEnFirma` en el estado del flujo con un rechazo pendiente, y sin `APROBAR_CONTENIDO`;
   - aprobar con un rechazo pendiente: 409 `VALIDACIONOCS_REQUIERE_VERSION_NUEVA`, sin pedir a Generación que congele.
 
   Luego `FlujoControlador` y el caso de uso de aprobar, si hace falta.
-- [ ] T014 [US2] En `apps:distributivo`, `DocumentoFirmableIntegrationTest`: F1 aceptada, el rechazo de F2, y Aprobación recibe el aviso una sola vez aunque se publique otra vez. `ModulosTest` sin ciclos.
+- [ ] T014 [US2] En `apps:distributivo`, `DocumentoFirmableIntegrationTest`: F1 aceptada, el rechazo de F2, y Aprobación recibe el aviso una sola vez aunque se publique otra vez. Después del rechazo, la firma F1 y el archivo vigente siguen iguales (FR-007). `ModulosTest` sin ciclos.
 
 **Checkpoint**: el rechazo devuelve el distributivo a revisión.
 

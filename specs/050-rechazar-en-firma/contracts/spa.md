@@ -13,5 +13,5 @@
 
 ## Estado del flujo (`EstadoDelFlujo.tsx`)
 
-- Con `rechazoEnFirma`: un aviso «Rechazado en firma» con el paso (rótulo y rol), quién, cuándo y la observación, y la nota «Para aprobar otra vez hace falta una versión nueva».
+- Con `rechazoEnFirma`: un aviso «Rechazado en firma» con el paso («Paso N · rol»), quién, cuándo y la observación, y la nota «Para aprobar otra vez hace falta una versión nueva».
 - Sin el botón «Aprobar el contenido»: sale de `acciones`.

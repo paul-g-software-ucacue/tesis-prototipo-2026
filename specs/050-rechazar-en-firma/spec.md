@@ -49,7 +49,7 @@ Como firmante en turno (Responsable de consolidación, Vicerrector o Rector), qu
 2. **Dado** que soy el firmante en turno, **cuando** rechazo con una observación, **entonces** se registra el rechazo en firma, **y** el distributivo vuelve a revisión del Vicerrectorado. *(issue)*
 3. **Dado** una observación de menos de 10 o de más de 500 caracteres, **cuando** rechazo, **entonces** no se permite y se dice el largo admitido.
 4. **Dado** que no soy el firmante en turno (otro firmante, alguien con el rol pero sin la designación, o alguien sin el permiso de firma), **cuando** intento rechazar, **entonces** recibo el mismo error de acceso que al subir fuera de turno, y nada cambia.
-5. **Dado** el rechazo registrado, **cuando** se consulta el documento, **entonces** queda cerrado: nadie está en turno, «Pendientes de firma» ya no lo muestra, y una subida o un segundo rechazo se rechazan con un error del catálogo.
+5. **Dado** el rechazo registrado, **cuando** se consulta el documento, **entonces** queda cerrado: nadie está en turno, «Pendientes de firma» ya no lo muestra, y una subida o un segundo rechazo reciben el error de acceso común.
 6. **Dado** el rechazo registrado, **cuando** se consulta la bitácora, **entonces** tiene el rechazo, con quién, cuándo, el paso, la versión y la observación.
 7. **Dado** F1 o F1 y F2 ya aceptadas, **cuando** el firmante en turno rechaza, **entonces** el rechazo se registra igual; las firmas aceptadas se conservan, sin anularse (F12-H04).
 
@@ -110,7 +110,7 @@ Como firmante en turno, quiero un botón «Rechazar» junto a «Subir el PDF fir
 - **FR-002**: La observación DEBE ser obligatoria, de 10 a 500 caracteres después de recortar los espacios del inicio y del final (RF-36, D-98). Si falta o no cabe, el rechazo no se registra y se responde con un error del catálogo.
 - **FR-003**: Quien no está en turno, o no tiene el permiso de firma, DEBE recibir el mismo error de acceso que al subir fuera de turno, sin que nada cambie y sin revelar si el documento existe.
 - **FR-004**: El rechazo DEBE guardarse con el documento, el paso, la versión, quién, cuándo y la observación. No se modifica ni se borra después (principio VII).
-- **FR-005**: Un documento rechazado DEBE quedar cerrado: nadie está en turno, no aparece en «Pendientes de firma», y una subida o un segundo rechazo se responden con un error del catálogo, sin cambiar nada.
+- **FR-005**: Un documento rechazado DEBE quedar cerrado: nadie está en turno, no aparece en «Pendientes de firma», y una subida o un segundo rechazo se responden con el error de acceso común, el mismo de fuera de turno, sin cambiar nada.
 - **FR-006**: El rechazo y una subida del mismo documento a la vez NO DEBEN quedar registrados los dos: se registra el primero y el otro se rechaza.
 - **FR-007**: Las firmas aceptadas antes del rechazo y el archivo vigente se conservan sin cambios. Anularlas es de F12-H04.
 - **FR-008**: Cada rechazo DEBE quedar en la bitácora, con quién, cuándo, el paso, la versión y la observación.
@@ -118,11 +118,11 @@ Como firmante en turno, quiero un botón «Rechazar» junto a «Subir el PDF fir
 **El aviso y el flujo**
 
 - **FR-009**: Con el rechazo registrado, Firma DEBE avisar a Aprobación que el documento se rechazó, con el periodo, la versión, el paso, quién y la observación, sin conocer el flujo (MD-05).
-- **FR-010**: Aprobación DEBE pasar el distributivo de CONGELADO_EN_FIRMA a EN_REVISION_VRA, como una transición del sistema, con la versión y la observación, y registrarla en la bitácora.
+- **FR-010**: Aprobación DEBE pasar el distributivo de CONGELADO_EN_FIRMA a EN_REVISION_VRA, o a la etapa activa anterior si la configuración del distributivo la desactiva, como una transición del sistema, con la versión y la observación, y registrarla en la bitácora.
 - **FR-011**: El aviso DEBE llegar aunque Aprobación falle un momento, una sola vez: el rechazo no se repite y la transición no se duplica.
 - **FR-012**: Si el distributivo ya no está en CONGELADO_EN_FIRMA o la versión no es la congelada, Aprobación NO DEBE moverlo, y lo DEBE dejar registrado sin reintentar para siempre.
-- **FR-013**: El estado del flujo DEBE mostrar al Vicerrector la observación del rechazo, quién rechazó y en qué paso, mientras el distributivo esté en EN_REVISION_VRA por ese rechazo.
-- **FR-014**: Aprobar el contenido desde EN_REVISION_VRA DEBE rechazarse con un error del catálogo si el distributivo volvió por un rechazo en firma y no hay una versión nueva (F12-H04).
+- **FR-013**: El estado del flujo DEBE mostrar al Vicerrector la observación del rechazo, quién rechazó y en qué paso, mientras el distributivo siga en la etapa a la que volvió por ese rechazo.
+- **FR-014**: Aprobar el contenido, o enviar a revisión cuando eso congela la versión (EN_REVISION_VRA desactivada), DEBE rechazarse con un error del catálogo si el distributivo volvió por un rechazo en firma y no hay una versión nueva (F12-H04).
 
 **Pantalla, errores y seguridad**
 
