@@ -178,12 +178,25 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
 - [X] T016 [US2] El oyente de Aprobación. Ver fallar primero en `OCS/test/.../adaptadores/salida/AnulacionDeLasFirmasTest.java`: el aviso llama a `AnularFirmas` con el periodo, la versión, el motivo y el momento. Luego, `AnulacionDeLasFirmas` (`@ApplicationModuleListener`) y su bean en `ConfiguracionValidacionocs`.
 
   **Resultado (2026-11-15):** `AnulacionDeLasFirmasTest`, vista fallar contra el esqueleto; pasa con el oyente, que pasa `MotivoDeAnulacion.RECHAZO_EN_FIRMA` a Firma. El aviso es `AvisoDeAnulacion.FirmasPorAnular` (T011).
-- [ ] T017 [US2] De punta a punta en el proceso. Ver fallar primero en `APP/integrationTest/.../DocumentoFirmableIntegrationTest.java` (con el PDF/A real y la CA en memoria, como F14-H04): con F1 aceptada, el rechazo en F2 deja:
+- [X] T017 [US2] De punta a punta en el proceso. Ver fallar primero en `APP/integrationTest/.../DocumentoFirmableIntegrationTest.java` (con el PDF/A real y la CA en memoria, como F14-H04): con F1 aceptada, el rechazo en F2 deja:
   - la v1 ANULADA y la v2 EDITABLE;
   - EN_REVISION_VRA con `VERSION_NUEVA`;
   - el documento v1 anulado con 1 firma.
 
   Después, aprobar la v2 genera su documento con F1 en turno, y «Pendientes de firma» de `docente.demo` solo trae la v2. La prueba de F14-H04 conserva su doble `@Primary` de `RegistrarRechazoEnFirma`; la nueva usa los casos de uso reales, en su propia clase de prueba si el doble lo exige (análisis A2). `ModulosTest` sin ciclos.
+
+  **Resultado (2026-11-15):** una prueba nueva, `dadoElRechazoEnF2_cuandoAprobacionOrdenaAnular_entoncesFirmaAnulaYLaVersionDosEmpiezaEnF1`. Sube F1 y rechaza en F2 con los casos de uso reales de Firma. Después publica la orden real de Aprobación (`FirmasPorAnular`) en una transacción. Comprueba:
+  - la anulación con 1 firma y por `sistema`;
+  - F1 y su archivo conservados;
+  - la entrada `FIRMAS_ANULADAS` para la bitácora;
+  - que al entrar la versión 2 en firma su documento tiene F1 en turno y `docente.demo` solo la ve a ella.
+
+  **Desvíos:**
+  - **El alcance:** la vuelta a revisión y la versión nueva no van en esta prueba, porque necesitan un proceso de aprobación y un distributivo reales que el proceso no tiene sin datos. Las cubren `RegistrarRechazoEnFirmaServicioTest`, `VersionNuevaIntegrationTest` y el script (T022). Por eso la prueba de F14-H04 conserva su doble de `RegistrarRechazoEnFirma`.
+  - **El doble del contenido** devuelve la versión de `Dobles.VERSIONES`.
+  - **TDD:** se escribió con T013 a T016 hechos y pasó al escribirse: no se vio fallar.
+
+  `ModulosTest` en verde.
 
 **Checkpoint**: el rechazo deja la versión nueva y las firmas anuladas; la versión nueva se aprueba y empieza su cadena.
 

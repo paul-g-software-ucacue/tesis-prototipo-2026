@@ -69,6 +69,7 @@ class DocumentoFirmableIntegrationTest {
     @Autowired private JdbcTemplate jdbc;
     @Autowired private SubirFirma subir;
     @Autowired private RechazarEnFirma rechazar;
+    @Autowired private ec.mdd.firma.puertos.entrada.ConsultarFirmasPendientes pendientes;
 
     @DynamicPropertySource
     static void propiedades(DynamicPropertyRegistry propiedades) {
@@ -274,6 +275,108 @@ class DocumentoFirmableIntegrationTest {
                 .isEqualTo(1);
     }
 
+    // F12-H04: con la versión nueva, Aprobación ordena anular las firmas de la rechazada (D-106).
+    // La vuelta a revisión y la versión nueva usan un proceso de aprobación y un distributivo
+    // reales: las prueban RegistrarRechazoEnFirmaServicioTest, VersionNuevaIntegrationTest y el
+    // script de punta a punta. Aquí, la orden real llega a Firma después de confirmar, y la versión
+    // 2 empieza su cadena en F1.
+    @Test
+    void dadoElRechazoEnF2_cuandoAprobacionOrdenaAnular_entoncesFirmaAnulaYLaVersionDosEmpiezaEnF1()
+            throws Exception {
+        String periodo = periodo();
+        transacciones.executeWithoutResult(estado -> eventos.publishEvent(aviso(periodo)));
+        esperarGenerado(periodo);
+        UUID id =
+                jdbc.queryForObject(
+                        "SELECT id FROM firma.documento_firmable WHERE periodo = ? AND version = 1",
+                        UUID.class,
+                        periodo);
+        byte[] original =
+                Files.readAllBytes(
+                        ARCHIVOS.resolve(
+                                jdbc.queryForObject(
+                                        "SELECT archivo FROM firma.documento_firmable"
+                                                + " WHERE id = ?",
+                                        String.class,
+                                        id)));
+        ResultadoValidacion f1 =
+                subir.subir(
+                        id,
+                        FirmasDePrueba.firmar(
+                                original,
+                                FirmasDePrueba.firmante(CA, "PÉREZ ANA"),
+                                "firma-1-RESPONSABLE_CONSOLIDACION"),
+                        new Solicitante("docente.demo", Set.of("DOCENTE")));
+        rechazar.rechazar(
+                id,
+                "Falta la carga de un docente de Software.",
+                new Solicitante("vicerrectorado.demo", Set.of("VICERRECTOR")));
+
+        transacciones.executeWithoutResult(
+                estado ->
+                        eventos.publishEvent(
+                                new ec.mdd.validacionocs.puertos.salida.AvisoDeAnulacion
+                                        .FirmasPorAnular(periodo, 1, Instant.now())));
+
+        esperar(
+                () ->
+                        jdbc.queryForObject(
+                                        "SELECT count(*) FROM firma.anulacion_de_firmas"
+                                                + " WHERE periodo = ?",
+                                        Integer.class,
+                                        periodo)
+                                == 1);
+        assertThat(
+                        jdbc.queryForMap(
+                                "SELECT version, motivo, firmas_anuladas, anulada_por"
+                                        + " FROM firma.anulacion_de_firmas WHERE periodo = ?",
+                                periodo))
+                .containsEntry("version", 1)
+                .containsEntry("motivo", "RECHAZO_EN_FIRMA")
+                .containsEntry("firmas_anuladas", 1)
+                .containsEntry("anulada_por", "sistema");
+        // Las firmas se conservan: F1 sigue registrada, con su archivo.
+        assertThat(
+                        jdbc.queryForList(
+                                "SELECT sha256_subido FROM firma.validacion_firma"
+                                        + " WHERE periodo = ? AND aceptada",
+                                String.class,
+                                periodo))
+                .containsExactly(f1.sha256Subido());
+        assertThat(ARCHIVOS.resolve("documentos/" + f1.sha256Subido() + ".pdf")).exists();
+        esperar(
+                () ->
+                        jdbc.queryForObject(
+                                        "SELECT count(*) FROM eventos_distributivo"
+                                                + ".event_publication WHERE serialized_event"
+                                                + " LIKE ? AND serialized_event LIKE ?",
+                                        Integer.class,
+                                        "%FIRMAS_ANULADAS%",
+                                        "%" + periodo + "%")
+                                == 1);
+
+        // Aprobar la versión 2 la lleva a firma: su documento empieza en F1, y el firmante de F1
+        // solo ve la versión 2.
+        Dobles.VERSIONES.put(periodo, 2);
+        transacciones.executeWithoutResult(estado -> eventos.publishEvent(aviso(periodo, 2)));
+        esperar(
+                () ->
+                        jdbc.queryForObject(
+                                        "SELECT count(*) FROM firma.documento_firmable"
+                                                + " WHERE periodo = ? AND version = 2",
+                                        Integer.class,
+                                        periodo)
+                                == 1);
+        assertThat(pendientes.pendientes(new Solicitante("docente.demo", Set.of("DOCENTE"))))
+                .filteredOn(una -> una.periodo().equals(periodo))
+                .singleElement()
+                .satisfies(
+                        una -> {
+                            assertThat(una.version()).isEqualTo(2);
+                            assertThat(una.orden()).isEqualTo(1);
+                        });
+    }
+
     private static void esperar(java.util.function.BooleanSupplier condicion)
             throws InterruptedException {
         Instant limite = Instant.now().plusSeconds(30);
@@ -303,9 +406,13 @@ class DocumentoFirmableIntegrationTest {
     }
 
     private static AvisoDeFirma.DistributivoEnFirma aviso(String periodo) {
+        return aviso(periodo, 1);
+    }
+
+    private static AvisoDeFirma.DistributivoEnFirma aviso(String periodo, int version) {
         return new AvisoDeFirma.DistributivoEnFirma(
                 periodo,
-                1,
+                version,
                 HASH,
                 List.of(
                         new AvisoDeFirma.Paso(1, "Elaborado", "RESPONSABLE_CONSOLIDACION"),
@@ -387,6 +494,10 @@ class DocumentoFirmableIntegrationTest {
                                     + rechazo.rechazadoPor());
         }
 
+        /** La versión que devuelve el contenido de cada periodo; 1 si no está (F12-H04). */
+        static final Map<String, Integer> VERSIONES =
+                new java.util.concurrent.ConcurrentHashMap<>();
+
         @Bean
         @Primary
         ContenidoDelDistributivo contenidoDePrueba() {
@@ -400,7 +511,7 @@ class DocumentoFirmableIntegrationTest {
                                 BigDecimal.ZERO);
                 return new ContenidoDelDocumento(
                         periodo,
-                        1,
+                        VERSIONES.getOrDefault(periodo, 1),
                         HASH,
                         List.of(new ContenidoDelDocumento.Carrera("TDS", "ENVIADO", 1, 1, horas)),
                         horas,
