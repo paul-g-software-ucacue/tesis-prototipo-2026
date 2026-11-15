@@ -1,7 +1,8 @@
 // F14-H01 en un navegador, con la API simulada: el Responsable designado ve su firma pendiente y
 // descarga el PDF vigente; sin pendientes, lo dice; un 403 en la descarga muestra el aviso; y la
 // pantalla es accesible con axe-core (WCAG 2.1 AA) con pendientes y sin ellos. F14-H02: la subida
-// del PDF firmado, aceptada y rechazada, con el resultado de cada comprobación y sin fallas de axe.
+// del PDF firmado, aceptada y rechazada, con el resultado de cada comprobación y sin fallas de axe;
+// desde F14-H03, con las siete comprobaciones.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { ingresar, simularApi } from './simulacion';
@@ -114,6 +115,9 @@ test('sube el PDF firmado, se acepta y muestra el resultado (F14-H02)', async ({
           { comprobacion: 'UNA_FIRMA_NUEVA', resultado: 'APROBADA' },
           { comprobacion: 'INTEGRIDAD', resultado: 'APROBADA' },
           { comprobacion: 'CONFIANZA', resultado: 'APROBADA' },
+          { comprobacion: 'VIGENCIA', resultado: 'APROBADA' },
+          { comprobacion: 'ORDEN', resultado: 'APROBADA' },
+          { comprobacion: 'FIRMANTE', resultado: 'APROBADA' },
         ],
         certificado: {
           nombre: 'Firmante Uno Prueba (F1)',
@@ -135,6 +139,7 @@ test('sube el PDF firmado, se acepta y muestra el resultado (F14-H02)', async ({
 
   const aviso = page.getByRole('status', { name: 'Firma registrada' });
   await expect(aviso).toContainText('El certificado es de confianza');
+  await expect(aviso).toContainText('Firma la persona del paso');
   await expect(aviso).toContainText('Firmante Uno Prueba (F1)');
   await sinFallas(page);
 });
@@ -162,6 +167,9 @@ test('si la firma se rechaza, dice el motivo y las cuatro comprobaciones (F14-H0
           },
           { campo: 'INTEGRIDAD', descripcion: 'No evaluada. El archivo no es la versión vigente.' },
           { campo: 'CONFIANZA', descripcion: 'No evaluada. El archivo no es la versión vigente.' },
+          { campo: 'VIGENCIA', descripcion: 'No evaluada. El archivo no es la versión vigente.' },
+          { campo: 'ORDEN', descripcion: 'No evaluada. El archivo no es la versión vigente.' },
+          { campo: 'FIRMANTE', descripcion: 'No evaluada. El archivo no es la versión vigente.' },
         ],
       },
     }),

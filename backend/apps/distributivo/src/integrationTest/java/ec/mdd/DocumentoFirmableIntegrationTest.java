@@ -12,6 +12,7 @@ import ec.mdd.firma.puertos.salida.ContenidoDelDistributivo;
 import ec.mdd.firma.puertos.salida.FirmantesDelPeriodo;
 import ec.mdd.firma.puertos.salida.FirmantesDelPeriodo.FirmanteDelPeriodo;
 import ec.mdd.firma.puertos.salida.IdentificacionDeUsuarios;
+import ec.mdd.validacionocs.puertos.entrada.CompletarFirmas;
 import ec.mdd.validacionocs.puertos.salida.AvisoDeFirma;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -154,6 +155,9 @@ class DocumentoFirmableIntegrationTest {
                         new Solicitante("docente.demo", Set.of("DOCENTE")),
                         new Solicitante("vicerrectorado.demo", Set.of("VICERRECTOR")),
                         new Solicitante("rectorado.demo", Set.of("RECTOR")));
+        // F14-H03: el CN de cada firma es el nombre que el PDF imprime en su paso (los de los
+        // dobles).
+        List<String> nombres = List.of("PÉREZ ANA", "LÓPEZ LUIS", "MORA EVA");
         List<String> campos =
                 List.of(
                         "firma-1-RESPONSABLE_CONSOLIDACION",
@@ -163,9 +167,7 @@ class DocumentoFirmableIntegrationTest {
         for (int i = 0; i < 3; i++) {
             byte[] firmado =
                     FirmasDePrueba.firmar(
-                            vigente,
-                            FirmasDePrueba.firmante(CA, "Firmante " + (i + 1)),
-                            campos.get(i));
+                            vigente, FirmasDePrueba.firmante(CA, nombres.get(i)), campos.get(i));
 
             ResultadoValidacion resultado = subir.subir(id, firmado, firmantes.get(i));
 
@@ -178,6 +180,11 @@ class DocumentoFirmableIntegrationTest {
             vigente = firmado;
         }
 
+        // F14-H03: después de confirmar la tercera, Aprobación recibe el aviso de cadena completa
+        // una sola vez, con el periodo y la versión.
+        esperar(() -> !Dobles.CADENAS_COMPLETAS.isEmpty());
+        Thread.sleep(1000);
+        assertThat(Dobles.CADENAS_COMPLETAS).containsExactly(periodo + "/1");
         // Cada archivo anterior se conserva sin cambios (D-101), y nadie está en turno.
         assertThat(archivos).hasSize(4).allSatisfy(archivo -> assertThat(archivo).exists());
         assertThat(
@@ -196,6 +203,17 @@ class DocumentoFirmableIntegrationTest {
                                 "%FIRMA_ACEPTADA%",
                                 "%" + periodo + "%"))
                 .isEqualTo(3);
+    }
+
+    private static void esperar(java.util.function.BooleanSupplier condicion)
+            throws InterruptedException {
+        Instant limite = Instant.now().plusSeconds(30);
+        while (!condicion.getAsBoolean()) {
+            if (Instant.now().isAfter(limite)) {
+                throw new AssertionError("No se cumplió en 30 s");
+            }
+            Thread.sleep(200);
+        }
     }
 
     private void esperarGenerado(String periodo) throws InterruptedException {
@@ -261,6 +279,20 @@ class DocumentoFirmableIntegrationTest {
     /** El contenido y los firmantes, sin los procesos datos e identidad. */
     @TestConfiguration
     static class Dobles {
+
+        /** Los avisos de cadena completa que recibió Aprobación, como «periodo/versión». */
+        static final List<String> CADENAS_COMPLETAS =
+                java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+
+        /**
+         * Aprobación, sin un proceso de aprobación real del periodo: anota el aviso. El paso a
+         * EN_OCS lo prueban CompletarFirmasServicioTest y el script de punta a punta.
+         */
+        @Bean
+        @Primary
+        CompletarFirmas completarFirmasDePrueba() {
+            return (periodo, version, momento) -> CADENAS_COMPLETAS.add(periodo + "/" + version);
+        }
 
         @Bean
         @Primary

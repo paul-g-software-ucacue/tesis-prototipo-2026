@@ -40,6 +40,9 @@ import java.util.TreeMap;
  */
 public final class ProcesoAprobacion {
 
+    /** Quién registra las transiciones que no pide una persona, como la cadena completa. */
+    public static final String SISTEMA = "sistema";
+
     /** Las etapas que se avanzan con el avance genérico: opcionales y sin historia propia. */
     public static final Set<TipoDeEtapa> CON_AVANCE_GENERICO =
             Set.of(TipoDeEtapa.BORRADOR_UNIDADES);
@@ -514,6 +517,34 @@ public final class ProcesoAprobacion {
                 .filter(una -> una.tipo() == TipoDeTransicion.PASO_DE_ETAPA)
                 .filter(una -> una.hacia() == TipoDeEtapa.CONGELADO_EN_FIRMA)
                 .reduce((primera, ultima) -> ultima);
+    }
+
+    /**
+     * La cadena de firmas de la versión congelada quedó completa: el distributivo sale de
+     * CONGELADO_EN_FIRMA hacia la siguiente etapa activa, EN_OCS del esqueleto fijo (F14-H03,
+     * D-104). Lo pide Firma con un aviso que puede llegar más de una vez, así que es idempotente:
+     * si ya salió de firma con esa versión, o el distributivo está en otra etapa, o la versión no
+     * es la congelada, no hace nada. Mover el flujo no es de Firma (MD-05): lo decide este
+     * agregado.
+     *
+     * @param version la versión que se firmó
+     * @param ahora cuándo se completó
+     * @return la transición nueva, por {@value #SISTEMA}, o vacío si no corresponde
+     */
+    public List<Transicion> completarFirmas(int version, Instant ahora) {
+        Optional<Transicion> congelada = congelacion();
+        if (estado != TipoDeEtapa.CONGELADO_EN_FIRMA
+                || congelada.filter(una -> una.version() == version).isEmpty()) {
+            return List.of();
+        }
+        Transicion paso =
+                paso(
+                        new Solicitante(SISTEMA, Set.of(), Optional.empty()),
+                        version,
+                        congelada.get().hash(),
+                        ahora);
+        transiciones.add(paso);
+        return List.of(paso);
     }
 
     /** Lo que {@code quien} puede hacer ahora (FR-014). */

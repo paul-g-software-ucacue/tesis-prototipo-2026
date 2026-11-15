@@ -1087,4 +1087,61 @@ class ProcesoAprobacionTest {
             case EN_OCS, APROBADO, PUBLICADO -> "SECRETARIA_GENERAL";
         };
     }
+
+    // La cadena de firmas completa pasa a EN_OCS (F14-H03, D-104).
+
+    private static final Instant FIRMADA = AHORA.plusSeconds(3600);
+
+    private static ProcesoAprobacion enFirma() {
+        ProcesoAprobacion proceso = enRevision(etapas(false));
+        proceso.aprobarContenido(VICERRECTOR, 2, HASH_CONGELADO, AHORA);
+        return proceso;
+    }
+
+    @Test
+    void dadoElDistributivoEnFirma_cuandoSeCompletanLasFirmas_entoncesPasaAEnOcsPorElSistema() {
+        ProcesoAprobacion proceso = enFirma();
+
+        List<Transicion> nuevas = proceso.completarFirmas(2, FIRMADA);
+
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_OCS);
+        assertThat(nuevas)
+                .containsExactly(
+                        new Transicion(
+                                TipoDeTransicion.PASO_DE_ETAPA,
+                                TipoDeEtapa.CONGELADO_EN_FIRMA,
+                                TipoDeEtapa.EN_OCS,
+                                Optional.empty(),
+                                2,
+                                HASH_CONGELADO,
+                                "sistema",
+                                FIRMADA));
+    }
+
+    @Test
+    void dadoElAvisoRepetido_cuandoYaEstaEnOcs_entoncesNoAgregaOtraTransicion() {
+        ProcesoAprobacion proceso = enFirma();
+        proceso.completarFirmas(2, FIRMADA);
+
+        assertThat(proceso.completarFirmas(2, FIRMADA.plusSeconds(5))).isEmpty();
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_OCS);
+        assertThat(proceso.transiciones()).hasSize(2);
+    }
+
+    @Test
+    void dadoOtraVersion_cuandoSeCompletanLasFirmas_entoncesNoCambiaNada() {
+        ProcesoAprobacion proceso = enFirma();
+
+        assertThat(proceso.completarFirmas(3, FIRMADA)).isEmpty();
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.CONGELADO_EN_FIRMA);
+    }
+
+    @Test
+    void dadoElDistributivoEnOtraEtapa_cuandoSeCompletanLasFirmas_entoncesNoCambiaNada() {
+        ProcesoAprobacion proceso = enRevision(etapas(false));
+
+        assertThat(proceso.completarFirmas(2, FIRMADA)).isEmpty();
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_REVISION_VRA);
+        assertThat(proceso.transiciones()).isEmpty();
+    }
 }

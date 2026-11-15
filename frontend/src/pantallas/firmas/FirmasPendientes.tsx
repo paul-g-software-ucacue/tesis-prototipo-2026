@@ -40,12 +40,16 @@ const visuallyHidden = {
   width: 1,
 } as const;
 
-// Los nombres de las comprobaciones de la validación básica, en su orden (D-103).
+// Los nombres de las comprobaciones de la validación básica, en su orden (D-103, D-104).
 const COMPROBACIONES: Record<string, string> = {
   MISMO_DOCUMENTO: 'Es la versión vigente',
   UNA_FIRMA_NUEVA: 'Tiene una sola firma nueva',
   INTEGRIDAD: 'La firma es íntegra',
   CONFIANZA: 'El certificado es de confianza',
+  // F14-H03 (D-104).
+  VIGENCIA: 'El certificado está vigente',
+  ORDEN: 'La firma está en su orden',
+  FIRMANTE: 'Firma la persona del paso',
 };
 
 const RESULTADOS: Record<string, string> = {

@@ -1,10 +1,9 @@
 package ec.mdd.firma.dominio;
 
 /**
- * Las comprobaciones de la validación básica que hace F14-H02 sobre un PDF subido (D-23, D-103), en
- * el orden en que se evalúan. Cada una depende de la anterior: si una no se aprueba, las siguientes
- * no se evalúan. La vigencia al subir, la persona por el CN y el orden por la persona son de
- * F14-H03.
+ * Las comprobaciones de la validación básica sobre un PDF subido (D-23), en el orden en que se
+ * evalúan: las cuatro primeras de F14-H02 (D-103) y las tres últimas de F14-H03 (D-104). Cada una
+ * depende de la anterior: si una no se aprueba, las siguientes no se evalúan.
  */
 public enum Comprobacion {
 
@@ -18,5 +17,14 @@ public enum Comprobacion {
     INTEGRIDAD,
 
     /** El certificado de la firma nueva llega a una raíz de la lista de confianza. */
-    CONFIANZA
+    CONFIANZA,
+
+    /** El certificado de la firma nueva está vigente al momento de subir. */
+    VIGENCIA,
+
+    /** La firma no es de la persona de un paso posterior al paso en turno. */
+    ORDEN,
+
+    /** El CN del certificado es el nombre que el PDF imprime en el paso en turno. */
+    FIRMANTE
 }

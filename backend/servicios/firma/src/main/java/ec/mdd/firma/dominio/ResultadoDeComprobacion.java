@@ -86,7 +86,10 @@ public record ResultadoDeComprobacion(
             case MISMO_DOCUMENTO -> "El archivo no es la versión vigente.";
             case UNA_FIRMA_NUEVA -> "El archivo no tiene una sola firma nueva.";
             case INTEGRIDAD -> "La firma nueva no es íntegra.";
-            case CONFIANZA -> throw new IllegalArgumentException("es la última comprobación");
+            case CONFIANZA -> "El certificado no es de confianza.";
+            case VIGENCIA -> "El certificado no está vigente.";
+            case ORDEN -> "La firma está fuera de orden.";
+            case FIRMANTE -> throw new IllegalArgumentException("es la última comprobación");
         };
     }
 }

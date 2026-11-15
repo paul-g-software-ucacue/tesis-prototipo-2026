@@ -105,6 +105,11 @@ public record CambioDeFlujo(
          * versión, el hash y la observación de cada carrera devuelta en el detalle
          * (contracts/bitacora.md, D-95, D-98). Una entrada aunque devuelva varias carreras.
          */
-        DISTRIBUTIVO_DEVUELTO
+        DISTRIBUTIVO_DEVUELTO,
+        /**
+         * La cadena de firmas completa (F14-H03, D-104): el paso desde CONGELADO_EN_FIRMA a EN_OCS,
+         * por el sistema, con la etapa antes y después, y la versión y el hash en el detalle.
+         */
+        CADENA_DE_FIRMAS_COMPLETA
     }
 }

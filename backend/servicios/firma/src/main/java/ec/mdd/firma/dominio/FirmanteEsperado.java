@@ -19,11 +19,19 @@ import java.util.regex.Pattern;
  * @param rol el rol del paso en la cadena
  * @param usuario el usuario esperado, o {@code null} si se reconoce por la identificación
  * @param identificacion la identificación esperada, o {@code null} si se reconoce por el usuario
+ * @param nombre el nombre que el PDF imprime en el paso, de hasta 200 caracteres; con él se compara
+ *     el CN de la firma (F14-H03, D-104). Vacío en los documentos generados antes
  */
-public record FirmanteEsperado(int orden, String rol, String usuario, String identificacion) {
+public record FirmanteEsperado(
+        int orden, String rol, String usuario, String identificacion, Optional<String> nombre) {
 
     // El formato de Docentes: cédula de 10 dígitos o pasaporte de hasta 13 letras o dígitos.
     private static final Pattern IDENTIFICACION = Pattern.compile("^[0-9A-Z]{1,13}$");
+
+    /** Un firmante sin nombre impreso guardado, como los de los documentos anteriores a F14-H03. */
+    public FirmanteEsperado(int orden, String rol, String usuario, String identificacion) {
+        this(orden, rol, usuario, identificacion, Optional.empty());
+    }
 
     /** Exige el orden, el rol y exactamente una de las dos personas. */
     public FirmanteEsperado {
@@ -40,6 +48,10 @@ public record FirmanteEsperado(int orden, String rol, String usuario, String ide
         if (identificacion != null && !IDENTIFICACION.matcher(identificacion).matches()) {
             throw new IllegalArgumentException("La identificación no tiene el formato de Docentes");
         }
+        Objects.requireNonNull(nombre, "nombre");
+        if (nombre.filter(texto -> texto.isBlank() || texto.length() > 200).isPresent()) {
+            throw new IllegalArgumentException("El nombre impreso tiene de 1 a 200 caracteres");
+        }
     }
 
     /** El firmante que se reconoce por su usuario: el Responsable designado. */
@@ -50,6 +62,18 @@ public record FirmanteEsperado(int orden, String rol, String usuario, String ide
     /** El firmante que se reconoce por su identificación: el docente de un cargo. */
     public static FirmanteEsperado porIdentificacion(int orden, String rol, String identificacion) {
         return new FirmanteEsperado(orden, rol, null, identificacion);
+    }
+
+    /** El Responsable designado, con el nombre que imprime el PDF (F14-H03). */
+    public static FirmanteEsperado porUsuario(
+            int orden, String rol, String usuario, String nombre) {
+        return new FirmanteEsperado(orden, rol, usuario, null, Optional.of(nombre));
+    }
+
+    /** El docente de un cargo, con el nombre que imprime el PDF (F14-H03). */
+    public static FirmanteEsperado porIdentificacion(
+            int orden, String rol, String identificacion, String nombre) {
+        return new FirmanteEsperado(orden, rol, null, identificacion, Optional.of(nombre));
     }
 
     /** Si para reconocerlo hace falta la identificación de quien pide. */

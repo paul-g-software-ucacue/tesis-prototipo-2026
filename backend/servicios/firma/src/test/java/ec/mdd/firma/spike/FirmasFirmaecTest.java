@@ -112,7 +112,7 @@ class FirmasFirmaecTest {
         if (!modoLocal) {
             assertThat(resultados)
                     .extracting(ResultadoFirma::firmante)
-                    .containsExactly("Firmante Uno Prueba (F1)", "Firmante Dos Prueba (F2)");
+                    .containsExactly("Docente (demo)", "CABRERA VAZQUEZ ANA GABRIELA");
         }
     }
 

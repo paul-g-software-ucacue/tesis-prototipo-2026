@@ -3,13 +3,14 @@
 // y un /Contents de 16 384 bytes. Usa los certificados ficticios de la CA de prueba
 // (backend/servicios/firma/src/test/resources/ca-prueba/) o, con --ca-ajena, una CA creada en
 // memoria que no está en la lista de confianza. Con --alterar, cambia un byte firmado después de
-// firmar, para que la firma no sea íntegra.
+// firmar, para que la firma no sea íntegra. Con --momento=<instante ISO>, firma con ese signingTime,
+// por ejemplo el de un certificado que estaba vigente entonces y ya venció (F14-H03).
 //
 // Corre como programa de un solo archivo en eclipse-temurin:25-jdk, con PDFBox y Bouncy Castle
 // copiados del contenedor distributivo (las mismas versiones del proceso):
 //
 //   java -cp 'lib/*' FirmarDePrueba.java firmar <entrada.pdf> <salida.pdf> <firmante.p12> <campo>
-//       [--ca-ajena] [--alterar]
+//       [--ca-ajena] [--alterar] [--momento=2025-01-15T12:00:00Z]
 //
 // <campo> es el campo vacío donde firmar (firma-<orden>-<rol>), o «-» para uno nuevo. La contraseña
 // ficticia del PKCS #12 llega por la variable MDD_CLAVE_P12 y nunca se imprime. Es código de
@@ -82,8 +83,11 @@ public final class FirmarDePrueba {
     public static void main(String[] argumentos) throws Exception {
         List<String> posicionales = new ArrayList<>();
         Set<String> opciones = new java.util.HashSet<>();
+        Instant momento = Instant.now();
         for (String argumento : argumentos) {
-            if (argumento.startsWith("--")) {
+            if (argumento.startsWith("--momento=")) {
+                momento = Instant.parse(argumento.substring("--momento=".length()));
+            } else if (argumento.startsWith("--")) {
                 opciones.add(argumento);
             } else {
                 posicionales.add(argumento);
@@ -94,7 +98,7 @@ public final class FirmarDePrueba {
                 || !Set.of("--ca-ajena", "--alterar").containsAll(opciones)) {
             System.err.println(
                     "Uso: FirmarDePrueba firmar <entrada.pdf> <salida.pdf> <firmante.p12> <campo|->"
-                            + " [--ca-ajena] [--alterar]");
+                            + " [--ca-ajena] [--alterar] [--momento=<instante>]");
             System.exit(2);
         }
         byte[] entrada = Files.readAllBytes(Path.of(posicionales.get(1)));
@@ -103,7 +107,7 @@ public final class FirmarDePrueba {
                         ? deCaAjena()
                         : deP12(Path.of(posicionales.get(3)), clave());
         String campo = posicionales.get(4).equals("-") ? null : posicionales.get(4);
-        byte[] firmado = firmar(entrada, firmante, campo);
+        byte[] firmado = firmar(entrada, firmante, campo, momento);
         if (opciones.contains("--alterar")) {
             firmado = alterar(firmado, entrada.length);
         }
@@ -119,8 +123,8 @@ public final class FirmarDePrueba {
         return clave.toCharArray();
     }
 
-    private static byte[] firmar(byte[] pdf, Identidad firmante, String campo) throws IOException {
-        Instant momento = Instant.now();
+    private static byte[] firmar(byte[] pdf, Identidad firmante, String campo, Instant momento)
+            throws IOException {
         ByteArrayOutputStream salida = new ByteArrayOutputStream();
         try (PDDocument documento = Loader.loadPDF(pdf);
                 SignatureOptions opciones = new SignatureOptions()) {

@@ -315,14 +315,18 @@ public final class DocumentoFirmableServicio
                 esperados);
     }
 
-    // La persona que firma un paso. Sin ella no se sabría a quién le toca: falla como sin nombre.
+    // La persona que firma un paso, con el nombre que el PDF imprime para ella (F14-H03, D-104):
+    // con
+    // ese nombre se compara el CN de su firma. Sin la persona no se sabría a quién le toca: falla
+    // como sin nombre.
     private static FirmanteEsperado esperado(PasoDeFirma paso, FirmanteDelPeriodo firmante) {
         if (firmante != null && firmante.usuario().isPresent()) {
-            return FirmanteEsperado.porUsuario(paso.orden(), paso.rol(), firmante.usuario().get());
+            return FirmanteEsperado.porUsuario(
+                    paso.orden(), paso.rol(), firmante.usuario().get(), firmante.nombre());
         }
         if (firmante != null && firmante.identificacion().isPresent()) {
             return FirmanteEsperado.porIdentificacion(
-                    paso.orden(), paso.rol(), firmante.identificacion().get());
+                    paso.orden(), paso.rol(), firmante.identificacion().get(), firmante.nombre());
         }
         throw new FirmanteSinNombre(Firmante.cargoDe(paso.rol()));
     }

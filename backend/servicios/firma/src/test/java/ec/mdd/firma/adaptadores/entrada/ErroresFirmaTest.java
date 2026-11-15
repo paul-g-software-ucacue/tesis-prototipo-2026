@@ -11,6 +11,7 @@ import ec.mdd.firma.dominio.CertificadoDeLaFirma;
 import ec.mdd.firma.dominio.Comprobacion;
 import ec.mdd.firma.dominio.EtapaNoAdmiteGeneracion;
 import ec.mdd.firma.dominio.GeneracionFallida;
+import ec.mdd.firma.dominio.PasoSinNombre;
 import ec.mdd.firma.dominio.ResultadoDeComprobacion;
 import ec.mdd.firma.dominio.ResultadoValidacion;
 import ec.mdd.plataforma.errores.nucleo.DetalleRespuesta;
@@ -56,6 +57,19 @@ class ErroresFirmaTest {
                                 ArchivoFirmadoRechazado.SinConfianza.class,
                                 "FIRMA_SIN_CONFIANZA",
                                 422),
+                        tuple(
+                                ArchivoFirmadoRechazado.NoVigente.class,
+                                "FIRMA_CERTIFICADO_NO_VIGENTE",
+                                422),
+                        tuple(
+                                ArchivoFirmadoRechazado.FueraDeOrden.class,
+                                "FIRMA_FUERA_DE_ORDEN",
+                                422),
+                        tuple(
+                                ArchivoFirmadoRechazado.FirmanteEquivocado.class,
+                                "FIRMA_FIRMANTE_EQUIVOCADO",
+                                422),
+                        tuple(PasoSinNombre.class, "FIRMA_PASO_SIN_NOMBRE", 409),
                         tuple(ArchivoVacio.class, "FIRMA_ARCHIVO_VACIO", 400),
                         tuple(ArchivoDemasiadoGrande.class, "FIRMA_ARCHIVO_DEMASIADO_GRANDE", 413));
     }
@@ -113,6 +127,11 @@ class ErroresFirmaTest {
                         new DetalleRespuesta(
                                 "INTEGRIDAD", "Rechazada. La firma nueva no es íntegra."),
                         new DetalleRespuesta(
-                                "CONFIANZA", "No evaluada. La firma nueva no es íntegra."));
+                                "CONFIANZA", "No evaluada. La firma nueva no es íntegra."),
+                        new DetalleRespuesta(
+                                "VIGENCIA", "No evaluada. La firma nueva no es íntegra."),
+                        new DetalleRespuesta("ORDEN", "No evaluada. La firma nueva no es íntegra."),
+                        new DetalleRespuesta(
+                                "FIRMANTE", "No evaluada. La firma nueva no es íntegra."));
     }
 }

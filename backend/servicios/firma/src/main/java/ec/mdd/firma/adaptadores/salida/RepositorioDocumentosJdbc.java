@@ -17,6 +17,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -147,8 +148,9 @@ public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
         for (FirmanteEsperado firmante : firmantes) {
             jdbc.sql(
                             "INSERT INTO firma.firmante_esperado (periodo, version, tipo, orden,"
-                                    + " rol, usuario, identificacion) VALUES (:periodo, :version,"
-                                    + " :tipo, :orden, :rol, :usuario, :identificacion)")
+                                    + " rol, usuario, identificacion, nombre) VALUES (:periodo,"
+                                    + " :version, :tipo, :orden, :rol, :usuario, :identificacion,"
+                                    + " :nombre)")
                     .param("periodo", documento.periodo())
                     .param("version", documento.version())
                     .param("tipo", documento.tipo())
@@ -156,6 +158,7 @@ public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
                     .param("rol", firmante.rol())
                     .param("usuario", firmante.usuario())
                     .param("identificacion", firmante.identificacion())
+                    .param("nombre", firmante.nombre().orElse(null))
                     .update();
         }
     }
@@ -279,15 +282,25 @@ public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
                 .toList();
     }
 
+    // Las validaciones de F14-H02 tienen cuatro comprobaciones: las de F14-H03 se leen como no
+    // evaluadas, sin reescribir la fila (research §8 de F14-H03, principio VII).
     private static List<ResultadoDeComprobacion> comprobaciones(String json) {
-        return JSON.readValue(json, FILAS).stream()
-                .map(
-                        fila ->
-                                new ResultadoDeComprobacion(
-                                        Comprobacion.valueOf(fila.get("comprobacion")),
-                                        Resultado.valueOf(fila.get("resultado")),
-                                        Optional.ofNullable(fila.get("motivo"))))
-                .toList();
+        List<ResultadoDeComprobacion> leidas =
+                new ArrayList<>(
+                        JSON.readValue(json, FILAS).stream()
+                                .map(
+                                        fila ->
+                                                new ResultadoDeComprobacion(
+                                                        Comprobacion.valueOf(
+                                                                fila.get("comprobacion")),
+                                                        Resultado.valueOf(fila.get("resultado")),
+                                                        Optional.ofNullable(fila.get("motivo"))))
+                                .toList());
+        Comprobacion[] todas = Comprobacion.values();
+        for (int i = leidas.size(); i < todas.length; i++) {
+            leidas.add(ResultadoDeComprobacion.noEvaluada(todas[i], "Anterior a F14-H03."));
+        }
+        return List.copyOf(leidas);
     }
 
     private static Map<String, String> certificado(CertificadoDeLaFirma certificado) {
@@ -315,7 +328,7 @@ public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
         DocumentoFirmable documento = documento(fila);
         List<FirmanteEsperado> firmantes =
                 jdbc.sql(
-                                "SELECT orden, rol, usuario, identificacion"
+                                "SELECT orden, rol, usuario, identificacion, nombre"
                                         + " FROM firma.firmante_esperado WHERE periodo = :periodo"
                                         + " AND version = :version AND tipo = :tipo ORDER BY orden")
                         .param("periodo", documento.periodo())
@@ -327,7 +340,8 @@ public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
                                                 una.getInt("orden"),
                                                 una.getString("rol"),
                                                 una.getString("usuario"),
-                                                una.getString("identificacion")))
+                                                una.getString("identificacion"),
+                                                Optional.ofNullable(una.getString("nombre"))))
                         .list();
         return new FirmasDelDocumento(
                 documento,

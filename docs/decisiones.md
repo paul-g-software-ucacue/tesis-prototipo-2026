@@ -102,6 +102,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-101 | 2026-11-11 | El documento firmable se genera al entrar en firma: Aprobación le entrega la cadena a Firma después de confirmar; Firma genera el PDF/A, lo guarda por su hash y reintenta a pedido | Aceptada | RF-38, RF-58, RNF-POR-01, MD-05, ADR-018, D-46, D-88, D-100 |
 | D-102 | 2026-11-14 | El firmante esperado de cada paso se fija al generar el documento; la cuenta de usuario guarda la identificación de la persona | Aceptada | RF-38, RF-58, ADR-003, ADR-007, ADR-023, D-101 |
 | D-103 | 2026-11-14 | La validación del PDF firmado: cuatro comprobaciones en orden, la firma es la validación aceptada y la lista de confianza va en la imagen como configuración de demostración; constitución 2.2.1 | Aceptada | RF-39, D-23, D-46, ADR-017, ADR-007, D-101, D-102 |
+| D-104 | 2026-11-14 | El firmante se reconoce por el CN igual al nombre impreso, que se guarda al generar; la última firma avisa a Aprobación, que pasa a EN_OCS; la CA de prueba con los nombres de los datos de prueba | Aceptada | RF-38, RF-39, RF-58, D-23, D-102, D-103, ADR-017, MD-05 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -2060,7 +2061,7 @@ Con la base de datos de Grype del 2026-11-07, la CI encontró además dos altas 
 
 | Archivo | Sujeto | Vigencia | SHA-256 del certificado |
 |---|---|---|---|
-| `ca-prueba.crt` | CN=CA de Prueba MDD Demo, O=MDD Demo, C=EC (la del spike, `ca-prueba/generar.sh`) | 2026-10-13 a 2036-10-10 | `60ca4684e97b094971d432f6fe59b244c42f83af1dfcc8df7d40979d6349e406` |
+| `ca-prueba.crt` | CN=CA de Prueba MDD Demo, O=MDD Demo, C=EC (`ca-prueba/generar.sh`; regenerada en F14-H03, D-104, con los firmantes de los nombres impresos) | 2024-01-01 a 2036-12-31 | `06d4975906b5daab705a32c50822fdcfce2a473318bc91f0004c4ff66a04bf17` |
 | `bce-raiz.crt` | CN=AUTORIDAD DE CERTIFICACION RAIZ DEL BANCO CENTRAL DEL ECUADOR, OU=ENTIDAD DE CERTIFICACION DE INFORMACION-ECIBCE, O=BANCO CENTRAL DEL ECUADOR, L=QUITO, C=EC | 2011-08-08 a 2031-08-08 | `11c7c59be9d21d216f0e8151378d53d03b314060559adc49da161ec4f7829bec` |
 
 La raíz del BCE se sacó de la cadena que trae el certificado de firma del autor (`openssl pkcs12 -cacerts -nokeys`): solo el certificado público de la raíz, autofirmado, con `CA:TRUE` y sin llave. Ni el certificado del autor ni su intermedia entran al repositorio.
@@ -2085,3 +2086,41 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 - `Firma` es una entidad de `PasoCadena`; aquí es la validación aceptada del paso;
 - `ResultadoValidacion` incluye la vigencia, el paso en turno y la identidad, que llegan con F14-H03;
 - faltan «Comprobación» (cada una de las de la validación básica, con su resultado: aprobada, rechazada o no evaluada) y «Firma nueva» (la firma que el archivo subido tiene de más sobre el vigente).
+
+---
+
+## D-104. El firmante se reconoce por el CN igual al nombre impreso; la última firma completa la cadena y el distributivo pasa a EN_OCS
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-14 · **Decidido por:** autor de la tesis
+- **Origen:** F14-H03 (#64); aclaraciones de `specs/049-completar-cadena/spec.md` y su plan (`research.md` §1 a §8)
+- **Relacionadas:** RF-38, RF-39, RF-58, D-23, D-102, D-103, ADR-017, ADR-007, MD-05; diseño de firmas §6 y §7
+
+**Decisión.**
+- **Tres comprobaciones más,** después de las cuatro de D-103, en este orden:
+  1. **vigencia:** el certificado de la firma nueva está vigente al momento de subir;
+  2. **orden:** si el CN es el nombre impreso de un paso posterior, y no el del paso en turno, la firma está fuera de orden;
+  3. **firmante:** el CN es el nombre que el PDF imprime en el paso en turno.
+
+  Se comparan normalizados (D-23): mayúsculas, sin tildes ni diéresis salvo la Ñ, y espacios unificados. El CN se busca por su tipo en el sujeto; el número de serie del sujeto no se usa. No distingue homónimos.
+- **El nombre impreso se guarda** con cada firmante esperado al generar el documento (V5 de `firma`). Un paso sin nombre guardado, de un documento anterior, no acepta firmas.
+- **La cadena completa.** Con la última firma aceptada, Firma publica `CadenaDeFirmasCompleta` (periodo y versión) en la misma transacción, en su API publicada. Aprobación lo escucha después de confirmar y pasa el distributivo de CONGELADO_EN_FIRMA a EN_OCS como `sistema`. Un aviso repetido no agrega otra transición; en otra etapa o con otra versión no hace nada.
+- **La CA de prueba se regenera** con tres firmantes ficticios cuyo CN es el nombre que el PDF imprime en cada paso con los datos de prueba, y uno vencido. Cambia su huella en D-103.
+- **El nombre local del autor** (ADR-017, punto 3): `MDD_FIRMA_NOMBRE_LOCAL` en su `.env`, que Git ignora. Si tiene valor, es el nombre impreso y esperado de todos los pasos; quién está en turno no cambia. La demo y la CI no la definen.
+
+**Por qué.**
+- D-23 ya decidía la identidad por el CN. Guardar el nombre al generar sigue a D-102: el que firma es el que figura en el PDF.
+- El evento en la API de Firma deja la dependencia de Aprobación hacia Firma, sin ciclo (MD-05), y el registro de publicaciones lo reintenta (ADR-018).
+- Las pruebas de punta a punta necesitan certificados con el CN de cada paso.
+
+**Alternativas.**
+- La cédula o el número de serie del sujeto: cambia D-23 y depende de qué pone cada entidad en ese campo.
+- Releer el nombre del PDF o volver a pedirlo a Datos: frágil, o sigue al cargo vigente en vez del nombre impreso.
+- Que Firma llame a Aprobación: crea el ciclo que MD-05 evita.
+- Una CA en memoria en cada prueba: el perfil de la CI tendría que cambiar su lista de confianza.
+
+**Consecuencias.**
+- Los resultados de validación tienen siete comprobaciones; los anteriores, de cuatro, se leen con las tres nuevas como «no evaluadas».
+- Cuatro códigos nuevos: `FIRMA_CERTIFICADO_NO_VIGENTE`, `FIRMA_FUERA_DE_ORDEN`, `FIRMA_FIRMANTE_EQUIVOCADO` y `FIRMA_PASO_SIN_NOMBRE`.
+- El autor, con `MDD_FIRMA_NOMBRE_LOCAL`, deja su nombre en la base local; `down -v` lo borra.
+
+**Documentos que hay que poner al día.** El modelo de dominio (§7.5): «Firmante en turno» dice «usuario asignado»; aquí es la persona cuyo nombre impreso coincide con el CN. No hay entrada para «Vigencia» del certificado.

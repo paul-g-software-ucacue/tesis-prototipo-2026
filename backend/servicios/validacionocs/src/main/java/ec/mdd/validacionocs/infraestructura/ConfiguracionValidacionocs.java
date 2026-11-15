@@ -4,6 +4,7 @@ import ec.mdd.firma.puertos.entrada.PrepararDocumentoFirmable;
 import ec.mdd.generacion.puertos.entrada.ParcialesDelDistributivo;
 import ec.mdd.generacion.puertos.requeridos.EtapaDelConsolidado;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
+import ec.mdd.validacionocs.adaptadores.entrada.CierreDeLaFirma;
 import ec.mdd.validacionocs.adaptadores.entrada.EtapaParaGeneracion;
 import ec.mdd.validacionocs.adaptadores.salida.AvisoDeFirmaSpring;
 import ec.mdd.validacionocs.adaptadores.salida.DatosDesdeProcesos;
@@ -16,11 +17,13 @@ import ec.mdd.validacionocs.adaptadores.salida.RepositorioConfiguracionJdbc;
 import ec.mdd.validacionocs.adaptadores.salida.RepositorioProcesoJdbc;
 import ec.mdd.validacionocs.adaptadores.salida.TransaccionSpring;
 import ec.mdd.validacionocs.aplicacion.CargarConfiguracionServicio;
+import ec.mdd.validacionocs.aplicacion.CompletarFirmasServicio;
 import ec.mdd.validacionocs.aplicacion.ConsultarConfiguracionServicio;
 import ec.mdd.validacionocs.aplicacion.EtapaDelConsolidadoServicio;
 import ec.mdd.validacionocs.aplicacion.EtapasAlCrearse;
 import ec.mdd.validacionocs.aplicacion.FlujoDelDistributivoServicio;
 import ec.mdd.validacionocs.puertos.entrada.CargarConfiguracion;
+import ec.mdd.validacionocs.puertos.entrada.CompletarFirmas;
 import ec.mdd.validacionocs.puertos.entrada.ConsultarConfiguracion;
 import ec.mdd.validacionocs.puertos.salida.DatosDelPeriodo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo;
@@ -157,5 +160,21 @@ public class ConfiguracionValidacionocs {
                 transaccionValidacionocs,
                 Clock.systemUTC(),
                 new AvisoDeFirmaSpring(eventos));
+    }
+
+    /** El paso a EN_OCS con la cadena de firmas completa (F14-H03, D-104). */
+    @Bean
+    public CompletarFirmasServicio completarFirmas(
+            RepositorioProceso repositorioProceso,
+            RegistroDeCambios registroDeCambiosValidacionocs,
+            Transaccion transaccionValidacionocs) {
+        return new CompletarFirmasServicio(
+                repositorioProceso, registroDeCambiosValidacionocs, transaccionValidacionocs);
+    }
+
+    /** Escucha el aviso de cadena completa de Firma después de confirmar (MD-05, F14-H03). */
+    @Bean
+    public CierreDeLaFirma cierreDeLaFirma(CompletarFirmas completarFirmas) {
+        return new CierreDeLaFirma(completarFirmas);
     }
 }

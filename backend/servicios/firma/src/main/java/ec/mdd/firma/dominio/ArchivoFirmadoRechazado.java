@@ -14,7 +14,10 @@ public abstract sealed class ArchivoFirmadoRechazado extends RuntimeException
         permits ArchivoFirmadoRechazado.NoEsLaVersionVigente,
                 ArchivoFirmadoRechazado.SinUnaFirmaNueva,
                 ArchivoFirmadoRechazado.NoIntegra,
-                ArchivoFirmadoRechazado.SinConfianza {
+                ArchivoFirmadoRechazado.SinConfianza,
+                ArchivoFirmadoRechazado.NoVigente,
+                ArchivoFirmadoRechazado.FueraDeOrden,
+                ArchivoFirmadoRechazado.FirmanteEquivocado {
 
     @Serial private static final long serialVersionUID = 1L;
 
@@ -44,6 +47,9 @@ public abstract sealed class ArchivoFirmadoRechazado extends RuntimeException
             case UNA_FIRMA_NUEVA -> new SinUnaFirmaNueva(resultado);
             case INTEGRIDAD -> new NoIntegra(resultado);
             case CONFIANZA -> new SinConfianza(resultado);
+            case VIGENCIA -> new NoVigente(resultado);
+            case ORDEN -> new FueraDeOrden(resultado);
+            case FIRMANTE -> new FirmanteEquivocado(resultado);
         };
     }
 
@@ -84,6 +90,33 @@ public abstract sealed class ArchivoFirmadoRechazado extends RuntimeException
         @Serial private static final long serialVersionUID = 1L;
 
         private SinConfianza(ResultadoValidacion resultado) {
+            super(resultado);
+        }
+    }
+
+    /** El certificado no está vigente al subir ({@code FIRMA_CERTIFICADO_NO_VIGENTE}). */
+    public static final class NoVigente extends ArchivoFirmadoRechazado {
+        @Serial private static final long serialVersionUID = 1L;
+
+        private NoVigente(ResultadoValidacion resultado) {
+            super(resultado);
+        }
+    }
+
+    /** La firma es de la persona de un paso posterior ({@code FIRMA_FUERA_DE_ORDEN}). */
+    public static final class FueraDeOrden extends ArchivoFirmadoRechazado {
+        @Serial private static final long serialVersionUID = 1L;
+
+        private FueraDeOrden(ResultadoValidacion resultado) {
+            super(resultado);
+        }
+    }
+
+    /** El CN no es el nombre impreso del paso en turno ({@code FIRMA_FIRMANTE_EQUIVOCADO}). */
+    public static final class FirmanteEquivocado extends ArchivoFirmadoRechazado {
+        @Serial private static final long serialVersionUID = 1L;
+
+        private FirmanteEquivocado(ResultadoValidacion resultado) {
             super(resultado);
         }
     }
