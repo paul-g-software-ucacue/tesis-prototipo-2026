@@ -226,7 +226,9 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
 - [X] T020 [P] [US3] Quitar la rama del rechazo de `SPA/pantallas/comun/AvisoDeVersionCongelada.tsx` (research §8), con sus dos pruebas en `Consolidado.test.tsx` e `Inconsistencias.test.tsx`. El aviso vuelve al texto de F13-H01, sin consultar el flujo. Si el componente queda trivial, se devuelve a cada pantalla como estaba.
 
   **Resultado (2026-11-15):** sin la rama, el componente solo era el `Alert` de F13-H01. Los cuatro archivos vuelven a como estaban antes de F14-H04 (`a8ac00e`), cuyo cambio en ellos era solo ese aviso, y se borra `AvisoDeVersionCongelada.tsx`. Tipos, ESLint y Prettier en verde; Vitest 582/582 (583, menos las dos quitadas, más la de T019).
-- [ ] T021 [US3] Playwright: correr `e2e/consolidado.spec.ts`, `e2e/firmas-pendientes.spec.ts` y `e2e/inconsistencias.spec.ts` con axe-core. Sin pruebas nuevas si nada cambió en los controles.
+- [X] T021 [US3] Playwright: correr `e2e/consolidado.spec.ts`, `e2e/firmas-pendientes.spec.ts` y `e2e/inconsistencias.spec.ts` con axe-core. Sin pruebas nuevas si nada cambió en los controles.
+
+  **Resultado (2026-11-15):** 14/14, con axe-core sin fallas. Sin pruebas nuevas: los controles no cambiaron, solo el texto del aviso.
 
 **Checkpoint**: las tres historias funcionan en la API y en la SPA.
 
@@ -234,13 +236,20 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T022 El script `deploy/probar_rechazo_en_firma.sh`, según `contracts/demostracion.md`:
+- [X] T022 El script `deploy/probar_rechazo_en_firma.sh`, según `contracts/demostracion.md`:
   - el paso 6 suma la v1 ANULADA, la v2 EDITABLE con el motivo, las mismas asignaciones (los totales por tabla), `VERSION_NUEVA` y la anulación en Firma, en menos de 30 s;
   - el paso 8 aprueba la v2: CONGELADO_EN_FIRMA con la v2, su documento y `docente.demo` con F1 de la v2;
   - el paso 9 suma la bitácora de la versión nueva y de la anulación;
   - la limpieza borra también `firma.anulacion_de_firmas`.
 
   Correrlo sobre un perfil construido desde la rama; shellcheck sin hallazgos.
+
+  **Resultado (2026-11-15):** 10/10 en 55 s, sobre un perfil construido desde la rama. EN_REVISION_VRA unos 0 s y las firmas anuladas unos 1 s después de rechazar (SC-001).
+  - **El paso 6** compara las seis tablas de la versión por número de filas. La primera corrida falló porque exigía filas en todas, y la preparación no asigna actividades no lectivas: esa tabla queda en 0 en las dos versiones, y las demás tienen que tener alguna fila.
+  - **`id_del_documento`** toma la versión 1, porque con la versión 2 hay dos documentos.
+  - **La cabecera, el comentario del workflow y el mensaje de `MDD_CONSERVAR`** nombran F12-H04 y el quickstart de 051.
+
+  shellcheck sin hallazgos.
 - [ ] T023 Los scripts de `perfil-consolidado`, en su orden, sobre un perfil construido desde la rama (SC-005). Después, el recorrido a mano de `quickstart.md` §3, del autor.
 - [ ] T024 Correr completos:
   - `./gradlew build integrationTest jacocoTestReport jacocoTestCoverageVerification`;

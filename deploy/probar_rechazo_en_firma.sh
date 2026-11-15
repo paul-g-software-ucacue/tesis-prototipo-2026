@@ -2,7 +2,9 @@
 # Las condiciones se invocan a través de verificar y esperar; shellcheck no lo ve.
 # shellcheck disable=SC2329
 # El rechazo en firma, de punta a punta sobre el perfil levantado, con los procesos reales (F14-H04,
-# D-105; specs/050-rechazar-en-firma/contracts/demostracion.md). Uso, desde cualquier directorio:
+# D-105; specs/050-rechazar-en-firma/contracts/demostracion.md), con la versión nueva y la anulación
+# de las firmas (F12-H04, D-106; specs/051-version-nueva/contracts/demostracion.md). Uso, desde
+# cualquier directorio:
 # deploy/probar_rechazo_en_firma.sh
 # Con una base sin estructura orgánica, carreras, distributivos ni los datos de prueba: prepara el
 # periodo como probar_documento_firmable.sh (las 10 cargas de prueba, ficticias, RNF-SEG-06; el
@@ -12,16 +14,18 @@
 # bibliotecas del contenedor distributivo). Con F2 en turno: rectorado.demo, fuera de turno, recibe
 # 403 al rechazar; vicerrectorado.demo rechaza sin observación, con una corta y sin el campo (400),
 # y después con una observación (201). En menos de 30 s el distributivo vuelve a EN_REVISION_VRA por
-# el sistema, con el rechazo en el estado del flujo y sin la acción de aprobar; el documento queda
-# cerrado (subir y rechazar otra vez, 403; nadie tiene pendientes); aprobar otra vez responde 409; y
-# la base y la bitácora tienen F1, el rechazo y la transición. Si la base ya tiene alguno de esos
+# el sistema con la versión 2: la 1 ANULADA, la 2 EDITABLE con lo mismo, las firmas de la 1
+# anuladas y la acción de aprobar otra vez; el documento queda cerrado (subir y rechazar otra vez,
+# 403; nadie tiene pendientes); el Vicerrector aprueba la versión 2, su documento se genera y F1 de
+# la 2 queda en turno; y la base y la bitácora tienen F1, el rechazo, la versión nueva y la
+# anulación. Si la base ya tiene alguno de esos
 # datos, falla sin tocar nada. Al terminar, aunque un paso falle, borra lo que creó (también los
 # archivos del volumen), salvo las entradas de la bitácora, que no se pueden borrar. Termina con 0
 # si todos los pasos pasan y con 1 si alguno falla. Nunca imprime una clave ni un token.
 #
 # MDD_CONSERVAR=1 (solo en el perfil local): deja el distributivo en CONGELADO_EN_FIRMA con F1
-# aceptada y F2 en turno, y no borra nada, para recorrer a mano
-# specs/050-rechazar-en-firma/quickstart.md §3. Al terminar dice cómo limpiar.
+# aceptada y F2 en turno, y no borra nada, para recorrer a mano specs/051-version-nueva/quickstart.md
+# §3. Al terminar dice cómo limpiar.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -240,7 +244,8 @@ delete from firma.validacion_firma where periodo in ($periodos);
 delete from firma.firmante_esperado where periodo in ($periodos);
 delete from firma.documento_firmable where periodo in ($periodos);
 delete from firma.rechazo_en_firma where periodo in ($periodos);
--- El proceso no puede cambiar los documentos, sus firmantes, sus validaciones ni el rechazo (V2 a V6 de firma), así que tampoco
+delete from firma.anulacion_de_firmas where periodo in ($periodos);
+-- El proceso no puede cambiar los documentos, sus firmantes, sus validaciones, el rechazo ni la anulación (V2 a V7 de firma), así que tampoco
 -- pasa la verificación de la clave foránea al borrar su generación; sin ellos ya, se borra sin los
 -- disparadores.
 set session_replication_role = replica;
@@ -282,6 +287,7 @@ delete from eventos_datos.event_publication where serialized_event::jsonb -> 'co
         + (select count(*) from firma.firmante_esperado where periodo in ($periodos))
         + (select count(*) from firma.validacion_firma where periodo in ($periodos))
         + (select count(*) from firma.rechazo_en_firma where periodo in ($periodos))
+        + (select count(*) from firma.anulacion_de_firmas where periodo in ($periodos))
         + (select count(*) from validacionocs.rechazo_en_firma r join validacionocs.transicion t
             on t.id = r.transicion_id where t.periodo in ($periodos))
         + (select count(*) from roles.designacion_responsable where periodo in ($periodos))
@@ -306,6 +312,7 @@ ya_estan=$(consultar_base "select (select count(*) from academico.unidad_organic
     + (select count(*) from firma.firmante_esperado where periodo in ($periodos))
     + (select count(*) from firma.validacion_firma where periodo in ($periodos))
     + (select count(*) from firma.rechazo_en_firma where periodo in ($periodos))
+    + (select count(*) from firma.anulacion_de_firmas where periodo in ($periodos))
     + (select count(*) from roles.designacion_responsable where periodo in ($periodos))")
 if [[ $ya_estan != 0 ]]; then
     echo "FALLA  0. La base ya tiene $ya_estan unidades, carreras, datos de prueba, carreras de coordinadores o distributivos: no se tocan."
@@ -593,8 +600,8 @@ cabecera() {  # cabecera <nombre>: su valor en la última descarga, sin el fin d
     grep -i "^$1:" "$carpeta/cabeceras" | head -1 | cut -d' ' -f2- | tr -d '\r'
 }
 
-id_del_documento() {
-    consultar_base "select id from firma.documento_firmable where periodo = '$PERIODO'"
+id_del_documento() {  # del documento de la versión 1, la que se rechaza
+    consultar_base "select id from firma.documento_firmable where periodo = '$PERIODO' and version = 1"
 }
 
 # rechazar <cuerpo json>: el rechazo en firma del documento del periodo, con el token de $token.
@@ -665,20 +672,57 @@ en_revision() {
         == EN_REVISION_VRA ]]
 }
 
-# --- 6. En menos de 30 s, EN_REVISION_VRA por el sistema, con el rechazo en el flujo y sin aprobar ---
+firmas_anuladas() {
+    [[ $(consultar_base "select count(*) from firma.anulacion_de_firmas where periodo = '$PERIODO'") == 1 ]]
+}
+
+# Las filas de una tabla de la versión, por número de versión: «v1:n,v2:n».
+filas_por_version() {  # filas_por_version <tabla>
+    consultar_base "select string_agg('v' || v.numero || ':' || (select count(*) from generacion.$1 t
+        where t.version_id = v.id), ',' order by v.numero) from generacion.version_distributivo v
+        join generacion.distributivo d on d.id = v.distributivo_id where d.periodo = '$PERIODO'"
+}
+
+# --- 6. En menos de 30 s y sin que nadie haga nada: EN_REVISION_VRA por el sistema con la versión 2
+# (F12-H04): la 1 ANULADA, la 2 EDITABLE con lo mismo, las firmas anuladas, y se aprueba otra vez ---
 vuelve_a_revision() {
+    local tabla filas
     esperar 30 en_revision || { echo "       el proceso no volvió a EN_REVISION_VRA" >&2; return 1; }
     echo "       en EN_REVISION_VRA unos $(($(date +%s) - rechazado_en)) s después de rechazar"
-    [[ $(consultar_base "select count(*) from validacionocs.transicion where periodo = '$PERIODO'
-        and tipo = 'RECHAZO_EN_FIRMA' and desde = 'CONGELADO_EN_FIRMA' and hacia = 'EN_REVISION_VRA'
-        and quien = 'sistema'") == 1 ]] || return 1
+    esperar 30 firmas_anuladas || { echo "       Firma no anuló las firmas" >&2; return 1; }
+    echo "       firmas anuladas unos $(($(date +%s) - rechazado_en)) s después de rechazar"
+    [[ $(consultar_base "select string_agg(tipo || ':' || desde || ':' || hacia || ':' || version || ':' || quien,
+        ',' order by momento, tipo) from validacionocs.transicion where periodo = '$PERIODO'
+        and tipo in ('RECHAZO_EN_FIRMA', 'VERSION_NUEVA')") \
+        == "RECHAZO_EN_FIRMA:CONGELADO_EN_FIRMA:EN_REVISION_VRA:1:sistema,VERSION_NUEVA:EN_REVISION_VRA:EN_REVISION_VRA:2:sistema" ]] \
+        || { echo "       las transiciones no son las esperadas" >&2; return 1; }
+    [[ $(consultar_base "select string_agg(v.numero || ':' || v.estado || ':' || coalesce(v.motivo, '-')
+        || ':' || coalesce(v.creada_por, '-'), ',' order by v.numero) from generacion.version_distributivo v
+        join generacion.distributivo d on d.id = v.distributivo_id where d.periodo = '$PERIODO'") \
+        == "1:ANULADA:-:-,2:EDITABLE:RECHAZO_EN_FIRMA:sistema" ]] \
+        || { echo "       las versiones no son las esperadas" >&2; return 1; }
+    # SC-002: la versión 2 tiene lo mismo que la 1, tabla por tabla. La preparación no asigna
+    # actividades no lectivas: esa tabla tiene 0 en las dos; las demás, alguna fila.
+    for tabla in parcial_carrera propuesta actividad_no_lectiva justificacion_inconsistencia \
+        consolidacion informe_sustentado; do
+        filas=$(filas_por_version "$tabla")
+        if ! [[ $filas =~ ^v1:([0-9]+),v2:([0-9]+)$ && ${BASH_REMATCH[1]} == "${BASH_REMATCH[2]}" ]] \
+            || [[ $tabla != actividad_no_lectiva && ${BASH_REMATCH[1]} == 0 ]]; then
+            echo "       $tabla: $filas" >&2
+            return 1
+        fi
+    done
+    [[ $(consultar_base "select version || ':' || motivo || ':' || firmas_anuladas || ':' || anulada_por
+        from firma.anulacion_de_firmas where periodo = '$PERIODO'") == "1:RECHAZO_EN_FIRMA:1:sistema" ]] \
+        || return 1
     iniciar "$VICERRECTOR"
     pedir GET "$FLUJO" "Bearer $token"
     [[ $estado == 200 ]] || return 1
-    [[ $(jq -c '[.rechazoEnFirma.orden, .rechazoEnFirma.rol, .rechazoEnFirma.por, .rechazoEnFirma.observacion]' \
-        <<<"$cuerpo") == "$(jq -cn --arg v "$VICERRECTOR" --arg o "$OBSERVACION" '[2, "VICERRECTOR", $v, $o]')" ]] \
-        || return 1
-    [[ $(jq -r '.acciones | index("APROBAR_CONTENIDO")' <<<"$cuerpo") == null ]]
+    [[ $(jq -c '[.rechazoEnFirma.orden, .rechazoEnFirma.rol, .rechazoEnFirma.por, .rechazoEnFirma.observacion,
+        .rechazoEnFirma.versionAnulada, .rechazoEnFirma.versionNueva, .version]' <<<"$cuerpo") \
+        == "$(jq -cn --arg v "$VICERRECTOR" --arg o "$OBSERVACION" '[2, "VICERRECTOR", $v, $o, 1, 2, 2]')" ]] \
+        || { echo "       el flujo: $(jq -c '.rechazoEnFirma' <<<"$cuerpo")" >&2; return 1; }
+    [[ $(jq -c '.acciones' <<<"$cuerpo") == '["APROBAR_CONTENIDO"]' ]]
 }
 
 # --- 7. El documento queda cerrado: subir y rechazar otra vez, 403; nadie tiene pendientes ---
@@ -695,11 +739,23 @@ cerrado() {
     done
 }
 
-# --- 8. Aprobar otra vez: 409 hasta la versión nueva, sin cambiar de etapa ---
-sin_aprobar_otra_vez() {
+documento_de_la_version_2() {  # con el token de $token
+    documento_generado && [[ $(jq -r '.version' <<<"$cuerpo") == 2 ]]
+}
+
+# --- 8. El Vicerrector aprueba la versión 2: CONGELADO_EN_FIRMA con la 2, su documento generado y F1
+# en turno de la 2, sin la 1 (SC-004) ---
+aprobar_la_version_nueva() {
     iniciar "$VICERRECTOR"
     pedir POST "$APROBACION" "Bearer $token"
-    es_codigo 409 VALIDACIONOCS_REQUIERE_VERSION_NUEVA && en_revision
+    [[ $estado == 200 && $(jq -r '.etapa' <<<"$cuerpo") == CONGELADO_EN_FIRMA ]] \
+        || { echo "       aprobar la versión 2: $estado" >&2; return 1; }
+    [[ $(jq -r '.congelacion.version' <<<"$cuerpo") == 2 ]] || return 1
+    iniciar "$RESPONSABLE"
+    esperar 30 documento_de_la_version_2 || { echo "       el documento de la versión 2 no se generó" >&2; return 1; }
+    turno_de "$DESIGNADO" 1 "Elaborado por" || return 1
+    pedir GET "$PENDIENTES" "Bearer $token"
+    [[ $(jq -c --arg p "$PERIODO" '[.[] | select(.periodo == $p) | .version]' <<<"$cuerpo") == '[2]' ]]
 }
 
 # --- 9. La base y la bitácora: F1 intacta, el rechazo en Firma y en Aprobación ---
@@ -717,8 +773,14 @@ registro_del_rechazo() {
         and periodo = '$PERIODO' and nuevo ->> 'observacion' = '$OBSERVACION'" || return 1
     esperar 15 hay_entradas 1 "servicio = 'validacionocs' and accion = 'DISTRIBUTIVO_RECHAZADO_EN_FIRMA'
         and periodo = '$PERIODO' and usuario = 'sistema'" || return 1
+    # F12-H04: la versión nueva en Aprobación y la anulación en Firma, por el sistema.
+    esperar 15 hay_entradas 1 "servicio = 'validacionocs' and accion = 'DISTRIBUTIVO_VERSION_NUEVA'
+        and periodo = '$PERIODO' and usuario = 'sistema'" || return 1
+    esperar 15 hay_entradas 1 "servicio = 'firma' and accion = 'FIRMAS_ANULADAS'
+        and periodo = '$PERIODO' and usuario = 'sistema'" || return 1
     sleep 3
-    hay_entradas 1 "servicio = 'firma' and accion = 'RECHAZO_EN_FIRMA' and periodo = '$PERIODO'"
+    hay_entradas 1 "servicio = 'firma' and accion = 'RECHAZO_EN_FIRMA' and periodo = '$PERIODO'" \
+        && hay_entradas 1 "servicio = 'firma' and accion = 'FIRMAS_ANULADAS' and periodo = '$PERIODO'"
 }
 
 f1=''
@@ -731,7 +793,7 @@ if [[ -n $CONSERVAR ]]; then
         echo "No quedó en firma. Para limpiar: docker compose -p tesis-prototipo-2026 down -v"
         exit 1
     fi
-    echo "Quedó en CONGELADO_EN_FIRMA con F1 aceptada, sin limpiar. Recorre specs/050-rechazar-en-firma/quickstart.md §3."
+    echo "Quedó en CONGELADO_EN_FIRMA con F1 aceptada, sin limpiar. Recorre specs/051-version-nueva/quickstart.md §3."
     echo "Para limpiar al terminar: docker compose -p tesis-prototipo-2026 down -v"
     exit 0
 fi
@@ -741,10 +803,10 @@ verificar 2 "$DESIGNADO firma F1 y se acepta; F2, de $VICERRECTOR, en turno" f1_
 verificar 3 "$RECTOR, $DESIGNADO y $RESPONSABLE, fuera de turno, reciben 403 al rechazar, sin dejar fila" rechazo_fuera_de_turno
 verificar 4 "$VICERRECTOR sin observación, con una corta o sin el campo: 400, sin fila" observacion_invalida
 verificar 5 "$VICERRECTOR rechaza con una observación: 201 con el paso 2" rechazo
-verificar 6 "En menos de 30 s, EN_REVISION_VRA por sistema, con el rechazo en el flujo y sin aprobar" vuelve_a_revision
+verificar 6 "En menos de 30 s, EN_REVISION_VRA con la versión 2, la 1 anulada con sus firmas y con lo mismo" vuelve_a_revision
 verificar 7 "El documento cerrado: subir y rechazar otra vez, 403; nadie tiene pendientes" cerrado
-verificar 8 "Aprobar otra vez: 409 VALIDACIONOCS_REQUIERE_VERSION_NUEVA, sigue en EN_REVISION_VRA" sin_aprobar_otra_vez
-verificar 9 "F1 intacta, el rechazo en Firma y en Aprobación, y la bitácora de los dos servicios" registro_del_rechazo
+verificar 8 "$VICERRECTOR aprueba la versión 2: su documento y F1 en turno, sin la versión 1" aprobar_la_version_nueva
+verificar 9 "F1 intacta, el rechazo, la versión nueva y la anulación en la base y en la bitácora" registro_del_rechazo
 
 if ((fallas > 0)); then
     echo "El rechazo en firma de punta a punta: $fallas paso(s) fallan."
