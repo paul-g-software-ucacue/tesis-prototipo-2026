@@ -195,7 +195,9 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
   - `Resolucion.test.tsx` (2) se vio fallar sin la pantalla y pasa con ella, su ruta y su entrada del menú.
   - La spec (US3, FR-014, SC-003), el contrato de la SPA y D-107 quedan al día.
   - Vitest 589/589.
-- [ ] T015 [US3] Playwright en `frontend/e2e/consolidado.spec.ts`: el registro completo con el teclado, la constancia y la descarga, y axe-core sin fallas en EN_OCS y en APROBADO.
+- [X] T015 [US3] Playwright en `frontend/e2e/consolidado.spec.ts`: el registro completo con el teclado, la constancia y la descarga, y axe-core sin fallas en EN_OCS y en APROBADO.
+
+  **Resultado (2026-11-15):** en un archivo nuevo, `e2e/resolucion.spec.ts`, por la pantalla propia. `secretaria.demo` entra por el menú, registra con el teclado y confirma («Cancelar» enfocado; Tab y Enter a «Registrar y aprobar»). Después ve APROBADO con la constancia, y la descarga trae el nombre del servidor. axe-core sin fallas en EN_OCS, con la confirmación abierta y en APROBADO. La primera corrida falló por contraste en el diálogo, medido durante su animación de apertura: la prueba espera ahora a que termine. Se escribió con la pantalla hecha: no se vio fallar por falta de código. `consolidado.spec.ts`, 6/6.
 
 **Checkpoint**: las tres historias funcionan en la API y en la SPA.
 
