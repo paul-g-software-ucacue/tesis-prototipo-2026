@@ -69,7 +69,7 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
   Luego, `ResolucionOcs`, `ArchivoDeResolucion` y sus excepciones (`NumeroDeResolucionInvalido`, `ResolucionNoEsPdf`, `ResolucionDemasiadoGrande`).
 
   **Resultado (2026-11-15):** `ResolucionOcsTest` (3) y `ArchivoDeResolucionTest` (3). Fallaron 5 contra los esqueletos; la del número de 60 pasaba porque el esqueleto no validaba nada. Pasan con la implementación. Las excepciones ya existían (T003). `ResolucionOcs` exige además la huella y un tamaño desde 1, como la tabla.
-- [ ] T006 [P] El agregado. Ver fallar primero en `OCS/test/.../dominio/ProcesoAprobacionTest.java`:
+- [X] T006 [P] El agregado. Ver fallar primero en `OCS/test/.../dominio/ProcesoAprobacionTest.java`:
   - **en EN_OCS, el rol de la etapa registra:** un `PASO_DE_ETAPA` a APROBADO por quien registra, con la versión y el hash de la congelación y la resolución;
   - **la fecha:** del día de entrada en EN_OCS y de hoy (en `America/Guayaquil`, también cerca de la medianoche), y fuera de rango (`ResolucionFueraDeRango`);
   - **otro rol:** `RolDeOtraEtapa`;
@@ -81,6 +81,8 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
   Además, en `TransicionTest`, la resolución solo en EN_OCS → APROBADO.
 
   Luego, `Transicion.resolucion`, `AccionDelProceso.REGISTRAR_RESOLUCION`, las excepciones y los métodos.
+
+  **Resultado (2026-11-15):** 7 pruebas nuevas en `ProcesoAprobacionTest` y 3 en `TransicionTest`. Fallaron las 8 que dependen del comportamiento nuevo; la de los constructores de antes pasaba con el esqueleto. Pasan con la implementación. La prueba parametrizada de F12-H02 sobre «etapa con operación propia» excluye ahora EN_OCS, que tiene su propio 409 (`RequiereResolucion`). `ProcesoAprobacion.ZONA` es `America/Guayaquil`. Las 404 de Validación OCS en verde.
 
 **Checkpoint**: el contrato, el catálogo, la tabla y las reglas están; ninguna operación nueva funciona todavía.
 

@@ -1,6 +1,8 @@
 package ec.mdd.validacionocs.dominio;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -256,17 +258,87 @@ public final class ProcesoAprobacion {
         return List.of(paso);
     }
 
+    /** La zona de la institución: las fechas de las resoluciones son días de aquí (D-107). */
+    public static final ZoneId ZONA = ZoneId.of("America/Guayaquil");
+
+    /**
+     * La Secretaría general académica registra la resolución del OCS y el distributivo pasa de
+     * EN_OCS a APROBADO (F15-H01, RF-37, D-107): registrar es aprobar, y después no se corrige. La
+     * transición lleva la versión y el hash de la congelación, la que se firmó, y la resolución.
+     *
+     * <p>La fecha va desde el día en que el distributivo llegó a EN_OCS hasta el de {@code ahora},
+     * los dos en {@link #ZONA}: la resolución aprueba la versión ya firmada, y se comparan días, no
+     * instantes, para que una resolución de hoy no se rechace por la hora.
+     *
+     * @param quien quien registra
+     * @param resolucion el número, la fecha y el PDF, ya comprobados
+     * @param ahora cuándo se registra
+     * @return la transición nueva
+     * @throws EtapaNoAdmiteResolucion si el distributivo no está en EN_OCS
+     * @throws RolDeOtraEtapa si no tiene el rol de EN_OCS en la copia de la configuración
+     * @throws ResolucionFueraDeRango si la fecha es futura o anterior a la llegada a EN_OCS
+     */
+    public List<Transicion> registrarResolucion(
+            Solicitante quien, ResolucionOcs resolucion, Instant ahora) {
+        Objects.requireNonNull(resolucion, "resolucion");
+        if (estado != TipoDeEtapa.EN_OCS) {
+            throw new EtapaNoAdmiteResolucion();
+        }
+        exigirRol(quien, estado);
+        LocalDate llegada =
+                transiciones.stream()
+                        .filter(una -> una.hacia() == TipoDeEtapa.EN_OCS)
+                        .reduce((primera, ultima) -> ultima)
+                        .map(una -> LocalDate.ofInstant(una.momento(), ZONA))
+                        .orElseThrow(() -> new IllegalStateException("En EN_OCS sin llegar"));
+        LocalDate hoy = LocalDate.ofInstant(ahora, ZONA);
+        if (resolucion.fecha().isBefore(llegada) || resolucion.fecha().isAfter(hoy)) {
+            throw new ResolucionFueraDeRango();
+        }
+        Transicion congelada =
+                congelacion().orElseThrow(() -> new IllegalStateException("En EN_OCS sin firma"));
+        TipoDeEtapa desde = estado;
+        estado = siguienteActiva(desde);
+        Transicion paso =
+                new Transicion(
+                        TipoDeTransicion.PASO_DE_ETAPA,
+                        desde,
+                        estado,
+                        Optional.empty(),
+                        congelada.version(),
+                        congelada.hash(),
+                        quien.usuario(),
+                        ahora,
+                        Map.of(),
+                        Optional.empty(),
+                        Optional.of(resolucion));
+        transiciones.add(paso);
+        return List.of(paso);
+    }
+
+    /** La transición que aprobó el distributivo con la resolución del OCS, si ya se registró. */
+    public Optional<Transicion> resolucion() {
+        return transiciones.stream()
+                .filter(una -> una.resolucion().isPresent())
+                .reduce((primera, ultima) -> ultima);
+    }
+
     /**
      * Comprueba que {@code quien} puede usar el avance genérico, sin cambiar nada. El caso de uso
      * lo llama antes de pedirle a Generación que congele, si el paso llega a CONGELADO_EN_FIRMA
      * (F13-H01).
      *
      * @param quien quien avanza
+     * @throws RequiereResolucion si el distributivo está en EN_OCS (F15-H01)
      * @throws EtapaConOperacionPropia si la etapa no es de las del avance genérico
      * @throws RolDeOtraEtapa si no tiene el rol de la etapa actual
      * @throws RequiereVersionNueva si el avance congelaría la versión de un rechazo en firma
      */
     public void validarAvance(Solicitante quien) {
+        // F15-H01: a APROBADO solo se pasa registrando la resolución del OCS (RF-37).
+        if (estado == TipoDeEtapa.EN_OCS) {
+            throw new RequiereResolucion();
+        }
         if (!CON_AVANCE_GENERICO.contains(estado)) {
             throw new EtapaConOperacionPropia();
         }
@@ -716,6 +788,10 @@ public final class ProcesoAprobacion {
                     ? List.of(
                             AccionDelProceso.ENVIAR_A_REVISION, AccionDelProceso.DEVOLVER_PARCIALES)
                     : List.of(AccionDelProceso.ENVIAR_A_REVISION);
+        }
+        // F15-H01: la Secretaría registra la resolución del OCS.
+        if (estado == TipoDeEtapa.EN_OCS && tieneRol(quien, TipoDeEtapa.EN_OCS)) {
+            return List.of(AccionDelProceso.REGISTRAR_RESOLUCION);
         }
         // Con un rechazo en firma pendiente no se aprueba hasta la versión nueva (F14-H04).
         if (estado == TipoDeEtapa.EN_REVISION_VRA

@@ -62,4 +62,56 @@ class TransicionTest {
                                 .rechazo())
                 .isEmpty();
     }
+
+    // F15-H01: la resolución va solo en el paso de EN_OCS a APROBADO, y siempre en él.
+    private static final ResolucionOcs RESOLUCION =
+            new ResolucionOcs(
+                    "RPC-SO-12-No.123-2026",
+                    java.time.LocalDate.of(2026, 11, 15),
+                    "b".repeat(64),
+                    "resolucion.pdf",
+                    2048);
+
+    private static Transicion paso(
+            TipoDeEtapa desde, TipoDeEtapa hacia, Optional<ResolucionOcs> resolucion) {
+        return new Transicion(
+                TipoDeTransicion.PASO_DE_ETAPA,
+                desde,
+                hacia,
+                Optional.empty(),
+                1,
+                "a".repeat(64),
+                "secretaria.demo",
+                MOMENTO,
+                Map.of(),
+                Optional.empty(),
+                resolucion);
+    }
+
+    @Test
+    void dadoElPasoAAprobadoConSuResolucion_cuandoSeCrea_entoncesLaLleva() {
+        assertThat(
+                        paso(TipoDeEtapa.EN_OCS, TipoDeEtapa.APROBADO, Optional.of(RESOLUCION))
+                                .resolucion())
+                .contains(RESOLUCION);
+    }
+
+    @Test
+    void dadoElPasoAAprobadoSinResolucionUOtroPasoConElla_cuandoSeCrea_entoncesSeRechaza() {
+        assertThatThrownBy(() -> paso(TipoDeEtapa.EN_OCS, TipoDeEtapa.APROBADO, Optional.empty()))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(
+                        () ->
+                                paso(
+                                        TipoDeEtapa.EN_REVISION_VRA,
+                                        TipoDeEtapa.CONGELADO_EN_FIRMA,
+                                        Optional.of(RESOLUCION)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void dadosLosConstructoresDeAntes_cuandoSeCrean_entoncesNoLlevanResolucion() {
+        assertThat(de(TipoDeTransicion.RECHAZO_EN_FIRMA, Optional.of(RECHAZO)).resolucion())
+                .isEmpty();
+    }
 }
