@@ -50,7 +50,9 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
   Regenerar los tipos de la SPA. Pasan `verificar:ruptura` y `PermisosValidacionocsTest` (con las dos operaciones nuevas: puede hacer falta un esqueleto del controlador).
 
   **Resultado (2026-11-15):** el contrato con las dos operaciones, `ResolucionDelOcs`, `EstadoDelFlujo.resolucion`, la acción y el 409 del avance. Los tipos de la SPA, regenerados; `verificar:ruptura` pasa. `FlujoControlador` tiene un esqueleto de las dos operaciones, con sus `@PreAuthorize`, que lanza hasta T010 y T012. `PermisosValidacionocsTest` cuenta 10 operaciones y verifica los dos permisos nuevos.
-- [ ] T002b [P] Roles V9, `backend/servicios/roles/src/main/resources/db/migration/roles/V9__resolucion_para_quien_aprueba.sql`: «`RESOLUCION_OCS:LECTURA`, `TODO`» para VICERRECTOR, RECTOR y MIEMBRO_OCS (análisis S1). Antes, ver fallar en `backend/servicios/roles/src/integrationTest/.../MatrizD16IntegrationTest.java` los permisos de esos tres roles.
+- [X] T002b [P] Roles V9, `backend/servicios/roles/src/main/resources/db/migration/roles/V9__resolucion_para_quien_aprueba.sql`: «`RESOLUCION_OCS:LECTURA`, `TODO`» para VICERRECTOR, RECTOR y MIEMBRO_OCS (análisis S1). Antes, ver fallar en `backend/servicios/roles/src/integrationTest/.../MatrizD16IntegrationTest.java` los permisos de esos tres roles.
+
+  **Resultado (2026-11-15):** `MatrizD16IntegrationTest` se vio fallar con los tres permisos nuevos y pasa con V9. Las pruebas de Roles siguen en verde.
 - [ ] T003 [P] Los ocho códigos en `contratos/comun/errores.md` (8 columnas, `contracts/validacionocs.md`) y en `OCS/main/.../adaptadores/entrada/ErroresValidacionocs.java`. Antes, ver fallar `ErroresValidacionocsTest`.
 - [ ] T004 [P] La migración `OCS/main/resources/db/migration/validacionocs/V7__resolucion_ocs.sql`, según `data-model.md`. Antes, ver fallar en `OCS/integrationTest/.../ValidacionocsEsquemaIntegrationTest.java`:
   - inserta una resolución con su transición;
