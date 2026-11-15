@@ -65,6 +65,20 @@ public interface Distributivo {
     VersionCongeladaEnAprobacion congelar(String periodo);
 
     /**
+     * Le ordena a Generación anular la versión rechazada en firma y crear la siguiente, en su
+     * propia transacción (F12-H04, D-106). Es idempotente: si ya la creó, devuelve la misma.
+     *
+     * @param periodo el código del periodo
+     * @param anulada la versión rechazada en firma
+     * @param momento cuándo se rechazó
+     * @return el número y el hash de la versión nueva; vacío si Generación no tiene esa versión
+     *     congelada ni la siguiente ya creada
+     * @throws SinDistributivo si el periodo no tiene distributivo
+     */
+    Optional<VersionNuevaEnAprobacion> crearVersionNueva(
+            String periodo, int anulada, java.time.Instant momento);
+
+    /**
      * El distributivo de un periodo.
      *
      * @param version el número de la versión vigente
@@ -94,4 +108,12 @@ public interface Distributivo {
      * @param hash el SHA-256 del distributivo, el de todos sus parciales
      */
     record VersionCongeladaEnAprobacion(int version, String hash) {}
+
+    /**
+     * La versión nueva que creó Generación (F12-H04).
+     *
+     * @param version su número
+     * @param hash el hash del distributivo de esa versión
+     */
+    record VersionNuevaEnAprobacion(int version, String hash) {}
 }

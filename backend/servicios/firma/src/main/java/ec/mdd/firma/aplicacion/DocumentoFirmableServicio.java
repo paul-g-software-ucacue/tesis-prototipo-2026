@@ -7,6 +7,7 @@ import ec.mdd.firma.dominio.EtapaNoAdmiteGeneracion;
 import ec.mdd.firma.dominio.Firmante;
 import ec.mdd.firma.dominio.FirmanteEsperado;
 import ec.mdd.firma.dominio.FirmanteSinNombre;
+import ec.mdd.firma.dominio.FirmasDelDocumento;
 import ec.mdd.firma.dominio.GeneracionDeDocumento;
 import ec.mdd.firma.dominio.GeneracionFallida;
 import ec.mdd.firma.dominio.PasoDeFirma;
@@ -163,23 +164,33 @@ public final class DocumentoFirmableServicio
         boolean puedeGenerar =
                 generacion.estado() == EstadoDeGeneracion.FALLIDA
                         && generacion.puedeReintentar(quien.roles());
+        Optional<DocumentoFirmable> documento =
+                generacion.estado() == EstadoDeGeneracion.GENERADA
+                        ? documentos.documento(periodo, generacion.version())
+                        : Optional.empty();
         return new EstadoDelDocumento(
                 periodo,
                 Optional.of(generacion.version()),
                 estado,
                 generacion.motivo(),
-                generacion.estado() == EstadoDeGeneracion.GENERADA
-                        ? documentos
-                                .documento(periodo, generacion.version())
-                                .map(
-                                        una ->
-                                                new EstadoDelDocumento.Documento(
-                                                        una.sha256Original(),
-                                                        una.hashContenido(),
-                                                        una.generadoPor(),
-                                                        una.generadoEn()))
-                        : Optional.empty(),
-                puedeGenerar ? List.of(EstadoDelDocumento.GENERAR) : List.of());
+                documento.map(
+                        una ->
+                                new EstadoDelDocumento.Documento(
+                                        una.sha256Original(),
+                                        una.hashContenido(),
+                                        una.generadoPor(),
+                                        una.generadoEn())),
+                puedeGenerar ? List.of(EstadoDelDocumento.GENERAR) : List.of(),
+                // F12-H04: la anulación de las firmas del documento, si la hubo (D-106).
+                documento
+                        .flatMap(una -> documentos.firmas(una.id()))
+                        .flatMap(FirmasDelDocumento::anulacion)
+                        .map(
+                                anulacion ->
+                                        new EstadoDelDocumento.Anulacion(
+                                                anulacion.motivo(),
+                                                anulacion.firmasAnuladas(),
+                                                anulacion.anuladaEn())));
     }
 
     // FR-012: el rol de la etapa que llegó con la solicitud, sobre la última versión que pidió

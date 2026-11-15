@@ -2,6 +2,7 @@ package ec.mdd.firma.infraestructura;
 
 import ec.mdd.firma.adaptadores.salida.AlmacenDeDocumentosEnDisco;
 import ec.mdd.firma.adaptadores.salida.AvisoDeCadenaCompletaSpring;
+import ec.mdd.firma.adaptadores.salida.AvisoDeFirmasAnuladasSpring;
 import ec.mdd.firma.adaptadores.salida.AvisoDeRechazoEnFirmaSpring;
 import ec.mdd.firma.adaptadores.salida.ContenidoDesdeGeneracion;
 import ec.mdd.firma.adaptadores.salida.FirmantesConNombreLocal;
@@ -13,6 +14,7 @@ import ec.mdd.firma.adaptadores.salida.PublicadorDeCambios;
 import ec.mdd.firma.adaptadores.salida.RepositorioDocumentosJdbc;
 import ec.mdd.firma.adaptadores.salida.TransaccionSpring;
 import ec.mdd.firma.adaptadores.salida.ValidadorPades;
+import ec.mdd.firma.aplicacion.AnularFirmasServicio;
 import ec.mdd.firma.aplicacion.DocumentoFirmableServicio;
 import ec.mdd.firma.aplicacion.FirmasPendientesServicio;
 import ec.mdd.firma.aplicacion.RechazarEnFirmaServicio;
@@ -207,5 +209,19 @@ public class ConfiguracionFirma {
     @Bean
     public AvisoDeRechazoEnFirma avisoDeRechazoEnFirma(ApplicationEventPublisher eventos) {
         return new AvisoDeRechazoEnFirmaSpring(eventos);
+    }
+
+    /** La anulación de las firmas, por orden de Aprobación (F12-H04, D-106). */
+    @Bean
+    public AnularFirmasServicio anularFirmas(
+            RepositorioDocumentos repositorioDocumentos,
+            RegistroDeCambios registroDeCambiosFirma,
+            Transaccion transaccionFirma,
+            ApplicationEventPublisher eventos) {
+        return new AnularFirmasServicio(
+                repositorioDocumentos,
+                registroDeCambiosFirma,
+                transaccionFirma,
+                new AvisoDeFirmasAnuladasSpring(eventos));
     }
 }

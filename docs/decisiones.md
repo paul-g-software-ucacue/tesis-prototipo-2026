@@ -104,6 +104,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-103 | 2026-11-14 | La validación del PDF firmado: cuatro comprobaciones en orden, la firma es la validación aceptada y la lista de confianza va en la imagen como configuración de demostración; constitución 2.2.1 | Aceptada | RF-39, D-23, D-46, ADR-017, ADR-007, D-101, D-102 |
 | D-104 | 2026-11-14 | El firmante se reconoce por el CN igual al nombre impreso, que se guarda al generar; la última firma avisa a Aprobación, que pasa a EN_OCS; la CA de prueba con los nombres de los datos de prueba | Aceptada | RF-38, RF-39, RF-58, D-23, D-102, D-103, ADR-017, MD-05 |
 | D-105 | 2026-11-15 | El rechazo en firma lo registra Firma y cierra el documento; Aprobación vuelve a la etapa activa anterior como el sistema, y aprobar otra vez espera la versión nueva | Aceptada | RF-36, RF-59, D-98, D-101, D-102, D-103, D-104, ADR-018, MD-05 |
+| D-106 | 2026-11-15 | El rechazo en firma crea la versión nueva y anula las firmas: Aprobación ordena a Generación y, después de confirmar, a Firma; la transición VERSION_NUEVA levanta el bloqueo de D-105 | Aceptada | RF-34, RF-59, MD-01, MD-04, MD-05, D-83, D-95, D-99, D-100, D-101, D-105, ADR-018 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -2159,3 +2160,49 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 - La notificación del rechazo es de F16-H01.
 
 **Documentos que hay que poner al día.** Ninguno: el glosario ya tiene «Rechazo en firma», `RechazoEnFirma` (§6), `rechazarEnFirma()` (§5) y `Observacion`, con los mismos nombres. Dice que vuelve «a EN_REVISION_VRA»; con la configuración por defecto es así.
+
+## D-106. El rechazo en firma crea la versión nueva y anula las firmas; Aprobación lo ordena y la transición VERSION_NUEVA levanta el bloqueo
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-15 · **Decidido por:** autor de la tesis
+- **Origen:** F12-H04 (#59); aclaraciones de `specs/051-version-nueva/spec.md` y su plan (`research.md` §1 a §9)
+- **Relacionadas:** RF-34, RF-59, MD-01, MD-04, MD-05, D-83, D-95, D-99, D-100, D-101, D-105, ADR-018; diseño de firmas §2 y §7
+
+**Decisión.**
+- **Al recibir el rechazo en firma**, Aprobación hace tres pasos, como la aprobación de D-100:
+  1. comprueba que el proceso sigue en CONGELADO_EN_FIRMA con esa versión; si no, no hace nada;
+  2. ordena a Generación crear la versión nueva, en la transacción de Generación;
+  3. con el proceso bloqueado, registra `RECHAZO_EN_FIRMA` y `VERSION_NUEVA` y guarda el aviso para Firma.
+
+  Un reenvío repite el paso 2, que es idempotente, y completa el 3.
+- **Generación** pasa la versión congelada a ANULADA y crea la siguiente, EDITABLE, con el motivo `RECHAZO_EN_FIRMA`, `sistema` y el momento (V8).
+  - Copia, con la versión bloqueada y en una transacción, los parciales con su estado, las propuestas, las actividades, las justificaciones, las consolidaciones y los informes.
+  - La consolidación conserva su momento, así que no queda desactualizada.
+  - El informe comparte su archivo: el índice único de la clave pasa a `(version_id, clave)`.
+  - Como D-95, Generación no anota el cambio en su registro.
+- **Firma anula** por orden de Aprobación, con un oyente después de confirmar, como la preparación del documento de D-101.
+  - Una fila en `firma.anulacion_de_firmas` (V7), solo de inserción, con el motivo y cuántas firmas.
+  - Las firmas y sus archivos no cambian. Con la anulación, nadie está en turno.
+  - Publica `FirmasAnuladas`; todavía no lo escucha nadie (F16).
+- **La transición `VERSION_NUEVA`** (de la etapa a la que volvió a la misma, por `sistema`) deja atrás el rechazo, así que la regla de D-105 deja aprobar la versión nueva sin cambiar. Aprobarla congela la versión nueva y genera su documento con la cadena desde F1.
+- **El estado del flujo** muestra el rechazo, la versión anulada y la nueva, desde el rechazo hasta la siguiente congelación.
+- **Ningún código nuevo** en el catálogo: crear y anular no son operaciones de la API.
+
+**Por qué.**
+- MD-04 y MD-05: Aprobación ordena a Distributivo y a Firma; la dependencia sigue de Aprobación hacia los dos, y cada servicio guarda en su esquema y su transacción.
+- La versión es el agregado de MD-01; copiarla entera con la versión bloqueada (D-83) evita estados intermedios. En EN_REVISION_VRA nadie la edita (D-99).
+- Una transición deja en el flujo y en la bitácora quién y cuándo creó la versión (RF-34).
+
+**Alternativas.**
+- Una sola transacción para Generación y Aprobación: ataría los dos esquemas; D-100 ya eligió no hacerlo.
+- Que Firma anule sola al registrar el rechazo: el autor eligió que lo ordene Aprobación, que sirve igual para una devolución desde EN_OCS.
+- Marcar cada firma anulada en `validacion_firma`: exigiría `update` en una tabla solo de inserción.
+- Copiar los bytes del informe a un archivo nuevo: duplica el archivo y escribe fuera de la transacción.
+- Quitar el bloqueo de D-105: un rechazo sin versión nueva, por un fallo a medias, dejaría aprobar la versión anulada.
+
+**Consecuencias.**
+- El 409 `VALIDACIONOCS_REQUIERE_VERSION_NUEVA` se conserva, pero ya no se alcanza en el flujo normal.
+- La rama «sigue congelada» del aviso de la versión congelada, de F14-H04, se quita: ya no se alcanza.
+- `probar_rechazo_en_firma.sh` aprueba la versión nueva en lugar de esperar el 409.
+- Una tabla nueva que dependa de la versión tendrá que copiarse al crear la versión nueva.
+
+**Documentos que hay que poner al día.** El glosario (`sdd/modelo_dominio.md`, `VersionDistributivo`): sus motivos de una versión nueva suman «rechazo en firma», hecho el 2026-11-15 en el `.md`; falta el `.docx`. Los demás nombres ya estaban: `crearVersionNueva()`, `anularFirmas()`, `FirmasAnuladas` y ANULADA.

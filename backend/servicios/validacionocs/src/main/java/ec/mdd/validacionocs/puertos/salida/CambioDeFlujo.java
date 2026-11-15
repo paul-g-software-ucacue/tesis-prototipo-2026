@@ -116,6 +116,12 @@ public record CambioDeFlujo(
          * activa anterior, por el sistema, con la etapa antes y después, y la versión, el hash, el
          * paso, su rol, quién rechazó y la observación en el detalle.
          */
-        DISTRIBUTIVO_RECHAZADO_EN_FIRMA
+        DISTRIBUTIVO_RECHAZADO_EN_FIRMA,
+        /**
+         * La versión nueva tras un rechazo en firma (F12-H04, D-106): por el sistema, con la
+         * versión anulada antes y la nueva después, y la versión nueva, su hash, la anulada y el
+         * motivo en el detalle.
+         */
+        DISTRIBUTIVO_VERSION_NUEVA
     }
 }

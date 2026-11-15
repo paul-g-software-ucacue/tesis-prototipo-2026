@@ -62,6 +62,24 @@ public interface ParcialesDelDistributivo {
     VersionCongeladaEnGeneracion congelarVersion(String periodo);
 
     /**
+     * Anula la versión congelada y crea la siguiente, EDITABLE, con todo su contenido, por orden de
+     * Aprobación (F12-H04, MD-04, D-106). Bloquea la versión vigente durante su transacción. Es
+     * idempotente: si la vigente ya es la siguiente y la del aviso quedó anulada, la devuelve sin
+     * crear otra, así que un reintento de Aprobación completa lo que quedó a mitad. No registra en
+     * el registro de cambios de Generación: la transición la registra Aprobación (D-95).
+     *
+     * @param periodo el código del periodo
+     * @param anulada la versión rechazada, que tiene que ser la vigente congelada
+     * @param motivo por qué se crea la nueva
+     * @param momento cuándo
+     * @return el número y el hash de la versión nueva; vacío si la vigente no es la del aviso
+     *     congelada ni la siguiente ya creada
+     * @throws DistributivoNoEncontrado si el periodo no tiene distributivo
+     */
+    java.util.Optional<VersionNuevaEnGeneracion> crearVersionNueva(
+            String periodo, int anulada, MotivoDeVersion motivo, java.time.Instant momento);
+
+    /**
      * El hash del distributivo: el de los hashes de todos sus parciales (research §4).
      *
      * @param periodo el código del periodo

@@ -39,6 +39,9 @@ public interface RegistroDeCambios {
         /** El firmante en turno rechazó en firma, con su observación (F14-H04, D-105). */
         public static final String RECHAZO_EN_FIRMA = "RECHAZO_EN_FIRMA";
 
+        /** Las firmas de un documento anuladas por orden de Aprobación (F12-H04, D-106). */
+        public static final String FIRMAS_ANULADAS = "FIRMAS_ANULADAS";
+
         /** Exige todo y copia los mapas. */
         public CambioDeFirma {
             Objects.requireNonNull(momento, "momento");

@@ -23,9 +23,19 @@ const MOMENTO = new Intl.DateTimeFormat('es-EC', {
 /**
  * @param periodo el periodo, con el distributivo en CONGELADO_EN_FIRMA
  * @param intervalo cada cuánto vuelve a consultar mientras se genera, en milisegundos
+ * @param version la versión congelada; el documento de otra versión todavía no es el suyo
+ *   (F12-H04), así que se muestra como generándose
  */
-export function DocumentoFirmable({ periodo, intervalo }: { periodo: string; intervalo?: number }) {
-  const documento = useDocumentoFirmable(periodo, intervalo);
+export function DocumentoFirmable({
+  periodo,
+  intervalo,
+  version,
+}: {
+  periodo: string;
+  intervalo?: number;
+  version?: number | undefined;
+}) {
+  const documento = useDocumentoFirmable(periodo, intervalo, version);
   const consultas = useQueryClient();
   const [aviso, setAviso] = useState<MensajeDeError | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -36,7 +46,11 @@ export function DocumentoFirmable({ periodo, intervalo }: { periodo: string; int
   if (!documento.data) {
     return null;
   }
-  const { estado, motivo, acciones } = documento.data;
+  // F12-H04: el documento de otra versión, el de la anulada, todavía no es el de esta.
+  const deOtraVersion = version !== undefined && documento.data.version !== version;
+  const { motivo } = documento.data;
+  const estado = deOtraVersion ? 'SIN_GENERAR' : documento.data.estado;
+  const acciones = deOtraVersion ? [] : documento.data.acciones;
 
   const generar = async () => {
     setAviso(null);

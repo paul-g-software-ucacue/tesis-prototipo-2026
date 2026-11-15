@@ -186,14 +186,19 @@ class FlujoControlador implements AprobacionApi {
                                                 una.momento().atOffset(ZoneOffset.UTC))));
         flujo.rechazoEnFirma()
                 .ifPresent(
-                        una ->
-                                respuesta.rechazoEnFirma(
-                                        new RechazoEnFirmaDelFlujo(
-                                                una.orden(),
-                                                una.rol(),
-                                                una.por(),
-                                                una.en().atOffset(ZoneOffset.UTC),
-                                                una.observacion())));
+                        una -> {
+                            RechazoEnFirmaDelFlujo rechazo =
+                                    new RechazoEnFirmaDelFlujo(
+                                            una.orden(),
+                                            una.rol(),
+                                            una.por(),
+                                            una.en().atOffset(ZoneOffset.UTC),
+                                            una.observacion(),
+                                            una.versionAnulada());
+                            // F12-H04: la versión nueva, si ya existe.
+                            una.versionNueva().ifPresent(rechazo::versionNueva);
+                            respuesta.rechazoEnFirma(rechazo);
+                        });
         return respuesta;
     }
 

@@ -15,5 +15,11 @@ public enum TipoDeTransicion {
      * El distributivo volvió de CONGELADO_EN_FIRMA a la etapa activa anterior porque el firmante en
      * turno rechazó en firma; la registra el sistema, con el rechazo (F14-H04, D-105).
      */
-    RECHAZO_EN_FIRMA
+    RECHAZO_EN_FIRMA,
+    /**
+     * Después de un rechazo en firma, Generación anuló la versión rechazada y creó la siguiente; el
+     * distributivo sigue en la etapa a la que volvió. La registra el sistema, con la versión nueva
+     * y su hash (F12-H04, D-106).
+     */
+    VERSION_NUEVA
 }

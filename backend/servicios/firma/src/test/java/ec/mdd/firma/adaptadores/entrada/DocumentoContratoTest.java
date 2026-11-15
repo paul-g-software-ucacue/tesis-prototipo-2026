@@ -78,6 +78,25 @@ class DocumentoContratoTest {
                 .contains("\"hashContenido\":\"" + HASH + "\"");
     }
 
+    // F12-H04: con las firmas anuladas, el estado lo dice con cuántas y cuándo.
+    @Test
+    void dadoUnDocumentoConLasFirmasAnuladas_cuandoSeConsulta_entoncesTraeLaAnulacion()
+            throws Exception {
+        MvcResult resultado = pedir(get(RUTA.formatted("ANULADO")), "CONSOLIDACION:LECTURA");
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        contrato.validar(resultado);
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains(
+                        "\"anulacion\":{\"motivo\":\"RECHAZO_EN_FIRMA\",\"firmasAnuladas\":2,"
+                                + "\"anuladaEn\":\"2026-11-15T16:06:00Z\"}");
+        assertThat(
+                        pedir(get(RUTA.formatted("LISTO")), "CONSOLIDACION:LECTURA")
+                                .getResponse()
+                                .getContentAsString())
+                .doesNotContain("anulacion");
+    }
+
     @Test
     void dadoElResponsable_cuandoGenera_entonces200Generado() throws Exception {
         MvcResult resultado = pedir(post(RUTA.formatted("LISTO")), "CONSOLIDACION:APROBACION");
@@ -185,6 +204,24 @@ class DocumentoContratoTest {
                                 Optional.of("Falta el nombre del Rector."),
                                 Optional.empty(),
                                 List.of("GENERAR"));
+                case "ANULADO" ->
+                        new EstadoDelDocumento(
+                                periodo,
+                                Optional.of(1),
+                                EstadoDelDocumento.Estado.GENERADO,
+                                Optional.empty(),
+                                Optional.of(
+                                        new EstadoDelDocumento.Documento(
+                                                SHA,
+                                                HASH,
+                                                "sistema",
+                                                Instant.parse("2026-11-11T15:00:05Z"))),
+                                List.of(),
+                                Optional.of(
+                                        new EstadoDelDocumento.Anulacion(
+                                                "RECHAZO_EN_FIRMA",
+                                                2,
+                                                Instant.parse("2026-11-15T16:06:00Z"))));
                 default ->
                         new EstadoDelDocumento(
                                 periodo,

@@ -533,6 +533,7 @@ describe('EstadoDelFlujo', () => {
         por: 'rectorado.demo',
         en: '2026-11-15T15:30:00Z',
         observacion: 'Falta la carga de un docente de Software.',
+        versionAnulada: 1,
       },
     });
 
@@ -551,6 +552,39 @@ describe('EstadoDelFlujo', () => {
       expect(
         screen.queryByRole('button', { name: 'Aprobar el contenido' }),
       ).not.toBeInTheDocument();
+    });
+
+    // F12-H04 (D-106): con la versión nueva, el aviso dice cuál se anuló y con cuál se sigue.
+    it('con la versión nueva, dice que la anterior quedó anulada y deja aprobar', async () => {
+      simulada.responder(
+        'GET',
+        RUTA,
+        json(200, {
+          ...rechazado,
+          version: 2,
+          acciones: ['APROBAR_CONTENIDO'],
+          congelacion: {
+            version: 1,
+            hash: 'b'.repeat(64),
+            quien: 'vicerrectorado.demo',
+            momento: '2026-11-15T15:00:00Z',
+          },
+          rechazoEnFirma: { ...rechazado.rechazoEnFirma, versionNueva: 2 },
+        }),
+      );
+      montar();
+
+      const aviso = await screen.findByRole('status', { name: 'Rechazado en firma' });
+      expect(
+        within(aviso).getByText(
+          'La versión 1 quedó anulada con sus firmas; el distributivo sigue con la versión 2.',
+        ),
+      ).toBeVisible();
+      expect(within(aviso).queryByText(/hace falta una versión nueva/)).not.toBeInTheDocument();
+      expect(within(aviso).getByText('Falta la carga de un docente de Software.')).toBeVisible();
+      expect(await screen.findByRole('button', { name: 'Aprobar el contenido' })).toBeVisible();
+      // La constancia es de la versión anulada: no se muestra con la versión 2 vigente.
+      expect(screen.queryByText(/congelada por/)).not.toBeInTheDocument();
     });
 
     it('sin rechazo no muestra el aviso', async () => {

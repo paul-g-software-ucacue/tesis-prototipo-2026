@@ -1,5 +1,6 @@
 package ec.mdd.firma.adaptadores.salida;
 
+import ec.mdd.firma.dominio.AnulacionDeFirmas;
 import ec.mdd.firma.dominio.CertificadoDeLaFirma;
 import ec.mdd.firma.dominio.Comprobacion;
 import ec.mdd.firma.dominio.DocumentoFirmable;
@@ -191,9 +192,11 @@ public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
         DocumentoFirmable documento = validadoContra.documento();
         if (resultado.aceptada()) {
             bloquear(documento.periodo(), documento.version()).orElseThrow();
-            // F14-H04: un documento rechazado entretanto está cerrado (D-105).
+            // F14-H04: un documento rechazado entretanto está cerrado (D-105); F12-H04, también
+            // uno con las firmas anuladas (D-106).
             if (!firmasRegistradas(documento).equals(validadoContra.firmas())
-                    || rechazoDe(documento).isPresent()) {
+                    || rechazoDe(documento).isPresent()
+                    || anulacionDe(documento).isPresent()) {
                 return false;
             }
         }
@@ -235,7 +238,8 @@ public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
         DocumentoFirmable documento = vistas.documento();
         bloquear(documento.periodo(), documento.version()).orElseThrow();
         if (!firmasRegistradas(documento).equals(vistas.firmas())
-                || rechazoDe(documento).isPresent()) {
+                || rechazoDe(documento).isPresent()
+                || anulacionDe(documento).isPresent()) {
             return false;
         }
         jdbc.sql(
@@ -251,6 +255,35 @@ public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
                 .param("observacion", rechazo.observacion())
                 .update();
         return true;
+    }
+
+    /**
+     * Registra la anulación de las firmas (F12-H04, D-106) con la generación bloqueada, como el
+     * rechazo y la firma aceptada: cuenta las firmas que quedaron después de cualquier subida que
+     * llegó antes. La clave de V7 garantiza además una sola anulación por documento.
+     */
+    @Override
+    public Optional<AnulacionDeFirmas> registrarAnulacion(
+            DocumentoFirmable documento, String motivo, String quien, Instant momento) {
+        bloquear(documento.periodo(), documento.version()).orElseThrow();
+        if (anulacionDe(documento).isPresent()) {
+            return Optional.empty();
+        }
+        AnulacionDeFirmas anulacion =
+                new AnulacionDeFirmas(motivo, firmasRegistradas(documento).size(), quien, momento);
+        jdbc.sql(
+                        "INSERT INTO firma.anulacion_de_firmas (periodo, version, tipo, motivo,"
+                                + " firmas_anuladas, anulada_por, anulada_en) VALUES (:periodo,"
+                                + " :version, :tipo, :motivo, :anuladas, :por, :en)")
+                .param("periodo", documento.periodo())
+                .param("version", documento.version())
+                .param("tipo", documento.tipo())
+                .param("motivo", anulacion.motivo())
+                .param("anuladas", anulacion.firmasAnuladas())
+                .param("por", anulacion.anuladaPor())
+                .param("en", Timestamp.from(anulacion.anuladaEn()))
+                .update();
+        return Optional.of(anulacion);
     }
 
     @Override
@@ -317,6 +350,25 @@ public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
                                         fila.getString("rechazado_por"),
                                         fila.getTimestamp("rechazado_en").toInstant(),
                                         fila.getString("observacion")))
+                .optional();
+    }
+
+    // La anulación de las firmas del documento, si la hubo (F12-H04).
+    private Optional<AnulacionDeFirmas> anulacionDe(DocumentoFirmable documento) {
+        return jdbc.sql(
+                        "SELECT motivo, firmas_anuladas, anulada_por, anulada_en"
+                                + " FROM firma.anulacion_de_firmas WHERE periodo = :periodo"
+                                + " AND version = :version AND tipo = :tipo")
+                .param("periodo", documento.periodo())
+                .param("version", documento.version())
+                .param("tipo", documento.tipo())
+                .query(
+                        (fila, numero) ->
+                                new AnulacionDeFirmas(
+                                        fila.getString("motivo"),
+                                        fila.getInt("firmas_anuladas"),
+                                        fila.getString("anulada_por"),
+                                        fila.getTimestamp("anulada_en").toInstant()))
                 .optional();
     }
 
@@ -399,7 +451,8 @@ public final class RepositorioDocumentosJdbc implements RepositorioDocumentos {
                 JSON.readValue(fila.getString("cadena"), CADENA),
                 firmantes,
                 firmasRegistradas(documento),
-                rechazoDe(documento));
+                rechazoDe(documento),
+                anulacionDe(documento));
     }
 
     private static DocumentoFirmable documento(ResultSet fila) throws SQLException {

@@ -23,9 +23,11 @@ import ec.mdd.generacion.puertos.entrada.ConsultarConsolidado;
 import ec.mdd.generacion.puertos.entrada.DistributivoNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.EstadoDelDistributivo;
 import ec.mdd.generacion.puertos.entrada.EstadoDelDistributivo.ParcialYSuEstado;
+import ec.mdd.generacion.puertos.entrada.MotivoDeVersion;
 import ec.mdd.generacion.puertos.entrada.ParcialMarcado;
 import ec.mdd.generacion.puertos.entrada.ParcialNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.VersionCongeladaEnGeneracion;
+import ec.mdd.generacion.puertos.entrada.VersionNuevaEnGeneracion;
 import ec.mdd.generacion.puertos.salida.RegistroDeCambios;
 import ec.mdd.generacion.puertos.salida.RepositorioDistributivos;
 import ec.mdd.generacion.puertos.salida.Transaccion;
@@ -231,6 +233,111 @@ class ParcialesDelDistributivoServicioTest {
         assertThatThrownBy(() -> servicio.congelarVersion(PERIODO))
                 .isInstanceOf(DistributivoNoEncontrado.class);
         verify(distributivos, never()).congelar(any());
+    }
+
+    // Crear la versión nueva tras un rechazo en firma (F12-H04, contracts/generacion.md, D-106).
+
+    private static final UUID NUEVA = UUID.fromString("7a2b3c4d-5e6f-4a1b-8c2d-3e4f5a6b7c8d");
+    private static final Instant RECHAZADA = Instant.parse("2026-11-15T16:06:00Z");
+
+    @Test
+    void dadaLaVersionCongeladaDelAviso_cuandoSeCreaLaNueva_entoncesLaAnulaYDevuelveLaSiguiente() {
+        VersionDistributivo congelada = conEstado(EstadoDeVersion.CONGELADA);
+        VersionDistributivo nueva = numero(NUEVA, 2, EstadoDeVersion.EDITABLE);
+        when(distributivos.bloquearVigente(PERIODO)).thenReturn(Optional.of(congelada));
+        when(distributivos.crearVersionNueva(
+                        VERSION, MotivoDeVersion.RECHAZO_EN_FIRMA, "sistema", RECHAZADA))
+                .thenReturn(NUEVA);
+        when(distributivos.vigenteDe(PERIODO)).thenReturn(Optional.of(nueva));
+
+        Optional<VersionNuevaEnGeneracion> creada =
+                servicio.crearVersionNueva(PERIODO, 1, MotivoDeVersion.RECHAZO_EN_FIRMA, RECHAZADA);
+
+        assertThat(creada).contains(new VersionNuevaEnGeneracion(2, hashDe(nueva)));
+        assertThat(transacciones).hasValue(1);
+        verify(registro, never()).registrar(any());
+    }
+
+    @Test
+    void dadaLaNuevaYaCreada_cuandoSePideOtraVez_entoncesLaDevuelveSinCrearOtra() {
+        VersionDistributivo nueva = numero(NUEVA, 2, EstadoDeVersion.EDITABLE);
+        when(distributivos.bloquearVigente(PERIODO)).thenReturn(Optional.of(nueva));
+        when(distributivos.estadoDe(PERIODO, 1)).thenReturn(Optional.of(EstadoDeVersion.ANULADA));
+
+        assertThat(
+                        servicio.crearVersionNueva(
+                                PERIODO, 1, MotivoDeVersion.RECHAZO_EN_FIRMA, RECHAZADA))
+                .contains(new VersionNuevaEnGeneracion(2, hashDe(nueva)));
+        verify(distributivos, never()).crearVersionNueva(any(), any(), any(), any());
+    }
+
+    @Test
+    void dadoUnSegundoRechazo_cuandoSeCreaLaNueva_entoncesAnulaLaDosYCreaLaTres() {
+        VersionDistributivo dos = numero(NUEVA, 2, EstadoDeVersion.CONGELADA);
+        UUID tres = UUID.fromString("8b3c4d5e-6f7a-4b2c-9d3e-4f5a6b7c8d9e");
+        VersionDistributivo nueva = numero(tres, 3, EstadoDeVersion.EDITABLE);
+        when(distributivos.bloquearVigente(PERIODO)).thenReturn(Optional.of(dos));
+        when(distributivos.crearVersionNueva(
+                        NUEVA, MotivoDeVersion.RECHAZO_EN_FIRMA, "sistema", RECHAZADA))
+                .thenReturn(tres);
+        when(distributivos.vigenteDe(PERIODO)).thenReturn(Optional.of(nueva));
+
+        assertThat(
+                        servicio.crearVersionNueva(
+                                PERIODO, 2, MotivoDeVersion.RECHAZO_EN_FIRMA, RECHAZADA))
+                .contains(new VersionNuevaEnGeneracion(3, hashDe(nueva)));
+    }
+
+    @Test
+    void dadaOtraSituacion_cuandoSePideLaVersionNueva_entoncesNoHaceNada() {
+        when(distributivos.bloquearVigente(PERIODO))
+                .thenReturn(Optional.of(conEstado(EstadoDeVersion.EDITABLE)));
+        assertThat(
+                        servicio.crearVersionNueva(
+                                PERIODO, 1, MotivoDeVersion.RECHAZO_EN_FIRMA, RECHAZADA))
+                .as("la del aviso sin congelar")
+                .isEmpty();
+
+        when(distributivos.bloquearVigente(PERIODO))
+                .thenReturn(Optional.of(numero(NUEVA, 3, EstadoDeVersion.EDITABLE)));
+        assertThat(
+                        servicio.crearVersionNueva(
+                                PERIODO, 1, MotivoDeVersion.RECHAZO_EN_FIRMA, RECHAZADA))
+                .as("otra versión")
+                .isEmpty();
+
+        when(distributivos.bloquearVigente(PERIODO))
+                .thenReturn(Optional.of(numero(NUEVA, 2, EstadoDeVersion.EDITABLE)));
+        when(distributivos.estadoDe(PERIODO, 1)).thenReturn(Optional.of(EstadoDeVersion.CONGELADA));
+        assertThat(
+                        servicio.crearVersionNueva(
+                                PERIODO, 1, MotivoDeVersion.RECHAZO_EN_FIRMA, RECHAZADA))
+                .as("la siguiente sin la anterior anulada")
+                .isEmpty();
+        verify(distributivos, never()).crearVersionNueva(any(), any(), any(), any());
+    }
+
+    @Test
+    void
+            dadoUnPeriodoSinDistributivo_cuandoSePideLaVersionNueva_entoncesDistributivoNoEncontrado() {
+        when(distributivos.bloquearVigente(PERIODO)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(
+                        () ->
+                                servicio.crearVersionNueva(
+                                        PERIODO, 1, MotivoDeVersion.RECHAZO_EN_FIRMA, RECHAZADA))
+                .isInstanceOf(DistributivoNoEncontrado.class);
+    }
+
+    private static VersionDistributivo numero(UUID id, int numero, EstadoDeVersion estado) {
+        return new VersionDistributivo(
+                id,
+                numero,
+                estado,
+                List.of(
+                        new ParcialCarrera("DS", EstadoDelParcial.ENVIADO),
+                        new ParcialCarrera("TDS", EstadoDelParcial.ENVIADO)),
+                List.of());
     }
 
     private static VersionDistributivo conEstado(EstadoDeVersion estado) {

@@ -594,11 +594,11 @@ components:
           format: date-time
     RechazoEnFirmaDelFlujo:
       description: >-
-        El rechazo en firma por el que volvió el distributivo: presente mientras la última
-        transición es ese rechazo, hasta la versión nueva (F14-H04, D-105).
+        El rechazo en firma de la versión vigente (F14-H04, D-105): presente desde el rechazo
+        hasta la congelación siguiente, con la versión anulada y la nueva (F12-H04, D-106).
       type: object
       additionalProperties: false
-      required: [orden, rol, por, en, observacion]
+      required: [orden, rol, por, en, observacion, versionAnulada]
       properties:
         orden:
           description: El orden del paso que se rechazó.
@@ -617,6 +617,16 @@ components:
         observacion:
           type: string
           maxLength: 500
+        versionAnulada:
+          description: La versión que se rechazó en firma y quedó anulada.
+          type: integer
+          format: int32
+          minimum: 1
+        versionNueva:
+          description: La versión creada por el rechazo; falta si todavía no existe.
+          type: integer
+          format: int32
+          minimum: 2
     ParcialDelFlujo:
       type: object
       additionalProperties: false
@@ -686,7 +696,7 @@ components:
       properties:
         tipo:
           type: string
-          enum: [ENVIO_PARCIAL, PASO_DE_ETAPA, DEVOLUCION, RECHAZO_EN_FIRMA]
+          enum: [ENVIO_PARCIAL, PASO_DE_ETAPA, DEVOLUCION, RECHAZO_EN_FIRMA, VERSION_NUEVA]
         desde:
           $ref: '#/components/schemas/TipoDeEtapa'
         hacia:

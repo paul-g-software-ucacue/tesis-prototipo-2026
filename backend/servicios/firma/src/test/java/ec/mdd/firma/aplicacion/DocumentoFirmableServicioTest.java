@@ -509,6 +509,16 @@ class DocumentoFirmableServicioTest {
         }
 
         @Override
+        public Optional<ec.mdd.firma.dominio.AnulacionDeFirmas> registrarAnulacion(
+                DocumentoFirmable documento,
+                String motivo,
+                String quien,
+                java.time.Instant momento) {
+            // La generación del documento no anula firmas (F12-H04 lo prueba aparte).
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public List<ResultadoValidacion> validaciones(UUID documento) {
             throw new UnsupportedOperationException();
         }

@@ -409,6 +409,18 @@ public final class FlujoDelDistributivoServicio
                     Map.of("estado", transicion.desde().name()),
                     Map.of("estado", transicion.hacia().name()));
         }
+        // F12-H04: la versión anulada es la anterior a la nueva; hoy el único motivo es el rechazo.
+        if (transicion.tipo() == TipoDeTransicion.VERSION_NUEVA) {
+            detalle.put("versionAnulada", transicion.version() - 1);
+            detalle.put("motivo", "RECHAZO_EN_FIRMA");
+            return new CambioDeFlujo(
+                    transicion.momento(),
+                    transicion.quien(),
+                    CambioDeFlujo.Accion.DISTRIBUTIVO_VERSION_NUEVA,
+                    detalle,
+                    Map.of("version", transicion.version() - 1),
+                    Map.of("version", transicion.version()));
+        }
         return new CambioDeFlujo(
                 transicion.momento(),
                 transicion.quien(),
@@ -451,16 +463,37 @@ public final class FlujoDelDistributivoServicio
                                                 una.hash(),
                                                 una.quien(),
                                                 una.momento())),
-                proceso.rechazoPendiente()
-                        .flatMap(Transicion::rechazo)
-                        .map(
-                                rechazo ->
-                                        new FlujoDelDistributivo.RechazoEnFirma(
-                                                rechazo.orden(),
-                                                rechazo.rol(),
-                                                rechazo.rechazadoPor(),
-                                                rechazo.rechazadoEn(),
-                                                rechazo.observacion().texto())));
+                // F12-H04: el rechazo de la versión vigente, con la versión nueva que creó.
+                proceso.rechazoVigente()
+                        .flatMap(
+                                transicion ->
+                                        transicion
+                                                .rechazo()
+                                                .map(
+                                                        rechazo ->
+                                                                new FlujoDelDistributivo
+                                                                        .RechazoEnFirma(
+                                                                        rechazo.orden(),
+                                                                        rechazo.rol(),
+                                                                        rechazo.rechazadoPor(),
+                                                                        rechazo.rechazadoEn(),
+                                                                        rechazo.observacion()
+                                                                                .texto(),
+                                                                        transicion.version(),
+                                                                        versionNueva(
+                                                                                proceso,
+                                                                                transicion)))));
+    }
+
+    // F12-H04: la versión nueva registrada justo después del rechazo, si ya llegó.
+    private static java.util.OptionalInt versionNueva(
+            ProcesoAprobacion proceso, Transicion rechazo) {
+        List<Transicion> transiciones = proceso.transiciones();
+        int despues = transiciones.lastIndexOf(rechazo) + 1;
+        return despues < transiciones.size()
+                        && transiciones.get(despues).tipo() == TipoDeTransicion.VERSION_NUEVA
+                ? java.util.OptionalInt.of(transiciones.get(despues).version())
+                : java.util.OptionalInt.empty();
     }
 
     // Enviado: con su transición registrada. Pendiente de confirmar: Generación lo marcó y la

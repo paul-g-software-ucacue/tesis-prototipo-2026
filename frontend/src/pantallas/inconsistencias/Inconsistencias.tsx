@@ -27,7 +27,6 @@ import {
 import { tieneAlguno, type PermisoRequerido } from '../../sesion/permisos';
 import { useSesionActual } from '../../sesion/useSesionActual';
 import { useCarreras } from '../carreras/consultas';
-import { AvisoDeVersionCongelada } from '../comun/AvisoDeVersionCongelada';
 import { ayuda, detalleDe, SELECCION } from '../comun/formulario';
 import { Avisos, Marco } from '../comun/Formulario';
 import { useEnvio } from '../comun/useEnvio';
@@ -313,11 +312,13 @@ export function Inconsistencias() {
           Este periodo todavía no tiene distributivo: no hay nada que evaluar.
         </Alert>
       )}
-      {datos?.creado && periodo && (
+      {datos?.creado && (
         <>
           {/* F13-H01: el aviso de la versión congelada reemplaza al de la revisión (#215). */}
           {datos.versionCongelada ? (
-            <AvisoDeVersionCongelada periodo={periodo} version={datos.version} />
+            <Alert severity="info" role="status" sx={{ my: 2 }}>
+              {`La versión ${String(datos.version ?? '')} está congelada para la firma: ya no cambia.`}
+            </Alert>
           ) : (
             datos.enRevision && (
               <Alert severity="info" role="status" sx={{ my: 2 }}>

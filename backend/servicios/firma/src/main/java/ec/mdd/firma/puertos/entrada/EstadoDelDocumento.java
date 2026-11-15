@@ -22,7 +22,8 @@ public record EstadoDelDocumento(
         Estado estado,
         Optional<String> motivo,
         Optional<Documento> documento,
-        List<String> acciones) {
+        List<String> acciones,
+        Optional<Anulacion> anulacion) {
 
     /** La acción de reintentar. */
     public static final String GENERAR = "GENERAR";
@@ -31,8 +32,29 @@ public record EstadoDelDocumento(
     public EstadoDelDocumento {
         Objects.requireNonNull(periodo, "periodo");
         Objects.requireNonNull(estado, "estado");
+        Objects.requireNonNull(anulacion, "anulacion");
         acciones = List.copyOf(acciones);
     }
+
+    /** Un estado sin anulación de las firmas. */
+    public EstadoDelDocumento(
+            String periodo,
+            Optional<Integer> version,
+            Estado estado,
+            Optional<String> motivo,
+            Optional<Documento> documento,
+            List<String> acciones) {
+        this(periodo, version, estado, motivo, documento, acciones, Optional.empty());
+    }
+
+    /**
+     * Las firmas del documento quedaron anuladas por orden de Aprobación (F12-H04, D-106).
+     *
+     * @param motivo por qué
+     * @param firmasAnuladas cuántas firmas aceptadas tenía
+     * @param anuladaEn cuándo
+     */
+    public record Anulacion(String motivo, int firmasAnuladas, Instant anuladaEn) {}
 
     /** Los estados que ve la pantalla. */
     public enum Estado {

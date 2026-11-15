@@ -73,6 +73,17 @@ class DocumentoControlador implements DocumentoFirmableApi {
                                                 documento.hashContenido(),
                                                 documento.generadoPor(),
                                                 documento.generadoEn().atOffset(ZoneOffset.UTC))));
+        // F12-H04, D-106.
+        estado.anulacion()
+                .ifPresent(
+                        anulacion ->
+                                respuesta.anulacion(
+                                        new ec.mdd.firma.adaptadores.entrada.api.AnulacionDeFirmas(
+                                                ec.mdd.firma.adaptadores.entrada.api
+                                                        .AnulacionDeFirmas.MotivoEnum.fromValue(
+                                                        anulacion.motivo()),
+                                                anulacion.firmasAnuladas(),
+                                                anulacion.anuladaEn().atOffset(ZoneOffset.UTC))));
         return respuesta;
     }
 }

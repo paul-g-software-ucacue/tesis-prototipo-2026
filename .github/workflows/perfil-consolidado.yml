@@ -95,7 +95,8 @@ jobs:
         shell: bash
         run: deploy/probar_documento_firmable.sh
 
-      # F14-H04: el rechazo en firma cierra el documento y devuelve el distributivo a revisión (D-105).
+      # F14-H04: el rechazo en firma cierra el documento y devuelve el distributivo a revisión (D-105);
+      # F12-H04: con la versión nueva y las firmas anuladas, y la versión 2 vuelve a firma (D-106).
       - name: Rechazo en firma
         shell: bash
         run: deploy/probar_rechazo_en_firma.sh

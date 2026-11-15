@@ -1,5 +1,6 @@
 package ec.mdd.validacionocs.adaptadores.salida;
 
+import ec.mdd.validacionocs.puertos.salida.AvisoDeAnulacion;
 import ec.mdd.validacionocs.puertos.salida.AvisoDeFirma;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -8,7 +9,7 @@ import org.springframework.context.ApplicationEventPublisher;
  * (F13-H02, D-101). El registro de Spring Modulith lo guarda en la transacción en curso (ADR-018):
  * si la transacción del paso no confirma, no sale.
  */
-public final class AvisoDeFirmaSpring implements AvisoDeFirma {
+public final class AvisoDeFirmaSpring implements AvisoDeFirma, AvisoDeAnulacion {
 
     private final ApplicationEventPublisher eventos;
 
@@ -19,6 +20,11 @@ public final class AvisoDeFirmaSpring implements AvisoDeFirma {
 
     @Override
     public void avisar(DistributivoEnFirma aviso) {
+        eventos.publishEvent(aviso);
+    }
+
+    @Override
+    public void avisar(FirmasPorAnular aviso) {
         eventos.publishEvent(aviso);
     }
 }

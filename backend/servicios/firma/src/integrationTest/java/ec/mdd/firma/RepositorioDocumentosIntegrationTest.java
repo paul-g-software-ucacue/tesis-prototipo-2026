@@ -447,6 +447,109 @@ class RepositorioDocumentosIntegrationTest {
         assertThat(despues.firmas().size() + (despues.rechazo().isPresent() ? 1 : 0)).isEqualTo(1);
     }
 
+    // La anulación de las firmas (F12-H04, D-106).
+
+    private static final java.time.Instant ANULADA = MOMENTO.plusSeconds(120);
+
+    @Test
+    void dadoUnDocumentoConF1_cuandoSeAnulanSusFirmas_entoncesQuedaCerradoYLasFirmasSeConservan() {
+        FirmasDelDocumento antes = generado(periodo());
+        transaccion.ejecutar(() -> repositorio.registrarValidacion(aceptada(antes, 1, "c"), antes));
+        FirmasDelDocumento conF1 = repositorio.firmas(antes.documento().id()).orElseThrow();
+
+        Optional<ec.mdd.firma.dominio.AnulacionDeFirmas> anulacion =
+                transaccion.ejecutar(
+                        () ->
+                                repositorio.registrarAnulacion(
+                                        antes.documento(), "RECHAZO_EN_FIRMA", "sistema", ANULADA));
+
+        assertThat(anulacion)
+                .contains(
+                        new ec.mdd.firma.dominio.AnulacionDeFirmas(
+                                "RECHAZO_EN_FIRMA", 1, "sistema", ANULADA));
+        FirmasDelDocumento despues = repositorio.firmas(antes.documento().id()).orElseThrow();
+        assertThat(despues.anulacion()).isEqualTo(anulacion);
+        assertThat(despues.pasoEnTurno()).isEmpty();
+        assertThat(despues.firmas()).isEqualTo(conF1.firmas());
+        assertThat(repositorio.validaciones(antes.documento().id())).hasSize(1);
+        // Idempotente: otra vez, nada.
+        assertThat(
+                        transaccion.ejecutar(
+                                () ->
+                                        repositorio.registrarAnulacion(
+                                                antes.documento(),
+                                                "RECHAZO_EN_FIRMA",
+                                                "sistema",
+                                                ANULADA.plusSeconds(5))))
+                .isEmpty();
+    }
+
+    @Test
+    void dadasLasFirmasAnuladas_cuandoLleganUnaFirmaOUnRechazo_entoncesNoSeRegistran() {
+        FirmasDelDocumento antes = generado(periodo());
+        transaccion.ejecutar(
+                () ->
+                        repositorio.registrarAnulacion(
+                                antes.documento(), "RECHAZO_EN_FIRMA", "sistema", ANULADA));
+
+        assertThat(
+                        transaccion.ejecutar(
+                                () ->
+                                        repositorio.registrarValidacion(
+                                                aceptada(antes, 1, "c"), antes)))
+                .isFalse();
+        assertThat(transaccion.ejecutar(() -> repositorio.registrarRechazo(rechazo(1), antes)))
+                .isFalse();
+        FirmasDelDocumento despues = repositorio.firmas(antes.documento().id()).orElseThrow();
+        assertThat(despues.firmas()).isEmpty();
+        assertThat(despues.rechazo()).isEmpty();
+    }
+
+    @Test
+    void
+            dadasUnaAnulacionYUnaFirmaALaVez_cuandoSeRegistran_entoncesLaAnulacionCuentaLasQueQuedaron()
+                    throws Exception {
+        FirmasDelDocumento antes = generado(periodo());
+        CountDownLatch salida = new CountDownLatch(1);
+        ExecutorService hilos = Executors.newFixedThreadPool(2);
+        try {
+            List<Future<?>> tareas = new ArrayList<>();
+            tareas.add(
+                    hilos.submit(
+                            () -> {
+                                salida.await(10, TimeUnit.SECONDS);
+                                return transaccion.ejecutar(
+                                        () ->
+                                                repositorio.registrarAnulacion(
+                                                        antes.documento(),
+                                                        "RECHAZO_EN_FIRMA",
+                                                        "sistema",
+                                                        ANULADA));
+                            }));
+            tareas.add(
+                    hilos.submit(
+                            () -> {
+                                salida.await(10, TimeUnit.SECONDS);
+                                return transaccion.ejecutar(
+                                        () ->
+                                                repositorio.registrarValidacion(
+                                                        aceptada(antes, 1, "c"), antes));
+                            }));
+            salida.countDown();
+            for (Future<?> tarea : tareas) {
+                tarea.get(30, TimeUnit.SECONDS);
+            }
+        } finally {
+            hilos.shutdownNow();
+        }
+
+        FirmasDelDocumento despues = repositorio.firmas(antes.documento().id()).orElseThrow();
+        assertThat(despues.anulacion())
+                .get()
+                .extracting(ec.mdd.firma.dominio.AnulacionDeFirmas::firmasAnuladas)
+                .isEqualTo(despues.firmas().size());
+    }
+
     private FirmasDelDocumento generado(String periodo) {
         DocumentoFirmable documento = documento(periodo);
         GeneracionDeDocumento generada = nueva(periodo);

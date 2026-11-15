@@ -484,6 +484,8 @@ class FlujoContratoTest {
         assertThat(rechazo.get("por").asString()).isEqualTo("rectorado.demo");
         assertThat(rechazo.get("observacion").asString())
                 .isEqualTo("Falta la carga de un docente de Software.");
+        assertThat(rechazo.get("versionAnulada").asInt()).isEqualTo(1);
+        assertThat(rechazo.has("versionNueva")).isFalse();
         assertThat(cuerpo.get("acciones")).isEmpty();
         JsonNode transiciones = cuerpo.get("transiciones");
         JsonNode ultima = transiciones.get(transiciones.size() - 1);
@@ -504,6 +506,53 @@ class FlujoContratoTest {
         assertCodigo(resultado, 409, "VALIDACIONOCS_REQUIERE_VERSION_NUEVA");
         assertThat(etapa(PERIODO)).isEqualTo("EN_REVISION_VRA");
         contrato.validar(resultado);
+    }
+
+    // La versión nueva tras el rechazo (F12-H04, contracts/validacionocs.md).
+
+    @Test
+    void dadaLaVersionNueva_cuandoElVicerrectorConsulta_entoncesVeLasDosVersionesYPuedeAprobar()
+            throws Exception {
+        enRevision(PERIODO);
+        aprobar(PERIODO, "VICERRECTOR");
+        MEMORIA.rechazarEnFirma(PERIODO);
+        MEMORIA.versionNueva(PERIODO);
+
+        MvcResult resultado = pedir(get(FLUJO.formatted(PERIODO)), "VICERRECTOR", null);
+
+        JsonNode cuerpo = cuerpo(resultado);
+        assertThat(cuerpo.get("etapa").asString()).isEqualTo("EN_REVISION_VRA");
+        JsonNode rechazo = cuerpo.get("rechazoEnFirma");
+        assertThat(rechazo.get("versionAnulada").asInt()).isEqualTo(1);
+        assertThat(rechazo.get("versionNueva").asInt()).isEqualTo(2);
+        assertThat(rechazo.get("observacion").asString())
+                .isEqualTo("Falta la carga de un docente de Software.");
+        assertThat(cuerpo.get("acciones"))
+                .extracting(JsonNode::asString)
+                .containsExactly("APROBAR_CONTENIDO");
+        JsonNode transiciones = cuerpo.get("transiciones");
+        JsonNode ultima = transiciones.get(transiciones.size() - 1);
+        assertThat(ultima.get("tipo").asString()).isEqualTo("VERSION_NUEVA");
+        assertThat(ultima.get("version").asInt()).isEqualTo(2);
+        assertThat(ultima.get("quien").asString()).isEqualTo("sistema");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadaLaVersionNuevaAprobada_cuandoSeConsulta_entoncesYaNoTraeElRechazo() throws Exception {
+        enRevision(PERIODO);
+        aprobar(PERIODO, "VICERRECTOR");
+        MEMORIA.rechazarEnFirma(PERIODO);
+        MEMORIA.versionNueva(PERIODO);
+
+        MvcResult aprobada = aprobar(PERIODO, "VICERRECTOR");
+
+        assertThat(aprobada.getResponse().getStatus()).isEqualTo(200);
+        assertThat(etapa(PERIODO)).isEqualTo("CONGELADO_EN_FIRMA");
+        assertThat(
+                        cuerpo(pedir(get(FLUJO.formatted(PERIODO)), "VICERRECTOR", null))
+                                .has("rechazoEnFirma"))
+                .isFalse();
     }
 
     @Test
