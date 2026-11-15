@@ -328,7 +328,8 @@ paths:
         distributivo pasa a la siguiente etapa activa, por defecto EN_REVISION_VRA, en la misma
         respuesta, y la transición queda con la versión y el hash (D-95). Si la siguiente etapa activa
         es CONGELADO_EN_FIRMA, porque EN_REVISION_VRA está desactivada, Generación congela antes la
-        versión vigente (D-100).
+        versión vigente (D-100); si además el distributivo volvió por un rechazo en firma, no se
+        envía hasta que haya una versión nueva (D-105).
       x-mdd-permiso: CONSOLIDACION:APROBACION
       responses:
         '200':
@@ -356,8 +357,9 @@ paths:
             (VALIDACIONOCS_SIN_CONSOLIDAR), el consolidado está desactualizado
             (VALIDACIONOCS_CONSOLIDADO_DESACTUALIZADO), no tiene informe (VALIDACIONOCS_SIN_INFORME),
             quedan inconsistencias abiertas, con su número en detalles
-            (VALIDACIONOCS_INCONSISTENCIAS_ABIERTAS), o el periodo está cerrado
-            (VALIDACIONOCS_PERIODO_CERRADO).
+            (VALIDACIONOCS_INCONSISTENCIAS_ABIERTAS), enviar congelaría la versión de un rechazo en
+            firma sin versión nueva (VALIDACIONOCS_REQUIERE_VERSION_NUEVA), o el periodo está
+            cerrado (VALIDACIONOCS_PERIODO_CERRADO).
           content:
             application/json:
               schema:
@@ -455,7 +457,9 @@ paths:
         D-100). Sin cuerpo y sin comentario. Generación congela la versión vigente y el distributivo
         pasa a la siguiente etapa activa, CONGELADO_EN_FIRMA, en la misma respuesta. La transición
         queda con la versión y el hash, el mismo del envío a revisión (D-95, D-99). Si la versión ya
-        estaba congelada por un intento anterior cortado a mitad, volver a aprobar lo completa.
+        estaba congelada por un intento anterior cortado a mitad, volver a aprobar lo completa. Si el
+        distributivo volvió por un rechazo en firma, no se aprueba otra vez hasta que haya una
+        versión nueva (D-105).
       x-mdd-permiso: DISTRIBUTIVO:APROBACION
       responses:
         '200':
@@ -478,8 +482,10 @@ paths:
                 $ref: '../comun/errores.yaml#/components/schemas/Error'
         '409':
           description: >-
-            El distributivo no está en EN_REVISION_VRA (VALIDACIONOCS_ETAPA_NO_ADMITE_APROBACION) o el
-            periodo está cerrado (VALIDACIONOCS_PERIODO_CERRADO).
+            El distributivo no está en EN_REVISION_VRA (VALIDACIONOCS_ETAPA_NO_ADMITE_APROBACION),
+            volvió por un rechazo en firma y no hay versión nueva
+            (VALIDACIONOCS_REQUIERE_VERSION_NUEVA) o el periodo está cerrado
+            (VALIDACIONOCS_PERIODO_CERRADO).
           content:
             application/json:
               schema:
@@ -563,6 +569,8 @@ components:
             $ref: '#/components/schemas/TransicionDelFlujo'
         congelacion:
           $ref: '#/components/schemas/CongelacionDeLaVersion'
+        rechazoEnFirma:
+          $ref: '#/components/schemas/RechazoEnFirmaDelFlujo'
     CongelacionDeLaVersion:
       description: >-
         La congelación de la versión: el último paso hacia CONGELADO_EN_FIRMA. Presente desde que el
@@ -584,6 +592,31 @@ components:
         momento:
           type: string
           format: date-time
+    RechazoEnFirmaDelFlujo:
+      description: >-
+        El rechazo en firma por el que volvió el distributivo: presente mientras la última
+        transición es ese rechazo, hasta la versión nueva (F14-H04, D-105).
+      type: object
+      additionalProperties: false
+      required: [orden, rol, por, en, observacion]
+      properties:
+        orden:
+          description: El orden del paso que se rechazó.
+          type: integer
+          format: int32
+          minimum: 1
+        rol:
+          description: El rol del paso.
+          type: string
+        por:
+          description: Quién rechazó.
+          type: string
+        en:
+          type: string
+          format: date-time
+        observacion:
+          type: string
+          maxLength: 500
     ParcialDelFlujo:
       type: object
       additionalProperties: false
@@ -653,7 +686,7 @@ components:
       properties:
         tipo:
           type: string
-          enum: [ENVIO_PARCIAL, PASO_DE_ETAPA, DEVOLUCION]
+          enum: [ENVIO_PARCIAL, PASO_DE_ETAPA, DEVOLUCION, RECHAZO_EN_FIRMA]
         desde:
           $ref: '#/components/schemas/TipoDeEtapa'
         hacia:

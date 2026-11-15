@@ -55,10 +55,12 @@ description: "Tareas de F14-H04: rechazar en firma con una observación"
 
 **⚠️ CRITICAL**: ninguna historia empieza antes de T007.
 
-- [ ] T002 [P] Los contratos, según `contracts/firma.md` y `contracts/validacionocs.md`:
+- [X] T002 [P] Los contratos, según `contracts/firma.md` y `contracts/validacionocs.md`:
   - en `contratos/firma/openapi.yaml`: `rechazarEnFirma` (`POST /api/firma/documentos/{documento}/rechazos`, `x-mdd-permiso` `DISTRIBUTIVO:FIRMA`), `SolicitudDeRechazo` («`observacion`, `maxLength: 500`»), `RechazoEnFirma` y sus respuestas; la descripción de `subirFirma` con el documento rechazado;
   - en `contratos/validacionocs/openapi.yaml`: `RechazoEnFirmaDelFlujo`, `EstadoDelFlujo.rechazoEnFirma`, `RECHAZO_EN_FIRMA` en el tipo de transición y el 409 de la aprobación y de la revisión;
   - ninguna descripción de una operación que escribe nombra la bitácora (`BitacoraSinBorradoContratoTest`).
+
+  **Resultado (2026-11-15):** los dos contratos actualizados; `BitacoraSinBorradoContratoTest` y `verificar:ruptura` pasan. La operación nueva la implementa `FirmasPendientesControlador`, el de la subida, no `DocumentoControlador`: queda un esqueleto que responde 500 hasta T011. `PermisosFirmaTest` cuenta seis operaciones.
 - [ ] T003 [P] Los dos códigos en `contratos/comun/errores.md`, con sus 8 columnas. Ver fallar primero `ErroresFirmaTest` con `ObservacionInvalida` y `ErroresValidacionocsTest` con `RequiereVersionNueva`; luego, `ErroresFirma` y `ErroresValidacionocs`.
 - [ ] T004 [P] La migración `FIR/main/resources/db/migration/firma/V6__rechazo_en_firma.sql` según `data-model.md`. Antes, ver fallar en `DocumentoFirmableEsquemaIntegrationTest`, con el rol del proceso:
   - inserta un rechazo; un segundo del mismo documento falla por la clave;
@@ -105,7 +107,7 @@ description: "Tareas de F14-H04: rechazar en firma con una observación"
 
   Luego `RechazarEnFirma`, `RechazoRegistrado`, el evento `RechazoEnFirma` (en `puertos.entrada`), el puerto `AvisoDeRechazoEnFirma`, su adaptador con el publicador de Spring y el bean.
 - [ ] T010 [US1] `SubirFirmaServicio`. Ver fallar primero en `SubirFirmaServicioTest`: aceptada con el documento rechazado entretanto, se registra como rechazada por «mismo documento» (la regla de la subida tardía). Luego, si hace falta, el servicio.
-- [ ] T011 [US1] El controlador. Ver fallar primero en `RechazarEnFirmaContratoTest` y `PermisosFirmaTest`: el 201 con su cuerpo, los dos 400, el 403 sin permiso y fuera de turno, y el 401. Luego, el endpoint en `DocumentoControlador`.
+- [ ] T011 [US1] El controlador. Ver fallar primero en `RechazarEnFirmaContratoTest` y `PermisosFirmaTest`: el 201 con su cuerpo, los dos 400, el 403 sin permiso y fuera de turno, y el 401. Luego, el endpoint en `FirmasPendientesControlador`.
 
 **Checkpoint**: el firmante en turno rechaza y el documento queda cerrado.
 

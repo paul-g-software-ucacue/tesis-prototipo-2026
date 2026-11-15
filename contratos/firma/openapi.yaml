@@ -131,6 +131,9 @@ paths:
         detalles, sin guardar el archivo. Cada subida del firmante en turno deja su resultado
         registrado y publica su cambio (RF-44). A quien no es el firmante en turno, el 403
         común, sin resultado, también si el documento no existe o no está generado.
+        Un documento rechazado en firma no tiene firmante en turno (D-105): el 403 común. Una
+        subida aceptada que llega a registrarse después del rechazo se registra como rechazada por
+        no ser la versión vigente.
       x-mdd-permiso: DISTRIBUTIVO:FIRMA
       requestBody:
         required: true
@@ -198,6 +201,62 @@ paths:
             application/json:
               schema:
                 $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/firma/documentos/{documento}/rechazos:
+    parameters:
+      - name: documento
+        in: path
+        required: true
+        description: El identificador del documento firmable.
+        schema:
+          type: string
+          format: uuid
+        example: 3f2504e0-4f89-41d3-9a0c-0305e82c3301
+    post:
+      tags: [FirmasPendientes]
+      operationId: rechazarEnFirma
+      summary: Rechaza en firma el documento con una observación; solo el firmante en turno.
+      description: >-
+        El firmante en turno no firma y escribe una observación (RF-36, D-105). Primero el turno: a
+        quien no es el firmante en turno, el 403 común sin mirar la observación, también si el
+        documento no existe, no está generado, ya se rechazó o tiene la cadena completa. Después la
+        observación, de 10 a 500 caracteres sin los espacios de los extremos. El rechazo queda
+        registrado con el paso, quién, cuándo y la observación, y cierra el documento: nadie queda
+        en turno y las firmas aceptadas se conservan. Avisa a Aprobación, que devuelve el
+        distributivo a revisión (MD-05). Si una firma del paso se registró entretanto, quien
+        rechaza ya no está en turno: el 403 común.
+      x-mdd-permiso: DISTRIBUTIVO:FIRMA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitudDeRechazo'
+      responses:
+        '201':
+          description: El rechazo quedó registrado y el documento, cerrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RechazoEnFirma'
+        '400':
+          description: >-
+            El identificador mal formado, el cuerpo sin la observación o con más de 500 caracteres
+            (COMUN_SOLICITUD_INVALIDA), o una observación que sin los espacios de los extremos
+            tiene menos de 10 caracteres (FIRMA_OBSERVACION_INVALIDA).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
         '502':
           $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
         '504':
@@ -405,6 +464,50 @@ components:
           description: Por qué se rechazó o no se evaluó; un texto del sistema.
           type: string
           maxLength: 200
+    SolicitudDeRechazo:
+      description: La observación del rechazo en firma.
+      type: object
+      additionalProperties: false
+      required: [observacion]
+      properties:
+        observacion:
+          description: Qué hay que corregir, de 10 a 500 caracteres sin los espacios de los extremos.
+          type: string
+          maxLength: 500
+    RechazoEnFirma:
+      description: El rechazo en firma registrado; el documento queda cerrado (D-105).
+      type: object
+      additionalProperties: false
+      required: [documento, periodo, version, orden, rotulo, rechazadoPor, rechazadoEn, observacion]
+      properties:
+        documento:
+          type: string
+          format: uuid
+        periodo:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        version:
+          type: integer
+          format: int32
+          minimum: 1
+        orden:
+          description: El orden del paso en turno que se rechazó.
+          type: integer
+          format: int32
+          minimum: 1
+        rotulo:
+          description: El rótulo del paso, como en el PDF («Aprobado por»).
+          type: string
+          maxLength: 60
+        rechazadoPor:
+          type: string
+        rechazadoEn:
+          type: string
+          format: date-time
+        observacion:
+          description: La observación, sin los espacios de los extremos.
+          type: string
+          maxLength: 500
     CertificadoDeLaFirma:
       description: El certificado de la firma nueva; solo si hay una sola firma nueva legible.
       type: object

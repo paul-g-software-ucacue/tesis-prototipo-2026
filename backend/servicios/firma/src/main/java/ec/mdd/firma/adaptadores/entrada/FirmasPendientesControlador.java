@@ -3,8 +3,10 @@ package ec.mdd.firma.adaptadores.entrada;
 import ec.mdd.firma.adaptadores.entrada.api.CertificadoDeLaFirma;
 import ec.mdd.firma.adaptadores.entrada.api.FirmaPendiente;
 import ec.mdd.firma.adaptadores.entrada.api.FirmasPendientesApi;
+import ec.mdd.firma.adaptadores.entrada.api.RechazoEnFirma;
 import ec.mdd.firma.adaptadores.entrada.api.ResultadoDeComprobacion;
 import ec.mdd.firma.adaptadores.entrada.api.ResultadoValidacion;
+import ec.mdd.firma.adaptadores.entrada.api.SolicitudDeRechazo;
 import ec.mdd.firma.dominio.SinTurnoDeFirma;
 import ec.mdd.firma.puertos.entrada.ArchivoVigente;
 import ec.mdd.firma.puertos.entrada.ConsultarFirmasPendientes;
@@ -101,6 +103,14 @@ class FirmasPendientesControlador implements FirmasPendientesApi {
             throw new UncheckedIOException("No se pudo leer el archivo subido", error);
         }
         return ResponseEntity.status(HttpStatus.CREATED).body(respuesta(resultado));
+    }
+
+    @Override
+    @PreAuthorize("hasAuthority('PERMISO_DISTRIBUTIVO:FIRMA')")
+    public ResponseEntity<RechazoEnFirma> rechazarEnFirma(
+            UUID documento, SolicitudDeRechazo solicitud) {
+        // Esqueleto de T002: el caso de uso llega en T009 y el endpoint en T011.
+        throw new UnsupportedOperationException("rechazarEnFirma todavía no está implementado");
     }
 
     private static ResultadoValidacion respuesta(ec.mdd.firma.dominio.ResultadoValidacion uno) {
