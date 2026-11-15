@@ -186,10 +186,18 @@ description: "Tareas de F14-H04: rechazar en firma con una observación"
 - [X] T018 `deploy/probar_rechazo_en_firma.sh` según `contracts/demostracion.md` (10 pasos, `MDD_CONSERVAR=1`), en `.github/workflows/perfil-consolidado.yml` después de `probar_documento_firmable.sh`. La limpieza borra las dos tablas nuevas. shellcheck sin hallazgos.
 
   **Resultado (2026-11-15):** 10/10 en la primera corrida, en 61 s, sobre un perfil construido desde la rama; EN_REVISION_VRA unos 1 s después del rechazo. La preparación (cargas, consolidado, aprobación, firma de prueba y limpieza) es la de `probar_documento_firmable.sh`, copiada como en los demás scripts; los pasos 2 a 9 son nuevos. En el paso 3, además de `rectorado.demo`, rechazan fuera de turno `docente.demo` (ya firmó F1) y `consolidacion.demo`. La limpieza borra `firma.rechazo_en_firma` antes de la generación; `validacionocs.rechazo_en_firma` se va en cascada con el proceso. shellcheck sin hallazgos.
-- [ ] T019 Correr todos los scripts del workflow sobre un perfil construido desde la rama. Recorrer `quickstart.md` §3 a mano: SC-002 y SC-003.
-- [ ] T020 Correr completos:
+- [X] T019 Correr todos los scripts del workflow sobre un perfil construido desde la rama. Recorrer `quickstart.md` §3 a mano: SC-002 y SC-003.
+
+  **Resultado (2026-11-15):** los 36 de `perfil-consolidado` pasan, en su orden, sobre un perfil construido desde la rama; `probar_rechazo_en_firma.sh` en 48 s y `probar_documento_firmable.sh` en 73 s. SC-002: EN_REVISION_VRA unos 1 s después del rechazo. **Pendiente:** el recorrido a mano de `quickstart.md` §3 (SC-003), del autor.
+- [X] T020 Correr completos:
   - `./gradlew build integrationTest jacocoTestReport jacocoTestCoverageVerification`;
   - en la SPA, los tipos, ESLint, Prettier, Vitest y Playwright (SC-005).
+
+  **Resultado (2026-11-15):**
+  - `./gradlew build integrationTest jacocoTestReport jacocoTestCoverageVerification --rerun-tasks --continue`: 3 180 pruebas unitarias y 318 de integración. Fallaron 3, en módulos que esta rama no toca: las dos intermitentes de siempre (`ClienteDeEventosLocalTest` y `ConfirmarLasDiezCargasIntegrationTest`) y `EntregaIntegrationTest` de `plataforma:eventos` (un `ConditionTimeoutException`, mientras Vitest corría a la vez). Las tres pasan corridas solas (5/5, 9/9 y 3/3). Spring Modulith en verde.
+  - Cobertura de líneas: Firma 81,8 %, Validación OCS 82,9 %; la más baja, Roles, 77,2 %.
+  - Spotless y SpotBugs en verde.
+  - SPA: tipos, ESLint y Prettier en verde; Vitest 581/581 (con Gradle corriendo a la vez, 7 pruebas de otras pantallas agotaron los 15 s; solo, todo pasa); Playwright 129/129.
 - [X] T021 Revisar el JavaDoc (principio XII): el cierre del documento, la carrera con la subida, la etapa de llegada y el bloqueo de aprobar.
 
   **Resultado (2026-11-15):** el cierre del documento en `FirmasDelDocumento` y `FirmanteEnTurno`; la carrera con la subida en `RepositorioDocumentos.registrarRechazo` y en `SubirFirmaServicio`; el orden turno → observación en `RechazarEnFirmaServicio` y su puerto; la etapa activa anterior y la idempotencia en `ProcesoAprobacion.rechazarEnFirma`; el bloqueo en `validarAprobacion`, `validarRevision` y `validarAvance`, con su `@throws`; el evento en `RechazoEnFirma`. Se completaron el `@throws` de `validarAvance` y la mención del rechazo en `FirmanteEnTurno`.
