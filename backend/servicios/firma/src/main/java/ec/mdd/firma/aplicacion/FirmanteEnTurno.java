@@ -21,7 +21,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Quién está en turno y el archivo vigente verificado, compartido por la lista de pendientes, la
- * descarga (F14-H01) y la subida (F14-H02): la regla es una sola (D-102).
+ * descarga (F14-H01), la subida (F14-H02) y el rechazo en firma (F14-H04): la regla es una sola
+ * (D-102). Un documento rechazado no tiene a nadie en turno (D-105).
  *
  * <p>Está en turno el firmante esperado del primer paso sin firma: el Responsable designado, por su
  * usuario, o el docente de un cargo, por la identificación de la cuenta. El rol del token no

@@ -264,6 +264,7 @@ public final class ProcesoAprobacion {
      * @param quien quien avanza
      * @throws EtapaConOperacionPropia si la etapa no es de las del avance genérico
      * @throws RolDeOtraEtapa si no tiene el rol de la etapa actual
+     * @throws RequiereVersionNueva si el avance congelaría la versión de un rechazo en firma
      */
     public void validarAvance(Solicitante quien) {
         if (!CON_AVANCE_GENERICO.contains(estado)) {
