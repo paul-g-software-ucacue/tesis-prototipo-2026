@@ -110,13 +110,15 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
   Luego, `RepositorioDistributivos.crearVersionNueva` y su implementación con `INSERT … SELECT` en `RepositorioDistributivosJdbc`, en la transacción que bloquea la versión (D-83): nadie edita mientras se copia, y en EN_REVISION_VRA el consolidado tampoco admite cambios (D-99). El JavaDoc dice que una tabla nueva de la versión exige su copia.
 
   **Resultado (2026-11-15):** `VersionNuevaIntegrationTest` (nueva, en lugar de sumarla a `RepositorioDistributivosIntegrationTest`, por su preparación propia) arma una versión congelada con dos parciales enviados, una propuesta, una actividad, una justificación, una consolidación y su informe. Se vio fallar contra el esqueleto y pasa con la copia: las seis tablas iguales en las dos versiones, la anulada intacta, el motivo, quién y cuándo de la nueva, la misma consolidación (así no queda desactualizada) y un hash distinto. Se sumó `estadoDe(periodo, numero)` al repositorio, para la idempotencia de T010.
-- [ ] T010 [US1] La operación publicada. Ver fallar primero en `GEN/test/.../aplicacion/ParcialesDelDistributivoServicioTest.java`:
+- [X] T010 [US1] La operación publicada. Ver fallar primero en `GEN/test/.../aplicacion/ParcialesDelDistributivoServicioTest.java`:
   - la vigente congelada es la del aviso: anula, crea y devuelve el número y el hash;
   - la vigente es la siguiente, creada por ese motivo: la devuelve sin cambiar nada;
   - un segundo rechazo: con la v2 congelada, anula la v2 y crea la v3;
   - otro caso: vacío; sin distributivo: `DistributivoNoEncontrado`.
 
   Luego, `ParcialesDelDistributivo.crearVersionNueva`, `VersionNuevaEnGeneracion` y el servicio, con la versión bloqueada (`bloquearVigente`).
+
+  **Resultado (2026-11-15):** 5 pruebas nuevas en `ParcialesDelDistributivoServicioTest`. Contra el esqueleto fallaron 4; la de «otra situación» pasaba porque el esqueleto devolvía vacío. Pasan con la implementación y las de Generación siguen en verde. La idempotencia mira el número y que la anterior esté ANULADA, no el motivo: hoy hay uno solo (está en el comentario).
 - [ ] T011 [US1] Aprobación ordena la versión nueva. Ver fallar primero en `OCS/test/.../aplicacion/RegistrarRechazoEnFirmaServicioTest.java`:
   - fuera de firma o con otra versión: no llama a Generación ni guarda nada;
   - en firma: llama a Generación y después, con el proceso bloqueado, guarda `RECHAZO_EN_FIRMA` y `VERSION_NUEVA`, sus dos cambios para la bitácora (`DISTRIBUTIVO_RECHAZADO_EN_FIRMA` y `DISTRIBUTIVO_VERSION_NUEVA`) y el aviso `FirmasPorAnular`;

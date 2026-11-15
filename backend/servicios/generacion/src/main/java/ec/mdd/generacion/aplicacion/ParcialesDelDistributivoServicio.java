@@ -12,10 +12,12 @@ import ec.mdd.generacion.puertos.entrada.ConsultarConsolidado;
 import ec.mdd.generacion.puertos.entrada.DistributivoNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.EstadoDelDistributivo;
 import ec.mdd.generacion.puertos.entrada.EstadoDelDistributivo.ParcialYSuEstado;
+import ec.mdd.generacion.puertos.entrada.MotivoDeVersion;
 import ec.mdd.generacion.puertos.entrada.ParcialMarcado;
 import ec.mdd.generacion.puertos.entrada.ParcialNoEncontrado;
 import ec.mdd.generacion.puertos.entrada.ParcialesDelDistributivo;
 import ec.mdd.generacion.puertos.entrada.VersionCongeladaEnGeneracion;
+import ec.mdd.generacion.puertos.entrada.VersionNuevaEnGeneracion;
 import ec.mdd.generacion.puertos.salida.RepositorioDistributivos;
 import ec.mdd.generacion.puertos.salida.Transaccion;
 import java.util.List;
@@ -132,6 +134,46 @@ public final class ParcialesDelDistributivoServicio implements ParcialesDelDistr
                     return new VersionCongeladaEnGeneracion(
                             version.numero(), hashDe(periodo, version));
                 });
+    }
+
+    /** Quién crea la versión nueva: la ordena Aprobación como el sistema (D-106). */
+    private static final String SISTEMA = "sistema";
+
+    // F12-H04, D-106: con la versión bloqueada, como congelar. Idempotente: si la del aviso ya se
+    // anuló y la vigente es la siguiente, la devuelve. Hoy el único motivo es el rechazo en firma,
+    // así que no hace falta comprobar con qué motivo se creó la siguiente.
+    @Override
+    public java.util.Optional<VersionNuevaEnGeneracion> crearVersionNueva(
+            String periodo, int anulada, MotivoDeVersion motivo, java.time.Instant momento) {
+        return transaccion.ejecutar(
+                () -> {
+                    VersionDistributivo vigente =
+                            distributivos
+                                    .bloquearVigente(periodo)
+                                    .orElseThrow(DistributivoNoEncontrado::new);
+                    if (vigente.numero() == anulada
+                            && vigente.estado() == EstadoDeVersion.CONGELADA) {
+                        distributivos.crearVersionNueva(vigente.id(), motivo, SISTEMA, momento);
+                        return java.util.Optional.of(
+                                nueva(
+                                        periodo,
+                                        distributivos
+                                                .vigenteDe(periodo)
+                                                .orElseThrow(DistributivoNoEncontrado::new)));
+                    }
+                    if (vigente.numero() == anulada + 1
+                            && distributivos
+                                    .estadoDe(periodo, anulada)
+                                    .filter(EstadoDeVersion.ANULADA::equals)
+                                    .isPresent()) {
+                        return java.util.Optional.of(nueva(periodo, vigente));
+                    }
+                    return java.util.Optional.empty();
+                });
+    }
+
+    private static VersionNuevaEnGeneracion nueva(String periodo, VersionDistributivo version) {
+        return new VersionNuevaEnGeneracion(version.numero(), hashDe(periodo, version));
     }
 
     @Override
