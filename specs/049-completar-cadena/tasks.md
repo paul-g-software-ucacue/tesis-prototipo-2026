@@ -103,7 +103,7 @@ description: "Tareas de F14-H03: validar firmante, turno y vigencia, y completar
 
 **Independent Test**: con F3 en turno, las firmas de otra persona, fuera de orden o vencidas se rechazan con su 422; la del Rector vigente se acepta.
 
-- [ ] T008 [US1] El nombre impreso al generar. Ver fallar primero:
+- [X] T008 [US1] El nombre impreso al generar. Ver fallar primero:
   - en `DocumentoFirmableServicioTest`, que cada firmante esperado registrado lleva el nombre que imprime el PDF;
   - en `RepositorioDocumentosIntegrationTest`, que se guarda y se lee;
   - en `RepositorioDocumentosIntegrationTest`, que las validaciones de cuatro comprobaciones se leen con las tres nuevas «no evaluadas» (research §8).
