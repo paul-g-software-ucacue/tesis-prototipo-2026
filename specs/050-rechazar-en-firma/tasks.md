@@ -173,7 +173,9 @@ description: "Tareas de F14-H04: rechazar en firma con una observación"
 - [X] T016 [US3] Ver fallar primero en la prueba de `EstadoDelFlujo` el aviso «Rechazado en firma» con la observación y la nota de la versión nueva. Luego `SPA/pantallas/comun/EstadoDelFlujo.tsx`.
 
   **Resultado (2026-11-15):** 2 pruebas nuevas en `EstadoDelFlujo.test.tsx`; se vio fallar la del aviso y pasan con «Rechazado en firma» (paso y rol, quién, cuándo, la observación y la nota de la versión nueva). Sin la acción, no hay «Aprobar el contenido»: lo decide la API. La constancia de la versión congelada sigue a la vista, porque la versión sigue congelada hasta F12-H04.
-- [ ] T017 [US3] `e2e/firmas-pendientes.spec.ts`: el rechazo con teclado, el foco al cerrar y axe-core sin fallas con el diálogo abierto y después del rechazo.
+- [X] T017 [US3] `e2e/firmas-pendientes.spec.ts`: el rechazo con teclado, el foco al cerrar y axe-core sin fallas con el diálogo abierto y después del rechazo.
+
+  **Resultado (2026-11-15):** una prueba nueva: abre el diálogo con Enter, Escape lo cierra y el foco vuelve a «Rechazar», rechaza con el teclado y ve «Rechazo registrado» y la lista vacía; axe-core sin fallas con el diálogo abierto y después. Las 6 del archivo pasan. Se escribió con la pantalla ya hecha: no se vio fallar.
 
 **Checkpoint**: el firmante rechaza sin salir de la pantalla.
 
