@@ -39,7 +39,9 @@ Devuelve el número y el hash de la versión nueva (el mismo de `hashDelDistribu
 
 ## §3. Los datos de la versión
 
-**Decisión.** Generación V8: `version_distributivo` suma `motivo` (`RECHAZO_EN_FIRMA`; nulo solo en la versión 1), `creada_por` y `creada_en` (nulos en las versiones que ya existían), con el `check (numero = 1) = (motivo is null)`. El dominio suma `MotivoDeVersion` con un solo valor. Los otros motivos del glosario (ajuste, devolución, reforma) los agregan sus historias.
+**Decisión.** Generación V8: `version_distributivo` suma `motivo` (`RECHAZO_EN_FIRMA`; nulo solo en la versión 1), `creada_por` y `creada_en` (nulos en las versiones que ya existían), con el `check (numero = 1) = (motivo is null)`. `MotivoDeVersion`, con un solo valor, va en `puertos/entrada` de Generación, su interfaz publicada: Aprobación lo usa al ordenar, y no puede depender del dominio de otro servicio (principio V). El repositorio guarda su nombre. Los otros motivos del glosario (ajuste, devolución, reforma) los agregan sus historias.
+
+**El glosario.** Sus motivos son «ajuste, devolución o reforma»; el autor eligió el nombre «rechazo en firma» y lo suma al glosario antes de implementar (principio III).
 
 **Por qué.** Es la tabla `distributivo_version` del diseño de firmas (motivo, creada_por, creada_en).
 
@@ -59,7 +61,7 @@ Con ella:
 
 ## §5. Cómo ordena Aprobación la anulación a Firma
 
-**Decisión.** Como la preparación del documento (D-101): `AvisoDeFirma` suma `avisar(FirmasPorAnular)` (periodo, versión, motivo, momento), guardado en la transacción del paso 3 de §1. El oyente nuevo `AnulacionDeLasFirmas` (adaptador de salida, `@ApplicationModuleListener`) llama a la API publicada de Firma, `AnularFirmas.anular(...)`, después de confirmar.
+**Decisión.** Como la preparación del documento (D-101): `AvisoDeFirma` suma `avisar(FirmasPorAnular)` (periodo, versión, motivo, momento), guardado en la transacción del paso 3 de §1. El oyente nuevo `AnulacionDeLasFirmas` (adaptador de salida, `@ApplicationModuleListener`) llama a la API publicada de Firma, `AnularFirmas.anular(...)`, después de confirmar. El motivo es `MotivoDeAnulacion` (`RECHAZO_EN_FIRMA`), un enum de `puertos/entrada` de Firma, el mismo valor del contrato.
 
 **Por qué.** Firma no conoce el flujo (MD-05) y la dependencia sigue de Aprobación hacia Firma. El aviso se guarda con la transición: si la transición no confirma, no se anula nada; si Firma falla, el registro lo reintenta (FR-012).
 

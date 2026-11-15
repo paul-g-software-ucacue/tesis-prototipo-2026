@@ -41,6 +41,8 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
 
   **Resultado (2026-11-15):** escrita con el plan. El glosario tiene `crearVersionNueva()` («las ordena Aprobación», MD-04), `anularFirmas()` de `DocumentoFirmable`, el evento `FirmasAnuladas` de Firma, el estado ANULADA de la versión y «Anular firmas: … Se conservan en el historial». Se usan esos nombres. Da como motivos de la versión nueva «ajuste, devolución o reforma», sin «rechazo en firma»: D-106 lo anota para que el autor ponga al día el glosario.
 
+  **Pendiente del autor (análisis, C1):** el autor eligió «rechazo en firma» y lo suma a los motivos de `VersionDistributivo` en `sdd/modelo_dominio.md` antes de T003 (principio III). El glosario está fuera del repositorio.
+
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
@@ -66,12 +68,13 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
   - sin generación, falla por la foránea;
   - no puede actualizar ni borrar.
 - [ ] T005 [P] La migración `OCS/main/resources/db/migration/validacionocs/V6__version_nueva.sql`: `VERSION_NUEVA` en `transicion_tipo_check`. Antes, ver fallar en `OCS/integrationTest/.../ValidacionocsEsquemaIntegrationTest.java` una transición `VERSION_NUEVA`.
-- [ ] T006 [P] El dominio de Generación: `GEN/main/.../dominio/MotivoDeVersion.java` (`RECHAZO_EN_FIRMA`). Sin regla propia: no lleva prueba.
+- [ ] T006 [P] El tipo del motivo en la interfaz publicada de Generación: `GEN/main/.../puertos/entrada/MotivoDeVersion.java` (`RECHAZO_EN_FIRMA`), no en el dominio, porque lo usa Aprobación (principio V, análisis C2). Sin regla propia: no lleva prueba.
 - [ ] T007 [P] El dominio de Aprobación. Ver fallar primero en `OCS/test/.../dominio/ProcesoAprobacionTest.java`:
   - `registrarVersionNueva` después del `RECHAZO_EN_FIRMA` de esa versión: una transición `VERSION_NUEVA` por `sistema`, de EN_REVISION_VRA a EN_REVISION_VRA, con la versión nueva y su hash;
   - repetida, sin rechazo antes, o con otra versión anulada: vacía;
   - después, `rechazoPendiente()` vacío, `acciones` con APROBAR_CONTENIDO y `validarAprobacion` sin `RequiereVersionNueva`;
-  - `rechazoVigente()`: el rechazo desde que se registra hasta la congelación siguiente, y vacío después.
+  - `rechazoVigente()`: el rechazo desde que se registra hasta la congelación siguiente, y vacío después;
+  - un segundo rechazo, sobre la versión 2 aprobada: vuelve a EN_REVISION_VRA, `registrarVersionNueva(2, 3, …)` y `rechazoVigente()` es el segundo.
 
   Luego, `TipoDeTransicion.VERSION_NUEVA` y los dos métodos.
 - [ ] T008 [P] El dominio de Firma. Ver fallar primero en `FIR/test/.../dominio/FirmasDelDocumentoTest.java`: con anulación, `pasoEnTurno()` vacío y nadie en turno; los constructores de antes, sin anulación. Luego, `AnulacionDeFirmas` y `FirmasDelDocumento.anulacion`.
@@ -92,10 +95,11 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
   - compara tabla por tabla: parciales con su estado, propuestas, actividades, justificaciones, consolidaciones e informes (la misma `clave` y huella);
   - el consolidado de la nueva no queda desactualizado, y el hash de la nueva difiere del de la anulada (lleva el número).
 
-  Luego, `RepositorioDistributivos.crearVersionNueva` y su implementación con `INSERT … SELECT` en `RepositorioDistributivosJdbc`. El JavaDoc dice que una tabla nueva de la versión exige su copia.
+  Luego, `RepositorioDistributivos.crearVersionNueva` y su implementación con `INSERT … SELECT` en `RepositorioDistributivosJdbc`, en la transacción que bloquea la versión (D-83): nadie edita mientras se copia, y en EN_REVISION_VRA el consolidado tampoco admite cambios (D-99). El JavaDoc dice que una tabla nueva de la versión exige su copia.
 - [ ] T010 [US1] La operación publicada. Ver fallar primero en `GEN/test/.../aplicacion/ParcialesDelDistributivoServicioTest.java`:
   - la vigente congelada es la del aviso: anula, crea y devuelve el número y el hash;
   - la vigente es la siguiente, creada por ese motivo: la devuelve sin cambiar nada;
+  - un segundo rechazo: con la v2 congelada, anula la v2 y crea la v3;
   - otro caso: vacío; sin distributivo: `DistributivoNoEncontrado`.
 
   Luego, `ParcialesDelDistributivo.crearVersionNueva`, `VersionNuevaEnGeneracion` y el servicio, con la versión bloqueada (`bloquearVigente`).
@@ -135,7 +139,7 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
   - sin documento para esa versión: nada, en el log.
 
   Luego:
-  - `puertos/entrada/AnularFirmas` y el evento `FirmasAnuladas` (API publicada);
+  - `puertos/entrada/AnularFirmas`, `MotivoDeAnulacion` (`RECHAZO_EN_FIRMA`, análisis I2) y el evento `FirmasAnuladas` (API publicada);
   - `puertos/salida/AvisoDeFirmasAnuladas` y `AvisoDeFirmasAnuladasSpring`;
   - `CambioDeFirma.FIRMAS_ANULADAS`;
   - `AnularFirmasServicio` y su bean en `ConfiguracionFirma`.
@@ -146,7 +150,7 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
   - EN_REVISION_VRA con `VERSION_NUEVA`;
   - el documento v1 anulado con 1 firma.
 
-  Después, aprobar la v2 genera su documento con F1 en turno, y «Pendientes de firma» de `docente.demo` solo trae la v2. El doble `@Primary` de `RegistrarRechazoEnFirma` de F14-H04 se quita si ya no hace falta. `ModulosTest` sin ciclos.
+  Después, aprobar la v2 genera su documento con F1 en turno, y «Pendientes de firma» de `docente.demo` solo trae la v2. La prueba de F14-H04 conserva su doble `@Primary` de `RegistrarRechazoEnFirma`; la nueva usa los casos de uso reales, en su propia clase de prueba si el doble lo exige (análisis A2). `ModulosTest` sin ciclos.
 
 **Checkpoint**: el rechazo deja la versión nueva y las firmas anuladas; la versión nueva se aprueba y empieza su cadena.
 

@@ -27,7 +27,7 @@
 
 ### Dominio
 
-- **`MotivoDeVersion`** (nuevo): `RECHAZO_EN_FIRMA`.
+- **`MotivoDeVersion`** (nuevo, en `puertos/entrada`, la interfaz publicada): `RECHAZO_EN_FIRMA`. No va en el dominio: Aprobación lo usa al ordenar (principio V).
 - **`EstadoDeVersion`**: ya tiene `ANULADA`.
 
 ### Puertos
@@ -82,7 +82,7 @@
 ### Puertos
 
 - **Entrada (API publicada):**
-  - `AnularFirmas.anular(String periodo, int version, String motivo, Instant momento)`;
+  - `AnularFirmas.anular(String periodo, int version, MotivoDeAnulacion motivo, Instant momento)`, con `MotivoDeAnulacion` (`RECHAZO_EN_FIRMA`) en `puertos/entrada`;
   - el evento **`FirmasAnuladas`**: periodo, versión, cuántas, motivo, momento.
 - **Salida:**
   - `RepositorioDocumentos.registrarAnulacion(...)` → `boolean`: bloquea la generación e inserta si no hay;

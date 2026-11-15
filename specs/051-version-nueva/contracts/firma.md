@@ -25,10 +25,14 @@ La consulta muestra la última versión del periodo con documento: la anulada, h
 
 ```java
 /** Anula las firmas del documento de una versión (F12-H04, RF-59). Idempotente. */
-void anular(String periodo, int version, String motivo, Instant momento);
+void anular(String periodo, int version, MotivoDeAnulacion motivo, Instant momento);
+
+/** El mismo valor del contrato. */
+enum MotivoDeAnulacion { RECHAZO_EN_FIRMA }
 
 /** El evento, en la misma transacción que la anulación. */
-record FirmasAnuladas(String periodo, int version, int anuladas, String motivo, Instant momento) {}
+record FirmasAnuladas(
+        String periodo, int version, int anuladas, MotivoDeAnulacion motivo, Instant momento) {}
 ```
 
 | Situación | Resultado |

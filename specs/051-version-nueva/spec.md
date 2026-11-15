@@ -126,7 +126,7 @@ Como Vicerrector académico, quiero ver que la versión anterior quedó anulada 
 
 - **FR-012**: Si una de las dos órdenes falla, DEBE reintentarse hasta completarse, sin repetir la que ya se cumplió.
 - **FR-013**: Si el distributivo ya no está en la etapa a la que volvió por ese rechazo, o la versión del aviso no es la congelada, NO DEBE crearse versión ni anularse firmas, y DEBE quedar registrado sin reintentar para siempre.
-- **FR-014**: La bitácora DEBE tener la anulación de la versión y la creación de la nueva (con su motivo), y la anulación de las firmas (con el documento, la versión y cuántas).
+- **FR-014**: La bitácora DEBE tener una entrada para la versión nueva, con la versión anulada, la nueva y el motivo, y otra para la anulación de las firmas, con el documento, la versión y cuántas.
 
 **Pantalla, errores y seguridad**
 

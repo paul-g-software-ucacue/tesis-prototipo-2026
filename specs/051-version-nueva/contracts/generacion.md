@@ -13,6 +13,9 @@ Optional<VersionNuevaEnGeneracion> crearVersionNueva(
         String periodo, int anulada, MotivoDeVersion motivo, Instant momento);
 
 record VersionNuevaEnGeneracion(int numero, String hash) {}
+
+/** En la interfaz publicada, no en el dominio: lo usa Aprobación (principio V). */
+enum MotivoDeVersion { RECHAZO_EN_FIRMA }
 ```
 
 | Situación | Resultado |

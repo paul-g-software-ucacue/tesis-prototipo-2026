@@ -78,9 +78,9 @@
 |---|---|---|
 | I. Capas | Las reglas de la versión y del flujo, en el dominio; la copia, en el adaptador; los avisos, por puertos. | ✅ |
 | II. DDD | Generación decide si la versión se puede anular; Aprobación, cuándo pedirlo; Firma, cómo se anula un documento. | ✅ |
-| III. Lenguaje ubicuo | `crearVersionNueva()`, `anularFirmas()`, `FirmasAnuladas`, ANULADA (glosario). | ✅ |
+| III. Lenguaje ubicuo | `crearVersionNueva()`, `anularFirmas()`, `FirmasAnuladas`, ANULADA (glosario). El motivo «rechazo en firma» entra al glosario antes de implementar (T001). | ✅ |
 | IV. API primero | Los campos nuevos del flujo y del documento, en los contratos antes del código. Crear y anular no son de la API. | ✅ |
-| V. Límites | Cada servicio en su esquema y su transacción; Aprobación llama a las interfaces publicadas de Generación y Firma. | ✅ |
+| V. Límites | Cada servicio en su esquema y su transacción; Aprobación llama a las interfaces publicadas de Generación y Firma, y solo usa sus tipos de `puertos/entrada` (`MotivoDeVersion`, `MotivoDeAnulacion`). | ✅ |
 | VI. Las reglas son datos | La etapa de llegada sigue saliendo de la copia de la configuración. | ✅ |
 | VII. Inmutabilidad | La versión anulada solo cambia de estado; la anulación es una fila nueva, solo de inserción. | ✅ |
 | VIII. Pruebas | Dominio y aplicación, viéndolos fallar; la copia y la anulación con PostgreSQL real; el script. | ✅ |
@@ -111,8 +111,8 @@ specs/051-version-nueva/
 contratos/firma/openapi.yaml, contratos/validacionocs/openapi.yaml
 
 backend/servicios/generacion/
-├── dominio/            MotivoDeVersion
-├── puertos/entrada/    ParcialesDelDistributivo.crearVersionNueva, VersionNuevaEnGeneracion
+├── puertos/entrada/    ParcialesDelDistributivo.crearVersionNueva, VersionNuevaEnGeneracion,
+│                       MotivoDeVersion
 ├── puertos/salida/     RepositorioDistributivos.crearVersionNueva
 ├── aplicacion/         ParcialesDelDistributivoServicio
 ├── adaptadores/salida/ RepositorioDistributivosJdbc
@@ -120,7 +120,7 @@ backend/servicios/generacion/
 
 backend/servicios/firma/
 ├── dominio/            AnulacionDeFirmas, FirmasDelDocumento.anulacion
-├── puertos/entrada/    AnularFirmas, FirmasAnuladas, EstadoDelDocumento.anulacion
+├── puertos/entrada/    AnularFirmas, MotivoDeAnulacion, FirmasAnuladas, EstadoDelDocumento.anulacion
 ├── puertos/salida/     AvisoDeFirmasAnuladas; RepositorioDocumentos.registrarAnulacion
 ├── aplicacion/         AnularFirmasServicio
 ├── adaptadores/        AvisoDeFirmasAnuladasSpring, RepositorioDocumentosJdbc, DocumentoControlador
@@ -155,4 +155,6 @@ docs/decisiones.md      D-106
 
 ## Complexity Tracking
 
-Sin violaciones que justificar.
+| Lo que parece de más | Por qué se hace | Lo más simple que se descartó |
+|---|---|---|
+| `FirmasAnuladas` se publica y nadie lo escucha todavía (principio X) | Lo exigen el glosario (§6) y la decisión del autor; lo escuchará F16 para notificar. Cuesta un record y una línea en la transacción | No publicarlo: F16 tendría que volver a Firma a agregarlo |
