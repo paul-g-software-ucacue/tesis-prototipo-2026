@@ -208,12 +208,14 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
 
 **Independent Test**: en «Consolidado del periodo», el Vicerrector ve la versión 2, el aviso del rechazo con «La versión 1 quedó anulada con sus firmas…» y «Aprobar el contenido».
 
-- [ ] T018 [US3] La vista del flujo. Ver fallar primero en `OCS/test/.../adaptadores/entrada/FlujoContratoTest.java`, con `FlujoEnMemoria`:
+- [X] T018 [US3] La vista del flujo. Ver fallar primero en `OCS/test/.../adaptadores/entrada/FlujoContratoTest.java`, con `FlujoEnMemoria`:
   - con la versión nueva: `rechazoEnFirma` con `versionAnulada` y `versionNueva`, `VERSION_NUEVA` en las transiciones y APROBAR_CONTENIDO en `acciones`;
   - sin versión nueva: `versionAnulada` sin `versionNueva`;
   - después de aprobar la versión nueva: sin `rechazoEnFirma`.
 
   Luego, `FlujoDelDistributivo.RechazoEnFirma` con las dos versiones (de `rechazoVigente()`) y `FlujoControlador`.
+
+  **Resultado (2026-11-15):** dos pruebas nuevas en `FlujoContratoTest`, con `FlujoEnMemoria.versionNueva`; la de F14-H04 suma `versionAnulada` sin `versionNueva`. Se vio fallar la de la versión nueva. La de «aprobada otra vez» pasaba antes, porque la vista usaba `rechazoPendiente`. La vista toma ahora `rechazoVigente()` y la versión de la transición `VERSION_NUEVA` que lo sigue. Las 56 de `FlujoContratoTest` y las de Validación OCS en verde.
 - [ ] T019 [P] [US3] El aviso de la SPA. Ver fallar primero en `SPA/pantallas/comun/EstadoDelFlujo.test.tsx`:
   - con `versionNueva`: «La versión 1 quedó anulada con sus firmas; el distributivo sigue con la versión 2.» y sin «Para aprobar otra vez…»;
   - sin ella: el texto de F14-H04.

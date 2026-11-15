@@ -79,8 +79,8 @@ public record FlujoDelDistributivo(
     public record Congelacion(int version, String hash, String quien, Instant momento) {}
 
     /**
-     * El rechazo en firma por el que volvió el distributivo (F14-H04, esquema {@code
-     * RechazoEnFirmaDelFlujo}).
+     * El rechazo en firma de la versión vigente (F14-H04, esquema {@code RechazoEnFirmaDelFlujo}):
+     * desde el rechazo hasta la congelación siguiente, con la versión nueva que creó (F12-H04).
      *
      * @param orden el paso que se rechazó
      * @param rol su rol

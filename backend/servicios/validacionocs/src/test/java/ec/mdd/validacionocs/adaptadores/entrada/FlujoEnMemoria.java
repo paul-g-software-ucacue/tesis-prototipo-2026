@@ -101,6 +101,11 @@ final class FlujoEnMemoria {
                         AHORA);
     }
 
+    /** Como Aprobación tras el rechazo: Generación creó la versión 2 (F12-H04). */
+    void versionNueva(String periodo) {
+        procesos.get(periodo).registrarVersionNueva(1, 2, "e".repeat(64), AHORA);
+    }
+
     /** Todo como al empezar: distributivos sin parciales enviados y sin procesos. */
     void reiniciar() {
         enviados.clear();

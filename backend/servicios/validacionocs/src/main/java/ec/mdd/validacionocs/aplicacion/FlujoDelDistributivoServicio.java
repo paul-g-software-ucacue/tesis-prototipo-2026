@@ -463,7 +463,8 @@ public final class FlujoDelDistributivoServicio
                                                 una.hash(),
                                                 una.quien(),
                                                 una.momento())),
-                proceso.rechazoPendiente()
+                // F12-H04: el rechazo de la versión vigente, con la versión nueva que creó.
+                proceso.rechazoVigente()
                         .flatMap(
                                 transicion ->
                                         transicion
@@ -479,8 +480,20 @@ public final class FlujoDelDistributivoServicio
                                                                         rechazo.observacion()
                                                                                 .texto(),
                                                                         transicion.version(),
-                                                                        java.util.OptionalInt
-                                                                                .empty()))));
+                                                                        versionNueva(
+                                                                                proceso,
+                                                                                transicion)))));
+    }
+
+    // F12-H04: la versión nueva registrada justo después del rechazo, si ya llegó.
+    private static java.util.OptionalInt versionNueva(
+            ProcesoAprobacion proceso, Transicion rechazo) {
+        List<Transicion> transiciones = proceso.transiciones();
+        int despues = transiciones.lastIndexOf(rechazo) + 1;
+        return despues < transiciones.size()
+                        && transiciones.get(despues).tipo() == TipoDeTransicion.VERSION_NUEVA
+                ? java.util.OptionalInt.of(transiciones.get(despues).version())
+                : java.util.OptionalInt.empty();
     }
 
     // Enviado: con su transición registrada. Pendiente de confirmar: Generación lo marcó y la
