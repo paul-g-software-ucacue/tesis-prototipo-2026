@@ -118,7 +118,9 @@ description: "Tareas de F14-H04: rechazar en firma con una observación"
   Luego `RechazarEnFirma`, `RechazoRegistrado`, el evento `RechazoEnFirma` (en `puertos.entrada`), el puerto `AvisoDeRechazoEnFirma`, su adaptador con el publicador de Spring y el bean.
 
   **Resultado (2026-11-15):** `RechazarEnFirmaServicioTest` (5), visto fallar contra los esqueletos, pasa; las demás de Firma siguen en verde. El cambio para la bitácora es `RECHAZO_EN_FIRMA`, con el periodo, la versión y el paso en el objeto y la observación como valor nuevo.
-- [ ] T010 [US1] `SubirFirmaServicio`. Ver fallar primero en `SubirFirmaServicioTest`: aceptada con el documento rechazado entretanto, se registra como rechazada por «mismo documento» (la regla de la subida tardía). Luego, si hace falta, el servicio.
+- [X] T010 [US1] `SubirFirmaServicio`. Ver fallar primero en `SubirFirmaServicioTest`: aceptada con el documento rechazado entretanto, se registra como rechazada por «mismo documento» (la regla de la subida tardía). Luego, si hace falta, el servicio.
+
+  **Resultado (2026-11-15):** sin código nuevo en el servicio ni prueba nueva. El servicio ya convierte cualquier `false` de `registrarValidacion` en la subida tardía (`dadaOtraSubidaQueFirmoAntes_cuandoSeRegistra_entoncesSeRechazaPorNoSerLaVersionVigente`), y que el repositorio devuelva `false` con un rechazo registrado lo prueba T008 contra PostgreSQL (`dadoUnRechazoRegistrado_cuandoLlegaUnaFirmaAceptada_entoncesNoSeRegistra`). Una prueba aquí repetiría la existente con otro nombre. Solo se ajustó el JavaDoc de `SubirFirmaServicio`.
 - [ ] T011 [US1] El controlador. Ver fallar primero en `RechazarEnFirmaContratoTest` y `PermisosFirmaTest`: el 201 con su cuerpo, los dos 400, el 403 sin permiso y fuera de turno, y el 401. Luego, el endpoint en `FirmasPendientesControlador`.
 
 **Checkpoint**: el firmante en turno rechaza y el documento queda cerrado.
