@@ -2224,6 +2224,7 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 - **Los datos.** La resolución va en `validacionocs.resolucion_ocs` (V7), con su transición y única por versión aprobada.
 - **El avance genérico desde EN_OCS** responde 409 `VALIDACIONOCS_REQUIERE_RESOLUCION`.
 - **La consulta.** El estado del flujo trae la acción `REGISTRAR_RESOLUCION` y, solo a quien tiene `RESOLUCION_OCS:LECTURA` (D-16), la resolución; el PDF se descarga con ese permiso. Roles V9 lo suma a VICERRECTOR, RECTOR y MIEMBRO_OCS; SECRETARIA_GENERAL y ADMINISTRADOR ya lo tenían. Los coordinadores y el Responsable de consolidación no la ven.
+- **La pantalla.** La Secretaría general no abre «Consolidado del periodo»: no lee el consolidado (D-16). Registra en una pantalla propia, «Resolución del OCS» (`/resolucion-ocs`), para quien tiene `RESOLUCION_OCS` de lectura o de escritura, con el periodo y el estado del flujo (decisión del autor, durante la implementación).
 - **Sin evento por ahora.** `ResolucionRegistrada` no se publica todavía: lo agregará la historia que lo escuche (F18-H01 o F16).
 - **Ocho códigos nuevos** en el catálogo.
 

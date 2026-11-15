@@ -30,6 +30,7 @@
 - Q: ¿Dónde se guarda el PDF de la resolución? → A: En Aprobación, en el almacén de archivos del proceso, con su huella, junto con el número y la fecha. La resolución es parte del proceso de aprobación (glosario). Se comprueba que sea un PDF y su tamaño, como el informe sustentado, pero no sus firmas.
 - Q: ¿Qué reglas lleva la fecha? → A: No puede ser futura ni anterior al día en que el distributivo entró en EN_OCS: la resolución aprueba la versión ya firmada.
 - Q: ¿Quién puede leer la resolución y descargar su PDF? → A: Quien tiene `RESOLUCION_OCS:LECTURA` (D-16). Se suma a VICERRECTOR, RECTOR y MIEMBRO_OCS, además de SECRETARIA_GENERAL y ADMINISTRADOR, que ya lo tienen. No basta con leer el flujo (análisis S1).
+- Q: ¿Dónde registra la Secretaría, si no abre «Consolidado del periodo»? → A: En una pantalla propia, «Resolución del OCS», para quien tiene el permiso de la resolución: el periodo y el estado del flujo, con el formulario o la constancia (decisión del autor, durante la implementación).
 - Q: ¿Registrar y aprobar son pasos distintos? → A: No. Registrar la resolución pasa el distributivo a APROBADO en la misma operación. Después no se corrige; solo una reforma (F18-H02) cambia una versión aprobada.
 
 ## User Scenarios & Testing *(mandatory)*
@@ -73,17 +74,17 @@ Como Vicerrector, Rector, miembro del OCS o Secretaría, quiero ver la resoluci�
 
 ---
 
-### User Story 3 - Registrar la resolución desde «Consolidado del periodo» (Priority: P2)
+### User Story 3 - Registrar la resolución desde su pantalla (Priority: P2)
 
-Como Secretaría general académica, quiero un formulario en «Consolidado del periodo» para registrar la resolución, y ver después su constancia con la descarga.
+Como Secretaría general académica, quiero una pantalla «Resolución del OCS» con el formulario para registrar la resolución, y ver después su constancia con la descarga. La Secretaría no abre «Consolidado del periodo»: no tiene el permiso de leer el consolidado (D-16).
 
 **Why this priority**: la operación ya se puede hacer por la API; la pantalla la pone al alcance de la Secretaría.
 
-**Independent Test**: con el distributivo en EN_OCS, `secretaria.demo` abre «Consolidado del periodo», completa el número, la fecha y el PDF, confirma, y ve el distributivo en APROBADO con la constancia de la resolución y «Descargar la resolución».
+**Independent Test**: con el distributivo en EN_OCS, `secretaria.demo` abre «Resolución del OCS», completa el número, la fecha y el PDF, confirma, y ve el distributivo en APROBADO con la constancia de la resolución y «Descargar la resolución».
 
 **Acceptance Scenarios**:
 
-1. **Dado** el distributivo en EN_OCS y el rol de la etapa, **cuando** abro «Consolidado del periodo», **entonces** veo el formulario «Registrar la resolución del OCS» con el número, la fecha y el PDF, y una confirmación que dice que el distributivo quedará aprobado.
+1. **Dado** el distributivo en EN_OCS y el rol de la etapa, **cuando** abro «Resolución del OCS», **entonces** veo el formulario «Registrar la resolución del OCS» con el número, la fecha y el PDF, y una confirmación que dice que el distributivo quedará aprobado.
 2. **Dado** el formulario incompleto o con la fecha fuera de rango, **cuando** intento confirmar, **entonces** la pantalla dice qué falta; el servidor lo comprueba igual.
 3. **Dado** la resolución registrada, **cuando** vuelve la pantalla, **entonces** veo APROBADO y la constancia con el número, la fecha, quién, cuándo, la huella y «Descargar la resolución».
 4. **Dado** otro rol, **cuando** abro la pantalla con el distributivo en EN_OCS, **entonces** no veo el formulario.
@@ -126,7 +127,7 @@ Como Secretaría general académica, quiero un formulario en «Consolidado del p
 
 **Pantalla, errores y seguridad**
 
-- **FR-014**: «Consolidado del periodo» DEBE ofrecer al rol de la etapa, con el distributivo en EN_OCS, el formulario de la resolución con su confirmación, y después la constancia con la descarga. Cumple WCAG 2.1 AA.
+- **FR-014**: La pantalla «Resolución del OCS», en el menú de quien lee o escribe la resolución, DEBE ofrecer al rol de la etapa, con el distributivo en EN_OCS, el formulario de la resolución con su confirmación, y después la constancia con la descarga. «Consolidado del periodo» muestra también la constancia a quien la abre y puede leerla. Cumple WCAG 2.1 AA.
 - **FR-015**: Los errores nuevos DEBEN estar en el catálogo con sus 8 columnas (principio XIII).
 - **FR-016**: El rol, la etapa, el número, la fecha y el PDF DEBEN comprobarse en el servidor; la pantalla solo ayuda.
 
@@ -142,7 +143,7 @@ Como Secretaría general académica, quiero un formulario en «Consolidado del p
 
 - **SC-001**: En las pruebas, el 100 % de los intentos de pasar a APROBADO sin resolución, con un dato que falta o no cumple, de otro rol o en otra etapa se rechazan sin cambiar nada.
 - **SC-002**: El 100 % de los registros válidos dejan el distributivo en APROBADO con su resolución, y su PDF se descarga idéntico.
-- **SC-003**: La Secretaría registra la resolución desde «Consolidado del periodo» en menos de 2 minutos, con el PDF a mano.
+- **SC-003**: La Secretaría registra la resolución desde «Resolución del OCS» en menos de 2 minutos, con el PDF a mano.
 - **SC-004**: Los escenarios de F12-H04, F14-H04, F14-H03, F14-H02, F14-H01, F13-H02 y F13-H01 siguen pasando.
 
 ## Assumptions

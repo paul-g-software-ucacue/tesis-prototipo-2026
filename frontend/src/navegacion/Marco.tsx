@@ -20,6 +20,7 @@ import {
   LECTURA_DE_LA_OFERTA,
   LECTURA_DE_LOS_DOCENTES,
   FIRMA_DEL_DISTRIBUTIVO,
+  RESOLUCION_DEL_OCS,
   LECTURA_DEL_FLUJO,
   LECTURA_DEL_PANEL,
   PREPARACION_DEL_PERIODO,
@@ -67,6 +68,7 @@ const ENTRADAS: Entrada[] = [
     texto: 'Pendientes de firma',
     permiso: FIRMA_DEL_DISTRIBUTIVO,
   },
+  { ruta: '/resolucion-ocs', texto: 'Resolución del OCS', permiso: RESOLUCION_DEL_OCS },
   { ruta: '/bitacora', texto: 'Bitácora', permiso: { funcionalidad: 'BITACORA', tipo: 'LECTURA' } },
 ];
 

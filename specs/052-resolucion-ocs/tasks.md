@@ -190,6 +190,11 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
   - **El cuerpo multipart** se comprueba como texto: en jsdom, `formData()` no lee el archivo, y la API simulada pierde su nombre («blob») al copiar la petición.
 
   Tipos, ESLint, Prettier y Vitest 587/587.
+
+  **La pantalla «Resolución del OCS» (decisión del autor, durante T015).** Al preparar Playwright se vio que la Secretaría general no abre «Consolidado del periodo»: la pantalla y su consulta piden `CONSOLIDACION:LECTURA` o `DISTRIBUTIVO:ESCRITURA`. El autor eligió una pantalla propia, `pantallas/resolucion/Resolucion.tsx` en `/resolucion-ocs`, con el permiso `RESOLUCION_DEL_OCS` (lectura o escritura de la resolución): el periodo y `EstadoDelFlujoDelPeriodo`, que ya muestra el formulario y la constancia.
+  - `Resolucion.test.tsx` (2) se vio fallar sin la pantalla y pasa con ella, su ruta y su entrada del menú.
+  - La spec (US3, FR-014, SC-003), el contrato de la SPA y D-107 quedan al día.
+  - Vitest 589/589.
 - [ ] T015 [US3] Playwright en `frontend/e2e/consolidado.spec.ts`: el registro completo con el teclado, la constancia y la descarga, y axe-core sin fallas en EN_OCS y en APROBADO.
 
 **Checkpoint**: las tres historias funcionan en la API y en la SPA.

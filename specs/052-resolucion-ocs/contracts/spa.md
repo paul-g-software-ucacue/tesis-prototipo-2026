@@ -1,6 +1,10 @@
 # Contrato: SPA
 
-## El estado del flujo (`EstadoDelFlujo.tsx`), en «Consolidado del periodo»
+## La pantalla «Resolución del OCS» (`/resolucion-ocs`)
+
+En el menú y con su ruta para quien tiene `RESOLUCION_OCS:LECTURA` o `RESOLUCION_OCS:ESCRITURA`: el selector de periodo y el estado del flujo del periodo (`EstadoDelFlujoDelPeriodo`). La Secretaría general no abre «Consolidado del periodo»: no lee el consolidado (D-16). Lee los periodos y el flujo con `DISTRIBUTIVO:LECTURA`.
+
+## El estado del flujo (`EstadoDelFlujo.tsx`), en «Resolución del OCS» y en «Consolidado del periodo»
 
 **Con `REGISTRAR_RESOLUCION` en `acciones`**, un formulario «Registrar la resolución del OCS»:
 - los campos «Número de la resolución», «Fecha de la resolución» (fecha, sin futura) y «PDF de la resolución»;
