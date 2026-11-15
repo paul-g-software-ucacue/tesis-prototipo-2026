@@ -85,4 +85,12 @@ El autor preguntó por la columna «Paso» de «Pendientes de firma». Muestra e
 
 ## Equipo de demostración (T027)
 
-Pendiente: se completa después de fusionar, solo de lectura (`contracts/demostracion.md`).
+| Comprobación | Resultado |
+|---|---|
+| Fusión | PR #237 (`8c802b3`), con las 12 comprobaciones en verde en la primera corrida |
+| Despliegue | `cd` exitoso; `mdd-actualizar` tomó `8c802b3` y dice «Sano en 56 s»; los 8 contenedores sanos con las imágenes `*-8c802b36db43` |
+| Las migraciones | En la base, `generacion` en la V8 (`version nueva`), `firma` en la V7 (`anulacion de firmas`) y `validacionocs` en la V6 (`version nueva`) |
+| Nada anulado | `firma.anulacion_de_firmas` vacía; ninguna versión ANULADA ni con motivo: 2026-I sigue en EN_CONSOLIDACION con su versión 1 |
+| Memoria | `distributivo` usa 245 de sus 512 MiB; `identidad`, 475 (#224, como después de F14-H04) |
+
+En la demo no se llega a la firma: 2026-I está en consolidación. El rechazo con la versión nueva lo cubren el script en la CI y el recorrido del autor en el perfil local.
