@@ -238,6 +238,37 @@ class DocumentoFirmableEsquemaIntegrationTest {
                 .isInstanceOf(DataAccessException.class);
     }
 
+    @Test
+    void dadoUnFirmanteConNombreImpresoYOtroSin_cuandoSeRegistran_entoncesQuedanYNoSeCambian() {
+        generacion("P13", 1, "GENERADA", null);
+        documento("P13", 1, UUID.randomUUID());
+        comoProceso
+                .sql(
+                        "insert into firma.firmante_esperado (periodo, version, tipo, orden, rol,"
+                                + " usuario, identificacion, nombre) values ('P13', 1, 'CONSOLIDADO',"
+                                + " 1, 'RESPONSABLE_CONSOLIDACION', 'docente.demo', null,"
+                                + " 'Docente (demo)')")
+                .update();
+        firmante("P13", 2, "VICERRECTOR", null, "0109990028");
+
+        assertThat(
+                        comoProceso
+                                .sql(
+                                        "select coalesce(nombre, '-') from firma.firmante_esperado"
+                                                + " where periodo = 'P13' order by orden")
+                                .query(String.class)
+                                .list())
+                .containsExactly("Docente (demo)", "-");
+        assertThatThrownBy(
+                        () ->
+                                comoProceso
+                                        .sql(
+                                                "update firma.firmante_esperado set nombre = 'otro'"
+                                                        + " where periodo = 'P13'")
+                                        .update())
+                .isInstanceOf(DataAccessException.class);
+    }
+
     private static void validacion(
             String periodo, int orden, boolean aceptada, String comprobaciones) {
         comoProceso
