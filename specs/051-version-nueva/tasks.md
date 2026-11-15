@@ -41,7 +41,7 @@ description: "Tareas de F12-H04: crear una versión nueva y anular las firmas tr
 
   **Resultado (2026-11-15):** escrita con el plan. El glosario tiene `crearVersionNueva()` («las ordena Aprobación», MD-04), `anularFirmas()` de `DocumentoFirmable`, el evento `FirmasAnuladas` de Firma, el estado ANULADA de la versión y «Anular firmas: … Se conservan en el historial». Se usan esos nombres. Da como motivos de la versión nueva «ajuste, devolución o reforma», sin «rechazo en firma»: D-106 lo anota para que el autor ponga al día el glosario.
 
-  **Pendiente del autor (análisis, C1):** el autor eligió «rechazo en firma» y lo suma a los motivos de `VersionDistributivo` en `sdd/modelo_dominio.md` antes de T003 (principio III). El glosario está fuera del repositorio.
+  **Glosario (análisis, C1, 2026-11-15):** el autor eligió «rechazo en firma». Con su autorización, se sumó a los motivos de `VersionDistributivo` en `sdd/modelo_dominio.md`: «(ajuste, devolución, reforma o rechazo en firma)». El `.docx` lo pone al día el autor. El glosario está fuera del repositorio.
 
 ---
 

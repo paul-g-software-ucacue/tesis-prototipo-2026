@@ -2205,4 +2205,4 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 - `probar_rechazo_en_firma.sh` aprueba la versión nueva en lugar de esperar el 409.
 - Una tabla nueva que dependa de la versión tendrá que copiarse al crear la versión nueva.
 
-**Documentos que hay que poner al día.** El glosario (`sdd/modelo_dominio.md`, `VersionDistributivo`) da como motivos de una versión nueva «ajuste, devolución o reforma»; hay que sumar «rechazo en firma». Los demás nombres ya están: `crearVersionNueva()`, `anularFirmas()`, `FirmasAnuladas` y ANULADA.
+**Documentos que hay que poner al día.** El glosario (`sdd/modelo_dominio.md`, `VersionDistributivo`): sus motivos de una versión nueva suman «rechazo en firma», hecho el 2026-11-15 en el `.md`; falta el `.docx`. Los demás nombres ya estaban: `crearVersionNueva()`, `anularFirmas()`, `FirmasAnuladas` y ANULADA.
