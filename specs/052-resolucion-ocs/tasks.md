@@ -214,7 +214,19 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
   Correrlo sobre un perfil construido desde la rama: 16/16. shellcheck sin hallazgos.
 
   **Resultado (2026-11-15):** 16/16 en la primera corrida, en 90 s, sobre un perfil construido desde la rama. El PDF de prueba de la resolución es mínimo y ficticio («%PDF-1.7 … %%EOF»). El de más de 10 MB entra en el límite del proceso, de 11 MB, y lo rechaza el dominio con su 413. La fecha anterior a EN_OCS sale de la transición, en `America/Guayaquil`. shellcheck sin hallazgos. El comentario del paso en `perfil-consolidado.yml` nombra F15-H01.
-- [ ] T017 Los scripts de `perfil-consolidado`, en su orden, sobre un perfil construido desde la rama (SC-004). Después, el recorrido a mano de `quickstart.md` §3, del autor (SC-003).
+- [X] T017 Los scripts de `perfil-consolidado`, en su orden, sobre un perfil construido desde la rama (SC-004). Después, el recorrido a mano de `quickstart.md` §3, del autor (SC-003).
+
+  **Resultado (2026-11-15):** los 36 pasan en su orden (T018).
+
+  **El recorrido a mano del autor**, con `MDD_CONSERVAR=EN_OCS`:
+  - `secretaria.demo` registró la resolución desde «Resolución del OCS» en 45 s (SC-003);
+  - quedó «Aprobado · versión 1» con la constancia;
+  - la descarga es el mismo PDF;
+  - `vicerrectorado.demo` ve la constancia en «Consolidado del periodo», sin el formulario.
+
+  **El recorrido dejó un texto, corregido en la rama.** El aviso de Generación decía «La versión N está congelada para la firma: ya no cambia.» también en APROBADO. Ahora dice «La versión N está congelada: ya no cambia.» en «Consolidado del periodo» y en el panel de inconsistencias. Generación no sabe en qué etapa está el flujo.
+  - Vitest 589/589.
+  - Playwright de las tres pantallas, 9/9.
 - [X] T018 Correr completos:
   - `./gradlew build integrationTest jacocoTestReport jacocoTestCoverageVerification`;
   - en la SPA, los tipos, ESLint, Prettier, Vitest y Playwright.
