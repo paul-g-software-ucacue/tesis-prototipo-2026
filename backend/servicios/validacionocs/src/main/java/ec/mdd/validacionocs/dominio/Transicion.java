@@ -25,6 +25,8 @@ import java.util.regex.Pattern;
  *     vacío en los demás tipos (F12-H05)
  * @param rechazo en un rechazo en firma, quién rechazó, en qué paso y su observación; vacío en los
  *     demás tipos (F14-H04)
+ * @param resolucion en el paso de EN_OCS a APROBADO, la resolución del OCS; vacío en los demás
+ *     (F15-H01)
  */
 public record Transicion(
         TipoDeTransicion tipo,
@@ -36,7 +38,8 @@ public record Transicion(
         String quien,
         Instant momento,
         Map<String, Observacion> observaciones,
-        Optional<RechazoDelFirmante> rechazo) {
+        Optional<RechazoDelFirmante> rechazo,
+        Optional<ResolucionOcs> resolucion) {
 
     private static final Pattern HASH = Pattern.compile("^[0-9a-f]{64}$");
 
@@ -64,6 +67,41 @@ public record Transicion(
             throw new IllegalArgumentException(
                     "Solo un rechazo en firma lleva su rechazo, y siempre");
         }
+        Objects.requireNonNull(resolucion, "resolucion");
+        boolean aAprobado =
+                tipo == TipoDeTransicion.PASO_DE_ETAPA
+                        && desde == TipoDeEtapa.EN_OCS
+                        && hacia == TipoDeEtapa.APROBADO;
+        if (aAprobado != resolucion.isPresent()) {
+            throw new IllegalArgumentException(
+                    "Solo el paso de EN_OCS a APROBADO lleva la resolución del OCS, y siempre");
+        }
+    }
+
+    /** Una transición sin resolución del OCS: cualquiera menos el paso de EN_OCS a APROBADO. */
+    public Transicion(
+            TipoDeTransicion tipo,
+            TipoDeEtapa desde,
+            TipoDeEtapa hacia,
+            Optional<String> carrera,
+            int version,
+            String hash,
+            String quien,
+            Instant momento,
+            Map<String, Observacion> observaciones,
+            Optional<RechazoDelFirmante> rechazo) {
+        this(
+                tipo,
+                desde,
+                hacia,
+                carrera,
+                version,
+                hash,
+                quien,
+                momento,
+                observaciones,
+                rechazo,
+                Optional.empty());
     }
 
     /** Una transición sin rechazo en firma: un envío, un paso de etapa o una devolución. */

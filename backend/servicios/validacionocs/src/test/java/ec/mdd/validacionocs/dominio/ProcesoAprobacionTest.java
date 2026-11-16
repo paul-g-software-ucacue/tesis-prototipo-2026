@@ -223,10 +223,11 @@ class ProcesoAprobacionTest {
         assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.BORRADOR_UNIDADES);
     }
 
+    // EN_OCS tiene su propio rechazo desde F15-H01: RequiereResolucion (prueba aparte).
     @ParameterizedTest
     @EnumSource(
             value = TipoDeEtapa.class,
-            names = {"BORRADOR_UNIDADES"},
+            names = {"BORRADOR_UNIDADES", "EN_OCS"},
             mode = EnumSource.Mode.EXCLUDE)
     void dadaUnaEtapaConOperacionPropia_cuandoSeUsaElAvanceGenerico_entoncesSeRechaza(
             TipoDeEtapa etapa) {
@@ -1381,5 +1382,151 @@ class ProcesoAprobacionTest {
         assertThat(enFirma.admiteRechazoEnFirma(3)).isFalse();
         assertThat(rechazado().admiteRechazoEnFirma(2)).isFalse();
         assertThat(enRevision(etapas(false)).admiteRechazoEnFirma(2)).isFalse();
+    }
+
+    // La resolución del OCS (F15-H01, D-107). En firma con AHORA (2026-11-07, 10:00 en Guayaquil);
+    // a EN_OCS con FIRMADA, una hora después: el mismo día en la institución.
+
+    private static final Solicitante SECRETARIA =
+            new Solicitante("secretaria.demo", Set.of("SECRETARIA_GENERAL"), Optional.empty());
+    private static final java.time.LocalDate DIA_EN_OCS = java.time.LocalDate.of(2026, 11, 7);
+    private static final Instant TRES_DIAS_DESPUES = Instant.parse("2026-11-10T15:00:00Z");
+
+    private static ProcesoAprobacion enOcs() {
+        ProcesoAprobacion proceso = enFirma();
+        proceso.completarFirmas(2, FIRMADA);
+        return proceso;
+    }
+
+    private static ResolucionOcs resolucionDel(java.time.LocalDate fecha) {
+        return new ResolucionOcs("RPC-SO-12-No.123-2026", fecha, "b".repeat(64), "r.pdf", 2048);
+    }
+
+    @Test
+    void dadoElDistributivoEnOcs_cuandoLaSecretariaRegistraLaResolucion_entoncesPasaAAprobado() {
+        ProcesoAprobacion proceso = enOcs();
+        ResolucionOcs resolucion = resolucionDel(DIA_EN_OCS.plusDays(2));
+
+        List<Transicion> nuevas =
+                proceso.registrarResolucion(SECRETARIA, resolucion, TRES_DIAS_DESPUES);
+
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.APROBADO);
+        assertThat(nuevas)
+                .containsExactly(
+                        new Transicion(
+                                TipoDeTransicion.PASO_DE_ETAPA,
+                                TipoDeEtapa.EN_OCS,
+                                TipoDeEtapa.APROBADO,
+                                Optional.empty(),
+                                2,
+                                HASH_CONGELADO,
+                                "secretaria.demo",
+                                TRES_DIAS_DESPUES,
+                                Map.of(),
+                                Optional.empty(),
+                                Optional.of(resolucion)));
+        assertThat(proceso.resolucion()).contains(nuevas.get(0));
+        assertThat(proceso.acciones(SECRETARIA)).isEmpty();
+    }
+
+    @Test
+    void dadaLaFechaDelDiaDeEntradaODeHoy_cuandoSeRegistra_entoncesSeAdmite() {
+        assertThat(
+                        enOcs().registrarResolucion(
+                                        SECRETARIA, resolucionDel(DIA_EN_OCS), TRES_DIAS_DESPUES))
+                .hasSize(1);
+        assertThat(
+                        enOcs().registrarResolucion(
+                                        SECRETARIA,
+                                        resolucionDel(java.time.LocalDate.of(2026, 11, 10)),
+                                        TRES_DIAS_DESPUES))
+                .hasSize(1);
+    }
+
+    @Test
+    void dadaUnaFechaAnteriorALaEntradaOFutura_cuandoSeRegistra_entoncesFueraDeRangoSinCambiar() {
+        ProcesoAprobacion proceso = enOcs();
+
+        assertThatThrownBy(
+                        () ->
+                                proceso.registrarResolucion(
+                                        SECRETARIA,
+                                        resolucionDel(DIA_EN_OCS.minusDays(1)),
+                                        TRES_DIAS_DESPUES))
+                .isInstanceOf(ResolucionFueraDeRango.class);
+        assertThatThrownBy(
+                        () ->
+                                proceso.registrarResolucion(
+                                        SECRETARIA,
+                                        resolucionDel(java.time.LocalDate.of(2026, 11, 11)),
+                                        TRES_DIAS_DESPUES))
+                .isInstanceOf(ResolucionFueraDeRango.class);
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_OCS);
+    }
+
+    @Test
+    void
+            dadaLaNocheEnGuayaquil_cuandoSeRegistraConLaFechaDeUtc_entoncesEsFuturaParaLaInstitucion() {
+        // 2026-11-08T03:00Z son las 22:00 del 7 en Guayaquil: el 8 todavía es futuro.
+        Instant noche = Instant.parse("2026-11-08T03:00:00Z");
+
+        assertThatThrownBy(
+                        () ->
+                                enOcs().registrarResolucion(
+                                                SECRETARIA,
+                                                resolucionDel(java.time.LocalDate.of(2026, 11, 8)),
+                                                noche))
+                .isInstanceOf(ResolucionFueraDeRango.class);
+        assertThat(enOcs().registrarResolucion(SECRETARIA, resolucionDel(DIA_EN_OCS), noche))
+                .hasSize(1);
+    }
+
+    @Test
+    void dadoOtroRolUOtraEtapa_cuandoSeRegistra_entoncesSeRechazaSinCambiar() {
+        ProcesoAprobacion enOcs = enOcs();
+        assertThatThrownBy(
+                        () ->
+                                enOcs.registrarResolucion(
+                                        VICERRECTOR, resolucionDel(DIA_EN_OCS), TRES_DIAS_DESPUES))
+                .isInstanceOf(RolDeOtraEtapa.class);
+        assertThat(enOcs.estado()).isEqualTo(TipoDeEtapa.EN_OCS);
+
+        ProcesoAprobacion enFirma = enFirma();
+        assertThatThrownBy(
+                        () ->
+                                enFirma.registrarResolucion(
+                                        SECRETARIA, resolucionDel(DIA_EN_OCS), TRES_DIAS_DESPUES))
+                .isInstanceOf(EtapaNoAdmiteResolucion.class);
+
+        ProcesoAprobacion aprobado = enOcs();
+        aprobado.registrarResolucion(SECRETARIA, resolucionDel(DIA_EN_OCS), TRES_DIAS_DESPUES);
+        assertThatThrownBy(
+                        () ->
+                                aprobado.registrarResolucion(
+                                        SECRETARIA, resolucionDel(DIA_EN_OCS), TRES_DIAS_DESPUES))
+                .as("la segunda, ya en APROBADO")
+                .isInstanceOf(EtapaNoAdmiteResolucion.class);
+    }
+
+    @Test
+    void dadoElDistributivoEnOcs_cuandoSeUsaElAvanceGenerico_entoncesRequiereResolucion() {
+        ProcesoAprobacion proceso = enOcs();
+
+        assertThatThrownBy(() -> proceso.validarAvance(SECRETARIA))
+                .isInstanceOf(RequiereResolucion.class);
+        assertThatThrownBy(() -> proceso.avanzar(SECRETARIA, 2, HASH_CONGELADO, TRES_DIAS_DESPUES))
+                .isInstanceOf(RequiereResolucion.class);
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_OCS);
+    }
+
+    @Test
+    void dadoElDistributivoEnOcs_cuandoSeVenLasAcciones_entoncesSoloLaSecretariaRegistra() {
+        ProcesoAprobacion proceso = enOcs();
+
+        assertThat(proceso.acciones(SECRETARIA))
+                .containsExactly(AccionDelProceso.REGISTRAR_RESOLUCION);
+        assertThat(proceso.acciones(VICERRECTOR)).isEmpty();
+        assertThat(enFirma().acciones(SECRETARIA)).isEmpty();
+        assertThat(proceso.resolucion()).isEmpty();
     }
 }

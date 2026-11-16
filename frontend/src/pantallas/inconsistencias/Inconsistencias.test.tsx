@@ -299,9 +299,7 @@ describe('Panel de inconsistencias', () => {
       );
       await abrir();
 
-      expect(
-        screen.getByText('La versión 1 está congelada para la firma: ya no cambia.'),
-      ).toBeVisible();
+      expect(screen.getByText('La versión 1 está congelada: ya no cambia.')).toBeVisible();
       expect(
         screen.queryByText(
           'El distributivo está en revisión del Vicerrectorado: el consolidado ya no cambia.',

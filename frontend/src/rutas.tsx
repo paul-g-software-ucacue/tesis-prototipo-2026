@@ -16,6 +16,7 @@ import { Bitacora } from './pantallas/bitacora/Bitacora';
 import { Consolidado } from './pantallas/consolidado/Consolidado';
 import { FirmasPendientes } from './pantallas/firmas/FirmasPendientes';
 import { Flujo } from './pantallas/flujo/Flujo';
+import { Resolucion } from './pantallas/resolucion/Resolucion';
 import { Inconsistencias } from './pantallas/inconsistencias/Inconsistencias';
 import { Oferta } from './pantallas/oferta/Oferta';
 import { Plantillas } from './pantallas/plantillas/Plantillas';
@@ -31,6 +32,7 @@ import {
   LECTURA_DE_LA_OFERTA,
   LECTURA_DE_LOS_DOCENTES,
   FIRMA_DEL_DISTRIBUTIVO,
+  RESOLUCION_DEL_OCS,
   LECTURA_DEL_FLUJO,
   LECTURA_DEL_PANEL,
 } from './sesion/funcionalidades';
@@ -98,6 +100,14 @@ export const rutasDeLaSpa: RouteObject[] = [
         element: (
           <RutaConPermiso cualquieraDe={LECTURA_DEL_FLUJO}>
             <Flujo />
+          </RutaConPermiso>
+        ),
+      },
+      {
+        path: 'resolucion-ocs',
+        element: (
+          <RutaConPermiso cualquieraDe={RESOLUCION_DEL_OCS}>
+            <Resolucion />
           </RutaConPermiso>
         ),
       },

@@ -15,20 +15,28 @@ import ec.mdd.validacionocs.dominio.EtapaConOperacionPropia;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteAprobacion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteDevolucion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteEnvio;
+import ec.mdd.validacionocs.dominio.EtapaNoAdmiteResolucion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteRevision;
 import ec.mdd.validacionocs.dominio.InconsistenciasAbiertas;
+import ec.mdd.validacionocs.dominio.NumeroDeResolucionInvalido;
 import ec.mdd.validacionocs.dominio.ObservacionInvalida;
 import ec.mdd.validacionocs.dominio.ParcialNoEncontrado;
 import ec.mdd.validacionocs.dominio.ParcialNoEnviado;
 import ec.mdd.validacionocs.dominio.ParcialYaEnviado;
 import ec.mdd.validacionocs.dominio.ParcialesPendientes;
+import ec.mdd.validacionocs.dominio.RequiereResolucion;
 import ec.mdd.validacionocs.dominio.RequiereVersionNueva;
+import ec.mdd.validacionocs.dominio.ResolucionDemasiadoGrande;
+import ec.mdd.validacionocs.dominio.ResolucionFueraDeRango;
+import ec.mdd.validacionocs.dominio.ResolucionNoEsPdf;
 import ec.mdd.validacionocs.dominio.SinConsolidar;
 import ec.mdd.validacionocs.dominio.SinInforme;
 import ec.mdd.validacionocs.puertos.entrada.ConfiguracionInvalida;
 import ec.mdd.validacionocs.puertos.entrada.PeriodoCerrado;
 import ec.mdd.validacionocs.puertos.entrada.PeriodoNoEncontrado;
 import ec.mdd.validacionocs.puertos.entrada.PeriodoSinPlanificacion;
+import ec.mdd.validacionocs.puertos.entrada.ResolucionIlegible;
+import ec.mdd.validacionocs.puertos.entrada.ResolucionNoEncontrada;
 import ec.mdd.validacionocs.puertos.entrada.SinDistributivo;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -67,6 +75,30 @@ class ErroresValidacionocsTest {
                                 "VALIDACIONOCS_PERIODO_NO_ENCONTRADO",
                                 404),
                         tuple(SinDistributivo.class, "VALIDACIONOCS_SIN_DISTRIBUTIVO", 404),
+                        // F15-H01, D-107.
+                        tuple(RequiereResolucion.class, "VALIDACIONOCS_REQUIERE_RESOLUCION", 409),
+                        tuple(
+                                EtapaNoAdmiteResolucion.class,
+                                "VALIDACIONOCS_ETAPA_NO_ADMITE_RESOLUCION",
+                                409),
+                        tuple(
+                                NumeroDeResolucionInvalido.class,
+                                "VALIDACIONOCS_NUMERO_DE_RESOLUCION_INVALIDO",
+                                400),
+                        tuple(
+                                ResolucionFueraDeRango.class,
+                                "VALIDACIONOCS_FECHA_DE_RESOLUCION_FUERA_DE_RANGO",
+                                400),
+                        tuple(ResolucionNoEsPdf.class, "VALIDACIONOCS_RESOLUCION_NO_ES_PDF", 400),
+                        tuple(
+                                ResolucionDemasiadoGrande.class,
+                                "VALIDACIONOCS_RESOLUCION_DEMASIADO_GRANDE",
+                                413),
+                        tuple(
+                                ResolucionNoEncontrada.class,
+                                "VALIDACIONOCS_RESOLUCION_NO_ENCONTRADA",
+                                404),
+                        tuple(ResolucionIlegible.class, "VALIDACIONOCS_RESOLUCION_ILEGIBLE", 500),
                         tuple(
                                 RequiereVersionNueva.class,
                                 "VALIDACIONOCS_REQUIERE_VERSION_NUEVA",

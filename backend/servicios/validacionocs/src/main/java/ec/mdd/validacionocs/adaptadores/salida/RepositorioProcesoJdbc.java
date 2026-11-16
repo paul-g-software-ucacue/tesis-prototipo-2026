@@ -5,6 +5,7 @@ import ec.mdd.validacionocs.dominio.EtapaDelProceso;
 import ec.mdd.validacionocs.dominio.Observacion;
 import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
 import ec.mdd.validacionocs.dominio.RechazoDelFirmante;
+import ec.mdd.validacionocs.dominio.ResolucionOcs;
 import ec.mdd.validacionocs.dominio.TipoDeEtapa;
 import ec.mdd.validacionocs.dominio.TipoDeTransicion;
 import ec.mdd.validacionocs.dominio.Transicion;
@@ -165,6 +166,27 @@ public final class RepositorioProcesoJdbc implements RepositorioProceso {
                                         .param("en", Timestamp.from(rechazo.rechazadoEn()))
                                         .param("observacion", rechazo.observacion().texto())
                                         .update());
+        // La resolución del OCS (F15-H01), también solo de inserción.
+        transicion
+                .resolucion()
+                .ifPresent(
+                        resolucion ->
+                                jdbc.sql(
+                                                "INSERT INTO validacionocs.resolucion_ocs"
+                                                        + " (transicion_id, periodo, version,"
+                                                        + " numero, fecha, sha256, nombre, tamano)"
+                                                        + " VALUES (:id, :periodo, :version,"
+                                                        + " :numero, :fecha, :sha, :nombre,"
+                                                        + " :tamano)")
+                                        .param("id", id)
+                                        .param("periodo", periodo)
+                                        .param("version", transicion.version())
+                                        .param("numero", resolucion.numero())
+                                        .param("fecha", resolucion.fecha())
+                                        .param("sha", resolucion.sha256())
+                                        .param("nombre", resolucion.nombre())
+                                        .param("tamano", resolucion.tamano())
+                                        .update());
     }
 
     private Optional<ProcesoAprobacion> leer(String consulta, String periodo) {
@@ -208,6 +230,7 @@ public final class RepositorioProcesoJdbc implements RepositorioProceso {
     private List<Transicion> transiciones(String periodo) {
         Map<UUID, Map<String, Observacion>> observaciones = observaciones(periodo);
         Map<UUID, RechazoDelFirmante> rechazos = rechazos(periodo);
+        Map<UUID, ResolucionOcs> resoluciones = resoluciones(periodo);
         // El orden de inserción dentro de un mismo momento: el envío antes que su paso de etapa.
         return jdbc.sql(
                         "SELECT id, tipo, desde, hacia, carrera, version, hash, quien, momento"
@@ -229,8 +252,31 @@ public final class RepositorioProcesoJdbc implements RepositorioProceso {
                                         observaciones.getOrDefault(
                                                 fila.getObject("id", UUID.class), Map.of()),
                                         Optional.ofNullable(
-                                                rechazos.get(fila.getObject("id", UUID.class)))))
+                                                rechazos.get(fila.getObject("id", UUID.class))),
+                                        Optional.ofNullable(
+                                                resoluciones.get(
+                                                        fila.getObject("id", UUID.class)))))
                 .list();
+    }
+
+    private Map<UUID, ResolucionOcs> resoluciones(String periodo) {
+        Map<UUID, ResolucionOcs> porTransicion = new HashMap<>();
+        jdbc.sql(
+                        "SELECT transicion_id, numero, fecha, sha256, nombre, tamano"
+                                + " FROM validacionocs.resolucion_ocs WHERE periodo = :periodo")
+                .param("periodo", periodo)
+                .query(
+                        (fila, numero) ->
+                                porTransicion.put(
+                                        fila.getObject("transicion_id", UUID.class),
+                                        new ResolucionOcs(
+                                                fila.getString("numero"),
+                                                fila.getObject("fecha", java.time.LocalDate.class),
+                                                fila.getString("sha256"),
+                                                fila.getString("nombre"),
+                                                fila.getInt("tamano"))))
+                .list();
+        return porTransicion;
     }
 
     private Map<UUID, RechazoDelFirmante> rechazos(String periodo) {

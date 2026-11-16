@@ -90,7 +90,8 @@ jobs:
         shell: bash
         run: deploy/probar_aprobacion.sh
 
-      # F13-H02: al aprobar, el PDF/A del consolidado con su hash; veraPDF lo valida (D-101).
+      # F13-H02: al aprobar, el PDF/A del consolidado con su hash; veraPDF lo valida (D-101). Hasta
+      # F15-H01: las tres firmas, EN_OCS y la resolución del OCS, que lo deja APROBADO (D-107).
       - name: Documento firmable
         shell: bash
         run: deploy/probar_documento_firmable.sh

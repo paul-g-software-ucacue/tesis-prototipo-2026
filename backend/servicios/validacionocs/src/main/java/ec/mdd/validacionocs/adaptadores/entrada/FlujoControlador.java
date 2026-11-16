@@ -9,6 +9,7 @@ import ec.mdd.validacionocs.adaptadores.entrada.api.DevolucionDelParcial;
 import ec.mdd.validacionocs.adaptadores.entrada.api.EstadoDelFlujo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.ParcialDelFlujo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.RechazoEnFirmaDelFlujo;
+import ec.mdd.validacionocs.adaptadores.entrada.api.ResolucionDelOcs;
 import ec.mdd.validacionocs.adaptadores.entrada.api.SolicitudDeDevolucion;
 import ec.mdd.validacionocs.adaptadores.entrada.api.TipoDeEtapa;
 import ec.mdd.validacionocs.adaptadores.entrada.api.TransicionDelFlujo;
@@ -20,10 +21,12 @@ import ec.mdd.validacionocs.dominio.Transicion;
 import ec.mdd.validacionocs.puertos.entrada.AprobarContenido;
 import ec.mdd.validacionocs.puertos.entrada.AvanzarEtapa;
 import ec.mdd.validacionocs.puertos.entrada.ConsultarFlujo;
+import ec.mdd.validacionocs.puertos.entrada.DescargarResolucion;
 import ec.mdd.validacionocs.puertos.entrada.DevolverParciales;
 import ec.mdd.validacionocs.puertos.entrada.EnviarARevision;
 import ec.mdd.validacionocs.puertos.entrada.EnviarParcial;
 import ec.mdd.validacionocs.puertos.entrada.FlujoDelDistributivo;
+import ec.mdd.validacionocs.puertos.entrada.RegistrarResolucion;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
@@ -57,6 +60,8 @@ class FlujoControlador implements AprobacionApi {
     private final EnviarARevision revisar;
     private final DevolverParciales devolver;
     private final AprobarContenido aprobar;
+    private final RegistrarResolucion registrar;
+    private final DescargarResolucion descargar;
 
     FlujoControlador(
             ConsultarFlujo consultar,
@@ -64,13 +69,17 @@ class FlujoControlador implements AprobacionApi {
             AvanzarEtapa avanzar,
             EnviarARevision revisar,
             DevolverParciales devolver,
-            AprobarContenido aprobar) {
+            AprobarContenido aprobar,
+            RegistrarResolucion registrar,
+            DescargarResolucion descargar) {
         this.consultar = consultar;
         this.enviar = enviar;
         this.avanzar = avanzar;
         this.revisar = revisar;
         this.devolver = devolver;
         this.aprobar = aprobar;
+        this.registrar = registrar;
+        this.descargar = descargar;
     }
 
     @Override
@@ -129,6 +138,52 @@ class FlujoControlador implements AprobacionApi {
         Solicitante quien = solicitante(true);
         return ResponseEntity.ok(
                 respuesta(sinPermiso(() -> aprobar.aprobarContenido(periodo, quien))));
+    }
+
+    // F15-H01, D-107: solo el rol de EN_OCS en la copia de la configuración; registrar es aprobar.
+    // El PDF llega entero: el proceso corta en 11 MB y el dominio, en 10.
+    @Override
+    @PreAuthorize("hasAuthority('PERMISO_RESOLUCION_OCS:ESCRITURA')")
+    public ResponseEntity<EstadoDelFlujo> registrarResolucion(
+            String periodo,
+            String numero,
+            java.time.LocalDate fecha,
+            org.springframework.web.multipart.MultipartFile archivo) {
+        Solicitante quien = solicitante(true);
+        byte[] bytes;
+        try {
+            bytes = archivo.getBytes();
+        } catch (java.io.IOException error) {
+            throw new java.io.UncheckedIOException("No se pudo leer el archivo recibido", error);
+        }
+        return ResponseEntity.ok(
+                respuesta(
+                        sinPermiso(
+                                () ->
+                                        registrar.registrar(
+                                                periodo,
+                                                numero,
+                                                fecha,
+                                                archivo.getOriginalFilename(),
+                                                bytes,
+                                                quien))));
+    }
+
+    // F15-H01: con el permiso de leer la resolución (D-16, D-107), el PDF con su nombre.
+    @Override
+    @PreAuthorize("hasAuthority('PERMISO_RESOLUCION_OCS:LECTURA')")
+    public ResponseEntity<org.springframework.core.io.Resource> descargarResolucion(
+            String periodo) {
+        DescargarResolucion.ArchivoDeLaResolucion archivo = descargar.descargar(periodo);
+        return ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.APPLICATION_PDF)
+                .header(
+                        org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        org.springframework.http.ContentDisposition.attachment()
+                                .filename(archivo.nombre(), java.nio.charset.StandardCharsets.UTF_8)
+                                .build()
+                                .toString())
+                .body(new org.springframework.core.io.ByteArrayResource(archivo.contenido()));
     }
 
     private static FlujoDelDistributivo sinPermiso(Supplier<FlujoDelDistributivo> caso) {
@@ -199,7 +254,29 @@ class FlujoControlador implements AprobacionApi {
                             una.versionNueva().ifPresent(rechazo::versionNueva);
                             respuesta.rechazoEnFirma(rechazo);
                         });
+        // F15-H01: la resolución, solo a quien tiene el permiso de leerla (D-16, D-107).
+        if (puedeLeerLaResolucion()) {
+            flujo.resolucion()
+                    .ifPresent(
+                            una ->
+                                    respuesta.resolucion(
+                                            new ResolucionDelOcs(
+                                                    una.numero(),
+                                                    una.fecha(),
+                                                    una.registradaPor(),
+                                                    una.registradaEn().atOffset(ZoneOffset.UTC),
+                                                    una.sha256(),
+                                                    una.nombre(),
+                                                    una.tamano())));
+        }
         return respuesta;
+    }
+
+    private static boolean puedeLeerLaResolucion() {
+        return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .anyMatch(
+                        autoridad ->
+                                "PERMISO_RESOLUCION_OCS:LECTURA".equals(autoridad.getAuthority()));
     }
 
     private static ParcialDelFlujo parcial(FlujoDelDistributivo.Parcial parcial) {

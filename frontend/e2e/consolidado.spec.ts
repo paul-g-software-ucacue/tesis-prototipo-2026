@@ -438,9 +438,7 @@ test('el Vicerrector aprueba y congela, ve la constancia y es accesible', async 
   );
   await expect(estado).toContainText('Huella: 0123456789ab…');
   await expect(page.getByRole('button', { name: 'Aprobar el contenido' })).toHaveCount(0);
-  await expect(
-    page.getByText('La versión 1 está congelada para la firma: ya no cambia.'),
-  ).toBeVisible();
+  await expect(page.getByText('La versión 1 está congelada: ya no cambia.')).toBeVisible();
   await expect(page.getByRole('button', { name: /onsolidar/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Descargar el informe' })).toBeVisible();
   expect(aprobaciones).toBe(1);

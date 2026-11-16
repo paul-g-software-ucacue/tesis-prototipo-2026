@@ -54,6 +54,10 @@ final class FlujoEnMemoria {
 
     private final Map<String, Map<String, Boolean>> enviados = new HashMap<>();
     private final Map<String, ProcesoAprobacion> procesos = new HashMap<>();
+
+    /** Los PDF de las resoluciones, por su huella (F15-H01). */
+    final Map<String, byte[]> resoluciones = new java.util.concurrent.ConcurrentHashMap<>();
+
     private CondicionesDeRevision condiciones = listo();
     private boolean sinDevolucion;
 
@@ -106,10 +110,60 @@ final class FlujoEnMemoria {
         procesos.get(periodo).registrarVersionNueva(1, 2, "e".repeat(64), AHORA);
     }
 
+    /**
+     * Como Firma tras la tercera firma: la cadena completa, el distributivo en EN_OCS (F15-H01).
+     */
+    void enOcs(String periodo) {
+        procesos.get(periodo).completarFirmas(1, AHORA);
+    }
+
+    /** Descargar la resolución con el caso de uso real, sobre esta memoria (F15-H01). */
+    ec.mdd.validacionocs.puertos.entrada.DescargarResolucion descargarResolucion() {
+        return new ec.mdd.validacionocs.aplicacion.DescargarResolucionServicio(
+                repositorio(), almacen());
+    }
+
+    private ec.mdd.validacionocs.puertos.salida.AlmacenDeResoluciones almacen() {
+        return new ec.mdd.validacionocs.puertos.salida.AlmacenDeResoluciones() {
+            @Override
+            public void guardar(String sha256, byte[] contenido) {
+                resoluciones.put(sha256, contenido.clone());
+            }
+
+            @Override
+            public byte[] leer(String sha256) {
+                byte[] contenido = resoluciones.get(sha256);
+                if (contenido == null) {
+                    throw new ec.mdd.validacionocs.puertos.entrada.ResolucionIlegible();
+                }
+                return contenido.clone();
+            }
+        };
+    }
+
+    /** Registrar la resolución con el caso de uso real, sobre esta memoria (F15-H01). */
+    ec.mdd.validacionocs.puertos.entrada.RegistrarResolucion registrarResolucion() {
+        return new ec.mdd.validacionocs.aplicacion.RegistrarResolucionServicio(
+                repositorio(),
+                distributivo(),
+                datos(),
+                almacen(),
+                cambio -> {},
+                new Transaccion() {
+                    @Override
+                    public <T> T ejecutar(Supplier<T> trabajo) {
+                        return trabajo.get();
+                    }
+                },
+                servicio(),
+                Clock.fixed(AHORA.plusSeconds(3600), ZoneOffset.UTC));
+    }
+
     /** Todo como al empezar: distributivos sin parciales enviados y sin procesos. */
     void reiniciar() {
         enviados.clear();
         procesos.clear();
+        resoluciones.clear();
         condiciones = listo();
         sinDevolucion = false;
         for (String periodo : List.of(PERIODO, CERRADO)) {

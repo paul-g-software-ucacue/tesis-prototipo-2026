@@ -93,15 +93,24 @@ class MatrizD16IntegrationTest {
                             "PARAMETROS:ESCRITURA",
                             // D-66: lee la normativa que elige para su periodo (F04-H01).
                             "PARAMETROS:LECTURA",
-                            "REPORTES:LECTURA"),
+                            "REPORTES:LECTURA",
+                            // D-107: lee la resolución del OCS (F15-H01).
+                            "RESOLUCION_OCS:LECTURA"),
                     "RECTOR",
                     List.of(
                             "DISTRIBUTIVO:APROBACION",
                             "DISTRIBUTIVO:FIRMA",
                             "DISTRIBUTIVO:LECTURA",
-                            "REPORTES:LECTURA"),
+                            "REPORTES:LECTURA",
+                            // D-107: lee la resolución del OCS (F15-H01).
+                            "RESOLUCION_OCS:LECTURA"),
                     "MIEMBRO_OCS",
-                    List.of("DISTRIBUTIVO:LECTURA", "REPORTES:LECTURA", "VOTACION_OCS:APROBACION"),
+                    List.of(
+                            "DISTRIBUTIVO:LECTURA",
+                            "REPORTES:LECTURA",
+                            // D-107: lee la resolución del OCS (F15-H01).
+                            "RESOLUCION_OCS:LECTURA",
+                            "VOTACION_OCS:APROBACION"),
                     "SECRETARIA_GENERAL",
                     List.of(
                             "DISTRIBUTIVO:LECTURA",

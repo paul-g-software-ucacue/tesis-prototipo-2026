@@ -13,20 +13,28 @@ import ec.mdd.validacionocs.dominio.EtapaConOperacionPropia;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteAprobacion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteDevolucion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteEnvio;
+import ec.mdd.validacionocs.dominio.EtapaNoAdmiteResolucion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteRevision;
 import ec.mdd.validacionocs.dominio.InconsistenciasAbiertas;
+import ec.mdd.validacionocs.dominio.NumeroDeResolucionInvalido;
 import ec.mdd.validacionocs.dominio.ObservacionInvalida;
 import ec.mdd.validacionocs.dominio.ParcialNoEncontrado;
 import ec.mdd.validacionocs.dominio.ParcialNoEnviado;
 import ec.mdd.validacionocs.dominio.ParcialYaEnviado;
 import ec.mdd.validacionocs.dominio.ParcialesPendientes;
+import ec.mdd.validacionocs.dominio.RequiereResolucion;
 import ec.mdd.validacionocs.dominio.RequiereVersionNueva;
+import ec.mdd.validacionocs.dominio.ResolucionDemasiadoGrande;
+import ec.mdd.validacionocs.dominio.ResolucionFueraDeRango;
+import ec.mdd.validacionocs.dominio.ResolucionNoEsPdf;
 import ec.mdd.validacionocs.dominio.SinConsolidar;
 import ec.mdd.validacionocs.dominio.SinInforme;
 import ec.mdd.validacionocs.puertos.entrada.ConfiguracionInvalida;
 import ec.mdd.validacionocs.puertos.entrada.PeriodoCerrado;
 import ec.mdd.validacionocs.puertos.entrada.PeriodoNoEncontrado;
 import ec.mdd.validacionocs.puertos.entrada.PeriodoSinPlanificacion;
+import ec.mdd.validacionocs.puertos.entrada.ResolucionIlegible;
+import ec.mdd.validacionocs.puertos.entrada.ResolucionNoEncontrada;
 import ec.mdd.validacionocs.puertos.entrada.SinDistributivo;
 import java.util.List;
 import org.springframework.stereotype.Component;
@@ -130,6 +138,58 @@ class ErroresValidacionocs implements CatalogoDeErrores {
                         "Etapa sin aprobación",
                         "El distributivo no está en revisión del Vicerrectorado: no se puede"
                                 + " aprobar su contenido."),
+                // La resolución del OCS (F15-H01, D-107).
+                EntradaCatalogo.de(
+                        RequiereResolucion.class,
+                        "VALIDACIONOCS_REQUIERE_RESOLUCION",
+                        409,
+                        "Falta la resolución",
+                        "Para aprobar el distributivo registra la resolución del OCS: número, fecha y"
+                                + " PDF."),
+                EntradaCatalogo.de(
+                        EtapaNoAdmiteResolucion.class,
+                        "VALIDACIONOCS_ETAPA_NO_ADMITE_RESOLUCION",
+                        409,
+                        "Etapa sin resolución",
+                        "La resolución del OCS solo se registra con el distributivo en la etapa del"
+                                + " OCS."),
+                EntradaCatalogo.de(
+                        NumeroDeResolucionInvalido.class,
+                        "VALIDACIONOCS_NUMERO_DE_RESOLUCION_INVALIDO",
+                        400,
+                        "Número no válido",
+                        "Escribe el número de la resolución, de hasta 60 caracteres."),
+                EntradaCatalogo.de(
+                        ResolucionFueraDeRango.class,
+                        "VALIDACIONOCS_FECHA_DE_RESOLUCION_FUERA_DE_RANGO",
+                        400,
+                        "Fecha fuera de rango",
+                        "La fecha de la resolución va desde el día en que el distributivo llegó al OCS"
+                                + " hasta hoy."),
+                EntradaCatalogo.de(
+                        ResolucionNoEsPdf.class,
+                        "VALIDACIONOCS_RESOLUCION_NO_ES_PDF",
+                        400,
+                        "El archivo no es un PDF",
+                        "Adjunta la resolución en PDF."),
+                EntradaCatalogo.de(
+                        ResolucionDemasiadoGrande.class,
+                        "VALIDACIONOCS_RESOLUCION_DEMASIADO_GRANDE",
+                        413,
+                        "Resolución demasiado grande",
+                        "La resolución pasa de 10 MB. Reduce su tamaño y vuelve a adjuntarla."),
+                EntradaCatalogo.de(
+                        ResolucionNoEncontrada.class,
+                        "VALIDACIONOCS_RESOLUCION_NO_ENCONTRADA",
+                        404,
+                        "Sin resolución",
+                        "Este periodo todavía no tiene resolución del OCS."),
+                EntradaCatalogo.de(
+                        ResolucionIlegible.class,
+                        "VALIDACIONOCS_RESOLUCION_ILEGIBLE",
+                        500,
+                        "Resolución no disponible",
+                        "No se pudo leer el PDF guardado de la resolución. Avisa al administrador."),
                 // Volver a congelar después de un rechazo en firma (F14-H04, D-105).
                 EntradaCatalogo.de(
                         RequiereVersionNueva.class,

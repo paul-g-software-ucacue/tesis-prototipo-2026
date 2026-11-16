@@ -85,6 +85,15 @@ export const ESCRITURA_DEL_FLUJO: readonly { funcionalidad: string; tipo: TipoDe
   { funcionalidad: 'FLUJO_FIRMAS', tipo: 'ESCRITURA' },
 ];
 
+/**
+ * Quién abre «Resolución del OCS» (F15-H01, D-107): quien lee o registra la resolución. Lo comparten
+ * la ruta y la entrada del menú.
+ */
+export const RESOLUCION_DEL_OCS: readonly { funcionalidad: string; tipo: TipoDePermiso }[] = [
+  { funcionalidad: 'RESOLUCION_OCS', tipo: 'LECTURA' },
+  { funcionalidad: 'RESOLUCION_OCS', tipo: 'ESCRITURA' },
+];
+
 /** Quién firma algún paso del árbol (F14-H01): su entrada «Pendientes de firma» y su ruta. */
 export const FIRMA_DEL_DISTRIBUTIVO: readonly { funcionalidad: string; tipo: TipoDePermiso }[] = [
   { funcionalidad: 'DISTRIBUTIVO', tipo: 'FIRMA' },

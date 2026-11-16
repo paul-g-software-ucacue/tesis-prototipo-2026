@@ -302,7 +302,7 @@ export function Consolidado() {
           {/* F13-H01: el aviso de la versión congelada reemplaza al de la revisión (#215). */}
           {datos.versionCongelada ? (
             <Alert severity="info" role="status" sx={{ my: 2 }}>
-              {`La versión ${String(datos.version ?? '')} está congelada para la firma: ya no cambia.`}
+              {`La versión ${String(datos.version ?? '')} está congelada: ya no cambia.`}
             </Alert>
           ) : (
             datos.enRevision && (

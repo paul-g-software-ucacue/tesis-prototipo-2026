@@ -7,6 +7,7 @@ import ec.mdd.generacion.puertos.requeridos.EtapaDelConsolidado;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
 import ec.mdd.validacionocs.adaptadores.entrada.CierreDeLaFirma;
 import ec.mdd.validacionocs.adaptadores.entrada.EtapaParaGeneracion;
+import ec.mdd.validacionocs.adaptadores.salida.AlmacenDeResolucionesEnDisco;
 import ec.mdd.validacionocs.adaptadores.salida.AnulacionDeLasFirmas;
 import ec.mdd.validacionocs.adaptadores.salida.AvisoDeFirmaSpring;
 import ec.mdd.validacionocs.adaptadores.salida.DatosDesdeProcesos;
@@ -21,14 +22,17 @@ import ec.mdd.validacionocs.adaptadores.salida.TransaccionSpring;
 import ec.mdd.validacionocs.aplicacion.CargarConfiguracionServicio;
 import ec.mdd.validacionocs.aplicacion.CompletarFirmasServicio;
 import ec.mdd.validacionocs.aplicacion.ConsultarConfiguracionServicio;
+import ec.mdd.validacionocs.aplicacion.DescargarResolucionServicio;
 import ec.mdd.validacionocs.aplicacion.EtapaDelConsolidadoServicio;
 import ec.mdd.validacionocs.aplicacion.EtapasAlCrearse;
 import ec.mdd.validacionocs.aplicacion.FlujoDelDistributivoServicio;
 import ec.mdd.validacionocs.aplicacion.RegistrarRechazoEnFirmaServicio;
+import ec.mdd.validacionocs.aplicacion.RegistrarResolucionServicio;
 import ec.mdd.validacionocs.puertos.entrada.CargarConfiguracion;
 import ec.mdd.validacionocs.puertos.entrada.CompletarFirmas;
 import ec.mdd.validacionocs.puertos.entrada.ConsultarConfiguracion;
 import ec.mdd.validacionocs.puertos.entrada.RegistrarRechazoEnFirma;
+import ec.mdd.validacionocs.puertos.salida.AlmacenDeResoluciones;
 import ec.mdd.validacionocs.puertos.salida.DatosDelPeriodo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo;
 import ec.mdd.validacionocs.puertos.salida.LectorDeConfiguracion;
@@ -96,6 +100,42 @@ public class ConfiguracionValidacionocs {
     @Bean
     public AnulacionDeLasFirmas anulacionDeLasFirmas(AnularFirmas anularFirmas) {
         return new AnulacionDeLasFirmas(anularFirmas);
+    }
+
+    /** Registrar la resolución del OCS y aprobar el distributivo (F15-H01, D-107). */
+    @Bean
+    public RegistrarResolucionServicio registrarResolucion(
+            RepositorioProceso repositorioProceso,
+            Distributivo distributivoDeGeneracion,
+            DatosDelPeriodo datos,
+            AlmacenDeResoluciones almacenDeResoluciones,
+            RegistroDeCambios registroDeCambiosValidacionocs,
+            Transaccion transaccionValidacionocs,
+            FlujoDelDistributivoServicio flujoDelDistributivo) {
+        return new RegistrarResolucionServicio(
+                repositorioProceso,
+                distributivoDeGeneracion,
+                datos,
+                almacenDeResoluciones,
+                registroDeCambiosValidacionocs,
+                transaccionValidacionocs,
+                flujoDelDistributivo,
+                Clock.systemUTC());
+    }
+
+    /** Descargar el PDF de la resolución del OCS (F15-H01). */
+    @Bean
+    public DescargarResolucionServicio descargarResolucion(
+            RepositorioProceso repositorioProceso, AlmacenDeResoluciones almacenDeResoluciones) {
+        return new DescargarResolucionServicio(repositorioProceso, almacenDeResoluciones);
+    }
+
+    /** Los PDF de las resoluciones del OCS, en el volumen del proceso (F15-H01, D-88). */
+    @Bean
+    public AlmacenDeResoluciones almacenDeResoluciones(
+            @org.springframework.beans.factory.annotation.Value("${mdd.archivos.raiz}")
+                    java.nio.file.Path raiz) {
+        return new AlmacenDeResolucionesEnDisco(raiz);
     }
 
     /** Las transacciones de Validación OCS (F17-H01). */

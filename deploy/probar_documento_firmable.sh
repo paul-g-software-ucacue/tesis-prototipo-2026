@@ -25,14 +25,20 @@
 # demostracion.md): los certificados ficticios tienen el CN del nombre impreso de cada paso; se
 # rechazan además la firma de la persona de F2 en el turno de F1 (fuera de orden), un certificado
 # vencido al subir y, en el turno de F2, la de la persona de F1 (firmante equivocado); con la
-# tercera firma, el distributivo pasa a EN_OCS por el sistema en menos de 30 s. Si la base ya tiene
+# tercera firma, el distributivo pasa a EN_OCS por el sistema en menos de 30 s. Desde F15-H01 (D-107;
+# specs/052-resolucion-ocs/contracts/demostracion.md): en EN_OCS, el avance genérico responde 409
+# porque falta la resolución, y quien no es la Secretaría recibe 403 al registrarla; los registros
+# inválidos (número vacío, fecha futura o anterior a EN_OCS, un archivo que no es PDF y uno de más
+# de 10 MB) se rechazan sin dejar fila; secretaria.demo registra la resolución, el distributivo
+# queda en APROBADO y el PDF se descarga idéntico. Si la base ya tiene
 # alguno de esos datos, falla sin tocar nada. Al terminar, aunque un paso falle, borra lo que creó (también los archivos del volumen),
 # salvo las entradas de la bitácora, que no se pueden borrar. Termina con 0 si todos los pasos pasan
 # y con 1 si alguno falla. Nunca imprime una clave ni un token.
 #
 # MDD_CONSERVAR=1 (solo en el perfil local): deja el distributivo en EN_REVISION_VRA, con
 # docente.demo designado Responsable, y no borra nada, para recorrer a mano
-# specs/049-completar-cadena/quickstart.md §3. Al terminar dice cómo limpiar.
+# specs/049-completar-cadena/quickstart.md §3. MDD_CONSERVAR=EN_OCS lo deja en EN_OCS, con las tres
+# firmas, para recorrer specs/052-resolucion-ocs/quickstart.md §3. Al terminar dice cómo limpiar.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -59,6 +65,9 @@ readonly TEMURIN=eclipse-temurin:25-jdk
 readonly CA_PRUEBA=backend/servicios/firma/src/test/resources/ca-prueba
 readonly CLAVE_P12=cambiar-en-local-firma
 readonly CONSERVAR="${MDD_CONSERVAR:-}"
+readonly SECRETARIA=secretaria.demo
+readonly RESOLUCION="$GATEWAY/api/validacionocs/periodos/$PERIODO/resolucion"
+readonly NUMERO='RPC-SO-12-No.123-2026'
 
 # MDD_CONSERVAR deja datos en la base: solo contra el perfil local, nunca contra otro equipo.
 if [[ -n $CONSERVAR && ! $GATEWAY =~ ^http://(localhost|127\.0\.0\.1)(:[0-9]+)?$ ]]; then
@@ -290,6 +299,7 @@ delete from eventos_datos.event_publication where serialized_event::jsonb -> 'co
         + (select count(*) from firma.firmante_esperado where periodo in ($periodos))
     + (select count(*) from firma.validacion_firma where periodo in ($periodos))
         + (select count(*) from firma.validacion_firma where periodo in ($periodos))
+        + (select count(*) from validacionocs.resolucion_ocs where periodo in ($periodos))
         + (select count(*) from roles.designacion_responsable where periodo in ($periodos))
         + (select count(*) from docentes.docente where identificacion in ($docentes))
         + (select count(*) from academico.periodo_academico where codigo in ($periodos))" 2>/dev/null || echo '?')
@@ -495,6 +505,88 @@ registro_de_firmas() {
         and desde = 'CONGELADO_EN_FIRMA' and hacia = 'EN_OCS' and quien = 'sistema'") == 1 ]] || return 1
     esperar 15 hay_entradas 1 "servicio = 'validacionocs' and accion = 'CADENA_DE_FIRMAS_COMPLETA'
         and periodo = '$PERIODO'"
+}
+
+# --- F15-H01: la resolución del OCS (D-107) ---
+
+resoluciones_en_la_base() {
+    consultar_base "select count(*) from validacionocs.resolucion_ocs where periodo = '$PERIODO'"
+}
+
+# registrar <número> <fecha> <archivo>: la resolución, con el token de $token.
+registrar() {
+    enviar POST "$RESOLUCION" -F "numero=$1" -F "fecha=$2" -F "archivo=@$3;type=application/pdf"
+}
+
+hoy() {
+    TZ=America/Guayaquil date +%F
+}
+
+# --- 13. En EN_OCS: el avance genérico, 409 porque falta la resolución; otros roles, 403 al registrar ---
+sin_resolucion() {
+    local usuario
+    printf '%%PDF-1.7\nResolución del OCS de prueba (ficticia)\n%%%%EOF\n' >"$carpeta/resolucion.pdf"
+    iniciar "$SECRETARIA"
+    pedir POST "$GATEWAY/api/validacionocs/periodos/$PERIODO/avance" "Bearer $token"
+    es_codigo 409 VALIDACIONOCS_REQUIERE_RESOLUCION || { echo "       avance: $estado" >&2; return 1; }
+    for usuario in "$VICERRECTOR" rectorado.demo "$RESPONSABLE"; do
+        iniciar "$usuario"
+        registrar "$NUMERO" "$(hoy)" "$carpeta/resolucion.pdf"
+        es_codigo 403 SEGURIDAD_ACCESO_NO_AUTORIZADO \
+            || { echo "       $usuario registra ($estado)" >&2; return 1; }
+    done
+    en_ocs && [[ $(resoluciones_en_la_base) == 0 ]]
+}
+
+# --- 14. Los registros inválidos: su 400 o su 413, sin dejar fila ---
+resoluciones_invalidas() {
+    local llegada
+    llegada=$(consultar_base "select to_char(momento at time zone 'America/Guayaquil', 'YYYY-MM-DD')
+        from validacionocs.transicion where periodo = '$PERIODO' and hacia = 'EN_OCS'")
+    printf 'no es un PDF\n' >"$carpeta/texto.pdf"
+    { printf '%%PDF-1.7\n'; head -c $((10 * 1024 * 1024)) /dev/zero; printf '\n%%%%EOF\n'; } \
+        >"$carpeta/grande.pdf"
+    iniciar "$SECRETARIA"
+    registrar '   ' "$(hoy)" "$carpeta/resolucion.pdf"
+    es_codigo 400 VALIDACIONOCS_NUMERO_DE_RESOLUCION_INVALIDO || { echo "       número: $estado" >&2; return 1; }
+    registrar "$NUMERO" "$(TZ=America/Guayaquil date -d tomorrow +%F)" "$carpeta/resolucion.pdf"
+    es_codigo 400 VALIDACIONOCS_FECHA_DE_RESOLUCION_FUERA_DE_RANGO \
+        || { echo "       futura: $estado" >&2; return 1; }
+    registrar "$NUMERO" "$(date -d "$llegada - 1 day" +%F)" "$carpeta/resolucion.pdf"
+    es_codigo 400 VALIDACIONOCS_FECHA_DE_RESOLUCION_FUERA_DE_RANGO \
+        || { echo "       anterior: $estado" >&2; return 1; }
+    registrar "$NUMERO" "$(hoy)" "$carpeta/texto.pdf"
+    es_codigo 400 VALIDACIONOCS_RESOLUCION_NO_ES_PDF || { echo "       texto: $estado" >&2; return 1; }
+    registrar "$NUMERO" "$(hoy)" "$carpeta/grande.pdf"
+    es_codigo 413 VALIDACIONOCS_RESOLUCION_DEMASIADO_GRANDE || { echo "       grande: $estado" >&2; return 1; }
+    en_ocs && [[ $(resoluciones_en_la_base) == 0 ]]
+}
+
+# --- 15. secretaria.demo registra: APROBADO, el PDF por su huella y descargado idéntico, y la bitácora ---
+resolucion_registrada() {
+    local huella
+    huella=$(sha256sum "$carpeta/resolucion.pdf" | cut -d' ' -f1)
+    iniciar "$SECRETARIA"
+    registrar "  $NUMERO  " "$(hoy)" "$carpeta/resolucion.pdf"
+    [[ $estado == 200 && $(jq -r '.etapa' <<<"$cuerpo") == APROBADO ]] \
+        || { echo "       registrar: $estado" >&2; return 1; }
+    [[ $(jq -c '[.resolucion.numero, .resolucion.fecha, .resolucion.registradaPor, .resolucion.sha256]' \
+        <<<"$cuerpo") == "$(jq -cn --arg n "$NUMERO" --arg f "$(hoy)" --arg s "$SECRETARIA" --arg h "$huella" \
+        '[$n, $f, $s, $h]')" ]] || { echo "       la resolución en el flujo" >&2; return 1; }
+    [[ $(consultar_base "select count(*) from validacionocs.transicion t join validacionocs.resolucion_ocs r
+        on r.transicion_id = t.id where t.periodo = '$PERIODO' and t.desde = 'EN_OCS' and t.hacia = 'APROBADO'
+        and t.quien = '$SECRETARIA' and r.numero = '$NUMERO' and r.sha256 = '$huella'") == 1 ]] || return 1
+    docker compose exec -T distributivo test -f "/var/mdd/archivos/resoluciones/$huella.pdf" \
+        || { echo "       falta resoluciones/$huella.pdf" >&2; return 1; }
+    iniciar "$VICERRECTOR"
+    descargar "$RESOLUCION/archivo"
+    [[ $estado == 200 && $(sha256sum "$carpeta/descargado.pdf" | cut -d' ' -f1) == "$huella" ]] \
+        || { echo "       descarga del Vicerrector: $estado" >&2; return 1; }
+    iniciar "$COORDINADOR"
+    pedir GET "$RESOLUCION/archivo" "Bearer $token"
+    es_codigo 403 SEGURIDAD_ACCESO_NO_AUTORIZADO || { echo "       coordinación descarga ($estado)" >&2; return 1; }
+    esperar 15 hay_entradas 1 "servicio = 'validacionocs' and accion = 'RESOLUCION_REGISTRADA'
+        and periodo = '$PERIODO' and usuario = '$SECRETARIA'"
 }
 
 if [[ -n $CONSERVAR ]]; then
@@ -812,7 +904,7 @@ nadie_mas() {
     es_codigo 403 SEGURIDAD_ACCESO_NO_AUTORIZADO
 }
 
-if [[ -n $CONSERVAR ]]; then
+if [[ -n $CONSERVAR && $CONSERVAR != EN_OCS ]]; then
     verificar 1 "El consolidado listo, enviado a revisión y con $DESIGNADO designado: EN_REVISION_VRA" en_revision_y_designado
     if ((fallas > 0)); then
         echo "No quedó en revisión. Para limpiar: docker compose -p tesis-prototipo-2026 down -v"
@@ -835,6 +927,20 @@ verificar 9 "Siete PDF rechazados con su 422 y las siete comprobaciones; el turn
 verificar 10 "$VICERRECTOR y $RESPONSABLE, fuera de turno, reciben 403 al subir, sin dejar fila" fuera_de_turno
 verificar 11 "F2 de la persona de F1 se rechaza; F1, F2 y F3 se aceptan en orden; al final nadie está en turno" tres_firmas
 verificar 12 "3 aceptadas y 8 rechazadas, los 4 archivos y la bitácora; el proceso en EN_OCS por sistema" registro_de_firmas
+
+if [[ $CONSERVAR == EN_OCS ]]; then
+    if ((fallas > 0)); then
+        echo "No quedó en EN_OCS. Para limpiar: docker compose -p tesis-prototipo-2026 down -v"
+        exit 1
+    fi
+    echo "Quedó en EN_OCS con las tres firmas, sin limpiar. Recorre specs/052-resolucion-ocs/quickstart.md §3."
+    echo "Para limpiar al terminar: docker compose -p tesis-prototipo-2026 down -v"
+    exit 0
+fi
+
+verificar 13 "En EN_OCS, el avance responde 409 VALIDACIONOCS_REQUIERE_RESOLUCION; otros roles, 403 al registrar" sin_resolucion
+verificar 14 "Número vacío, fecha futura y anterior, un archivo que no es PDF y uno de más de 10 MB: su error, sin fila" resoluciones_invalidas
+verificar 15 "$SECRETARIA registra la resolución: APROBADO, el PDF por su huella, la descarga idéntica y la bitácora" resolucion_registrada
 
 if ((fallas > 0)); then
     echo "El documento firmable de punta a punta: $fallas paso(s) fallan."
