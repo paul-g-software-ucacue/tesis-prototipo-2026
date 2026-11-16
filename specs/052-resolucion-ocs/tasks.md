@@ -215,15 +215,29 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
 
   **Resultado (2026-11-15):** 16/16 en la primera corrida, en 90 s, sobre un perfil construido desde la rama. El PDF de prueba de la resolución es mínimo y ficticio («%PDF-1.7 … %%EOF»). El de más de 10 MB entra en el límite del proceso, de 11 MB, y lo rechaza el dominio con su 413. La fecha anterior a EN_OCS sale de la transición, en `America/Guayaquil`. shellcheck sin hallazgos. El comentario del paso en `perfil-consolidado.yml` nombra F15-H01.
 - [ ] T017 Los scripts de `perfil-consolidado`, en su orden, sobre un perfil construido desde la rama (SC-004). Después, el recorrido a mano de `quickstart.md` §3, del autor (SC-003).
-- [ ] T018 Correr completos:
+- [X] T018 Correr completos:
   - `./gradlew build integrationTest jacocoTestReport jacocoTestCoverageVerification`;
   - en la SPA, los tipos, ESLint, Prettier, Vitest y Playwright.
-- [ ] T019 [P] Revisar el JavaDoc:
+
+  **Resultado (2026-11-15):**
+  - **Backend:** `./gradlew build integrationTest jacocoTestReport jacocoTestCoverageVerification --rerun-tasks --continue`, con solo las dos intermitentes de siempre (`ClienteDeEventosLocalTest`, `ConfirmarLasDiezCargasIntegrationTest`), que pasan con sus módulos completos. Con eso: 3 239 pruebas unitarias y 332 de integración, sin fallas.
+  - **Cobertura de líneas:** Validación OCS 83,3 %, Roles 77,2 % (la más baja), Generación 90,1 % y Firma 80,7 %.
+  - **Herramientas:** Spotless, SpotBugs, ArchUnit y Spring Modulith en verde.
+  - **SPA:** tipos, ESLint, Prettier y Vitest 589/589; Playwright 130/130.
+  - **T017:** los 36 scripts de `perfil-consolidado` pasan en su orden; `probar_documento_firmable.sh` en 76 s.
+- [X] T019 [P] Revisar el JavaDoc:
   - registrar es aprobar;
   - la fecha en días de la institución;
   - por qué no se validan las firmas (D-19);
   - el archivo por su hash y antes de la transacción;
   - el 409 del avance desde EN_OCS.
+
+  **Resultado (2026-11-15):** ya está, sin cambios aparte:
+  - registrar es aprobar, en `ProcesoAprobacion.registrarResolucion` y `RegistrarResolucion`;
+  - la fecha en días de la institución, con `ProcesoAprobacion.ZONA`;
+  - D-19, en `ArchivoDeResolucion` y `RegistrarResolucionServicio`;
+  - el archivo por su huella y antes de la transacción, en el servicio y en `AlmacenDeResolucionesEnDisco`;
+  - el 409 del avance, con su `@throws` en `validarAvance`.
 - [ ] T020 Crear `specs/052-resolucion-ocs/evidencia.md`, como la de 051.
 - [ ] T021 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde. Verificar la demo (`contracts/demostracion.md`, solo lectura) y abrir el PR de evidencia con `Closes #66`. Cerrar la épica F15 (#14) si el autor lo aprueba. Borrar las ramas solo si el autor lo pide.
 
