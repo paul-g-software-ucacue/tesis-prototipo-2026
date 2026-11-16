@@ -251,7 +251,7 @@ description: "Tareas de F15-H01: registrar la resolución del OCS"
   - el archivo por su huella y antes de la transacción, en el servicio y en `AlmacenDeResolucionesEnDisco`;
   - el 409 del avance, con su `@throws` en `validarAvance`.
 - [X] T020 Crear `specs/052-resolucion-ocs/evidencia.md`, como la de 051.
-- [ ] T021 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde. Verificar la demo (`contracts/demostracion.md`, solo lectura) y abrir el PR de evidencia con `Closes #66`. Cerrar la épica F15 (#14) si el autor lo aprueba. Borrar las ramas solo si el autor lo pide.
+- [X] T021 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde. Verificar la demo (`contracts/demostracion.md`, solo lectura) y abrir el PR de evidencia con `Closes #66`. Cerrar la épica F15 (#14) si el autor lo aprueba. Borrar las ramas solo si el autor lo pide.
 
 ---
 

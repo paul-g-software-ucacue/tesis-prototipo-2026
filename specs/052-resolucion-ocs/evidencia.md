@@ -75,4 +75,13 @@ Hecho por el autor el 2026-11-15, con `quickstart.md` §3, sobre un perfil const
 
 ## Equipo de demostración (T021)
 
-Pendiente: se completa después de fusionar, solo de lectura (`contracts/demostracion.md`).
+| Comprobación | Resultado |
+|---|---|
+| Fusión | PR #239 (`6507996`), con las 12 comprobaciones en verde en la primera corrida |
+| Despliegue | `cd` exitoso; `mdd-actualizar` tomó `6507996` y dice «Sano en 52 s»; los 8 contenedores sanos con las imágenes `*-6507996953ac` |
+| Las migraciones | En la base, `validacionocs` en la V7 (`resolucion ocs`) y `roles` en la V9 (`resolucion para quien aprueba`) |
+| El permiso | Leen la resolución ADMINISTRADOR, MIEMBRO_OCS, RECTOR, SECRETARIA_GENERAL y VICERRECTOR |
+| Nada registrado | `validacionocs.resolucion_ocs` vacía: 2026-I sigue en EN_CONSOLIDACION |
+| Memoria | `distributivo` usa 230 de sus 512 MiB; `identidad`, 470 (#224) |
+
+En la demo no se llega a EN_OCS: 2026-I está en consolidación. La resolución la cubren el script en la CI y el recorrido del autor en el perfil local.
