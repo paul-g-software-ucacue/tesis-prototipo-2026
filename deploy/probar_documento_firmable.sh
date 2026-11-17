@@ -30,7 +30,11 @@
 # porque falta la resolución, y quien no es la Secretaría recibe 403 al registrarla; los registros
 # inválidos (número vacío, fecha futura o anterior a EN_OCS, un archivo que no es PDF y uno de más
 # de 10 MB) se rechazan sin dejar fila; secretaria.demo registra la resolución, el distributivo
-# queda en APROBADO y el PDF se descarga idéntico. Si la base ya tiene
+# queda en APROBADO y el PDF se descarga idéntico. Desde F16-H01 (D-108;
+# specs/053-notificaciones-internas/contracts/demostracion.md): el envío a revisión se hace con
+# identidad detenido, sin error para el usuario, y su notificación llega cuando vuelve; al final,
+# las bandejas de todos los usuarios de la demo tienen exactamente las notificaciones de cada
+# transición, vicerrectorado.demo lee y marca la suya, y una entrega repetida no duplica nada. Si la base ya tiene
 # alguno de esos datos, falla sin tocar nada. Al terminar, aunque un paso falle, borra lo que creó (también los archivos del volumen),
 # salvo las entradas de la bitácora, que no se pueden borrar. Termina con 0 si todos los pasos pasan
 # y con 1 si alguno falla. Nunca imprime una clave ni un token.
@@ -68,6 +72,8 @@ readonly CONSERVAR="${MDD_CONSERVAR:-}"
 readonly SECRETARIA=secretaria.demo
 readonly RESOLUCION="$GATEWAY/api/validacionocs/periodos/$PERIODO/resolucion"
 readonly NUMERO='RPC-SO-12-No.123-2026'
+# Dos ciclos del reenvío (30 s) y un margen (SC-002 de F16-H01).
+readonly ESPERA_REENVIO=120
 
 # MDD_CONSERVAR deja datos en la base: solo contra el perfil local, nunca contra otro equipo.
 if [[ -n $CONSERVAR && ! $GATEWAY =~ ^http://(localhost|127\.0\.0\.1)(:[0-9]+)?$ ]]; then
@@ -589,6 +595,102 @@ resolucion_registrada() {
         and periodo = '$PERIODO' and usuario = '$SECRETARIA'"
 }
 
+# --- F16-H01: las notificaciones de cada transición (D-108) ---
+readonly REVISION='El distributivo llegó a «Revisión del Vicerrectorado»'
+
+# Lo que hay en las bandejas desde que empezó el script: «destinatario|título», ordenado.
+bandejas() {
+    consultar_base "select destinatario || '|' || titulo from notificaciones.notificacion
+        where periodo = '$PERIODO' and recibida_en >= '$inicio'" | LC_ALL=C sort
+}
+
+# Lo que debe haber: cada transición, a los usuarios del rol de su etapa de llegada, sin el autor.
+# El Responsable de consolidación es quien tiene el rol ($RESPONSABLE) y, desde la designación,
+# $DESIGNADO; el paso a APROBADO no llega a nadie, porque $SECRETARIA es la única con su rol.
+esperadas() {
+    local una_carrera
+    {
+        # Cada carrera por su nombre en Académico.
+        for una_carrera in "${orden[@]}"; do
+            echo "$RESPONSABLE|La carrera $(consultar_base "select nombre from academico.carrera
+                where codigo = '$una_carrera'") envió su parcial"
+        done
+        echo "$RESPONSABLE|El distributivo llegó a «Consolidación»"
+        echo "$VICERRECTOR|$REVISION"
+        echo "$RESPONSABLE|El distributivo llegó a «En firma»"
+        echo "$DESIGNADO|El distributivo llegó a «En firma»"
+        echo "$SECRETARIA|El distributivo llegó a «Resolución del OCS»"
+    } | LC_ALL=C sort
+}
+
+bandejas_completas() {
+    [[ $(bandejas) == "$(esperadas)" ]]
+}
+
+# --- 16. Las bandejas de todos: exactamente las de cada transición; la lectura de vicerrectorado.demo ---
+notificaciones_y_lectura() {
+    esperar 30 bandejas_completas || {
+        diff <(esperadas) <(bandejas) | sed 's/^/       /' >&2
+        return 1
+    }
+    [[ $(consultar_base "select autor_nombre from notificaciones.notificacion where periodo = '$PERIODO'
+        and recibida_en >= '$inicio' and titulo = 'El distributivo llegó a «Resolución del OCS»'") == 'el sistema' ]] \
+        || { echo "       EN_OCS no dice «el sistema»" >&2; return 1; }
+    local antes id ajena primera
+    iniciar "$VICERRECTOR"
+    pedir GET "$GATEWAY/api/notificaciones/bandeja/sin-leer" "Bearer $token"
+    antes=$(jq -r '.sinLeer' <<<"$cuerpo")
+    [[ $estado == 200 && $antes -ge 1 ]] || return 1
+    pedir GET "$GATEWAY/api/notificaciones/bandeja" "Bearer $token"
+    id=$(jq -r --arg t "$REVISION" '[.notificaciones[] | select(.titulo == $t and .periodo == "'"$PERIODO"'")] | first | .id' \
+        <<<"$cuerpo")
+    [[ $id =~ ^[0-9a-f-]{36}$ ]] || { echo "       no está en la bandeja" >&2; return 1; }
+    pedir POST "$GATEWAY/api/notificaciones/bandeja/$id/lectura" "Bearer $token"
+    [[ $estado == 200 && $(jq -r '.leida' <<<"$cuerpo") == true ]] || return 1
+    primera=$(jq -r '.leidaEn' <<<"$cuerpo")
+    pedir POST "$GATEWAY/api/notificaciones/bandeja/$id/lectura" "Bearer $token"
+    [[ $estado == 200 && $(jq -r '.leidaEn' <<<"$cuerpo") == "$primera" ]] || return 1
+    pedir GET "$GATEWAY/api/notificaciones/bandeja/sin-leer" "Bearer $token"
+    [[ $(jq -r '.sinLeer' <<<"$cuerpo") == $((antes - 1)) ]] || return 1
+    ajena=$(consultar_base "select id from notificaciones.notificacion where destinatario = '$SECRETARIA'
+        and periodo = '$PERIODO' and recibida_en >= '$inicio' limit 1")
+    pedir POST "$GATEWAY/api/notificaciones/bandeja/$ajena/lectura" "Bearer $token"
+    es_codigo 404 NOTIFICACIONES_NOTIFICACION_NO_ENCONTRADA
+}
+
+# --- 17. El envío a revisión con identidad detenido: 200 sin error y la notificación al volver ---
+llego_al_volver() {
+    [[ -n $caida && -n $vuelta ]] || { echo "       el envío no se hizo con identidad detenido" >&2; return 1; }
+    local llegada
+    llegada=$(consultar_base "select extract(epoch from recibida_en - '$vuelta'::timestamptz)::int
+        from notificaciones.notificacion where destinatario = '$VICERRECTOR' and periodo = '$PERIODO'
+        and titulo = '$REVISION' and recibida_en >= '$caida'")
+    echo "       llegó $llegada s después de levantar identidad"
+    [[ $llegada =~ ^-?[0-9]+$ ]] && ((llegada >= 0 && llegada <= ESPERA_REENVIO))
+}
+
+# --- 18. Una entrega repetida: la publicación vuelve a FAILED y el reenvío no duplica nada ---
+completada() {  # completada <idEvento>
+    [[ $(consultar_base "select count(*) from eventos_distributivo.event_publication
+        where serialized_event like '%$1%' and status = 'COMPLETED'") == 1 ]]
+}
+
+entrega_repetida() {
+    local id_evento antes
+    id_evento=$(consultar_base "select serialized_event::jsonb ->> 'idEvento' from eventos_distributivo.event_publication
+        where publication_date >= '$inicio' and completion_date is not null
+        and serialized_event::jsonb -> 'contenido' -> 'mensajes' -> 0 ->> 'titulo' = '$REVISION'
+        and serialized_event::jsonb -> 'contenido' ->> 'periodo' = '$PERIODO' limit 1")
+    [[ $id_evento =~ ^[0-9a-f-]{36}$ ]] || { echo "       sin la publicación del envío" >&2; return 1; }
+    antes=$(consultar_base "select count(*) from notificaciones.notificacion")
+    consultar_base "update eventos_distributivo.event_publication set status = 'FAILED', completion_date = null
+        where serialized_event like '%$id_evento%'" >/dev/null
+    esperar "$ESPERA_REENVIO" completada "$id_evento" || return 1
+    [[ $(consultar_base "select count(*) from notificaciones.notificacion") == "$antes"
+        && $(consultar_base "select count(*) from notificaciones.notificacion where id_evento = '$id_evento'
+            and leida_en is not null") == 1 ]]
+}
+
 if [[ -n $CONSERVAR ]]; then
     trap 'rm -rf "$carpeta"' EXIT
 else
@@ -728,13 +830,29 @@ enviado() {
         justificar "$(jq -r '.[0]' <<<"$una")" "$(jq -r '.[1]' <<<"$una")" "$TEXTO"
         [[ $estado == 200 ]] || { echo "       justificar: $estado" >&2; return 1; }
     done < <(jq -c '.inconsistencias[] | select(.estado == "ABIERTA" and .severidad == "BLANDA") | [.tipo, .objeto.clave]' <<<"$cuerpo")
+    # F16-H01 (SC-002): el envío se hace con identidad detenido; su notificación llega al volver.
+    if [[ -z $CONSERVAR ]]; then
+        caida=$(consultar_base "select now()")
+        docker compose stop identidad >/dev/null 2>&1
+    fi
     pedir POST "$GATEWAY/api/validacionocs/periodos/$PERIODO/revision" "Bearer $token"
+    local estado_del_envio=$estado cuerpo_del_envio=$cuerpo
+    if [[ -n $caida ]]; then
+        # La vuelta es cuando se pide levantarlo: identidad acepta el evento antes de que su
+        # chequeo de salud lo dé por sano, y --wait espera a ese chequeo.
+        vuelta=$(consultar_base "select now()")
+        docker compose up -d --wait --no-recreate --no-build identidad >/dev/null 2>&1 || return 1
+    fi
+    estado=$estado_del_envio
+    cuerpo=$cuerpo_del_envio
     [[ $estado == 200 && $(jq -r '.etapa' <<<"$cuerpo") == EN_REVISION_VRA ]] || return 1
     hash_del_envio=$(jq -r '[.transiciones[] | select(.tipo == "PASO_DE_ETAPA" and .desde == "EN_CONSOLIDACION")] | last | .hash' <<<"$cuerpo")
     [[ $hash_del_envio =~ ^[0-9a-f]{64}$ ]]
 }
 
 # Lo del envío, de la aprobación y del documento, para los pasos siguientes.
+caida=''
+vuelta=''
 hash_del_envio=''
 huella_enviada=''
 hash_congelado=''
@@ -941,6 +1059,9 @@ fi
 verificar 13 "En EN_OCS, el avance responde 409 VALIDACIONOCS_REQUIERE_RESOLUCION; otros roles, 403 al registrar" sin_resolucion
 verificar 14 "Número vacío, fecha futura y anterior, un archivo que no es PDF y uno de más de 10 MB: su error, sin fila" resoluciones_invalidas
 verificar 15 "$SECRETARIA registra la resolución: APROBADO, el PDF por su huella, la descarga idéntica y la bitácora" resolucion_registrada
+verificar 16 "Las bandejas de todos tienen exactamente las de cada transición; $VICERRECTOR marca la suya y la ajena da 404" notificaciones_y_lectura
+verificar 17 "El envío a revisión con identidad detenido respondió 200, y su notificación llegó antes de $ESPERA_REENVIO s" llego_al_volver
+verificar 18 "Una entrega repetida se completa otra vez sin duplicar la notificación, que sigue leída" entrega_repetida
 
 if ((fallas > 0)); then
     echo "El documento firmable de punta a punta: $fallas paso(s) fallan."
