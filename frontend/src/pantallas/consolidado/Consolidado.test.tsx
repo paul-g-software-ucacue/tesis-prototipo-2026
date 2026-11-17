@@ -75,6 +75,24 @@ describe('Consolidado del periodo', () => {
     expect(within(tabla).getByText('9 de 12')).toBeVisible();
   });
 
+  it('con un periodo en la dirección, como desde una notificación, abre ese periodo', async () => {
+    simulada.responder(
+      'GET',
+      '/api/generacion/periodos/2026-1/consolidado',
+      json(200, { ...CONSOLIDADO, periodo: '2026-1' }),
+    );
+    sesionCon(simulada, CONSOLIDACION);
+    montarSpa('/consolidado?periodo=2026-1');
+
+    await screen.findByRole('table', { name: 'Carreras del consolidado' });
+    expect(screen.getByLabelText('Periodo')).toHaveValue('2026-1');
+    expect(
+      simulada.peticiones.some(
+        (una) => new URL(una.url).pathname === '/api/generacion/periodos/2026-1/consolidado',
+      ),
+    ).toBe(true);
+  });
+
   it('muestra los totales institucionales y dice que las unidades no tienen parcial', async () => {
     await abrir();
 

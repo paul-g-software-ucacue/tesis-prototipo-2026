@@ -14,6 +14,7 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import { NavLink, Outlet } from 'react-router';
 import { cerrarSesion } from '../sesion/almacen';
+import { Campana } from './Campana';
 import {
   DESCARGA_DE_PLANTILLAS,
   LECTURA_DE_LA_ESTRUCTURA,
@@ -85,6 +86,7 @@ export function Marco() {
           <Typography component="p" variant="h6" sx={{ flexGrow: 1 }}>
             MDD · Distributivo docente
           </Typography>
+          {sesion.data && <Campana />}
           {sesion.data && (
             <Typography component="span" sx={{ mr: 2 }} data-usuario>
               {sesion.data.usuario}
