@@ -19,6 +19,7 @@ import ec.mdd.validacionocs.puertos.salida.AvisoDeAnulacion.FirmasPorAnular;
 import ec.mdd.validacionocs.puertos.salida.CambioDeFlujo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo.VersionNuevaEnAprobacion;
+import ec.mdd.validacionocs.puertos.salida.NotificacionDeTransiciones;
 import ec.mdd.validacionocs.puertos.salida.RegistroDeCambios;
 import ec.mdd.validacionocs.puertos.salida.RepositorioProceso;
 import ec.mdd.validacionocs.puertos.salida.Transaccion;
@@ -89,9 +90,10 @@ class RegistrarRechazoEnFirmaServicioTest {
                 }
             };
 
+    private final NotificacionDeTransiciones notificacion = mock(NotificacionDeTransiciones.class);
     private final RegistrarRechazoEnFirmaServicio servicio =
             new RegistrarRechazoEnFirmaServicio(
-                    procesos, distributivo, aviso, registro, transaccion);
+                    procesos, distributivo, aviso, registro, transaccion, notificacion);
 
     @Test
     void
@@ -124,6 +126,7 @@ class RegistrarRechazoEnFirmaServicioTest {
         servicio.registrar("2026-I", 1, RECHAZO);
 
         verify(procesos).guardar(proceso, List.of(A_REVISION, VERSION_NUEVA));
+        verify(notificacion).notificar(proceso, List.of(A_REVISION, VERSION_NUEVA));
         verify(aviso).avisar(new FirmasPorAnular("2026-I", 1, RECHAZADA));
         ArgumentCaptor<CambioDeFlujo> cambio = ArgumentCaptor.forClass(CambioDeFlujo.class);
         verify(registro, org.mockito.Mockito.times(2)).registrar(cambio.capture());
@@ -191,6 +194,7 @@ class RegistrarRechazoEnFirmaServicioTest {
         servicio.registrar("2026-I", 1, RECHAZO);
 
         verify(procesos, never()).guardar(any(), anyList());
+        verify(notificacion, never()).notificar(any(), anyList());
         verify(registro, never()).registrar(any());
         verify(aviso, never()).avisar(any(FirmasPorAnular.class));
     }

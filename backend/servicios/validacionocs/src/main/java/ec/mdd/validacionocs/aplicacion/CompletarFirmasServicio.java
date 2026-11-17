@@ -3,6 +3,7 @@ package ec.mdd.validacionocs.aplicacion;
 import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
 import ec.mdd.validacionocs.dominio.Transicion;
 import ec.mdd.validacionocs.puertos.entrada.CompletarFirmas;
+import ec.mdd.validacionocs.puertos.salida.NotificacionDeTransiciones;
 import ec.mdd.validacionocs.puertos.salida.RegistroDeCambios;
 import ec.mdd.validacionocs.puertos.salida.RepositorioProceso;
 import ec.mdd.validacionocs.puertos.salida.Transaccion;
@@ -27,6 +28,7 @@ public final class CompletarFirmasServicio implements CompletarFirmas {
 
     private final RepositorioProceso procesos;
     private final RegistroDeCambios registro;
+    private final NotificacionDeTransiciones notificacion;
     private final Transaccion transaccion;
 
     /**
@@ -35,9 +37,13 @@ public final class CompletarFirmasServicio implements CompletarFirmas {
      * @param transaccion la transacción del paso
      */
     public CompletarFirmasServicio(
-            RepositorioProceso procesos, RegistroDeCambios registro, Transaccion transaccion) {
+            RepositorioProceso procesos,
+            RegistroDeCambios registro,
+            Transaccion transaccion,
+            NotificacionDeTransiciones notificacion) {
         this.procesos = procesos;
         this.registro = registro;
+        this.notificacion = notificacion;
         this.transaccion = transaccion;
     }
 
@@ -63,6 +69,7 @@ public final class CompletarFirmasServicio implements CompletarFirmas {
                         return null;
                     }
                     procesos.guardar(bloqueado.get(), nuevas);
+                    notificacion.notificar(bloqueado.get(), nuevas);
                     nuevas.forEach(
                             una ->
                                     registro.registrar(

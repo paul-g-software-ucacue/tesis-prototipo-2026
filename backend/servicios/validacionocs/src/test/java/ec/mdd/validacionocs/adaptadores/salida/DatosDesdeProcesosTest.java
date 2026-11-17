@@ -9,6 +9,7 @@ import ec.mdd.plataforma.pruebas.ReceptorSimulado;
 import ec.mdd.validacionocs.dominio.EstadoDelPeriodo;
 import ec.mdd.validacionocs.dominio.Firmantes;
 import java.time.Clock;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
@@ -63,6 +64,23 @@ class DatosDesdeProcesosTest {
 
         assertThat(adaptador.firmantes("2026-I")).isEqualTo(new Firmantes(Set.of("RECTOR"), true));
         assertThat(identidad.direccionesConsultadas().getLast()).endsWith("?periodo=2026-I");
+    }
+
+    @Test
+    void dadasLasCarreras_cuandoSePidenSusNombres_entoncesLosDaAcademicoPorSuCodigo() {
+        datos.responderConsulta(
+                "/interno/academico/carreras",
+                200,
+                "[{\"codigo\":\"DS\",\"nombre\":\"DESARROLLO DE SOFTWARE\"},"
+                        + "{\"codigo\":\"CO\",\"nombre\":\"CONTABILIDAD\"}]");
+
+        assertThat(adaptador.nombres())
+                .isEqualTo(Map.of("DS", "DESARROLLO DE SOFTWARE", "CO", "CONTABILIDAD"));
+    }
+
+    @Test
+    void dadoQueAcademicoNoTieneLaRuta_cuandoSePidenLosNombres_entoncesFalla() {
+        assertThatThrownBy(adaptador::nombres).isInstanceOf(IllegalStateException.class);
     }
 
     @Test

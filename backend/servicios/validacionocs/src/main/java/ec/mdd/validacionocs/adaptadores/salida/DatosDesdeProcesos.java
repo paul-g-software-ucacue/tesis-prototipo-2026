@@ -4,17 +4,21 @@ import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
 import ec.mdd.validacionocs.dominio.EstadoDelPeriodo;
 import ec.mdd.validacionocs.dominio.Firmantes;
 import ec.mdd.validacionocs.puertos.salida.DatosDelPeriodo;
+import ec.mdd.validacionocs.puertos.salida.NombresDeCarreras;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /**
- * Pide a Académico (proceso datos) y a Roles (proceso identidad) lo que necesita de un periodo, por
- * sus rutas internas (principio V, ADR-023).
+ * Pide a Académico (proceso datos) y a Roles (proceso identidad) lo que necesita de un periodo, y a
+ * Académico el nombre de las carreras, por sus rutas internas (principio V, ADR-023).
  */
-public final class DatosDesdeProcesos implements DatosDelPeriodo {
+public final class DatosDesdeProcesos implements DatosDelPeriodo, NombresDeCarreras {
 
     private final ConsultasEntreProcesos consultas;
     private final URI datos;
@@ -62,8 +66,30 @@ public final class DatosDesdeProcesos implements DatosDelPeriodo {
                 Set.copyOf(respuesta.rolesConUsuario()), respuesta.responsableDesignado());
     }
 
+    @Override
+    public Map<String, String> nombres() {
+        URI ruta =
+                UriComponentsBuilder.fromUri(datos)
+                        .pathSegment("interno", "academico", "carreras")
+                        .build()
+                        .toUri();
+        return Arrays.stream(
+                        consultas
+                                .obtener(ruta, NombreDeCarrera[].class)
+                                .orElseThrow(
+                                        () ->
+                                                new IllegalStateException(
+                                                        "Académico no publica las carreras")))
+                .collect(
+                        Collectors.toUnmodifiableMap(
+                                NombreDeCarrera::codigo, NombreDeCarrera::nombre, (a, b) -> a));
+    }
+
     /** La respuesta de Académico. */
     record RespuestaEstado(String periodo, String estado) {}
+
+    /** Una carrera en la respuesta de Académico. */
+    record NombreDeCarrera(String codigo, String nombre) {}
 
     /** La respuesta de Roles. */
     record RespuestaFirmantes(List<String> rolesConUsuario, boolean responsableDesignado) {}

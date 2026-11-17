@@ -8,6 +8,7 @@ import ec.mdd.validacionocs.puertos.salida.AvisoDeAnulacion;
 import ec.mdd.validacionocs.puertos.salida.AvisoDeAnulacion.FirmasPorAnular;
 import ec.mdd.validacionocs.puertos.salida.Distributivo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo.VersionNuevaEnAprobacion;
+import ec.mdd.validacionocs.puertos.salida.NotificacionDeTransiciones;
 import ec.mdd.validacionocs.puertos.salida.RegistroDeCambios;
 import ec.mdd.validacionocs.puertos.salida.RepositorioProceso;
 import ec.mdd.validacionocs.puertos.salida.Transaccion;
@@ -45,6 +46,7 @@ public final class RegistrarRechazoEnFirmaServicio implements RegistrarRechazoEn
     private final Distributivo distributivo;
     private final AvisoDeAnulacion aviso;
     private final RegistroDeCambios registro;
+    private final NotificacionDeTransiciones notificacion;
     private final Transaccion transaccion;
 
     /**
@@ -59,11 +61,13 @@ public final class RegistrarRechazoEnFirmaServicio implements RegistrarRechazoEn
             Distributivo distributivo,
             AvisoDeAnulacion aviso,
             RegistroDeCambios registro,
-            Transaccion transaccion) {
+            Transaccion transaccion,
+            NotificacionDeTransiciones notificacion) {
         this.procesos = procesos;
         this.distributivo = distributivo;
         this.aviso = aviso;
         this.registro = registro;
+        this.notificacion = notificacion;
         this.transaccion = transaccion;
     }
 
@@ -113,6 +117,7 @@ public final class RegistrarRechazoEnFirmaServicio implements RegistrarRechazoEn
                                     nueva.get().hash(),
                                     rechazo.rechazadoEn()));
                     procesos.guardar(bloqueado, nuevas);
+                    notificacion.notificar(bloqueado, nuevas);
                     nuevas.forEach(
                             una ->
                                     registro.registrar(

@@ -102,7 +102,8 @@ class AprobacionIntegrationTest {
                                 new TransactionTemplate(
                                         new DataSourceTransactionManager(dataSource))),
                         Clock.fixed(AHORA, ZoneOffset.UTC),
-                        aviso -> {});
+                        aviso -> {},
+                        (sinUso, nuevas) -> {});
     }
 
     @AfterAll

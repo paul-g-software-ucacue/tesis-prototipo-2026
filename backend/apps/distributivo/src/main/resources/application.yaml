@@ -25,6 +25,8 @@ spring.modulith.events.staleness.resubmitted: PT2M
 mdd.eventos.plazo: PT5S
 mdd.eventos.reenvio.intervalo: PT30S
 mdd.eventos.destinos.usuarios: ${MDD_URI_IDENTIDAD:http://identidad:8080}/interno/usuarios/eventos
+# Las notificaciones de cada transición (F16-H01, D-108), en el mismo proceso identidad.
+mdd.eventos.destinos.notificaciones: ${MDD_URI_IDENTIDAD:http://identidad:8080}/interno/notificaciones/eventos
 mdd.eventos.token-proceso: ${MDD_URI_IDENTIDAD:http://identidad:8080}/interno/usuarios/token-proceso
 mdd.eventos.proceso: distributivo
 # El informe sustentado y el PDF firmado: 10 MB, que limita el dominio, más la envoltura del

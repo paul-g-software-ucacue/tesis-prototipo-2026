@@ -13,6 +13,7 @@ import ec.mdd.validacionocs.dominio.TipoDeEtapa;
 import ec.mdd.validacionocs.dominio.TipoDeTransicion;
 import ec.mdd.validacionocs.dominio.Transicion;
 import ec.mdd.validacionocs.puertos.salida.CambioDeFlujo;
+import ec.mdd.validacionocs.puertos.salida.NotificacionDeTransiciones;
 import ec.mdd.validacionocs.puertos.salida.RegistroDeCambios;
 import ec.mdd.validacionocs.puertos.salida.RepositorioProceso;
 import ec.mdd.validacionocs.puertos.salida.Transaccion;
@@ -59,8 +60,9 @@ class CompletarFirmasServicioTest {
                 }
             };
 
+    private final NotificacionDeTransiciones notificacion = mock(NotificacionDeTransiciones.class);
     private final CompletarFirmasServicio servicio =
-            new CompletarFirmasServicio(procesos, registro, transaccion);
+            new CompletarFirmasServicio(procesos, registro, transaccion, notificacion);
 
     @Test
     void dadoElProcesoEnFirma_cuandoSeCompletaLaCadena_entoncesGuardaLaTransicionYLaRegistra() {
@@ -75,6 +77,7 @@ class CompletarFirmasServicioTest {
         servicio.completar("2026-I", 1, FIRMADA);
 
         verify(procesos).guardar(proceso, List.of(A_EN_OCS));
+        verify(notificacion).notificar(proceso, List.of(A_EN_OCS));
         ArgumentCaptor<CambioDeFlujo> cambio = ArgumentCaptor.forClass(CambioDeFlujo.class);
         verify(registro).registrar(cambio.capture());
         assertThat(cambio.getValue().accion())
@@ -96,6 +99,7 @@ class CompletarFirmasServicioTest {
 
         verify(procesos, never()).guardar(any(), anyList());
         verify(registro, never()).registrar(any());
+        verify(notificacion, never()).notificar(any(), anyList());
     }
 
     @Test

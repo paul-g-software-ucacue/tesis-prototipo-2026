@@ -15,6 +15,7 @@ import ec.mdd.validacionocs.puertos.entrada.SinDistributivo;
 import ec.mdd.validacionocs.puertos.salida.AlmacenDeResoluciones;
 import ec.mdd.validacionocs.puertos.salida.DatosDelPeriodo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo;
+import ec.mdd.validacionocs.puertos.salida.NotificacionDeTransiciones;
 import ec.mdd.validacionocs.puertos.salida.RegistroDeCambios;
 import ec.mdd.validacionocs.puertos.salida.RepositorioProceso;
 import ec.mdd.validacionocs.puertos.salida.Transaccion;
@@ -49,6 +50,7 @@ public final class RegistrarResolucionServicio implements RegistrarResolucion {
     private final DatosDelPeriodo datos;
     private final AlmacenDeResoluciones almacen;
     private final RegistroDeCambios registro;
+    private final NotificacionDeTransiciones notificacion;
     private final Transaccion transaccion;
     private final ConsultarFlujo flujo;
     private final Clock reloj;
@@ -71,12 +73,14 @@ public final class RegistrarResolucionServicio implements RegistrarResolucion {
             RegistroDeCambios registro,
             Transaccion transaccion,
             ConsultarFlujo flujo,
-            Clock reloj) {
+            Clock reloj,
+            NotificacionDeTransiciones notificacion) {
         this.procesos = procesos;
         this.distributivo = distributivo;
         this.datos = datos;
         this.almacen = almacen;
         this.registro = registro;
+        this.notificacion = notificacion;
         this.transaccion = transaccion;
         this.flujo = flujo;
         this.reloj = reloj;
@@ -110,6 +114,7 @@ public final class RegistrarResolucionServicio implements RegistrarResolucion {
                     List<Transicion> nuevas =
                             bloqueado.registrarResolucion(quien, resolucion, ahora);
                     procesos.guardar(bloqueado, nuevas);
+                    notificacion.notificar(bloqueado, nuevas);
                     nuevas.forEach(
                             una ->
                                     registro.registrar(

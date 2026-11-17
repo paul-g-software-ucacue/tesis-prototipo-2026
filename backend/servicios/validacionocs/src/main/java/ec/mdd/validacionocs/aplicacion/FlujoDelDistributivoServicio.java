@@ -27,6 +27,7 @@ import ec.mdd.validacionocs.puertos.salida.Distributivo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo.DistributivoActual;
 import ec.mdd.validacionocs.puertos.salida.Distributivo.ParcialEnviadoEnGeneracion;
 import ec.mdd.validacionocs.puertos.salida.Distributivo.VersionCongeladaEnAprobacion;
+import ec.mdd.validacionocs.puertos.salida.NotificacionDeTransiciones;
 import ec.mdd.validacionocs.puertos.salida.RegistroDeCambios;
 import ec.mdd.validacionocs.puertos.salida.RepositorioProceso;
 import ec.mdd.validacionocs.puertos.salida.Transaccion;
@@ -66,8 +67,12 @@ public final class FlujoDelDistributivoServicio
     private final Transaccion transaccion;
     private final Clock reloj;
     private final AvisoDeFirma aviso;
+    private final NotificacionDeTransiciones notificacion;
 
-    /** Recibe los puertos, las etapas al crearse, el reloj y el aviso de firma (F13-H02). */
+    /**
+     * Recibe los puertos, las etapas al crearse, el reloj, el aviso de firma (F13-H02) y la
+     * notificación de cada transición (F16-H01).
+     */
     public FlujoDelDistributivoServicio(
             Distributivo distributivo,
             RepositorioProceso procesos,
@@ -76,7 +81,8 @@ public final class FlujoDelDistributivoServicio
             RegistroDeCambios registro,
             Transaccion transaccion,
             Clock reloj,
-            AvisoDeFirma aviso) {
+            AvisoDeFirma aviso,
+            NotificacionDeTransiciones notificacion) {
         this.distributivo = distributivo;
         this.procesos = procesos;
         this.etapas = etapas;
@@ -85,6 +91,7 @@ public final class FlujoDelDistributivoServicio
         this.transaccion = transaccion;
         this.reloj = reloj;
         this.aviso = aviso;
+        this.notificacion = notificacion;
     }
 
     @Override
@@ -121,6 +128,7 @@ public final class FlujoDelDistributivoServicio
                                             hashDelDistributivo,
                                             ahora);
                             procesos.guardar(bloqueado, nuevas);
+                            notificacion.notificar(bloqueado, nuevas);
                             avisarSiEntraEnFirma(bloqueado, nuevas);
                             nuevas.forEach(
                                     una ->
@@ -147,6 +155,7 @@ public final class FlujoDelDistributivoServicio
                                     bloqueado.avanzar(
                                             quien, actual.version(), hashDelDistributivo, ahora);
                             procesos.guardar(bloqueado, nuevas);
+                            notificacion.notificar(bloqueado, nuevas);
                             avisarSiEntraEnFirma(bloqueado, nuevas);
                             nuevas.forEach(
                                     una ->
@@ -193,6 +202,7 @@ public final class FlujoDelDistributivoServicio
                                             hashDelDistributivo,
                                             ahora);
                             procesos.guardar(bloqueado, nuevas);
+                            notificacion.notificar(bloqueado, nuevas);
                             avisarSiEntraEnFirma(bloqueado, nuevas);
                             nuevas.forEach(
                                     una ->
@@ -233,6 +243,7 @@ public final class FlujoDelDistributivoServicio
                                             hashDelDistributivo,
                                             ahora);
                             procesos.guardar(bloqueado, nuevas);
+                            notificacion.notificar(bloqueado, nuevas);
                             avisarSiEntraEnFirma(bloqueado, nuevas);
                             nuevas.forEach(
                                     una ->
@@ -263,6 +274,7 @@ public final class FlujoDelDistributivoServicio
                                     bloqueado.aprobarContenido(
                                             quien, congelada.version(), congelada.hash(), ahora);
                             procesos.guardar(bloqueado, nuevas);
+                            notificacion.notificar(bloqueado, nuevas);
                             avisarSiEntraEnFirma(bloqueado, nuevas);
                             nuevas.forEach(
                                     una ->
