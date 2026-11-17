@@ -3,4 +3,18 @@
 // SpotBugs. Vale para todos los servicios, centrales o no.
 plugins {
     id 'mdd.servicio'
+    id 'mdd.contrato'
+}
+
+dependencies {
+    // Los destinatarios de cada mensaje, por las interfaces publicadas de Roles y Usuarios en el
+    // mismo proceso identidad (F16-H01, research §2, principio V).
+    implementation project(':servicios:roles')
+    implementation project(':servicios:usuarios')
+    // La bandeja y los eventos recibidos en el esquema notificaciones, con JdbcClient.
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    // La validación del contenido de cada evento y su tamaño (research §3).
+    implementation 'tools.jackson.core:jackson-databind'
+    // @PreAuthorize y el usuario de la sesión, destinatario de su bandeja (D-108).
+    implementation 'org.springframework.security:spring-security-core'
 }
