@@ -317,10 +317,16 @@ description: "Tareas de F16-H01: recibir notificaciones internas por cada cambio
   - por qué el contenido no cambia: `Notificacion`;
   - y la consulta automática de la campana: `notificaciones.ts`.
 - [X] T025 Crear `specs/053-notificaciones-internas/evidencia.md`, como la de 052.
-- [ ] T026 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde.
+- [X] T026 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde.
   - Verificar la demo en solo lectura (`quickstart.md` §4): la V2 de `notificaciones` y la memoria de `identidad` (#224).
   - Abrir el PR de evidencia con `Closes #67`.
   - La épica F16 (#15) sigue abierta por F16-H02.
+
+  **Resultado (2026-11-17):**
+  - Se fusionó #241 (`94ba524`).
+  - El primer despliegue volvió atrás por una suspensión del equipo.
+  - Forzado por el autor: «Sano en 39 s», con `notificaciones` en la V2.
+  - El detalle está en `evidencia.md`.
 
 ---
 
