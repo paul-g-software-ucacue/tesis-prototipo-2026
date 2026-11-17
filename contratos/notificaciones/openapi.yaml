@@ -1,0 +1,299 @@
+# Contrato de Notificaciones (servicio 07, proceso identidad). Desde F16-H01, la bandeja interna de
+# cada usuario (RF-41, V-09: sin correo): recibe por /interno/ las notificaciones que piden los
+# demás procesos, una sola vez por idEvento (ADR-018), y cada usuario ve y marca como leídas solo las
+# suyas. La bandeja no declara x-mdd-permiso: basta con la sesión, y el límite es el destinatario,
+# que es el sub del token (D-108).
+openapi: 3.0.3
+info:
+  title: MDD · Notificaciones
+  version: 1.0.0
+servers:
+  - url: /
+security:
+  - bearer: []
+tags:
+  - name: Eventos
+    description: Receptor de las notificaciones que piden otros procesos (ADR-018).
+  - name: Bandeja
+    description: Las notificaciones del usuario de la sesión (F16-H01, RF-41).
+paths:
+  /interno/notificaciones/eventos:
+    post:
+      tags: [Eventos]
+      operationId: recibirEvento
+      summary: Registra las notificaciones de un evento de otro proceso una sola vez por idEvento.
+      description: >-
+        Admite el tipo validacionocs.NotificacionesSolicitadas, con origen validacionocs y un
+        contenido SolicitudDeNotificaciones. Por cada mensaje, resuelve el destino a los usuarios
+        activos que tienen el rol (el Responsable de consolidación designado del periodo; con
+        carrera, los coordinadores de esa carrera), sin el autor, y guarda una notificación por cada
+        uno. Solo con un token de proceso (rol PROCESO). Un evento ya registrado también responde
+        204, sin volver a crear nada.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../comun/eventos.yaml#/components/schemas/EventoEntreProcesos'
+      responses:
+        '204':
+          description: Notificaciones registradas, o ya registradas antes por el mismo idEvento.
+        '400':
+          description: >-
+            El cuerpo no cumple el contrato (COMUN_SOLICITUD_INVALIDA, con detalles), el tipo no es
+            uno admitido o su prefijo no coincide con el origen (COMUN_EVENTO_NO_RECONOCIDO), o el
+            contenido no es una SolicitudDeNotificaciones válida
+            (NOTIFICACIONES_NOTIFICACION_INVALIDA). En los tres casos no se registra nada y la
+            publicación queda pendiente en el emisor.
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+  /api/notificaciones/bandeja:
+    get:
+      tags: [Bandeja]
+      operationId: consultarBandeja
+      summary: Las notificaciones del usuario de la sesión, de la más nueva a la más antigua.
+      description: >-
+        Sin x-mdd-permiso: cualquier usuario con sesión ve su bandeja, y solo la suya (D-108).
+        Ordenadas por momento descendente y luego por id. sinLeer cuenta todas las sin leer, no
+        solo las de la página.
+      parameters:
+        - name: limite
+          in: query
+          required: false
+          description: Cuántas notificaciones trae, de 1 a 100.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: La bandeja.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bandeja'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/notificaciones/bandeja/sin-leer:
+    get:
+      tags: [Bandeja]
+      operationId: consultarSinLeer
+      summary: Cuántas notificaciones sin leer tiene el usuario de la sesión, para la campana.
+      responses:
+        '200':
+          description: El número sin leer.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SinLeer'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+  /api/notificaciones/bandeja/{id}/lectura:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: El identificador de la notificación.
+        schema:
+          type: string
+          format: uuid
+        example: 3f2b8c1e-5d4a-4e6f-9a7b-1c2d3e4f5a6b
+    post:
+      tags: [Bandeja]
+      operationId: marcarLeida
+      summary: Marca como leída una notificación del usuario de la sesión.
+      description: >-
+        Marcar una ya leída no cambia nada y responde igual. Una notificación que no existe o que es
+        de otro usuario responde el mismo 404, sin decir cuál de las dos (principio IX).
+      responses:
+        '200':
+          description: La notificación, leída.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notificacion'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '404':
+          description: La notificación no existe o es de otro usuario (NOTIFICACIONES_NOTIFICACION_NO_ENCONTRADA).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '503':
+          $ref: '../comun/errores.yaml#/components/responses/ServicioNoDisponible'
+components:
+  securitySchemes:
+    bearer:
+      $ref: '../comun/seguridad.yaml#/components/securitySchemes/bearer'
+  schemas:
+    Notificacion:
+      description: Un mensaje en la bandeja interna de un usuario por un hecho del flujo (glosario).
+      type: object
+      additionalProperties: false
+      required: [id, periodo, titulo, detalle, enlace, autor, autorNombre, momento, leida]
+      properties:
+        id:
+          type: string
+          format: uuid
+        periodo:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+          example: 2026-I
+        carrera:
+          type: string
+          pattern: '^[0-9A-Z_-]{1,20}$'
+          description: Solo en una devolución, la carrera devuelta.
+          example: TI
+        titulo:
+          type: string
+          minLength: 1
+          maxLength: 200
+          example: El distributivo llegó a «Revisión del Vicerrectorado»
+        detalle:
+          type: string
+          maxLength: 1000
+          example: Periodo 2026-I, versión 1.
+        enlace:
+          type: string
+          pattern: '^/([a-z0-9-]+(/[a-z0-9-]+)*)?$'
+          description: La ruta de la SPA donde se ve el hecho.
+          example: /consolidado
+        autor:
+          type: string
+          description: El usuario que hizo la transición, o sistema.
+          example: consolidacion.demo
+        autorNombre:
+          type: string
+          description: Su nombre para mostrar cuando se recibió la notificación, o «el sistema».
+          example: Responsable de consolidación
+        momento:
+          type: string
+          format: date-time
+          description: Cuándo ocurrió el hecho.
+        leida:
+          type: boolean
+        leidaEn:
+          type: string
+          format: date-time
+          description: Cuándo se leyó por primera vez; falta si no está leída.
+    Bandeja:
+      type: object
+      additionalProperties: false
+      required: [notificaciones, sinLeer]
+      properties:
+        notificaciones:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/Notificacion'
+        sinLeer:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Todas las sin leer del usuario, no solo las de la página.
+    SinLeer:
+      type: object
+      additionalProperties: false
+      required: [sinLeer]
+      properties:
+        sinLeer:
+          type: integer
+          format: int32
+          minimum: 0
+    SolicitudDeNotificaciones:
+      description: >-
+        El contenido de los eventos <servicio>.NotificacionesSolicitadas: un hecho ya guardado en su
+        servicio y los mensajes que pide, cada uno con su destino. Notificaciones no interpreta el
+        título ni el detalle (D-108). Nunca lleva contraseñas, tokens ni datos personales de un
+        docente; el contenido no pasa de 64 KB.
+      type: object
+      additionalProperties: false
+      required: [periodo, autor, momento, mensajes]
+      properties:
+        periodo:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+          example: 2026-I
+        autor:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Quién hizo la transición, o «sistema». No recibe su propia notificación.
+          example: consolidacion.demo
+        momento:
+          type: string
+          format: date-time
+          description: Cuándo ocurrió el hecho (ISO 8601, UTC).
+        mensajes:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/MensajeSolicitado'
+    MensajeSolicitado:
+      type: object
+      additionalProperties: false
+      required: [destino, titulo, detalle, enlace]
+      properties:
+        destino:
+          $ref: '#/components/schemas/DestinoDelMensaje'
+        titulo:
+          type: string
+          minLength: 1
+          maxLength: 200
+        detalle:
+          type: string
+          maxLength: 1000
+        enlace:
+          type: string
+          pattern: '^/([a-z0-9-]+(/[a-z0-9-]+)*)?$'
+    DestinoDelMensaje:
+      description: >-
+        A quién toca el mensaje: los usuarios activos con el rol. RESPONSABLE_CONSOLIDACION es el
+        designado del periodo; con carrera, solo los coordinadores de esa carrera.
+      type: object
+      additionalProperties: false
+      required: [rol]
+      properties:
+        rol:
+          type: string
+          enum:
+            - ADMINISTRADOR
+            - COORDINADOR_CARRERA
+            - DOCENTE
+            - GESTOR_UNIDAD
+            - MIEMBRO_OCS
+            - OPERADOR_DATOS
+            - RECTOR
+            - RESPONSABLE_CONSOLIDACION
+            - SECRETARIA_GENERAL
+            - VICERRECTOR
+        carrera:
+          type: string
+          pattern: '^[0-9A-Z_-]{1,20}$'
+          example: TI
