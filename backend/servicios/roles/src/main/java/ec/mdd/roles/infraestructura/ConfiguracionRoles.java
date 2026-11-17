@@ -12,6 +12,7 @@ import ec.mdd.roles.aplicacion.AsignarCarreraServicio;
 import ec.mdd.roles.aplicacion.AsignarRolesInicialesServicio;
 import ec.mdd.roles.aplicacion.AsignarRolesServicio;
 import ec.mdd.roles.aplicacion.ConsultarAutorizacionServicio;
+import ec.mdd.roles.aplicacion.ConsultarDestinatariosServicio;
 import ec.mdd.roles.aplicacion.ConsultarFirmantesServicio;
 import ec.mdd.roles.aplicacion.ConsultarResponsableServicio;
 import ec.mdd.roles.aplicacion.DesignarResponsableServicio;
@@ -21,6 +22,7 @@ import ec.mdd.roles.puertos.entrada.AsignarCarrera;
 import ec.mdd.roles.puertos.entrada.AsignarRoles;
 import ec.mdd.roles.puertos.entrada.AsignarRolesIniciales;
 import ec.mdd.roles.puertos.entrada.ConsultarAutorizacion;
+import ec.mdd.roles.puertos.entrada.ConsultarDestinatarios;
 import ec.mdd.roles.puertos.entrada.ConsultarFirmantes;
 import ec.mdd.roles.puertos.entrada.ConsultarResponsable;
 import ec.mdd.roles.puertos.entrada.GestionarRoles;
@@ -127,6 +129,15 @@ public class ConfiguracionRoles {
     public ConsultarResponsable consultarResponsable(
             RepositorioDesignaciones designaciones, NombreDeUsuario nombres) {
         return new ConsultarResponsableServicio(designaciones, nombres);
+    }
+
+    /** A quién toca un mensaje de Notificaciones, en el mismo proceso (F16-H01, D-108). */
+    @Bean
+    public ConsultarDestinatarios consultarDestinatarios(
+            RepositorioAsignacionesDeRol asignaciones,
+            RepositorioDesignaciones designaciones,
+            RepositorioCarrerasDeCoordinadores carreras) {
+        return new ConsultarDestinatariosServicio(asignaciones, designaciones, carreras);
     }
 
     /** Quién puede firmar en un periodo (RF-58). */
