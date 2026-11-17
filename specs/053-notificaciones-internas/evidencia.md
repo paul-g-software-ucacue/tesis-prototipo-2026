@@ -80,4 +80,15 @@ Hecho por el autor el 2026-11-16, con `quickstart.md` §3, sobre un perfil const
 
 ## Equipo de demostración (T026)
 
-Pendiente: se verifica después de fusionar, en solo lectura (`quickstart.md` §4), y va en el PR de evidencia.
+| Comprobación | Resultado |
+|---|---|
+| Fusión | PR #241 (`94ba524`), con las 12 comprobaciones en verde en la primera corrida |
+| Primer intento de despliegue | Falló por la suspensión del equipo, no por la versión. <br>• `mdd-actualizar` arrancó los contenedores a las 20:36:57, y un segundo después KDE suspendió el equipo. <br>• Al despertar, a las 22:36, los 180 s ya habían pasado en el reloj, y los chequeos de salud no habían vuelto a correr. <br>• Volvió a `b2de3f7`, con las imágenes que ya tenía, porque todavía no había DNS. Todo quedó sano. |
+| Despliegue | El autor lo forzó con `actualizar.sh --forzar`: «Sano en 39 s», los 8 contenedores sanos con las imágenes `*-94ba5248986c` |
+| La migración | `notificaciones` en la V2 (`bandeja`). La aplicó el primer intento; `b2de3f7` siguió sano con ella, porque no la usa |
+| Nada notificado todavía | `notificaciones.notificacion` vacía y ninguna publicación pendiente en `eventos_distributivo`: 2026-I sigue en EN_CONSOLIDACION |
+| Memoria | Un minuto después del arranque, `identidad` usa 476 de sus 512 MiB y `distributivo`, 233. Con `b2de3f7`, después de 7 horas, `identidad` llegaba a 508 MiB (#224) |
+
+En la demo no hubo transiciones después del despliegue: la primera notificación llegará con la próxima transición real. Las notificaciones las cubren el script en la CI y el recorrido del autor en el perfil local.
+
+**Limitación conocida.** `actualizar.sh` mide los 180 s con el reloj, también mientras el equipo está suspendido. Un despliegue que coincide con una suspensión se da por fallido y vuelve atrás sin necesidad. La vuelta atrás funcionó, pero hay que forzar el despliegue a mano.
