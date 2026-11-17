@@ -156,7 +156,8 @@ final class FlujoEnMemoria {
                     }
                 },
                 servicio(),
-                Clock.fixed(AHORA.plusSeconds(3600), ZoneOffset.UTC));
+                Clock.fixed(AHORA.plusSeconds(3600), ZoneOffset.UTC),
+                (sinUso, nuevas) -> {});
     }
 
     /** Todo como al empezar: distributivos sin parciales enviados y sin procesos. */
@@ -191,7 +192,8 @@ final class FlujoEnMemoria {
                     }
                 },
                 Clock.fixed(AHORA, ZoneOffset.UTC),
-                aviso -> {});
+                aviso -> {},
+                (sinUso, nuevas) -> {});
     }
 
     private Distributivo distributivo() {

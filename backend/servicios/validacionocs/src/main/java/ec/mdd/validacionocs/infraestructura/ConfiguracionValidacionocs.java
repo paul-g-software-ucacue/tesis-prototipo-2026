@@ -16,6 +16,7 @@ import ec.mdd.validacionocs.adaptadores.salida.LectorYaml;
 import ec.mdd.validacionocs.adaptadores.salida.PlantillaEnRecursos;
 import ec.mdd.validacionocs.adaptadores.salida.PreparacionDelDocumento;
 import ec.mdd.validacionocs.adaptadores.salida.PublicadorDeCambios;
+import ec.mdd.validacionocs.adaptadores.salida.PublicadorDeNotificaciones;
 import ec.mdd.validacionocs.adaptadores.salida.RepositorioConfiguracionJdbc;
 import ec.mdd.validacionocs.adaptadores.salida.RepositorioProcesoJdbc;
 import ec.mdd.validacionocs.adaptadores.salida.TransaccionSpring;
@@ -36,6 +37,7 @@ import ec.mdd.validacionocs.puertos.salida.AlmacenDeResoluciones;
 import ec.mdd.validacionocs.puertos.salida.DatosDelPeriodo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo;
 import ec.mdd.validacionocs.puertos.salida.LectorDeConfiguracion;
+import ec.mdd.validacionocs.puertos.salida.NotificacionDeTransiciones;
 import ec.mdd.validacionocs.puertos.salida.PlantillaDelFlujo;
 import ec.mdd.validacionocs.puertos.salida.RegistroDeCambios;
 import ec.mdd.validacionocs.puertos.salida.RepositorioConfiguracion;
@@ -87,6 +89,17 @@ public class ConfiguracionValidacionocs {
         return new PublicadorDeCambios(eventos, Clock.systemUTC());
     }
 
+    /** Cada transición, como una solicitud de notificaciones hacia Notificaciones (F16-H01). */
+    @Bean
+    public NotificacionDeTransiciones notificacionDeTransiciones(
+            ApplicationEventPublisher eventos,
+            ConsultasEntreProcesos consultas,
+            @Value("${mdd.procesos.datos}") URI datos,
+            @Value("${mdd.procesos.identidad}") URI identidad) {
+        return new PublicadorDeNotificaciones(
+                eventos, new DatosDesdeProcesos(consultas, datos, identidad), Clock.systemUTC());
+    }
+
     /** Al entrar en firma, le entrega la cadena a Firma después de confirmar (MD-05, F13-H02). */
     @Bean
     public PreparacionDelDocumento preparacionDelDocumento(PrepararDocumentoFirmable firma) {
@@ -111,7 +124,8 @@ public class ConfiguracionValidacionocs {
             AlmacenDeResoluciones almacenDeResoluciones,
             RegistroDeCambios registroDeCambiosValidacionocs,
             Transaccion transaccionValidacionocs,
-            FlujoDelDistributivoServicio flujoDelDistributivo) {
+            FlujoDelDistributivoServicio flujoDelDistributivo,
+            NotificacionDeTransiciones notificacionDeTransiciones) {
         return new RegistrarResolucionServicio(
                 repositorioProceso,
                 distributivoDeGeneracion,
@@ -120,7 +134,8 @@ public class ConfiguracionValidacionocs {
                 registroDeCambiosValidacionocs,
                 transaccionValidacionocs,
                 flujoDelDistributivo,
-                Clock.systemUTC());
+                Clock.systemUTC(),
+                notificacionDeTransiciones);
     }
 
     /** Descargar el PDF de la resolución del OCS (F15-H01). */
@@ -203,7 +218,8 @@ public class ConfiguracionValidacionocs {
             DatosDelPeriodo datos,
             RegistroDeCambios registroDeCambiosValidacionocs,
             Transaccion transaccionValidacionocs,
-            ApplicationEventPublisher eventos) {
+            ApplicationEventPublisher eventos,
+            NotificacionDeTransiciones notificacionDeTransiciones) {
         return new FlujoDelDistributivoServicio(
                 distributivoDeGeneracion,
                 repositorioProceso,
@@ -212,7 +228,8 @@ public class ConfiguracionValidacionocs {
                 registroDeCambiosValidacionocs,
                 transaccionValidacionocs,
                 Clock.systemUTC(),
-                new AvisoDeFirmaSpring(eventos));
+                new AvisoDeFirmaSpring(eventos),
+                notificacionDeTransiciones);
     }
 
     /** El paso a EN_OCS con la cadena de firmas completa (F14-H03, D-104). */
@@ -220,9 +237,13 @@ public class ConfiguracionValidacionocs {
     public CompletarFirmasServicio completarFirmas(
             RepositorioProceso repositorioProceso,
             RegistroDeCambios registroDeCambiosValidacionocs,
-            Transaccion transaccionValidacionocs) {
+            Transaccion transaccionValidacionocs,
+            NotificacionDeTransiciones notificacionDeTransiciones) {
         return new CompletarFirmasServicio(
-                repositorioProceso, registroDeCambiosValidacionocs, transaccionValidacionocs);
+                repositorioProceso,
+                registroDeCambiosValidacionocs,
+                transaccionValidacionocs,
+                notificacionDeTransiciones);
     }
 
     /**
@@ -235,13 +256,15 @@ public class ConfiguracionValidacionocs {
             Distributivo distributivoDeGeneracion,
             RegistroDeCambios registroDeCambiosValidacionocs,
             Transaccion transaccionValidacionocs,
-            ApplicationEventPublisher eventos) {
+            ApplicationEventPublisher eventos,
+            NotificacionDeTransiciones notificacionDeTransiciones) {
         return new RegistrarRechazoEnFirmaServicio(
                 repositorioProceso,
                 distributivoDeGeneracion,
                 new AvisoDeFirmaSpring(eventos),
                 registroDeCambiosValidacionocs,
-                transaccionValidacionocs);
+                transaccionValidacionocs,
+                notificacionDeTransiciones);
     }
 
     /**

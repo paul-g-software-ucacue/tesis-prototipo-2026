@@ -93,7 +93,8 @@ class EtapaDelConsolidadoIntegrationTest {
                         REGISTRADOS::add,
                         new TransaccionSpring(transacciones),
                         Clock.systemUTC(),
-                        aviso -> {});
+                        aviso -> {},
+                        (sinUso, nuevas) -> {});
     }
 
     @AfterAll

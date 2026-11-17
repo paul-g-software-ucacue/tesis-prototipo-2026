@@ -29,6 +29,7 @@ import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
 import ec.mdd.validacionocs.dominio.RolDeOtraEtapa;
 import ec.mdd.validacionocs.dominio.Solicitante;
 import ec.mdd.validacionocs.dominio.TipoDeEtapa;
+import ec.mdd.validacionocs.dominio.TipoDeTransicion;
 import ec.mdd.validacionocs.dominio.Transicion;
 import ec.mdd.validacionocs.puertos.entrada.FlujoDelDistributivo;
 import ec.mdd.validacionocs.puertos.entrada.PeriodoCerrado;
@@ -40,6 +41,7 @@ import ec.mdd.validacionocs.puertos.salida.Distributivo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo.DistributivoActual;
 import ec.mdd.validacionocs.puertos.salida.Distributivo.ParcialEnviadoEnGeneracion;
 import ec.mdd.validacionocs.puertos.salida.Distributivo.VersionCongeladaEnAprobacion;
+import ec.mdd.validacionocs.puertos.salida.NotificacionDeTransiciones;
 import ec.mdd.validacionocs.puertos.salida.RegistroDeCambios;
 import ec.mdd.validacionocs.puertos.salida.RepositorioConfiguracion;
 import ec.mdd.validacionocs.puertos.salida.RepositorioProceso;
@@ -93,6 +95,9 @@ class FlujoDelDistributivoServicioTest {
                 }
             };
     private final AvisoDeFirma aviso = mock(AvisoDeFirma.class);
+    private final List<List<Transicion>> notificadas = new ArrayList<>();
+    private final NotificacionDeTransiciones notificacion =
+            (proceso, nuevas) -> notificadas.add(List.copyOf(nuevas));
     private final FlujoDelDistributivoServicio servicio =
             new FlujoDelDistributivoServicio(
                     distributivo,
@@ -103,7 +108,8 @@ class FlujoDelDistributivoServicioTest {
                     registro,
                     transaccion,
                     Clock.fixed(AHORA, ZoneOffset.UTC),
-                    aviso);
+                    aviso,
+                    notificacion);
 
     private final Map<String, Boolean> enviadosEnGeneracion = new LinkedHashMap<>();
 
@@ -870,5 +876,74 @@ class FlujoDelDistributivoServicioTest {
                     proceso.parciales(),
                     proceso.transiciones());
         }
+    }
+
+    // Cada transición nueva se notifica en su transacción (F16-H01, D-108).
+
+    private List<TipoDeTransicion> notificadasPorTipo() {
+        return notificadas.stream().flatMap(List::stream).map(Transicion::tipo).toList();
+    }
+
+    @Test
+    void dadosLosDosParciales_cuandoSeEnvian_entoncesNotificaCadaEnvioYElPasoDeEtapa() {
+        servicio.enviar(PERIODO, "DS", COORDINADOR_DS);
+        servicio.enviar(PERIODO, "TDS", COORDINADOR_TDS);
+
+        assertThat(notificadas).hasSize(2);
+        assertThat(notificadas.get(1))
+                .extracting(Transicion::tipo)
+                .containsExactly(TipoDeTransicion.ENVIO_PARCIAL, TipoDeTransicion.PASO_DE_ETAPA);
+    }
+
+    @Test
+    void dadoUnEnvioRechazado_cuandoSeIntenta_entoncesNoNotifica() {
+        assertThatThrownBy(() -> servicio.enviar(PERIODO, "DS", VICERRECTOR))
+                .isInstanceOf(RolDeOtraEtapa.class);
+
+        assertThat(notificadas).isEmpty();
+    }
+
+    @Test
+    void dadoElAvanceGenerico_cuandoElGestorAvanza_entoncesNotificaElPaso() {
+        String conUnidades =
+                new PlantillaEnRecursos()
+                        .texto()
+                        .replaceFirst("(BORRADOR_UNIDADES:\\s*\\n\\s*activa:) false", "$1 true");
+        when(configuraciones.vigenteEn(PERIODO, CREADO))
+                .thenReturn(Optional.of(new CargaGuardada(1, conUnidades, "admin.demo", CREADO)));
+        servicio.enviar(PERIODO, "DS", COORDINADOR_DS);
+        servicio.enviar(PERIODO, "TDS", COORDINADOR_TDS);
+        notificadas.clear();
+
+        servicio.avanzar(
+                PERIODO,
+                new Solicitante("gestion.demo", Set.of("GESTOR_UNIDAD"), Optional.empty()));
+
+        assertThat(notificadasPorTipo()).containsExactly(TipoDeTransicion.PASO_DE_ETAPA);
+    }
+
+    @Test
+    void dadoElEnvioARevisionLaDevolucionYLaAprobacion_cuandoSeHacen_entoncesCadaUnaNotifica() {
+        enConsolidacion();
+        marcarDevueltosEnGeneracion();
+        notificadas.clear();
+        servicio.devolver(PERIODO, DEVOLVER_DS_Y_TDS, RESPONSABLE);
+        assertThat(notificadasPorTipo()).containsExactly(TipoDeTransicion.DEVOLUCION);
+
+        notificadas.clear();
+        enRevision();
+        assertThat(notificadas.getLast())
+                .singleElement()
+                .satisfies(paso -> assertThat(paso.hacia()).isEqualTo(TipoDeEtapa.EN_REVISION_VRA));
+
+        notificadas.clear();
+        congelaEnGeneracion();
+        servicio.aprobarContenido(PERIODO, VICERRECTOR);
+        assertThat(notificadas)
+                .singleElement()
+                .satisfies(
+                        nuevas ->
+                                assertThat(nuevas.getFirst().hacia())
+                                        .isEqualTo(TipoDeEtapa.CONGELADO_EN_FIRMA));
     }
 }

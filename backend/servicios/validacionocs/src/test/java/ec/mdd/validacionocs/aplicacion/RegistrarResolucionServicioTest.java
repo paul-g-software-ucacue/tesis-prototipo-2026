@@ -31,6 +31,7 @@ import ec.mdd.validacionocs.puertos.salida.AlmacenDeResoluciones;
 import ec.mdd.validacionocs.puertos.salida.CambioDeFlujo;
 import ec.mdd.validacionocs.puertos.salida.DatosDelPeriodo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo;
+import ec.mdd.validacionocs.puertos.salida.NotificacionDeTransiciones;
 import ec.mdd.validacionocs.puertos.salida.RegistroDeCambios;
 import ec.mdd.validacionocs.puertos.salida.RepositorioProceso;
 import ec.mdd.validacionocs.puertos.salida.Transaccion;
@@ -97,6 +98,7 @@ class RegistrarResolucionServicioTest {
                 }
             };
 
+    private final NotificacionDeTransiciones notificacion = mock(NotificacionDeTransiciones.class);
     private final RegistrarResolucionServicio servicio =
             new RegistrarResolucionServicio(
                     procesos,
@@ -106,7 +108,8 @@ class RegistrarResolucionServicioTest {
                     registro,
                     transaccion,
                     flujo,
-                    Clock.fixed(AHORA, ZoneOffset.UTC));
+                    Clock.fixed(AHORA, ZoneOffset.UTC),
+                    notificacion);
 
     private void abierto() {
         when(datos.estado("2026-I")).thenReturn(Optional.of(new EstadoDelPeriodo("PLANIFICACION")));
@@ -151,6 +154,7 @@ class RegistrarResolucionServicioTest {
         verify(leido).validarResolucion(SECRETARIA, RESOLUCION, AHORA);
         verify(almacen).guardar(HUELLA, PDF);
         verify(procesos).guardar(bloqueado, List.of(APROBADO));
+        verify(notificacion).notificar(bloqueado, List.of(APROBADO));
         ArgumentCaptor<CambioDeFlujo> cambio = ArgumentCaptor.forClass(CambioDeFlujo.class);
         verify(registro).registrar(cambio.capture());
         assertThat(cambio.getValue().accion())
@@ -222,6 +226,7 @@ class RegistrarResolucionServicioTest {
                                         SECRETARIA))
                 .isInstanceOf(EtapaNoAdmiteResolucion.class);
         verify(procesos, never()).guardar(any(), anyList());
+        verify(notificacion, never()).notificar(any(), anyList());
         verify(registro, never()).registrar(any());
     }
 

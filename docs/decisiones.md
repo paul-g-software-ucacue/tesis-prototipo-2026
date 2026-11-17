@@ -106,6 +106,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-105 | 2026-11-15 | El rechazo en firma lo registra Firma y cierra el documento; Aprobación vuelve a la etapa activa anterior como el sistema, y aprobar otra vez espera la versión nueva | Aceptada | RF-36, RF-59, D-98, D-101, D-102, D-103, D-104, ADR-018, MD-05 |
 | D-106 | 2026-11-15 | El rechazo en firma crea la versión nueva y anula las firmas: Aprobación ordena a Generación y, después de confirmar, a Firma; la transición VERSION_NUEVA levanta el bloqueo de D-105 | Aceptada | RF-34, RF-59, MD-01, MD-04, MD-05, D-83, D-95, D-99, D-100, D-101, D-105, ADR-018 |
 | D-107 | 2026-11-15 | La resolución del OCS la registra Aprobación con su PDF en el volumen, y registrarla pasa el distributivo a APROBADO; leerla exige RESOLUCION_OCS:LECTURA, que se suma a Vicerrector, Rector y OCS | Aceptada | RF-37, D-16, D-19, D-88, D-95, D-104, ADR-007 |
+| D-108 | 2026-11-15 | Las notificaciones de cada transición: Aprobación decide el rol y arma el mensaje, Notificaciones resuelve los usuarios con Roles en su proceso y la bandeja solo pide sesión | Aceptada | RF-41, V-09, MD-03, MD-09, ADR-018, ADR-024, D-97, D-98, D-100 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -2244,3 +2245,60 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 - La votación electrónica (C-15), la devolución desde EN_OCS, publicar y las notificaciones quedan para sus historias.
 
 **Documentos que hay que poner al día.** Ninguno: el glosario ya tiene `ResolucionOcs`, `registrarResolucion()`, «Resolución del OCS» y SECRETARIA_GENERAL.
+
+---
+
+## D-108. Las notificaciones de cada transición: Aprobación decide el rol y arma el mensaje, Notificaciones resuelve los usuarios con Roles en su proceso y la bandeja solo pide sesión
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-15 · **Decidido por:** autor de la tesis
+- **Origen:** aclaraciones de F16-H01 (`specs/053-notificaciones-internas/spec.md`) y su plan (`research.md` §1 a §8)
+- **Cumple a:** D-97, D-98 y D-100, que dejaron sus notificaciones para F16-H01
+- **Relacionadas:** RF-41, V-09, MD-03, MD-09, ADR-018, ADR-024, D-16, D-90; principios V, VI, VII, IX y X
+
+**Decisión.**
+1. **Qué notifica.** Toda transición que registra Aprobación:
+   - el envío de un parcial;
+   - el paso de etapa;
+   - la devolución;
+   - el rechazo en firma;
+   - la versión nueva.
+
+   Las 8 operaciones que guardan transiciones llaman, en su transacción, al puerto `NotificacionDeTransiciones`. Este publica un `validacionocs.NotificacionesSolicitadas` por transición hacia `notificaciones` (ADR-018).
+2. **A quién.** A los usuarios activos con el rol responsable de la etapa de llegada, según la copia de la configuración del proceso. Hay cuatro reglas:
+   - en el envío de un parcial, el rol de la siguiente etapa activa;
+   - en una devolución, los coordinadores de cada carrera devuelta, con su observación;
+   - RESPONSABLE_CONSOLIDACION son quienes tienen el rol asignado y, además, el designado del periodo (el autor lo cambió durante la implementación: en la demo, quien consolida tiene el rol fijo, y el designado firma F1);
+   - nunca el autor de la transición.
+3. **Quién decide qué.** Se reparte así:
+   - Aprobación decide el rol y arma el título, el detalle y el enlace de cada mensaje.
+   - Una carrera se nombra por su nombre en Académico (el autor lo pidió en el recorrido a mano). Aprobación lo pide por la ruta interna del proceso `datos` (ADR-023), solo en el envío de un parcial y en la devolución. Esas dos operaciones ya piden a Académico el estado del periodo, así que no suman una dependencia. Si Académico no responde, el título lleva el código y la transición sigue.
+   - Notificaciones, en el proceso `identidad`, resuelve el rol a usuarios con un caso de uso nuevo de Roles (`ConsultarDestinatarios`) y con `ListarUsuarios`, por sus puertos de entrada.
+   - Los destinatarios se fijan al recibir.
+4. **La bandeja.** Las notificaciones viven en `notificaciones.notificacion`, una por evento, destinatario y carrera.
+   - Solo cambia `leida_en`, y una vez. No se borran: lo impiden un disparador y el `REVOKE`.
+   - La bandeja, el número sin leer y marcar como leída solo piden sesión, sin `x-mdd-permiso`. Cada usuario ve lo suyo, por el `sub` del token. La de otro responde 404.
+   - El mínimo privilegio (constitución, RNF-SEG-03) se valida en el servidor por el destinatario, como en `renovarSesion`: no hay nada que un rol pueda y otro no.
+   - La matriz D-16 no cambia, y `PermisosNotificacionesTest` comprueba que las tres operaciones piden sesión.
+5. **La SPA.** Una campana en la barra superior consulta el número cada 30 s y al volver el foco. Abrir una notificación la marca y lleva a su enlace con `?periodo=` de la notificación. «Oferta del periodo», «Consolidado del periodo» y «Resolución del OCS» toman ese periodo en vez del de por omisión (el recorrido a mano llegó a 2026-II con la notificación de 2026-I). El enlace del contrato no cambia.
+
+**Por qué.**
+- El glosario hace de Notificaciones un contexto genérico que recibe «notificar a estos roles o usuarios este hecho» y solo depende de Identidad.
+- Aprobación ya conoce el rol de cada etapa.
+- Roles, en el mismo proceso que Notificaciones, conoce las designaciones y las carreras.
+- El evento persistente cumple MD-03: no se pierde si `identidad` está caída y llega una sola vez.
+- Un permiso que tendrían los diez roles no protege nada (principio X): el límite real es el destinatario.
+
+**Alternativas.**
+- Aprobación resuelve los usuarios: consultaría a Roles por HTTP en la transacción del usuario.
+- Notificaciones lee la configuración del flujo: dependería de Aprobación.
+- Notificaciones arma los textos: tendría que conocer cada tipo de transición.
+- El permiso `NOTIFICACIONES:LECTURA` para todos los roles.
+- *Websockets* o *server-sent events*: un mecanismo nuevo para un aviso que tolera un minuto.
+
+**Consecuencias.**
+- `contratos/notificaciones/openapi.yaml` es nuevo, con 2 códigos del catálogo.
+- `probar_documento_firmable.sh` revisa las bandejas y prueba la caída de `identidad` y la repetición.
+- F16-H02 y F18-H01 publican el mismo contenido desde Firma y al publicar.
+- El correo (V-09) queda fuera, detrás de un adaptador futuro.
+
+**Documentos que hay que poner al día.** Ninguno: el glosario ya tiene `Notificacion` y el contexto Notificaciones.

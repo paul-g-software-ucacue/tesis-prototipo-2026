@@ -166,6 +166,54 @@ public final class ProcesoAprobacion {
     }
 
     /**
+     * A quién toca una transición (F16-H01, D-108): el rol responsable de la etapa a la que llega
+     * el distributivo, según la copia de la configuración (principio VI).
+     *
+     * <ul>
+     *   <li>en el envío de un parcial, que no cambia de etapa, el de la siguiente etapa activa, que
+     *       es quien lo recibe;
+     *   <li>en una devolución, los coordinadores de cada carrera devuelta, uno por carrera;
+     *   <li>en los demás, el de la etapa {@code hacia}.
+     * </ul>
+     *
+     * <p>Notificaciones resuelve el rol a usuarios y quita al autor.
+     *
+     * @param transicion una transición de este proceso
+     * @return un destino por mensaje
+     */
+    public List<DestinoDeNotificacion> destinoDe(Transicion transicion) {
+        return switch (transicion.tipo()) {
+            case ENVIO_PARCIAL ->
+                    List.of(
+                            new DestinoDeNotificacion(
+                                    etapa(siguienteActiva(TipoDeEtapa.BORRADOR_CARRERA)).rol(),
+                                    Optional.empty()));
+            case DEVOLUCION ->
+                    transicion.observaciones().keySet().stream()
+                            .map(
+                                    carrera ->
+                                            new DestinoDeNotificacion(
+                                                    etapa(transicion.hacia()).rol(),
+                                                    Optional.of(carrera)))
+                            .toList();
+            case PASO_DE_ETAPA, RECHAZO_EN_FIRMA, VERSION_NUEVA ->
+                    List.of(
+                            new DestinoDeNotificacion(
+                                    etapa(transicion.hacia()).rol(), Optional.empty()));
+        };
+    }
+
+    /**
+     * La etapa en la copia de la configuración, con su nombre y su rol.
+     *
+     * @param tipo cuál
+     * @return la etapa
+     */
+    public EtapaDelProceso etapaDe(TipoDeEtapa tipo) {
+        return etapa(tipo);
+    }
+
+    /**
      * Suma como pendientes los parciales que Generación agregó después (una carrera con su primera
      * propuesta, research §6).
      */

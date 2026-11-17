@@ -11,6 +11,7 @@ import type { paths as rutasDeDocentes } from './generado/docentes';
 import type { paths as rutasDeFirma } from './generado/firma';
 import type { paths as rutasDeGeneracion } from './generado/generacion';
 import type { paths as rutasDeNormativa } from './generado/normativa';
+import type { paths as rutasDeNotificaciones } from './generado/notificaciones';
 import type { paths as rutasDeRoles } from './generado/roles';
 import type { paths } from './generado/usuarios';
 import type { paths as rutasDeValidacionocs } from './generado/validacionocs';
@@ -118,3 +119,10 @@ export const apiFirma = createClient<rutasDeFirma>({
   fetch: (peticion) => globalThis.fetch(peticion),
 });
 apiFirma.use(conToken);
+
+/** El cliente de Notificaciones (F16-H01), con el mismo token y la misma actividad. */
+export const apiNotificaciones = createClient<rutasDeNotificaciones>({
+  baseUrl: globalThis.location?.origin ?? '',
+  fetch: (peticion) => globalThis.fetch(peticion),
+});
+apiNotificaciones.use(conToken);

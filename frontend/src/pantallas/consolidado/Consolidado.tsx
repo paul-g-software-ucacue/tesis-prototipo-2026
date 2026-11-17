@@ -30,6 +30,7 @@ import { porComponente } from '../comun/cargaHoraria';
 import { SELECCION } from '../comun/formulario';
 import { useEnvio } from '../comun/useEnvio';
 import { usePeriodos } from '../periodos/consultas';
+import { usePeriodoElegido } from '../periodos/periodoElegido';
 import { NOMBRE_DEL_ESTADO } from '../periodos/estados';
 import {
   adjuntarInforme,
@@ -240,12 +241,8 @@ export function Consolidado() {
   const consultas = useQueryClient();
   const periodos = usePeriodos();
   const carreras = useCarreras();
-  const [elegido, setElegido] = useState<string | null>(null);
-  // Por omisión, el más reciente en Planificación; si no hay, el más reciente.
-  const porOmision =
-    periodos.data?.find((periodo) => periodo.estado === 'PLANIFICACION')?.codigo ??
-    periodos.data?.[0]?.codigo;
-  const periodo = elegido ?? porOmision;
+  // El de la notificación que trajo aquí; si no, el más reciente en Planificación.
+  const [periodo, elegir] = usePeriodoElegido(periodos.data);
   const consulta = useConsolidado(periodo);
   const recargar = () => consultas.invalidateQueries({ queryKey: CLAVE_CONSOLIDADO });
   const { aviso, enviando, enviar } = useEnvio(recargar);
@@ -273,7 +270,7 @@ export function Consolidado() {
           select
           label="Periodo"
           value={periodo ?? ''}
-          onChange={(evento) => setElegido(evento.target.value)}
+          onChange={(evento) => elegir(evento.target.value)}
           slotProps={SELECCION}
           sx={{ my: 1, minWidth: 280, display: 'block' }}
         >
