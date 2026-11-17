@@ -6,7 +6,7 @@ import org.cyclonedx.gradle.CyclonedxDirectTask
 import org.gradle.api.file.RegularFile
 
 plugins {
-    id 'org.cyclonedx.bom' version '3.5.1'
+    id 'org.cyclonedx.bom' version '3.6.1'
 }
 
 allprojects {
