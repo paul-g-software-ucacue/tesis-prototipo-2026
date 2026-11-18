@@ -86,7 +86,16 @@ final class BandejasEnMemoria
 
     @Override
     public List<Destinatario> de(DestinoDelMensaje destino, String periodo) {
-        return USUARIOS_POR_ROL.getOrDefault(destino.rol(), List.of()).stream()
+        // F16-H02: la identificación del Vicerrector de los datos de prueba.
+        if (destino instanceof DestinoDelMensaje.PorIdentificacion porIdentificacion) {
+            return porIdentificacion.identificacion().equals("0109990028")
+                    ? List.of(new Destinatario("vicerrectorado.demo", Optional.empty()))
+                    : List.of();
+        }
+        if (!(destino instanceof DestinoDelMensaje.PorRol porRol)) {
+            return List.of();
+        }
+        return USUARIOS_POR_ROL.getOrDefault(porRol.rol(), List.of()).stream()
                 .map(usuario -> new Destinatario(usuario, destino.carrera()))
                 .toList();
     }

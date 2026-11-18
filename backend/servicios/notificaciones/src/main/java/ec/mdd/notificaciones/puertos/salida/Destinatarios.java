@@ -12,9 +12,11 @@ import java.util.Optional;
 public interface Destinatarios {
 
     /**
-     * @param destino el rol y, en una devolución, la carrera
+     * @param destino el rol y, en una devolución, la carrera; o una persona, por su usuario o su
+     *     identificación (D-110)
      * @param periodo el periodo, para el Responsable de consolidación designado
-     * @return los usuarios activos del destino, ordenados por usuario
+     * @return los usuarios activos del destino, ordenados por usuario; vacío si una persona no
+     *     tiene cuenta activa
      */
     List<Destinatario> de(DestinoDelMensaje destino, String periodo);
 
