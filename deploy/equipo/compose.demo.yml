@@ -7,7 +7,8 @@
 # Las imágenes salen del repositorio privado de Docker Hub (REPOSITORIO y ETIQUETA, en el .env del
 # equipo). Cada servicio recibe solo sus variables: no hay env_file. Los secretos los genera
 # preparar.sh en el equipo y nunca entran al repositorio ni a una imagen.
-# Límites de memoria: 3 072 MiB sin el túnel, en un equipo de 8 GiB de presupuesto (R-19, D-36).
+# Límites de memoria: 3 328 MiB sin el túnel, en un equipo de 8 GiB de presupuesto (R-19, D-36).
+# identidad tiene 768 MiB y el heap al 40 %; los demás procesos, 512 MiB y el heap al 60 % (D-109).
 #
 # Túnel opcional (D-55): con TUNEL_TOKEN en el .env, «--profile tunel» levanta cloudflared, que sale
 # hacia Cloudflare y llega a http://caddy:8081 sin abrir puertos de entrada (quickstart §5).
@@ -68,8 +69,16 @@ services:
   identidad:
     <<: *proceso
     image: ${REPOSITORIO}:identidad-${ETIQUETA}
+    # D-109 (#224): con 512 MiB y el heap al 60 %, identidad llegaba a 508 MiB. El heap máximo sigue
+    # en unos 300 MiB; MALLOC_ARENA_MAX acota la memoria de malloc.
+    deploy:
+      resources:
+        limits:
+          memory: 768m
     environment:
       <<: *jvm
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=40
+      MALLOC_ARENA_MAX: "2"
       DB_CLAVE_IDENTIDAD: ${DB_CLAVE_IDENTIDAD}
       MDD_CLAVE_PROCESO_DISTRIBUTIVO: ${MDD_CLAVE_PROCESO_DISTRIBUTIVO:?falta MDD_CLAVE_PROCESO_DISTRIBUTIVO}
       # Académico avisa a Roles de cada periodo con el token de proceso de datos (F05-H03, D-49).
