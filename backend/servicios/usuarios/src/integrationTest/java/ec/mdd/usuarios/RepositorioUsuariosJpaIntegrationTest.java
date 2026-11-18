@@ -69,6 +69,18 @@ class RepositorioUsuariosJpaIntegrationTest {
     }
 
     @Test
+    void dadasCuentasConYSinIdentificacion_cuandoSeBuscaPorIdentificacion_entoncesDaLaSuya() {
+        RepositorioUsuariosJpa repositorio = new RepositorioUsuariosJpa(filas);
+        Usuario rector =
+                new Usuario("rectorado.demo", "Rectorado", "hash", true, Optional.of("0109990010"));
+        repositorio.guardar(rector);
+        repositorio.guardar(new Usuario("docente.demo", "Docente", "hash", true));
+
+        assertThat(repositorio.buscarPorIdentificacion("0109990010")).contains(rector);
+        assertThat(repositorio.buscarPorIdentificacion("0999999999")).isEmpty();
+    }
+
+    @Test
     void dadoUnUsuarioConIdentificacion_cuandoSeGuardaYSeCorrige_entoncesLaConserva() {
         RepositorioUsuariosJpa repositorio = new RepositorioUsuariosJpa(filas);
         repositorio.guardar(

@@ -115,6 +115,11 @@ class IdentificacionContratoTest {
                         }
 
                         @Override
+                        public Optional<Usuario> buscarPorIdentificacion(String identificacion) {
+                            throw new UnsupportedOperationException();
+                        }
+
+                        @Override
                         public List<Usuario> todos() {
                             return List.copyOf(CUENTAS.values());
                         }

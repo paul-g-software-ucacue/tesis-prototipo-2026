@@ -21,6 +21,13 @@ final class RepositorioEnMemoria implements RepositorioUsuarios {
     }
 
     @Override
+    public Optional<Usuario> buscarPorIdentificacion(String identificacion) {
+        return usuarios.stream()
+                .filter(u -> u.identificacion().equals(Optional.of(identificacion)))
+                .findFirst();
+    }
+
+    @Override
     public List<Usuario> todos() {
         return usuarios.stream().sorted(Comparator.comparing(Usuario::nombreUsuario)).toList();
     }
