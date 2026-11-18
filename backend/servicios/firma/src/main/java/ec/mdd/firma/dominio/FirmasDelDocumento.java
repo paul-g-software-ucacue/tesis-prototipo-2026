@@ -24,6 +24,11 @@ import java.util.stream.Collectors;
  * lo ve pendiente, lo descarga, sube una firma ni lo rechaza otra vez. Sus firmas aceptadas y su
  * archivo vigente se conservan.
  *
+ * <p>La cadena con el estado de cada paso (F16-H02, D-110) usa la misma regla del turno, así que lo
+ * que ve quien sigue el proceso coincide con las firmas pendientes del firmante: un paso con firma
+ * aceptada está firmado; el rechazado, rechazado; el de {@link #pasoEnTurno()}, en turno; el resto,
+ * pendiente.
+ *
  * @param documento el documento registrado
  * @param cadena los pasos que entregó Aprobación (MD-05)
  * @param firmantes el firmante esperado de cada paso, fijado al generar
@@ -114,6 +119,66 @@ public record FirmasDelDocumento(
                 .isPresent();
     }
 
+    /**
+     * Cada paso de la cadena con su estado, en su orden, para quien sigue el proceso (F16-H02,
+     * D-110). El paso en turno es el de {@link #pasoEnTurno()}: la cadena y las firmas pendientes
+     * no se contradicen.
+     *
+     * @return los pasos con su estado
+     */
+    public List<PasoConEstado> cadenaConEstado() {
+        Optional<Integer> enTurno = pasoEnTurno().map(turno -> turno.paso().orden());
+        Optional<Integer> rechazado = rechazo.map(RechazoDelFirmante::orden);
+        return cadena.stream()
+                .sorted(Comparator.comparingInt(PasoDeFirma::orden))
+                .map(
+                        paso -> {
+                            Optional<FirmaRegistrada> firma =
+                                    firmas.stream()
+                                            .filter(una -> una.orden() == paso.orden())
+                                            .findFirst();
+                            PasoConEstado.Estado estado;
+                            if (firma.isPresent()) {
+                                estado = PasoConEstado.Estado.FIRMADO;
+                            } else if (rechazado.filter(uno -> uno == paso.orden()).isPresent()) {
+                                estado = PasoConEstado.Estado.RECHAZADO;
+                            } else if (enTurno.filter(uno -> uno == paso.orden()).isPresent()) {
+                                estado = PasoConEstado.Estado.EN_TURNO;
+                            } else {
+                                estado = PasoConEstado.Estado.PENDIENTE;
+                            }
+                            return new PasoConEstado(
+                                    paso.orden(),
+                                    rotulo(paso),
+                                    firmanteDe(paso.orden()).flatMap(FirmanteEsperado::nombre),
+                                    estado,
+                                    firma.map(FirmaRegistrada::subidoEn));
+                        })
+                .toList();
+    }
+
+    /**
+     * El paso que sigue a uno recién firmado, con su firmante esperado (F16-H02).
+     *
+     * @param orden el orden del paso firmado
+     * @return el siguiente; vacío si era el último o si el siguiente no tiene firmante esperado
+     */
+    public Optional<PasoEnTurno> siguienteTrasFirmar(int orden) {
+        return cadena.stream()
+                .filter(paso -> paso.orden() > orden)
+                .min(Comparator.comparingInt(PasoDeFirma::orden))
+                .flatMap(paso -> firmanteDe(paso.orden()).map(uno -> new PasoEnTurno(paso, uno)));
+    }
+
+    private Optional<FirmanteEsperado> firmanteDe(int orden) {
+        return firmantes.stream().filter(firmante -> firmante.orden() == orden).findFirst();
+    }
+
+    // El rótulo, como en el PDF: la etiqueta seguida de «por».
+    private static String rotulo(PasoDeFirma paso) {
+        return paso.etiqueta() + " por";
+    }
+
     /** El archivo que se firma ahora: el de la última firma o, sin firmas, el original. */
     public ArchivoDelDocumento archivoVigente() {
         return firmas.stream()
@@ -135,7 +200,7 @@ public record FirmasDelDocumento(
 
         /** El rótulo del paso, como en el PDF: la etiqueta seguida de «por». */
         public String rotulo() {
-            return paso.etiqueta() + " por";
+            return FirmasDelDocumento.rotulo(paso);
         }
     }
 }

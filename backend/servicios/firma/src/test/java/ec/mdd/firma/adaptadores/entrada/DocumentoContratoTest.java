@@ -17,6 +17,7 @@ import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
 import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,7 +64,8 @@ class DocumentoContratoTest {
                         pedir(get(RUTA.formatted("SIN")), "CONSOLIDACION:LECTURA")
                                 .getResponse()
                                 .getContentAsString())
-                .isEqualTo("{\"periodo\":\"SIN\",\"estado\":\"SIN_GENERAR\",\"acciones\":[]}");
+                .isEqualTo(
+                        "{\"periodo\":\"SIN\",\"estado\":\"SIN_GENERAR\",\"acciones\":[],\"cadena\":[]}");
         assertThat(
                         pedir(get(RUTA.formatted("FALLO")), "CONSOLIDACION:LECTURA")
                                 .getResponse()
@@ -95,6 +97,55 @@ class DocumentoContratoTest {
                                 .getResponse()
                                 .getContentAsString())
                 .doesNotContain("anulacion");
+    }
+
+    // F16-H02, D-110: la cadena con el estado de cada paso, sin identificaciones.
+    @Test
+    void dadaF1Firmada_cuandoSeConsulta_entoncesLaCadenaConF2EnTurno() throws Exception {
+        MvcResult resultado = pedir(get(RUTA.formatted("CADENA")), "DISTRIBUTIVO:ESCRITURA");
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        contrato.validar(resultado);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> cadena =
+                (List<Map<String, Object>>)
+                        new tools.jackson.databind.json.JsonMapper()
+                                .readValue(resultado.getResponse().getContentAsString(), Map.class)
+                                .get("cadena");
+        assertThat(cadena)
+                .containsExactly(
+                        Map.of(
+                                "orden", 1,
+                                "rotulo", "Elaborado por",
+                                "firmante", "PÉREZ ANA",
+                                "estado", "FIRMADO",
+                                "firmadoEn", "2026-11-18T15:04:05Z"),
+                        Map.of(
+                                "orden", 2,
+                                "rotulo", "Revisado por",
+                                "firmante", "LÓPEZ LUIS",
+                                "estado", "EN_TURNO"),
+                        Map.of("orden", 3, "rotulo", "Aprobado por", "estado", "PENDIENTE"));
+        assertThat(resultado.getResponse().getContentAsString()).doesNotContain("0109990028");
+    }
+
+    @Test
+    void dadoUnRechazoEnF2_cuandoSeConsulta_entoncesF2RechazadaSegunElContrato() throws Exception {
+        MvcResult resultado = pedir(get(RUTA.formatted("RECHAZADO")), "CONSOLIDACION:LECTURA");
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        contrato.validar(resultado);
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("\"estado\":\"RECHAZADO\"")
+                .doesNotContain("EN_TURNO");
+    }
+
+    @Test
+    void dadoQuienNoLeeElDocumento_cuandoConsultaLaCadena_entonces403() throws Exception {
+        MvcResult resultado = pedir(get(RUTA.formatted("CADENA")), "OFERTA:LECTURA");
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(403);
+        assertThat(resultado.getResponse().getContentAsString()).doesNotContain("cadena");
     }
 
     @Test
@@ -222,6 +273,39 @@ class DocumentoContratoTest {
                                                 "RECHAZO_EN_FIRMA",
                                                 2,
                                                 Instant.parse("2026-11-15T16:06:00Z"))));
+                case "CADENA", "RECHAZADO" ->
+                        new EstadoDelDocumento(
+                                periodo,
+                                Optional.of(1),
+                                EstadoDelDocumento.Estado.GENERADO,
+                                Optional.empty(),
+                                Optional.of(
+                                        new EstadoDelDocumento.Documento(
+                                                SHA,
+                                                HASH,
+                                                "sistema",
+                                                Instant.parse("2026-11-11T15:00:05Z"))),
+                                List.of(),
+                                Optional.empty(),
+                                List.of(
+                                        new EstadoDelDocumento.Paso(
+                                                1,
+                                                "Elaborado por",
+                                                Optional.of("PÉREZ ANA"),
+                                                "FIRMADO",
+                                                Optional.of(Instant.parse("2026-11-18T15:04:05Z"))),
+                                        new EstadoDelDocumento.Paso(
+                                                2,
+                                                "Revisado por",
+                                                Optional.of("LÓPEZ LUIS"),
+                                                periodo.equals("CADENA") ? "EN_TURNO" : "RECHAZADO",
+                                                Optional.empty()),
+                                        new EstadoDelDocumento.Paso(
+                                                3,
+                                                "Aprobado por",
+                                                Optional.empty(),
+                                                "PENDIENTE",
+                                                Optional.empty())));
                 default ->
                         new EstadoDelDocumento(
                                 periodo,

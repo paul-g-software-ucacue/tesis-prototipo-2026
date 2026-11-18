@@ -20,7 +20,9 @@ import ec.mdd.firma.puertos.entrada.Solicitante;
 import ec.mdd.firma.puertos.entrada.SubirFirma;
 import ec.mdd.firma.puertos.salida.AlmacenDeDocumentos;
 import ec.mdd.firma.puertos.salida.AvisoDeCadenaCompleta;
+import ec.mdd.firma.puertos.salida.FirmaPendienteSolicitada;
 import ec.mdd.firma.puertos.salida.IdentificacionDeUsuarios;
+import ec.mdd.firma.puertos.salida.NotificacionDeFirmaPendiente;
 import ec.mdd.firma.puertos.salida.RegistroDeCambios;
 import ec.mdd.firma.puertos.salida.RegistroDeCambios.CambioDeFirma;
 import ec.mdd.firma.puertos.salida.RepositorioDocumentos;
@@ -29,6 +31,7 @@ import ec.mdd.firma.puertos.salida.ValidadorDeFirmas;
 import ec.mdd.firma.puertos.salida.ValidadorDeFirmas.HallazgosDeLaFirma;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -69,6 +72,7 @@ public final class SubirFirmaServicio implements SubirFirma {
     private final RegistroDeCambios registro;
     private final Transaccion transaccion;
     private final AvisoDeCadenaCompleta aviso;
+    private final NotificacionDeFirmaPendiente notificacion;
     private final Clock reloj;
 
     /**
@@ -80,6 +84,7 @@ public final class SubirFirmaServicio implements SubirFirma {
      * @param transaccion la transacción del registro
      * @param aviso el aviso de cadena completa, para Aprobación (F14-H03)
      * @param reloj el momento de la subida
+     * @param notificacion la notificación al siguiente firmante (F16-H02, D-110)
      */
     public SubirFirmaServicio(
             RepositorioDocumentos documentos,
@@ -89,7 +94,8 @@ public final class SubirFirmaServicio implements SubirFirma {
             RegistroDeCambios registro,
             Transaccion transaccion,
             AvisoDeCadenaCompleta aviso,
-            Clock reloj) {
+            Clock reloj,
+            NotificacionDeFirmaPendiente notificacion) {
         this.enTurno = new FirmanteEnTurno(documentos, almacen, identificaciones);
         this.documentos = documentos;
         this.almacen = almacen;
@@ -97,6 +103,7 @@ public final class SubirFirmaServicio implements SubirFirma {
         this.registro = registro;
         this.transaccion = transaccion;
         this.aviso = aviso;
+        this.notificacion = notificacion;
         this.reloj = reloj;
     }
 
@@ -114,8 +121,7 @@ public final class SubirFirmaServicio implements SubirFirma {
         }
         FirmasDelDocumento firmas = turno.firmas();
         byte[] vigente = enTurno.leerVerificado(firmas.archivoVigente());
-        ResultadoValidacion resultado =
-                validar(documento, turno, vigente, archivo, quien, reloj.instant());
+        ResultadoValidacion resultado = validar(documento, turno, vigente, archivo, quien, ahora());
         if (resultado.aceptada()) {
             almacen.guardar(archivo, resultado.sha256Subido());
         }
@@ -128,6 +134,9 @@ public final class SubirFirmaServicio implements SubirFirma {
                                 documentos.registrarValidacion(aRegistrar, firmas);
                             }
                             registro.registrar(cambio(aRegistrar, firmas.documento()));
+                            if (aRegistrar.aceptada()) {
+                                notificarAlSiguiente(firmas, turno, aRegistrar, quien);
+                            }
                             if (aRegistrar.aceptada()
                                     && esElUltimoPaso(firmas, aRegistrar.orden())) {
                                 aviso.avisar(
@@ -181,6 +190,36 @@ public final class SubirFirmaServicio implements SubirFirma {
 
     // La cadena se completa con la firma del paso de mayor orden (F14-H03): el turno no se salta
     // pasos, así que los anteriores ya están firmados.
+    // F16-H02, D-110: el firmante esperado del paso siguiente recibe su notificación. El siguiente
+    // nunca es F1, así que su firmante se queda con la del paso a «En firma» (FR-006); tras el
+    // último paso no hay nadie. Va en la transacción: si la firma se revierte, la notificación
+    // tampoco sale.
+    private void notificarAlSiguiente(
+            FirmasDelDocumento firmas,
+            DocumentoEnTurno turno,
+            ResultadoValidacion aceptada,
+            Solicitante quien) {
+        firmas.siguienteTrasFirmar(aceptada.orden())
+                .ifPresent(
+                        siguiente ->
+                                notificacion.notificar(
+                                        new FirmaPendienteSolicitada(
+                                                firmas.documento().periodo(),
+                                                firmas.documento().version(),
+                                                quien.usuario(),
+                                                aceptada.subidoEn(),
+                                                siguiente.rotulo(),
+                                                siguiente.firmante(),
+                                                turno.turno().rotulo(),
+                                                turno.turno().firmante().nombre().orElseThrow())));
+    }
+
+    // La precisión de la base: PostgreSQL guarda microsegundos y redondea el resto, así que la
+    // respuesta, la cadena y la notificación dirían horas distintas (F16-H02).
+    private Instant ahora() {
+        return reloj.instant().truncatedTo(ChronoUnit.MICROS);
+    }
+
     private static boolean esElUltimoPaso(FirmasDelDocumento firmas, int orden) {
         return firmas.cadena().stream().mapToInt(PasoDeFirma::orden).max().orElse(0) == orden;
     }

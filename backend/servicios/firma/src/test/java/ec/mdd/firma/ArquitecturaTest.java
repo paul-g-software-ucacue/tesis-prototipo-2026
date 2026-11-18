@@ -30,4 +30,15 @@ class ArquitecturaTest {
                     .should()
                     .dependOnClassesThat()
                     .resideInAnyPackage("org.bouncycastle..", "org.apache.pdfbox..");
+
+    /**
+     * Firma no conoce el flujo ni a Notificaciones (MD-05, D-110): avisa a Aprobación y pide
+     * notificaciones solo con eventos, por sus puertos de salida.
+     */
+    @ArchTest
+    static final ArchRule sinAprobacionNiNotificaciones =
+            ArchRuleDefinition.noClasses()
+                    .should()
+                    .dependOnClassesThat()
+                    .resideInAnyPackage("ec.mdd.validacionocs..", "ec.mdd.notificaciones..");
 }

@@ -3,6 +3,7 @@ package ec.mdd.firma.adaptadores.entrada;
 import ec.mdd.firma.adaptadores.entrada.api.DocumentoFirmable;
 import ec.mdd.firma.adaptadores.entrada.api.DocumentoFirmableApi;
 import ec.mdd.firma.adaptadores.entrada.api.EstadoDelDocumento;
+import ec.mdd.firma.adaptadores.entrada.api.PasoConEstado;
 import ec.mdd.firma.dominio.SinRolDeFirma;
 import ec.mdd.firma.puertos.entrada.ConsultarDocumentoFirmable;
 import ec.mdd.firma.puertos.entrada.GenerarDocumentoFirmable;
@@ -61,7 +62,9 @@ class DocumentoControlador implements DocumentoFirmableApi {
                         EstadoDelDocumento.EstadoEnum.fromValue(estado.estado().name()),
                         estado.acciones().stream()
                                 .map(EstadoDelDocumento.AccionesEnum::fromValue)
-                                .toList());
+                                .toList(),
+                        // F16-H02, D-110: la cadena con su estado, sin identificaciones.
+                        estado.cadena().stream().map(DocumentoControlador::paso).toList());
         estado.version().ifPresent(respuesta::version);
         estado.motivo().ifPresent(respuesta::motivo);
         estado.documento()
@@ -85,5 +88,16 @@ class DocumentoControlador implements DocumentoFirmableApi {
                                                 anulacion.firmasAnuladas(),
                                                 anulacion.anuladaEn().atOffset(ZoneOffset.UTC))));
         return respuesta;
+    }
+
+    private static PasoConEstado paso(ec.mdd.firma.puertos.entrada.EstadoDelDocumento.Paso paso) {
+        PasoConEstado modelo =
+                new PasoConEstado(
+                        paso.orden(),
+                        paso.rotulo(),
+                        PasoConEstado.EstadoEnum.fromValue(paso.estado()));
+        paso.firmante().ifPresent(modelo::firmante);
+        paso.firmadoEn().ifPresent(momento -> modelo.firmadoEn(momento.atOffset(ZoneOffset.UTC)));
+        return modelo;
     }
 }

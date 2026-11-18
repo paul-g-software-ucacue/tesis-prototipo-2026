@@ -168,6 +168,31 @@ public final class DocumentoFirmableServicio
                 generacion.estado() == EstadoDeGeneracion.GENERADA
                         ? documentos.documento(periodo, generacion.version())
                         : Optional.empty();
+        Optional<FirmasDelDocumento> firmas = documento.flatMap(una -> documentos.firmas(una.id()));
+        // F12-H04: la anulación de las firmas del documento, si la hubo (D-106).
+        Optional<EstadoDelDocumento.Anulacion> anulacion =
+                firmas.flatMap(FirmasDelDocumento::anulacion)
+                        .map(
+                                una ->
+                                        new EstadoDelDocumento.Anulacion(
+                                                una.motivo(),
+                                                una.firmasAnuladas(),
+                                                una.anuladaEn()));
+        // F16-H02, D-110: la cadena con su estado, solo sin anulación: las firmas anuladas no se
+        // muestran como firmadas.
+        List<EstadoDelDocumento.Paso> cadena =
+                anulacion.isPresent()
+                        ? List.of()
+                        : firmas.map(FirmasDelDocumento::cadenaConEstado).orElse(List.of()).stream()
+                                .map(
+                                        paso ->
+                                                new EstadoDelDocumento.Paso(
+                                                        paso.orden(),
+                                                        paso.rotulo(),
+                                                        paso.firmante(),
+                                                        paso.estado().name(),
+                                                        paso.firmadoEn()))
+                                .toList();
         return new EstadoDelDocumento(
                 periodo,
                 Optional.of(generacion.version()),
@@ -181,16 +206,8 @@ public final class DocumentoFirmableServicio
                                         una.generadoPor(),
                                         una.generadoEn())),
                 puedeGenerar ? List.of(EstadoDelDocumento.GENERAR) : List.of(),
-                // F12-H04: la anulación de las firmas del documento, si la hubo (D-106).
-                documento
-                        .flatMap(una -> documentos.firmas(una.id()))
-                        .flatMap(FirmasDelDocumento::anulacion)
-                        .map(
-                                anulacion ->
-                                        new EstadoDelDocumento.Anulacion(
-                                                anulacion.motivo(),
-                                                anulacion.firmasAnuladas(),
-                                                anulacion.anuladaEn())));
+                anulacion,
+                cadena);
     }
 
     // FR-012: el rol de la etapa que llegó con la solicitud, sobre la última versión que pidió

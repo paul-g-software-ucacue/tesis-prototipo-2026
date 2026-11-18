@@ -362,6 +362,7 @@ class DocumentoFirmableServicioTest {
         assertThat(sin.estado()).isEqualTo(EstadoDelDocumento.Estado.SIN_GENERAR);
         assertThat(sin.version()).isEmpty();
         assertThat(sin.acciones()).isEmpty();
+        assertThat(sin.cadena()).isEmpty();
 
         sinNombreDelRector();
         servicio.preparar(solicitud());
@@ -370,6 +371,7 @@ class DocumentoFirmableServicioTest {
         assertThat(fallida.version()).contains(1);
         assertThat(fallida.motivo()).contains("Falta el nombre del Rector.");
         assertThat(fallida.acciones()).containsExactly("GENERAR");
+        assertThat(fallida.cadena()).isEmpty();
         assertThat(servicio.estado(PERIODO, VICERRECTOR).acciones()).isEmpty();
 
         when(firmantes.firmantes(
@@ -382,6 +384,44 @@ class DocumentoFirmableServicioTest {
         assertThat(generado.documento().orElseThrow().hashContenido()).isEqualTo(HASH);
         assertThat(generado.motivo()).isEmpty();
         assertThat(servicio.estado(PERIODO, RESPONSABLE).acciones()).isEmpty();
+        // F16-H02: la cadena con su estado, con los nombres impresos y sin identificaciones.
+        assertThat(generado.cadena())
+                .containsExactly(
+                        new EstadoDelDocumento.Paso(
+                                1,
+                                "Elaborado por",
+                                Optional.of("PÉREZ ANA"),
+                                "EN_TURNO",
+                                Optional.empty()),
+                        new EstadoDelDocumento.Paso(
+                                2,
+                                "Revisado por",
+                                Optional.of("LÓPEZ LUIS"),
+                                "PENDIENTE",
+                                Optional.empty()),
+                        new EstadoDelDocumento.Paso(
+                                3,
+                                "Aprobado por",
+                                Optional.of("MORA EVA"),
+                                "PENDIENTE",
+                                Optional.empty()));
+    }
+
+    @Test
+    void dadoUnDocumentoConLasFirmasAnuladas_cuandoSeConsulta_entoncesSinCadena() {
+        when(firmantes.firmantes(
+                        PERIODO, Set.of("RESPONSABLE_CONSOLIDACION", "VICERRECTOR", "RECTOR")))
+                .thenReturn(NOMBRES);
+        servicio.preparar(solicitud());
+        documentos.anular(
+                new ec.mdd.firma.dominio.AnulacionDeFirmas(
+                        "RECHAZO_EN_FIRMA", 1, "sistema", ENTRO.plusSeconds(60)));
+
+        EstadoDelDocumento anulado = servicio.estado(PERIODO, VICERRECTOR);
+
+        assertThat(anulado.estado()).isEqualTo(EstadoDelDocumento.Estado.GENERADO);
+        assertThat(anulado.anulacion()).isPresent();
+        assertThat(anulado.cadena()).isEmpty();
     }
 
     private static SolicitudDeDocumento solicitud() {
@@ -427,6 +467,12 @@ class DocumentoFirmableServicioTest {
         private final Map<String, GeneracionDeDocumento> generaciones = new TreeMap<>();
         private final Map<String, DocumentoFirmable> registrados = new TreeMap<>();
         private final Map<UUID, List<FirmanteEsperado>> firmantes = new java.util.HashMap<>();
+        private ec.mdd.firma.dominio.AnulacionDeFirmas anulada;
+
+        /** Anula las firmas de los documentos, como F12-H04 (D-106). */
+        void anular(ec.mdd.firma.dominio.AnulacionDeFirmas anulacion) {
+            anulada = anulacion;
+        }
 
         @Override
         public Optional<GeneracionDeDocumento> bloquear(String periodo, int version) {
@@ -478,7 +524,9 @@ class DocumentoFirmableServicioTest {
                                             uno,
                                             generacion(uno.periodo(), uno.version()).cadena(),
                                             firmantes.getOrDefault(uno.id(), List.of()),
-                                            List.of()));
+                                            List.of(),
+                                            Optional.empty(),
+                                            Optional.ofNullable(anulada)));
         }
 
         /** Registra un documento de antes de F14-H01, sin firmantes esperados. */
