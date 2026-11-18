@@ -107,6 +107,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-106 | 2026-11-15 | El rechazo en firma crea la versión nueva y anula las firmas: Aprobación ordena a Generación y, después de confirmar, a Firma; la transición VERSION_NUEVA levanta el bloqueo de D-105 | Aceptada | RF-34, RF-59, MD-01, MD-04, MD-05, D-83, D-95, D-99, D-100, D-101, D-105, ADR-018 |
 | D-107 | 2026-11-15 | La resolución del OCS la registra Aprobación con su PDF en el volumen, y registrarla pasa el distributivo a APROBADO; leerla exige RESOLUCION_OCS:LECTURA, que se suma a Vicerrector, Rector y OCS | Aceptada | RF-37, D-16, D-19, D-88, D-95, D-104, ADR-007 |
 | D-108 | 2026-11-15 | Las notificaciones de cada transición: Aprobación decide el rol y arma el mensaje, Notificaciones resuelve los usuarios con Roles en su proceso y la bandeja solo pide sesión | Aceptada | RF-41, V-09, MD-03, MD-09, ADR-018, ADR-024, D-97, D-98, D-100 |
+| D-109 | 2026-11-17 | identidad sube a 768 MiB, con el heap al 40 % y las arenas de malloc acotadas | Aceptada | R-19, ADR-008, D-34, D-36, issue #224 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -2302,3 +2303,44 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 - El correo (V-09) queda fuera, detrás de un adaptador futuro.
 
 **Documentos que hay que poner al día.** Ninguno: el glosario ya tiene `Notificacion` y el contexto Notificaciones.
+
+---
+
+## D-109. identidad sube a 768 MiB, con el heap al 40 % y las arenas de malloc acotadas
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-17 · **Decidido por:** autor de la tesis
+- **Origen:** issue #224. `identidad` usaba el 93 % de su límite en la demo, y una corrida de `perfil-consolidado` lo perdió sin dejar error.
+- **Precisa a:** D-36, punto 3, que permite subir un límite si una medición lo pide, y ADR-008, que fija la memoria de cada JVM con `JAVA_TOOL_OPTIONS`.
+
+**Decisión.**
+1. `identidad` pasa de 512 a 768 MiB en `compose.yaml` y en `deploy/equipo/compose.demo.yml`.
+2. Su heap baja del 60 % al 40 % (`-XX:MaxRAMPercentage=40`). El heap máximo queda igual: unos 300 MiB.
+3. `MALLOC_ARENA_MAX=2` acota la memoria que `malloc` reserva fuera de la JVM.
+4. Los demás procesos siguen con 512 MiB y el heap al 60 %.
+5. Los límites suman 3 264 MiB en el perfil consolidado y 3 328 MiB en la demo, sin el túnel. Quedan lejos de la alerta de 7 GiB de R-19.
+6. Si un contenedor se cae en `perfil-consolidado`, el paso «Estado de los contenedores» muestra también los detenidos, con su código de salida y si los mató el kernel por memoria (`OOMKilled`).
+
+**Por qué.** Se midió en el perfil local, con las opciones de la demo, en reposo y después de `probar_autenticacion.sh` (los inicios de sesión de #224):
+- **El heap:** con 512 MiB y el heap al 60 %, el máximo es 308 MB. El recolector que la JVM elige con menos de 1,75 GB (Serial) lo agranda al arrancar y no lo devuelve. En reposo tenía 273 MB comprometidos y unos 50 MB vivos.
+- **Lo que no es heap** ocupa unos 200 MB, según Native Memory Tracking: Metaspace, código, símbolos, hilos y `malloc`.
+- **Después de autenticar,** el contenedor quedó en 511,9 de 512 MiB, con 505 MiB de memoria anónima y el límite tocado 82 veces. No lo mató el kernel porque el equipo tiene swap. Un equipo sin swap lo habría matado, lo que encaja con la caída de la CI, aunque no se comprobó allí.
+
+| Configuración | En reposo | Después de autenticar | Límite tocado |
+|---|---|---|---|
+| 512 MiB, heap al 60 % (antes) | 478 MiB (93 %) | 512 MiB (100 %) | 82 veces |
+| 512 MiB, heap al 40 % | 422 MiB (82 %) | 436 MiB (85 %) | 0, con el heap casi lleno |
+| 512 MiB, al 60 %, devolviendo el heap libre (`MaxHeapFreeRatio=30`) | 478 MiB | 511 MiB | 154 veces |
+| 768 MiB, heap al 40 % | 482 MiB (63 %) | 560 MiB (73 %) | 0 |
+| **768 MiB, heap al 40 %, `MALLOC_ARENA_MAX=2`** | **452 MiB (59 %)** | **527 MiB (69 %)** | **0** |
+
+**Alternativas.**
+- **Dejar 512 MiB y achicar el heap al 35 %:** al 40 % el heap ya quedaba casi lleno, y recolectaría todo el tiempo.
+- **Devolver el heap libre al sistema:** Serial solo lo devuelve en una recolección completa; no cambió nada.
+- **Subir el límite sin bajar el porcentaje:** el heap crecería en proporción y se comería el margen.
+
+**Consecuencias.**
+- La JVM de `identidad` usa entre el 59 % y el 69 % de su límite. Las de los demás procesos no cambian.
+- No se investigó por qué `identidad` necesita casi el doble que `datos` o `distributivo`, que con la misma configuración usan unos 240 MiB. Queda como pregunta abierta si vuelve a acercarse al límite.
+- `compose.yaml` ya pasaba `JAVA_TOOL_OPTIONS` por `.env.ejemplo`, con el mismo valor que la demo: esa diferencia de #224 no existía.
+
+**Documentos que hay que poner al día.** Ninguno fuera del repositorio: los límites por contenedor están en los dos compose.

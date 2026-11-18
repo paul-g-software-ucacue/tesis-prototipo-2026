@@ -4,7 +4,8 @@
 #
 # Las variables llegan por env_file: .env.ejemplo, versionado y con valores ficticios, y encima un
 # .env opcional que Git ignora. No hay interpolación ${…} en este archivo.
-# Límites de memoria: 3 008 MiB en total para los 7 contenedores, en un equipo de 8 GiB (R-19, D-36).
+# Límites de memoria: 3 264 MiB en total para los 7 contenedores, en un equipo de 8 GiB (R-19, D-36).
+# identidad tiene 768 MiB y el heap al 40 %; los demás procesos, 512 MiB y el heap al 60 % (D-109).
 
 x-variables: &variables
   env_file:
@@ -64,6 +65,15 @@ services:
       context: .
       dockerfile: deploy/docker/java.Dockerfile
       args: { MODULO: "apps:identidad", NOMBRE: identidad }
+    # D-109 (#224): lo que no es heap ocupa unos 200 MiB, y con 512 MiB y el heap al 60 % tocaba el
+    # límite. El heap máximo sigue en unos 300 MiB; MALLOC_ARENA_MAX acota la memoria de malloc.
+    environment:
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=40
+      MALLOC_ARENA_MAX: "2"
+    deploy:
+      resources:
+        limits:
+          memory: 768m
 
   datos:
     <<: *proceso
