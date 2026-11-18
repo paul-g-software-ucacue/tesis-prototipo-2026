@@ -81,4 +81,12 @@ Sin hallazgos.
 
 ## Equipo de demostración (T022)
 
-Pendiente: se verifica después de fusionar, en solo lectura (`quickstart.md` §4), y va en el PR de evidencia.
+| Comprobación | Resultado |
+|---|---|
+| Fusión | PR #246 (`2ba0736`), con las 12 comprobaciones en verde en la primera corrida |
+| Despliegue | `cd` exitoso en la primera corrida; `mdd-actualizar` tomó `2ba0736` y dice «Sano en 56 s»; los 8 contenedores sanos con las imágenes `*-2ba0736bdcf2` |
+| Sin migraciones | Esta historia no cambia el esquema de ningún servicio |
+| Nada firmado todavía | Ningún documento firmable ni notificación de firma pendiente, y ninguna publicación pendiente en `eventos_distributivo`: 2026-I sigue en EN_CONSOLIDACION |
+| Memoria | Dos minutos después del arranque, `identidad` usa 489 de sus 768 MiB (64 %) y `distributivo`, 235 de 512 (D-109) |
+
+En la demo no se llega a la firma: 2026-I está en consolidación. La notificación de firma pendiente y la cadena las cubren el script en la CI y el recorrido del autor en el perfil local.

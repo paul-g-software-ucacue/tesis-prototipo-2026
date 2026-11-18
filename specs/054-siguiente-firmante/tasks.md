@@ -249,11 +249,16 @@ description: "Tareas de F16-H02: notificar al siguiente firmante y ver la cadena
   
   Se corrigió el JavaDoc de `ORIGENES`, que todavía decía «F16-H02 sumará `firma`».
 - [X] T021 Crear `specs/054-siguiente-firmante/evidencia.md`, como la de 053.
-- [ ] T022 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde.
+- [X] T022 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde.
   - Verificar la demo en solo lectura (`quickstart.md` §4): «Sano» y la memoria de `identidad` (D-109).
   - Abrir el PR de evidencia con `Closes #68`.
   - Con F16-H02, la épica F16 (#15) queda sin historias abiertas: preguntarle al autor si la cierra.
 
+
+  **Resultado (2026-11-18):**
+  - Se fusionó #246 (`2ba0736`).
+  - La demo dice «Sano en 56 s»; `identidad` usa 489 de 768 MiB.
+  - El detalle está en `evidencia.md`.
 ---
 
 ## Dependencies & Execution Order
