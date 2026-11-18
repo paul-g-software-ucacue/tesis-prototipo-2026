@@ -623,6 +623,15 @@ en_firma() {
 }
 
 # --- 2. docente.demo firma F1 con el certificado ficticio de la CA de prueba: F2 en turno ---
+# F16-H02 (D-110): la cadena de firmas que ve vicerrectorado.demo, con los estados separados por
+# comas; vacía si el documento tiene las firmas anuladas.
+cadena_es() {
+    iniciar "$VICERRECTOR"
+    pedir GET "$DOCUMENTO" "Bearer $token"
+    [[ $estado == 200 && $(jq -r '[.cadena[].estado] | join(",")' <<<"$cuerpo") == "$1" ]] \
+        || { echo "       cadena: $(jq -c '[.cadena[].estado]' <<<"$cuerpo" 2>/dev/null)" >&2; return 1; }
+}
+
 f1_aceptada() {
     vigente_de "$DESIGNADO" || return 1
     firmar "$carpeta/descargado.pdf" "$carpeta/f1.pdf" 1 firma-1-RESPONSABLE_CONSOLIDACION || return 1
@@ -630,7 +639,8 @@ f1_aceptada() {
     subir "$carpeta/f1.pdf"
     aceptada || { echo "       F1: $estado" >&2; return 1; }
     f1=$(jq -r '.sha256Subido' <<<"$cuerpo")
-    turno_de "$VICERRECTOR" 2 "Revisado por"
+    turno_de "$VICERRECTOR" 2 "Revisado por" || return 1
+    cadena_es "FIRMADO,EN_TURNO,PENDIENTE"
 }
 
 # --- 3. Quien no está en turno rechaza con observación y recibe 403, sin dejar fila ---
@@ -722,7 +732,9 @@ vuelve_a_revision() {
         .rechazoEnFirma.versionAnulada, .rechazoEnFirma.versionNueva, .version]' <<<"$cuerpo") \
         == "$(jq -cn --arg v "$VICERRECTOR" --arg o "$OBSERVACION" '[2, "VICERRECTOR", $v, $o, 1, 2, 2]')" ]] \
         || { echo "       el flujo: $(jq -c '.rechazoEnFirma' <<<"$cuerpo")" >&2; return 1; }
-    [[ $(jq -c '.acciones' <<<"$cuerpo") == '["APROBAR_CONTENIDO"]' ]]
+    [[ $(jq -c '.acciones' <<<"$cuerpo") == '["APROBAR_CONTENIDO"]' ]] || return 1
+    # F16-H02: con las firmas de la versión 1 anuladas, la cadena no se muestra.
+    cadena_es ""
 }
 
 # --- 7. El documento queda cerrado: subir y rechazar otra vez, 403; nadie tiene pendientes ---
@@ -755,7 +767,10 @@ aprobar_la_version_nueva() {
     esperar 30 documento_de_la_version_2 || { echo "       el documento de la versión 2 no se generó" >&2; return 1; }
     turno_de "$DESIGNADO" 1 "Elaborado por" || return 1
     pedir GET "$PENDIENTES" "Bearer $token"
-    [[ $(jq -c --arg p "$PERIODO" '[.[] | select(.periodo == $p) | .version]' <<<"$cuerpo") == '[2]' ]]
+    [[ $(jq -c --arg p "$PERIODO" '[.[] | select(.periodo == $p) | .version]' <<<"$cuerpo") == '[2]' ]] \
+        || return 1
+    # F16-H02: la cadena de la versión 2 empieza sin firmas, sin las de la versión 1.
+    cadena_es "EN_TURNO,PENDIENTE,PENDIENTE"
 }
 
 # --- 9. La base y la bitácora: F1 intacta, el rechazo en Firma y en Aprobación ---
