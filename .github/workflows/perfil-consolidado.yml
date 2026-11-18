@@ -245,10 +245,15 @@ jobs:
           deploy/medir_memoria.sh --con-sesion | tee medicion.md
           cat medicion.md >> "$GITHUB_STEP_SUMMARY"
 
+      # #224: también los detenidos, con su código de salida y si el kernel los mató por memoria.
       - if: always()
         name: Estado de los contenedores
         shell: bash
-        run: docker compose ps
+        run: |
+          docker compose ps -a
+          for contenedor in $(docker compose ps -aq); do
+            docker inspect --format '{{.Name}} {{.State.Status}} salida={{.State.ExitCode}} OOMKilled={{.State.OOMKilled}} reinicios={{.RestartCount}}' "$contenedor"
+          done
 
       - if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
