@@ -365,7 +365,7 @@ test('el Vicerrector aprueba y congela, ve la constancia y es accesible', async 
     return ruta.fulfill({
       json:
         consultasDelDocumento < 2
-          ? { periodo: '2026-2', version: 1, estado: 'EN_CURSO', acciones: [] }
+          ? { periodo: '2026-2', version: 1, estado: 'EN_CURSO', acciones: [], cadena: [] }
           : {
               periodo: '2026-2',
               version: 1,
@@ -377,6 +377,7 @@ test('el Vicerrector aprueba y congela, ve la constancia y es accesible', async 
                 generadoEn: '2026-11-10T15:30:20Z',
               },
               acciones: [],
+              cadena: [],
             },
     });
   });
@@ -484,6 +485,7 @@ test('el Responsable genera el PDF que falló y la sección es accesible en cada
             generadoEn: '2026-11-10T15:40:00Z',
           },
           acciones: [],
+          cadena: [],
         }
       : {
           periodo: '2026-2',
@@ -491,6 +493,7 @@ test('el Responsable genera el PDF que falló y la sección es accesible en cada
           estado: 'FALLIDA',
           motivo: 'Falta el nombre del Rector.',
           acciones: ['GENERAR'],
+          cadena: [],
         };
   await page.route('**/api/firma/periodos/*/documento', async (ruta) => {
     if (ruta.request().method() === 'POST') {
@@ -518,5 +521,79 @@ test('el Responsable genera el PDF que falló y la sección es accesible en cada
   await estado.getByRole('button', { name: 'Generar el PDF' }).click();
   await expect(estado).toContainText('Documento firmable generado el 10/11/26, 10:40');
   await expect(estado.getByRole('button', { name: 'Generar el PDF' })).toHaveCount(0);
+  await sinFallas(page);
+});
+
+// F16-H02, D-110: el Vicerrector ve la cadena de firmas, con F2 en turno, y es accesible.
+test('el Vicerrector ve la cadena de firmas con F2 en turno, y es accesible', async ({ page }) => {
+  await page.route('**/api/validacionocs/periodos/*/flujo', (ruta) =>
+    ruta.fulfill({
+      json: {
+        periodo: '2026-2',
+        etapa: 'CONGELADO_EN_FIRMA',
+        nombreDeEtapa: 'En firma',
+        version: 1,
+        parciales: [{ carrera: 'TDS', enviado: true, pendienteDeConfirmar: false }],
+        acciones: [],
+        transiciones: [],
+        congelacion: {
+          version: 1,
+          hash: 'e'.repeat(64),
+          quien: 'vicerrectorado.demo',
+          momento: '2026-11-10T15:30:00Z',
+        },
+      },
+    }),
+  );
+  await page.route('**/api/firma/periodos/*/documento', (ruta) =>
+    ruta.fulfill({
+      json: {
+        periodo: '2026-2',
+        version: 1,
+        estado: 'GENERADO',
+        documento: {
+          sha256: 'f'.repeat(64),
+          hashContenido: 'e'.repeat(64),
+          generadoPor: 'sistema',
+          generadoEn: '2026-11-10T15:40:00Z',
+        },
+        acciones: [],
+        cadena: [
+          {
+            orden: 1,
+            rotulo: 'Elaborado por',
+            firmante: 'PÉREZ ANA',
+            estado: 'FIRMADO',
+            firmadoEn: '2026-11-18T15:04:05Z',
+          },
+          { orden: 2, rotulo: 'Revisado por', firmante: 'LÓPEZ LUIS', estado: 'EN_TURNO' },
+          { orden: 3, rotulo: 'Aprobado por', firmante: 'MORA EVA', estado: 'PENDIENTE' },
+        ],
+      },
+    }),
+  );
+  await abrirConsolidado(
+    page,
+    () => ({
+      periodo: '2026-2',
+      creado: true,
+      modificable: true,
+      enRevision: true,
+      versionCongelada: true,
+      version: 1,
+      desactualizado: false,
+      carreras: [],
+      totales: HORAS,
+      abiertas: { duras: 0, blandas: 0 },
+    }),
+    VICERRECTORADO,
+  );
+
+  const cadena = page.getByRole('list', { name: 'Cadena de firmas' });
+  await expect(cadena.getByRole('listitem')).toHaveCount(3);
+  await expect(cadena.getByRole('listitem').nth(0)).toContainText('Firmado el 18/11/26, 10:04');
+  await expect(cadena.getByRole('listitem').nth(1)).toContainText('F2 · Revisado por · LÓPEZ LUIS');
+  await expect(cadena.getByRole('listitem').nth(1)).toContainText('En turno');
+  await expect(cadena.getByRole('listitem').nth(2)).toContainText('Pendiente');
   await sinFallas(page);
 });

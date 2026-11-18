@@ -10,6 +10,7 @@ import ec.mdd.notificaciones.puertos.salida.Destinatarios;
 import ec.mdd.notificaciones.puertos.salida.RepositorioEventosRecibidos;
 import ec.mdd.notificaciones.puertos.salida.RepositorioNotificaciones;
 import ec.mdd.roles.puertos.entrada.ConsultarDestinatarios;
+import ec.mdd.usuarios.puertos.entrada.ConsultarCuentaPorIdentificacion;
 import ec.mdd.usuarios.puertos.entrada.ListarUsuarios;
 import java.time.Clock;
 import org.springframework.context.annotation.Bean;
@@ -41,8 +42,11 @@ public class ConfiguracionNotificaciones {
     /** Quién recibe cada mensaje, por las interfaces publicadas de Roles y Usuarios. */
     @Bean
     public Destinatarios destinatariosDeNotificaciones(
-            ConsultarDestinatarios consultarDestinatarios, ListarUsuarios listarUsuarios) {
-        return new DestinatariosDesdeIdentidad(consultarDestinatarios, listarUsuarios);
+            ConsultarDestinatarios consultarDestinatarios,
+            ListarUsuarios listarUsuarios,
+            ConsultarCuentaPorIdentificacion consultarCuentaPorIdentificacion) {
+        return new DestinatariosDesdeIdentidad(
+                consultarDestinatarios, listarUsuarios, consultarCuentaPorIdentificacion);
     }
 
     /** La bandeja del usuario de la sesión y marcar como leída (US2). */

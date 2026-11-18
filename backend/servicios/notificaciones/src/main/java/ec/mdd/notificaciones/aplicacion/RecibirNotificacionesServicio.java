@@ -28,6 +28,10 @@ import org.springframework.transaction.annotation.Transactional;
  * su propia notificación (FR-002). Si Roles o Usuarios fallan, nada queda y el emisor lo vuelve a
  * enviar (FR-011).
  *
+ * <p>El destino es un rol o una persona (D-110). Una persona sin cuenta activa no recibe nada, sin
+ * respaldo por rol: el firmante esperado es esa persona, no cualquiera con su rol. No es un error,
+ * así que el evento queda recibido y no se reenvía.
+ *
  * <p>Los destinatarios se fijan al recibir: quien recibe el rol después no ve las anteriores, y
  * quien lo pierde conserva las que ya tenía.
  *
@@ -38,8 +42,11 @@ public class RecibirNotificacionesServicio implements RecibirNotificaciones {
     /** El nombre del evento, después del prefijo del servicio. */
     public static final String NOTIFICACIONES_SOLICITADAS = "NotificacionesSolicitadas";
 
-    /** Los servicios que piden notificaciones; F16-H02 sumará {@code firma}. */
-    public static final List<String> ORIGENES = List.of("validacionocs");
+    /**
+     * Los servicios que piden notificaciones: Aprobación por cada transición (D-108) y Firma por
+     * cada firma aceptada que tiene un paso siguiente (F16-H02, D-110).
+     */
+    public static final List<String> ORIGENES = List.of("validacionocs", "firma");
 
     /** El autor de lo que no pide una persona, como la cadena de firmas completa. */
     public static final String SISTEMA = "sistema";

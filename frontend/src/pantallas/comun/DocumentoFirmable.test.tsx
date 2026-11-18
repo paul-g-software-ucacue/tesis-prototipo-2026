@@ -22,6 +22,7 @@ const generado: EstadoDelDocumento = {
     generadoEn: '2026-11-11T15:30:05Z',
   },
   acciones: [],
+  cadena: [],
 };
 const fallido: EstadoDelDocumento = {
   periodo: '2026-I',
@@ -29,17 +30,37 @@ const fallido: EstadoDelDocumento = {
   estado: 'FALLIDA',
   motivo: 'Falta el nombre del Rector.',
   acciones: ['GENERAR'],
+  cadena: [],
 };
 const enCurso: EstadoDelDocumento = {
   periodo: '2026-I',
   version: 1,
   estado: 'EN_CURSO',
   acciones: [],
+  cadena: [],
 };
 
-function montar(version?: number) {
-  const consultas = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  render(
+// F16-H02: F1 firmada, F2 en turno y F3 pendiente, con F3 sin nombre impreso.
+const conCadena: EstadoDelDocumento = {
+  ...generado,
+  cadena: [
+    {
+      orden: 1,
+      rotulo: 'Elaborado por',
+      firmante: 'PÉREZ ANA',
+      estado: 'FIRMADO',
+      firmadoEn: '2026-11-18T15:04:05Z',
+    },
+    { orden: 2, rotulo: 'Revisado por', firmante: 'LÓPEZ LUIS', estado: 'EN_TURNO' },
+    { orden: 3, rotulo: 'Aprobado por', estado: 'PENDIENTE' },
+  ],
+};
+
+function montar(
+  version?: number,
+  consultas = new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+) {
+  return render(
     <QueryClientProvider client={consultas}>
       <DocumentoFirmable periodo="2026-I" intervalo={20} version={version} />
     </QueryClientProvider>,
@@ -159,5 +180,100 @@ describe('DocumentoFirmable', () => {
     const aviso = await screen.findByRole('alert');
     expect(within(aviso).getByText(/Falta el nombre del Rector/)).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Generar el PDF' })).not.toBeInTheDocument();
+  });
+
+  describe('la cadena de firmas (F16-H02)', () => {
+    function pasos() {
+      const lista = screen.getByRole('list', { name: 'Cadena de firmas' });
+      return within(lista)
+        .getAllByRole('listitem')
+        .map((paso) => paso.textContent);
+    }
+
+    it('cada paso con su rótulo, su firmante y su estado en texto', async () => {
+      simulada.responder('GET', RUTA, json(200, conCadena));
+      montar();
+
+      await screen.findByRole('list', { name: 'Cadena de firmas' });
+      expect(pasos()).toEqual([
+        'F1 · Elaborado por · PÉREZ ANAFirmado el 18/11/26, 10:04',
+        'F2 · Revisado por · LÓPEZ LUISEn turno',
+        'F3 · Aprobado porPendiente',
+      ]);
+    });
+
+    it('el paso en turno se resalta, y su estado también se dice con texto', async () => {
+      simulada.responder('GET', RUTA, json(200, conCadena));
+      montar();
+
+      const lista = await screen.findByRole('list', { name: 'Cadena de firmas' });
+      const enTurno = within(lista).getByText('F2 · Revisado por · LÓPEZ LUIS');
+      expect(enTurno).toHaveStyle({ fontWeight: 700 });
+      expect(within(lista).getByText('En turno')).toBeVisible();
+    });
+
+    it('un paso rechazado lo dice', async () => {
+      simulada.responder(
+        'GET',
+        RUTA,
+        json(200, {
+          ...conCadena,
+          cadena: [
+            conCadena.cadena[0],
+            { orden: 2, rotulo: 'Revisado por', firmante: 'LÓPEZ LUIS', estado: 'RECHAZADO' },
+            conCadena.cadena[2],
+          ],
+        }),
+      );
+      montar();
+
+      await screen.findByRole('list', { name: 'Cadena de firmas' });
+      expect(pasos()[1]).toBe('F2 · Revisado por · LÓPEZ LUISRechazado');
+    });
+
+    it('sin cadena no hay lista', async () => {
+      simulada.responder('GET', RUTA, json(200, generado));
+      montar();
+
+      await screen.findByText(/Documento firmable generado/);
+      expect(screen.queryByRole('list', { name: 'Cadena de firmas' })).not.toBeInTheDocument();
+    });
+
+    it('con el documento de otra versión no hay lista', async () => {
+      simulada.responder('GET', RUTA, json(200, conCadena));
+      montar(2);
+
+      await screen.findByText('Generando el documento firmable…');
+      expect(screen.queryByRole('list', { name: 'Cadena de firmas' })).not.toBeInTheDocument();
+    });
+
+    // FR-014: al volver a montar la tarjeta, la consulta se repite y muestra la firma nueva.
+    it('al volver a abrir la pantalla muestra la última firma aceptada', async () => {
+      let consultas = 0;
+      simulada.responder('GET', RUTA, () => {
+        consultas++;
+        return json(
+          200,
+          consultas === 1
+            ? conCadena
+            : {
+                ...conCadena,
+                cadena: [
+                  conCadena.cadena[0],
+                  { ...conCadena.cadena[1], estado: 'FIRMADO', firmadoEn: '2026-11-18T16:00:00Z' },
+                  { ...conCadena.cadena[2], estado: 'EN_TURNO' },
+                ],
+              },
+        );
+      });
+      const cache = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const primera = montar(undefined, cache);
+      await screen.findByRole('list', { name: 'Cadena de firmas' });
+      primera.unmount();
+
+      montar(undefined, cache);
+
+      await waitFor(() => expect(pasos()[2]).toBe('F3 · Aprobado porEn turno'));
+    });
   });
 });

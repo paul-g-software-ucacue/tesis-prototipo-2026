@@ -34,7 +34,8 @@ const ROL_DE_LA_ETAPA: Record<string, string> = {
   PUBLICADO: 'SECRETARIA_GENERAL',
 };
 
-// Los permisos de esos roles en la matriz D-16 (roles V2, V4, V5, V7 y V9), sin el alcance.
+// Los permisos de esos roles en la matriz D-16 (roles V2, V4, V5, V7 y V9), sin el alcance. El
+// Rector firma F3 (F16-H02).
 const PERMISOS: Record<string, readonly string[]> = {
   COORDINADOR_CARRERA: [
     'OFERTA:LECTURA',
@@ -66,6 +67,13 @@ const PERMISOS: Record<string, readonly string[]> = {
     'PARAMETROS:ESCRITURA',
     'CARGAS:LECTURA',
     'CARGAS:ESCRITURA',
+    'RESOLUCION_OCS:LECTURA',
+  ],
+  RECTOR: [
+    'DISTRIBUTIVO:LECTURA',
+    'REPORTES:LECTURA',
+    'DISTRIBUTIVO:APROBACION',
+    'DISTRIBUTIVO:FIRMA',
     'RESOLUCION_OCS:LECTURA',
   ],
   SECRETARIA_GENERAL: [
@@ -119,6 +127,14 @@ describe('Los enlaces de las notificaciones (F16-H01)', () => {
 
     expect(requeridos === null || tieneAlguno(PERMISOS[rol], requeridos ?? [])).toBe(true);
   });
+
+  // F16-H02, D-110: la notificación de firma pendiente lleva a «Pendientes de firma».
+  it.each(['VICERRECTOR', 'RECTOR'])(
+    '%s, firmante de F2 o F3, puede abrir /firmas-pendientes, el enlace de su firma pendiente',
+    (rol) => {
+      expect(tieneAlguno(PERMISOS[rol], requeridosDe('/firmas-pendientes') ?? [])).toBe(true);
+    },
+  );
 
   it('el coordinador de una carrera devuelta puede abrir /oferta, el enlace de la devolución', () => {
     expect(tieneAlguno(PERMISOS.COORDINADOR_CARRERA, requeridosDe('/oferta') ?? [])).toBe(true);

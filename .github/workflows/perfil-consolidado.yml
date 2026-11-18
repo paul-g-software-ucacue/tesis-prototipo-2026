@@ -93,6 +93,8 @@ jobs:
       # F13-H02: al aprobar, el PDF/A del consolidado con su hash; veraPDF lo valida (D-101). Hasta
       # F15-H01: las tres firmas, EN_OCS y la resolución del OCS, que lo deja APROBADO (D-107). Desde
       # F16-H01: las notificaciones de cada transición, con identidad detenido en un envío (D-108).
+      # Desde F16-H02: la cadena de firmas y la notificación al siguiente firmante, con identidad
+      # detenido durante F1 (D-110).
       - name: Documento firmable
         shell: bash
         run: deploy/probar_documento_firmable.sh

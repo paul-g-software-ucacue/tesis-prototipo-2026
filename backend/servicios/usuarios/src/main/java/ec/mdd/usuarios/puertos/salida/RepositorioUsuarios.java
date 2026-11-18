@@ -10,6 +10,14 @@ public interface RepositorioUsuarios {
     /** Busca un usuario por su nombre normalizado ({@link Usuario#normalizar(String)}). */
     Optional<Usuario> buscarPorNombre(String nombreUsuario);
 
+    /**
+     * Busca la cuenta con esa identificación, que es única (Usuarios V7, F16-H02).
+     *
+     * @param identificacion la cédula o el pasaporte, con el formato de Docentes
+     * @return la cuenta, o vacío si ninguna la tiene
+     */
+    Optional<Usuario> buscarPorIdentificacion(String identificacion);
+
     /** Todos los usuarios, ordenados por nombre de usuario. */
     List<Usuario> todos();
 

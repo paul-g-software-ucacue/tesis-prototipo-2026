@@ -34,7 +34,10 @@
 # specs/053-notificaciones-internas/contracts/demostracion.md): el envío a revisión se hace con
 # identidad detenido, sin error para el usuario, y su notificación llega cuando vuelve; al final,
 # las bandejas de todos los usuarios de la demo tienen exactamente las notificaciones de cada
-# transición, vicerrectorado.demo lee y marca la suya, y una entrega repetida no duplica nada. Si la base ya tiene
+# transición, vicerrectorado.demo lee y marca la suya, y una entrega repetida no duplica nada. Desde
+# F16-H02 (D-110; specs/054-siguiente-firmante/contracts/demostracion.md): la cadena de firmas con
+# el estado de cada paso después de generar y de cada firma; F1 se sube con identidad detenido, y la
+# notificación de firma pendiente de F2 llega cuando vuelve; F2 y F3 reciben la suya, y nadie más. Si la base ya tiene
 # alguno de esos datos, falla sin tocar nada. Al terminar, aunque un paso falle, borra lo que creó (también los archivos del volumen),
 # salvo las entradas de la bitácora, que no se pueden borrar. Termina con 0 si todos los pasos pasan
 # y con 1 si alguno falla. Nunca imprime una clave ni un token.
@@ -42,7 +45,9 @@
 # MDD_CONSERVAR=1 (solo en el perfil local): deja el distributivo en EN_REVISION_VRA, con
 # docente.demo designado Responsable, y no borra nada, para recorrer a mano
 # specs/049-completar-cadena/quickstart.md §3. MDD_CONSERVAR=EN_OCS lo deja en EN_OCS, con las tres
-# firmas, para recorrer specs/052-resolucion-ocs/quickstart.md §3. Al terminar dice cómo limpiar.
+# firmas, para recorrer specs/052-resolucion-ocs/quickstart.md §3. MDD_CONSERVAR=F2 lo deja con F1
+# aceptada y F2 en turno, para recorrer specs/054-siguiente-firmante/quickstart.md §3. Al terminar
+# dice cómo limpiar.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -452,6 +457,28 @@ aceptada() {
         && [[ -n $(jq -r '.certificado.nombre // empty' <<<"$cuerpo") ]]
 }
 
+# F16-H02 (D-110): la cadena de firmas, como la ve vicerrectorado.demo en «Consolidado del periodo».
+# cadena_es <estados separados por comas>: los tres pasos con su estado, cada uno con su nombre
+# impreso y con la fecha de la firma solo si está firmado.
+cadena_es() {
+    iniciar "$VICERRECTOR"
+    pedir GET "$DOCUMENTO" "Bearer $token"
+    [[ $estado == 200 ]] || return 1
+    [[ $(jq -r '[.cadena[].estado] | join(",")' <<<"$cuerpo") == "$1" ]] \
+        || { echo "       cadena: $(jq -c '[.cadena[].estado]' <<<"$cuerpo")" >&2; return 1; }
+    [[ $(jq '[.cadena[] | select((.firmante // "") == "")] | length' <<<"$cuerpo") == 0 ]] || return 1
+    [[ $(jq '[.cadena[] | select((.estado == "FIRMADO") != (.firmadoEn != null))] | length' <<<"$cuerpo") == 0 ]]
+}
+
+# firmado_en <orden> <subidoEn>: la fecha del paso en la cadena es la de la firma aceptada. Se
+# compara en microsegundos, la precisión de la base: la respuesta de la subida trae nanosegundos.
+firmado_en() {
+    local en_cadena
+    en_cadena=$(jq -r --argjson o "$1" '.cadena[] | select(.orden == $o) | .firmadoEn' <<<"$cuerpo")
+    [[ $(date -d "$en_cadena" +%s%6N) == $(date -d "$2" +%s%6N) ]] \
+        || { echo "       F$1: firmadoEn $en_cadena, subidoEn $2" >&2; return 1; }
+}
+
 # --- 11. Las tres firmas en orden, cada una sobre el vigente que deja la anterior ---
 firmados=()
 tres_firmas() {
@@ -472,12 +499,33 @@ tres_firmas() {
         fi
         firmar "$carpeta/descargado.pdf" "$carpeta/firmado-$i.pdf" $((i + 1)) "${campos[$i]}" || return 1
         iniciar "${usuarios[$i]}"
+        # F16-H02 (SC-002): F1 se sube con identidad detenido, con el token ya pedido; el designado
+        # se reconoce por su usuario, así que la subida no necesita a identidad. F2 y F3 sí.
+        if ((i == 0)) && [[ -z $CONSERVAR ]]; then
+            caida_firma=$(consultar_base "select now()")
+            docker compose stop identidad >/dev/null 2>&1
+        fi
         subir "$carpeta/firmado-$i.pdf"
+        local estado_de_la_subida=$estado cuerpo_de_la_subida=$cuerpo
+        if [[ -n $caida_firma && -z $vuelta_firma ]]; then
+            vuelta_firma=$(consultar_base "select now()")
+            docker compose up -d --wait --no-recreate --no-build identidad >/dev/null 2>&1 || return 1
+        fi
+        estado=$estado_de_la_subida
+        cuerpo=$cuerpo_de_la_subida
         aceptada || { echo "       ${usuarios[$i]}: $estado" >&2; return 1; }
         [[ $(jq -r '.sha256Subido' <<<"$cuerpo") == $(sha256sum "$carpeta/firmado-$i.pdf" | cut -d' ' -f1) ]] \
             || return 1
         firmados+=("$(jq -r '.sha256Subido' <<<"$cuerpo")")
+        local subido_en
+        subido_en=$(jq -r '.subidoEn' <<<"$cuerpo")
         sin_pendientes "${usuarios[$i]}" || { echo "       ${usuarios[$i]} sigue en turno" >&2; return 1; }
+        local esperada=("FIRMADO,EN_TURNO,PENDIENTE" "FIRMADO,FIRMADO,EN_TURNO" "FIRMADO,FIRMADO,FIRMADO")
+        cadena_es "${esperada[$i]}" || return 1
+        firmado_en $((i + 1)) "$subido_en" || return 1
+        if [[ $CONSERVAR == F2 ]]; then
+            return 0
+        fi
     done
     for i in "${usuarios[@]}" "$RESPONSABLE"; do
         sin_pendientes "$i" || return 1
@@ -619,6 +667,9 @@ esperadas() {
         echo "$VICERRECTOR|$REVISION"
         echo "$RESPONSABLE|El distributivo llegó a «En firma»"
         echo "$DESIGNADO|El distributivo llegó a «En firma»"
+        # F16-H02: cada firma aceptada notifica al siguiente firmante; F1 no, tras F3 nadie.
+        echo "$VICERRECTOR|Tienes una firma pendiente: «Revisado por»"
+        echo "rectorado.demo|Tienes una firma pendiente: «Aprobado por»"
         echo "$SECRETARIA|El distributivo llegó a «Resolución del OCS»"
     } | LC_ALL=C sort
 }
@@ -667,6 +718,29 @@ llego_al_volver() {
         and titulo = '$REVISION' and recibida_en >= '$caida'")
     echo "       llegó $llegada s después de levantar identidad"
     [[ $llegada =~ ^-?[0-9]+$ ]] && ((llegada >= 0 && llegada <= ESPERA_REENVIO))
+}
+
+# --- 19. F1 con identidad detenido: la notificación de F2 llegó al volver, una vez (F16-H02) ---
+FIRMA_PENDIENTE='Tienes una firma pendiente: «Revisado por»'
+llego_la_de_f2() {
+    [[ -n $caida_firma && -n $vuelta_firma ]] || { echo "       F1 no se subió con identidad detenido" >&2; return 1; }
+    local filas llegada detalle autor
+    filas=$(consultar_base "select count(*) from notificaciones.notificacion where destinatario = '$VICERRECTOR'
+        and periodo = '$PERIODO' and titulo = '$FIRMA_PENDIENTE' and recibida_en >= '$caida_firma'")
+    [[ $filas == 1 ]] || { echo "       $filas notificaciones de F2" >&2; return 1; }
+    llegada=$(consultar_base "select extract(epoch from recibida_en - '$vuelta_firma'::timestamptz)::int
+        from notificaciones.notificacion where destinatario = '$VICERRECTOR' and periodo = '$PERIODO'
+        and titulo = '$FIRMA_PENDIENTE' and recibida_en >= '$caida_firma'")
+    echo "       llegó $llegada s después de levantar identidad"
+    [[ $llegada =~ ^-?[0-9]+$ ]] && ((llegada >= 0 && llegada <= ESPERA_REENVIO)) || return 1
+    detalle=$(consultar_base "select detalle || '|' || autor from notificaciones.notificacion
+        where destinatario = '$VICERRECTOR' and periodo = '$PERIODO' and titulo = '$FIRMA_PENDIENTE'
+        and recibida_en >= '$caida_firma'")
+    autor=${detalle##*|}
+    detalle=${detalle%|*}
+    [[ $autor == "$DESIGNADO" ]] || { echo "       autor: $autor" >&2; return 1; }
+    [[ $detalle =~ ^Periodo\ $PERIODO,\ versión\ 1\.\ «Elaborado\ por»\ la\ firmó\ .+\.$ ]] \
+        || { echo "       detalle: $detalle" >&2; return 1; }
 }
 
 # --- 18. Una entrega repetida: la publicación vuelve a FAILED y el reenvío no duplica nada ---
@@ -853,6 +927,8 @@ enviado() {
 # Lo del envío, de la aprobación y del documento, para los pasos siguientes.
 caida=''
 vuelta=''
+caida_firma=''
+vuelta_firma=''
 hash_del_envio=''
 huella_enviada=''
 hash_congelado=''
@@ -905,7 +981,12 @@ generado_solo() {
     [[ $(jq -r '.documento.hashContenido' <<<"$cuerpo") == "$hash_congelado" ]] || return 1
     [[ $(jq -c '.acciones' <<<"$cuerpo") == '[]' ]] || return 1
     sha=$(jq -r '.documento.sha256' <<<"$cuerpo")
-    [[ $sha =~ ^[0-9a-f]{64}$ ]]
+    [[ $sha =~ ^[0-9a-f]{64}$ ]] || return 1
+    # F16-H02: la cadena recién generada; coordinacion.demo, que no lee el documento, 403.
+    cadena_es "EN_TURNO,PENDIENTE,PENDIENTE" || return 1
+    iniciar "$COORDINADOR"
+    pedir GET "$DOCUMENTO" "Bearer $token"
+    es_codigo 403 SEGURIDAD_ACCESO_NO_AUTORIZADO
 }
 
 # --- 3. El archivo del volumen se llama por su SHA-256, y es ese ---
@@ -1022,7 +1103,7 @@ nadie_mas() {
     es_codigo 403 SEGURIDAD_ACCESO_NO_AUTORIZADO
 }
 
-if [[ -n $CONSERVAR && $CONSERVAR != EN_OCS ]]; then
+if [[ -n $CONSERVAR && $CONSERVAR != EN_OCS && $CONSERVAR != F2 ]]; then
     verificar 1 "El consolidado listo, enviado a revisión y con $DESIGNADO designado: EN_REVISION_VRA" en_revision_y_designado
     if ((fallas > 0)); then
         echo "No quedó en revisión. Para limpiar: docker compose -p tesis-prototipo-2026 down -v"
@@ -1043,7 +1124,17 @@ verificar 7 "$DESIGNADO ve su firma pendiente («Elaborado por») y descarga el 
 verificar 8 "$RESPONSABLE, $VICERRECTOR y rectorado.demo no la ven y reciben 403; $COORDINADOR, sin permiso, 403" nadie_mas
 verificar 9 "Siete PDF rechazados con su 422 y las siete comprobaciones; el turno y el vigente no cambian" rechazos
 verificar 10 "$VICERRECTOR y $RESPONSABLE, fuera de turno, reciben 403 al subir, sin dejar fila" fuera_de_turno
-verificar 11 "F2 de la persona de F1 se rechaza; F1, F2 y F3 se aceptan en orden; al final nadie está en turno" tres_firmas
+if [[ $CONSERVAR == F2 ]]; then
+    verificar 11 "F2 de la persona de F1 se rechaza; F1 se acepta y F2 queda en turno, con la cadena" tres_firmas
+    if ((fallas > 0)); then
+        echo "No quedó F2 en turno. Para limpiar: docker compose -p tesis-prototipo-2026 down -v"
+        exit 1
+    fi
+    echo "Quedó F1 aceptada y F2 en turno, sin limpiar. Recorre specs/054-siguiente-firmante/quickstart.md §3."
+    echo "Para limpiar al terminar: docker compose -p tesis-prototipo-2026 down -v"
+    exit 0
+fi
+verificar 11 "F2 de la persona de F1 se rechaza; F1, F2 y F3 se aceptan en orden con la cadena; al final nadie está en turno" tres_firmas
 verificar 12 "3 aceptadas y 8 rechazadas, los 4 archivos y la bitácora; el proceso en EN_OCS por sistema" registro_de_firmas
 
 if [[ $CONSERVAR == EN_OCS ]]; then
@@ -1062,6 +1153,7 @@ verificar 15 "$SECRETARIA registra la resolución: APROBADO, el PDF por su huell
 verificar 16 "Las bandejas de todos tienen exactamente las de cada transición; $VICERRECTOR marca la suya y la ajena da 404" notificaciones_y_lectura
 verificar 17 "El envío a revisión con identidad detenido respondió 200, y su notificación llegó antes de $ESPERA_REENVIO s" llego_al_volver
 verificar 18 "Una entrega repetida se completa otra vez sin duplicar la notificación, que sigue leída" entrega_repetida
+verificar 19 "F1 subida con identidad detenido: aceptada, y la notificación de F2 llegó una vez antes de $ESPERA_REENVIO s" llego_la_de_f2
 
 if ((fallas > 0)); then
     echo "El documento firmable de punta a punta: $fallas paso(s) fallan."

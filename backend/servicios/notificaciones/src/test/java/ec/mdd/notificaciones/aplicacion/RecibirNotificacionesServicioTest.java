@@ -55,7 +55,8 @@ class RecibirNotificacionesServicioTest {
 
     @Test
     void dadoUnEventoNuevo_cuandoSeRecibe_entoncesUnaNotificacionPorDestinatarioSinElAutor() {
-        when(destinatarios.de(new DestinoDelMensaje("VICERRECTOR", Optional.empty()), "2026-I"))
+        when(destinatarios.de(
+                        new DestinoDelMensaje.PorRol("VICERRECTOR", Optional.empty()), "2026-I"))
                 .thenReturn(
                         List.of(
                                 new Destinatario("consolidacion.demo", Optional.empty()),
@@ -91,10 +92,12 @@ class RecibirNotificacionesServicioTest {
     @Test
     void dadaUnaDevolucion_cuandoSeRecibe_entoncesCadaCoordinadorConLaNotificacionDeSuCarrera() {
         when(destinatarios.de(
-                        new DestinoDelMensaje("COORDINADOR_CARRERA", Optional.of("DS")), "2026-I"))
+                        new DestinoDelMensaje.PorRol("COORDINADOR_CARRERA", Optional.of("DS")),
+                        "2026-I"))
                 .thenReturn(List.of(new Destinatario("coordinacion.demo", Optional.of("DS"))));
         when(destinatarios.de(
-                        new DestinoDelMensaje("COORDINADOR_CARRERA", Optional.of("TDS")), "2026-I"))
+                        new DestinoDelMensaje.PorRol("COORDINADOR_CARRERA", Optional.of("TDS")),
+                        "2026-I"))
                 .thenReturn(
                         List.of(
                                 new Destinatario("otra.coordinacion", Optional.of("TDS")),
@@ -166,7 +169,8 @@ class RecibirNotificacionesServicioTest {
                 List.of(
                         new String[] {"validacionocs.EntradaBitacora", "validacionocs"},
                         new String[] {TIPO, "generacion"},
-                        new String[] {"firma.NotificacionesSolicitadas", "firma"},
+                        new String[] {"firma.NotificacionesSolicitadas", "validacionocs"},
+                        new String[] {"firma.EntradaBitacora", "firma"},
                         new String[] {"sin-punto", "validacionocs"})) {
             assertThatThrownBy(
                             () ->
@@ -181,6 +185,55 @@ class RecibirNotificacionesServicioTest {
                     .isInstanceOf(EventoNoReconocido.class);
         }
         verify(eventos, never()).registrarSiEsNuevo(any());
+    }
+
+    // F16-H02, D-110: Firma pide la notificación de firma pendiente para una persona.
+    @Test
+    void dadaLaSolicitudDeFirma_cuandoSeRecibe_entoncesLaPersonaRecibeSuNotificacion() {
+        Map<String, Object> mensaje = mensaje("VICERRECTOR", null);
+        mensaje.put("destino", new LinkedHashMap<>(Map.of("identificacion", "0109990028")));
+        Map<String, Object> contenido = contenido(mensaje);
+        contenido.put("autor", "docente.demo");
+        when(destinatarios.de(new DestinoDelMensaje.PorIdentificacion("0109990028"), "2026-I"))
+                .thenReturn(List.of(new Destinatario("vicerrectorado.demo", Optional.empty())));
+        when(destinatarios.nombre("docente.demo")).thenReturn(Optional.of("Docente (demo)"));
+
+        servicio.recibir(
+                new EventoRecibido(
+                        UUID.randomUUID(),
+                        "firma.NotificacionesSolicitadas",
+                        "firma",
+                        AHORA,
+                        contenido));
+
+        assertThat(guardadas())
+                .singleElement()
+                .satisfies(
+                        notificacion -> {
+                            assertThat(notificacion.destinatario())
+                                    .isEqualTo("vicerrectorado.demo");
+                            assertThat(notificacion.autorNombre()).isEqualTo("Docente (demo)");
+                            assertThat(notificacion.carrera()).isEmpty();
+                        });
+    }
+
+    @Test
+    void dadaLaSolicitudDeFirmaParaQuienNoTieneCuenta_cuandoSeRecibe_entoncesNoGuardaNiFalla() {
+        Map<String, Object> mensaje = mensaje("VICERRECTOR", null);
+        mensaje.put("destino", new LinkedHashMap<>(Map.of("identificacion", "0109990028")));
+        when(destinatarios.de(any(), any())).thenReturn(List.of());
+
+        servicio.recibir(
+                new EventoRecibido(
+                        UUID.randomUUID(),
+                        "firma.NotificacionesSolicitadas",
+                        "firma",
+                        AHORA,
+                        contenido(mensaje)));
+
+        verify(eventos).registrarSiEsNuevo(any());
+        verify(notificaciones, never())
+                .guardar(org.mockito.ArgumentMatchers.argThat(lista -> !lista.isEmpty()));
     }
 
     @Test

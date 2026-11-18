@@ -28,7 +28,7 @@ class SolicitudDeNotificacionesTest {
         assertThat(solicitud.mensajes()).hasSize(2);
         MensajeSolicitado primero = solicitud.mensajes().get(0);
         assertThat(primero.destino())
-                .isEqualTo(new DestinoDelMensaje("VICERRECTOR", Optional.empty()));
+                .isEqualTo(new DestinoDelMensaje.PorRol("VICERRECTOR", Optional.empty()));
         assertThat(primero.titulo())
                 .isEqualTo("El distributivo llegó a «Revisión del Vicerrectorado»");
         assertThat(primero.detalle()).isEqualTo("Periodo 2026-I, versión 1.");
@@ -89,6 +89,63 @@ class SolicitudDeNotificacionesTest {
         assertDestinoInvalido(Map.of("rol", "JEFE"));
         assertDestinoInvalido(Map.of("rol", "COORDINADOR_CARRERA", "carrera", "ti"));
         assertDestinoInvalido(Map.of());
+    }
+
+    @Test
+    void dadoUnDestinoPorUsuarioOPorIdentificacion_cuandoSeLee_entoncesEsLaPersona() {
+        Map<String, Object> contenido = contenido();
+        mensajes(contenido).get(0).put("destino", new HashMap<>(Map.of("usuario", "docente.demo")));
+        Map<String, Object> segundo = mensaje("VICERRECTOR", null, "/firmas-pendientes");
+        segundo.put("destino", new HashMap<>(Map.of("identificacion", "0109990010")));
+        mensajes(contenido).add(segundo);
+
+        SolicitudDeNotificaciones solicitud = SolicitudDeNotificaciones.de(contenido);
+
+        assertThat(solicitud.mensajes())
+                .extracting(MensajeSolicitado::destino)
+                .containsExactly(
+                        new DestinoDelMensaje.PorUsuario("docente.demo"),
+                        new DestinoDelMensaje.PorIdentificacion("0109990010"));
+        assertThat(solicitud.mensajes().get(1).destino().carrera()).isEmpty();
+    }
+
+    @Test
+    void dadoUnDestinoConDosClavesOConCarreraSinRol_cuandoSeLee_entoncesEsInvalida() {
+        assertDestinoInvalido(Map.of("rol", "VICERRECTOR", "usuario", "vicerrectorado.demo"));
+        assertDestinoInvalido(Map.of("usuario", "docente.demo", "identificacion", "0109990010"));
+        assertDestinoInvalido(Map.of("rol", "RECTOR", "identificacion", "0109990010"));
+        assertDestinoInvalido(Map.of("usuario", "docente.demo", "carrera", "TI"));
+        assertDestinoInvalido(Map.of("identificacion", "0109990010", "carrera", "TI"));
+    }
+
+    @Test
+    void dadoUnUsuarioOUnaIdentificacionFueraDeSuForma_cuandoSeLee_entoncesEsInvalida() {
+        assertDestinoInvalido(Map.of("usuario", ""));
+        assertDestinoInvalido(Map.of("usuario", "u".repeat(65)));
+        assertDestinoInvalido(Map.of("identificacion", "01099900101234"));
+        assertDestinoInvalido(Map.of("identificacion", "0109-990010"));
+    }
+
+    @Test
+    void dadaUnaIdentificacionInvalida_cuandoSeRechaza_entoncesElMensajeNoLaRepite() {
+        Map<String, Object> contenido = contenido();
+        mensajes(contenido)
+                .get(0)
+                .put("destino", new HashMap<>(Map.of("identificacion", "ab-1234567")));
+
+        assertThatThrownBy(() -> SolicitudDeNotificaciones.de(contenido))
+                .isInstanceOf(NotificacionInvalida.class)
+                .message()
+                .doesNotContain("ab-1234567");
+    }
+
+    @Test
+    void dadoUnDestinoPorUsuarioDeSesentaYCuatro_cuandoSeLee_entoncesSeAcepta() {
+        Map<String, Object> contenido = contenido();
+        mensajes(contenido).get(0).put("destino", new HashMap<>(Map.of("usuario", "u".repeat(64))));
+
+        assertThat(SolicitudDeNotificaciones.de(contenido).mensajes().get(0).destino())
+                .isEqualTo(new DestinoDelMensaje.PorUsuario("u".repeat(64)));
     }
 
     @Test

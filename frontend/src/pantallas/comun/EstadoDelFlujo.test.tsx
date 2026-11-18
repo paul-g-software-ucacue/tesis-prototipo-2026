@@ -486,6 +486,7 @@ describe('EstadoDelFlujo', () => {
             generadoEn: '2026-11-10T15:30:20Z',
           },
           acciones: [],
+          cadena: [],
         }),
       );
       montar();

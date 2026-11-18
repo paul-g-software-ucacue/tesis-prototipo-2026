@@ -108,6 +108,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-107 | 2026-11-15 | La resolución del OCS la registra Aprobación con su PDF en el volumen, y registrarla pasa el distributivo a APROBADO; leerla exige RESOLUCION_OCS:LECTURA, que se suma a Vicerrector, Rector y OCS | Aceptada | RF-37, D-16, D-19, D-88, D-95, D-104, ADR-007 |
 | D-108 | 2026-11-15 | Las notificaciones de cada transición: Aprobación decide el rol y arma el mensaje, Notificaciones resuelve los usuarios con Roles en su proceso y la bandeja solo pide sesión | Aceptada | RF-41, V-09, MD-03, MD-09, ADR-018, ADR-024, D-97, D-98, D-100 |
 | D-109 | 2026-11-17 | identidad sube a 768 MiB, con el heap al 40 % y las arenas de malloc acotadas | Aceptada | R-19, ADR-008, D-34, D-36, issue #224 |
+| D-110 | 2026-11-18 | La notificación de firma pendiente: Firma la publica al aceptar una firma, con el firmante esperado como destino, y Notificaciones lo resuelve a su cuenta; la cadena con su estado va en la consulta del documento firmable | Aceptada | RF-41, D-17, MD-05, ADR-018, D-102, D-104, D-105, D-106, D-108 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -2344,3 +2345,51 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 - `compose.yaml` ya pasaba `JAVA_TOOL_OPTIONS` por `.env.ejemplo`, con el mismo valor que la demo: esa diferencia de #224 no existía.
 
 **Documentos que hay que poner al día.** Ninguno fuera del repositorio: los límites por contenedor están en los dos compose.
+
+---
+
+## D-110. La notificación de firma pendiente: Firma la publica al aceptar una firma, con el firmante esperado como destino, y Notificaciones lo resuelve a su cuenta; la cadena con su estado va en la consulta del documento firmable
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-18 · **Decidido por:** autor de la tesis
+- **Origen:** F16-H02 (#68), `specs/054-siguiente-firmante/research.md`
+- **Extiende a:** D-108, que preveía que Firma publicara el mismo contenido
+
+**Decisión.**
+1. **Quién publica.** Firma publica `firma.NotificacionesSolicitadas` hacia Notificaciones (ADR-018) en la transacción en que registra una firma aceptada, si la cadena tiene un paso siguiente.
+   - El firmante de F1 no recibe una notificación de firma pendiente: le basta «El distributivo llegó a «En firma»» de D-108.
+   - Tras F3 no hay paso siguiente: la Secretaría recibe la del paso a EN_OCS de D-108.
+2. **El destino es la persona.** El destino de un mensaje admite, además de `{rol, carrera?}`, `{usuario}` o `{identificacion}`, con exactamente una de las tres claves.
+   - Firma manda el firmante esperado fijado al generar (D-102): el usuario del designado, o la identificación del docente del cargo.
+   - Notificaciones lo resuelve en el proceso `identidad`: el usuario, si está activo; la identificación, con la cuenta activa que la tiene. Para eso, Usuarios publica `ConsultarCuentaPorIdentificacion`. La identificación es única entre las cuentas.
+   - Si no hay cuenta activa, nadie recibe la notificación, sin respaldo por rol (aclaración del autor del 2026-11-18).
+3. **El mensaje.**
+   - Título: «Tienes una firma pendiente: «{rótulo}»».
+   - Detalle: el periodo, la versión y quién firmó el paso anterior, con su nombre impreso.
+   - Autor: quien subió la firma.
+   - Momento: cuándo la aceptó el MDD.
+   - Enlace: `/firmas-pendientes`.
+4. **La cadena.** `GET /api/firma/periodos/{periodo}/documento` suma `cadena`: cada paso con su rótulo, el nombre impreso, su estado (`FIRMADO`, `EN_TURNO`, `PENDIENTE` o `RECHAZADO`) y, si está firmado, cuándo lo aceptó el MDD.
+   - Solo con el documento generado y sin anulación.
+   - Con el permiso de hoy.
+   - La regla del turno es la de «Pendientes de firma».
+   - «Consolidado del periodo» la muestra en la tarjeta del documento firmable.
+
+**Por qué.**
+- Firma es el dueño de la cadena y del turno; Aprobación solo se entera de la cadena completa (MD-05, D-104).
+- El firmante esperado es una persona, no un rol (D-102). Firma conoce la identificación del cargo, pero no la cuenta.
+- Resolver la cuenta en Firma exigiría una consulta síncrona a Usuarios dentro de la transacción de la firma, que D-108 ya descartó. Además, fallaría con `identidad` detenido.
+- La cadena en la consulta que ya existe no cambia los permisos, ni suma rutas ni consultas.
+
+**Alternativas.**
+- **Un destino por rol** (VICERRECTOR, RECTOR): llegaría a quien tiene el rol sin ser la persona del paso.
+- **Que Aprobación notifique** cada firma: tendría que conocer el turno y los firmantes de Firma.
+- **Una ruta nueva para la cadena:** otro permiso y otra consulta para lo mismo.
+- **Mostrar el paso rechazado** con su observación: la observación ya está en el estado del flujo (D-105).
+
+**Consecuencias.**
+- La identificación del firmante viaja en el evento y queda en el registro de publicaciones del proceso `distributivo` mientras se entrega. Ya estaba en Firma desde D-102. No se guarda en la notificación, no se muestra y no se repite en los errores.
+- `contratos/notificaciones/openapi.yaml` y `contratos/firma/openapi.yaml` cambian de forma compatible: el destino por rol sigue igual, y la respuesta suma un campo.
+- `probar_documento_firmable.sh` suma la cadena, las dos notificaciones, una caída de `identidad` durante F1 y `MDD_CONSERVAR=F2`.
+- Con la versión nueva (D-106), la cadena de la versión anulada no se muestra, y la de la nueva empieza sin firmas.
+
+**Documentos que hay que poner al día.** Ninguno: el glosario ya tiene `Notificacion`, la cadena de firmas y el firmante.

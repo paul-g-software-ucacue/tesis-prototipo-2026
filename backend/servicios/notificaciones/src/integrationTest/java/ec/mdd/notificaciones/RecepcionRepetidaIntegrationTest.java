@@ -101,6 +101,17 @@ class RecepcionRepetidaIntegrationTest {
         assertThat(filas(evento.idEvento())).isEqualTo(2);
     }
 
+    // F16-H02: la notificación de firma pendiente, con su destino por identificación.
+    @Test
+    void dadaLaMismaSolicitudDeFirma_cuandoLlegaDosVeces_entoncesUnaPorDestinatario() {
+        EventoRecibido evento = deFirma();
+
+        recibir(evento);
+        recibir(evento);
+
+        assertThat(filas(evento.idEvento())).isEqualTo(2);
+    }
+
     @Test
     void dadoElMismoEventoDespuesDeLeido_cuandoLlega_entoncesSigueUnaYSigueLeida() {
         EventoRecibido evento = evento();
@@ -179,6 +190,25 @@ class RecepcionRepetidaIntegrationTest {
                 UUID.randomUUID(),
                 "validacionocs.NotificacionesSolicitadas",
                 "validacionocs",
+                Instant.now(),
+                contenido);
+    }
+
+    private static EventoRecibido deFirma() {
+        Map<String, Object> mensaje = new LinkedHashMap<>();
+        mensaje.put("destino", Map.of("identificacion", "0109990028"));
+        mensaje.put("titulo", "Tienes una firma pendiente: «Revisado por»");
+        mensaje.put("detalle", "Periodo 2026-I, versión 1. «Elaborado por» la firmó Uno.");
+        mensaje.put("enlace", "/firmas-pendientes");
+        Map<String, Object> contenido = new LinkedHashMap<>();
+        contenido.put("periodo", "2026-I");
+        contenido.put("autor", "docente.demo");
+        contenido.put("momento", "2026-11-18T15:04:05Z");
+        contenido.put("mensajes", List.of(mensaje));
+        return new EventoRecibido(
+                UUID.randomUUID(),
+                "firma.NotificacionesSolicitadas",
+                "firma",
                 Instant.now(),
                 contenido);
     }

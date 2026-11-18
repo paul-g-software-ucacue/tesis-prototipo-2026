@@ -167,6 +167,59 @@ class EventosNotificacionesContratoTest {
                 .andReturn();
     }
 
+    // F16-H02, D-110: Firma pide la notificación de firma pendiente para una persona.
+    @Test
+    void dadaLaSolicitudDeFirmaConDestinoPorIdentificacion_cuandoSeEntrega_entonces204()
+            throws Exception {
+        MvcResult resultado =
+                entregar(
+                        cuerpo(
+                                UUID.randomUUID(),
+                                "firma.NotificacionesSolicitadas",
+                                "firma",
+                                deFirma()),
+                        deProceso());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(204);
+        contrato.validar(resultado);
+        assertThat(MEMORIA.guardadas)
+                .singleElement()
+                .satisfies(
+                        notificacion -> {
+                            assertThat(notificacion.destinatario())
+                                    .isEqualTo("vicerrectorado.demo");
+                            assertThat(notificacion.titulo())
+                                    .isEqualTo("Tienes una firma pendiente: «Revisado por»");
+                            assertThat(notificacion.enlace()).isEqualTo("/firmas-pendientes");
+                        });
+    }
+
+    @Test
+    void dadaLaSolicitudDeFirmaConUnTokenDeUsuario_cuandoLlega_entonces403SinRegistrar()
+            throws Exception {
+        MvcResult resultado =
+                entregar(
+                        cuerpo(
+                                UUID.randomUUID(),
+                                "firma.NotificacionesSolicitadas",
+                                "firma",
+                                deFirma()),
+                        jwt().authorities(new SimpleGrantedAuthority("ROLE_VICERRECTOR")));
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(403);
+        contrato.validar(resultado);
+        assertThat(MEMORIA.recibidos).isEmpty();
+        assertThat(MEMORIA.guardadas).isEmpty();
+    }
+
+    private static String deFirma() {
+        return "{\"periodo\":\"2026-I\",\"autor\":\"docente.demo\","
+                + "\"momento\":\"2026-11-18T15:04:05Z\",\"mensajes\":[{\"destino\":"
+                + "{\"identificacion\":\"0109990028\"},\"titulo\":\"Tienes una firma"
+                + " pendiente: «Revisado por»\",\"detalle\":\"Periodo 2026-I, versión 1."
+                + " «Elaborado por» la firmó Docente (demo).\",\"enlace\":\"/firmas-pendientes\"}]}";
+    }
+
     private static JwtRequestPostProcessor deProceso() {
         return jwt().jwt(token -> token.subject("proceso:distributivo"))
                 .authorities(new SimpleGrantedAuthority("ROLE_PROCESO"));
@@ -181,11 +234,17 @@ class EventosNotificacionesContratoTest {
     }
 
     private static String cuerpo(UUID id, String tipo, String contenido) {
+        return cuerpo(id, tipo, "validacionocs", contenido);
+    }
+
+    private static String cuerpo(UUID id, String tipo, String origen, String contenido) {
         return "{\"idEvento\":\""
                 + id
                 + "\",\"tipo\":\""
                 + tipo
-                + "\",\"origen\":\"validacionocs\",\"momento\":\"2026-11-15T15:00:01Z\","
+                + "\",\"origen\":\""
+                + origen
+                + "\",\"momento\":\"2026-11-15T15:00:01Z\","
                 + "\"contenido\":"
                 + contenido
                 + "}";

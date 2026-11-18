@@ -23,11 +23,12 @@ paths:
       operationId: recibirEvento
       summary: Registra las notificaciones de un evento de otro proceso una sola vez por idEvento.
       description: >-
-        Admite el tipo validacionocs.NotificacionesSolicitadas, con origen validacionocs y un
-        contenido SolicitudDeNotificaciones. Por cada mensaje, resuelve el destino a los usuarios
-        activos que tienen el rol (el Responsable de consolidación designado del periodo; con
-        carrera, los coordinadores de esa carrera), sin el autor, y guarda una notificación por cada
-        uno. Solo con un token de proceso (rol PROCESO). Un evento ya registrado también responde
+        Admite los tipos validacionocs.NotificacionesSolicitadas y firma.NotificacionesSolicitadas,
+        con el origen igual al prefijo del tipo y un contenido SolicitudDeNotificaciones. Por cada
+        mensaje, resuelve el destino a usuarios activos: los que tienen el rol (el Responsable de
+        consolidación asignado y el designado del periodo; con carrera, los coordinadores de esa
+        carrera), o la persona, por su usuario o por su identificación (F16-H02, D-110). Quita al
+        autor y guarda una notificación por cada uno; si no queda nadie, no guarda ninguna. Solo con un token de proceso (rol PROCESO). Un evento ya registrado también responde
         204, sin volver a crear nada.
       requestBody:
         required: true
@@ -274,7 +275,16 @@ components:
           pattern: '^/([a-z0-9-]+(/[a-z0-9-]+)*)?$'
     DestinoDelMensaje:
       description: >-
-        A quién toca el mensaje: los usuarios activos con el rol. RESPONSABLE_CONSOLIDACION es el
+        A quién toca el mensaje: un rol (F16-H01) o una persona (F16-H02, D-110), con exactamente una
+        de las claves rol, usuario o identificacion. Solo se notifica a cuentas activas, y nunca al
+        autor.
+      oneOf:
+        - $ref: '#/components/schemas/DestinoPorRol'
+        - $ref: '#/components/schemas/DestinoPorUsuario'
+        - $ref: '#/components/schemas/DestinoPorIdentificacion'
+    DestinoPorRol:
+      description: >-
+        Los usuarios activos con el rol. RESPONSABLE_CONSOLIDACION son quienes lo tienen asignado y el
         designado del periodo; con carrera, solo los coordinadores de esa carrera.
       type: object
       additionalProperties: false
@@ -297,3 +307,28 @@ components:
           type: string
           pattern: '^[0-9A-Z_-]{1,20}$'
           example: TI
+    DestinoPorUsuario:
+      description: >-
+        Una cuenta, por su nombre de usuario, si existe y está activa: el firmante que se reconoce por
+        su usuario (el Responsable designado, D-102). Sin patrón: Usuarios solo fija el largo.
+      type: object
+      additionalProperties: false
+      required: [usuario]
+      properties:
+        usuario:
+          type: string
+          minLength: 1
+          maxLength: 64
+          example: docente.demo
+    DestinoPorIdentificacion:
+      description: >-
+        La cuenta activa con esa identificación, que es única, si existe: el docente de un cargo
+        firmante (D-102). La identificación no se guarda en la notificación ni se repite en un error.
+      type: object
+      additionalProperties: false
+      required: [identificacion]
+      properties:
+        identificacion:
+          type: string
+          pattern: '^[0-9A-Z]{1,13}$'
+          example: '0102030405'

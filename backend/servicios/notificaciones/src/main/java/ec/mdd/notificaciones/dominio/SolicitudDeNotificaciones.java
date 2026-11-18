@@ -23,8 +23,9 @@ import java.util.regex.Pattern;
  *   <li>solo admite las claves del esquema, a cualquier profundidad: así no entra ningún secreto ni
  *       dato que nadie pidió (FR-014);
  *   <li>el periodo, el autor, el momento y de 1 a {@value #MENSAJES_MAXIMOS} mensajes;
- *   <li>cada mensaje con un rol de D-63, una carrera con su forma, el título de 1 a 200 caracteres,
- *       el detalle hasta 1000 y un enlace relativo de la SPA;
+ *   <li>cada mensaje con un destino: un rol de D-63 con una carrera con su forma, o una persona,
+ *       por su usuario (de 1 a 64 caracteres) o por su identificación (D-110); el título de 1 a 200
+ *       caracteres, el detalle hasta 1000 y un enlace relativo de la SPA;
  *   <li>el contenido no pasa de 64 KB, contado en UTF-8.
  * </ul>
  *
@@ -65,7 +66,13 @@ public record SolicitudDeNotificaciones(
     private static final Set<String> CLAVES = Set.of("periodo", "autor", "momento", "mensajes");
     private static final Set<String> CLAVES_DEL_MENSAJE =
             Set.of("destino", "titulo", "detalle", "enlace");
-    private static final Set<String> CLAVES_DEL_DESTINO = Set.of("rol", "carrera");
+    private static final Set<String> CLAVES_DEL_DESTINO =
+            Set.of("rol", "carrera", "usuario", "identificacion");
+    private static final Set<String> CLAVES_DE_QUIEN = Set.of("rol", "usuario", "identificacion");
+    // El formato de Docentes y de Usuarios V7: cédula o pasaporte.
+    private static final Pattern IDENTIFICACION = Pattern.compile("^[0-9A-Z]{1,13}$");
+    // El largo de nombre_usuario en Usuarios; Usuarios no fija un formato.
+    private static final int USUARIO_MAXIMO = 64;
 
     /** Exige los datos y copia la lista. */
     public SolicitudDeNotificaciones {
@@ -132,23 +139,52 @@ public record SolicitudDeNotificaciones(
         return new MensajeSolicitado(destino(mensaje.get("destino")), titulo, detalle, enlace);
     }
 
+    // Exactamente una de rol, usuario o identificacion (D-110); la carrera, solo con el rol. La
+    // identificación es un dato personal: un error no la repite.
     private static DestinoDelMensaje destino(Object valor) {
         if (!(valor instanceof Map<?, ?> destino)) {
             throw new NotificacionInvalida("Falta el destino de un mensaje, o no es un objeto.");
         }
         soloClaves(destino, CLAVES_DEL_DESTINO, "un destino");
+        long claves = CLAVES_DE_QUIEN.stream().filter(destino::containsKey).count();
+        if (claves != 1) {
+            throw new NotificacionInvalida(
+                    "Un destino lleva exactamente una de las claves rol, usuario o identificacion.");
+        }
+        if (destino.containsKey("usuario")) {
+            if (destino.containsKey("carrera")) {
+                throw new NotificacionInvalida("La carrera solo va en un destino por rol.");
+            }
+            String usuario = texto(destino, "usuario");
+            if (usuario.isEmpty() || usuario.length() > USUARIO_MAXIMO) {
+                throw new NotificacionInvalida(
+                        "El usuario del destino debe tener de 1 a 64 caracteres.");
+            }
+            return new DestinoDelMensaje.PorUsuario(usuario);
+        }
+        if (destino.containsKey("identificacion")) {
+            if (destino.containsKey("carrera")) {
+                throw new NotificacionInvalida("La carrera solo va en un destino por rol.");
+            }
+            if (!(destino.get("identificacion") instanceof String identificacion)
+                    || !IDENTIFICACION.matcher(identificacion).matches()) {
+                throw new NotificacionInvalida(
+                        "La identificación del destino no tiene la forma esperada.");
+            }
+            return new DestinoDelMensaje.PorIdentificacion(identificacion);
+        }
         String rol = texto(destino, "rol");
         if (!ROLES.contains(rol)) {
             throw new NotificacionInvalida("El rol del destino no es uno de los diez de D-63.");
         }
         Object carrera = destino.get("carrera");
         if (carrera == null) {
-            return new DestinoDelMensaje(rol, Optional.empty());
+            return new DestinoDelMensaje.PorRol(rol, Optional.empty());
         }
         if (!(carrera instanceof String codigo) || !CARRERA.matcher(codigo).matches()) {
             throw new NotificacionInvalida("La carrera del destino no tiene la forma " + CARRERA);
         }
-        return new DestinoDelMensaje(rol, Optional.of(codigo));
+        return new DestinoDelMensaje.PorRol(rol, Optional.of(codigo));
     }
 
     private static void soloClaves(Map<?, ?> mapa, Set<String> admitidas, String donde) {

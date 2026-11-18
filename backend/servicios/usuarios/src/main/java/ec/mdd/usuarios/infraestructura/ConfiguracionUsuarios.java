@@ -17,6 +17,7 @@ import ec.mdd.usuarios.adaptadores.salida.RepositorioUsuariosJpa;
 import ec.mdd.usuarios.adaptadores.salida.UsuarioJpaRepositorio;
 import ec.mdd.usuarios.adaptadores.salida.VerificadorArgon2;
 import ec.mdd.usuarios.aplicacion.ConsultarBitacoraServicio;
+import ec.mdd.usuarios.aplicacion.ConsultarCuentaPorIdentificacionServicio;
 import ec.mdd.usuarios.aplicacion.ConsultarIdentificacionServicio;
 import ec.mdd.usuarios.aplicacion.EmitirTokenDeProcesoServicio;
 import ec.mdd.usuarios.aplicacion.IniciarSesionServicio;
@@ -25,6 +26,7 @@ import ec.mdd.usuarios.aplicacion.RegistrarEventoRecibidoServicio;
 import ec.mdd.usuarios.aplicacion.RenovarSesionServicio;
 import ec.mdd.usuarios.dominio.PoliticaDeIntentos;
 import ec.mdd.usuarios.puertos.entrada.ConsultarBitacora;
+import ec.mdd.usuarios.puertos.entrada.ConsultarCuentaPorIdentificacion;
 import ec.mdd.usuarios.puertos.entrada.ConsultarIdentificacion;
 import ec.mdd.usuarios.puertos.entrada.EmitirTokenDeProceso;
 import ec.mdd.usuarios.puertos.entrada.IniciarSesion;
@@ -145,6 +147,13 @@ public class ConfiguracionUsuarios {
     @Bean
     public ConsultarIdentificacion consultarIdentificacion(RepositorioUsuarios repositorio) {
         return new ConsultarIdentificacionServicio(repositorio);
+    }
+
+    /** La cuenta de una identificación, para Notificaciones (F16-H02, D-110). */
+    @Bean
+    public ConsultarCuentaPorIdentificacion consultarCuentaPorIdentificacion(
+            RepositorioUsuarios repositorio) {
+        return new ConsultarCuentaPorIdentificacionServicio(repositorio);
     }
 
     /** Renovación hasta {@code mdd.usuarios.token.maximo} desde el inicio (ADR-020). */

@@ -36,7 +36,9 @@ import ec.mdd.firma.puertos.entrada.CadenaDeFirmasCompleta;
 import ec.mdd.firma.puertos.entrada.Solicitante;
 import ec.mdd.firma.puertos.salida.AlmacenDeDocumentos;
 import ec.mdd.firma.puertos.salida.AvisoDeCadenaCompleta;
+import ec.mdd.firma.puertos.salida.FirmaPendienteSolicitada;
 import ec.mdd.firma.puertos.salida.IdentificacionDeUsuarios;
+import ec.mdd.firma.puertos.salida.NotificacionDeFirmaPendiente;
 import ec.mdd.firma.puertos.salida.RegistroDeCambios;
 import ec.mdd.firma.puertos.salida.RegistroDeCambios.CambioDeFirma;
 import ec.mdd.firma.puertos.salida.RepositorioDocumentos;
@@ -88,6 +90,8 @@ class SubirFirmaServicioTest {
     private final RegistroDeCambios registro = mock(RegistroDeCambios.class);
     private final TransaccionDePrueba transaccion = new TransaccionDePrueba();
     private final AvisoDeCadenaCompleta aviso = mock(AvisoDeCadenaCompleta.class);
+    private final NotificacionDeFirmaPendiente notificacion =
+            mock(NotificacionDeFirmaPendiente.class);
 
     private final SubirFirmaServicio servicio =
             new SubirFirmaServicio(
@@ -98,7 +102,8 @@ class SubirFirmaServicioTest {
                     registro,
                     transaccion,
                     aviso,
-                    Clock.fixed(AHORA, ZoneOffset.UTC));
+                    Clock.fixed(AHORA, ZoneOffset.UTC),
+                    notificacion);
 
     private final DocumentoFirmable documento =
             new DocumentoFirmable(
@@ -374,6 +379,8 @@ class SubirFirmaServicioTest {
         assertThat(registradas.getAllValues().getLast().primerRechazo()).contains(MISMO_DOCUMENTO);
         assertThat(cambioPublicado().accion()).isEqualTo(CambioDeFirma.FIRMA_RECHAZADA);
         assertThat(transaccion.veces).isEqualTo(1);
+        // F16-H02: la ganada por otra subida no notifica.
+        verifyNoInteractions(notificacion);
     }
 
     // --- F14-H03: el paso sin nombre, la vigencia, el orden y el firmante.
@@ -470,6 +477,8 @@ class SubirFirmaServicioTest {
                 documento.id(), FIRMADO, new Solicitante("rectorado.demo", Set.of("RECTOR")));
 
         verify(aviso).avisar(new CadenaDeFirmasCompleta("2026-I", 1, AHORA));
+        // F16-H02: tras F3 no hay siguiente firmante.
+        verifyNoInteractions(notificacion);
     }
 
     @Test
@@ -503,6 +512,107 @@ class SubirFirmaServicioTest {
                                         new Solicitante("rectorado.demo", Set.of("RECTOR"))))
                 .isInstanceOf(ArchivoFirmadoRechazado.FirmanteEquivocado.class);
         verifyNoInteractions(aviso);
+        verifyNoInteractions(notificacion);
+    }
+
+    // --- F16-H02: la firma aceptada notifica al siguiente firmante, en la misma transacción.
+
+    @Test
+    void dadaF1Aceptada_cuandoSeRegistra_entoncesNotificaAlFirmanteDeF2EnLaTransaccion() {
+        enF1();
+        when(validador.validar(any(), any())).thenReturn(aprobados());
+        when(documentos.registrarValidacion(any(), any())).thenReturn(true);
+        org.mockito.Mockito.doAnswer(
+                        invocacion -> {
+                            assertThat(transaccion.dentro).isTrue();
+                            return null;
+                        })
+                .when(notificacion)
+                .notificar(any());
+
+        servicio.subir(documento.id(), FIRMADO, DESIGNADO);
+
+        verify(notificacion)
+                .notificar(
+                        new FirmaPendienteSolicitada(
+                                "2026-I",
+                                1,
+                                "docente.demo",
+                                AHORA,
+                                "Revisado por",
+                                FirmanteEsperado.porIdentificacion(
+                                        2,
+                                        "VICERRECTOR",
+                                        "0109990028",
+                                        "CABRERA VAZQUEZ ANA GABRIELA"),
+                                "Elaborado por",
+                                "Docente (demo)"));
+    }
+
+    @Test
+    void dadaF2Aceptada_cuandoSeRegistra_entoncesNotificaAlFirmanteDeF3() {
+        FirmaRegistrada primera =
+                new FirmaRegistrada(1, sha256(VIGENTE), VIGENTE.length, "docente.demo", AHORA);
+        when(documentos.firmas(documento.id())).thenReturn(Optional.of(firmas(primera)));
+        when(almacen.leer("documentos/" + sha256(VIGENTE) + ".pdf")).thenReturn(VIGENTE.clone());
+        when(identificaciones.de("vicerrectorado.demo")).thenReturn(Optional.of("0109990028"));
+        when(validador.validar(any(), any()))
+                .thenReturn(aprobados(de("CABRERA VAZQUEZ ANA GABRIELA")));
+        when(documentos.registrarValidacion(any(), any())).thenReturn(true);
+
+        servicio.subir(documento.id(), FIRMADO, VICERRECTOR);
+
+        verify(notificacion)
+                .notificar(
+                        new FirmaPendienteSolicitada(
+                                "2026-I",
+                                1,
+                                "vicerrectorado.demo",
+                                AHORA,
+                                "Aprobado por",
+                                FirmanteEsperado.porIdentificacion(
+                                        3, "RECTOR", "0109990010", "PERALTA MALDONADO JUAN ANDRES"),
+                                "Revisado por",
+                                "CABRERA VAZQUEZ ANA GABRIELA"));
+    }
+
+    @Test
+    void dadoUnFalloAlNotificar_cuandoSeRegistra_entoncesLaFirmaNoSeConfirma() {
+        enF1();
+        when(validador.validar(any(), any())).thenReturn(aprobados());
+        when(documentos.registrarValidacion(any(), any())).thenReturn(true);
+        org.mockito.Mockito.doThrow(new IllegalStateException("sin registro de publicaciones"))
+                .when(notificacion)
+                .notificar(any());
+
+        assertThatThrownBy(() -> servicio.subir(documento.id(), FIRMADO, DESIGNADO))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(transaccion.veces).isEqualTo(1);
+    }
+
+    // F16-H02: la respuesta y lo guardado tienen la misma precisión que la base, microsegundos. Sin
+    // eso, la base redondea y la cadena muestra otra hora que la de la subida.
+    @Test
+    void dadoUnRelojConNanosegundos_cuandoSeSube_entoncesElMomentoQuedaEnMicrosegundos() {
+        SubirFirmaServicio conNanos =
+                new SubirFirmaServicio(
+                        documentos,
+                        almacen,
+                        identificaciones,
+                        validador,
+                        registro,
+                        transaccion,
+                        aviso,
+                        Clock.fixed(AHORA.plusNanos(609_956_638), ZoneOffset.UTC),
+                        notificacion);
+        enF1();
+        when(validador.validar(any(), any())).thenReturn(aprobados());
+        when(documentos.registrarValidacion(any(), any())).thenReturn(true);
+
+        ResultadoValidacion resultado = conNanos.subir(documento.id(), FIRMADO, DESIGNADO);
+
+        assertThat(resultado.subidoEn()).isEqualTo(AHORA.plusNanos(609_956_000));
+        assertThat(validacionRegistrada().subidoEn()).isEqualTo(AHORA.plusNanos(609_956_000));
     }
 
     // --- US4: quien no está en turno.

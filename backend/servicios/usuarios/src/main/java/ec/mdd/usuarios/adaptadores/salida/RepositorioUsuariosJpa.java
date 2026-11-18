@@ -19,6 +19,11 @@ public final class RepositorioUsuariosJpa implements RepositorioUsuarios {
     }
 
     @Override
+    public Optional<Usuario> buscarPorIdentificacion(String identificacion) {
+        return filas.findByIdentificacion(identificacion).map(UsuarioJpa::aDominio);
+    }
+
+    @Override
     public Optional<Usuario> buscarPorNombre(String nombreUsuario) {
         return filas.findByNombreUsuario(Usuario.normalizar(nombreUsuario))
                 .map(UsuarioJpa::aDominio);

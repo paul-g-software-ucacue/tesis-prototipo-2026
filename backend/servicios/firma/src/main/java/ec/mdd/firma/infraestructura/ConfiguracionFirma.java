@@ -11,6 +11,7 @@ import ec.mdd.firma.adaptadores.salida.GeneradorPdfa;
 import ec.mdd.firma.adaptadores.salida.IdentificacionDesdeUsuarios;
 import ec.mdd.firma.adaptadores.salida.ListaConfianza;
 import ec.mdd.firma.adaptadores.salida.PublicadorDeCambios;
+import ec.mdd.firma.adaptadores.salida.PublicadorDeFirmaPendiente;
 import ec.mdd.firma.adaptadores.salida.RepositorioDocumentosJdbc;
 import ec.mdd.firma.adaptadores.salida.TransaccionSpring;
 import ec.mdd.firma.adaptadores.salida.ValidadorPades;
@@ -26,6 +27,7 @@ import ec.mdd.firma.puertos.salida.ContenidoDelDistributivo;
 import ec.mdd.firma.puertos.salida.FirmantesDelPeriodo;
 import ec.mdd.firma.puertos.salida.GeneradorDePdf;
 import ec.mdd.firma.puertos.salida.IdentificacionDeUsuarios;
+import ec.mdd.firma.puertos.salida.NotificacionDeFirmaPendiente;
 import ec.mdd.firma.puertos.salida.RegistroDeCambios;
 import ec.mdd.firma.puertos.salida.RepositorioDocumentos;
 import ec.mdd.firma.puertos.salida.Transaccion;
@@ -100,6 +102,13 @@ public class ConfiguracionFirma {
         return new PublicadorDeCambios(eventos, Clock.systemUTC());
     }
 
+    /** La notificación al siguiente firmante, hacia Notificaciones (F16-H02, D-110). */
+    @Bean
+    public NotificacionDeFirmaPendiente notificacionDeFirmaPendiente(
+            ApplicationEventPublisher eventos) {
+        return new PublicadorDeFirmaPendiente(eventos, Clock.systemUTC());
+    }
+
     /** Las transacciones de Firma. */
     @Bean
     public Transaccion transaccionFirma(TransactionOperations transactionTemplate) {
@@ -168,7 +177,8 @@ public class ConfiguracionFirma {
             ValidadorDeFirmas validadorDeFirmas,
             RegistroDeCambios registroDeCambiosFirma,
             Transaccion transaccionFirma,
-            AvisoDeCadenaCompleta avisoDeCadenaCompleta) {
+            AvisoDeCadenaCompleta avisoDeCadenaCompleta,
+            NotificacionDeFirmaPendiente notificacionDeFirmaPendiente) {
         return new SubirFirmaServicio(
                 repositorioDocumentos,
                 almacenDeDocumentos,
@@ -177,7 +187,8 @@ public class ConfiguracionFirma {
                 registroDeCambiosFirma,
                 transaccionFirma,
                 avisoDeCadenaCompleta,
-                Clock.systemUTC());
+                Clock.systemUTC(),
+                notificacionDeFirmaPendiente);
     }
 
     /** El aviso de cadena completa, para Aprobación (F14-H03, MD-05). */

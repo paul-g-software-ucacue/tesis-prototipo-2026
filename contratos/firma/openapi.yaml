@@ -340,7 +340,7 @@ components:
     EstadoDelDocumento:
       type: object
       additionalProperties: false
-      required: [periodo, estado, acciones]
+      required: [periodo, estado, acciones, cadena]
       properties:
         periodo:
           type: string
@@ -367,6 +367,42 @@ components:
           items:
             type: string
             enum: [GENERAR]
+        cadena:
+          description: >-
+            Los pasos de la cadena de firmas con su estado, solo con GENERADO y sin anulación; vacía
+            en cualquier otro caso (F16-H02, D-110). La regla del turno es la de las firmas
+            pendientes.
+          type: array
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/PasoConEstado'
+    PasoConEstado:
+      description: >-
+        Un paso de la cadena de firmas, como lo ve quien sigue el proceso: sin la identificación, el
+        usuario ni el certificado del firmante.
+      type: object
+      additionalProperties: false
+      required: [orden, rotulo, estado]
+      properties:
+        orden:
+          type: integer
+          format: int32
+          minimum: 1
+        rotulo:
+          description: El rótulo del paso, como en el PDF («Elaborado por»).
+          type: string
+          maxLength: 60
+        firmante:
+          description: El nombre impreso en el PDF; falta en un documento sin nombres guardados.
+          type: string
+          maxLength: 200
+        estado:
+          type: string
+          enum: [FIRMADO, EN_TURNO, PENDIENTE, RECHAZADO]
+        firmadoEn:
+          description: Cuándo el MDD aceptó la firma; solo con FIRMADO.
+          type: string
+          format: date-time
     AnulacionDeFirmas:
       description: >-
         Las firmas del documento de esta versión quedaron anuladas por orden de Aprobación (F12-H04,
