@@ -105,6 +105,14 @@ class ErroresValidacionocsTest {
                                 "VALIDACIONOCS_ETAPA_NO_ADMITE_PUBLICACION",
                                 409),
                         tuple(
+                                ec.mdd.validacionocs.dominio.EtapaNoAdmiteReforma.class,
+                                "VALIDACIONOCS_ETAPA_NO_ADMITE_REFORMA",
+                                409),
+                        tuple(
+                                ec.mdd.validacionocs.dominio.MotivoDeReformaInvalido.class,
+                                "VALIDACIONOCS_MOTIVO_DE_REFORMA_INVALIDO",
+                                400),
+                        tuple(
                                 RequiereVersionNueva.class,
                                 "VALIDACIONOCS_REQUIERE_VERSION_NUEVA",
                                 409),

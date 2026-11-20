@@ -87,6 +87,25 @@ public final class DistributivoDesdeGeneracion implements Distributivo {
                             periodo,
                             anulada,
                             ec.mdd.generacion.puertos.entrada.MotivoDeVersion.RECHAZO_EN_FIRMA,
+                            "sistema",
+                            momento)
+                    .map(nueva -> new VersionNuevaEnAprobacion(nueva.numero(), nueva.hash()));
+        } catch (DistributivoNoEncontrado sinDistributivo) {
+            throw new SinDistributivo();
+        }
+    }
+
+    // F18-H02, D-113: la reforma, que deja la publicada CONGELADA; la crea quien la inició.
+    @Override
+    public Optional<VersionNuevaEnAprobacion> crearVersionDeReforma(
+            String periodo, int publicada, String quien, java.time.Instant momento) {
+        try {
+            return parciales
+                    .crearVersionNueva(
+                            periodo,
+                            publicada,
+                            ec.mdd.generacion.puertos.entrada.MotivoDeVersion.REFORMA,
+                            quien,
                             momento)
                     .map(nueva -> new VersionNuevaEnAprobacion(nueva.numero(), nueva.hash()));
         } catch (DistributivoNoEncontrado sinDistributivo) {

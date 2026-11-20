@@ -94,8 +94,9 @@ public interface RepositorioDistributivos {
     OptionalInt versionCongelada(String periodo);
 
     /**
-     * Anula la versión y crea la siguiente con todo su contenido, por orden de Aprobación (F12-H04,
-     * D-106). Se llama dentro de la transacción que la bloqueó.
+     * Crea la siguiente versión con todo el contenido de la vigente, por orden de Aprobación
+     * (F12-H04, D-106). Con el rechazo en firma, la vigente pasa a ANULADA; con la reforma
+     * (F18-H02, D-113), sigue CONGELADA. Se llama dentro de la transacción que la bloqueó.
      *
      * @param anulada la versión que se anula, la vigente
      * @param motivo por qué se crea la nueva
@@ -113,4 +114,14 @@ public interface RepositorioDistributivos {
      * @return vacío si no existe
      */
     Optional<EstadoDeVersion> estadoDe(String periodo, int numero);
+
+    /**
+     * El motivo de una versión del distributivo del periodo (F18-H02).
+     *
+     * @param periodo el código del periodo
+     * @param numero el número de la versión
+     * @return su motivo; vacío en la versión 1, que no tiene, o si no existe
+     */
+    Optional<ec.mdd.generacion.puertos.entrada.MotivoDeVersion> motivoDe(
+            String periodo, int numero);
 }

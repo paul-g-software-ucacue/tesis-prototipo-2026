@@ -52,7 +52,13 @@ class PermisosValidacionocsTest {
     void dadoElContrato_cuandoSeVerificaCadaOperacion_entoncesExigeSuPermiso() {
         assertThat(verificador.operaciones())
                 .extracting(VerificadorDePermisos.OperacionProtegida::toString)
-                .hasSize(11)
+                // F18-H02: iniciar la reforma, con DISTRIBUTIVO:APROBACION (D-113).
+                .hasSize(12)
+                .anySatisfy(
+                        operacion ->
+                                assertThat(operacion)
+                                        .contains("/reforma")
+                                        .contains("DISTRIBUTIVO:APROBACION"))
                 .anySatisfy(operacion -> assertThat(operacion).contains("FLUJO_FIRMAS:LECTURA"))
                 .anySatisfy(operacion -> assertThat(operacion).contains("FLUJO_FIRMAS:ESCRITURA"))
                 .anySatisfy(operacion -> assertThat(operacion).contains("PROYECTOS:LECTURA"))
@@ -74,6 +80,12 @@ class PermisosValidacionocsTest {
      */
     @TestConfiguration
     static class FlujoFijo {
+
+        @Bean
+        ec.mdd.validacionocs.puertos.entrada.IniciarReforma iniciarReforma() {
+            return org.mockito.Mockito.mock(
+                    ec.mdd.validacionocs.puertos.entrada.IniciarReforma.class);
+        }
 
         @Bean
         FlujoDelDistributivoServicio flujoDelDistributivo() {

@@ -39,7 +39,8 @@ public record Transicion(
         Instant momento,
         Map<String, Observacion> observaciones,
         Optional<RechazoDelFirmante> rechazo,
-        Optional<ResolucionOcs> resolucion) {
+        Optional<ResolucionOcs> resolucion,
+        Optional<Reforma> reforma) {
 
     private static final Pattern HASH = Pattern.compile("^[0-9a-f]{64}$");
 
@@ -76,6 +77,38 @@ public record Transicion(
             throw new IllegalArgumentException(
                     "Solo el paso de EN_OCS a APROBADO lleva la resolución del OCS, y siempre");
         }
+        Objects.requireNonNull(reforma, "reforma");
+        if ((tipo == TipoDeTransicion.REFORMA) != reforma.isPresent()) {
+            throw new IllegalArgumentException("Solo una reforma lleva su reforma, y siempre");
+        }
+    }
+
+    /** Una transición que no es una reforma (F18-H02): todas las de antes. */
+    public Transicion(
+            TipoDeTransicion tipo,
+            TipoDeEtapa desde,
+            TipoDeEtapa hacia,
+            Optional<String> carrera,
+            int version,
+            String hash,
+            String quien,
+            Instant momento,
+            Map<String, Observacion> observaciones,
+            Optional<RechazoDelFirmante> rechazo,
+            Optional<ResolucionOcs> resolucion) {
+        this(
+                tipo,
+                desde,
+                hacia,
+                carrera,
+                version,
+                hash,
+                quien,
+                momento,
+                observaciones,
+                rechazo,
+                resolucion,
+                Optional.empty());
     }
 
     /** Una transición sin resolución del OCS: cualquiera menos el paso de EN_OCS a APROBADO. */

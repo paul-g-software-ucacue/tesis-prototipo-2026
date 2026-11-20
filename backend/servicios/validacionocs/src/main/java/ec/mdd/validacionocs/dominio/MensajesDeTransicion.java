@@ -134,6 +134,25 @@ public final class MensajesDeTransicion {
                                             + "»",
                                     enlaceDe(transicion.hacia()));
                         }
+                        // F18-H02, D-113: la versión nueva, la publicada que sigue vigente y el
+                        // motivo; cada rol, a su pantalla.
+                        case REFORMA -> {
+                            Reforma reforma = transicion.reforma().orElseThrow();
+                            yield new MensajeDeTransicion(
+                                    destino,
+                                    "Se inició una reforma del distributivo de "
+                                            + proceso.periodo(),
+                                    "Versión "
+                                            + transicion.version()
+                                            + ", reforma de la versión "
+                                            + reforma.versionPublicada()
+                                            + ". Motivo: «"
+                                            + reforma.motivo().texto()
+                                            + "». La versión "
+                                            + reforma.versionPublicada()
+                                            + " sigue vigente hasta que se publique la reforma.",
+                                    enlaceDeLaReforma(destino, transicion.hacia()));
+                        }
                         case VERSION_NUEVA ->
                                 new MensajeDeTransicion(
                                         destino,
@@ -147,6 +166,16 @@ public final class MensajesDeTransicion {
                     });
         }
         return List.copyOf(mensajes);
+    }
+
+    // Como la publicación (D-111): las coordinaciones a la oferta, los docentes y Talento Humano al
+    // inicio, y el rol de la etapa de llegada a la de su etapa.
+    private static String enlaceDeLaReforma(DestinoDeNotificacion destino, TipoDeEtapa llegada) {
+        return switch (destino.rol()) {
+            case "COORDINADOR_CARRERA" -> "/oferta";
+            case "DOCENTE", "OPERADOR_DATOS" -> "/";
+            default -> enlaceDe(llegada);
+        };
     }
 
     private static String nombre(String carrera, Map<String, String> nombres) {

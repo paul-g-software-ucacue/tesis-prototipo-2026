@@ -22,6 +22,7 @@ import { useCarreras } from '../carreras/consultas';
 import { DialogoConfirmar } from '../carreras/DialogosDeCarrera';
 import { DialogoDeAprobacion } from './DialogoDeAprobacion';
 import { DialogoDePublicacion } from './DialogoDePublicacion';
+import { DialogoDeReforma } from './DialogoDeReforma';
 import { DocumentoFirmable } from './DocumentoFirmable';
 import { DialogoDeDevolucion } from './DialogoDeDevolucion';
 import { HuellaCopiable } from './HuellaCopiable';
@@ -36,6 +37,7 @@ import {
   type EstadoDelFlujo,
   type ParcialDelFlujo,
   type PublicacionDelDistributivo,
+  type ReformaDelDistributivo,
   type RechazoEnFirmaDelFlujo,
 } from './flujo';
 
@@ -61,7 +63,8 @@ function estadoDe(parcial: ParcialDelFlujo, nombre: string) {
     : `${nombre}: pendiente`;
 }
 
-type Confirmar = 'enviar' | 'avanzar' | 'revisar' | 'devolver' | 'aprobar' | 'publicar' | null;
+type Confirmar =
+  'enviar' | 'avanzar' | 'revisar' | 'devolver' | 'aprobar' | 'publicar' | 'reformar' | null;
 
 // La constancia de la versión congelada (F13-H01, FR-013): quién, cuándo y la huella, con un botón
 // para copiarla entera. «Huella copiada» se anuncia en una región viva.
@@ -79,11 +82,36 @@ function Constancia({ congelacion }: { congelacion: CongelacionDeLaVersion }) {
 
 // La constancia de la publicación (F18-H01, D-111): la versión publicada, quién y cuándo. La ve
 // todo el que lee el estado del flujo.
-function ConstanciaDeLaPublicacion({ publicacion }: { publicacion: PublicacionDelDistributivo }) {
+function ConstanciaDeLaPublicacion({
+  publicacion,
+  enReforma,
+}: {
+  publicacion: PublicacionDelDistributivo;
+  enReforma: boolean;
+}) {
   return (
     <Box sx={{ mt: 1, mb: 1, pl: 1, borderLeft: 3, borderColor: 'success.main' }}>
       <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
         {`Versión ${String(publicacion.version)} publicada por ${publicacion.publicadaPor} el ${MOMENTO.format(new Date(publicacion.publicadaEn))}`}
+      </Typography>
+      {/* F18-H02: durante una reforma, la publicada sigue siendo la oficial (D-113). */}
+      {enReforma && (
+        <Typography variant="body2">Vigente hasta que se publique la reforma.</Typography>
+      )}
+    </Box>
+  );
+}
+
+// La reforma en curso (F18-H02, D-113): de qué versión, la nueva, quién, cuándo y el motivo. La ve
+// todo el que lee el estado del flujo.
+function ConstanciaDeLaReforma({ reforma }: { reforma: ReformaDelDistributivo }) {
+  return (
+    <Box sx={{ mt: 1, mb: 1, pl: 1, borderLeft: 3, borderColor: 'warning.main' }}>
+      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+        {`Reforma de la versión ${String(reforma.versionPublicada)} en curso: versión ${String(reforma.version)}, iniciada por ${reforma.iniciadaPor} el ${MOMENTO.format(new Date(reforma.iniciadaEn))}`}
+      </Typography>
+      <Typography variant="body2" sx={{ whiteSpace: 'pre-line', fontStyle: 'italic' }}>
+        {reforma.motivo}
       </Typography>
     </Box>
   );
@@ -162,6 +190,7 @@ export function EstadoDelFlujoDelPeriodo({
     rechazoEnFirma,
     resolucion,
     publicacion,
+    reforma,
   } = flujo.data;
   if (soloEn && !soloEn.includes(etapa)) {
     return null;
@@ -175,6 +204,7 @@ export function EstadoDelFlujoDelPeriodo({
   const puedeDevolver = acciones.includes('DEVOLVER_PARCIALES');
   const puedeAprobar = acciones.includes('APROBAR_CONTENIDO');
   const puedePublicar = acciones.includes('PUBLICAR');
+  const puedeReformar = acciones.includes('INICIAR_REFORMA');
 
   const ejecutar = async (accion: () => Promise<unknown>) => {
     setConfirmar(null);
@@ -213,7 +243,11 @@ export function EstadoDelFlujoDelPeriodo({
       {/* F15-H01: la resolución del OCS; el formulario, solo con la acción. */}
       {resolucion && <ConstanciaDeLaResolucion periodo={periodo} resolucion={resolucion} />}
       {/* F18-H01: la publicación, para todo el que lee el flujo. */}
-      {publicacion && <ConstanciaDeLaPublicacion publicacion={publicacion} />}
+      {publicacion && (
+        <ConstanciaDeLaPublicacion publicacion={publicacion} enReforma={Boolean(reforma)} />
+      )}
+      {/* F18-H02: la reforma en curso, para todo el que lee el flujo. */}
+      {reforma && <ConstanciaDeLaReforma reforma={reforma} />}
       {acciones.includes('REGISTRAR_RESOLUCION') && (
         <RegistroDeLaResolucion
           periodo={periodo}
@@ -296,6 +330,11 @@ export function EstadoDelFlujoDelPeriodo({
             Publicar el distributivo
           </Button>
         )}
+        {puedeReformar && (
+          <Button variant="outlined" disabled={enviando} onClick={() => setConfirmar('reformar')}>
+            Iniciar una reforma
+          </Button>
+        )}
       </Stack>
       {puedeRevisar && faltan.length > 0 && (
         <Box
@@ -362,6 +401,18 @@ export function EstadoDelFlujoDelPeriodo({
           version={version}
           alCerrar={() => setConfirmar(null)}
           alPublicar={async () => {
+            setConfirmar(null);
+            await consultas.invalidateQueries({ queryKey: CLAVE_FLUJO });
+            alCambiar?.();
+          }}
+        />
+      )}
+      {confirmar === 'reformar' && (
+        <DialogoDeReforma
+          periodo={periodo}
+          version={version}
+          alCerrar={() => setConfirmar(null)}
+          alIniciar={async () => {
             setConfirmar(null);
             await consultas.invalidateQueries({ queryKey: CLAVE_FLUJO });
             alCambiar?.();

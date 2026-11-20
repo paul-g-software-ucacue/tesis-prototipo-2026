@@ -208,6 +208,55 @@ class MensajesDeTransicionTest {
         assertThat(MensajesDeTransicion.enlaceDe(TipoDeEtapa.PUBLICADO)).isEqualTo("/");
     }
 
+    // F18-H02 (D-113, research §5): el rol de la etapa de llegada y los tres de la publicación,
+    // con un enlace por rol.
+    @Test
+    void dadaUnaReforma_cuandoSeNotifica_entoncesVaALaLlegadaYALosPublicadosConSuEnlace() {
+        Transicion reforma =
+                new Transicion(
+                        TipoDeTransicion.REFORMA,
+                        TipoDeEtapa.PUBLICADO,
+                        TipoDeEtapa.EN_CONSOLIDACION,
+                        Optional.empty(),
+                        2,
+                        HASH,
+                        "vicerrectorado.demo",
+                        AHORA,
+                        Map.of(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.of(
+                                new Reforma(
+                                        1,
+                                        new Observacion(
+                                                "Cambia el docente de Software por una licencia."))));
+
+        List<MensajeDeTransicion> mensajes =
+                MensajesDeTransicion.de(proceso(etapas(false)), reforma, Map.of());
+
+        assertThat(mensajes)
+                .extracting(mensaje -> mensaje.destino().rol() + " " + mensaje.enlace())
+                .containsExactlyInAnyOrder(
+                        "RESPONSABLE_CONSOLIDACION /consolidado",
+                        "DOCENTE /",
+                        "OPERADOR_DATOS /",
+                        "COORDINADOR_CARRERA /oferta");
+        assertThat(mensajes)
+                .allSatisfy(mensaje -> assertThat(mensaje.destino().carrera()).isEmpty());
+        assertThat(mensajes)
+                .allSatisfy(
+                        mensaje -> {
+                            assertThat(mensaje.titulo())
+                                    .isEqualTo("Se inició una reforma del distributivo de 2026-I");
+                            assertThat(mensaje.detalle())
+                                    .isEqualTo(
+                                            "Versión 2, reforma de la versión 1. Motivo: «Cambia el"
+                                                    + " docente de Software por una licencia.». La"
+                                                    + " versión 1 sigue vigente hasta que se publique"
+                                                    + " la reforma.");
+                        });
+    }
+
     @Test
     void dadaUnaVersionNueva_cuandoSeNotifica_entoncesDiceSuNumeroYLaAnulada() {
         Transicion nueva =

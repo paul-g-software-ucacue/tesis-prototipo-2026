@@ -687,13 +687,78 @@ class FlujoContratoTest {
                     .isEqualTo(cuerpo(flujo).get("version").asInt());
             assertThat(publicacion.get("publicadaPor").asString())
                     .isEqualTo("secretaria_general.demo");
-            assertThat(cuerpo(flujo).get("acciones")).as(rol).isEmpty();
+            // F18-H02, D-113: solo el Vicerrector, para iniciar una reforma.
+            if (rol.equals("VICERRECTOR")) {
+                assertThat(cuerpo(flujo).get("acciones").toString())
+                        .isEqualTo("[\"INICIAR_REFORMA\"]");
+            } else {
+                assertThat(cuerpo(flujo).get("acciones")).as(rol).isEmpty();
+            }
             contrato.validar(flujo);
         }
         assertCodigo(
                 pedir(post(PUBLICACION.formatted(PERIODO)), "SECRETARIA_GENERAL", null),
                 409,
                 "VALIDACIONOCS_ETAPA_NO_ADMITE_PUBLICACION");
+    }
+
+    // La reforma (F18-H02, D-113): desde PUBLICADO, el Vicerrector; la publicada sigue vigente.
+
+    private static final String REFORMA = "/api/validacionocs/periodos/%s/reforma";
+    private static final String MOTIVO = "Cambia el docente de Software por una licencia.";
+
+    private void publicado() throws Exception {
+        enRevision(PERIODO);
+        aprobar(PERIODO, "VICERRECTOR");
+        MEMORIA.enOcs(PERIODO);
+        registrar(PERIODO);
+        pedir(post(PUBLICACION.formatted(PERIODO)), "SECRETARIA_GENERAL", null);
+    }
+
+    private MvcResult reformar(String rol, String motivo) throws Exception {
+        return pedir(
+                post(REFORMA.formatted(PERIODO))
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"motivo\":\"" + motivo + "\"}"),
+                rol,
+                null);
+    }
+
+    @Test
+    void
+            dadoElDistributivoPublicado_cuandoElVicerrectorIniciaLaReforma_entoncesVuelveAConsolidacion()
+                    throws Exception {
+        publicado();
+
+        MvcResult reforma = reformar("VICERRECTOR", MOTIVO);
+
+        assertThat(reforma.getResponse().getStatus()).isEqualTo(200);
+        assertThat(cuerpo(reforma).get("etapa").asString()).isEqualTo("EN_CONSOLIDACION");
+        assertThat(cuerpo(reforma).get("version").asInt()).isEqualTo(2);
+        contrato.validar(reforma);
+        for (String rol : List.of("SECRETARIA_GENERAL", "VICERRECTOR", RESPONSABLE)) {
+            MvcResult flujo = pedir(get(FLUJO.formatted(PERIODO)), rol, null);
+            JsonNode cuerpo = cuerpo(flujo);
+            assertThat(cuerpo.get("publicacion").get("version").asInt()).as(rol).isEqualTo(1);
+            assertThat(cuerpo.get("reforma").get("versionPublicada").asInt()).isEqualTo(1);
+            assertThat(cuerpo.get("reforma").get("version").asInt()).isEqualTo(2);
+            assertThat(cuerpo.get("reforma").get("motivo").asString()).isEqualTo(MOTIVO);
+            assertThat(cuerpo.get("reforma").get("iniciadaPor").asString())
+                    .isEqualTo("vicerrector.demo");
+            contrato.validar(flujo);
+        }
+        assertCodigo(reformar("VICERRECTOR", MOTIVO), 409, "VALIDACIONOCS_ETAPA_NO_ADMITE_REFORMA");
+    }
+
+    @Test
+    void dadoElDistributivoPublicado_cuandoOtroRolOUnMotivoCorto_entoncesSeRechaza()
+            throws Exception {
+        publicado();
+
+        assertCodigo(reformar("SECRETARIA_GENERAL", MOTIVO), 403, "SEGURIDAD_ACCESO_NO_AUTORIZADO");
+        assertCodigo(
+                reformar("VICERRECTOR", "corta"), 400, "VALIDACIONOCS_MOTIVO_DE_REFORMA_INVALIDO");
+        assertThat(etapa(PERIODO)).isEqualTo("PUBLICADO");
     }
 
     @Test
@@ -1130,6 +1195,11 @@ class FlujoContratoTest {
         }
 
         /** F15-H01: la resolución, con su caso de uso real sobre la memoria. */
+        @Bean
+        ec.mdd.validacionocs.puertos.entrada.IniciarReforma iniciarReforma() {
+            return MEMORIA.iniciarReforma();
+        }
+
         @Bean
         ec.mdd.validacionocs.puertos.entrada.PublicarDistributivo publicarDistributivo() {
             return MEMORIA.publicarDistributivo();

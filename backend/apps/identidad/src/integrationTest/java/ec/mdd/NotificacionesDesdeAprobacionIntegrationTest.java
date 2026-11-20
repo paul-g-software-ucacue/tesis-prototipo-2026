@@ -138,6 +138,30 @@ class NotificacionesDesdeAprobacionIntegrationTest {
         assertThat(bandeja(otraSecretaria)).isEmpty();
     }
 
+    // F18-H02 (D-113): la reforma va al rol de la etapa de llegada y a los tres de la publicación;
+    // quien tiene dos de esos roles recibe una, y el autor ninguna.
+    @Test
+    void dadaUnaReforma_cuandoLlega_entoncesLaRecibenElResponsableYLosDeLaPublicacionUnaVez() {
+        String responsable = usuario("responsable.reforma", true, "RESPONSABLE_CONSOLIDACION");
+        String doble =
+                usuario("docente.coordinador.reforma", true, "DOCENTE", "COORDINADOR_CARRERA");
+        String talento = usuario("talento.reforma", true, "OPERADOR_DATOS");
+        String autor = usuario("vra.reforma", true, "VICERRECTOR");
+
+        recibir.recibir(
+                evento(
+                        autor,
+                        mensaje("RESPONSABLE_CONSOLIDACION", null),
+                        mensaje("DOCENTE", null),
+                        mensaje("OPERADOR_DATOS", null),
+                        mensaje("COORDINADOR_CARRERA", null)));
+
+        assertThat(bandeja(responsable)).hasSize(1);
+        assertThat(bandeja(doble)).hasSize(1);
+        assertThat(bandeja(talento)).hasSize(1);
+        assertThat(bandeja(autor)).isEmpty();
+    }
+
     private String usuario(String base, boolean activo, String... roles) {
         String nombre = base + "." + sufijo;
         jdbc.update(

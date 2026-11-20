@@ -95,7 +95,8 @@ jobs:
       # F16-H01: las notificaciones de cada transición, con identidad detenido en una (D-108).
       # Desde F16-H02: la cadena de firmas y la notificación al siguiente firmante, con identidad
       # detenido durante F1 (D-110). Desde F18-H01: la publicación, con identidad detenido, y la
-      # versión publicada sin acciones (D-111).
+      # versión publicada sin acciones (D-111). Desde F18-H02: la reforma con identidad detenido y el
+      # ciclo completo de la versión 2, con la 1 histórica (D-113).
       - name: Documento firmable
         shell: bash
         run: deploy/probar_documento_firmable.sh

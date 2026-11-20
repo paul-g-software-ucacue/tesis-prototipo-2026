@@ -139,12 +139,17 @@ public final class ParcialesDelDistributivoServicio implements ParcialesDelDistr
     /** Quién crea la versión nueva: la ordena Aprobación como el sistema (D-106). */
     private static final String SISTEMA = "sistema";
 
-    // F12-H04, D-106: con la versión bloqueada, como congelar. Idempotente: si la del aviso ya se
-    // anuló y la vigente es la siguiente, la devuelve. Hoy el único motivo es el rechazo en firma,
-    // así que no hace falta comprobar con qué motivo se creó la siguiente.
+    // F12-H04, D-106: con la versión bloqueada, como congelar. Idempotente: si la vigente ya es la
+    // siguiente, la devuelve. F18-H02, D-113: en una reforma la anterior sigue CONGELADA, así que
+    // el
+    // reintento se reconoce por el motivo de la siguiente; en un rechazo, por la anterior ANULADA.
     @Override
     public java.util.Optional<VersionNuevaEnGeneracion> crearVersionNueva(
-            String periodo, int anulada, MotivoDeVersion motivo, java.time.Instant momento) {
+            String periodo,
+            int anulada,
+            MotivoDeVersion motivo,
+            String quien,
+            java.time.Instant momento) {
         return transaccion.ejecutar(
                 () -> {
                     VersionDistributivo vigente =
@@ -153,7 +158,7 @@ public final class ParcialesDelDistributivoServicio implements ParcialesDelDistr
                                     .orElseThrow(DistributivoNoEncontrado::new);
                     if (vigente.numero() == anulada
                             && vigente.estado() == EstadoDeVersion.CONGELADA) {
-                        distributivos.crearVersionNueva(vigente.id(), motivo, SISTEMA, momento);
+                        distributivos.crearVersionNueva(vigente.id(), motivo, quien, momento);
                         return java.util.Optional.of(
                                 nueva(
                                         periodo,
@@ -161,15 +166,28 @@ public final class ParcialesDelDistributivoServicio implements ParcialesDelDistr
                                                 .vigenteDe(periodo)
                                                 .orElseThrow(DistributivoNoEncontrado::new)));
                     }
-                    if (vigente.numero() == anulada + 1
-                            && distributivos
-                                    .estadoDe(periodo, anulada)
-                                    .filter(EstadoDeVersion.ANULADA::equals)
-                                    .isPresent()) {
+                    if (vigente.numero() == anulada + 1 && yaCreada(periodo, anulada, motivo)) {
                         return java.util.Optional.of(nueva(periodo, vigente));
                     }
                     return java.util.Optional.empty();
                 });
+    }
+
+    private boolean yaCreada(String periodo, int anterior, MotivoDeVersion motivo) {
+        if (motivo == MotivoDeVersion.REFORMA) {
+            return distributivos
+                            .estadoDe(periodo, anterior)
+                            .filter(EstadoDeVersion.CONGELADA::equals)
+                            .isPresent()
+                    && distributivos
+                            .motivoDe(periodo, anterior + 1)
+                            .filter(MotivoDeVersion.REFORMA::equals)
+                            .isPresent();
+        }
+        return distributivos
+                .estadoDe(periodo, anterior)
+                .filter(EstadoDeVersion.ANULADA::equals)
+                .isPresent();
     }
 
     private static VersionNuevaEnGeneracion nueva(String periodo, VersionDistributivo version) {

@@ -43,7 +43,14 @@
 # publicar y secretaria.demo publica con identidad detenido (la transición de F16-H01, que antes
 # era el envío a revisión), con su constancia y su bitácora, y una segunda publicación da 409;
 # publicado, nadie tiene acciones y cada operación de cambio responde con su error; la publicación
-# llega una vez a datos.demo, coordinacion.demo, docente.demo y docente.coordinador.demo. Si la base ya tiene
+# llega una vez a datos.demo, coordinacion.demo, docente.demo y docente.coordinador.demo. Desde
+# F18-H02 (D-113; specs/056-reforma-version-publicada/contracts/demostracion.md): en APROBADO, la
+# reforma responde 409; publicado, solo vicerrectorado.demo puede iniciarla; secretaria.demo y
+# rectorado.demo reciben 403 y un motivo corto, 400; vicerrectorado.demo la inicia con identidad
+# detenido, el distributivo vuelve a EN_CONSOLIDACION con la versión 2 y la 1 sigue CONGELADA y
+# vigente; la notificación llega una vez a quien consolida, los docentes, Talento Humano y las
+# coordinaciones; la versión 2 recorre el ciclo completo hasta publicarse, y la 1 conserva sus
+# firmas, su documento y su resolución. Si la base ya tiene
 # alguno de esos datos, falla sin tocar nada. Al terminar, aunque un paso falle, borra lo que creó (también los archivos del volumen),
 # salvo las entradas de la bitácora, que no se pueden borrar. Termina con 0 si todos los pasos pasan
 # y con 1 si alguno falla. Nunca imprime una clave ni un token.
@@ -54,7 +61,10 @@
 # firmas, para recorrer specs/052-resolucion-ocs/quickstart.md §3. MDD_CONSERVAR=F2 lo deja con F1
 # aceptada y F2 en turno, para recorrer specs/054-siguiente-firmante/quickstart.md §3.
 # MDD_CONSERVAR=APROBADO lo deja con la resolución registrada, sin publicar, para recorrer
-# specs/055-publicar-distributivo/quickstart.md §3. Al terminar dice cómo limpiar.
+# specs/055-publicar-distributivo/quickstart.md §3. MDD_CONSERVAR=PUBLICADO lo deja con la versión
+# 1 publicada, sin reformar y sin revisar las notificaciones (pasos 18 a 21), para recorrer
+# specs/056-reforma-version-publicada/quickstart.md §3.
+# Al terminar dice cómo limpiar.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -86,6 +96,9 @@ readonly RESOLUCION="$GATEWAY/api/validacionocs/periodos/$PERIODO/resolucion"
 readonly NUMERO='RPC-SO-12-No.123-2026'
 readonly PUBLICACION="$GATEWAY/api/validacionocs/periodos/$PERIODO/publicacion"
 readonly PUBLICADA="El distributivo de $PERIODO fue publicado"
+readonly REFORMA_URL="$GATEWAY/api/validacionocs/periodos/$PERIODO/reforma"
+readonly MOTIVO='Cambia la docente de una carrera por una licencia (prueba).'
+readonly REFORMADA="Se inició una reforma del distributivo de $PERIODO"
 # Dos ciclos del reenvío (30 s) y un margen (SC-002 de F16-H01).
 readonly ESPERA_REENVIO=120
 
@@ -653,7 +666,11 @@ resolucion_registrada() {
     pedir GET "$RESOLUCION/archivo" "Bearer $token"
     es_codigo 403 SEGURIDAD_ACCESO_NO_AUTORIZADO || { echo "       coordinación descarga ($estado)" >&2; return 1; }
     esperar 15 hay_entradas 1 "servicio = 'validacionocs' and accion = 'RESOLUCION_REGISTRADA'
-        and periodo = '$PERIODO' and usuario = '$SECRETARIA'"
+        and periodo = '$PERIODO' and usuario = '$SECRETARIA'" || return 1
+    # F18-H02: aprobado todavía no se reforma.
+    iniciar "$VICERRECTOR"
+    reformar "$MOTIVO"
+    es_codigo 409 VALIDACIONOCS_ETAPA_NO_ADMITE_REFORMA || { echo "       reforma en APROBADO: $estado" >&2; return 1; }
 }
 
 # --- F18-H01: publicar (D-111) ---
@@ -702,7 +719,7 @@ publicado() {
     [[ $(publicaciones) == 1 ]]
 }
 
-# --- 17. Publicado: nadie tiene acciones, y cada operación de cambio responde con su error ---
+# --- 17. Publicado: nadie edita (solo el Vicerrector puede reformar), y cada cambio da su error ---
 sin_acciones() {
     local usuario antes carrera asignatura paralelo docente
     antes=$(transiciones)
@@ -711,7 +728,13 @@ sin_acciones() {
         iniciar "$usuario"
         pedir GET "$GATEWAY/api/validacionocs/periodos/$PERIODO/flujo" "Bearer $token"
         if [[ $estado == 200 ]]; then
-            [[ $(jq -c '.acciones' <<<"$cuerpo") == '[]' ]] || { echo "       $usuario tiene acciones" >&2; return 1; }
+            # F18-H02, D-113: solo el Vicerrector, para iniciar una reforma, que no edita la publicada.
+            if [[ $usuario == "$VICERRECTOR" ]]; then
+                [[ $(jq -c '.acciones' <<<"$cuerpo") == '["INICIAR_REFORMA"]' ]] \
+                    || { echo "       $usuario: $(jq -c '.acciones' <<<"$cuerpo")" >&2; return 1; }
+            else
+                [[ $(jq -c '.acciones' <<<"$cuerpo") == '[]' ]] || { echo "       $usuario tiene acciones" >&2; return 1; }
+            fi
         else
             es_codigo 403 SEGURIDAD_ACCESO_NO_AUTORIZADO || { echo "       $usuario: $estado" >&2; return 1; }
         fi
@@ -735,6 +758,185 @@ sin_acciones() {
     registrar "$NUMERO" "$(hoy)" "$carpeta/resolucion.pdf"
     es_codigo 409 VALIDACIONOCS_ETAPA_NO_ADMITE_RESOLUCION || { echo "       resolución: $estado" >&2; return 1; }
     [[ $(transiciones) == "$antes" && $(resoluciones_en_la_base) == 1 ]]
+}
+
+# --- F18-H02: la reforma (D-113) ---
+
+reformar() {  # reformar <motivo>, con el token de $token
+    pedir POST "$REFORMA_URL" "Bearer $token" "$(jq -cn --arg m "$1" '{motivo: $m}')"
+}
+
+reformas() {
+    consultar_base "select count(*) from validacionocs.transicion where periodo = '$PERIODO'
+        and tipo = 'REFORMA'"
+}
+
+version_es() {  # version_es <número> <estado> [motivo]: en Generación
+    [[ $(consultar_base "select v.estado || '|' || coalesce(v.motivo, '') from generacion.version_distributivo v
+        join generacion.distributivo d on d.id = v.distributivo_id
+        where d.periodo = '$PERIODO' and v.numero = $1") == "$2|${3:-}" ]] \
+        || { echo "       versión $1: no es $2 ${3:-}" >&2; return 1; }
+}
+
+caida_reforma=''
+vuelta_reforma=''
+
+# --- 22. La reforma: 403 a otros roles, 400 sin motivo; vicerrectorado.demo la inicia con identidad detenido ---
+reforma_iniciada() {
+    local usuario estado_de_la_reforma cuerpo_de_la_reforma
+    for usuario in "$SECRETARIA" rectorado.demo; do
+        iniciar "$usuario"
+        reformar "$MOTIVO"
+        es_codigo 403 SEGURIDAD_ACCESO_NO_AUTORIZADO || { echo "       $usuario reforma ($estado)" >&2; return 1; }
+    done
+    iniciar "$VICERRECTOR"
+    for corto in '' '   corta   '; do
+        reformar "$corto"
+        es_codigo 400 VALIDACIONOCS_MOTIVO_DE_REFORMA_INVALIDO || { echo "       motivo corto: $estado" >&2; return 1; }
+    done
+    [[ $(reformas) == 0 ]] || return 1
+    # SC-004: con el token ya pedido, identidad detenido; la notificación llega cuando vuelve.
+    caida_reforma=$(consultar_base "select now()")
+    docker compose stop identidad >/dev/null 2>&1
+    reformar "$MOTIVO"
+    estado_de_la_reforma=$estado
+    cuerpo_de_la_reforma=$cuerpo
+    vuelta_reforma=$(consultar_base "select now()")
+    docker compose up -d --wait --no-recreate --no-build identidad >/dev/null 2>&1 || return 1
+    estado=$estado_de_la_reforma
+    cuerpo=$cuerpo_de_la_reforma
+    [[ $estado == 200 && $(jq -c '[.etapa, .version, .reforma.versionPublicada, .reforma.version, .publicacion.version]' \
+        <<<"$cuerpo") == '["EN_CONSOLIDACION",2,1,2,1]' ]] || { echo "       reformar: $estado" >&2; return 1; }
+    [[ $(reformas) == 1 ]] || return 1
+    version_es 1 CONGELADA || return 1
+    version_es 2 EDITABLE REFORMA || return 1
+    esperar "$ESPERA_REENVIO" hay_entradas 1 "servicio = 'validacionocs' and accion = 'REFORMA_INICIADA'
+        and periodo = '$PERIODO' and usuario = '$VICERRECTOR'" || { echo "       sin la bitácora" >&2; return 1; }
+    reformar "$MOTIVO"
+    es_codigo 409 VALIDACIONOCS_ETAPA_NO_ADMITE_REFORMA || { echo "       la segunda: $estado" >&2; return 1; }
+    [[ $(reformas) == 1 ]]
+}
+
+# --- 23. La publicada sigue vigente y la reforma en curso, para quien lee el flujo ---
+publicada_vigente() {
+    local usuario
+    for usuario in "$SECRETARIA" "$RESPONSABLE" "$COORDINADOR"; do
+        iniciar "$usuario"
+        pedir GET "$GATEWAY/api/validacionocs/periodos/$PERIODO/flujo" "Bearer $token"
+        [[ $estado == 200 && $(jq -c '[.publicacion.version, .reforma.versionPublicada, .reforma.version,
+            .reforma.motivo, .reforma.iniciadaPor]' <<<"$cuerpo") \
+            == "$(jq -cn --arg m "$MOTIVO" --arg v "$VICERRECTOR" '[1, 1, 2, $m, $v]')" ]] \
+            || { echo "       $usuario: $estado" >&2; return 1; }
+    done
+}
+
+notificaciones_de_la_reforma() {  # notificaciones_de_la_reforma <usuario>
+    consultar_base "select count(*) from notificaciones.notificacion where destinatario = '$1'
+        and periodo = '$PERIODO' and titulo = '$REFORMADA' and recibida_en >= '$caida_reforma'"
+}
+
+llego_la_reforma() {
+    [[ $(notificaciones_de_la_reforma "$DESIGNADO") == 1 ]]
+}
+
+# --- 24. La notificación: una a cada uno, la de docente.demo antes de 120 s de la vuelta; ninguna al Vicerrector ---
+reforma_notificada() {
+    [[ -n $caida_reforma && -n $vuelta_reforma ]] || { echo "       no se reformó con identidad detenido" >&2; return 1; }
+    esperar "$ESPERA_REENVIO" llego_la_reforma || { echo "       no llegó a $DESIGNADO" >&2; return 1; }
+    local usuario llegada
+    for usuario in "$RESPONSABLE" "$DESIGNADO" datos.demo "$COORDINADOR" docente.coordinador.demo; do
+        [[ $(notificaciones_de_la_reforma "$usuario") == 1 ]] \
+            || { echo "       $usuario: $(notificaciones_de_la_reforma "$usuario")" >&2; return 1; }
+    done
+    [[ $(notificaciones_de_la_reforma "$VICERRECTOR") == 0 ]] || { echo "       el Vicerrector la recibió" >&2; return 1; }
+    llegada=$(consultar_base "select extract(epoch from recibida_en - '$vuelta_reforma'::timestamptz)::int
+        from notificaciones.notificacion where destinatario = '$DESIGNADO' and periodo = '$PERIODO'
+        and titulo = '$REFORMADA' and recibida_en >= '$caida_reforma'")
+    echo "       llegó $llegada s después de levantar identidad"
+    [[ $llegada =~ ^-?[0-9]+$ ]] && ((llegada >= 0 && llegada <= ESPERA_REENVIO))
+}
+
+documento_de_la_version() {  # documento_de_la_version <número>, con el token de $token
+    pedir GET "$DOCUMENTO" "Bearer $token"
+    [[ $estado == 200 && $(jq -r '.estado' <<<"$cuerpo") == GENERADO && $(jq -r '.version' <<<"$cuerpo") == "$1" ]]
+}
+
+# --- 25. El ciclo de la versión 2: devolver, reenviar, consolidar, revisión y aprobación ---
+ciclo_de_la_version_2() {
+    local carrera=${orden[0]} una
+    iniciar "$RESPONSABLE"
+    pedir POST "$GATEWAY/api/validacionocs/periodos/$PERIODO/devolucion" "Bearer $token" \
+        "$(jq -cn --arg c "$carrera" --arg o "$MOTIVO" '{devoluciones: [{carrera: $c, observacion: $o}]}')"
+    [[ $estado == 200 && $(jq -r '.etapa' <<<"$cuerpo") == BORRADOR_CARRERA ]] \
+        || { echo "       devolver: $estado" >&2; return 1; }
+    como_coordinador_de "$carrera" || return 1
+    enviar_parcial "$carrera"
+    [[ $estado == 200 && $(jq -r '.etapa' <<<"$cuerpo") == EN_CONSOLIDACION ]] \
+        || { echo "       reenviar: $estado" >&2; return 1; }
+    iniciar "$RESPONSABLE"
+    consolidar
+    [[ $estado == 200 ]] || { echo "       consolidar: $estado" >&2; return 1; }
+    printf '%%PDF-1.7\n%% el informe de la reforma\n%%%%EOF\n' >"$carpeta/informe-2.pdf"
+    adjuntar "$carpeta/informe-2.pdf"
+    [[ $estado == 200 ]] || { echo "       adjuntar: $estado" >&2; return 1; }
+    pedir GET "$PANEL" "Bearer $token"
+    while read -r una; do
+        justificar "$(jq -r '.[0]' <<<"$una")" "$(jq -r '.[1]' <<<"$una")" "$TEXTO"
+        [[ $estado == 200 ]] || { echo "       justificar: $estado" >&2; return 1; }
+    done < <(jq -c '.inconsistencias[] | select(.estado == "ABIERTA" and .severidad == "BLANDA") | [.tipo, .objeto.clave]' <<<"$cuerpo")
+    pedir POST "$GATEWAY/api/validacionocs/periodos/$PERIODO/revision" "Bearer $token"
+    [[ $estado == 200 && $(jq -r '.etapa' <<<"$cuerpo") == EN_REVISION_VRA ]] \
+        || { echo "       revisión: $estado ${cuerpo:0:160}" >&2; return 1; }
+    iniciar "$VICERRECTOR"
+    pedir POST "$APROBACION" "Bearer $token"
+    [[ $estado == 200 && $(jq -c '[.etapa, .congelacion.version]' <<<"$cuerpo") == '["CONGELADO_EN_FIRMA",2]' ]] \
+        || { echo "       aprobar: $estado" >&2; return 1; }
+    iniciar "$RESPONSABLE"
+    esperar 30 documento_de_la_version 2 || { echo "       sin el documento de la versión 2" >&2; return 1; }
+    cadena_es "EN_TURNO,PENDIENTE,PENDIENTE"
+}
+
+# --- 26. Las tres firmas de la versión 2, su resolución y su publicación ---
+firmas_y_publicacion_de_la_version_2() {
+    local i usuarios=("$DESIGNADO" "$VICERRECTOR" rectorado.demo)
+    local campos=(firma-1-RESPONSABLE_CONSOLIDACION firma-2-VICERRECTOR firma-3-RECTOR)
+    local rotulos=("Elaborado por" "Revisado por" "Aprobado por")
+    for i in 0 1 2; do
+        turno_de "${usuarios[$i]}" $((i + 1)) "${rotulos[$i]}" \
+            || { echo "       no es el turno de ${usuarios[$i]}" >&2; return 1; }
+        vigente_de "${usuarios[$i]}" || return 1
+        firmar "$carpeta/descargado.pdf" "$carpeta/v2-firmado-$i.pdf" $((i + 1)) "${campos[$i]}" || return 1
+        iniciar "${usuarios[$i]}"
+        subir "$carpeta/v2-firmado-$i.pdf"
+        aceptada || { echo "       ${usuarios[$i]}: $estado" >&2; return 1; }
+    done
+    esperar 30 en_ocs || { echo "       la versión 2 no llegó a EN_OCS" >&2; return 1; }
+    iniciar "$SECRETARIA"
+    registrar 'RPC-SO-12-No.124-2026' "$(hoy)" "$carpeta/resolucion.pdf"
+    [[ $estado == 200 && $(jq -r '.etapa' <<<"$cuerpo") == APROBADO ]] \
+        || { echo "       resolución: $estado" >&2; return 1; }
+    pedir POST "$PUBLICACION" "Bearer $token"
+    [[ $estado == 200 && $(jq -c '[.etapa, .publicacion.version, .reforma]' <<<"$cuerpo") \
+        == '["PUBLICADO",2,null]' ]] || { echo "       publicar: $estado" >&2; return 1; }
+    [[ $(publicaciones) == 2 ]]
+}
+
+# --- 27. La versión 1, histórica: CONGELADA, con sus tres firmas, su documento y su resolución ---
+version_1_historica() {
+    local v
+    version_es 1 CONGELADA || return 1
+    version_es 2 CONGELADA REFORMA || return 1
+    for v in 1 2; do
+        [[ $(consultar_base "select string_agg(orden::text, ',' order by orden) from firma.validacion_firma
+            where periodo = '$PERIODO' and version = $v and aceptada") == 1,2,3 ]] \
+            || { echo "       las firmas de la versión $v" >&2; return 1; }
+        [[ $(consultar_base "select count(*) from firma.documento_firmable where periodo = '$PERIODO'
+            and version = $v") == 1 ]] || { echo "       el documento de la versión $v" >&2; return 1; }
+        [[ $(consultar_base "select count(*) from validacionocs.resolucion_ocs where periodo = '$PERIODO'
+            and version = $v") == 1 ]] || { echo "       la resolución de la versión $v" >&2; return 1; }
+    done
+    [[ $(consultar_base "select count(*) from firma.anulacion_de_firmas where periodo = '$PERIODO'") == 0 ]] \
+        || { echo "       hay firmas anuladas" >&2; return 1; }
 }
 
 # --- F16-H01: las notificaciones de cada transición (D-108) ---
@@ -1161,7 +1363,9 @@ cabecera() {  # cabecera <nombre>: su valor en la última descarga, sin el fin d
 }
 
 id_del_documento() {
-    consultar_base "select id from firma.documento_firmable where periodo = '$PERIODO'"
+    # F18-H02: con la reforma hay un documento por versión; el vigente es el de la más alta.
+    consultar_base "select id from firma.documento_firmable where periodo = '$PERIODO'
+        order by version desc limit 1"
 }
 
 # --- 7. El designado ve su firma pendiente y descarga el PDF vigente, con su SHA-256 ---
@@ -1203,7 +1407,8 @@ nadie_mas() {
     es_codigo 403 SEGURIDAD_ACCESO_NO_AUTORIZADO
 }
 
-if [[ -n $CONSERVAR && $CONSERVAR != EN_OCS && $CONSERVAR != F2 && $CONSERVAR != APROBADO ]]; then
+if [[ -n $CONSERVAR && $CONSERVAR != EN_OCS && $CONSERVAR != F2 && $CONSERVAR != APROBADO \
+    && $CONSERVAR != PUBLICADO ]]; then
     verificar 1 "El consolidado listo, enviado a revisión y con $DESIGNADO designado: EN_REVISION_VRA" en_revision_y_designado
     if ((fallas > 0)); then
         echo "No quedó en revisión. Para limpiar: docker compose -p tesis-prototipo-2026 down -v"
@@ -1262,11 +1467,29 @@ if [[ $CONSERVAR == APROBADO ]]; then
 fi
 
 verificar 16 "En APROBADO, otros roles reciben 403; $SECRETARIA publica con identidad detenido, con la constancia y la bitácora; la segunda, 409" publicado
-verificar 17 "Publicado: nadie tiene acciones; proponer, consolidar, enviar, aprobar y registrar responden con su error, sin cambiar nada" sin_acciones
+verificar 17 "Publicado: nadie edita (solo $VICERRECTOR puede reformar); proponer, consolidar, enviar, aprobar y registrar responden con su error, sin cambiar nada" sin_acciones
+if [[ $CONSERVAR == PUBLICADO ]]; then
+    if ((fallas > 0)); then
+        echo "No quedó publicado. Para limpiar: docker compose -p tesis-prototipo-2026 down -v"
+        exit 1
+    fi
+    echo "Quedó en PUBLICADO con la versión 1, sin reformar ni limpiar. Recorre specs/056-reforma-version-publicada/quickstart.md §3."
+    echo "Para limpiar al terminar: docker compose -p tesis-prototipo-2026 down -v"
+    exit 0
+fi
+
 verificar 18 "Las bandejas de todos tienen exactamente las de cada transición; $VICERRECTOR marca la suya y la ajena da 404" notificaciones_y_lectura
 verificar 19 "La publicación con identidad detenido respondió 200, y su notificación llegó una vez a $DESIGNADO antes de $ESPERA_REENVIO s" llego_al_volver
 verificar 20 "Una entrega repetida se completa otra vez sin duplicar la notificación, que sigue leída" entrega_repetida
 verificar 21 "F1 subida con identidad detenido: aceptada, y la notificación de F2 llegó una vez antes de $ESPERA_REENVIO s" llego_la_de_f2
+
+
+verificar 22 "En PUBLICADO, otros roles reciben 403 y un motivo corto 400; $VICERRECTOR reforma con identidad detenido: la versión 2 y la 1 CONGELADA; la segunda, 409" reforma_iniciada
+verificar 23 "Durante la reforma, la versión 1 sigue publicada y vigente, y el flujo muestra la reforma en curso" publicada_vigente
+verificar 24 "La reforma llegó una vez a quien consolida, los docentes, Talento Humano y las coordinaciones; no al Vicerrector" reforma_notificada
+verificar 25 "La versión 2 vuelve por el ciclo: devolver, reenviar, consolidar, revisión y aprobación, con su documento desde F1" ciclo_de_la_version_2
+verificar 26 "F1, F2 y F3 sobre la versión 2, su resolución y su publicación: la versión 2 es la publicada, sin reforma en curso" firmas_y_publicacion_de_la_version_2
+verificar 27 "La versión 1, histórica: CONGELADA, con sus tres firmas, su documento y su resolución, sin anulación" version_1_historica
 
 if ((fallas > 0)); then
     echo "El documento firmable de punta a punta: $fallas paso(s) fallan."

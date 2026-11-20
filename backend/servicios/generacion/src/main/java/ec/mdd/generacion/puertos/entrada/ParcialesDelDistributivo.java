@@ -62,22 +62,32 @@ public interface ParcialesDelDistributivo {
     VersionCongeladaEnGeneracion congelarVersion(String periodo);
 
     /**
-     * Anula la versión congelada y crea la siguiente, EDITABLE, con todo su contenido, por orden de
-     * Aprobación (F12-H04, MD-04, D-106). Bloquea la versión vigente durante su transacción. Es
-     * idempotente: si la vigente ya es la siguiente y la del aviso quedó anulada, la devuelve sin
+     * Crea la siguiente versión, EDITABLE, con todo el contenido de la vigente congelada, por orden
+     * de Aprobación (F12-H04, MD-04, D-106). Con {@code RECHAZO_EN_FIRMA}, la vigente pasa a
+     * ANULADA; con {@code REFORMA} (F18-H02, D-113), sigue CONGELADA: es la publicada, que vale
+     * hasta que se publique la nueva. Bloquea el distributivo y la versión vigente durante su
+     * transacción. Es idempotente: si la vigente ya es la siguiente (en el rechazo, con la anterior
+     * anulada; en la reforma, con motivo {@code REFORMA} y la anterior congelada), la devuelve sin
      * crear otra, así que un reintento de Aprobación completa lo que quedó a mitad. No registra en
      * el registro de cambios de Generación: la transición la registra Aprobación (D-95).
      *
      * @param periodo el código del periodo
-     * @param anulada la versión rechazada, que tiene que ser la vigente congelada
+     * @param anulada la versión rechazada o la publicada que se reforma, que tiene que ser la
+     *     vigente congelada
      * @param motivo por qué se crea la nueva
+     * @param quien quién la crea: {@code sistema} en el rechazo en firma, quien la inició en la
+     *     reforma
      * @param momento cuándo
      * @return el número y el hash de la versión nueva; vacío si la vigente no es la del aviso
      *     congelada ni la siguiente ya creada
      * @throws DistributivoNoEncontrado si el periodo no tiene distributivo
      */
     java.util.Optional<VersionNuevaEnGeneracion> crearVersionNueva(
-            String periodo, int anulada, MotivoDeVersion motivo, java.time.Instant momento);
+            String periodo,
+            int anulada,
+            MotivoDeVersion motivo,
+            String quien,
+            java.time.Instant momento);
 
     /**
      * El hash del distributivo: el de los hashes de todos sus parciales (research §4).

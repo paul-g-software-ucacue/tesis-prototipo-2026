@@ -53,6 +53,10 @@ final class FlujoEnMemoria {
     private static final Instant AHORA = Instant.parse("2026-11-07T15:00:00Z");
 
     private final Map<String, Map<String, Boolean>> enviados = new HashMap<>();
+
+    // F18-H02: la versión vigente de Generación, que sube con la reforma.
+
+    private final Map<String, Integer> versiones = new java.util.HashMap<>();
     private final Map<String, ProcesoAprobacion> procesos = new HashMap<>();
 
     /** Los PDF de las resoluciones, por su huella (F15-H01). */
@@ -178,9 +182,28 @@ final class FlujoEnMemoria {
                 (sinUso, nuevas) -> {});
     }
 
+    /** Iniciar la reforma con el caso de uso real, sobre esta memoria (F18-H02). */
+    ec.mdd.validacionocs.puertos.entrada.IniciarReforma iniciarReforma() {
+        return new ec.mdd.validacionocs.aplicacion.IniciarReformaServicio(
+                repositorio(),
+                distributivo(),
+                datos(),
+                cambio -> {},
+                new Transaccion() {
+                    @Override
+                    public <T> T ejecutar(Supplier<T> trabajo) {
+                        return trabajo.get();
+                    }
+                },
+                servicio(),
+                Clock.fixed(AHORA.plusSeconds(10_800), ZoneOffset.UTC),
+                (sinUso, nuevas) -> {});
+    }
+
     /** Todo como al empezar: distributivos sin parciales enviados y sin procesos. */
     void reiniciar() {
         enviados.clear();
+        versiones.clear();
         procesos.clear();
         resoluciones.clear();
         condiciones = listo();
@@ -219,7 +242,12 @@ final class FlujoEnMemoria {
             @Override
             public Optional<DistributivoActual> actual(String periodo) {
                 return Optional.ofNullable(enviados.get(periodo))
-                        .map(carreras -> new DistributivoActual(1, CREADO, carreras));
+                        .map(
+                                carreras ->
+                                        new DistributivoActual(
+                                                versiones.getOrDefault(periodo, 1),
+                                                CREADO,
+                                                carreras));
             }
 
             @Override
@@ -263,6 +291,14 @@ final class FlujoEnMemoria {
             public java.util.Optional<VersionNuevaEnAprobacion> crearVersionNueva(
                     String periodo, int anulada, Instant momento) {
                 return java.util.Optional.empty();
+            }
+
+            @Override
+            public java.util.Optional<VersionNuevaEnAprobacion> crearVersionDeReforma(
+                    String periodo, int publicada, String quien, java.time.Instant momento) {
+                versiones.put(periodo, publicada + 1);
+                return java.util.Optional.of(
+                        new VersionNuevaEnAprobacion(publicada + 1, "f".repeat(64)));
             }
 
             @Override

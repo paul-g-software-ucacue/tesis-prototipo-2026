@@ -184,6 +184,12 @@ class PublicarContratoTest {
     static class Dobles {
 
         @Bean
+        ec.mdd.validacionocs.puertos.entrada.IniciarReforma iniciarReforma() {
+            return org.mockito.Mockito.mock(
+                    ec.mdd.validacionocs.puertos.entrada.IniciarReforma.class);
+        }
+
+        @Bean
         FlujoDelDistributivoServicio flujoDelDistributivo() {
             return mock(FlujoDelDistributivoServicio.class);
         }

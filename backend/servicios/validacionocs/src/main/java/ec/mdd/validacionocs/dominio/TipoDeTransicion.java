@@ -21,5 +21,8 @@ public enum TipoDeTransicion {
      * distributivo sigue en la etapa a la que volvió. La registra el sistema, con la versión nueva
      * y su hash (F12-H04, D-106).
      */
-    VERSION_NUEVA
+    VERSION_NUEVA,
+
+    /** El Vicerrector inició una reforma del distributivo publicado (F18-H02, D-113). */
+    REFORMA
 }
