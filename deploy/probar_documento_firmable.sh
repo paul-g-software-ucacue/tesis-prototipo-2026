@@ -31,13 +31,19 @@
 # inválidos (número vacío, fecha futura o anterior a EN_OCS, un archivo que no es PDF y uno de más
 # de 10 MB) se rechazan sin dejar fila; secretaria.demo registra la resolución, el distributivo
 # queda en APROBADO y el PDF se descarga idéntico. Desde F16-H01 (D-108;
-# specs/053-notificaciones-internas/contracts/demostracion.md): el envío a revisión se hace con
+# specs/053-notificaciones-internas/contracts/demostracion.md): una transición se hace con
 # identidad detenido, sin error para el usuario, y su notificación llega cuando vuelve; al final,
 # las bandejas de todos los usuarios de la demo tienen exactamente las notificaciones de cada
 # transición, vicerrectorado.demo lee y marca la suya, y una entrega repetida no duplica nada. Desde
 # F16-H02 (D-110; specs/054-siguiente-firmante/contracts/demostracion.md): la cadena de firmas con
 # el estado de cada paso después de generar y de cada firma; F1 se sube con identidad detenido, y la
-# notificación de firma pendiente de F2 llega cuando vuelve; F2 y F3 reciben la suya, y nadie más. Si la base ya tiene
+# notificación de firma pendiente de F2 llega cuando vuelve; F2 y F3 reciben la suya, y nadie más.
+# Desde F18-H01 (D-111; specs/055-publicar-distributivo/contracts/demostracion.md): en EN_OCS,
+# publicar responde 409; con APROBADO, vicerrectorado.demo y coordinacion.demo reciben 403 al
+# publicar y secretaria.demo publica con identidad detenido (la transición de F16-H01, que antes
+# era el envío a revisión), con su constancia y su bitácora, y una segunda publicación da 409;
+# publicado, nadie tiene acciones y cada operación de cambio responde con su error; la publicación
+# llega una vez a datos.demo, coordinacion.demo, docente.demo y docente.coordinador.demo. Si la base ya tiene
 # alguno de esos datos, falla sin tocar nada. Al terminar, aunque un paso falle, borra lo que creó (también los archivos del volumen),
 # salvo las entradas de la bitácora, que no se pueden borrar. Termina con 0 si todos los pasos pasan
 # y con 1 si alguno falla. Nunca imprime una clave ni un token.
@@ -46,8 +52,9 @@
 # docente.demo designado Responsable, y no borra nada, para recorrer a mano
 # specs/049-completar-cadena/quickstart.md §3. MDD_CONSERVAR=EN_OCS lo deja en EN_OCS, con las tres
 # firmas, para recorrer specs/052-resolucion-ocs/quickstart.md §3. MDD_CONSERVAR=F2 lo deja con F1
-# aceptada y F2 en turno, para recorrer specs/054-siguiente-firmante/quickstart.md §3. Al terminar
-# dice cómo limpiar.
+# aceptada y F2 en turno, para recorrer specs/054-siguiente-firmante/quickstart.md §3.
+# MDD_CONSERVAR=APROBADO lo deja con la resolución registrada, sin publicar, para recorrer
+# specs/055-publicar-distributivo/quickstart.md §3. Al terminar dice cómo limpiar.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -77,6 +84,8 @@ readonly CONSERVAR="${MDD_CONSERVAR:-}"
 readonly SECRETARIA=secretaria.demo
 readonly RESOLUCION="$GATEWAY/api/validacionocs/periodos/$PERIODO/resolucion"
 readonly NUMERO='RPC-SO-12-No.123-2026'
+readonly PUBLICACION="$GATEWAY/api/validacionocs/periodos/$PERIODO/publicacion"
+readonly PUBLICADA="El distributivo de $PERIODO fue publicado"
 # Dos ciclos del reenvío (30 s) y un margen (SC-002 de F16-H01).
 readonly ESPERA_REENVIO=120
 
@@ -577,12 +586,15 @@ hoy() {
 }
 
 # --- 13. En EN_OCS: el avance genérico, 409 porque falta la resolución; otros roles, 403 al registrar ---
+# F18-H01: publicar todavía no, 409.
 sin_resolucion() {
     local usuario
     printf '%%PDF-1.7\nResolución del OCS de prueba (ficticia)\n%%%%EOF\n' >"$carpeta/resolucion.pdf"
     iniciar "$SECRETARIA"
     pedir POST "$GATEWAY/api/validacionocs/periodos/$PERIODO/avance" "Bearer $token"
     es_codigo 409 VALIDACIONOCS_REQUIERE_RESOLUCION || { echo "       avance: $estado" >&2; return 1; }
+    pedir POST "$PUBLICACION" "Bearer $token"
+    es_codigo 409 VALIDACIONOCS_ETAPA_NO_ADMITE_PUBLICACION || { echo "       publicar: $estado" >&2; return 1; }
     for usuario in "$VICERRECTOR" rectorado.demo "$RESPONSABLE"; do
         iniciar "$usuario"
         registrar "$NUMERO" "$(hoy)" "$carpeta/resolucion.pdf"
@@ -643,6 +655,86 @@ resolucion_registrada() {
         and periodo = '$PERIODO' and usuario = '$SECRETARIA'"
 }
 
+# --- F18-H01: publicar (D-111) ---
+
+publicaciones() {
+    consultar_base "select count(*) from validacionocs.transicion where periodo = '$PERIODO'
+        and hacia = 'PUBLICADO'"
+}
+
+transiciones() {
+    consultar_base "select count(*) from validacionocs.transicion where periodo = '$PERIODO'"
+}
+
+# --- 16. Publicar: 403 a otros roles; secretaria.demo publica con identidad detenido; la segunda, 409 ---
+publicado() {
+    local usuario estado_de_la_publicacion cuerpo_de_la_publicacion
+    for usuario in "$VICERRECTOR" "$COORDINADOR"; do
+        iniciar "$usuario"
+        pedir POST "$PUBLICACION" "Bearer $token"
+        es_codigo 403 SEGURIDAD_ACCESO_NO_AUTORIZADO || { echo "       $usuario publica ($estado)" >&2; return 1; }
+    done
+    [[ $(publicaciones) == 0 ]] || return 1
+    # SC-003 (y SC-002 de F16-H01): con el token ya pedido, identidad detenido; la notificación
+    # llega cuando vuelve (paso 19).
+    iniciar "$SECRETARIA"
+    caida=$(consultar_base "select now()")
+    docker compose stop identidad >/dev/null 2>&1
+    pedir POST "$PUBLICACION" "Bearer $token"
+    estado_de_la_publicacion=$estado
+    cuerpo_de_la_publicacion=$cuerpo
+    # La vuelta es cuando se pide levantarlo, como en F16-H01.
+    vuelta=$(consultar_base "select now()")
+    docker compose up -d --wait --no-recreate --no-build identidad >/dev/null 2>&1 || return 1
+    estado=$estado_de_la_publicacion
+    cuerpo=$cuerpo_de_la_publicacion
+    [[ $estado == 200 && $(jq -r '.etapa' <<<"$cuerpo") == PUBLICADO ]] \
+        || { echo "       publicar: $estado" >&2; return 1; }
+    [[ $(jq -c '[.publicacion.version, .publicacion.publicadaPor, .acciones]' <<<"$cuerpo") \
+        == "[1,\"$SECRETARIA\",[]]" ]] || { echo "       la constancia en el flujo" >&2; return 1; }
+    [[ $(publicaciones) == 1 ]] || return 1
+    esperar 15 hay_entradas 1 "servicio = 'validacionocs' and accion = 'DISTRIBUTIVO_PUBLICADO'
+        and periodo = '$PERIODO' and usuario = '$SECRETARIA'" || { echo "       sin la bitácora" >&2; return 1; }
+    pedir POST "$PUBLICACION" "Bearer $token"
+    es_codigo 409 VALIDACIONOCS_ETAPA_NO_ADMITE_PUBLICACION || { echo "       la segunda: $estado" >&2; return 1; }
+    [[ $(publicaciones) == 1 ]]
+}
+
+# --- 17. Publicado: nadie tiene acciones, y cada operación de cambio responde con su error ---
+sin_acciones() {
+    local usuario antes carrera asignatura paralelo docente
+    antes=$(transiciones)
+    for usuario in admin.demo datos.demo "$COORDINADOR" gestion.demo "$RESPONSABLE" "$VICERRECTOR" \
+        rectorado.demo ocs.demo "$SECRETARIA" "$DESIGNADO" docente.coordinador.demo; do
+        iniciar "$usuario"
+        pedir GET "$GATEWAY/api/validacionocs/periodos/$PERIODO/flujo" "Bearer $token"
+        if [[ $estado == 200 ]]; then
+            [[ $(jq -c '.acciones' <<<"$cuerpo") == '[]' ]] || { echo "       $usuario tiene acciones" >&2; return 1; }
+        else
+            es_codigo 403 SEGURIDAD_ACCESO_NO_AUTORIZADO || { echo "       $usuario: $estado" >&2; return 1; }
+        fi
+    done
+    IFS=$'\t' read -r carrera asignatura paralelo <"$carpeta/paralelos.tsv" || true
+    como_coordinador_de "$carrera" || return 1
+    pedir GET "$GATEWAY/api/generacion/periodos/$PERIODO/oferta/$asignatura/$paralelo/sugerencia" "Bearer $token"
+    docente=$(jq -r '.candidatos[0].identificacion // empty' <<<"$cuerpo")
+    [[ -n $docente ]] || { echo "       sin un docente para proponer" >&2; return 1; }
+    proponer "$asignatura" "$paralelo" "$docente" "$TEXTO"
+    es_codigo 409 GENERACION_VERSION_CONGELADA || { echo "       proponer: $estado" >&2; return 1; }
+    iniciar "$RESPONSABLE"
+    consolidar
+    es_codigo 409 GENERACION_VERSION_CONGELADA || { echo "       consolidar: $estado" >&2; return 1; }
+    pedir POST "$GATEWAY/api/validacionocs/periodos/$PERIODO/revision" "Bearer $token"
+    es_codigo 409 VALIDACIONOCS_ETAPA_NO_ADMITE_REVISION || { echo "       revisión: $estado" >&2; return 1; }
+    iniciar "$VICERRECTOR"
+    pedir POST "$APROBACION" "Bearer $token"
+    es_codigo 409 VALIDACIONOCS_ETAPA_NO_ADMITE_APROBACION || { echo "       aprobar: $estado" >&2; return 1; }
+    iniciar "$SECRETARIA"
+    registrar "$NUMERO" "$(hoy)" "$carpeta/resolucion.pdf"
+    es_codigo 409 VALIDACIONOCS_ETAPA_NO_ADMITE_RESOLUCION || { echo "       resolución: $estado" >&2; return 1; }
+    [[ $(transiciones) == "$antes" && $(resoluciones_en_la_base) == 1 ]]
+}
+
 # --- F16-H01: las notificaciones de cada transición (D-108) ---
 readonly REVISION='El distributivo llegó a «Revisión del Vicerrectorado»'
 
@@ -652,7 +744,8 @@ bandejas() {
         where periodo = '$PERIODO' and recibida_en >= '$inicio'" | LC_ALL=C sort
 }
 
-# Lo que debe haber: cada transición, a los usuarios del rol de su etapa de llegada, sin el autor.
+# Lo que debe haber: cada transición, a los usuarios del rol de su etapa de llegada, sin el autor
+# (la publicación, a sus tres roles).
 # El Responsable de consolidación es quien tiene el rol ($RESPONSABLE) y, desde la designación,
 # $DESIGNADO; el paso a APROBADO no llega a nadie, porque $SECRETARIA es la única con su rol.
 esperadas() {
@@ -671,6 +764,14 @@ esperadas() {
         echo "$VICERRECTOR|Tienes una firma pendiente: «Revisado por»"
         echo "rectorado.demo|Tienes una firma pendiente: «Aprobado por»"
         echo "$SECRETARIA|El distributivo llegó a «Resolución del OCS»"
+        # F18-H01: la publicación, a cada usuario activo con DOCENTE, OPERADOR_DATOS o
+        # COORDINADOR_CARRERA, una sola vez aunque tenga dos, y no al autor. Además de los de la
+        # demo (paso 18), otros scripts dejan usuarios de prueba con esos roles.
+        consultar_base "select distinct u.nombre_usuario || '|$PUBLICADA' from usuarios.usuario u
+            join roles.asignacion_rol a on a.nombre_usuario = u.nombre_usuario
+            join roles.rol r on r.id = a.rol_id
+            where u.activo and r.identificador in ('DOCENTE', 'OPERADOR_DATOS', 'COORDINADOR_CARRERA')
+            and u.nombre_usuario <> '$SECRETARIA'"
     } | LC_ALL=C sort
 }
 
@@ -678,12 +779,19 @@ bandejas_completas() {
     [[ $(bandejas) == "$(esperadas)" ]]
 }
 
-# --- 16. Las bandejas de todos: exactamente las de cada transición; la lectura de vicerrectorado.demo ---
+# --- 18. Las bandejas de todos: exactamente las de cada transición; la lectura de vicerrectorado.demo ---
+# La publicación se hizo con identidad detenido: su notificación puede tardar hasta $ESPERA_REENVIO s.
 notificaciones_y_lectura() {
-    esperar 30 bandejas_completas || {
+    esperar "$ESPERA_REENVIO" bandejas_completas || {
         diff <(esperadas) <(bandejas) | sed 's/^/       /' >&2
         return 1
     }
+    # F18-H01: la publicación llegó a los cuatro de la demo con esos roles, una a cada uno.
+    local usuario
+    for usuario in datos.demo "$COORDINADOR" "$DESIGNADO" docente.coordinador.demo; do
+        [[ $(bandejas | grep -cFx "$usuario|$PUBLICADA") == 1 ]] \
+            || { echo "       a $usuario no le llegó la publicación" >&2; return 1; }
+    done
     [[ $(consultar_base "select autor_nombre from notificaciones.notificacion where periodo = '$PERIODO'
         and recibida_en >= '$inicio' and titulo = 'El distributivo llegó a «Resolución del OCS»'") == 'el sistema' ]] \
         || { echo "       EN_OCS no dice «el sistema»" >&2; return 1; }
@@ -709,18 +817,21 @@ notificaciones_y_lectura() {
     es_codigo 404 NOTIFICACIONES_NOTIFICACION_NO_ENCONTRADA
 }
 
-# --- 17. El envío a revisión con identidad detenido: 200 sin error y la notificación al volver ---
+# --- 19. La publicación con identidad detenido: 200 sin error y la notificación al volver, una vez ---
 llego_al_volver() {
-    [[ -n $caida && -n $vuelta ]] || { echo "       el envío no se hizo con identidad detenido" >&2; return 1; }
-    local llegada
+    [[ -n $caida && -n $vuelta ]] || { echo "       no se publicó con identidad detenido" >&2; return 1; }
+    local llegada filas
+    filas=$(consultar_base "select count(*) from notificaciones.notificacion where destinatario = '$DESIGNADO'
+        and periodo = '$PERIODO' and titulo = '$PUBLICADA' and recibida_en >= '$caida'")
+    [[ $filas == 1 ]] || { echo "       $filas notificaciones de la publicación" >&2; return 1; }
     llegada=$(consultar_base "select extract(epoch from recibida_en - '$vuelta'::timestamptz)::int
-        from notificaciones.notificacion where destinatario = '$VICERRECTOR' and periodo = '$PERIODO'
-        and titulo = '$REVISION' and recibida_en >= '$caida'")
+        from notificaciones.notificacion where destinatario = '$DESIGNADO' and periodo = '$PERIODO'
+        and titulo = '$PUBLICADA' and recibida_en >= '$caida'")
     echo "       llegó $llegada s después de levantar identidad"
     [[ $llegada =~ ^-?[0-9]+$ ]] && ((llegada >= 0 && llegada <= ESPERA_REENVIO))
 }
 
-# --- 19. F1 con identidad detenido: la notificación de F2 llegó al volver, una vez (F16-H02) ---
+# --- 21. F1 con identidad detenido: la notificación de F2 llegó al volver, una vez (F16-H02) ---
 FIRMA_PENDIENTE='Tienes una firma pendiente: «Revisado por»'
 llego_la_de_f2() {
     [[ -n $caida_firma && -n $vuelta_firma ]] || { echo "       F1 no se subió con identidad detenido" >&2; return 1; }
@@ -743,7 +854,7 @@ llego_la_de_f2() {
         || { echo "       detalle: $detalle" >&2; return 1; }
 }
 
-# --- 18. Una entrega repetida: la publicación vuelve a FAILED y el reenvío no duplica nada ---
+# --- 20. Una entrega repetida: la publicación vuelve a FAILED y el reenvío no duplica nada ---
 completada() {  # completada <idEvento>
     [[ $(consultar_base "select count(*) from eventos_distributivo.event_publication
         where serialized_event like '%$1%' and status = 'COMPLETED'") == 1 ]]
@@ -904,27 +1015,14 @@ enviado() {
         justificar "$(jq -r '.[0]' <<<"$una")" "$(jq -r '.[1]' <<<"$una")" "$TEXTO"
         [[ $estado == 200 ]] || { echo "       justificar: $estado" >&2; return 1; }
     done < <(jq -c '.inconsistencias[] | select(.estado == "ABIERTA" and .severidad == "BLANDA") | [.tipo, .objeto.clave]' <<<"$cuerpo")
-    # F16-H01 (SC-002): el envío se hace con identidad detenido; su notificación llega al volver.
-    if [[ -z $CONSERVAR ]]; then
-        caida=$(consultar_base "select now()")
-        docker compose stop identidad >/dev/null 2>&1
-    fi
+    # F18-H01: la caída de identidad de F16-H01 pasó a la publicación (paso 16).
     pedir POST "$GATEWAY/api/validacionocs/periodos/$PERIODO/revision" "Bearer $token"
-    local estado_del_envio=$estado cuerpo_del_envio=$cuerpo
-    if [[ -n $caida ]]; then
-        # La vuelta es cuando se pide levantarlo: identidad acepta el evento antes de que su
-        # chequeo de salud lo dé por sano, y --wait espera a ese chequeo.
-        vuelta=$(consultar_base "select now()")
-        docker compose up -d --wait --no-recreate --no-build identidad >/dev/null 2>&1 || return 1
-    fi
-    estado=$estado_del_envio
-    cuerpo=$cuerpo_del_envio
     [[ $estado == 200 && $(jq -r '.etapa' <<<"$cuerpo") == EN_REVISION_VRA ]] || return 1
     hash_del_envio=$(jq -r '[.transiciones[] | select(.tipo == "PASO_DE_ETAPA" and .desde == "EN_CONSOLIDACION")] | last | .hash' <<<"$cuerpo")
     [[ $hash_del_envio =~ ^[0-9a-f]{64}$ ]]
 }
 
-# Lo del envío, de la aprobación y del documento, para los pasos siguientes.
+# Lo del envío, de la aprobación, del documento y de la publicación, para los pasos siguientes.
 caida=''
 vuelta=''
 caida_firma=''
@@ -1103,7 +1201,7 @@ nadie_mas() {
     es_codigo 403 SEGURIDAD_ACCESO_NO_AUTORIZADO
 }
 
-if [[ -n $CONSERVAR && $CONSERVAR != EN_OCS && $CONSERVAR != F2 ]]; then
+if [[ -n $CONSERVAR && $CONSERVAR != EN_OCS && $CONSERVAR != F2 && $CONSERVAR != APROBADO ]]; then
     verificar 1 "El consolidado listo, enviado a revisión y con $DESIGNADO designado: EN_REVISION_VRA" en_revision_y_designado
     if ((fallas > 0)); then
         echo "No quedó en revisión. Para limpiar: docker compose -p tesis-prototipo-2026 down -v"
@@ -1150,10 +1248,23 @@ fi
 verificar 13 "En EN_OCS, el avance responde 409 VALIDACIONOCS_REQUIERE_RESOLUCION; otros roles, 403 al registrar" sin_resolucion
 verificar 14 "Número vacío, fecha futura y anterior, un archivo que no es PDF y uno de más de 10 MB: su error, sin fila" resoluciones_invalidas
 verificar 15 "$SECRETARIA registra la resolución: APROBADO, el PDF por su huella, la descarga idéntica y la bitácora" resolucion_registrada
-verificar 16 "Las bandejas de todos tienen exactamente las de cada transición; $VICERRECTOR marca la suya y la ajena da 404" notificaciones_y_lectura
-verificar 17 "El envío a revisión con identidad detenido respondió 200, y su notificación llegó antes de $ESPERA_REENVIO s" llego_al_volver
-verificar 18 "Una entrega repetida se completa otra vez sin duplicar la notificación, que sigue leída" entrega_repetida
-verificar 19 "F1 subida con identidad detenido: aceptada, y la notificación de F2 llegó una vez antes de $ESPERA_REENVIO s" llego_la_de_f2
+
+if [[ $CONSERVAR == APROBADO ]]; then
+    if ((fallas > 0)); then
+        echo "No quedó en APROBADO. Para limpiar: docker compose -p tesis-prototipo-2026 down -v"
+        exit 1
+    fi
+    echo "Quedó en APROBADO con la resolución, sin publicar ni limpiar. Recorre specs/055-publicar-distributivo/quickstart.md §3."
+    echo "Para limpiar al terminar: docker compose -p tesis-prototipo-2026 down -v"
+    exit 0
+fi
+
+verificar 16 "En APROBADO, otros roles reciben 403; $SECRETARIA publica con identidad detenido, con la constancia y la bitácora; la segunda, 409" publicado
+verificar 17 "Publicado: nadie tiene acciones; proponer, consolidar, enviar, aprobar y registrar responden con su error, sin cambiar nada" sin_acciones
+verificar 18 "Las bandejas de todos tienen exactamente las de cada transición; $VICERRECTOR marca la suya y la ajena da 404" notificaciones_y_lectura
+verificar 19 "La publicación con identidad detenido respondió 200, y su notificación llegó una vez a $DESIGNADO antes de $ESPERA_REENVIO s" llego_al_volver
+verificar 20 "Una entrega repetida se completa otra vez sin duplicar la notificación, que sigue leída" entrega_repetida
+verificar 21 "F1 subida con identidad detenido: aceptada, y la notificación de F2 llegó una vez antes de $ESPERA_REENVIO s" llego_la_de_f2
 
 if ((fallas > 0)); then
     echo "El documento firmable de punta a punta: $fallas paso(s) fallan."
