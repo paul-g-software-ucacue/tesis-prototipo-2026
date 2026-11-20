@@ -114,6 +114,9 @@ export function iniciarReforma(periodo: string, motivo: string) {
 }
 
 export type ReformaDelDistributivo = components['schemas']['ReformaDelDistributivo'];
+// F12-H03 (D-114): el plazo de la etapa actual y las etapas activas.
+export type PlazoDeLaEtapa = components['schemas']['PlazoDeLaEtapa'];
+export type EtapaDelDistributivo = components['schemas']['EtapaDelDistributivo'];
 
 export type ResolucionDelOcs = components['schemas']['ResolucionDelOcs'];
 

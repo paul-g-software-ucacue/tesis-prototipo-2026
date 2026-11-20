@@ -164,6 +164,61 @@ describe('Flujo y firmas', () => {
     });
   });
 
+  // F12-H03 (D-114): la advertencia de RN-23 no rechaza la carga y se ve con lo que rige.
+  describe('la advertencia de RN-23', () => {
+    const MARGEN = {
+      codigo: 'RN23_MARGEN_INSUFICIENTE' as const,
+      mensaje:
+        'Con estos plazos, contados desde hoy, el distributivo se aprobaría el 02/01/2027, después del 20/12/2026, que es 30 días antes del inicio del periodo (RN-23). Le faltan 13 días: acorta plazos o desactiva etapas opcionales.',
+      ultimoPlazo: '2027-01-02',
+      inicioDelPeriodo: '2027-01-19',
+      diasAntesDelInicio: 30,
+      fechaDeRemision: '2026-12-20',
+      diasDeMargen: -13,
+    };
+
+    it('después de cargar, avisa que quedó vigente y qué hacer', async () => {
+      simulada.responder('PUT', RUTA, json(200, { ...CARGADA, advertencias: [MARGEN] }));
+      await abrir();
+      simulada.responder('GET', RUTA, json(200, { ...CARGADA, advertencias: [MARGEN] }));
+
+      await userEvent.upload(screen.getByLabelText(ACCION), yaml());
+
+      const aviso = await screen.findByRole('status', { name: 'Advertencia de RN-23' });
+      expect(aviso).toHaveTextContent('La configuración quedó vigente.');
+      expect(aviso).toHaveTextContent(MARGEN.mensaje);
+      expect(aviso).toHaveTextContent('Aprobación estimada: 02/01/2027');
+      expect(aviso).toHaveTextContent('Fecha de RN-23: 20/12/2026');
+      expect(aviso).toHaveTextContent('Faltan 13 días de margen');
+    });
+
+    it('sin versión de normativa, dice que no se pudo comprobar, sin las cifras', async () => {
+      const sinNormativa = {
+        codigo: 'RN23_SIN_NORMATIVA' as const,
+        mensaje:
+          'El periodo no tiene versión de normativa, así que no se pudo comprobar RN-23. Elige la versión de normativa del periodo y vuelve a cargar la configuración para comprobarlo.',
+        ultimoPlazo: '2027-01-02',
+        inicioDelPeriodo: '2027-06-08',
+      };
+      simulada.responder('GET', RUTA, json(200, { ...CARGADA, advertencias: [sinNormativa] }));
+      await abrir();
+
+      const aviso = await screen.findByRole('status', { name: 'Advertencia de RN-23' });
+      expect(aviso).toHaveTextContent('no se pudo comprobar RN-23');
+      expect(aviso).not.toHaveTextContent('Fecha de RN-23');
+    });
+
+    it('sin advertencias no muestra el aviso', async () => {
+      simulada.responder('GET', RUTA, json(200, { ...CARGADA, advertencias: [] }));
+      await abrir();
+
+      expect(await screen.findByText(/Versión 2 · cargada por admin\.demo/)).toBeVisible();
+      expect(
+        screen.queryByRole('status', { name: 'Advertencia de RN-23' }),
+      ).not.toBeInTheDocument();
+    });
+  });
+
   describe('cargar', () => {
     it('sube el archivo y muestra la versión nueva', async () => {
       simulada.responder('PUT', RUTA, json(200, CARGADA));

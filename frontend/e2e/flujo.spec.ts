@@ -62,9 +62,10 @@ async function sinFallas(pagina: Page) {
   expect(fallas, fallas.join('\n')).toEqual([]);
 }
 
-async function abrir(pagina: Page) {
+// advertencias: las de la carga (F12-H03); rechazarPrimero: si la primera carga se rechaza.
+async function abrir(pagina: Page, advertencias: object[] = [], rechazarPrimero = true) {
   let cargada = false;
-  let rechazar = true;
+  let rechazar = rechazarPrimero;
   await simularApi(pagina, { sesion: ADMINISTRADOR });
   await pagina.route('**/api/academico/periodos', (ruta) =>
     ruta.fulfill({
@@ -106,6 +107,7 @@ async function abrir(pagina: Page) {
             porDefecto: false,
             version: 1,
             cargada: { por: 'admin.demo', en: '2026-11-02T15:00:00Z' },
+            advertencias,
           }
         : CONFIGURACION,
     });
@@ -138,6 +140,36 @@ test('ve lo que rige, un rechazo dice qué corregir y carga, accesible en cada e
   await sinFallas(page);
 
   await page.getByLabel('Cargar un archivo').setInputFiles(ARCHIVO);
+  await expect(page.getByText(/Versión 1 · cargada por admin\.demo/)).toBeVisible();
+  await sinFallas(page);
+});
+
+// F12-H03 (D-114): una carga con la advertencia de RN-23 queda vigente y lo dice; axe-core con el
+// aviso a la vista.
+test('una carga con la advertencia de RN-23 queda vigente, lo dice y es accesible', async ({
+  page,
+}) => {
+  await abrir(
+    page,
+    [
+      {
+        codigo: 'RN23_MARGEN_INSUFICIENTE',
+        mensaje:
+          'Con estos plazos, contados desde hoy, el distributivo se aprobaría el 02/01/2027, después del 20/12/2026, que es 30 días antes del inicio del periodo (RN-23). Le faltan 13 días: acorta plazos o desactiva etapas opcionales.',
+        ultimoPlazo: '2027-01-02',
+        inicioDelPeriodo: '2027-01-19',
+        diasAntesDelInicio: 30,
+        fechaDeRemision: '2026-12-20',
+        diasDeMargen: -13,
+      },
+    ],
+    false,
+  );
+
+  await page.getByLabel('Cargar un archivo').setInputFiles(ARCHIVO);
+  const aviso = page.getByRole('status', { name: 'Advertencia de RN-23' });
+  await expect(aviso).toContainText('La configuración quedó vigente.');
+  await expect(aviso).toContainText('Faltan 13 días de margen');
   await expect(page.getByText(/Versión 1 · cargada por admin\.demo/)).toBeVisible();
   await sinFallas(page);
 });

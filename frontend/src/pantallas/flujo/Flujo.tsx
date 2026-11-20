@@ -1,6 +1,7 @@
 // La pantalla «Flujo y firmas» (F12-H01, RF-34, RF-58): lo que rige en cada periodo, sus etapas y
 // su árbol de firmas. Se carga un archivo, no se edita aquí (ADR-007). La lee y la carga quien
-// tiene FLUJO_FIRMAS; solo cambia mientras el periodo está en Planificación.
+// tiene FLUJO_FIRMAS; solo cambia mientras el periodo está en Planificación. Desde F12-H03, la
+// advertencia de RN-23 con la que se cargó.
 import Alert from '@mui/material/Alert';
 import AlertTitle from '@mui/material/AlertTitle';
 import Button from '@mui/material/Button';
@@ -14,7 +15,7 @@ import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useQueryClient } from '@tanstack/react-query';
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useId, useRef, useState, type ChangeEvent } from 'react';
 import { AvisoDeError } from '../../errores/AvisoDeError';
 import { traducirError, type MensajeDeError } from '../../errores/traducir';
 import { useTitulo } from '../../navegacion/useTitulo';
@@ -33,6 +34,7 @@ import {
   cargarConfiguracion,
   descargarPlantilla,
   useConfiguracionDelFlujo,
+  type AdvertenciaDelFlujo,
   type ConfiguracionDelFlujo,
   type PasoDeFirma,
 } from './consultas';
@@ -141,6 +143,44 @@ function QueRige({ configuracion }: { configuracion: ConfiguracionDelFlujo }) {
   );
 }
 
+// Las fechas de la advertencia son días sin hora: se formatean en UTC para que la zona del navegador
+// no las corra.
+const DIA = new Intl.DateTimeFormat('es-EC', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+
+function dia(fecha: string) {
+  return DIA.format(new Date(`${fecha}T00:00:00Z`));
+}
+
+/**
+ * La advertencia de RN-23 (F12-H03, D-114): con estos plazos, contados desde el día de la carga,
+ * el distributivo se aprobaría después de la fecha que pide RN-23, o no se pudo comprobar. No es un
+ * error: la configuración quedó vigente.
+ */
+function AdvertenciaDeRn23({ advertencia }: { advertencia: AdvertenciaDelFlujo }) {
+  const titulo = useId();
+  const faltan = advertencia.diasDeMargen === undefined ? undefined : -advertencia.diasDeMargen;
+  return (
+    <Alert severity="warning" role="status" aria-labelledby={titulo} sx={{ my: 2 }}>
+      <AlertTitle id={titulo}>Advertencia de RN-23</AlertTitle>
+      <Typography variant="body2">La configuración quedó vigente.</Typography>
+      <Typography variant="body2" sx={{ mt: 0.5 }}>
+        {advertencia.mensaje}
+      </Typography>
+      <Typography variant="body2" sx={{ mt: 0.5 }}>
+        {`Aprobación estimada: ${dia(advertencia.ultimoPlazo)}`}
+        {advertencia.fechaDeRemision && ` · Fecha de RN-23: ${dia(advertencia.fechaDeRemision)}`}
+        {faltan !== undefined &&
+          ` · ${faltan === 1 ? 'Falta 1 día' : `Faltan ${String(faltan)} días`} de margen`}
+      </Typography>
+    </Alert>
+  );
+}
+
 /** Lo de un periodo. Va aparte, con su clave: un rechazo de un periodo no sigue en el siguiente. */
 function DelPeriodo({ periodo }: { periodo: string }) {
   const sesion = useSesionActual();
@@ -191,6 +231,9 @@ function DelPeriodo({ periodo }: { periodo: string }) {
         </AvisoDeError>
       )}
       {datos && <QueRige configuracion={datos} />}
+      {datos?.advertencias?.map((advertencia) => (
+        <AdvertenciaDeRn23 key={advertencia.codigo} advertencia={advertencia} />
+      ))}
       {datos && !datos.modificable && (
         <Alert severity="info" role="status" sx={{ my: 2 }}>
           La configuración solo cambia mientras el periodo está en Planificación.

@@ -35,7 +35,9 @@ import {
   useFlujo,
   type CongelacionDeLaVersion,
   type EstadoDelFlujo,
+  type EtapaDelDistributivo,
   type ParcialDelFlujo,
+  type PlazoDeLaEtapa,
   type PublicacionDelDistributivo,
   type ReformaDelDistributivo,
   type RechazoEnFirmaDelFlujo,
@@ -117,6 +119,96 @@ function ConstanciaDeLaReforma({ reforma }: { reforma: ReformaDelDistributivo })
   );
 }
 
+// Las fechas del plazo, en días de Ecuador (D-89). La fecha límite ya es un día, sin hora: se
+// formatea en UTC para que la zona del navegador no la corra.
+const DIA = new Intl.DateTimeFormat('es-EC', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  timeZone: 'America/Guayaquil',
+});
+const DIA_SIN_HORA = new Intl.DateTimeFormat('es-EC', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+
+function dias(cantidad: number) {
+  return cantidad === 1 ? '1 día' : `${String(cantidad)} días`;
+}
+
+function situacionDelPlazo(plazo: PlazoDeLaEtapa) {
+  switch (plazo.estado) {
+    case 'A_TIEMPO':
+      return plazo.diasRestantes === 1
+        ? 'Falta 1 día.'
+        : `Faltan ${String(plazo.diasRestantes)} días.`;
+    case 'VENCE_HOY':
+      return 'Vence hoy.';
+    case 'VENCIDO':
+      return `Vencido hace ${dias(-plazo.diasRestantes)}.`;
+  }
+}
+
+// El plazo de la etapa actual (F12-H03, D-114): desde cuándo, la fecha límite y si vence o venció.
+// El estado vencido se dice con texto y un ícono, no solo con el color (WCAG 1.4.1).
+function PlazoDeLaEtapaActual({ plazo, nombre }: { plazo: PlazoDeLaEtapa; nombre: string }) {
+  const titulo = useId();
+  const vencido = plazo.estado === 'VENCIDO';
+  return (
+    <Box
+      role="group"
+      aria-labelledby={titulo}
+      sx={{
+        mt: 1,
+        mb: 1,
+        pl: 1,
+        borderLeft: 3,
+        borderColor: vencido ? 'error.main' : 'divider',
+      }}
+    >
+      <Typography id={titulo} variant="body2" sx={{ fontWeight: 'bold' }}>
+        Plazo de la etapa
+      </Typography>
+      {vencido && (
+        <Typography variant="body2" color="error">
+          <span aria-hidden="true">⚠ </span>
+          <strong>Plazo vencido</strong>
+        </Typography>
+      )}
+      <Typography variant="body2">
+        {`En «${nombre}» desde el ${DIA.format(new Date(plazo.llegada))}. Fecha límite: ${DIA_SIN_HORA.format(new Date(`${plazo.fechaLimite}T00:00:00Z`))}. ${situacionDelPlazo(plazo)}`}
+      </Typography>
+    </Box>
+  );
+}
+
+// Las etapas activas del distributivo con su plazo (F12-H03); la actual, marcada también con texto.
+function EtapasDelFlujo({ etapas }: { etapas: EtapaDelDistributivo[] }) {
+  const titulo = useId();
+  return (
+    <Box sx={{ mt: 1, mb: 1 }}>
+      <Typography id={titulo} variant="body2" sx={{ fontWeight: 'bold' }}>
+        Etapas del flujo
+      </Typography>
+      <Box component="ol" aria-labelledby={titulo} sx={{ m: 0, pl: 3 }}>
+        {etapas.map((una) => (
+          <Typography
+            component="li"
+            variant="body2"
+            key={una.etapa}
+            aria-current={una.actual ? 'step' : undefined}
+            sx={una.actual ? { fontWeight: 'bold' } : undefined}
+          >
+            {`${una.nombre}${una.plazoDias === undefined ? '' : ` · ${dias(una.plazoDias)}`}${una.actual ? ' (actual)' : ''}`}
+          </Typography>
+        ))}
+      </Box>
+    </Box>
+  );
+}
+
 // El rechazo en firma de la versión vigente (F14-H04, D-105): quién, en qué paso, cuándo y la
 // observación. Desde F12-H04 (D-106), la versión que se anuló y con cuál se sigue; sin versión
 // nueva todavía, no se aprueba otra vez.
@@ -191,6 +283,8 @@ export function EstadoDelFlujoDelPeriodo({
     resolucion,
     publicacion,
     reforma,
+    plazo,
+    etapas,
   } = flujo.data;
   if (soloEn && !soloEn.includes(etapa)) {
     return null;
@@ -234,6 +328,9 @@ export function EstadoDelFlujoDelPeriodo({
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
         {`Etapa ${etapa}`}
       </Typography>
+      {/* F12-H03: el plazo de la etapa actual y las etapas activas, para todo el que lee el flujo. */}
+      {plazo && <PlazoDeLaEtapaActual plazo={plazo} nombre={nombreDeEtapa} />}
+      {etapas && etapas.length > 0 && <EtapasDelFlujo etapas={etapas} />}
       {rechazoEnFirma && <RechazoEnFirma rechazo={rechazoEnFirma} />}
       {/* F12-H04: la constancia es de la versión vigente; la de una anulada ya no vale. */}
       {congelacion?.version === version && <Constancia congelacion={congelacion} />}

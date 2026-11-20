@@ -60,6 +60,110 @@ describe('EstadoDelFlujo', () => {
     simulada = instalarApiSimulada();
   });
 
+  // F12-H03 (D-114): el plazo de la etapa actual y las etapas activas, con texto y no solo color.
+  const ETAPAS: EstadoDelFlujo['etapas'] = [
+    { etapa: 'BORRADOR_CARRERA', nombre: 'Propuesta de carrera', plazoDias: 15, actual: false },
+    { etapa: 'EN_CONSOLIDACION', nombre: 'Consolidación', plazoDias: 5, actual: true },
+    {
+      etapa: 'EN_REVISION_VRA',
+      nombre: 'Revisión del Vicerrectorado',
+      plazoDias: 1,
+      actual: false,
+    },
+    { etapa: 'PUBLICADO', nombre: 'Publicado', actual: false },
+  ];
+
+  function conPlazo(
+    estado: 'A_TIEMPO' | 'VENCE_HOY' | 'VENCIDO',
+    diasRestantes: number,
+  ): EstadoDelFlujo {
+    return flujo({
+      etapa: 'EN_CONSOLIDACION',
+      nombreDeEtapa: 'Consolidación',
+      plazo: {
+        etapa: 'EN_CONSOLIDACION',
+        llegada: '2026-11-04T15:00:00Z',
+        dias: 5,
+        fechaLimite: '2026-11-09',
+        diasRestantes,
+        estado,
+      },
+      etapas: ETAPAS,
+    });
+  }
+
+  it('a tiempo, dice desde cuándo, la fecha límite y cuántos días faltan', async () => {
+    simulada.responder('GET', RUTA, json(200, conPlazo('A_TIEMPO', 3)));
+    montar();
+
+    const plazo = await screen.findByRole('group', { name: 'Plazo de la etapa' });
+    expect(plazo).toHaveTextContent(
+      'En «Consolidación» desde el 04/11/2026. Fecha límite: 09/11/2026. Faltan 3 días.',
+    );
+    expect(within(plazo).queryByText('Plazo vencido')).not.toBeInTheDocument();
+  });
+
+  it('con un día, lo dice en singular', async () => {
+    simulada.responder('GET', RUTA, json(200, conPlazo('A_TIEMPO', 1)));
+    montar();
+
+    expect(await screen.findByRole('group', { name: 'Plazo de la etapa' })).toHaveTextContent(
+      'Falta 1 día.',
+    );
+  });
+
+  it('el día de la fecha límite dice que vence hoy', async () => {
+    simulada.responder('GET', RUTA, json(200, conPlazo('VENCE_HOY', 0)));
+    montar();
+
+    expect(await screen.findByRole('group', { name: 'Plazo de la etapa' })).toHaveTextContent(
+      'Fecha límite: 09/11/2026. Vence hoy.',
+    );
+  });
+
+  it('vencido, lo dice con texto y cuántos días lleva', async () => {
+    simulada.responder('GET', RUTA, json(200, conPlazo('VENCIDO', -3)));
+    montar();
+
+    const plazo = await screen.findByRole('group', { name: 'Plazo de la etapa' });
+    expect(within(plazo).getByText('Plazo vencido')).toBeVisible();
+    expect(plazo).toHaveTextContent('Vencido hace 3 días.');
+  });
+
+  it('vencido hace un día, en singular', async () => {
+    simulada.responder('GET', RUTA, json(200, conPlazo('VENCIDO', -1)));
+    montar();
+
+    expect(await screen.findByRole('group', { name: 'Plazo de la etapa' })).toHaveTextContent(
+      'Vencido hace 1 día.',
+    );
+  });
+
+  it('lista las etapas activas con sus días y marca la actual', async () => {
+    simulada.responder('GET', RUTA, json(200, conPlazo('A_TIEMPO', 3)));
+    montar();
+
+    const lista = await screen.findByRole('list', { name: 'Etapas del flujo' });
+    const etapas = within(lista).getAllByRole('listitem');
+    expect(etapas.map((una) => una.textContent)).toEqual([
+      'Propuesta de carrera · 15 días',
+      'Consolidación · 5 días (actual)',
+      'Revisión del Vicerrectorado · 1 día',
+      'Publicado',
+    ]);
+    expect(etapas[1]).toHaveAttribute('aria-current', 'step');
+    expect(etapas[0]).not.toHaveAttribute('aria-current');
+  });
+
+  it('sin plazo, como en PUBLICADO, no muestra el bloque del plazo', async () => {
+    simulada.responder('GET', RUTA, json(200, flujo()));
+    montar();
+
+    await screen.findByRole('region', { name: 'Estado del distributivo' });
+    expect(screen.queryByRole('group', { name: 'Plazo de la etapa' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'Etapas del flujo' })).not.toBeInTheDocument();
+  });
+
   it('muestra la etapa, la versión y el envío de cada parcial', async () => {
     simulada.responder('GET', RUTA, json(200, flujo()));
     montar();
