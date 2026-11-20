@@ -81,4 +81,14 @@ En la bandeja del recorrido quedaron también notificaciones de corridas anterio
 
 ## Equipo de demostración (T020)
 
-Pendiente: después de fusionar.
+| Comprobación | Resultado |
+|---|---|
+| Antes de fusionar | «5 · imágenes» falló por vulnerabilidades nuevas, ajenas a esta rama: PostgreSQL 18.6 y, en el frontend, `openssl` y `nginx`. El PR #249 (`90d1476`) subió PostgreSQL a 18.7 y el frontend a nginx mainline (D-112); la demo lo tomó a las 00:22 del 2026-11-20, «Sano en 58 s». Al actualizar la rama con `main`, la CI encontró las esperas de la bitácora de los pasos 12 y 16 (arriba) |
+| Fusión | PR #248 (`9e05c83`), con las 12 comprobaciones en verde |
+| Despliegue | `cd` exitoso; `mdd-actualizar` tomó `9e05c83` y dice «Sano en 55 s», con las cinco comprobaciones del proxy en OK; los 8 contenedores sanos con las imágenes `*-9e05c8355ef5` |
+| Sin migraciones | Esta historia no cambia el esquema de ningún servicio. PostgreSQL responde 18.7, con los mismos datos |
+| Nada publicado todavía | 2026-I sigue en EN_CONSOLIDACION: ninguna transición a PUBLICADO, ninguna notificación de la publicación y ninguna publicación pendiente en `eventos_distributivo` |
+| El frontend | La imagen desplegada trae nginx 1.31.7 (D-112), comprobado en un contenedor aparte de la imagen, sin tocar el de la demo |
+| Memoria | Unos 45 s después del arranque, `identidad` usa 492 de sus 768 MiB (64 %) y `distributivo`, 235 de 512 (D-109) |
+
+En la demo no se llega a la publicación: 2026-I está en consolidación. La publicación, la notificación y la versión sin acciones las cubren el script en la CI y el recorrido del autor en el perfil local.
