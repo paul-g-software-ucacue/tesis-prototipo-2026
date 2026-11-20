@@ -111,6 +111,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-110 | 2026-11-18 | La notificación de firma pendiente: Firma la publica al aceptar una firma, con el firmante esperado como destino, y Notificaciones lo resuelve a su cuenta; la cadena con su estado va en la consulta del documento firmable | Aceptada | RF-41, D-17, MD-05, ADR-018, D-102, D-104, D-105, D-106, D-108 |
 | D-111 | 2026-11-18 | Publicar: Aprobación pasa de APROBADO a PUBLICADO con su operación propia; la versión publicada es la congelada; notifica a docentes, Talento Humano y coordinaciones por rol | Aceptada | RF-40, RF-41, MD-11, ADR-007, D-100, D-107, D-108 |
 | D-112 | 2026-11-19 | El frontend usa la rama mainline de nginx.org: la stable todavía no trae los arreglos de cinco vulnerabilidades críticas de nginx 1.30.6 | Aceptada | D-52, D-54, ADR-019 |
+| D-113 | 2026-11-20 | La reforma: el Vicerrector la inicia desde PUBLICADO con un motivo; Generación crea la versión nueva sin anular la publicada, que sigue vigente hasta que se publique la reforma; el distributivo vuelve a EN_CONSOLIDACION | Aceptada | RF-40, RF-41, MD-01, MD-04, D-100, D-101, D-106, D-107, D-108, D-111 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -2455,3 +2456,39 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 - Cambiar al paquete `nginx` de Alpine: otra configuración, otro usuario y sin los módulos de la imagen.
 
 **Consecuencias.** La mainline cambia de versión menor más seguido que stable; cada cambio llega al reconstruir la imagen y lo revisan Grype, `perfil-consolidado` y Playwright. Si stable vuelve a tener los arreglos a tiempo, se puede volver a ella con otra decisión.
+
+---
+
+## D-113. La reforma: el Vicerrector la inicia desde PUBLICADO con un motivo; Generación crea la versión nueva sin anular la publicada, que sigue vigente hasta que se publique la reforma; el distributivo vuelve a EN_CONSOLIDACION
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-20 · **Decidido por:** autor de la tesis
+- **Origen:** F18-H02 (#72); aclaraciones de `specs/056-reforma-version-publicada/spec.md` y su plan (`research.md` §1 a §10)
+- **Relacionadas:** RF-40, RF-41, MD-01, MD-04, D-63, D-100, D-101, D-106, D-107, D-108, D-111; diseño de firmas §2 y §7
+
+**Decisión.**
+- **Iniciar.** `POST /api/validacionocs/periodos/{periodo}/reforma`, con el motivo (de 10 a 500 caracteres), el permiso `DISTRIBUTIVO:APROBACION` y el rol de la etapa EN_REVISION_VRA de la copia de la configuración (por defecto, el Vicerrector). Solo desde PUBLICADO; si no, `VALIDACIONOCS_ETAPA_NO_ADMITE_REFORMA` (409). Un motivo inválido, `VALIDACIONOCS_MOTIVO_DE_REFORMA_INVALIDO` (400).
+- **El orden, como D-100 y D-106:** el caso de uso comprueba sin cambiar nada, ordena a Generación la versión nueva y, con el proceso bloqueado, registra una transición nueva, `REFORMA`, de PUBLICADO a EN_CONSOLIDACION (o la siguiente etapa activa), con la versión nueva, el motivo y la versión publicada (tabla `validacionocs.reforma`, V8). Notifica y anota `REFORMA_INICIADA` en la bitácora en la misma transacción.
+- **Generación** suma el motivo `REFORMA` (V9): la versión nueva copia todo, como en D-106, pero **la publicada sigue CONGELADA**; no se anula. Es idempotente: un reintento devuelve la versión ya creada.
+- **La versión publicada vigente** es la de la última transición a PUBLICADO: durante la reforma, la anterior; al publicarse la de la reforma, la nueva, y la anterior queda histórica, con sus firmas, su documento y su resolución.
+- **Desde EN_CONSOLIDACION, el ciclo de siempre:** devolver los parciales que cambian, consolidar, revisión, aprobación (la versión nueva se congela y tiene su documento con la cadena desde F1), la resolución (única por versión) y la publicación.
+- **Notifica** al rol de la etapa de llegada y a DOCENTE, OPERADOR_DATOS y COORDINADOR_CARRERA, con un enlace por rol, una vez por usuario y nunca a quien la inició.
+- **En PUBLICADO**, el Vicerrector tiene la acción `INICIAR_REFORMA`; nadie más tiene acciones.
+
+**Por qué.**
+- RF-40 y el diseño de firmas: cualquier cambio después de publicar es una reforma, una versión nueva con la cadena completa; la publicada queda histórica, no anulada, porque llegó a valer.
+- MD-04: Aprobación ordena a Generación, y cada uno guarda en su esquema y su transacción.
+- La publicada vigente se deduce de las transiciones, sin un estado nuevo en Generación, y el periodo nunca se queda sin un distributivo oficial (aclaración del autor).
+- El rol que aprueba el contenido es el de EN_REVISION_VRA en la configuración (principio VI), no un nombre de rol fijo.
+
+**Alternativas.**
+- Anular la publicada, como el rechazo en firma: el diseño la deja histórica.
+- Que el Vicerrector elija las carreras al iniciar, o volver a EN_REVISION_VRA: descartadas por el autor.
+- Notificar solo al rol de la etapa de llegada (D-108): los que recibieron la publicación tienen que saber que va a cambiar.
+- Un estado HISTORICA en Generación: un dato que ya dan las transiciones.
+
+**Consecuencias.**
+- F18-H01 decía «en PUBLICADO, ninguna acción para nadie»: ahora el Vicerrector puede iniciar la reforma. RF-40 habla de acciones de **edición**, y la reforma no edita la publicada.
+- La resolución del estado del flujo se muestra solo si es de la versión de trabajo, como la congelación.
+- `probar_documento_firmable.sh` suma la reforma con `identidad` detenido y el ciclo completo de la versión 2.
+
+**Documentos que hay que poner al día.** Ninguno: el glosario ya tiene «Reforma», `iniciarReforma()` y el motivo «reforma» de `VersionDistributivo`.
