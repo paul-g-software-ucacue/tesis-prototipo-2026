@@ -73,7 +73,7 @@ jobs:
             echo "::notice::Sin $script: k6 se omite en este cierre."
           fi
       - if: steps.k6.outputs.script != ''
-        uses: grafana/setup-k6-action@43b9fc21641a76002687994433dd586f56e791b1 # v1.2.2
+        uses: grafana/setup-k6-action@c47136d33d365efbeb9ae7266908b5dcf98cdece # v1.3.0
       - if: steps.k6.outputs.script != ''
         uses: grafana/run-k6-action@4082a08c7e40cf6d65863911077dfb60ae0a4f04 # v1.5.0
         env:
