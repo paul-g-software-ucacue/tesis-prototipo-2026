@@ -112,6 +112,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-111 | 2026-11-18 | Publicar: Aprobación pasa de APROBADO a PUBLICADO con su operación propia; la versión publicada es la congelada; notifica a docentes, Talento Humano y coordinaciones por rol | Aceptada | RF-40, RF-41, MD-11, ADR-007, D-100, D-107, D-108 |
 | D-112 | 2026-11-19 | El frontend usa la rama mainline de nginx.org: la stable todavía no trae los arreglos de cinco vulnerabilidades críticas de nginx 1.30.6 | Aceptada | D-52, D-54, ADR-019 |
 | D-113 | 2026-11-20 | La reforma: el Vicerrector la inicia desde PUBLICADO con un motivo; Generación crea la versión nueva sin anular la publicada, que sigue vigente hasta que se publique la reforma; el distributivo vuelve a EN_CONSOLIDACION | Aceptada | RF-40, RF-41, MD-01, MD-04, D-100, D-101, D-106, D-107, D-108, D-111 |
+| D-114 | 2026-11-20 | Los plazos de cada etapa: se reconstruyen de la configuración que regía al crear el distributivo; una revisión diaria y al arrancar avisa una vez por llegada al rol de la etapa y al de EN_REVISION_VRA, sin bloquear; RN-23 advierte al cargar la configuración, con la cifra de Normativa | Aceptada | RF-34, RN-23, RF-41, MD-03, ADR-007, ADR-023, D-86, D-89, D-108, D-113 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -2492,3 +2493,52 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 - `probar_documento_firmable.sh` suma la reforma con `identidad` detenido y el ciclo completo de la versión 2.
 
 **Documentos que hay que poner al día.** Ninguno: el glosario ya tiene «Reforma», `iniciarReforma()` y el motivo «reforma» de `VersionDistributivo`.
+
+---
+
+## D-114. Los plazos de cada etapa: se reconstruyen de la configuración que regía al crear el distributivo; una revisión diaria y al arrancar avisa una vez por llegada al rol de la etapa y al de EN_REVISION_VRA, sin bloquear; RN-23 advierte al cargar la configuración, con la cifra de Normativa
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-20 · **Decidido por:** autor de la tesis
+- **Origen:** F12-H03 (#58); aclaraciones de `specs/057-plazos-etapas/spec.md` y su plan (`research.md` §1 a §9)
+- **Cumple a:** la pregunta 5 del modelo de dominio (§9.2), «el plazo vencido solo genera una notificación; no bloquea la etapa», que queda confirmada
+- **Relacionadas:** RF-34, RN-23, RF-41, MD-03, ADR-007, ADR-023, D-86, D-89, D-108, D-113; principios VI, VII y X
+
+**Decisión.**
+- **El plazo se reconstruye.** La copia de la configuración del proceso (`EtapaDelProceso`) no guarda el plazo. `EtapasAlCrearse.plazos` lo saca de la carga que regía al crear el distributivo, o de la configuración por defecto, igual que la cadena de firmas (F13-H02). No hay migración que complete procesos anteriores.
+- **La llegada** a la etapa actual es la última transición que cambia de etapa (`desde ≠ hacia`); sin ninguna, la creación del distributivo. Una devolución, un rechazo en firma, una reforma o un paso de etapa reinician el plazo; el envío de un parcial que no es el último y la `VERSION_NUEVA` no.
+- **La fecha límite** es la fecha de la llegada en `America/Guayaquil` más los días corridos (D-89). La etapa vence al terminar ese día: `A_TIEMPO`, `VENCE_HOY` o `VENCIDO`.
+- **La revisión** corre cada día a las 07:00 de Ecuador (`mdd.validacionocs.plazos.revision`, un *cron* configurable) y al arrancar el proceso. Para cada proceso en curso con el plazo vencido y el periodo no cerrado (si Académico no responde, por ejemplo sin `identidad` para el token de proceso, se trata como abierto, para que el aviso no espere al día siguiente), con el proceso bloqueado, vuelve a calcular y registra el vencimiento en `validacionocs.plazo_vencido`, con una clave única por `(periodo, etapa, llegada)`. Solo si lo registró, notifica y anota `PLAZO_VENCIDO` en la bitácora, por `sistema`, en la misma transacción.
+- **A quién:** el rol de la etapa en la copia de la configuración (en BORRADOR_CARRERA, solo los coordinadores de las carreras sin enviar), y el rol de EN_REVISION_VRA, que por defecto es el Vicerrector, como en D-113. Usa el evento `validacionocs.NotificacionesSolicitadas` de D-108, sin cambiar su contrato.
+- **No bloquea nada:** ninguna transición consulta el plazo.
+- **A la vista:** el estado del flujo suma `plazo` y `etapas`, calculados en el servidor con el mismo reloj.
+- **RN-23:** al cargar la configuración, el último plazo es la fecha de la carga más la suma de los plazos de las etapas activas hasta APROBADO. Si queda después del inicio del periodo menos los días de RN-23, la carga responde 200 con la advertencia `RN23_MARGEN_INSUFICIENTE`; sin versión de normativa, `RN23_SIN_NORMATIVA`. La advertencia se guarda con la carga (`configuracion_flujo.advertencia`) y no rechaza nada.
+  - Los días son el parámetro `RN-23.dias_antes_del_inicio = 30` de cada versión de normativa (V7 de Normativa, como D-86), por la ruta interna nueva `/interno/normativa/periodos/{periodo}/remision`.
+  - El inicio del periodo lo suma la ruta interna de estado de Académico (`inicio`).
+  - Si Normativa no responde, la carga responde el 502 o el 504 común y no carga nada.
+- **Las advertencias no son errores del catálogo:** llevan un código estable del contrato, como las de las cargas y los cargos.
+- **Sin fecha simulada:** la prueba de punta a punta corre hacia atrás las transiciones de sus datos de prueba y reinicia `distributivo`; el sistema no tiene una opción para eso.
+
+**Por qué.**
+- Reconstruir es exacto: las cargas son solo de inserción. Completar la copia con una migración pondría los valores por defecto a un periodo cargado con otros.
+- Un aviso por llegada (aclaración del autor) evita llenar la campana durante un atraso largo; la tarjeta sigue diciendo cuánto lleva vencido.
+- La clave única y el bloqueo hacen idempotente la revisión, aunque corra al arrancar y por el *cron* el mismo día.
+- El principio VI: los días por etapa son de la configuración, los de RN-23 son de la normativa, y el Vicerrector es un rol de la configuración.
+- El principio X: sin colas ni un bloqueo distribuido; un solo proceso `distributivo` (ADR-006) programa la tarea.
+
+**Alternativas.**
+- Guardar el plazo en la copia del proceso, con una migración de valores por defecto.
+- Revisar al consultar el estado del flujo, o cada hora.
+- Repetir el aviso cada día mientras siga vencida: descartada por el autor.
+- Contar desde otra fecha para RN-23, o rechazar la carga: descartadas por el autor y por el issue.
+- Los 30 días en el YAML del flujo o fijos en el código.
+- Un endpoint de demostración o un desfase del reloj para simular la fecha.
+
+**Consecuencias.**
+- **Un caso conocido:** la bandeja deduplica por evento, destinatario y carrera (D-108). Una cuenta con COORDINADOR_CARRERA y con el rol de EN_REVISION_VRA recibiría dos mensajes del mismo vencimiento en BORRADOR_CARRERA, uno por su carrera y otro sin carrera. Ninguna cuenta de la demo tiene los dos roles; se acepta así.
+- En la demo, 2026-I lleva semanas en EN_CONSOLIDACION: el primer arranque después del despliegue registra su vencimiento real y avisa una vez.
+- `probar_avance.sh` suma el vencimiento con `identidad` detenido; `probar_flujo.sh`, la advertencia.
+
+**Documentos que hay que poner al día.**
+- El modelo de dominio: la pregunta 5 de §9.2 queda decidida por esta decisión.
+- La spec de F12-H03: FR-005 dice el rol de EN_REVISION_VRA, no `VICERRECTOR` fijo (se corrigió con esta decisión).
+
