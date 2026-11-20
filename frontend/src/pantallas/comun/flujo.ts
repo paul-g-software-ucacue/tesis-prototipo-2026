@@ -100,6 +100,21 @@ export function publicarDistributivo(periodo: string) {
 
 export type PublicacionDelDistributivo = components['schemas']['PublicacionDelDistributivo'];
 
+/**
+ * Inicia una reforma del distributivo publicado (F18-H02, D-113), con su motivo de 10 a 500
+ * caracteres. El servidor exige el permiso y el rol de la revisión del Vicerrectorado.
+ */
+export function iniciarReforma(periodo: string, motivo: string) {
+  return llamar(
+    apiValidacionocs.POST('/api/validacionocs/periodos/{periodo}/reforma', {
+      params: { path: { periodo } },
+      body: { motivo },
+    }),
+  );
+}
+
+export type ReformaDelDistributivo = components['schemas']['ReformaDelDistributivo'];
+
 export type ResolucionDelOcs = components['schemas']['ResolucionDelOcs'];
 
 /**

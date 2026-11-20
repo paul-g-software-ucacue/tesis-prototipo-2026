@@ -840,6 +840,119 @@ describe('EstadoDelFlujo', () => {
     });
   });
 
+  describe('reforma (F18-H02)', () => {
+    const REFORMA = '/api/validacionocs/periodos/2026-I/reforma';
+    const MOTIVO = 'Cambia el docente de Software por una licencia.';
+    const publicacion = {
+      version: 1,
+      publicadaPor: 'secretaria.demo',
+      publicadaEn: '2026-11-18T15:30:00Z',
+    };
+    const publicado = flujo({
+      etapa: 'PUBLICADO',
+      nombreDeEtapa: 'Publicado',
+      version: 1,
+      parciales: [{ carrera: 'DS', enviado: true, pendienteDeConfirmar: false }],
+      acciones: ['INICIAR_REFORMA'],
+      publicacion,
+    });
+    const enReforma = flujo({
+      etapa: 'EN_CONSOLIDACION',
+      nombreDeEtapa: 'Consolidación',
+      version: 2,
+      parciales: [{ carrera: 'DS', enviado: true, pendienteDeConfirmar: false }],
+      acciones: [],
+      publicacion,
+      reforma: {
+        versionPublicada: 1,
+        version: 2,
+        motivo: MOTIVO,
+        iniciadaPor: 'vicerrectorado.demo',
+        iniciadaEn: '2026-11-20T15:30:00Z',
+      },
+    });
+
+    it('sin la acción no hay botón de reforma', async () => {
+      simulada.responder('GET', RUTA, json(200, { ...publicado, acciones: [] }));
+      montar();
+
+      await screen.findByText('Publicado · versión 1');
+      expect(screen.queryByRole('button', { name: 'Iniciar una reforma' })).not.toBeInTheDocument();
+    });
+
+    it('el Vicerrector inicia la reforma con su motivo; uno corto no se envía', async () => {
+      simulada.responder('GET', RUTA, json(200, publicado));
+      simulada.responder('POST', REFORMA, json(200, enReforma));
+      const { alCambiar } = montar();
+      const usuario = userEvent.setup();
+
+      await usuario.click(await screen.findByRole('button', { name: 'Iniciar una reforma' }));
+      const dialogo = screen.getByRole('dialog', { name: 'Iniciar una reforma' });
+      expect(dialogo).toHaveTextContent(
+        'Se creará la versión 2, una reforma de la versión 1, y el distributivo volverá a consolidación con el ciclo completo de aprobación y firmas. La versión 1 sigue vigente hasta que se publique la reforma. Se notificará a quien consolida, a los docentes, a Talento Humano y a las coordinaciones.',
+      );
+      expect(within(dialogo).getByRole('button', { name: 'Cancelar' })).toHaveFocus();
+      const iniciar = within(dialogo).getByRole('button', { name: 'Iniciar la reforma' });
+      expect(iniciar).toBeDisabled();
+      const campo = within(dialogo).getByLabelText(/Motivo de la reforma/);
+      await usuario.type(campo, 'corta');
+      expect(iniciar).toBeDisabled();
+      expect(dialogo).toHaveTextContent('5 de 500 caracteres.');
+
+      await usuario.clear(campo);
+      await usuario.type(campo, MOTIVO);
+      await usuario.click(iniciar);
+
+      await waitFor(() => expect(alCambiar).toHaveBeenCalled());
+      const peticion = simulada.peticiones.find(
+        (una) => una.method === 'POST' && new URL(una.url).pathname === REFORMA,
+      );
+      expect(JSON.parse((await peticion?.text()) ?? '{}')).toEqual({ motivo: MOTIVO });
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('un 409 se muestra en el diálogo, que queda abierto', async () => {
+      simulada.responder('GET', RUTA, json(200, publicado));
+      simulada.responder(
+        'POST',
+        REFORMA,
+        json(409, {
+          titulo: 'Etapa sin reforma',
+          descripcion: 'Solo se reforma un distributivo publicado.',
+          codigo: 'VALIDACIONOCS_ETAPA_NO_ADMITE_REFORMA',
+        }),
+      );
+      montar();
+      const usuario = userEvent.setup();
+
+      await usuario.click(await screen.findByRole('button', { name: 'Iniciar una reforma' }));
+      const dialogo = screen.getByRole('dialog', { name: 'Iniciar una reforma' });
+      await usuario.type(within(dialogo).getByLabelText(/Motivo de la reforma/), MOTIVO);
+      await usuario.click(within(dialogo).getByRole('button', { name: 'Iniciar la reforma' }));
+
+      expect(
+        await within(dialogo).findByText('Solo se reforma un distributivo publicado.'),
+      ).toBeVisible();
+      expect(screen.getByRole('dialog', { name: 'Iniciar una reforma' })).toBeVisible();
+    });
+
+    it('en curso: la reforma con su motivo, y la publicada vigente hasta publicar la nueva', async () => {
+      simulada.responder('GET', RUTA, json(200, enReforma));
+      montar();
+
+      expect(
+        await screen.findByText(
+          'Reforma de la versión 1 en curso: versión 2, iniciada por vicerrectorado.demo el 20/11/26, 10:30',
+        ),
+      ).toBeVisible();
+      expect(screen.getByText(MOTIVO)).toBeVisible();
+      expect(
+        screen.getByText('Versión 1 publicada por secretaria.demo el 18/11/26, 10:30'),
+      ).toBeVisible();
+      expect(screen.getByText('Vigente hasta que se publique la reforma.')).toBeVisible();
+    });
+  });
+
   it('sin distributivo no muestra nada', async () => {
     simulada.responder(
       'GET',

@@ -448,6 +448,122 @@ test('el Vicerrector aprueba y congela, ve la constancia y es accesible', async 
   await sinFallas(page);
 });
 
+// F18-H02: con el distributivo publicado, el Vicerrector inicia una reforma con el teclado; la
+// publicada sigue vigente. axe-core con el diálogo abierto y después.
+test('el Vicerrector inicia una reforma con el teclado, ve la reforma en curso y es accesible', async ({
+  page,
+}) => {
+  const MOTIVO = 'Cambia el docente de Software por una licencia.';
+  let reformado = false;
+  let cuerpo = '';
+  const publicacion = {
+    version: 1,
+    publicadaPor: 'secretaria.demo',
+    publicadaEn: '2026-11-18T15:30:00Z',
+  };
+  const flujo = () => ({
+    periodo: '2026-2',
+    etapa: reformado ? 'EN_CONSOLIDACION' : 'PUBLICADO',
+    nombreDeEtapa: reformado ? 'Consolidación' : 'Publicado',
+    version: reformado ? 2 : 1,
+    parciales: [{ carrera: 'TDS', enviado: true, pendienteDeConfirmar: false }],
+    acciones: reformado ? [] : ['INICIAR_REFORMA'],
+    transiciones: [],
+    publicacion,
+    ...(reformado
+      ? {
+          reforma: {
+            versionPublicada: 1,
+            version: 2,
+            motivo: MOTIVO,
+            iniciadaPor: 'vicerrectorado.demo',
+            iniciadaEn: '2026-11-20T15:30:00Z',
+          },
+        }
+      : {}),
+  });
+  await page.route('**/api/validacionocs/periodos/*/flujo', (ruta) =>
+    ruta.fulfill({ json: flujo() }),
+  );
+  await page.route('**/api/validacionocs/periodos/*/reforma', async (ruta) => {
+    cuerpo = ruta.request().postData() ?? '';
+    reformado = true;
+    await ruta.fulfill({ json: flujo() });
+  });
+  await page.route('**/api/firma/periodos/*/documento', (ruta) =>
+    ruta.fulfill({
+      json: {
+        periodo: '2026-2',
+        version: 1,
+        estado: 'GENERADO',
+        documento: {
+          sha256: 'f'.repeat(64),
+          hashContenido: '0123456789abcdef'.repeat(4),
+          generadoPor: 'sistema',
+          generadoEn: '2026-11-10T15:30:20Z',
+        },
+        acciones: [],
+        cadena: [],
+      },
+    }),
+  );
+  await abrirConsolidado(
+    page,
+    () => ({
+      periodo: '2026-2',
+      creado: true,
+      modificable: true,
+      enRevision: !reformado,
+      versionCongelada: !reformado,
+      version: reformado ? 2 : 1,
+      desactualizado: false,
+      carreras: [
+        {
+          carrera: 'TDS',
+          estado: 'ENVIADO',
+          paralelos: 3,
+          propuestos: 3,
+          completo: true,
+          horas: HORAS,
+        },
+      ],
+      totales: HORAS,
+      abiertas: { duras: 0, blandas: 0 },
+      consolidacion: { por: 'consolidacion.demo', en: '2026-11-02T15:00:00Z' },
+    }),
+    VICERRECTORADO,
+  );
+  const estado = page.getByRole('region', { name: 'Estado del distributivo' });
+  await expect(estado).toContainText('Publicado · versión 1');
+
+  await page.getByRole('button', { name: 'Iniciar una reforma' }).focus();
+  await page.keyboard.press('Enter');
+  const dialogo = page.getByRole('dialog', { name: 'Iniciar una reforma' });
+  await expect(dialogo).toContainText('Se creará la versión 2, una reforma de la versión 1');
+  await expect(dialogo.getByRole('button', { name: 'Cancelar' })).toBeFocused();
+  // axe mide el contraste: primero, que termine la animación de apertura.
+  await expect(page.locator('.MuiDialog-container')).toHaveCSS('opacity', '1');
+  await sinFallas(page);
+  // Con el teclado: del botón «Cancelar» al motivo, y de ahí a «Iniciar la reforma».
+  await page.keyboard.press('Shift+Tab');
+  await expect(dialogo.getByLabel(/Motivo de la reforma/)).toBeFocused();
+  await page.keyboard.type(MOTIVO);
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Tab');
+  await expect(dialogo.getByRole('button', { name: 'Iniciar la reforma' })).toBeFocused();
+  await page.keyboard.press('Enter');
+
+  await expect(estado).toContainText('Consolidación · versión 2');
+  await expect(estado).toContainText(
+    'Reforma de la versión 1 en curso: versión 2, iniciada por vicerrectorado.demo el 20/11/26, 10:30',
+  );
+  await expect(estado).toContainText(MOTIVO);
+  await expect(estado).toContainText('Vigente hasta que se publique la reforma.');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(JSON.parse(cuerpo)).toEqual({ motivo: MOTIVO });
+  await sinFallas(page);
+});
+
 // F13-H02: el documento firmable no se pudo generar; el Responsable lo genera con «Generar el PDF».
 test('el Responsable genera el PDF que falló y la sección es accesible en cada estado', async ({
   page,

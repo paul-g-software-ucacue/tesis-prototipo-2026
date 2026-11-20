@@ -156,6 +156,25 @@ describe('Los enlaces de las notificaciones (F16-H01)', () => {
     },
   );
 
+  // F18-H02, D-113: la reforma va al rol de la etapa de llegada y a los tres de la publicación,
+  // cada uno con su enlace.
+  const ENLACE_DE_LA_REFORMA: Record<string, string> = {
+    RESPONSABLE_CONSOLIDACION: ENLACES.EN_CONSOLIDACION ?? '',
+    DOCENTE: '/',
+    OPERADOR_DATOS: '/',
+    COORDINADOR_CARRERA: '/oferta',
+  };
+
+  it.each(Object.entries(ENLACE_DE_LA_REFORMA))(
+    '%s, notificado de la reforma, puede abrir %s',
+    (rol, enlace) => {
+      const requeridos = requeridosDe(enlace);
+
+      expect(requeridos).not.toBeUndefined();
+      expect(requeridos === null || tieneAlguno(PERMISOS[rol], requeridos ?? [])).toBe(true);
+    },
+  );
+
   it('el coordinador de una carrera devuelta puede abrir /oferta, el enlace de la devolución', () => {
     expect(tieneAlguno(PERMISOS.COORDINADOR_CARRERA, requeridosDe('/oferta') ?? [])).toBe(true);
   });
