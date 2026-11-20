@@ -1426,7 +1426,8 @@ class ProcesoAprobacionTest {
                                 Optional.empty(),
                                 Optional.of(resolucion)));
         assertThat(proceso.resolucion()).contains(nuevas.get(0));
-        assertThat(proceso.acciones(SECRETARIA)).isEmpty();
+        // F18-H01: en APROBADO, la Secretaría ya puede publicar.
+        assertThat(proceso.acciones(SECRETARIA)).containsExactly(AccionDelProceso.PUBLICAR);
     }
 
     @Test
@@ -1528,5 +1529,140 @@ class ProcesoAprobacionTest {
         assertThat(proceso.acciones(VICERRECTOR)).isEmpty();
         assertThat(enFirma().acciones(SECRETARIA)).isEmpty();
         assertThat(proceso.resolucion()).isEmpty();
+    }
+
+    // Publicar (F18-H01, D-111): desde APROBADO, con el rol de esa etapa, con la versión congelada.
+
+    private static final Instant PUBLICADA = TRES_DIAS_DESPUES.plusSeconds(3600);
+
+    private static ProcesoAprobacion aprobado() {
+        ProcesoAprobacion proceso = enOcs();
+        proceso.registrarResolucion(
+                SECRETARIA, resolucionDel(DIA_EN_OCS.plusDays(2)), TRES_DIAS_DESPUES);
+        return proceso;
+    }
+
+    @Test
+    void dadoElDistributivoAprobado_cuandoLaSecretariaLoPublica_entoncesPasaAPublicado() {
+        ProcesoAprobacion proceso = aprobado();
+
+        List<Transicion> nuevas = proceso.publicar(SECRETARIA, PUBLICADA);
+
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.PUBLICADO);
+        assertThat(nuevas)
+                .containsExactly(
+                        new Transicion(
+                                TipoDeTransicion.PASO_DE_ETAPA,
+                                TipoDeEtapa.APROBADO,
+                                TipoDeEtapa.PUBLICADO,
+                                Optional.empty(),
+                                2,
+                                HASH_CONGELADO,
+                                "secretaria.demo",
+                                PUBLICADA));
+        assertThat(proceso.publicacion()).contains(nuevas.getFirst());
+        assertThat(proceso.acciones(SECRETARIA)).isEmpty();
+        assertThat(proceso.acciones(VICERRECTOR)).isEmpty();
+    }
+
+    @Test
+    void dadaLaPublicacion_cuandoSePideSuDestino_entoncesLosTresRolesSinCarreraNiSecretaria() {
+        ProcesoAprobacion proceso = aprobado();
+        Transicion publicacion = proceso.publicar(SECRETARIA, PUBLICADA).getFirst();
+
+        assertThat(proceso.destinoDe(publicacion))
+                .containsExactly(
+                        new DestinoDeNotificacion("DOCENTE", Optional.empty()),
+                        new DestinoDeNotificacion("OPERADOR_DATOS", Optional.empty()),
+                        new DestinoDeNotificacion("COORDINADOR_CARRERA", Optional.empty()));
+    }
+
+    @Test
+    void dadoElDistributivoAprobado_cuandoSeConsultanLasAcciones_entoncesSoloLaSecretariaPublica() {
+        ProcesoAprobacion proceso = aprobado();
+
+        assertThat(proceso.acciones(SECRETARIA)).containsExactly(AccionDelProceso.PUBLICAR);
+        assertThat(proceso.acciones(VICERRECTOR)).isEmpty();
+        assertThat(proceso.publicacion()).isEmpty();
+    }
+
+    // F18-H01, US3: publicado, la resolución ya no se registra, ni otra vez.
+    @Test
+    void
+            dadoElDistributivoPublicado_cuandoSeRegistraLaResolucion_entoncesEtapaNoAdmiteResolucion() {
+        ProcesoAprobacion proceso = aprobado();
+        proceso.publicar(SECRETARIA, PUBLICADA);
+        int antes = proceso.transiciones().size();
+
+        assertThatThrownBy(
+                        () ->
+                                proceso.registrarResolucion(
+                                        SECRETARIA,
+                                        resolucionDel(DIA_EN_OCS.plusDays(2)),
+                                        PUBLICADA.plusSeconds(60)))
+                .isInstanceOf(EtapaNoAdmiteResolucion.class);
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.PUBLICADO);
+        assertThat(proceso.transiciones()).hasSize(antes);
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = TipoDeEtapa.class,
+            names = {"APROBADO"},
+            mode = EnumSource.Mode.EXCLUDE)
+    void dadoElDistributivoEnOtraEtapa_cuandoSePublica_entoncesSeRechazaSinCambiar(
+            TipoDeEtapa etapa) {
+        ProcesoAprobacion proceso = en(etapa, etapasTodasActivas());
+
+        assertThatThrownBy(() -> proceso.publicar(SECRETARIA, PUBLICADA))
+                .isInstanceOf(EtapaNoAdmitePublicacion.class);
+        assertThat(proceso.estado()).isEqualTo(etapa);
+        assertThat(proceso.publicacion()).isEmpty();
+    }
+
+    @Test
+    void dadoElDistributivoPublicado_cuandoSePublicaOtraVez_entoncesSeRechaza() {
+        ProcesoAprobacion proceso = aprobado();
+        proceso.publicar(SECRETARIA, PUBLICADA);
+
+        assertThatThrownBy(() -> proceso.publicar(SECRETARIA, PUBLICADA.plusSeconds(1)))
+                .isInstanceOf(EtapaNoAdmitePublicacion.class);
+    }
+
+    @Test
+    void dadoOtroRol_cuandoPublica_entoncesRolDeOtraEtapaSinCambiar() {
+        ProcesoAprobacion proceso = aprobado();
+
+        assertThatThrownBy(() -> proceso.publicar(VICERRECTOR, PUBLICADA))
+                .isInstanceOf(RolDeOtraEtapa.class);
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.APROBADO);
+    }
+
+    @Test
+    void dadaOtraConfiguracionDeAprobado_cuandoSePublica_entoncesPublicaSuRol() {
+        List<EtapaDelProceso> etapas =
+                etapas(false).stream()
+                        .map(
+                                una ->
+                                        una.tipo() == TipoDeEtapa.APROBADO
+                                                ? new EtapaDelProceso(
+                                                        una.tipo(),
+                                                        una.activa(),
+                                                        una.nombre(),
+                                                        "MIEMBRO_OCS",
+                                                        una.admiteDevolucion())
+                                                : una)
+                        .toList();
+        ProcesoAprobacion proceso = enRevision(etapas);
+        proceso.aprobarContenido(VICERRECTOR, 2, HASH_CONGELADO, AHORA);
+        proceso.completarFirmas(2, FIRMADA);
+        proceso.registrarResolucion(
+                SECRETARIA, resolucionDel(DIA_EN_OCS.plusDays(2)), TRES_DIAS_DESPUES);
+        Solicitante ocs = new Solicitante("ocs.demo", Set.of("MIEMBRO_OCS"), Optional.empty());
+
+        assertThatThrownBy(() -> proceso.publicar(SECRETARIA, PUBLICADA))
+                .isInstanceOf(RolDeOtraEtapa.class);
+        assertThat(proceso.publicar(ocs, PUBLICADA)).hasSize(1);
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.PUBLICADO);
     }
 }

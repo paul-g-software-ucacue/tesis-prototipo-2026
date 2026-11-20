@@ -15,6 +15,7 @@ import ec.mdd.validacionocs.dominio.EtapaConOperacionPropia;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteAprobacion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteDevolucion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteEnvio;
+import ec.mdd.validacionocs.dominio.EtapaNoAdmitePublicacion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteResolucion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteRevision;
 import ec.mdd.validacionocs.dominio.InconsistenciasAbiertas;
@@ -99,6 +100,10 @@ class ErroresValidacionocsTest {
                                 "VALIDACIONOCS_RESOLUCION_NO_ENCONTRADA",
                                 404),
                         tuple(ResolucionIlegible.class, "VALIDACIONOCS_RESOLUCION_ILEGIBLE", 500),
+                        tuple(
+                                EtapaNoAdmitePublicacion.class,
+                                "VALIDACIONOCS_ETAPA_NO_ADMITE_PUBLICACION",
+                                409),
                         tuple(
                                 RequiereVersionNueva.class,
                                 "VALIDACIONOCS_REQUIERE_VERSION_NUEVA",

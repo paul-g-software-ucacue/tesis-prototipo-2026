@@ -8,6 +8,7 @@ import ec.mdd.validacionocs.adaptadores.entrada.api.CongelacionDeLaVersion;
 import ec.mdd.validacionocs.adaptadores.entrada.api.DevolucionDelParcial;
 import ec.mdd.validacionocs.adaptadores.entrada.api.EstadoDelFlujo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.ParcialDelFlujo;
+import ec.mdd.validacionocs.adaptadores.entrada.api.PublicacionDelDistributivo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.RechazoEnFirmaDelFlujo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.ResolucionDelOcs;
 import ec.mdd.validacionocs.adaptadores.entrada.api.SolicitudDeDevolucion;
@@ -26,6 +27,7 @@ import ec.mdd.validacionocs.puertos.entrada.DevolverParciales;
 import ec.mdd.validacionocs.puertos.entrada.EnviarARevision;
 import ec.mdd.validacionocs.puertos.entrada.EnviarParcial;
 import ec.mdd.validacionocs.puertos.entrada.FlujoDelDistributivo;
+import ec.mdd.validacionocs.puertos.entrada.PublicarDistributivo;
 import ec.mdd.validacionocs.puertos.entrada.RegistrarResolucion;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -62,6 +64,7 @@ class FlujoControlador implements AprobacionApi {
     private final AprobarContenido aprobar;
     private final RegistrarResolucion registrar;
     private final DescargarResolucion descargar;
+    private final PublicarDistributivo publicar;
 
     FlujoControlador(
             ConsultarFlujo consultar,
@@ -71,7 +74,8 @@ class FlujoControlador implements AprobacionApi {
             DevolverParciales devolver,
             AprobarContenido aprobar,
             RegistrarResolucion registrar,
-            DescargarResolucion descargar) {
+            DescargarResolucion descargar,
+            PublicarDistributivo publicar) {
         this.consultar = consultar;
         this.enviar = enviar;
         this.avanzar = avanzar;
@@ -80,6 +84,7 @@ class FlujoControlador implements AprobacionApi {
         this.aprobar = aprobar;
         this.registrar = registrar;
         this.descargar = descargar;
+        this.publicar = publicar;
     }
 
     @Override
@@ -167,6 +172,14 @@ class FlujoControlador implements AprobacionApi {
                                                 archivo.getOriginalFilename(),
                                                 bytes,
                                                 quien))));
+    }
+
+    // F18-H01, D-111: el permiso de la matriz D-16 y, en el dominio, el rol de APROBADO.
+    @Override
+    @PreAuthorize("hasAuthority('PERMISO_PUBLICACION:APROBACION')")
+    public ResponseEntity<EstadoDelFlujo> publicarDistributivo(String periodo) {
+        Solicitante quien = solicitante(true);
+        return ResponseEntity.ok(respuesta(sinPermiso(() -> publicar.publicar(periodo, quien))));
     }
 
     // F15-H01: con el permiso de leer la resolución (D-16, D-107), el PDF con su nombre.
@@ -269,6 +282,15 @@ class FlujoControlador implements AprobacionApi {
                                                     una.nombre(),
                                                     una.tamano())));
         }
+        // F18-H01: la publicación, para todo el que lee el flujo (D-111).
+        flujo.publicacion()
+                .ifPresent(
+                        una ->
+                                respuesta.publicacion(
+                                        new PublicacionDelDistributivo(
+                                                una.version(),
+                                                una.publicadaPor(),
+                                                una.publicadaEn().atOffset(ZoneOffset.UTC))));
         return respuesta;
     }
 

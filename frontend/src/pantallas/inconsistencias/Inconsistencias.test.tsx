@@ -290,6 +290,34 @@ describe('Panel de inconsistencias', () => {
     });
   });
 
+  it('con el distributivo publicado, el aviso dice «publicada» (F18-H01)', async () => {
+    simulada.responder('GET', RUTA, json(200, { ...PANEL, versionCongelada: true }));
+    simulada.responder(
+      'GET',
+      '/api/validacionocs/periodos/2026-2/flujo',
+      json(200, {
+        periodo: '2026-2',
+        etapa: 'PUBLICADO',
+        nombreDeEtapa: 'Publicado',
+        version: 1,
+        parciales: [],
+        acciones: [],
+        transiciones: [],
+        publicacion: {
+          version: 1,
+          publicadaPor: 'secretaria.demo',
+          publicadaEn: '2026-11-18T15:30:00Z',
+        },
+      }),
+    );
+    await abrir();
+
+    expect(await screen.findByText('La versión 1 está publicada: ya no cambia.')).toBeVisible();
+    expect(
+      screen.queryByText('La versión 1 está congelada: ya no cambia.'),
+    ).not.toBeInTheDocument();
+  });
+
   describe('con la versión congelada (F13-H01)', () => {
     it('no sale «Justificar» y el aviso es el de la versión congelada', async () => {
       simulada.responder(

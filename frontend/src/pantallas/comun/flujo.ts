@@ -86,6 +86,20 @@ export function aprobarContenido(periodo: string) {
   );
 }
 
+/**
+ * Publica el distributivo aprobado (F18-H01, D-111). Sin cuerpo. El servidor exige el permiso y el
+ * rol de la etapa APROBADO.
+ */
+export function publicarDistributivo(periodo: string) {
+  return llamar(
+    apiValidacionocs.POST('/api/validacionocs/periodos/{periodo}/publicacion', {
+      params: { path: { periodo } },
+    }),
+  );
+}
+
+export type PublicacionDelDistributivo = components['schemas']['PublicacionDelDistributivo'];
+
 export type ResolucionDelOcs = components['schemas']['ResolucionDelOcs'];
 
 /**

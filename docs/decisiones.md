@@ -109,6 +109,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-108 | 2026-11-15 | Las notificaciones de cada transición: Aprobación decide el rol y arma el mensaje, Notificaciones resuelve los usuarios con Roles en su proceso y la bandeja solo pide sesión | Aceptada | RF-41, V-09, MD-03, MD-09, ADR-018, ADR-024, D-97, D-98, D-100 |
 | D-109 | 2026-11-17 | identidad sube a 768 MiB, con el heap al 40 % y las arenas de malloc acotadas | Aceptada | R-19, ADR-008, D-34, D-36, issue #224 |
 | D-110 | 2026-11-18 | La notificación de firma pendiente: Firma la publica al aceptar una firma, con el firmante esperado como destino, y Notificaciones lo resuelve a su cuenta; la cadena con su estado va en la consulta del documento firmable | Aceptada | RF-41, D-17, MD-05, ADR-018, D-102, D-104, D-105, D-106, D-108 |
+| D-111 | 2026-11-18 | Publicar: Aprobación pasa de APROBADO a PUBLICADO con su operación propia; la versión publicada es la congelada; notifica a docentes, Talento Humano y coordinaciones por rol | Aceptada | RF-40, RF-41, MD-11, ADR-007, D-100, D-107, D-108 |
 | D-112 | 2026-11-19 | El frontend usa la rama mainline de nginx.org: la stable todavía no trae los arreglos de cinco vulnerabilidades críticas de nginx 1.30.6 | Aceptada | D-52, D-54, ADR-019 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
@@ -2394,6 +2395,46 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 - Con la versión nueva (D-106), la cadena de la versión anulada no se muestra, y la de la nueva empieza sin firmas.
 
 **Documentos que hay que poner al día.** Ninguno: el glosario ya tiene `Notificacion`, la cadena de firmas y el firmante.
+
+---
+
+## D-111. Publicar: Aprobación pasa de APROBADO a PUBLICADO con su operación propia; la versión publicada es la congelada; notifica a docentes, Talento Humano y coordinaciones por rol
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-18 · **Decidido por:** autor de la tesis
+- **Origen:** F18-H01 (#71), `specs/055-publicar-distributivo/research.md`
+- **Precisa a:** D-108, que dejaba provisorio el enlace de PUBLICADO
+
+**Decisión.**
+1. **Publicar es de Aprobación** (MD-11). Una operación propia, `POST /api/validacionocs/periodos/{periodo}/publicacion`, con `PUBLICACION:APROBACION` y el rol de la etapa APROBADO de la configuración (por defecto, la Secretaría general académica).
+   - El agregado exige APROBADO y registra un `PASO_DE_ETAPA` a PUBLICADO con la versión vigente.
+   - Fuera de APROBADO: `VALIDACIONOCS_ETAPA_NO_ADMITE_PUBLICACION` (409).
+   - Con el proceso bloqueado, dos publicaciones a la vez dejan una sola transición.
+   - Deja `DISTRIBUTIVO_PUBLICADO` en la bitácora.
+2. **La versión publicada es la congelada que llegó a APROBADO.** Generación no suma un estado: el contenido ya es inmutable (D-100). En PUBLICADO el flujo no ofrece acciones a nadie. La constancia (versión, quién y cuándo) va en el estado del flujo, para todo el que lo lee.
+3. **A quién se notifica.** El paso a PUBLICADO va por rol a DOCENTE, OPERADOR_DATOS (Talento Humano) y COORDINADOR_CARRERA, sin carrera: una notificación por usuario, nunca a quien publicó (aclaración del autor del 2026-11-18). Título «El distributivo de {periodo} fue publicado». El enlace, por rol: las coordinaciones, a «Oferta y propuesta de docentes» (`/oferta`), cuya tarjeta del flujo muestra la constancia; los docentes y Talento Humano, al inicio (`/`), porque no pueden abrir otra pantalla del distributivo hasta F19. En el recorrido del autor (2026-11-19), un enlace al inicio para todos no se entendía: el clic no lleva a ninguna parte.
+4. **La pantalla.** La Secretaría publica desde «Resolución del OCS», con una confirmación (aclaración del autor del 2026-11-18). «Consolidado del periodo» dice «publicada».
+5. **El script.** La caída de `identidad` de `probar_documento_firmable.sh` pasa del envío a revisión a la publicación: las dos son transiciones de Validación OCS por el mismo camino.
+
+**Por qué.**
+- MD-11 y el glosario hacen de publicar una transición de Aprobación; Publicación y consulta solo lee.
+- ADR-007 deja APROBADO y PUBLICADO en el esqueleto fijo, con su operación propia.
+- RF-40 se cumple con la versión congelada y el flujo sin acciones.
+- La regla de D-108 («el rol de la etapa de llegada») no sirve aquí: el rol de PUBLICADO es quien publica.
+
+**Alternativas.**
+- **El avance genérico desde APROBADO:** sin acción, error ni permiso propios.
+- **Un estado PUBLICADA en Generación:** un aviso más en la transacción para algo que la versión congelada ya cumple. Se reconsidera en F18-H02.
+- **Notificar por persona a los docentes del distributivo (D-110):** descartado por el autor.
+- **Una tercera caída de `identidad` en el script:** alarga la corrida sin probar un camino distinto.
+
+**Consecuencias.**
+- `contratos/validacionocs/openapi.yaml` suma la operación, la acción `PUBLICAR` y `publicacion`; el catálogo, un código.
+- El enlace de PUBLICADO pasa de `/resolucion-ocs` a `/`, y a `/oferta` para COORDINADOR_CARRERA.
+- F18-H02 parte de la versión publicada que dice esta transición; F19 la lee para la consulta y el CSV.
+
+**Documentos que hay que poner al día.** Ninguno: el glosario ya tiene «Publicar» y `DistributivoPublicado`.
+
+---
 
 ## D-112. El frontend usa la rama mainline de nginx.org: la stable todavía no trae los arreglos de cinco vulnerabilidades críticas de nginx 1.30.6
 

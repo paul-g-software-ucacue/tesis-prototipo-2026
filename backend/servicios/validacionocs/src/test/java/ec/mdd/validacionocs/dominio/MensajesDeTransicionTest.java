@@ -172,6 +172,42 @@ class MensajesDeTransicionTest {
         assertThat(mensaje.enlace()).isEqualTo("/consolidado");
     }
 
+    // F18-H01 (D-111, research §3 y §4): los docentes, Talento Humano y las coordinaciones, sin
+    // carrera; ni la Secretaría ni el rol de la etapa PUBLICADO. Las coordinaciones van a la
+    // oferta,
+    // que muestra la constancia; los demás, al inicio, hasta la pantalla del docente (F19).
+    @Test
+    void dadaLaPublicacion_cuandoSeNotifica_entoncesVaALosTresRolesConSuMensajeYElInicio() {
+        List<EtapaDelProceso> etapas =
+                etapas(false, tipo -> tipo == TipoDeEtapa.PUBLICADO ? "RECTOR" : rolDe(tipo));
+        Transicion publicacion =
+                transicion(
+                        TipoDeTransicion.PASO_DE_ETAPA, "APROBADO", "PUBLICADO", Optional.empty());
+
+        List<MensajeDeTransicion> mensajes =
+                MensajesDeTransicion.de(proceso(etapas), publicacion, Map.of());
+
+        assertThat(mensajes)
+                .extracting(MensajeDeTransicion::destino)
+                .containsExactlyInAnyOrder(
+                        new DestinoDeNotificacion("DOCENTE", Optional.empty()),
+                        new DestinoDeNotificacion("OPERADOR_DATOS", Optional.empty()),
+                        new DestinoDeNotificacion("COORDINADOR_CARRERA", Optional.empty()));
+        assertThat(mensajes)
+                .allSatisfy(
+                        mensaje -> {
+                            assertThat(mensaje.titulo())
+                                    .isEqualTo("El distributivo de 2026-I fue publicado");
+                            assertThat(mensaje.detalle())
+                                    .isEqualTo("Versión 2. Es la versión oficial del periodo.");
+                        });
+        assertThat(mensajes)
+                .extracting(mensaje -> mensaje.destino().rol() + " " + mensaje.enlace())
+                .containsExactlyInAnyOrder(
+                        "DOCENTE /", "OPERADOR_DATOS /", "COORDINADOR_CARRERA /oferta");
+        assertThat(MensajesDeTransicion.enlaceDe(TipoDeEtapa.PUBLICADO)).isEqualTo("/");
+    }
+
     @Test
     void dadaUnaVersionNueva_cuandoSeNotifica_entoncesDiceSuNumeroYLaAnulada() {
         Transicion nueva =

@@ -165,6 +165,12 @@ public final class ProcesoAprobacion {
                 .orElseThrow(() -> new IllegalStateException("PUBLICADO es la última etapa"));
     }
 
+    private static final List<DestinoDeNotificacion> DESTINOS_DE_LA_PUBLICACION =
+            List.of(
+                    new DestinoDeNotificacion("DOCENTE", Optional.empty()),
+                    new DestinoDeNotificacion("OPERADOR_DATOS", Optional.empty()),
+                    new DestinoDeNotificacion("COORDINADOR_CARRERA", Optional.empty()));
+
     /**
      * A quién toca una transición (F16-H01, D-108): el rol responsable de la etapa a la que llega
      * el distributivo, según la copia de la configuración (principio VI).
@@ -173,6 +179,9 @@ public final class ProcesoAprobacion {
      *   <li>en el envío de un parcial, que no cambia de etapa, el de la siguiente etapa activa, que
      *       es quien lo recibe;
      *   <li>en una devolución, los coordinadores de cada carrera devuelta, uno por carrera;
+     *   <li>en la publicación (F18-H01, D-111), los docentes, Talento Humano y las coordinaciones
+     *       (DOCENTE, OPERADOR_DATOS y COORDINADOR_CARRERA), sin carrera: el rol de la etapa
+     *       PUBLICADO es el de quien publica, así que con la regla general nadie se enteraría;
      *   <li>en los demás, el de la etapa {@code hacia}.
      * </ul>
      *
@@ -182,6 +191,12 @@ public final class ProcesoAprobacion {
      * @return un destino por mensaje
      */
     public List<DestinoDeNotificacion> destinoDe(Transicion transicion) {
+        // F18-H01 (D-111): la publicación va a los docentes, a Talento Humano y a las
+        // coordinaciones, sin carrera; no al rol de la etapa PUBLICADO, que es quien publica.
+        if (transicion.tipo() == TipoDeTransicion.PASO_DE_ETAPA
+                && transicion.hacia() == TipoDeEtapa.PUBLICADO) {
+            return DESTINOS_DE_LA_PUBLICACION;
+        }
         return switch (transicion.tipo()) {
             case ENVIO_PARCIAL ->
                     List.of(
@@ -378,6 +393,41 @@ public final class ProcesoAprobacion {
         if (resolucion.fecha().isBefore(llegada) || resolucion.fecha().isAfter(hoy)) {
             throw new ResolucionFueraDeRango();
         }
+    }
+
+    /**
+     * Publica el distributivo aprobado: pasa de APROBADO a PUBLICADO (F18-H01, RF-40, MD-11,
+     * D-111). Publicar es de Aprobación; Publicación y consulta solo lee la versión publicada.
+     *
+     * <p>La versión publicada es la congelada que llegó a APROBADO: su contenido ya no cambia
+     * (D-100), y desde aquí el flujo no ofrece acciones. Cambiarla es una reforma (F18-H02).
+     *
+     * @param quien quien publica: el rol de la etapa APROBADO en la copia de la configuración
+     * @param ahora cuándo
+     * @return la transición a PUBLICADO
+     * @throws EtapaNoAdmitePublicacion si el distributivo no está en APROBADO, también si ya está
+     *     publicado
+     * @throws RolDeOtraEtapa si no tiene el rol de APROBADO
+     */
+    public List<Transicion> publicar(Solicitante quien, Instant ahora) {
+        if (estado != TipoDeEtapa.APROBADO) {
+            throw new EtapaNoAdmitePublicacion();
+        }
+        exigirRol(quien, TipoDeEtapa.APROBADO);
+        Transicion congelada =
+                congelacion().orElseThrow(() -> new IllegalStateException("Aprobado sin firma"));
+        Transicion paso = paso(quien, congelada.version(), congelada.hash(), ahora);
+        transiciones.add(paso);
+        return List.of(paso);
+    }
+
+    /**
+     * @return la transición a PUBLICADO, si ya se publicó (F18-H01): la versión, quién y cuándo
+     */
+    public Optional<Transicion> publicacion() {
+        return transiciones.stream()
+                .filter(una -> una.hacia() == TipoDeEtapa.PUBLICADO)
+                .reduce((primera, ultima) -> ultima);
     }
 
     /** La transición que aprobó el distributivo con la resolución del OCS, si ya se registró. */
@@ -856,6 +906,10 @@ public final class ProcesoAprobacion {
         // F15-H01: la Secretaría registra la resolución del OCS.
         if (estado == TipoDeEtapa.EN_OCS && tieneRol(quien, TipoDeEtapa.EN_OCS)) {
             return List.of(AccionDelProceso.REGISTRAR_RESOLUCION);
+        }
+        // F18-H01: la Secretaría publica el distributivo aprobado; publicado, nadie hace nada.
+        if (estado == TipoDeEtapa.APROBADO && tieneRol(quien, TipoDeEtapa.APROBADO)) {
+            return List.of(AccionDelProceso.PUBLICAR);
         }
         // Con un rechazo en firma pendiente no se aprueba hasta la versión nueva (F14-H04).
         if (estado == TipoDeEtapa.EN_REVISION_VRA

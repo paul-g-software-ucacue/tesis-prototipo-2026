@@ -453,6 +453,8 @@ public final class FlujoDelDistributivoServicio
                     case EN_CONSOLIDACION -> CambioDeFlujo.Accion.CONSOLIDADO_ENVIADO_A_REVISION;
                     case EN_REVISION_VRA -> CambioDeFlujo.Accion.CONTENIDO_APROBADO;
                     case CONGELADO_EN_FIRMA -> CambioDeFlujo.Accion.CADENA_DE_FIRMAS_COMPLETA;
+                    // F18-H01, D-111: la publicación.
+                    case APROBADO -> CambioDeFlujo.Accion.DISTRIBUTIVO_PUBLICADO;
                     default -> CambioDeFlujo.Accion.ETAPA_AVANZADA;
                 },
                 detalle,
@@ -523,7 +525,13 @@ public final class FlujoDelDistributivoServicio
                                                                         transicion.momento(),
                                                                         una.sha256(),
                                                                         una.nombre(),
-                                                                        una.tamano()))));
+                                                                        una.tamano()))),
+                // F18-H01: la publicación, si ya se publicó (D-111).
+                proceso.publicacion()
+                        .map(
+                                una ->
+                                        new FlujoDelDistributivo.Publicacion(
+                                                una.version(), una.quien(), una.momento())));
     }
 
     // F12-H04: la versión nueva registrada justo después del rechazo, si ya llegó.

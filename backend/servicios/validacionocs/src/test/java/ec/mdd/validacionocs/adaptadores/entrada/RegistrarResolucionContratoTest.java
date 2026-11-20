@@ -227,6 +227,11 @@ class RegistrarResolucionContratoTest {
         }
 
         @Bean
+        ec.mdd.validacionocs.puertos.entrada.PublicarDistributivo publicarDistributivo() {
+            return mock(ec.mdd.validacionocs.puertos.entrada.PublicarDistributivo.class);
+        }
+
+        @Bean
         ec.mdd.validacionocs.puertos.entrada.DescargarResolucion descargarResolucion() {
             return org.mockito.Mockito.mock(
                     ec.mdd.validacionocs.puertos.entrada.DescargarResolucion.class);

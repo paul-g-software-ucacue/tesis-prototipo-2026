@@ -496,6 +496,63 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
         '504':
           $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/validacionocs/periodos/{periodo}/publicacion:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2026-I
+    post:
+      tags: [Aprobacion]
+      operationId: publicarDistributivo
+      summary: Publica el distributivo aprobado (F18-H01).
+      description: >-
+        Pasa el distributivo de APROBADO a PUBLICADO (RF-40, MD-11, D-111). Hacen falta el permiso
+        y el rol de la etapa APROBADO en la configuración del distributivo, por defecto la Secretaría
+        general académica. La versión publicada es la congelada que llegó a APROBADO; desde ahora el
+        flujo no ofrece acciones. Notifica a los docentes, a Talento Humano y a las coordinaciones.
+        Sin cuerpo.
+      x-mdd-permiso: PUBLICACION:APROBACION
+      responses:
+        '200':
+          description: Publicado; el distributivo ya está en PUBLICADO, con su constancia.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoDelFlujo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: >-
+            El periodo no existe (VALIDACIONOCS_PERIODO_NO_ENCONTRADO) o no tiene distributivo
+            (VALIDACIONOCS_SIN_DISTRIBUTIVO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '409':
+          description: >-
+            El distributivo no está en APROBADO, también si ya está publicado o en la segunda de dos
+            publicaciones simultáneas (VALIDACIONOCS_ETAPA_NO_ADMITE_PUBLICACION), o el periodo está
+            cerrado (VALIDACIONOCS_PERIODO_CERRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
   /api/validacionocs/periodos/{periodo}/resolucion:
     parameters:
       - name: periodo
@@ -707,6 +764,26 @@ components:
           $ref: '#/components/schemas/RechazoEnFirmaDelFlujo'
         resolucion:
           $ref: '#/components/schemas/ResolucionDelOcs'
+        publicacion:
+          $ref: '#/components/schemas/PublicacionDelDistributivo'
+    PublicacionDelDistributivo:
+      description: >-
+        La publicación del distributivo (F18-H01, D-111): el paso de APROBADO a PUBLICADO. Presente
+        desde que se publica, para todo el que lee el estado del flujo. La versión publicada es la
+        congelada que llegó a APROBADO.
+      type: object
+      additionalProperties: false
+      required: [version, publicadaPor, publicadaEn]
+      properties:
+        version:
+          type: integer
+          format: int32
+          minimum: 1
+        publicadaPor:
+          type: string
+        publicadaEn:
+          type: string
+          format: date-time
     CongelacionDeLaVersion:
       description: >-
         La congelación de la versión: el último paso hacia CONGELADO_EN_FIRMA. Presente desde que el
@@ -858,7 +935,7 @@ components:
       type: string
       enum:
         [ENVIAR_PARCIAL, AVANZAR, ENVIAR_A_REVISION, DEVOLVER_PARCIALES, APROBAR_CONTENIDO,
-         REGISTRAR_RESOLUCION]
+         REGISTRAR_RESOLUCION, PUBLICAR]
     TransicionDelFlujo:
       type: object
       additionalProperties: false

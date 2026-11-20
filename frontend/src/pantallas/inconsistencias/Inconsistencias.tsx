@@ -29,6 +29,7 @@ import { useSesionActual } from '../../sesion/useSesionActual';
 import { useCarreras } from '../carreras/consultas';
 import { ayuda, detalleDe, SELECCION } from '../comun/formulario';
 import { Avisos, Marco } from '../comun/Formulario';
+import { useFlujo } from '../comun/flujo';
 import { useEnvio } from '../comun/useEnvio';
 import { usePeriodos } from '../periodos/consultas';
 import { NOMBRE_DEL_ESTADO } from '../periodos/estados';
@@ -263,6 +264,9 @@ export function Inconsistencias() {
   };
 
   const datos = panel.data;
+  // F18-H01: la etapa, solo con la versión congelada; publicar exige haberla congelado.
+  const flujo = useFlujo(datos?.versionCongelada ? periodo : undefined);
+  const publicada = flujo.data?.etapa === 'PUBLICADO';
   // #215, D-99: desde la revisión del Vicerrectorado ya no se justifica; F13-H01, D-100: tampoco
   // con la versión congelada.
   const puedeJustificar =
@@ -314,10 +318,11 @@ export function Inconsistencias() {
       )}
       {datos?.creado && (
         <>
-          {/* F13-H01: el aviso de la versión congelada reemplaza al de la revisión (#215). */}
+          {/* F13-H01: el aviso de la versión congelada reemplaza al de la revisión (#215). F18-H01:
+              publicada, lo dice. */}
           {datos.versionCongelada ? (
             <Alert severity="info" role="status" sx={{ my: 2 }}>
-              {`La versión ${String(datos.version ?? '')} está congelada: ya no cambia.`}
+              {`La versión ${String(datos.version ?? '')} está ${publicada ? 'publicada' : 'congelada'}: ya no cambia.`}
             </Alert>
           ) : (
             datos.enRevision && (

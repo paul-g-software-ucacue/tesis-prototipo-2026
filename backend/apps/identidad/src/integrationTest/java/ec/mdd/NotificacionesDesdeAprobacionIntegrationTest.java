@@ -115,7 +115,30 @@ class NotificacionesDesdeAprobacionIntegrationTest {
         assertThat(bandeja(activo)).hasSize(1);
     }
 
-    private String usuario(String base, boolean activo, String rol) {
+    // F18-H01 (D-111): la publicación va a tres roles sin carrera; quien tiene dos recibe una.
+    @Test
+    void dadaLaPublicacion_cuandoLlega_entoncesUnaPorUsuarioAunqueTengaDosDeLosRoles() {
+        String doble = usuario("docente.coordinador", true, "DOCENTE", "COORDINADOR_CARRERA");
+        String talento = usuario("talento", true, "OPERADOR_DATOS");
+        String inactivo = usuario("docente.inactivo", false, "DOCENTE");
+        String autor = usuario("secretaria.autora", true, "SECRETARIA_GENERAL");
+        String otraSecretaria = usuario("secretaria.otra", true, "SECRETARIA_GENERAL");
+
+        recibir.recibir(
+                evento(
+                        autor,
+                        mensaje("DOCENTE", null),
+                        mensaje("OPERADOR_DATOS", null),
+                        mensaje("COORDINADOR_CARRERA", null)));
+
+        assertThat(bandeja(doble)).hasSize(1);
+        assertThat(bandeja(talento)).hasSize(1);
+        assertThat(bandeja(inactivo)).isEmpty();
+        assertThat(bandeja(autor)).isEmpty();
+        assertThat(bandeja(otraSecretaria)).isEmpty();
+    }
+
+    private String usuario(String base, boolean activo, String... roles) {
         String nombre = base + "." + sufijo;
         jdbc.update(
                 "INSERT INTO usuarios.usuario (id, nombre_usuario, clave_hash, activo,"
@@ -124,7 +147,7 @@ class NotificacionesDesdeAprobacionIntegrationTest {
                 nombre,
                 activo,
                 "Nombre de " + nombre);
-        rolesIniciales.asignar(nombre, List.of(rol));
+        rolesIniciales.asignar(nombre, List.of(roles));
         return nombre;
     }
 

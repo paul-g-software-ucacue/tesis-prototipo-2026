@@ -644,6 +644,58 @@ class FlujoContratoTest {
         assertCodigo(descarga, 403, "SEGURIDAD_ACCESO_NO_AUTORIZADO");
     }
 
+    // Publicar (F18-H01, D-111): desde APROBADO, la Secretaría; publicado, nadie hace nada.
+
+    private static final String PUBLICACION = "/api/validacionocs/periodos/%s/publicacion";
+
+    @Test
+    void dadoElDistributivoAprobado_cuandoLaSecretariaConsulta_entoncesPuedePublicar()
+            throws Exception {
+        enRevision(PERIODO);
+        aprobar(PERIODO, "VICERRECTOR");
+        MEMORIA.enOcs(PERIODO);
+        registrar(PERIODO);
+
+        JsonNode secretaria =
+                cuerpo(pedir(get(FLUJO.formatted(PERIODO)), "SECRETARIA_GENERAL", null));
+        JsonNode vicerrector = cuerpo(pedir(get(FLUJO.formatted(PERIODO)), "VICERRECTOR", null));
+
+        assertThat(secretaria.get("acciones").get(0).asString()).isEqualTo("PUBLICAR");
+        assertThat(secretaria.has("publicacion")).isFalse();
+        assertThat(vicerrector.get("acciones")).isEmpty();
+    }
+
+    @Test
+    void dadoElDistributivoPublicado_cuandoCualquieraConsulta_entoncesVeLaConstanciaSinAcciones()
+            throws Exception {
+        enRevision(PERIODO);
+        aprobar(PERIODO, "VICERRECTOR");
+        MEMORIA.enOcs(PERIODO);
+        registrar(PERIODO);
+
+        MvcResult publicado =
+                pedir(post(PUBLICACION.formatted(PERIODO)), "SECRETARIA_GENERAL", null);
+
+        assertThat(publicado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(cuerpo(publicado).get("etapa").asString()).isEqualTo("PUBLICADO");
+        contrato.validar(publicado);
+        for (String rol : List.of("SECRETARIA_GENERAL", "VICERRECTOR", RESPONSABLE)) {
+            MvcResult flujo = pedir(get(FLUJO.formatted(PERIODO)), rol, null);
+            JsonNode publicacion = cuerpo(flujo).get("publicacion");
+            assertThat(publicacion).as(rol).isNotNull();
+            assertThat(publicacion.get("version").asInt())
+                    .isEqualTo(cuerpo(flujo).get("version").asInt());
+            assertThat(publicacion.get("publicadaPor").asString())
+                    .isEqualTo("secretaria_general.demo");
+            assertThat(cuerpo(flujo).get("acciones")).as(rol).isEmpty();
+            contrato.validar(flujo);
+        }
+        assertCodigo(
+                pedir(post(PUBLICACION.formatted(PERIODO)), "SECRETARIA_GENERAL", null),
+                409,
+                "VALIDACIONOCS_ETAPA_NO_ADMITE_PUBLICACION");
+    }
+
     @Test
     void dadoUnPeriodoSinResolucionOConElArchivoPerdido_cuandoSeDescarga_entonces404O500()
             throws Exception {
@@ -1078,6 +1130,11 @@ class FlujoContratoTest {
         }
 
         /** F15-H01: la resolución, con su caso de uso real sobre la memoria. */
+        @Bean
+        ec.mdd.validacionocs.puertos.entrada.PublicarDistributivo publicarDistributivo() {
+            return MEMORIA.publicarDistributivo();
+        }
+
         @Bean
         ec.mdd.validacionocs.puertos.entrada.RegistrarResolucion registrarResolucion() {
             return MEMORIA.registrarResolucion();

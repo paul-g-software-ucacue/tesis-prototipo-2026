@@ -27,6 +27,7 @@ import ec.mdd.validacionocs.aplicacion.DescargarResolucionServicio;
 import ec.mdd.validacionocs.aplicacion.EtapaDelConsolidadoServicio;
 import ec.mdd.validacionocs.aplicacion.EtapasAlCrearse;
 import ec.mdd.validacionocs.aplicacion.FlujoDelDistributivoServicio;
+import ec.mdd.validacionocs.aplicacion.PublicarDistributivoServicio;
 import ec.mdd.validacionocs.aplicacion.RegistrarRechazoEnFirmaServicio;
 import ec.mdd.validacionocs.aplicacion.RegistrarResolucionServicio;
 import ec.mdd.validacionocs.puertos.entrada.CargarConfiguracion;
@@ -131,6 +132,27 @@ public class ConfiguracionValidacionocs {
                 distributivoDeGeneracion,
                 datos,
                 almacenDeResoluciones,
+                registroDeCambiosValidacionocs,
+                transaccionValidacionocs,
+                flujoDelDistributivo,
+                Clock.systemUTC(),
+                notificacionDeTransiciones);
+    }
+
+    /** Publicar el distributivo aprobado (F18-H01, D-111). */
+    @Bean
+    public PublicarDistributivoServicio publicarDistributivo(
+            RepositorioProceso repositorioProceso,
+            Distributivo distributivoDeGeneracion,
+            DatosDelPeriodo datos,
+            RegistroDeCambios registroDeCambiosValidacionocs,
+            Transaccion transaccionValidacionocs,
+            FlujoDelDistributivoServicio flujoDelDistributivo,
+            NotificacionDeTransiciones notificacionDeTransiciones) {
+        return new PublicarDistributivoServicio(
+                repositorioProceso,
+                distributivoDeGeneracion,
+                datos,
                 registroDeCambiosValidacionocs,
                 transaccionValidacionocs,
                 flujoDelDistributivo,
