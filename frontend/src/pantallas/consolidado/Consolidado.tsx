@@ -21,6 +21,7 @@ import { AvisoDeError } from '../../errores/AvisoDeError';
 import { traducirError, type MensajeDeError } from '../../errores/traducir';
 import { useTitulo } from '../../navegacion/useTitulo';
 import { EstadoDelFlujoDelPeriodo } from '../comun/EstadoDelFlujo';
+import { useFlujo } from '../comun/flujo';
 import { ESCRITURA_DEL_PANEL } from '../../sesion/funcionalidades';
 import { tieneAlguno } from '../../sesion/permisos';
 import { useSesionActual } from '../../sesion/useSesionActual';
@@ -248,6 +249,10 @@ export function Consolidado() {
   const { aviso, enviando, enviar } = useEnvio(recargar);
 
   const datos = consulta.data;
+  // F18-H01: la etapa, solo con la versión congelada; publicar exige haberla congelado. Comparte la
+  // consulta con la tarjeta del estado del flujo.
+  const flujo = useFlujo(datos?.versionCongelada ? periodo : undefined);
+  const publicada = flujo.data?.etapa === 'PUBLICADO';
   const escribe = tieneAlguno(sesion.data?.permisos, ESCRITURA_DEL_PANEL);
   // #215, D-99: desde la revisión del Vicerrectorado, el consolidado ya no cambia; F13-H01, D-100:
   // tampoco con la versión congelada.
@@ -296,10 +301,11 @@ export function Consolidado() {
       )}
       {datos?.creado && periodo && (
         <>
-          {/* F13-H01: el aviso de la versión congelada reemplaza al de la revisión (#215). */}
+          {/* F13-H01: el aviso de la versión congelada reemplaza al de la revisión (#215). F18-H01:
+              publicada, lo dice. */}
           {datos.versionCongelada ? (
             <Alert severity="info" role="status" sx={{ my: 2 }}>
-              {`La versión ${String(datos.version ?? '')} está congelada: ya no cambia.`}
+              {`La versión ${String(datos.version ?? '')} está ${publicada ? 'publicada' : 'congelada'}: ya no cambia.`}
             </Alert>
           ) : (
             datos.enRevision && (

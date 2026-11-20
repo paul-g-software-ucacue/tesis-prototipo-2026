@@ -21,6 +21,7 @@ import { FalloDeApi, traducirError, type MensajeDeError } from '../../errores/tr
 import { useCarreras } from '../carreras/consultas';
 import { DialogoConfirmar } from '../carreras/DialogosDeCarrera';
 import { DialogoDeAprobacion } from './DialogoDeAprobacion';
+import { DialogoDePublicacion } from './DialogoDePublicacion';
 import { DocumentoFirmable } from './DocumentoFirmable';
 import { DialogoDeDevolucion } from './DialogoDeDevolucion';
 import { HuellaCopiable } from './HuellaCopiable';
@@ -34,6 +35,7 @@ import {
   type CongelacionDeLaVersion,
   type EstadoDelFlujo,
   type ParcialDelFlujo,
+  type PublicacionDelDistributivo,
   type RechazoEnFirmaDelFlujo,
 } from './flujo';
 
@@ -59,7 +61,7 @@ function estadoDe(parcial: ParcialDelFlujo, nombre: string) {
     : `${nombre}: pendiente`;
 }
 
-type Confirmar = 'enviar' | 'avanzar' | 'revisar' | 'devolver' | 'aprobar' | null;
+type Confirmar = 'enviar' | 'avanzar' | 'revisar' | 'devolver' | 'aprobar' | 'publicar' | null;
 
 // La constancia de la versión congelada (F13-H01, FR-013): quién, cuándo y la huella, con un botón
 // para copiarla entera. «Huella copiada» se anuncia en una región viva.
@@ -71,6 +73,18 @@ function Constancia({ congelacion }: { congelacion: CongelacionDeLaVersion }) {
         {`Versión ${String(version)} congelada por ${quien} el ${MOMENTO.format(new Date(momento))}`}
       </Typography>
       <HuellaCopiable etiqueta="Huella" hash={hash} />
+    </Box>
+  );
+}
+
+// La constancia de la publicación (F18-H01, D-111): la versión publicada, quién y cuándo. La ve
+// todo el que lee el estado del flujo.
+function ConstanciaDeLaPublicacion({ publicacion }: { publicacion: PublicacionDelDistributivo }) {
+  return (
+    <Box sx={{ mt: 1, mb: 1, pl: 1, borderLeft: 3, borderColor: 'success.main' }}>
+      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+        {`Versión ${String(publicacion.version)} publicada por ${publicacion.publicadaPor} el ${MOMENTO.format(new Date(publicacion.publicadaEn))}`}
+      </Typography>
     </Box>
   );
 }
@@ -147,6 +161,7 @@ export function EstadoDelFlujoDelPeriodo({
     congelacion,
     rechazoEnFirma,
     resolucion,
+    publicacion,
   } = flujo.data;
   if (soloEn && !soloEn.includes(etapa)) {
     return null;
@@ -159,6 +174,7 @@ export function EstadoDelFlujoDelPeriodo({
   const puedeRevisar = acciones.includes('ENVIAR_A_REVISION');
   const puedeDevolver = acciones.includes('DEVOLVER_PARCIALES');
   const puedeAprobar = acciones.includes('APROBAR_CONTENIDO');
+  const puedePublicar = acciones.includes('PUBLICAR');
 
   const ejecutar = async (accion: () => Promise<unknown>) => {
     setConfirmar(null);
@@ -196,6 +212,8 @@ export function EstadoDelFlujoDelPeriodo({
       )}
       {/* F15-H01: la resolución del OCS; el formulario, solo con la acción. */}
       {resolucion && <ConstanciaDeLaResolucion periodo={periodo} resolucion={resolucion} />}
+      {/* F18-H01: la publicación, para todo el que lee el flujo. */}
+      {publicacion && <ConstanciaDeLaPublicacion publicacion={publicacion} />}
       {acciones.includes('REGISTRAR_RESOLUCION') && (
         <RegistroDeLaResolucion
           periodo={periodo}
@@ -273,6 +291,11 @@ export function EstadoDelFlujoDelPeriodo({
             Aprobar el contenido
           </Button>
         )}
+        {puedePublicar && (
+          <Button variant="contained" disabled={enviando} onClick={() => setConfirmar('publicar')}>
+            Publicar el distributivo
+          </Button>
+        )}
       </Stack>
       {puedeRevisar && faltan.length > 0 && (
         <Box
@@ -327,6 +350,18 @@ export function EstadoDelFlujoDelPeriodo({
           version={version}
           alCerrar={() => setConfirmar(null)}
           alAprobar={async () => {
+            setConfirmar(null);
+            await consultas.invalidateQueries({ queryKey: CLAVE_FLUJO });
+            alCambiar?.();
+          }}
+        />
+      )}
+      {confirmar === 'publicar' && (
+        <DialogoDePublicacion
+          periodo={periodo}
+          version={version}
+          alCerrar={() => setConfirmar(null)}
+          alPublicar={async () => {
             setConfirmar(null);
             await consultas.invalidateQueries({ queryKey: CLAVE_FLUJO });
             alCambiar?.();

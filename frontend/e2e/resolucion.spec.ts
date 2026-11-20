@@ -1,6 +1,7 @@
 // F15-H01 en un navegador, con la API simulada: la Secretaría general abre «Resolución del OCS»,
 // registra la resolución con el teclado, confirma, ve la constancia y la descarga. axe-core (WCAG
-// 2.1 AA) sin fallas en EN_OCS, con la confirmación abierta y en APROBADO.
+// 2.1 AA) sin fallas en EN_OCS, con la confirmación abierta y en APROBADO. F18-H01: publica con el
+// teclado, confirma y ve la constancia; axe-core con el diálogo abierto y en PUBLICADO.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { ingresar, simularApi } from './simulacion';
@@ -11,7 +12,12 @@ const SECRETARIA = {
     usuario: 'secretaria.demo',
     nombre: 'Secretaría general académica (demo)',
     roles: ['SECRETARIA_GENERAL'],
-    permisos: ['DISTRIBUTIVO:LECTURA', 'RESOLUCION_OCS:LECTURA', 'RESOLUCION_OCS:ESCRITURA'],
+    permisos: [
+      'DISTRIBUTIVO:LECTURA',
+      'RESOLUCION_OCS:LECTURA',
+      'RESOLUCION_OCS:ESCRITURA',
+      'PUBLICACION:APROBACION',
+    ],
   },
 };
 
@@ -133,4 +139,91 @@ test('la Secretaría registra la resolución con el teclado, la ve y la descarga
   const descarga = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Descargar la resolución' }).click();
   expect((await descarga).suggestedFilename()).toBe('resolucion.pdf');
+});
+
+test('la Secretaría publica el distributivo aprobado con el teclado y ve la constancia', async ({
+  page,
+}) => {
+  let publicado = false;
+  let publicaciones = 0;
+  let cuerpo: string | null = 'sin pedir';
+  const flujo = () => ({
+    periodo: '2026-2',
+    etapa: publicado ? 'PUBLICADO' : 'APROBADO',
+    nombreDeEtapa: publicado ? 'Publicado' : 'Aprobado',
+    version: 2,
+    parciales: [{ carrera: 'TDS', enviado: true, pendienteDeConfirmar: false }],
+    acciones: publicado ? [] : ['PUBLICAR'],
+    transiciones: [],
+    resolucion: {
+      numero: 'RPC-SO-12-No.123-2026',
+      fecha: '2026-11-14',
+      registradaPor: 'secretaria.demo',
+      registradaEn: '2026-11-15T15:30:00Z',
+      sha256: 'b'.repeat(64),
+      nombre: 'resolucion.pdf',
+      tamano: 2048,
+    },
+    ...(publicado
+      ? {
+          publicacion: {
+            version: 2,
+            publicadaPor: 'secretaria.demo',
+            publicadaEn: '2026-11-18T15:30:00Z',
+          },
+        }
+      : {}),
+  });
+  await simularApi(page, { sesion: SECRETARIA });
+  await page.route('**/api/academico/periodos', (ruta) =>
+    ruta.fulfill({
+      json: [
+        {
+          codigo: '2026-2',
+          nombre: 'Periodo 2026-2',
+          inicio: '2026-09-01',
+          fin: '2027-02-28',
+          estado: 'PLANIFICACION',
+        },
+      ],
+    }),
+  );
+  await page.route('**/api/academico/carreras', (ruta) => ruta.fulfill({ json: [] }));
+  await page.route('**/api/validacionocs/periodos/*/flujo', (ruta) =>
+    ruta.fulfill({ json: flujo() }),
+  );
+  await page.route('**/api/validacionocs/periodos/*/publicacion', async (ruta) => {
+    publicaciones++;
+    cuerpo = ruta.request().postData();
+    publicado = true;
+    await ruta.fulfill({ json: flujo() });
+  });
+
+  await page.goto('/iniciar-sesion');
+  await ingresar(page, 'secretaria.demo');
+  await page.getByRole('link', { name: 'Resolución del OCS' }).click();
+  const estado = page.getByRole('region', { name: 'Estado del distributivo' });
+  await expect(estado).toContainText('Aprobado · versión 2');
+
+  await page.getByRole('button', { name: 'Publicar el distributivo' }).focus();
+  await page.keyboard.press('Enter');
+  const dialogo = page.getByRole('dialog', { name: 'Publicar el distributivo' });
+  await expect(dialogo).toContainText(
+    'La versión 2 de 2026-2 quedará publicada y bloqueada: no se podrá cambiar sin una reforma. Se notificará a los docentes, a Talento Humano y a las coordinaciones.',
+  );
+  await expect(dialogo.getByRole('button', { name: 'Cancelar' })).toBeFocused();
+  // axe mide el contraste: primero, que termine la animación de apertura.
+  await expect(page.locator('.MuiDialog-container')).toHaveCSS('opacity', '1');
+  await sinFallas(page);
+  await page.keyboard.press('Tab');
+  await expect(dialogo.getByRole('button', { name: 'Publicar' })).toBeFocused();
+  await page.keyboard.press('Enter');
+
+  await expect(estado).toContainText('Publicado · versión 2');
+  await expect(estado).toContainText('Versión 2 publicada por secretaria.demo el 18/11/26, 10:30');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Publicar el distributivo' })).toHaveCount(0);
+  expect(publicaciones).toBe(1);
+  expect(cuerpo ?? '').toBe('');
+  await sinFallas(page);
 });

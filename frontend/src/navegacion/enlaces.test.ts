@@ -18,7 +18,7 @@ const ENLACES: Record<string, string> = {
   EN_OCS: '/resolucion-ocs',
   REMITIDO_ZONAL: '/consolidado',
   APROBADO: '/resolucion-ocs',
-  PUBLICADO: '/resolucion-ocs',
+  PUBLICADO: '/',
 };
 
 // El rol de cada etapa en flujo-por-defecto.yaml.
@@ -35,7 +35,7 @@ const ROL_DE_LA_ETAPA: Record<string, string> = {
 };
 
 // Los permisos de esos roles en la matriz D-16 (roles V2, V4, V5, V7 y V9), sin el alcance. El
-// Rector firma F3 (F16-H02).
+// Rector firma F3 (F16-H02). DOCENTE y OPERADOR_DATOS reciben la publicación (F18-H01).
 const PERMISOS: Record<string, readonly string[]> = {
   COORDINADOR_CARRERA: [
     'OFERTA:LECTURA',
@@ -44,6 +44,8 @@ const PERMISOS: Record<string, readonly string[]> = {
     'OFERTA:ESCRITURA',
     'OFERTA:APROBACION',
   ],
+  DOCENTE: ['MI_DISTRIBUTIVO:LECTURA', 'MI_DISTRIBUTIVO:ESCRITURA'],
+  OPERADOR_DATOS: ['CARGAS:LECTURA', 'DOCENTES:LECTURA', 'CARGAS:ESCRITURA', 'DOCENTES:ESCRITURA'],
   GESTOR_UNIDAD: ['PROYECTOS:LECTURA', 'PROYECTOS:ESCRITURA', 'PROYECTOS:APROBACION'],
   RESPONSABLE_CONSOLIDACION: [
     'DISTRIBUTIVO:LECTURA',
@@ -133,6 +135,24 @@ describe('Los enlaces de las notificaciones (F16-H01)', () => {
     '%s, firmante de F2 o F3, puede abrir /firmas-pendientes, el enlace de su firma pendiente',
     (rol) => {
       expect(tieneAlguno(PERMISOS[rol], requeridosDe('/firmas-pendientes') ?? [])).toBe(true);
+    },
+  );
+
+  // F18-H01, D-111: la publicación va a tres roles, no al de la etapa PUBLICADO. Las
+  // coordinaciones, a la oferta, que muestra la constancia; los demás, al inicio, hasta F19.
+  const ENLACE_DE_LA_PUBLICACION: Record<string, string> = {
+    DOCENTE: ENLACES.PUBLICADO ?? '',
+    OPERADOR_DATOS: ENLACES.PUBLICADO ?? '',
+    COORDINADOR_CARRERA: '/oferta',
+  };
+
+  it.each(Object.entries(ENLACE_DE_LA_PUBLICACION))(
+    '%s, notificado de la publicación, puede abrir %s',
+    (rol, enlace) => {
+      const requeridos = requeridosDe(enlace);
+
+      expect(requeridos).not.toBeUndefined();
+      expect(requeridos === null || tieneAlguno(PERMISOS[rol], requeridos ?? [])).toBe(true);
     },
   );
 

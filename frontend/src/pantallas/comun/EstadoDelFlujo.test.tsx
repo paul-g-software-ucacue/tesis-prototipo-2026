@@ -748,6 +748,98 @@ describe('EstadoDelFlujo', () => {
     });
   });
 
+  describe('publicar (F18-H01)', () => {
+    const PUBLICACION = '/api/validacionocs/periodos/2026-I/publicacion';
+    const aprobado = flujo({
+      etapa: 'APROBADO',
+      nombreDeEtapa: 'Aprobado',
+      version: 2,
+      parciales: [{ carrera: 'DS', enviado: true, pendienteDeConfirmar: false }],
+      acciones: ['PUBLICAR'],
+    });
+    const publicado = flujo({
+      etapa: 'PUBLICADO',
+      nombreDeEtapa: 'Publicado',
+      version: 2,
+      parciales: [{ carrera: 'DS', enviado: true, pendienteDeConfirmar: false }],
+      acciones: [],
+      publicacion: {
+        version: 2,
+        publicadaPor: 'secretaria.demo',
+        publicadaEn: '2026-11-18T15:30:00Z',
+      },
+    });
+
+    it('sin la acción no hay botón de publicar', async () => {
+      simulada.responder('GET', RUTA, json(200, { ...aprobado, acciones: [] }));
+      montar();
+
+      await screen.findByText('Aprobado · versión 2');
+      expect(
+        screen.queryByRole('button', { name: 'Publicar el distributivo' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('la Secretaría publica con la confirmación, sin cuerpo, y la pantalla se recarga', async () => {
+      simulada.responder('GET', RUTA, json(200, aprobado));
+      simulada.responder('POST', PUBLICACION, json(200, publicado));
+      const { alCambiar } = montar();
+      const usuario = userEvent.setup();
+
+      await usuario.click(await screen.findByRole('button', { name: 'Publicar el distributivo' }));
+      const dialogo = screen.getByRole('dialog', { name: 'Publicar el distributivo' });
+      expect(dialogo).toHaveTextContent(
+        'La versión 2 de 2026-I quedará publicada y bloqueada: no se podrá cambiar sin una reforma. Se notificará a los docentes, a Talento Humano y a las coordinaciones.',
+      );
+      expect(within(dialogo).getByRole('button', { name: 'Cancelar' })).toHaveFocus();
+      await usuario.click(within(dialogo).getByRole('button', { name: 'Publicar' }));
+
+      await waitFor(() => expect(alCambiar).toHaveBeenCalled());
+      const peticion = simulada.peticiones.find(
+        (una) => una.method === 'POST' && new URL(una.url).pathname === PUBLICACION,
+      );
+      expect(peticion).toBeDefined();
+      expect(await peticion?.text()).toBe('');
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('un 409 se muestra en el diálogo, que queda abierto', async () => {
+      simulada.responder('GET', RUTA, json(200, aprobado));
+      simulada.responder(
+        'POST',
+        PUBLICACION,
+        json(409, {
+          titulo: 'Etapa sin publicación',
+          descripcion: 'El distributivo solo se publica cuando está aprobado.',
+          codigo: 'VALIDACIONOCS_ETAPA_NO_ADMITE_PUBLICACION',
+        }),
+      );
+      montar();
+      const usuario = userEvent.setup();
+
+      await usuario.click(await screen.findByRole('button', { name: 'Publicar el distributivo' }));
+      const dialogo = screen.getByRole('dialog', { name: 'Publicar el distributivo' });
+      await usuario.click(within(dialogo).getByRole('button', { name: 'Publicar' }));
+
+      expect(
+        await within(dialogo).findByText('El distributivo solo se publica cuando está aprobado.'),
+      ).toBeVisible();
+      expect(screen.getByRole('dialog', { name: 'Publicar el distributivo' })).toBeVisible();
+    });
+
+    it('publicado: la constancia dice la versión, quién y cuándo, sin acciones', async () => {
+      simulada.responder('GET', RUTA, json(200, publicado));
+      montar();
+
+      expect(
+        await screen.findByText('Versión 2 publicada por secretaria.demo el 18/11/26, 10:30'),
+      ).toBeVisible();
+      expect(
+        screen.queryByRole('button', { name: 'Publicar el distributivo' }),
+      ).not.toBeInTheDocument();
+    });
+  });
+
   it('sin distributivo no muestra nada', async () => {
     simulada.responder(
       'GET',
