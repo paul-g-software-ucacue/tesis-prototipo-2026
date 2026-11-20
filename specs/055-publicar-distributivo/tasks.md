@@ -180,10 +180,12 @@ description: "Tareas de F18-H01: publicar el distributivo aprobado"
 - [X] T019 Crear `specs/055-publicar-distributivo/evidencia.md`, como la de 054.
 
   **Resultado (2026-11-19):** `evidencia.md`, con las pruebas, el script, el recorrido del autor y su hallazgo, las desviaciones y los criterios de terminado; la sección del equipo de demostración queda para después de fusionar.
-- [ ] T020 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde.
+- [X] T020 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde.
   - Verificar la demo en solo lectura (`quickstart.md` §4): «Sano» y la memoria de `identidad`.
   - Abrir el PR de evidencia con `Closes #71`.
   - La épica F18 (#17) sigue abierta por F18-H02.
+
+  **Resultado (2026-11-20):** PR #248 fusionado (`9e05c83`) con las 12 comprobaciones en verde, después del PR #249 (PostgreSQL 18.7 y nginx mainline, D-112). La demo tomó `9e05c83`, «Sano en 55 s», con `identidad` en 492 de 768 MiB; 2026-I sigue en EN_CONSOLIDACION. PR de evidencia con `Closes #71`.
 
 ---
 
