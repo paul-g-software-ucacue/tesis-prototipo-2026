@@ -131,6 +131,110 @@ class VersionNuevaIntegrationTest {
         assertThat(servicio.hashDelDistributivo(periodo)).isNotEqualTo(hashAnulada);
     }
 
+    // F18-H02, D-113: la versión de una reforma copia todo y deja la publicada CONGELADA.
+    @Test
+    void dadaLaPublicadaCongelada_cuandoSeCreaLaDeUnaReforma_entoncesLaCopiaYNoLaAnula() {
+        String periodo = congeladaConDeTodo();
+        VersionDistributivo publicada = repositorio.vigenteDe(periodo).orElseThrow();
+        Map<String, List<Map<String, Object>>> antes = contenido(publicada.id());
+
+        var creada =
+                servicio.crearVersionNueva(
+                        periodo, 1, MotivoDeVersion.REFORMA, "vicerrectorado.demo", RECHAZO);
+
+        VersionDistributivo vigente = repositorio.vigenteDe(periodo).orElseThrow();
+        assertThat(creada).isPresent();
+        assertThat(creada.get().numero()).isEqualTo(2);
+        assertThat(vigente.estado()).isEqualTo(EstadoDeVersion.EDITABLE);
+        assertThat(repositorio.estadoDe(periodo, 1)).contains(EstadoDeVersion.CONGELADA);
+        assertThat(repositorio.motivoDe(periodo, 2)).contains(MotivoDeVersion.REFORMA);
+        assertThat(repositorio.motivoDe(periodo, 1)).isEmpty();
+        assertThat(
+                        jdbc.sql(
+                                        "select creada_por from generacion.version_distributivo"
+                                                + " where id = :id")
+                                .param("id", vigente.id())
+                                .query(String.class)
+                                .single())
+                .isEqualTo("vicerrectorado.demo");
+        assertThat(contenido(vigente.id())).isEqualTo(antes);
+        assertThat(contenido(publicada.id())).isEqualTo(antes);
+        // Otra vez: la misma, sin otra versión.
+        assertThat(
+                        servicio.crearVersionNueva(
+                                periodo,
+                                1,
+                                MotivoDeVersion.REFORMA,
+                                "vicerrectorado.demo",
+                                RECHAZO))
+                .isEqualTo(creada);
+        assertThat(versiones(periodo)).isEqualTo(2);
+    }
+
+    @Test
+    void dadosDosPedidosDeReformaALaVez_cuandoSeCrean_entoncesQuedaUnaSolaVersion()
+            throws Exception {
+        String periodo = congeladaConDeTodo();
+        java.util.concurrent.ExecutorService hilos =
+                java.util.concurrent.Executors.newFixedThreadPool(2);
+        java.util.concurrent.CountDownLatch salida = new java.util.concurrent.CountDownLatch(1);
+        try {
+            List<java.util.concurrent.Future<?>> tareas = new java.util.ArrayList<>();
+            for (int i = 0; i < 2; i++) {
+                tareas.add(
+                        hilos.submit(
+                                () -> {
+                                    salida.await();
+                                    return servicio.crearVersionNueva(
+                                            periodo,
+                                            1,
+                                            MotivoDeVersion.REFORMA,
+                                            "vicerrectorado.demo",
+                                            RECHAZO);
+                                }));
+            }
+            salida.countDown();
+            for (java.util.concurrent.Future<?> tarea : tareas) {
+                assertThat(tarea.get(30, java.util.concurrent.TimeUnit.SECONDS))
+                        .isEqualTo(tareas.getFirst().get());
+            }
+        } finally {
+            hilos.shutdownNow();
+        }
+
+        assertThat(versiones(periodo)).isEqualTo(2);
+        assertThat(repositorio.estadoDe(periodo, 1)).contains(EstadoDeVersion.CONGELADA);
+    }
+
+    // F18-H02: un rechazo en firma de la versión de la reforma anula esa, no la publicada.
+    @Test
+    void
+            dadoUnRechazoDeLaVersionDeLaReforma_cuandoSeCreaLaNueva_entoncesLaPublicadaSigueCongelada() {
+        String periodo = congeladaConDeTodo();
+        servicio.crearVersionNueva(
+                periodo, 1, MotivoDeVersion.REFORMA, "vicerrectorado.demo", RECHAZO);
+        servicio.congelarVersion(periodo);
+
+        var tercera =
+                servicio.crearVersionNueva(
+                        periodo, 2, MotivoDeVersion.RECHAZO_EN_FIRMA, "sistema", RECHAZO);
+
+        assertThat(tercera.orElseThrow().numero()).isEqualTo(3);
+        assertThat(repositorio.estadoDe(periodo, 1)).contains(EstadoDeVersion.CONGELADA);
+        assertThat(repositorio.estadoDe(periodo, 2)).contains(EstadoDeVersion.ANULADA);
+        assertThat(repositorio.estadoDe(periodo, 3)).contains(EstadoDeVersion.EDITABLE);
+    }
+
+    private static int versiones(String periodo) {
+        return jdbc.sql(
+                        "select count(*) from generacion.version_distributivo v join"
+                                + " generacion.distributivo d on d.id = v.distributivo_id where"
+                                + " d.periodo = :periodo")
+                .param("periodo", periodo)
+                .query(Integer.class)
+                .single();
+    }
+
     // Un distributivo propio con la versión 1 congelada: los dos parciales enviados, una propuesta,
     // una actividad, una justificación, una consolidación y su informe.
     private static String congeladaConDeTodo() {

@@ -251,7 +251,8 @@ class ParcialesDelDistributivoServicioTest {
         when(distributivos.vigenteDe(PERIODO)).thenReturn(Optional.of(nueva));
 
         Optional<VersionNuevaEnGeneracion> creada =
-                servicio.crearVersionNueva(PERIODO, 1, MotivoDeVersion.RECHAZO_EN_FIRMA, RECHAZADA);
+                servicio.crearVersionNueva(
+                        PERIODO, 1, MotivoDeVersion.RECHAZO_EN_FIRMA, "sistema", RECHAZADA);
 
         assertThat(creada).contains(new VersionNuevaEnGeneracion(2, hashDe(nueva)));
         assertThat(transacciones).hasValue(1);
@@ -266,7 +267,7 @@ class ParcialesDelDistributivoServicioTest {
 
         assertThat(
                         servicio.crearVersionNueva(
-                                PERIODO, 1, MotivoDeVersion.RECHAZO_EN_FIRMA, RECHAZADA))
+                                PERIODO, 1, MotivoDeVersion.RECHAZO_EN_FIRMA, "sistema", RECHAZADA))
                 .contains(new VersionNuevaEnGeneracion(2, hashDe(nueva)));
         verify(distributivos, never()).crearVersionNueva(any(), any(), any(), any());
     }
@@ -284,7 +285,7 @@ class ParcialesDelDistributivoServicioTest {
 
         assertThat(
                         servicio.crearVersionNueva(
-                                PERIODO, 2, MotivoDeVersion.RECHAZO_EN_FIRMA, RECHAZADA))
+                                PERIODO, 2, MotivoDeVersion.RECHAZO_EN_FIRMA, "sistema", RECHAZADA))
                 .contains(new VersionNuevaEnGeneracion(3, hashDe(nueva)));
     }
 
@@ -294,7 +295,7 @@ class ParcialesDelDistributivoServicioTest {
                 .thenReturn(Optional.of(conEstado(EstadoDeVersion.EDITABLE)));
         assertThat(
                         servicio.crearVersionNueva(
-                                PERIODO, 1, MotivoDeVersion.RECHAZO_EN_FIRMA, RECHAZADA))
+                                PERIODO, 1, MotivoDeVersion.RECHAZO_EN_FIRMA, "sistema", RECHAZADA))
                 .as("la del aviso sin congelar")
                 .isEmpty();
 
@@ -302,7 +303,7 @@ class ParcialesDelDistributivoServicioTest {
                 .thenReturn(Optional.of(numero(NUEVA, 3, EstadoDeVersion.EDITABLE)));
         assertThat(
                         servicio.crearVersionNueva(
-                                PERIODO, 1, MotivoDeVersion.RECHAZO_EN_FIRMA, RECHAZADA))
+                                PERIODO, 1, MotivoDeVersion.RECHAZO_EN_FIRMA, "sistema", RECHAZADA))
                 .as("otra versión")
                 .isEmpty();
 
@@ -311,7 +312,7 @@ class ParcialesDelDistributivoServicioTest {
         when(distributivos.estadoDe(PERIODO, 1)).thenReturn(Optional.of(EstadoDeVersion.CONGELADA));
         assertThat(
                         servicio.crearVersionNueva(
-                                PERIODO, 1, MotivoDeVersion.RECHAZO_EN_FIRMA, RECHAZADA))
+                                PERIODO, 1, MotivoDeVersion.RECHAZO_EN_FIRMA, "sistema", RECHAZADA))
                 .as("la siguiente sin la anterior anulada")
                 .isEmpty();
         verify(distributivos, never()).crearVersionNueva(any(), any(), any(), any());
@@ -325,8 +326,84 @@ class ParcialesDelDistributivoServicioTest {
         assertThatThrownBy(
                         () ->
                                 servicio.crearVersionNueva(
-                                        PERIODO, 1, MotivoDeVersion.RECHAZO_EN_FIRMA, RECHAZADA))
+                                        PERIODO,
+                                        1,
+                                        MotivoDeVersion.RECHAZO_EN_FIRMA,
+                                        "sistema",
+                                        RECHAZADA))
                 .isInstanceOf(DistributivoNoEncontrado.class);
+    }
+
+    // La versión de una reforma (F18-H02, contracts/generacion.md, D-113): la publicada sigue
+    // CONGELADA, y la crea quien inició la reforma.
+
+    private static final Instant REFORMADA = Instant.parse("2026-11-20T15:00:00Z");
+
+    @Test
+    void dadaLaPublicadaCongelada_cuandoSeCreaLaDeUnaReforma_entoncesLaCreaConQuienLaInicio() {
+        VersionDistributivo publicada = conEstado(EstadoDeVersion.CONGELADA);
+        VersionDistributivo nueva = numero(NUEVA, 2, EstadoDeVersion.EDITABLE);
+        when(distributivos.bloquearVigente(PERIODO)).thenReturn(Optional.of(publicada));
+        when(distributivos.crearVersionNueva(
+                        VERSION, MotivoDeVersion.REFORMA, "vicerrectorado.demo", REFORMADA))
+                .thenReturn(NUEVA);
+        when(distributivos.vigenteDe(PERIODO)).thenReturn(Optional.of(nueva));
+
+        assertThat(
+                        servicio.crearVersionNueva(
+                                PERIODO,
+                                1,
+                                MotivoDeVersion.REFORMA,
+                                "vicerrectorado.demo",
+                                REFORMADA))
+                .contains(new VersionNuevaEnGeneracion(2, hashDe(nueva)));
+        assertThat(transacciones).hasValue(1);
+    }
+
+    @Test
+    void dadaLaDeUnaReformaYaCreada_cuandoSePideOtraVez_entoncesLaDevuelveSinCrearOtra() {
+        VersionDistributivo nueva = numero(NUEVA, 2, EstadoDeVersion.EDITABLE);
+        when(distributivos.bloquearVigente(PERIODO)).thenReturn(Optional.of(nueva));
+        when(distributivos.estadoDe(PERIODO, 1)).thenReturn(Optional.of(EstadoDeVersion.CONGELADA));
+        when(distributivos.motivoDe(PERIODO, 2)).thenReturn(Optional.of(MotivoDeVersion.REFORMA));
+
+        assertThat(
+                        servicio.crearVersionNueva(
+                                PERIODO,
+                                1,
+                                MotivoDeVersion.REFORMA,
+                                "vicerrectorado.demo",
+                                REFORMADA))
+                .contains(new VersionNuevaEnGeneracion(2, hashDe(nueva)));
+        verify(distributivos, never()).crearVersionNueva(any(), any(), any(), any());
+    }
+
+    @Test
+    void dadaLaSiguienteDeOtroMotivoOLaAnteriorAnulada_cuandoSePideLaDeUnaReforma_entoncesNada() {
+        VersionDistributivo nueva = numero(NUEVA, 2, EstadoDeVersion.EDITABLE);
+        when(distributivos.bloquearVigente(PERIODO)).thenReturn(Optional.of(nueva));
+        when(distributivos.estadoDe(PERIODO, 1)).thenReturn(Optional.of(EstadoDeVersion.ANULADA));
+        when(distributivos.motivoDe(PERIODO, 2))
+                .thenReturn(Optional.of(MotivoDeVersion.RECHAZO_EN_FIRMA));
+
+        assertThat(
+                        servicio.crearVersionNueva(
+                                PERIODO,
+                                1,
+                                MotivoDeVersion.REFORMA,
+                                "vicerrectorado.demo",
+                                REFORMADA))
+                .as("la siguiente es de un rechazo en firma")
+                .isEmpty();
+
+        when(distributivos.estadoDe(PERIODO, 1)).thenReturn(Optional.of(EstadoDeVersion.CONGELADA));
+        when(distributivos.motivoDe(PERIODO, 2)).thenReturn(Optional.of(MotivoDeVersion.REFORMA));
+        assertThat(
+                        servicio.crearVersionNueva(
+                                PERIODO, 1, MotivoDeVersion.RECHAZO_EN_FIRMA, "sistema", RECHAZADA))
+                .as("un rechazo de la publicada, con la reforma ya creada")
+                .isEmpty();
+        verify(distributivos, never()).crearVersionNueva(any(), any(), any(), any());
     }
 
     private static VersionDistributivo numero(UUID id, int numero, EstadoDeVersion estado) {

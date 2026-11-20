@@ -92,6 +92,38 @@ class GeneracionEsquemaIntegrationTest {
         }
     }
 
+    // F18-H02, V9: la versión de una reforma, con su motivo; los demás motivos siguen rechazados.
+    @Test
+    void dadaLaV9_cuandoSeGuardaLaVersionDeUnaReforma_entoncesSuMotivoSeAdmite() {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
+            postgres.start();
+            DataSource dataSource =
+                    new DriverManagerDataSource(
+                            postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+            new GeneracionFlywayConfig().flywayGeneracion(dataSource).migrate();
+            JdbcClient jdbc = JdbcClient.create(dataSource);
+            UUID distributivo = UUID.randomUUID();
+            jdbc.sql(
+                            "insert into generacion.distributivo (id, periodo, creado_en, creado_por)"
+                                    + " values (:id, '2026-I', now(), 'consolidacion.demo')")
+                    .param("id", distributivo)
+                    .update();
+            version(jdbc, distributivo, 1, null);
+
+            version(jdbc, distributivo, 2, "REFORMA");
+
+            assertThat(
+                            jdbc.sql(
+                                            "select motivo from generacion.version_distributivo"
+                                                    + " where numero = 2")
+                                    .query(String.class)
+                                    .single())
+                    .isEqualTo("REFORMA");
+            assertThatThrownBy(() -> version(jdbc, distributivo, 3, "AJUSTE"))
+                    .isInstanceOf(DataIntegrityViolationException.class);
+        }
+    }
+
     private static UUID version(JdbcClient jdbc, UUID distributivo, int numero, String motivo) {
         UUID id = UUID.randomUUID();
         jdbc.sql(

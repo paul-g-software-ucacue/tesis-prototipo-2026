@@ -107,8 +107,16 @@ public final class RepositorioDistributivosJdbc implements RepositorioDistributi
         return leer(VIGENTE, periodo);
     }
 
+    // F18-H02: primero el distributivo, después la vigente, en otra sentencia. Quien esperaba el
+    // bloqueo lee así la versión que confirmó el anterior: bloquear solo la fila de la vigente
+    // devolvía, al soltarse, la misma fila ya superada, y dos reformas a la vez creaban la misma
+    // versión dos veces.
     @Override
     public Optional<VersionDistributivo> bloquearVigente(String periodo) {
+        jdbc.sql("SELECT id FROM generacion.distributivo WHERE periodo = :periodo FOR UPDATE")
+                .param("periodo", periodo)
+                .query(UUID.class)
+                .optional();
         return leer(VIGENTE + " FOR UPDATE OF v", periodo);
     }
 
@@ -332,11 +340,14 @@ public final class RepositorioDistributivosJdbc implements RepositorioDistributi
     public UUID crearVersionNueva(
             UUID anulada, MotivoDeVersion motivo, String quien, Instant momento) {
         UUID nueva = UUID.randomUUID();
-        jdbc.sql(
-                        "UPDATE generacion.version_distributivo SET estado = 'ANULADA'"
-                                + " WHERE id = :anulada")
-                .param("anulada", anulada)
-                .update();
+        // F18-H02, D-113: la publicada de una reforma no se anula; queda CONGELADA, histórica.
+        if (motivo != MotivoDeVersion.REFORMA) {
+            jdbc.sql(
+                            "UPDATE generacion.version_distributivo SET estado = 'ANULADA'"
+                                    + " WHERE id = :anulada")
+                    .param("anulada", anulada)
+                    .update();
+        }
         jdbc.sql(
                         "INSERT INTO generacion.version_distributivo (id, distributivo_id, numero,"
                                 + " estado, motivo, creada_por, creada_en) SELECT :nueva,"
@@ -387,6 +398,20 @@ public final class RepositorioDistributivosJdbc implements RepositorioDistributi
                             + " gen_random_uuid(), :nueva, nombre, tamano, huella, clave,"
                             + " adjuntado_por, adjuntado_en FROM generacion.informe_sustentado"
                             + " WHERE version_id = :anulada");
+
+    @Override
+    public Optional<MotivoDeVersion> motivoDe(String periodo, int numero) {
+        return jdbc.sql(
+                        "SELECT v.motivo FROM generacion.version_distributivo v"
+                                + " JOIN generacion.distributivo d ON d.id = v.distributivo_id"
+                                + " WHERE d.periodo = :periodo AND v.numero = :numero"
+                                + " AND v.motivo IS NOT NULL")
+                .param("periodo", periodo)
+                .param("numero", numero)
+                .query(String.class)
+                .optional()
+                .map(MotivoDeVersion::valueOf);
+    }
 
     @Override
     public Optional<EstadoDeVersion> estadoDe(String periodo, int numero) {
