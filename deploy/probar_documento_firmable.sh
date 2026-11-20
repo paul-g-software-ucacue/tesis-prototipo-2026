@@ -558,8 +558,9 @@ registro_de_firmas() {
         docker compose exec -T distributivo test -f "/var/mdd/archivos/documentos/$hash.pdf" \
             || { echo "       falta documentos/$hash.pdf" >&2; return 1; }
     done
-    esperar 15 hay_entradas 3 "servicio = 'firma' and accion = 'FIRMA_ACEPTADA'" || return 1
-    esperar 15 hay_entradas 8 "servicio = 'firma' and accion = 'FIRMA_RECHAZADA'" || return 1
+    # F1 se subió con identidad detenido (F16-H02): su entrada llega con el reenvío.
+    esperar "$ESPERA_REENVIO" hay_entradas 3 "servicio = 'firma' and accion = 'FIRMA_ACEPTADA'" || return 1
+    esperar "$ESPERA_REENVIO" hay_entradas 8 "servicio = 'firma' and accion = 'FIRMA_RECHAZADA'" || return 1
     [[ $(entradas "servicio = 'firma' and accion like 'FIRMA_%' and periodo = '$PERIODO'
         and objeto -> 'comprobaciones' ? 'FIRMANTE'") == 11 ]] || return 1
     # F14-H03: la cadena completa pasa a EN_OCS por el sistema, en menos de 30 s (SC-002).
@@ -693,7 +694,8 @@ publicado() {
     [[ $(jq -c '[.publicacion.version, .publicacion.publicadaPor, .acciones]' <<<"$cuerpo") \
         == "[1,\"$SECRETARIA\",[]]" ]] || { echo "       la constancia en el flujo" >&2; return 1; }
     [[ $(publicaciones) == 1 ]] || return 1
-    esperar 15 hay_entradas 1 "servicio = 'validacionocs' and accion = 'DISTRIBUTIVO_PUBLICADO'
+    # Publicado con identidad detenido: la entrada de la bitácora llega con el reenvío.
+    esperar "$ESPERA_REENVIO" hay_entradas 1 "servicio = 'validacionocs' and accion = 'DISTRIBUTIVO_PUBLICADO'
         and periodo = '$PERIODO' and usuario = '$SECRETARIA'" || { echo "       sin la bitácora" >&2; return 1; }
     pedir POST "$PUBLICACION" "Bearer $token"
     es_codigo 409 VALIDACIONOCS_ETAPA_NO_ADMITE_PUBLICACION || { echo "       la segunda: $estado" >&2; return 1; }

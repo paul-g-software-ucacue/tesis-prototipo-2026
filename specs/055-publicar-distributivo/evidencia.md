@@ -35,6 +35,8 @@ F18-H01 (#71). Cada sección dice qué se verificó, cómo y con qué resultado.
 
 **El error que encontró el script.** En la primera corrida del workflow fallaron los pasos 18 y 20. `esperadas()` nombraba a los cuatro destinatarios de la demo, pero la publicación también le llegó a `autor.prueba`, un usuario activo con DOCENTE y COORDINADOR_CARRERA que dejan `probar_autenticacion.sh` y otros scripts. Notificaciones hizo lo correcto: avisa a todos los usuarios activos de esos roles. Ahora los destinatarios de la publicación salen de la base, y el paso 18 exige aparte que a los cuatro de la demo les llegue una vez. El 20 falló solo porque el 18 cortó antes de la lectura del Vicerrector. Además, el paso 18 espera las bandejas hasta 120 s, porque la notificación de la publicación llega después de la vuelta de `identidad`.
 
+**Lo que encontró la CI.** En el PR, después de actualizar con `main`, fallaron los pasos 12 y 16 (la publicación sí respondió 200 con PUBLICADO). Los dos esperaban 15 s entradas de la bitácora que viajan a `identidad` por eventos justo después de detenerlo: la de la publicación (paso 16) y la de F1, subida con `identidad` detenido desde F16-H02 (paso 12). Con el reenvío, pueden tardar hasta 120 s; en local y en las corridas anteriores llegaron antes de los 15 s. Ahora esas esperas usan `ESPERA_REENVIO`, que termina en cuanto la entrada llega.
+
 ## Recorrido a mano (T016, SC-005, SC-006)
 
 Hecho por el autor el 2026-11-19, con `quickstart.md` §3, sobre el perfil construido desde la rama, después de `MDD_CONSERVAR=APROBADO deploy/probar_documento_firmable.sh`.
