@@ -321,6 +321,18 @@ final class FlujoEnMemoria {
             }
 
             @Override
+            public List<String> enCurso() {
+                return procesos.values().stream()
+                        .filter(
+                                uno ->
+                                        uno.estado()
+                                                != ec.mdd.validacionocs.dominio.TipoDeEtapa
+                                                        .PUBLICADO)
+                        .map(ProcesoAprobacion::periodo)
+                        .toList();
+            }
+
+            @Override
             public Optional<RepositorioProceso.EstadoCompartido> estadoCompartido(String periodo) {
                 return de(periodo)
                         .map(
@@ -355,7 +367,12 @@ final class FlujoEnMemoria {
                                 "$1 false");
         return new RepositorioConfiguracion() {
             @Override
-            public void guardar(String periodo, String contenido, String por, Instant en) {
+            public void guardar(
+                    String periodo,
+                    String contenido,
+                    String por,
+                    Instant en,
+                    Optional<ec.mdd.validacionocs.dominio.AdvertenciaDeRemision> advertencia) {
                 throw new UnsupportedOperationException("El flujo no carga configuraciones");
             }
 

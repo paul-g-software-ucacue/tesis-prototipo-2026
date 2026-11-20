@@ -4,7 +4,10 @@ import ec.mdd.validacionocs.dominio.CondicionesDeRevision;
 import ec.mdd.validacionocs.dominio.DevolucionDeParcial;
 import ec.mdd.validacionocs.dominio.EstadoDeEnvio;
 import ec.mdd.validacionocs.dominio.EstadoDelPeriodo;
+import ec.mdd.validacionocs.dominio.EtapaDelProceso;
 import ec.mdd.validacionocs.dominio.ParcialesPendientes;
+import ec.mdd.validacionocs.dominio.Plazo;
+import ec.mdd.validacionocs.dominio.PlazosDeEtapas;
 import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
 import ec.mdd.validacionocs.dominio.Solicitante;
 import ec.mdd.validacionocs.dominio.TipoDeEtapa;
@@ -33,6 +36,7 @@ import ec.mdd.validacionocs.puertos.salida.RepositorioProceso;
 import ec.mdd.validacionocs.puertos.salida.Transaccion;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -479,8 +483,9 @@ public final class FlujoDelDistributivoServicio
                 Map.of("estado", transicion.hacia().name()));
     }
 
-    private static FlujoDelDistributivo vista(
+    private FlujoDelDistributivo vista(
             ProcesoAprobacion proceso, DistributivoActual actual, Solicitante quien) {
+        PlazosDeEtapas plazos = etapas.plazos(proceso.periodo(), proceso.distributivoCreadoEn());
         List<FlujoDelDistributivo.Parcial> parciales =
                 proceso.parciales().entrySet().stream()
                         .map(
@@ -566,7 +571,44 @@ public final class FlujoDelDistributivoServicio
                                                                         transicion.version(),
                                                                         reforma.motivo().texto(),
                                                                         transicion.quien(),
-                                                                        transicion.momento()))));
+                                                                        transicion.momento()))),
+                plazo(proceso, plazos),
+                etapasDelDistributivo(proceso, plazos));
+    }
+
+    // F12-H03, D-114: el plazo de la etapa actual con el mismo reloj que la revisión diaria, para
+    // que la tarjeta y el aviso digan la misma fecha.
+    private Optional<FlujoDelDistributivo.PlazoDeLaEtapa> plazo(
+            ProcesoAprobacion proceso, PlazosDeEtapas plazos) {
+        LocalDate hoy = LocalDate.ofInstant(reloj.instant(), ProcesoAprobacion.ZONA);
+        return proceso.plazoActual(plazos)
+                .map(
+                        plazo -> {
+                            Plazo.Situacion situacion = plazo.en(hoy);
+                            return new FlujoDelDistributivo.PlazoDeLaEtapa(
+                                    plazo.etapa(),
+                                    plazo.llegada(),
+                                    plazo.dias(),
+                                    plazo.fechaLimite(),
+                                    situacion.diasRestantes(),
+                                    situacion.estado());
+                        });
+    }
+
+    // Las etapas activas de la copia de la configuración, con los días de la configuración que
+    // regía al crear el distributivo.
+    private static List<FlujoDelDistributivo.EtapaDelDistributivo> etapasDelDistributivo(
+            ProcesoAprobacion proceso, PlazosDeEtapas plazos) {
+        return proceso.etapas().stream()
+                .filter(EtapaDelProceso::activa)
+                .map(
+                        etapa ->
+                                new FlujoDelDistributivo.EtapaDelDistributivo(
+                                        etapa.tipo(),
+                                        etapa.nombre(),
+                                        plazos.de(etapa.tipo()),
+                                        etapa.tipo() == proceso.estado()))
+                .toList();
     }
 
     // F12-H04: la versión nueva registrada justo después del rechazo, si ya llegó.

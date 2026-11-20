@@ -58,5 +58,12 @@ public interface RepositorioProceso {
      * @param estado la etapa actual
      * @param distributivoCreadoEn cuándo se creó el distributivo que acompaña
      */
+    /**
+     * Los procesos en curso, para la revisión diaria de plazos (F12-H03, D-114).
+     *
+     * @return los periodos con un proceso que no está en PUBLICADO
+     */
+    List<String> enCurso();
+
     record EstadoCompartido(TipoDeEtapa estado, Instant distributivoCreadoEn) {}
 }

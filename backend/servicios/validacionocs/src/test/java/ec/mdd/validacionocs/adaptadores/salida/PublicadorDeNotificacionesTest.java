@@ -196,6 +196,63 @@ class PublicadorDeNotificacionesTest {
                 .toList();
     }
 
+    // F12-H03, D-114: el aviso de un plazo vencido, por el sistema, con el momento en que se
+    // detectó.
+    @Test
+    void dadoUnPlazoVencido_cuandoSeAvisa_entoncesPublicaUnEventoDelSistemaConSusMensajes() {
+        ec.mdd.validacionocs.dominio.VencimientoDePlazo vencimiento =
+                new ec.mdd.validacionocs.dominio.VencimientoDePlazo(
+                        "2026-I",
+                        ec.mdd.validacionocs.dominio.Plazo.de(
+                                TipoDeEtapa.EN_REVISION_VRA, MOMENTO, 5),
+                        MOMENTO.plus(java.time.Duration.ofDays(7)),
+                        2);
+
+        publicador.avisar(proceso(), vencimiento);
+
+        // Fuera de BORRADOR_CARRERA no nombra carreras: no se le pregunta a Académico.
+        assertThat(consultas).hasValue(0);
+        EventoEntreProcesos evento = (EventoEntreProcesos) publicados.getFirst();
+        assertThat(evento.tipo()).isEqualTo("validacionocs.NotificacionesSolicitadas");
+        assertThat(evento.contenido())
+                .containsEntry("periodo", "2026-I")
+                .containsEntry("autor", "sistema")
+                .containsEntry("momento", "2026-11-22T15:00:00Z");
+        assertThat(titulos()).containsExactly("Venció el plazo de «Revisión del Vicerrectorado»");
+    }
+
+    @Test
+    void dadoBorradorCarreraVencido_cuandoAcademicoNoResponde_entoncesAvisaConElCodigo() {
+        nombres = null;
+        ProcesoAprobacion proceso =
+                ProcesoAprobacion.de(
+                        "2026-I",
+                        proceso().etapas(),
+                        TipoDeEtapa.BORRADOR_CARRERA,
+                        MOMENTO,
+                        Map.of("DS", EstadoDeEnvio.PENDIENTE),
+                        List.of());
+
+        publicador.avisar(
+                proceso,
+                new ec.mdd.validacionocs.dominio.VencimientoDePlazo(
+                        "2026-I",
+                        ec.mdd.validacionocs.dominio.Plazo.de(
+                                TipoDeEtapa.BORRADOR_CARRERA, MOMENTO, 15),
+                        MOMENTO.plus(java.time.Duration.ofDays(17)),
+                        2));
+
+        assertThat(consultas).hasValue(1);
+        EventoEntreProcesos evento = (EventoEntreProcesos) publicados.getFirst();
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> mensajes =
+                (List<Map<String, Object>>) evento.contenido().get("mensajes");
+        assertThat(mensajes.getFirst().get("destino"))
+                .isEqualTo(Map.of("rol", "COORDINADOR_CARRERA", "carrera", "DS"));
+        assertThat((String) mensajes.getFirst().get("detalle"))
+                .contains("La carrera DS todavía no envió su parcial.");
+    }
+
     private static ProcesoAprobacion proceso() {
         return ProcesoAprobacion.de(
                 "2026-I",

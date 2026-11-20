@@ -601,6 +601,22 @@ class RepositorioProcesoIntegrationTest {
         }
     }
 
+    // F12-H03: la revisión diaria de plazos recorre los procesos que no están en PUBLICADO.
+    @Test
+    void dadosProcesosEnCursoYPublicados_cuandoSePidenLosEnCurso_entoncesNoEstanLosPublicados() {
+        String enCurso = periodo();
+        String publicado = periodo();
+        repositorio.crear(nuevo(enCurso, "DS"), AHORA);
+        repositorio.crear(nuevo(publicado, "DS"), AHORA);
+        jdbc.sql(
+                        "update validacionocs.proceso_aprobacion set estado = 'PUBLICADO'"
+                                + " where periodo = :periodo")
+                .param("periodo", publicado)
+                .update();
+
+        assertThat(repositorio.enCurso()).contains(enCurso).doesNotContain(publicado);
+    }
+
     private static ProcesoAprobacion nuevo(String periodo, String... carreras) {
         return ProcesoAprobacion.nuevo(periodo, etapas(), CREADO, List.of(carreras));
     }

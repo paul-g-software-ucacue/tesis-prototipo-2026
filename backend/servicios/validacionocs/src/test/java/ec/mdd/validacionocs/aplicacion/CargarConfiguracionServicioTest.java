@@ -14,27 +14,33 @@ import static org.mockito.Mockito.when;
 
 import ec.mdd.validacionocs.adaptadores.salida.LectorYaml;
 import ec.mdd.validacionocs.adaptadores.salida.PlantillaEnRecursos;
+import ec.mdd.validacionocs.dominio.AdvertenciaDeRemision;
 import ec.mdd.validacionocs.dominio.ArchivoDemasiadoGrande;
 import ec.mdd.validacionocs.dominio.ArchivoIlegible;
 import ec.mdd.validacionocs.dominio.CargaGuardada;
+import ec.mdd.validacionocs.dominio.CodigoDeAdvertencia;
 import ec.mdd.validacionocs.dominio.ConfiguracionFlujo;
 import ec.mdd.validacionocs.dominio.EstadoDelPeriodo;
 import ec.mdd.validacionocs.dominio.Firmantes;
+import ec.mdd.validacionocs.dominio.PlazosDeEtapas;
 import ec.mdd.validacionocs.puertos.entrada.ConfiguracionInvalida;
 import ec.mdd.validacionocs.puertos.entrada.ConfiguracionVigente;
 import ec.mdd.validacionocs.puertos.entrada.PeriodoNoEncontrado;
 import ec.mdd.validacionocs.puertos.entrada.PeriodoSinPlanificacion;
 import ec.mdd.validacionocs.puertos.salida.CambioDeFlujo;
 import ec.mdd.validacionocs.puertos.salida.DatosDelPeriodo;
+import ec.mdd.validacionocs.puertos.salida.NormativaDelPeriodo;
 import ec.mdd.validacionocs.puertos.salida.RegistroDeCambios;
 import ec.mdd.validacionocs.puertos.salida.RepositorioConfiguracion;
 import ec.mdd.validacionocs.puertos.salida.Transaccion;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,6 +64,7 @@ class CargarConfiguracionServicioTest {
     private final DatosDelPeriodo datos = mock(DatosDelPeriodo.class);
     private final RepositorioConfiguracion repositorio = mock(RepositorioConfiguracion.class);
     private final RegistroDeCambios registro = mock(RegistroDeCambios.class);
+    private final NormativaDelPeriodo normativa = mock(NormativaDelPeriodo.class);
     private boolean dentro;
     private final Transaccion transaccion =
             new Transaccion() {
@@ -74,6 +81,7 @@ class CargarConfiguracionServicioTest {
     private final CargarConfiguracionServicio servicio =
             new CargarConfiguracionServicio(
                     datos,
+                    normativa,
                     new LectorYaml(),
                     repositorio,
                     registro,
@@ -95,7 +103,7 @@ class CargarConfiguracionServicioTest {
     }
 
     private void assertNoGuardo() {
-        verify(repositorio, never()).guardar(anyString(), anyString(), anyString(), any());
+        verify(repositorio, never()).guardar(anyString(), anyString(), anyString(), any(), any());
     }
 
     @Test
@@ -105,7 +113,7 @@ class CargarConfiguracionServicioTest {
 
         ConfiguracionVigente vigente = cargar(PLANTILLA);
 
-        verify(repositorio).guardar(PERIODO, PLANTILLA, QUIEN, AHORA);
+        verify(repositorio).guardar(PERIODO, PLANTILLA, QUIEN, AHORA, Optional.empty());
         assertThat(vigente.periodo()).isEqualTo(PERIODO);
         assertThat(vigente.modificable()).isTrue();
         assertThat(vigente.carga().orElseThrow().numero()).isEqualTo(1);
@@ -167,7 +175,7 @@ class CargarConfiguracionServicioTest {
 
         cargar("﻿" + PLANTILLA);
 
-        verify(repositorio).guardar(PERIODO, PLANTILLA, QUIEN, AHORA);
+        verify(repositorio).guardar(PERIODO, PLANTILLA, QUIEN, AHORA, Optional.empty());
     }
 
     @Test
@@ -290,5 +298,104 @@ class CargarConfiguracionServicioTest {
 
         assertThatThrownBy(() -> cargar(PLANTILLA)).isInstanceOf(IllegalStateException.class);
         assertNoGuardo();
+    }
+
+    // F12-H03, D-114: la advertencia de RN-23, con el día de la carga en Ecuador (2026-11-02).
+
+    private void conInicio(LocalDate inicio) {
+        when(datos.estado(PERIODO))
+                .thenReturn(
+                        Optional.of(new EstadoDelPeriodo("PLANIFICACION", Optional.of(inicio))));
+        when(repositorio.vigente(PERIODO))
+                .thenReturn(Optional.of(new CargaGuardada(1, PLANTILLA, QUIEN, AHORA)));
+    }
+
+    @Test
+    void dadosPlazosQueNoDejanLos30Dias_cuandoSeCarga_entoncesGuardaConLaAdvertenciaYLaAnota() {
+        LocalDate hoy = LocalDate.of(2026, 11, 2);
+        conInicio(hoy.plusDays(60));
+        when(normativa.diasDeRemision(PERIODO)).thenReturn(OptionalInt.of(30));
+
+        cargar(PLANTILLA);
+
+        AdvertenciaDeRemision esperada =
+                AdvertenciaDeRemision.de(
+                                hoy,
+                                PlazosDeEtapas.de(
+                                        ConfiguracionFlujo.revisar(new LectorYaml().leer(PLANTILLA))
+                                                .configuracion()
+                                                .orElseThrow()
+                                                .etapas()),
+                                hoy.plusDays(60),
+                                OptionalInt.of(30))
+                        .orElseThrow();
+        assertThat(esperada.diasDeMargen()).hasValue(-13);
+        verify(repositorio).guardar(PERIODO, PLANTILLA, QUIEN, AHORA, Optional.of(esperada));
+        ArgumentCaptor<CambioDeFlujo> cambio = ArgumentCaptor.forClass(CambioDeFlujo.class);
+        verify(registro).registrar(cambio.capture());
+        assertThat(cambio.getValue().nuevo())
+                .isEqualTo(Map.of("version", 1, "advertencia", "RN23_MARGEN_INSUFICIENTE"));
+    }
+
+    @Test
+    void dadosPlazosConMargen_cuandoSeCarga_entoncesGuardaSinAdvertencia() {
+        conInicio(LocalDate.of(2026, 11, 2).plusDays(120));
+        when(normativa.diasDeRemision(PERIODO)).thenReturn(OptionalInt.of(30));
+
+        cargar(PLANTILLA);
+
+        verify(repositorio).guardar(PERIODO, PLANTILLA, QUIEN, AHORA, Optional.empty());
+    }
+
+    @Test
+    void dadoUnPeriodoSinNormativa_cuandoSeCarga_entoncesAdvierteQueNoSePudoComprobar() {
+        conInicio(LocalDate.of(2027, 4, 1));
+        when(normativa.diasDeRemision(PERIODO)).thenReturn(OptionalInt.empty());
+
+        cargar(PLANTILLA);
+
+        ArgumentCaptor<Optional<AdvertenciaDeRemision>> advertencia = ArgumentCaptor.captor();
+        verify(repositorio)
+                .guardar(
+                        org.mockito.ArgumentMatchers.eq(PERIODO),
+                        org.mockito.ArgumentMatchers.eq(PLANTILLA),
+                        org.mockito.ArgumentMatchers.eq(QUIEN),
+                        org.mockito.ArgumentMatchers.eq(AHORA),
+                        advertencia.capture());
+        assertThat(advertencia.getValue().orElseThrow().codigo())
+                .isEqualTo(CodigoDeAdvertencia.RN23_SIN_NORMATIVA);
+    }
+
+    @Test
+    void
+            dadoUnDatosAnteriorSinInicio_cuandoSeCarga_entoncesNoCalculaLaAdvertenciaNiPreguntaANormativa() {
+        when(repositorio.vigente(PERIODO))
+                .thenReturn(Optional.of(new CargaGuardada(1, PLANTILLA, QUIEN, AHORA)));
+
+        cargar(PLANTILLA);
+
+        verifyNoInteractions(normativa);
+        verify(repositorio).guardar(PERIODO, PLANTILLA, QUIEN, AHORA, Optional.empty());
+    }
+
+    @Test
+    void dadaNormativaSinResponder_cuandoSeCarga_entoncesFallaSinGuardarNada() {
+        conInicio(LocalDate.of(2027, 4, 1));
+        when(normativa.diasDeRemision(PERIODO))
+                .thenThrow(new IllegalStateException("Normativa no responde"));
+
+        assertThatThrownBy(() -> cargar(PLANTILLA)).isInstanceOf(IllegalStateException.class);
+
+        assertNoGuardo();
+        verifyNoInteractions(registro);
+    }
+
+    @Test
+    void dadoUnArchivoInvalido_cuandoSeCarga_entoncesNoPreguntaANormativa() {
+        conInicio(LocalDate.of(2027, 4, 1));
+
+        assertThatThrownBy(() -> cargar("etapas: [")).isInstanceOf(RuntimeException.class);
+
+        verifyNoInteractions(normativa);
     }
 }

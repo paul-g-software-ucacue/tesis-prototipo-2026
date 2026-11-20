@@ -71,6 +71,15 @@ public final class RepositorioProcesoJdbc implements RepositorioProceso {
     }
 
     @Override
+    public List<String> enCurso() {
+        return jdbc.sql(
+                        "SELECT periodo FROM validacionocs.proceso_aprobacion"
+                                + " WHERE estado <> 'PUBLICADO' ORDER BY periodo")
+                .query(String.class)
+                .list();
+    }
+
+    @Override
     public void crear(ProcesoAprobacion proceso, Instant ahora) {
         // Los parciales y las transiciones del anterior se van con él (on delete cascade).
         jdbc.sql("DELETE FROM validacionocs.proceso_aprobacion WHERE periodo = :periodo")

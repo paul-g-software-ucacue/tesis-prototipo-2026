@@ -24,6 +24,7 @@ import ec.mdd.validacionocs.puertos.entrada.PeriodoSinPlanificacion;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -95,6 +96,58 @@ class ConfiguracionContratoTest {
         assertThat(resultado.getResponse().getStatus()).isEqualTo(estado);
         assertThat(resultado.getResponse().getContentAsString()).contains(codigo);
         contrato.validar(resultado);
+    }
+
+    // F12-H03 (D-114): la advertencia de RN-23 no rechaza la carga y se conserva con ella.
+
+    @Test
+    void dadaUnaCargaSinMargen_cuandoSeCarga_entonces200ConLaAdvertencia() throws Exception {
+        MvcResult resultado = cargar(Dobles.ADVERTIDO);
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        String cuerpo = resultado.getResponse().getContentAsString();
+        assertThat(cuerpo)
+                .contains("\"codigo\":\"RN23_MARGEN_INSUFICIENTE\"")
+                .contains("\"ultimoPlazo\":\"2027-01-02\"")
+                .contains("\"fechaDeRemision\":\"2026-12-20\"")
+                .contains("\"diasDeMargen\":-13")
+                .contains("Le faltan 13 días");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadaUnaCargaConAdvertencia_cuandoSeConsulta_entoncesLaDevuelve() throws Exception {
+        MvcResult resultado = consultar(Dobles.ADVERTIDO);
+
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains("\"codigo\":\"RN23_MARGEN_INSUFICIENTE\"");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnPeriodoSinNormativa_cuandoSeCarga_entonces200SinLasCifrasDeLaNormativa()
+            throws Exception {
+        MvcResult resultado = cargar(Dobles.SIN_NORMATIVA);
+
+        String cuerpo = resultado.getResponse().getContentAsString();
+        assertThat(cuerpo)
+                .contains("\"codigo\":\"RN23_SIN_NORMATIVA\"")
+                .doesNotContain("diasDeMargen")
+                .doesNotContain("fechaDeRemision");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadaLaConfiguracionPorDefecto_cuandoSeConsulta_entoncesSinAdvertencias() throws Exception {
+        MvcResult resultado = consultar(Dobles.POR_DEFECTO);
+
+        assertThat(resultado.getResponse().getContentAsString()).contains("\"advertencias\":[]");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadaNormativaSinResponder_cuandoSeCarga_entonces504() throws Exception {
+        assertError(cargar(Dobles.NORMATIVA_CAIDA), 504, "COMUN_PROCESO_SIN_RESPUESTA");
     }
 
     @Test
@@ -248,6 +301,11 @@ class ConfiguracionContratoTest {
         static final String ILEGIBLE = "ILEGIBLE";
         static final String GRANDE = "GRANDE";
         static final String EN_CURSO = "EN-CURSO";
+        static final String ADVERTIDO = "2027-I";
+        static final String SIN_NORMATIVA = "2027-II";
+        static final String NORMATIVA_CAIDA = "2027-III";
+
+        private static final java.time.LocalDate HOY = java.time.LocalDate.of(2026, 11, 20);
 
         private static final String PLANTILLA = new PlantillaEnRecursos().texto();
         private static final Instant AHORA = Instant.parse("2026-11-02T15:00:00Z");
@@ -266,6 +324,24 @@ class ConfiguracionContratoTest {
                     modificable);
         }
 
+        private static ConfiguracionVigente advertida(String periodo, OptionalInt dias) {
+            ec.mdd.validacionocs.dominio.AdvertenciaDeRemision advertencia =
+                    ec.mdd.validacionocs.dominio.AdvertenciaDeRemision.de(
+                                    HOY,
+                                    ec.mdd.validacionocs.dominio.PlazosDeEtapas.de(
+                                            porDefecto().etapas()),
+                                    HOY.plusDays(60),
+                                    dias)
+                            .orElseThrow();
+            return new ConfiguracionVigente(
+                    periodo,
+                    porDefecto(),
+                    Optional.of(
+                            new CargaGuardada(
+                                    1, PLANTILLA, "admin.demo", AHORA, Optional.of(advertencia))),
+                    true);
+        }
+
         @Bean
         CargarConfiguracion cargarConfiguracion() {
             return (periodo, archivo, quien) ->
@@ -279,6 +355,10 @@ class ConfiguracionContratoTest {
                                         List.of(
                                                 "Falta la etapa EN_OCS.",
                                                 "El rol RECTOR no tiene usuarios."));
+                        case ADVERTIDO -> advertida(ADVERTIDO, OptionalInt.of(30));
+                        case SIN_NORMATIVA -> advertida(SIN_NORMATIVA, OptionalInt.empty());
+                        case NORMATIVA_CAIDA ->
+                                throw new ec.mdd.plataforma.eventos.ProcesoSinRespuesta();
                         default -> cargada(true);
                     };
         }
@@ -291,6 +371,7 @@ class ConfiguracionContratoTest {
                     return switch (periodo) {
                         case NADA -> throw new PeriodoNoEncontrado();
                         case CARGADO -> cargada(false);
+                        case ADVERTIDO -> advertida(ADVERTIDO, OptionalInt.of(30));
                         default ->
                                 new ConfiguracionVigente(
                                         periodo, porDefecto(), Optional.empty(), true);

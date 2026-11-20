@@ -140,6 +140,13 @@ public record CambioDeFlujo(
          * llegada, por quien la inició, con la versión publicada, la nueva, su hash y el motivo en
          * el detalle.
          */
-        REFORMA_INICIADA
+        REFORMA_INICIADA,
+
+        /**
+         * El plazo de la etapa actual venció (F12-H03, D-114): por el sistema, con el periodo y la
+         * etapa en el detalle, y la fecha límite y los días de atraso en {@code nuevo}. Uno por
+         * llegada a la etapa.
+         */
+        PLAZO_VENCIDO
     }
 }

@@ -1,5 +1,6 @@
 package ec.mdd.validacionocs.puertos.salida;
 
+import ec.mdd.validacionocs.dominio.AdvertenciaDeRemision;
 import ec.mdd.validacionocs.dominio.CargaGuardada;
 import java.time.Instant;
 import java.util.Optional;
@@ -12,8 +13,19 @@ public interface RepositorioConfiguracion {
      * @param contenido el archivo tal como se subió
      * @param por quién lo cargó
      * @param en cuándo
+     * @param advertencia la advertencia de RN-23 con la que se carga, si hay (F12-H03)
      */
-    void guardar(String periodo, String contenido, String por, Instant en);
+    void guardar(
+            String periodo,
+            String contenido,
+            String por,
+            Instant en,
+            Optional<AdvertenciaDeRemision> advertencia);
+
+    /** Guarda una carga sin advertencia. */
+    default void guardar(String periodo, String contenido, String por, Instant en) {
+        guardar(periodo, contenido, por, en, Optional.empty());
+    }
 
     /**
      * @param periodo el código del periodo
