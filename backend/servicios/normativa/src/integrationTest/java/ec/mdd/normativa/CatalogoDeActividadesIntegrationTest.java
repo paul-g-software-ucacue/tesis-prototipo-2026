@@ -34,7 +34,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 class CatalogoDeActividadesIntegrationTest {
 
     private static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:18.6-alpine");
+            new PostgreSQLContainer("postgres:18.7-alpine");
 
     private static final String CARGAR =
             "SELECT a.codigo, a.componente, array_to_string(a.tipos_de_proyecto, ',') AS tipos,"

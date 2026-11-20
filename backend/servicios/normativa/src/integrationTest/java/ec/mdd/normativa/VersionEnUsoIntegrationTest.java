@@ -46,7 +46,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 class VersionEnUsoIntegrationTest {
 
     private static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:18.6-alpine");
+            new PostgreSQLContainer("postgres:18.7-alpine");
     private static final String QUIEN = "vicerrectorado.demo";
 
     private static JdbcClient jdbc;

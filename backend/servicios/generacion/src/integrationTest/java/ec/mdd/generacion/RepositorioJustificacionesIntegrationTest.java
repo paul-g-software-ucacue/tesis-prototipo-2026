@@ -38,7 +38,7 @@ class RepositorioJustificacionesIntegrationTest {
 
     @BeforeAll
     static void levantar() {
-        postgres = new PostgreSQLContainer("postgres:18.6-alpine");
+        postgres = new PostgreSQLContainer("postgres:18.7-alpine");
         postgres.start();
         DataSource dataSource =
                 new DriverManagerDataSource(

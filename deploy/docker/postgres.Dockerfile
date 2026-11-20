@@ -3,5 +3,5 @@
 # cambia, porque la versión de PostgreSQL es la misma.
 # Ejemplo: docker build -f deploy/docker/postgres.Dockerfile -t mdd-postgres .
 
-FROM postgres:18.6-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
+FROM postgres:18.7-alpine@sha256:ff64c9e3bdf8e2120107d3559de8db314e8305f7e38c5105903c6295876738ff
 RUN apk upgrade --no-cache

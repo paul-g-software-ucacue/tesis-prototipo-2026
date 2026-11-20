@@ -25,7 +25,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 class BandejaEsquemaIntegrationTest {
 
     private static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:18.6-alpine");
+            new PostgreSQLContainer("postgres:18.7-alpine");
     private static final String ROL = "identidad_prueba";
     private static final String CLAVE = "clave-de-prueba";
 

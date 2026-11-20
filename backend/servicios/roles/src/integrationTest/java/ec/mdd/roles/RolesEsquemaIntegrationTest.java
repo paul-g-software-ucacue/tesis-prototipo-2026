@@ -40,7 +40,7 @@ class RolesEsquemaIntegrationTest {
     @Test
     void dadoUnaBaseVacia_cuandoElServicioMigra_entoncesTodasSusTablasQuedanEnSuEsquema()
             throws SQLException {
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
             postgres.start();
             DataSource dataSource =
                     new DriverManagerDataSource(
@@ -66,7 +66,7 @@ class RolesEsquemaIntegrationTest {
                 getClass().getResourceAsStream("/db/migration/roles/V1__esquema_roles.sql")) {
             Files.copy(v1, anterior.resolve("V1__esquema_roles.sql"));
         }
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
             postgres.start();
             DataSource dataSource =
                     new DriverManagerDataSource(
@@ -90,7 +90,7 @@ class RolesEsquemaIntegrationTest {
      */
     @Test
     void dadoLasTablasDelResponsable_cuandoSeGuardaAlgoFueraDeSusReglas_entoncesLaBaseLoRechaza() {
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
             postgres.start();
             DataSource dataSource =
                     new DriverManagerDataSource(

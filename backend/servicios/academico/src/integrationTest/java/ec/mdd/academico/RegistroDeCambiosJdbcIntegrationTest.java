@@ -21,7 +21,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 class RegistroDeCambiosJdbcIntegrationTest {
 
     private static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:18.6-alpine");
+            new PostgreSQLContainer("postgres:18.7-alpine");
 
     private static JdbcClient jdbc;
 

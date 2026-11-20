@@ -30,7 +30,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 class RepositorioEventosRecibidosJdbcIntegrationTest {
 
     private static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:18.6-alpine");
+            new PostgreSQLContainer("postgres:18.7-alpine");
 
     private static JdbcClient jdbc;
     private static RepositorioEventosRecibidosJdbc repositorio;
