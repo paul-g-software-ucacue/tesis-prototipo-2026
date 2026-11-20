@@ -79,4 +79,12 @@ Hecho por el autor el 2026-11-20, con `quickstart.md` §3, sobre un perfil limpi
 
 ## Equipo de demostración (T022)
 
-Pendiente: después de fusionar.
+| Comprobación | Resultado |
+|---|---|
+| Fusión | PR #251 (`71dd1b7`), con las 12 comprobaciones en verde en la primera corrida |
+| Despliegue | `cd` exitoso; `mdd-actualizar` tomó `71dd1b7` y dice «Sano en 56 s», con las cinco comprobaciones del proxy en OK; los 8 contenedores sanos con las imágenes `*-71dd1b7284b7` |
+| Migraciones | Validación OCS en V8, con la tabla `reforma`; Generación en V9, con el `check` del motivo que admite `RECHAZO_EN_FIRMA` y `REFORMA`; todas con éxito |
+| Nada reformado todavía | 2026-I sigue en EN_CONSOLIDACION: ninguna transición `REFORMA` y ninguna publicación pendiente en `eventos_distributivo` |
+| Memoria | Medio minuto después del arranque, `identidad` usa 488 de sus 768 MiB (64 %) y `distributivo`, 235 de 512 (D-109) |
+
+En la demo no se llega a la reforma: 2026-I está en consolidación. La reforma, su notificación y el ciclo de la versión 2 los cubren el script en la CI y el recorrido del autor en el perfil local.
