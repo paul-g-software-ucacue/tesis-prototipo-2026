@@ -195,10 +195,12 @@ description: "Tareas de F18-H02: iniciar una reforma de la versión publicada"
 - [X] T021 Crear `specs/056-reforma-version-publicada/evidencia.md`, como la de 055.
 
   **Resultado (2026-11-20):** `evidencia.md`, con las pruebas, el script, el recorrido del autor, el comportamiento conocido de `docente.coordinador.demo`, las desviaciones y los criterios de terminado; la sección del equipo de demostración queda para después de fusionar.
-- [ ] T022 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde.
+- [X] T022 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde.
   - Verificar la demo en solo lectura (`quickstart.md` §4): «Sano», las migraciones V8 y V9 aplicadas y la memoria de `identidad`.
   - Abrir el PR de evidencia con `Closes #72`.
   - Con #72 cerrada, cerrar la épica F18 (#17) si el autor lo aprueba.
+
+  **Resultado (2026-11-20):** PR #251 fusionado (`71dd1b7`) con las 12 comprobaciones en verde. La demo tomó `71dd1b7`, «Sano en 56 s», con V8 de Validación OCS y V9 de Generación aplicadas e `identidad` en 488 de 768 MiB; 2026-I sigue en EN_CONSOLIDACION. PR de evidencia con `Closes #72`.
 
 ---
 
