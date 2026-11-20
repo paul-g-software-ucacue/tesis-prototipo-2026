@@ -713,3 +713,55 @@ test('el Vicerrector ve la cadena de firmas con F2 en turno, y es accesible', as
   await expect(cadena.getByRole('listitem').nth(2)).toContainText('Pendiente');
   await sinFallas(page);
 });
+
+// F12-H03 (D-114): la tarjeta del flujo con el plazo de la etapa y las etapas activas; vencido, con
+// texto y no solo color. axe-core en los dos estados, que miden el contraste del borde y del texto.
+for (const [estado, diasRestantes, texto] of [
+  ['A_TIEMPO', 2, 'Faltan 2 días.'],
+  ['VENCIDO', -3, 'Vencido hace 3 días.'],
+] as const) {
+  test(`la tarjeta muestra el plazo ${estado} y las etapas, y es accesible`, async ({ page }) => {
+    await page.route('**/api/validacionocs/periodos/*/flujo', (ruta) =>
+      ruta.fulfill({
+        json: {
+          periodo: '2026-2',
+          etapa: 'EN_CONSOLIDACION',
+          nombreDeEtapa: 'Consolidación',
+          version: 1,
+          parciales: [],
+          acciones: [],
+          transiciones: [],
+          plazo: {
+            etapa: 'EN_CONSOLIDACION',
+            llegada: '2026-11-04T15:00:00Z',
+            dias: 5,
+            fechaLimite: '2026-11-09',
+            diasRestantes,
+            estado,
+          },
+          etapas: [
+            {
+              etapa: 'BORRADOR_CARRERA',
+              nombre: 'Propuesta de carrera',
+              plazoDias: 15,
+              actual: false,
+            },
+            { etapa: 'EN_CONSOLIDACION', nombre: 'Consolidación', plazoDias: 5, actual: true },
+            { etapa: 'PUBLICADO', nombre: 'Publicado', actual: false },
+          ],
+        },
+      }),
+    );
+    await abrirConsolidado(page);
+
+    const plazo = page.getByRole('group', { name: 'Plazo de la etapa' });
+    await expect(plazo).toContainText(
+      `En «Consolidación» desde el 04/11/2026. Fecha límite: 09/11/2026. ${texto}`,
+    );
+    await expect(plazo.getByText('Plazo vencido')).toHaveCount(estado === 'VENCIDO' ? 1 : 0);
+    const etapas = page.getByRole('list', { name: 'Etapas del flujo' }).getByRole('listitem');
+    await expect(etapas).toHaveCount(3);
+    await expect(etapas.nth(1)).toHaveAttribute('aria-current', 'step');
+    await sinFallas(page);
+  });
+}

@@ -9,10 +9,15 @@
 # el parcial de su carrera, que deja de admitir cambios, y lo intenta otra vez y con otra carrera; el
 # Vicerrector intenta el avance genérico; los demás roles no envían; los parciales que faltan se
 # envían, los dos últimos a la vez, y el distributivo pasa a EN_CONSOLIDACION una sola vez. Cada
-# transición deja su entrada en la bitácora con la versión y el hash de la transición. Si la base ya
-# tiene alguno de esos datos, falla sin tocar nada. Al terminar, aunque un paso falle, borra lo que
-# creó, salvo las entradas de la bitácora, que no se pueden borrar. Termina con 0 si todos los pasos
-# pasan y con 1 si alguno falla. Nunca imprime una clave ni un token.
+# transición deja su entrada en la bitácora con la versión y el hash de la transición. Desde F12-H03
+# (specs/057-plazos-etapas/contracts/demostracion.md), los pasos 9 a 16: la tarjeta muestra el plazo
+# de EN_CONSOLIDACION; con identidad detenido, corre 6 días hacia atrás las transiciones de prueba y
+# reinicia distributivo, cuya revisión al arrancar registra el vencimiento; al volver identidad, el
+# Vicerrector y quien consolida reciben un solo aviso, y la etapa no se bloquea. Si la base ya tiene
+# alguno de esos datos, falla sin tocar nada. Al terminar, aunque un paso falle, levanta identidad y
+# distributivo y borra lo que creó, salvo las entradas de la bitácora y las notificaciones, que no se
+# pueden borrar. Termina con 0 si todos los pasos pasan y con 1 si alguno falla. Nunca imprime una
+# clave ni un token.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -23,6 +28,10 @@ readonly CARGAS=(estructura_organica carreras ciclos_academicos asignaturas_mall
 readonly COORDINADOR=coordinacion.demo
 readonly PERIODO=2026-I
 readonly ESPERA_ENTREGA=20
+# F12-H03: el arranque de distributivo y el reenvío de eventos pendientes (cada 30 s).
+readonly ESPERA_REENVIO=150
+readonly VICERRECTOR=vicerrectorado.demo
+readonly RESPONSABLE=consolidacion.demo
 readonly FLUJO="$GATEWAY/api/validacionocs/periodos/$PERIODO/flujo"
 # Los usuarios de la demo de los roles que no envían el parcial (D-16).
 readonly OTROS_ROLES=(vicerrectorado.demo datos.demo gestion.demo consolidacion.demo rectorado.demo
@@ -187,6 +196,9 @@ IFS=$'\t' read -r carrera libre <"$carpeta/datos.tsv"
 read -r -a orden <"$carpeta/orden.lista"
 
 limpiar() {
+    # F12-H03: si un paso falló con un proceso detenido, se levanta antes de borrar.
+    docker compose up -d --wait --no-recreate --no-build identidad distributivo >/dev/null 2>&1 \
+        || echo "AVISO  No se pudieron levantar identidad y distributivo"
     consultar_base "delete from generacion.actividad_no_lectiva where version_id in (select v.id from generacion.version_distributivo v
     join generacion.distributivo d on d.id = v.distributivo_id where d.periodo in ($periodos));
 delete from generacion.propuesta where version_id in (select v.id from generacion.version_distributivo v
@@ -196,6 +208,7 @@ delete from generacion.parcial_carrera where version_id in (select v.id from gen
 delete from generacion.version_distributivo where distributivo_id in (select id from generacion.distributivo where periodo in ($periodos));
 delete from generacion.distributivo where periodo in ($periodos);
 delete from validacionocs.proceso_aprobacion where periodo in ($periodos);
+delete from validacionocs.plazo_vencido where periodo in ($periodos);
 delete from generacion.registro_cambio where momento >= '$inicio';
 delete from docentes.proyecto where codigo in ($proyectos);
 delete from docentes.cargo where docente in ($docentes);
@@ -409,6 +422,95 @@ mismo_hash() {
     [[ $de_la_api =~ ^[0-9a-f]{64}$ && $de_la_api == "$de_la_bitacora" ]]
 }
 
+# --- F12-H03: el plazo de la etapa y su vencimiento (contracts/demostracion.md, P1 a P8) ---
+acciones_del_responsable=''
+avisos() {  # avisos <usuario>: los avisos de un plazo vencido de 2026-I desde que empezó el script
+    consultar_base "select count(*) from notificaciones.notificacion where destinatario = '$1'
+        and periodo = '$PERIODO' and titulo like 'Venció el plazo de %' and recibida_en >= '$inicio'"
+}
+
+vencimientos() {
+    consultar_base "select count(*) from validacionocs.plazo_vencido where periodo = '$PERIODO'"
+}
+
+hay_un_vencimiento() {
+    [[ $(vencimientos) == 1 ]]
+}
+
+# Reinicia distributivo y espera su healthcheck: la revisión de plazos corre al arrancar.
+reiniciar_distributivo() {
+    docker compose stop distributivo >/dev/null 2>&1
+    docker compose up -d --wait --no-recreate --no-build distributivo >/dev/null 2>&1
+}
+
+# --- 9. A tiempo: la tarjeta trae el plazo de 5 días de EN_CONSOLIDACION y las etapas activas ---
+plazo_a_tiempo() {
+    iniciar "$RESPONSABLE"
+    pedir GET "$FLUJO" "Bearer $token"
+    [[ $estado == 200 ]] || return 1
+    acciones_del_responsable=$(jq -c '.acciones' <<<"$cuerpo")
+    jq -e '.plazo.etapa == "EN_CONSOLIDACION" and .plazo.dias == 5 and .plazo.diasRestantes == 5
+        and .plazo.estado == "A_TIEMPO" and (.etapas | length) == 7
+        and ([.etapas[] | select(.actual)][0].etapa == "EN_CONSOLIDACION")' <<<"$cuerpo" >/dev/null
+}
+
+# --- 10. Con identidad detenido, las transiciones de prueba 6 días atrás, todas juntas ---
+seis_dias_atras() {
+    local antes despues
+    docker compose stop identidad >/dev/null 2>&1
+    antes=$(consultar_base "select string_agg(id::text, ',' order by momento) from validacionocs.transicion
+        where periodo = '$PERIODO'")
+    consultar_base "update validacionocs.transicion set momento = momento - interval '6 days'
+        where periodo = '$PERIODO'" >/dev/null
+    despues=$(consultar_base "select string_agg(id::text, ',' order by momento) from validacionocs.transicion
+        where periodo = '$PERIODO'")
+    [[ -n $antes && $antes == "$despues" ]]
+}
+
+# --- 11. Al arrancar, distributivo registra un vencimiento de EN_CONSOLIDACION con su fecha límite ---
+registra_al_arrancar() {
+    reiniciar_distributivo || return 1
+    esperar "$ESPERA_REENVIO" hay_un_vencimiento || return 1
+    [[ $(consultar_base "select etapa || '|' || plazo_dias || '|' || (fecha_limite = (llegada
+        at time zone 'America/Guayaquil')::date + 5) from validacionocs.plazo_vencido
+        where periodo = '$PERIODO'") == 'EN_CONSOLIDACION|5|true' ]]
+}
+
+# --- 12. Al volver identidad, un aviso para el Vicerrector y uno para quien consolida ---
+llegaron_los_avisos() {
+    [[ $(avisos "$VICERRECTOR") == 1 && $(avisos "$RESPONSABLE") == 1 ]]
+}
+
+avisa_al_volver() {
+    docker compose up -d --wait --no-recreate --no-build identidad >/dev/null 2>&1 || return 1
+    esperar "$ESPERA_REENVIO" llegaron_los_avisos || return 1
+    [[ $(consultar_base "select enlace from notificaciones.notificacion where destinatario = '$VICERRECTOR'
+        and periodo = '$PERIODO' and titulo like 'Venció el plazo de %'
+        and recibida_en >= '$inicio'") == /consolidado ]]
+}
+
+# --- 13. La bitácora: PLAZO_VENCIDO por el sistema, con un día de atraso ---
+en_la_bitacora() {
+    esperar "$ESPERA_REENVIO" hay_entradas 1 "servicio = 'validacionocs' and accion = 'PLAZO_VENCIDO'
+        and periodo = '$PERIODO' and usuario = 'sistema' and nuevo ->> 'diasDeAtraso' = '1'"
+}
+
+# --- 14. La tarjeta dice VENCIDO, y las acciones de quien consolida no cambian ---
+vencido_sin_bloquear() {
+    iniciar "$RESPONSABLE"
+    pedir GET "$FLUJO" "Bearer $token"
+    [[ $estado == 200 ]] || return 1
+    jq -e '.plazo.estado == "VENCIDO" and .plazo.diasRestantes == -1' <<<"$cuerpo" >/dev/null || return 1
+    [[ $(jq -c '.acciones' <<<"$cuerpo") == "$acciones_del_responsable" ]]
+}
+
+# --- 15. Otro arranque el mismo día: ni otro vencimiento ni otro aviso ---
+sin_repetir() {
+    reiniciar_distributivo || return 1
+    sleep 35
+    [[ $(vencimientos) == 1 ]] && llegaron_los_avisos
+}
+
 verificar 1 "Las 10 cargas, $PERIODO abierto y el distributivo: BORRADOR_CARRERA, todo pendiente" preparado
 verificar 2 "$COORDINADOR envía el parcial de $carrera: ya no admite cambios, y su entrada en la bitácora" \
     envia_el_suyo
@@ -418,6 +520,17 @@ verificar 5 "El avance genérico en BORRADOR_CARRERA: 409 VALIDACIONOCS_ETAPA_CO
 verificar 6 "Los ${#OTROS_ROLES[@]} usuarios de los demás roles no envían: 403" otros_roles
 verificar 7 "Los que faltan, los dos últimos a la vez: EN_CONSOLIDACION y una sola ETAPA_AVANZADA" envia_los_demas
 verificar 8 "El hash de la entrada es el de la transición del flujo" mismo_hash
+verificar 9 "A tiempo: la tarjeta trae el plazo de 5 días de EN_CONSOLIDACION y las 7 etapas activas" \
+    plazo_a_tiempo
+verificar 10 "Con identidad detenido, las transiciones de $PERIODO 6 días atrás, en el mismo orden" \
+    seis_dias_atras
+verificar 11 "Al arrancar, distributivo registra el vencimiento de EN_CONSOLIDACION con su fecha límite" \
+    registra_al_arrancar
+verificar 12 "Al volver identidad, un aviso para $VICERRECTOR y uno para $RESPONSABLE" avisa_al_volver
+verificar 13 "La bitácora: PLAZO_VENCIDO por el sistema, con 1 día de atraso" en_la_bitacora
+verificar 14 "La tarjeta dice VENCIDO hace 1 día, y las acciones de $RESPONSABLE no cambian" \
+    vencido_sin_bloquear
+verificar 15 "Otro arranque el mismo día: ni otro vencimiento ni otro aviso" sin_repetir
 
 if ((fallas > 0)); then
     echo "El avance por etapas de punta a punta: $fallas paso(s) fallan."

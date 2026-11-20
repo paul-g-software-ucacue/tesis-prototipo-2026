@@ -100,6 +100,29 @@ class FlujoContratoTest {
         contrato.validar(resultado);
     }
 
+    // F12-H03, D-114: el plazo de la etapa actual y las etapas activas, según el contrato.
+    @Test
+    void dadoElDistributivoEnBorradorCarrera_cuandoSeConsulta_entoncesTraeSuPlazoYSusEtapas()
+            throws Exception {
+        MvcResult resultado = pedir(get(FLUJO.formatted(PERIODO)), "VICERRECTOR", null);
+
+        JsonNode cuerpo = cuerpo(resultado);
+        JsonNode plazo = cuerpo.get("plazo");
+        assertThat(plazo.get("etapa").asString()).isEqualTo("BORRADOR_CARRERA");
+        assertThat(plazo.get("dias").asInt()).isEqualTo(15);
+        assertThat(plazo.get("fechaLimite").asString()).isEqualTo("2026-11-16");
+        assertThat(plazo.get("estado").asString()).isEqualTo("A_TIEMPO");
+        assertThat(plazo.get("diasRestantes").asInt()).isPositive();
+        JsonNode etapas = cuerpo.get("etapas");
+        assertThat(etapas).hasSize(7);
+        assertThat(etapas.get(0).get("etapa").asString()).isEqualTo("BORRADOR_CARRERA");
+        assertThat(etapas.get(0).get("actual").asBoolean()).isTrue();
+        assertThat(etapas.get(0).get("plazoDias").asInt()).isEqualTo(15);
+        assertThat(etapas.get(6).get("etapa").asString()).isEqualTo("PUBLICADO");
+        assertThat(etapas.get(6).has("plazoDias")).isFalse();
+        contrato.validar(resultado);
+    }
+
     @ParameterizedTest
     @ValueSource(
             strings = {

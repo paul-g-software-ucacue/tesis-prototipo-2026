@@ -1,12 +1,15 @@
 package ec.mdd.validacionocs.puertos.entrada;
 
 import ec.mdd.validacionocs.dominio.AccionDelProceso;
+import ec.mdd.validacionocs.dominio.EstadoDelPlazo;
 import ec.mdd.validacionocs.dominio.TipoDeEtapa;
 import ec.mdd.validacionocs.dominio.Transicion;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 /**
  * El estado del flujo del distributivo de un periodo, para quien lo consulta (esquema {@code
@@ -27,6 +30,8 @@ import java.util.Optional;
  * @param publicacion la publicación, si ya se publicó (F18-H01); durante una reforma, la anterior,
  *     que sigue vigente
  * @param reforma la reforma en curso, si la hay (F18-H02)
+ * @param plazo el plazo de la etapa actual, salvo en PUBLICADO (F12-H03)
+ * @param etapas las etapas activas de la configuración del distributivo, en orden (F12-H03)
  */
 public record FlujoDelDistributivo(
         String periodo,
@@ -40,7 +45,9 @@ public record FlujoDelDistributivo(
         Optional<RechazoEnFirma> rechazoEnFirma,
         Optional<Resolucion> resolucion,
         Optional<Publicacion> publicacion,
-        Optional<ReformaEnCurso> reforma) {
+        Optional<ReformaEnCurso> reforma,
+        Optional<PlazoDeLaEtapa> plazo,
+        List<EtapaDelDistributivo> etapas) {
 
     /** Exige los datos y copia las listas. */
     public FlujoDelDistributivo {
@@ -51,10 +58,72 @@ public record FlujoDelDistributivo(
         Objects.requireNonNull(resolucion, "resolucion");
         Objects.requireNonNull(publicacion, "publicacion");
         Objects.requireNonNull(reforma, "reforma");
+        Objects.requireNonNull(plazo, "plazo");
+        etapas = List.copyOf(etapas);
         parciales = List.copyOf(parciales);
         acciones = List.copyOf(acciones);
         transiciones = List.copyOf(transiciones);
     }
+
+    /** Un flujo sin su plazo ni sus etapas, como antes de F12-H03. */
+    public FlujoDelDistributivo(
+            String periodo,
+            TipoDeEtapa etapa,
+            String nombreDeEtapa,
+            int version,
+            List<Parcial> parciales,
+            List<AccionDelProceso> acciones,
+            List<Transicion> transiciones,
+            Optional<Congelacion> congelacion,
+            Optional<RechazoEnFirma> rechazoEnFirma,
+            Optional<Resolucion> resolucion,
+            Optional<Publicacion> publicacion,
+            Optional<ReformaEnCurso> reforma) {
+        this(
+                periodo,
+                etapa,
+                nombreDeEtapa,
+                version,
+                parciales,
+                acciones,
+                transiciones,
+                congelacion,
+                rechazoEnFirma,
+                resolucion,
+                publicacion,
+                reforma,
+                Optional.empty(),
+                List.of());
+    }
+
+    /**
+     * El plazo de la etapa actual (F12-H03, D-114), calculado con el reloj del servidor.
+     *
+     * @param etapa la etapa actual
+     * @param llegada cuándo llegó el distributivo a ella
+     * @param dias su plazo en días corridos
+     * @param fechaLimite la fecha de la llegada en Ecuador más los días
+     * @param diasRestantes la fecha límite menos hoy; negativo si venció
+     * @param estado a tiempo, vence hoy o vencido
+     */
+    public record PlazoDeLaEtapa(
+            TipoDeEtapa etapa,
+            Instant llegada,
+            int dias,
+            LocalDate fechaLimite,
+            int diasRestantes,
+            EstadoDelPlazo estado) {}
+
+    /**
+     * Una etapa activa del flujo del distributivo, con su plazo (F12-H03).
+     *
+     * @param etapa cuál
+     * @param nombre su nombre en la configuración
+     * @param plazoDias sus días; vacío en PUBLICADO
+     * @param actual si es la etapa en la que está el distributivo
+     */
+    public record EtapaDelDistributivo(
+            TipoDeEtapa etapa, String nombre, OptionalInt plazoDias, boolean actual) {}
 
     /** Un flujo sin una reforma en curso. */
     public FlujoDelDistributivo(

@@ -2,10 +2,14 @@ package ec.mdd.validacionocs.adaptadores.salida;
 
 import ec.mdd.plataforma.eventos.EventoEntreProcesos;
 import ec.mdd.validacionocs.dominio.MensajeDeTransicion;
+import ec.mdd.validacionocs.dominio.MensajesDePlazo;
 import ec.mdd.validacionocs.dominio.MensajesDeTransicion;
 import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
+import ec.mdd.validacionocs.dominio.TipoDeEtapa;
 import ec.mdd.validacionocs.dominio.TipoDeTransicion;
 import ec.mdd.validacionocs.dominio.Transicion;
+import ec.mdd.validacionocs.dominio.VencimientoDePlazo;
+import ec.mdd.validacionocs.puertos.salida.AvisoDePlazoVencido;
 import ec.mdd.validacionocs.puertos.salida.NombresDeCarreras;
 import ec.mdd.validacionocs.puertos.salida.NotificacionDeTransiciones;
 import java.time.Clock;
@@ -28,7 +32,8 @@ import org.springframework.context.ApplicationEventPublisher;
  * <p>Si algún mensaje nombra una carrera, pide los nombres a Académico. Si Académico no responde,
  * el título lleva el código: notificar nunca hace fallar la transición.
  */
-public final class PublicadorDeNotificaciones implements NotificacionDeTransiciones {
+public final class PublicadorDeNotificaciones
+        implements NotificacionDeTransiciones, AvisoDePlazoVencido {
 
     /** El tipo del evento. */
     public static final String TIPO = "validacionocs.NotificacionesSolicitadas";
@@ -76,10 +81,33 @@ public final class PublicadorDeNotificaciones implements NotificacionDeTransicio
         }
     }
 
+    @Override
+    public void avisar(ProcesoAprobacion proceso, VencimientoDePlazo vencimiento) {
+        // F12-H03, D-114: en BORRADOR_CARRERA el aviso nombra las carreras que faltan.
+        Map<String, String> nombres =
+                vencimiento.plazo().etapa() == TipoDeEtapa.BORRADOR_CARRERA
+                        ? nombresDeCarreras()
+                        : Map.of();
+        Map<String, Object> solicitud = new LinkedHashMap<>();
+        solicitud.put("periodo", proceso.periodo());
+        solicitud.put("autor", ProcesoAprobacion.SISTEMA);
+        solicitud.put("momento", vencimiento.detectadoEn().toString());
+        solicitud.put(
+                "mensajes",
+                MensajesDePlazo.de(proceso, vencimiento, nombres).stream()
+                        .map(PublicadorDeNotificaciones::mensaje)
+                        .toList());
+        eventos.publishEvent(EventoEntreProcesos.nuevo(TIPO, ORIGEN, DESTINO, solicitud, reloj));
+    }
+
     private Map<String, String> nombresPara(List<Transicion> nuevas) {
         if (nuevas.stream().noneMatch(transicion -> NOMBRAN_CARRERA.contains(transicion.tipo()))) {
             return Map.of();
         }
+        return nombresDeCarreras();
+    }
+
+    private Map<String, String> nombresDeCarreras() {
         try {
             return carreras.nombres();
         } catch (RuntimeException e) {

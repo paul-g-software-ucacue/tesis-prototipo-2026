@@ -3,9 +3,14 @@ package ec.mdd.validacionocs;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ec.mdd.validacionocs.adaptadores.salida.RepositorioConfiguracionJdbc;
+import ec.mdd.validacionocs.dominio.AdvertenciaDeRemision;
 import ec.mdd.validacionocs.dominio.CargaGuardada;
+import ec.mdd.validacionocs.dominio.CodigoDeAdvertencia;
 import ec.mdd.validacionocs.infraestructura.ValidacionocsFlywayConfig;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
@@ -70,6 +75,49 @@ class RepositorioConfiguracionIntegrationTest {
         assertThat(repositorio.vigenteEn(periodo, MOMENTO.plusSeconds(3600)))
                 .map(CargaGuardada::contenido)
                 .contains("segunda");
+    }
+
+    // F12-H03 (D-114): la advertencia de RN-23 se guarda con la carga y se lee igual.
+    @Test
+    void dadaUnaCargaConAdvertencia_cuandoSeConsulta_entoncesLaTraeTalCual() {
+        String periodo = periodo();
+        LocalDate hoy = LocalDate.of(2026, 11, 20);
+        AdvertenciaDeRemision margen =
+                new AdvertenciaDeRemision(
+                        CodigoDeAdvertencia.RN23_MARGEN_INSUFICIENTE,
+                        hoy.plusDays(43),
+                        hoy.plusDays(60),
+                        OptionalInt.of(30),
+                        Optional.of(hoy.plusDays(30)),
+                        OptionalInt.of(-13));
+        repositorio.guardar(periodo, "uno", QUIEN, MOMENTO, Optional.of(margen));
+
+        assertThat(repositorio.vigente(periodo).orElseThrow().advertencia()).contains(margen);
+        assertThat(
+                        repositorio
+                                .vigenteEn(periodo, MOMENTO.plusSeconds(60))
+                                .orElseThrow()
+                                .advertencia())
+                .contains(margen);
+    }
+
+    @Test
+    void dadaUnaCargaSinNormativa_cuandoSeConsulta_entoncesTraeLaAdvertenciaSinLasCifras() {
+        String periodo = periodo();
+        AdvertenciaDeRemision sinNormativa =
+                new AdvertenciaDeRemision(
+                        CodigoDeAdvertencia.RN23_SIN_NORMATIVA,
+                        LocalDate.of(2027, 1, 2),
+                        LocalDate.of(2027, 6, 8),
+                        OptionalInt.empty(),
+                        Optional.empty(),
+                        OptionalInt.empty());
+        repositorio.guardar(periodo, "uno", QUIEN, MOMENTO, Optional.of(sinNormativa));
+        repositorio.guardar(periodo, "dos", QUIEN, MOMENTO.plusSeconds(60));
+
+        assertThat(repositorio.vigenteEn(periodo, MOMENTO).orElseThrow().advertencia())
+                .contains(sinNormativa);
+        assertThat(repositorio.vigente(periodo).orElseThrow().advertencia()).isEmpty();
     }
 
     @Test

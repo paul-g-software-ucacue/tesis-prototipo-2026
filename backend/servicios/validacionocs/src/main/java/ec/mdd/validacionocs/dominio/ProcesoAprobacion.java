@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -230,6 +231,96 @@ public final class ProcesoAprobacion {
                             new DestinoDeNotificacion(
                                     etapa(transicion.hacia()).rol(), Optional.empty()));
         };
+    }
+
+    /**
+     * Cuándo llegó el distributivo a la etapa actual (F12-H03, D-114): el momento de la última
+     * transición que cambia de etapa y termina en ella; sin ninguna, la creación del distributivo,
+     * que empieza en BORRADOR_CARRERA. Así una devolución, un rechazo en firma, una reforma o un
+     * paso de etapa reinician el plazo, y el envío de un parcial que no es el último o la {@code
+     * VERSION_NUEVA}, que van de la etapa a la misma, no.
+     *
+     * @return la llegada
+     */
+    public Instant llegadaALaEtapa() {
+        for (int i = transiciones.size() - 1; i >= 0; i--) {
+            Transicion una = transiciones.get(i);
+            if (una.desde() != una.hacia() && una.hacia() == estado) {
+                return una.momento();
+            }
+        }
+        return distributivoCreadoEn;
+    }
+
+    /**
+     * El plazo de la etapa actual, con los días de la configuración que regía al crear el
+     * distributivo (la copia no los guarda, D-114).
+     *
+     * @param plazos los días de cada etapa
+     * @return el plazo; vacío en PUBLICADO, que no tiene
+     */
+    public Optional<Plazo> plazoActual(PlazosDeEtapas plazos) {
+        Objects.requireNonNull(plazos, "plazos");
+        if (estado == TipoDeEtapa.PUBLICADO) {
+            return Optional.empty();
+        }
+        OptionalInt dias = plazos.de(estado);
+        return dias.isPresent()
+                ? Optional.of(Plazo.de(estado, llegadaALaEtapa(), dias.getAsInt()))
+                : Optional.empty();
+    }
+
+    /**
+     * El vencimiento del plazo actual, si ya venció en la fecha de {@code ahora} en {@link #ZONA}.
+     * Solo avisa: ninguna operación del proceso consulta el plazo (FR-003).
+     *
+     * @param plazos los días de cada etapa
+     * @param ahora cuándo se revisa
+     * @return el vencimiento; vacío si está a tiempo, si vence hoy o en PUBLICADO
+     */
+    public Optional<VencimientoDePlazo> vencimiento(PlazosDeEtapas plazos, Instant ahora) {
+        Objects.requireNonNull(ahora, "ahora");
+        LocalDate hoy = LocalDate.ofInstant(ahora, ZONA);
+        return plazoActual(plazos)
+                .filter(plazo -> plazo.en(hoy).estado() == EstadoDelPlazo.VENCIDO)
+                .map(
+                        plazo ->
+                                new VencimientoDePlazo(
+                                        periodo, plazo, ahora, plazo.diasDeAtraso(hoy)));
+    }
+
+    /**
+     * A quién se avisa el vencimiento de la etapa actual (F12-H03, D-114), según la copia de la
+     * configuración (principio VI):
+     *
+     * <ul>
+     *   <li>el rol de la etapa; en BORRADOR_CARRERA, uno por cada carrera que todavía no envió su
+     *       parcial, pendiente o devuelto, porque el atraso es de ellas;
+     *   <li>el Vicerrector: el rol de EN_REVISION_VRA, como en la reforma (D-113).
+     * </ul>
+     *
+     * <p>Sin repetidos: en EN_REVISION_VRA los dos son el mismo. Notificaciones resuelve los roles
+     * a usuarios y deja una notificación por usuario y carrera (D-108).
+     *
+     * @return un destino por mensaje
+     */
+    public List<DestinoDeNotificacion> destinosDelVencimiento() {
+        String rol = etapa(estado).rol();
+        List<DestinoDeNotificacion> destinos = new ArrayList<>();
+        if (estado == TipoDeEtapa.BORRADOR_CARRERA) {
+            parciales.forEach(
+                    (carrera, envio) -> {
+                        if (envio != EstadoDeEnvio.ENVIADO) {
+                            destinos.add(new DestinoDeNotificacion(rol, Optional.of(carrera)));
+                        }
+                    });
+        } else {
+            destinos.add(new DestinoDeNotificacion(rol, Optional.empty()));
+        }
+        destinos.add(
+                new DestinoDeNotificacion(
+                        etapa(TipoDeEtapa.EN_REVISION_VRA).rol(), Optional.empty()));
+        return destinos.stream().distinct().toList();
     }
 
     /**

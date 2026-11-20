@@ -887,7 +887,8 @@ paths:
       summary: Devuelve el estado de un periodo.
       description: >-
         Solo entre procesos, con el token de proceso: lo usa Aprobación, porque la configuración
-        del flujo solo cambia en Planificación (RF-34, ADR-023).
+        del flujo solo cambia en Planificación (RF-34, ADR-023), y su inicio para la advertencia de
+        RN-23 (F12-H03).
       responses:
         '200':
           description: El estado.
@@ -1271,12 +1272,18 @@ components:
     EstadoDelPeriodo:
       description: Lo que otro proceso necesita saber del estado de un periodo (principio IX).
       type: object
-      required: [periodo, estado]
+      required: [periodo, estado, inicio]
       properties:
         periodo:
           type: string
         estado:
           $ref: '#/components/schemas/EstadoPeriodo'
+        inicio:
+          description: >-
+            El primer día del periodo. Lo usa Aprobación para la advertencia de RN-23 (F12-H03,
+            D-114).
+          type: string
+          format: date
     NombreDeCarrera:
       type: object
       additionalProperties: false

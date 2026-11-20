@@ -196,6 +196,101 @@ class ValidacionocsEsquemaIntegrationTest {
                 .update();
     }
 
+    // F12-H03, V9: un vencimiento por llegada a la etapa, y la advertencia con la carga.
+    @Test
+    void dadoUnVencimiento_cuandoSeGuarda_entoncesQuedaUnoPorLlegadaYSusReglasSeExigen() {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
+            postgres.start();
+            DataSource dataSource =
+                    new DriverManagerDataSource(
+                            postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+            new ValidacionocsFlywayConfig().flywayValidacionocs(dataSource).migrate();
+            JdbcClient jdbc = JdbcClient.create(dataSource);
+
+            vencimiento(
+                    jdbc, "EN_CONSOLIDACION", 5, "2026-11-04T15:00:00Z", "2026-11-12T12:00:00Z");
+
+            assertThat(
+                            jdbc.sql(
+                                            "select fecha_limite::text from"
+                                                    + " validacionocs.plazo_vencido")
+                                    .query(String.class)
+                                    .single())
+                    .isEqualTo("2026-11-09");
+            // La misma llegada no se registra dos veces.
+            assertThatThrownBy(
+                            () ->
+                                    vencimiento(
+                                            jdbc,
+                                            "EN_CONSOLIDACION",
+                                            5,
+                                            "2026-11-04T15:00:00Z",
+                                            "2026-11-13T12:00:00Z"))
+                    .isInstanceOf(DataAccessException.class);
+            // Otra llegada a la misma etapa, sí.
+            vencimiento(
+                    jdbc, "EN_CONSOLIDACION", 5, "2026-11-20T15:00:00Z", "2026-11-26T12:00:00Z");
+            assertThatThrownBy(
+                            () ->
+                                    vencimiento(
+                                            jdbc,
+                                            "PUBLICADO",
+                                            5,
+                                            "2026-11-04T15:00:00Z",
+                                            "2026-11-12T12:00:00Z"))
+                    .isInstanceOf(DataAccessException.class);
+            assertThatThrownBy(
+                            () ->
+                                    vencimiento(
+                                            jdbc,
+                                            "EN_OCS",
+                                            0,
+                                            "2026-11-04T15:00:00Z",
+                                            "2026-11-12T12:00:00Z"))
+                    .isInstanceOf(DataAccessException.class);
+            assertThatThrownBy(
+                            () ->
+                                    vencimiento(
+                                            jdbc,
+                                            "EN_OCS",
+                                            3,
+                                            "2026-11-12T15:00:00Z",
+                                            "2026-11-04T12:00:00Z"))
+                    .isInstanceOf(DataAccessException.class);
+
+            jdbc.sql(
+                            "insert into validacionocs.configuracion_flujo (id, periodo, contenido,"
+                                    + " cargada_por, cargada_en, advertencia) values (:id,"
+                                    + " '2026-I', 'etapas: []', 'admin.demo', now(),"
+                                    + " '{\"codigo\": \"RN23_SIN_NORMATIVA\"}'::jsonb)")
+                    .param("id", UUID.randomUUID())
+                    .update();
+            assertThat(
+                            jdbc.sql(
+                                            "select advertencia ->> 'codigo' from"
+                                                    + " validacionocs.configuracion_flujo")
+                                    .query(String.class)
+                                    .single())
+                    .isEqualTo("RN23_SIN_NORMATIVA");
+        }
+    }
+
+    private static void vencimiento(
+            JdbcClient jdbc, String etapa, int dias, String llegada, String detectado) {
+        jdbc.sql(
+                        "insert into validacionocs.plazo_vencido (id, periodo, etapa, llegada,"
+                                + " plazo_dias, fecha_limite, detectado_en) values (:id, '2026-I',"
+                                + " :etapa, :llegada::timestamptz, :dias, (:llegada::timestamptz"
+                                + " at time zone 'America/Guayaquil')::date + :dias,"
+                                + " :detectado::timestamptz)")
+                .param("id", UUID.randomUUID())
+                .param("etapa", etapa)
+                .param("llegada", llegada)
+                .param("dias", dias)
+                .param("detectado", detectado)
+                .update();
+    }
+
     // F15-H01, V7: una resolución por versión aprobada, con sus reglas.
     @Test
     void dadaUnaResolucion_cuandoSeGuardaConSuTransicion_entoncesQuedaUnaPorVersion() {

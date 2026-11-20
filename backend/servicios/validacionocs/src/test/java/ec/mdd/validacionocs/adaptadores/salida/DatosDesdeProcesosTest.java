@@ -50,6 +50,43 @@ class DatosDesdeProcesosTest {
         assertThat(adaptador.estado("2026-I")).contains(new EstadoDelPeriodo("PLANIFICACION"));
     }
 
+    // F12-H03 (D-114): el inicio del periodo, para la advertencia de RN-23.
+    @Test
+    void dadoUnPeriodo_cuandoSePideSuEstado_entoncesTraeSuInicio() {
+        datos.responderConsulta(
+                "/interno/academico/periodos/2026-I/estado",
+                200,
+                "{\"periodo\":\"2026-I\",\"estado\":\"PLANIFICACION\",\"inicio\":\"2027-04-01\"}");
+
+        assertThat(adaptador.estado("2026-I").orElseThrow().inicio())
+                .contains(java.time.LocalDate.of(2027, 4, 1));
+    }
+
+    @Test
+    void dadoUnDatosAnteriorSinInicio_cuandoSePideElEstado_entoncesElInicioVaVacio() {
+        datos.responderConsulta(
+                "/interno/academico/periodos/2026-I/estado",
+                200,
+                "{\"periodo\":\"2026-I\",\"estado\":\"PLANIFICACION\"}");
+
+        assertThat(adaptador.estado("2026-I").orElseThrow().inicio()).isEmpty();
+    }
+
+    @Test
+    void dadoUnPeriodoConNormativa_cuandoSePidenLosDiasDeRemision_entoncesLosDaNormativa() {
+        datos.responderConsulta(
+                "/interno/normativa/periodos/2026-I/remision",
+                200,
+                "{\"periodo\":\"2026-I\",\"version\":2,\"diasAntesDelInicio\":30}");
+
+        assertThat(adaptador.diasDeRemision("2026-I")).hasValue(30);
+    }
+
+    @Test
+    void dadoUnPeriodoSinNormativa_cuandoSePidenLosDiasDeRemision_entoncesVacio() {
+        assertThat(adaptador.diasDeRemision("2026-I")).isEmpty();
+    }
+
     @Test
     void dadoUnPeriodoQueNoExiste_cuandoSePideSuEstado_entoncesVacio() {
         assertThat(adaptador.estado("NADA")).isEqualTo(Optional.empty());

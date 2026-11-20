@@ -7,6 +7,7 @@ import ec.mdd.normativa.adaptadores.entrada.api.PesosDelPeriodo;
 import ec.mdd.normativa.adaptadores.entrada.api.ProporcionDelPeriodo;
 import ec.mdd.normativa.adaptadores.entrada.api.ReglasDeAsignacion;
 import ec.mdd.normativa.adaptadores.entrada.api.ReglasDelPanel;
+import ec.mdd.normativa.adaptadores.entrada.api.RemisionDelPeriodo;
 import ec.mdd.normativa.dominio.ActividadDelCatalogo;
 import ec.mdd.normativa.dominio.PesosAfinidad;
 import ec.mdd.normativa.puertos.entrada.ActividadesDeLaVersion;
@@ -15,11 +16,13 @@ import ec.mdd.normativa.puertos.entrada.ConsultarPesosDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarProporcionDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarReglasDeAsignacion;
 import ec.mdd.normativa.puertos.entrada.ConsultarReglasDelPanel;
+import ec.mdd.normativa.puertos.entrada.ConsultarRemisionDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.PeriodoSinVersion;
 import ec.mdd.normativa.puertos.entrada.PesosDeLaVersion;
 import ec.mdd.normativa.puertos.entrada.ProporcionDeLaVersion;
 import ec.mdd.normativa.puertos.entrada.ReglasDeLaVersion;
 import ec.mdd.normativa.puertos.entrada.ReglasDelPanelDeLaVersion;
+import ec.mdd.normativa.puertos.entrada.RemisionDeLaVersion;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -39,18 +42,21 @@ class InternoNormativaControlador implements InternoApi {
     private final ConsultarProporcionDelPeriodo proporcion;
     private final ConsultarReglasDeAsignacion reglas;
     private final ConsultarReglasDelPanel panel;
+    private final ConsultarRemisionDelPeriodo remision;
 
     InternoNormativaControlador(
             ConsultarPesosDelPeriodo consultar,
             ConsultarActividadesDelPeriodo actividades,
             ConsultarProporcionDelPeriodo proporcion,
             ConsultarReglasDeAsignacion reglas,
-            ConsultarReglasDelPanel panel) {
+            ConsultarReglasDelPanel panel,
+            ConsultarRemisionDelPeriodo remision) {
         this.consultar = consultar;
         this.actividades = actividades;
         this.proporcion = proporcion;
         this.reglas = reglas;
         this.panel = panel;
+        this.remision = remision;
     }
 
     @Override
@@ -91,6 +97,18 @@ class InternoNormativaControlador implements InternoApi {
             return ResponseEntity.ok(
                     new ProporcionDelPeriodo(
                             periodo, meta.version(), meta.clase(), meta.otrasDocencia()));
+        } catch (PeriodoSinVersion error) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @Override
+    public ResponseEntity<RemisionDelPeriodo> consultarRemisionDelPeriodo(String periodo) {
+        try {
+            RemisionDeLaVersion deLaVersion = remision.remision(periodo);
+            return ResponseEntity.ok(
+                    new RemisionDelPeriodo(
+                            periodo, deLaVersion.version(), deLaVersion.diasAntesDelInicio()));
         } catch (PeriodoSinVersion error) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }

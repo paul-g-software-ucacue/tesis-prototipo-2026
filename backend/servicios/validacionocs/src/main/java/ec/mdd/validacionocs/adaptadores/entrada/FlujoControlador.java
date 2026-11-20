@@ -7,7 +7,9 @@ import ec.mdd.validacionocs.adaptadores.entrada.api.AprobacionApi;
 import ec.mdd.validacionocs.adaptadores.entrada.api.CongelacionDeLaVersion;
 import ec.mdd.validacionocs.adaptadores.entrada.api.DevolucionDelParcial;
 import ec.mdd.validacionocs.adaptadores.entrada.api.EstadoDelFlujo;
+import ec.mdd.validacionocs.adaptadores.entrada.api.EtapaDelDistributivo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.ParcialDelFlujo;
+import ec.mdd.validacionocs.adaptadores.entrada.api.PlazoDeLaEtapa;
 import ec.mdd.validacionocs.adaptadores.entrada.api.PublicacionDelDistributivo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.RechazoEnFirmaDelFlujo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.ReformaDelDistributivo;
@@ -319,6 +321,32 @@ class FlujoControlador implements AprobacionApi {
                                                 una.motivo(),
                                                 una.iniciadaPor(),
                                                 una.iniciadaEn().atOffset(ZoneOffset.UTC))));
+        // F12-H03: el plazo de la etapa actual y las etapas activas, para todo el que lee el flujo.
+        flujo.plazo()
+                .ifPresent(
+                        uno ->
+                                respuesta.plazo(
+                                        new PlazoDeLaEtapa(
+                                                TipoDeEtapa.fromValue(uno.etapa().name()),
+                                                uno.llegada().atOffset(ZoneOffset.UTC),
+                                                uno.dias(),
+                                                uno.fechaLimite(),
+                                                uno.diasRestantes(),
+                                                PlazoDeLaEtapa.EstadoEnum.fromValue(
+                                                        uno.estado().name()))));
+        respuesta.etapas(
+                flujo.etapas().stream()
+                        .map(
+                                una -> {
+                                    EtapaDelDistributivo etapa =
+                                            new EtapaDelDistributivo(
+                                                    TipoDeEtapa.fromValue(una.etapa().name()),
+                                                    una.nombre(),
+                                                    una.actual());
+                                    una.plazoDias().ifPresent(etapa::plazoDias);
+                                    return etapa;
+                                })
+                        .toList());
         return respuesta;
     }
 

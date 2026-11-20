@@ -222,6 +222,40 @@ paths:
           $ref: '#/components/responses/NoEncontrada'
         '500':
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+  /interno/normativa/periodos/{periodo}/remision:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        example: 2025-1
+    get:
+      tags: [Interno]
+      operationId: consultarRemisionDelPeriodo
+      summary: Devuelve los días de RN-23 de la versión que rige el periodo.
+      description: >-
+        Solo entre procesos, con el token de proceso: lo usa Aprobación para la advertencia de RN-23
+        al cargar la configuración del flujo (F12-H03, D-114, ADR-023). Sale de la versión que rige
+        el periodo. Un periodo sin versión responde 404.
+      responses:
+        '200':
+          description: La versión y los días antes del inicio del periodo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RemisionDelPeriodo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/NoEncontrada'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
   /interno/normativa/periodos/{periodo}/proporcion:
     parameters:
       - name: periodo
@@ -738,6 +772,22 @@ components:
           type: array
           items:
             type: string
+    RemisionDelPeriodo:
+      type: object
+      additionalProperties: false
+      required: [periodo, version, diasAntesDelInicio]
+      properties:
+        periodo:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        version:
+          type: integer
+          minimum: 1
+        diasAntesDelInicio:
+          description: >-
+            Los días antes del inicio del periodo en que se remite el distributivo aprobado por el
+            OCS (RN-23, POL 5.2).
+          type: integer
+          minimum: 0
     ProporcionDelPeriodo:
       type: object
       required: [periodo, version, clase, otrasDocencia]

@@ -7,6 +7,7 @@ import ec.mdd.generacion.puertos.requeridos.EtapaDelConsolidado;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
 import ec.mdd.validacionocs.adaptadores.entrada.CierreDeLaFirma;
 import ec.mdd.validacionocs.adaptadores.entrada.EtapaParaGeneracion;
+import ec.mdd.validacionocs.adaptadores.entrada.RevisionDiariaDePlazos;
 import ec.mdd.validacionocs.adaptadores.salida.AlmacenDeResolucionesEnDisco;
 import ec.mdd.validacionocs.adaptadores.salida.AnulacionDeLasFirmas;
 import ec.mdd.validacionocs.adaptadores.salida.AvisoDeFirmaSpring;
@@ -18,6 +19,7 @@ import ec.mdd.validacionocs.adaptadores.salida.PreparacionDelDocumento;
 import ec.mdd.validacionocs.adaptadores.salida.PublicadorDeCambios;
 import ec.mdd.validacionocs.adaptadores.salida.PublicadorDeNotificaciones;
 import ec.mdd.validacionocs.adaptadores.salida.RepositorioConfiguracionJdbc;
+import ec.mdd.validacionocs.adaptadores.salida.RepositorioPlazosJdbc;
 import ec.mdd.validacionocs.adaptadores.salida.RepositorioProcesoJdbc;
 import ec.mdd.validacionocs.adaptadores.salida.TransaccionSpring;
 import ec.mdd.validacionocs.aplicacion.CargarConfiguracionServicio;
@@ -31,18 +33,23 @@ import ec.mdd.validacionocs.aplicacion.IniciarReformaServicio;
 import ec.mdd.validacionocs.aplicacion.PublicarDistributivoServicio;
 import ec.mdd.validacionocs.aplicacion.RegistrarRechazoEnFirmaServicio;
 import ec.mdd.validacionocs.aplicacion.RegistrarResolucionServicio;
+import ec.mdd.validacionocs.aplicacion.RevisarPlazosServicio;
 import ec.mdd.validacionocs.puertos.entrada.CargarConfiguracion;
 import ec.mdd.validacionocs.puertos.entrada.CompletarFirmas;
 import ec.mdd.validacionocs.puertos.entrada.ConsultarConfiguracion;
 import ec.mdd.validacionocs.puertos.entrada.RegistrarRechazoEnFirma;
+import ec.mdd.validacionocs.puertos.entrada.RevisarPlazos;
 import ec.mdd.validacionocs.puertos.salida.AlmacenDeResoluciones;
+import ec.mdd.validacionocs.puertos.salida.AvisoDePlazoVencido;
 import ec.mdd.validacionocs.puertos.salida.DatosDelPeriodo;
 import ec.mdd.validacionocs.puertos.salida.Distributivo;
 import ec.mdd.validacionocs.puertos.salida.LectorDeConfiguracion;
+import ec.mdd.validacionocs.puertos.salida.NormativaDelPeriodo;
 import ec.mdd.validacionocs.puertos.salida.NotificacionDeTransiciones;
 import ec.mdd.validacionocs.puertos.salida.PlantillaDelFlujo;
 import ec.mdd.validacionocs.puertos.salida.RegistroDeCambios;
 import ec.mdd.validacionocs.puertos.salida.RepositorioConfiguracion;
+import ec.mdd.validacionocs.puertos.salida.RepositorioPlazos;
 import ec.mdd.validacionocs.puertos.salida.RepositorioProceso;
 import ec.mdd.validacionocs.puertos.salida.Transaccion;
 import java.net.URI;
@@ -58,9 +65,12 @@ import org.springframework.transaction.support.TransactionOperations;
 @Configuration(proxyBeanMethods = false)
 public class ConfiguracionValidacionocs {
 
-    /** Académico en el proceso datos y Roles en el proceso identidad (ADR-023). */
+    /**
+     * Académico en el proceso datos y Roles en el proceso identidad (ADR-023), y desde F12-H03 los
+     * días de RN-23 de Normativa ({@link NormativaDelPeriodo}), también en el proceso datos.
+     */
     @Bean
-    public DatosDelPeriodo datosDelPeriodo(
+    public DatosDesdeProcesos datosDelPeriodo(
             ConsultasEntreProcesos consultas,
             @Value("${mdd.procesos.datos}") URI datos,
             @Value("${mdd.procesos.identidad}") URI identidad) {
@@ -91,9 +101,12 @@ public class ConfiguracionValidacionocs {
         return new PublicadorDeCambios(eventos, Clock.systemUTC());
     }
 
-    /** Cada transición, como una solicitud de notificaciones hacia Notificaciones (F16-H01). */
+    /**
+     * Cada transición, como una solicitud de notificaciones hacia Notificaciones (F16-H01), y desde
+     * F12-H03 cada plazo vencido ({@link AvisoDePlazoVencido}).
+     */
     @Bean
-    public NotificacionDeTransiciones notificacionDeTransiciones(
+    public PublicadorDeNotificaciones notificacionDeTransiciones(
             ApplicationEventPublisher eventos,
             ConsultasEntreProcesos consultas,
             @Value("${mdd.procesos.datos}") URI datos,
@@ -207,12 +220,14 @@ public class ConfiguracionValidacionocs {
     @Bean
     public CargarConfiguracion cargarConfiguracion(
             DatosDelPeriodo datos,
+            NormativaDelPeriodo normativa,
             LectorDeConfiguracion lector,
             RepositorioConfiguracion repositorio,
             RegistroDeCambios registroDeCambiosValidacionocs,
             Transaccion transaccionValidacionocs) {
         return new CargarConfiguracionServicio(
                 datos,
+                normativa,
                 lector,
                 repositorio,
                 registroDeCambiosValidacionocs,
@@ -315,6 +330,41 @@ public class ConfiguracionValidacionocs {
      * Escucha los avisos de cadena completa y de rechazo en firma de Firma después de confirmar
      * (MD-05, F14-H03, F14-H04).
      */
+    /** Los vencimientos de plazo, uno por llegada a la etapa (F12-H03, D-114). */
+    @Bean
+    public RepositorioPlazos repositorioPlazos(JdbcClient jdbc) {
+        return new RepositorioPlazosJdbc(jdbc);
+    }
+
+    /** La revisión de plazos de cada día y al arrancar (F12-H03, D-114). */
+    @Bean
+    public RevisarPlazosServicio revisarPlazos(
+            RepositorioProceso repositorioProceso,
+            LectorDeConfiguracion lector,
+            RepositorioConfiguracion repositorio,
+            PlantillaDelFlujo plantilla,
+            DatosDelPeriodo datos,
+            RepositorioPlazos repositorioPlazos,
+            AvisoDePlazoVencido notificacionDeTransiciones,
+            RegistroDeCambios registroDeCambiosValidacionocs,
+            Transaccion transaccionValidacionocs) {
+        return new RevisarPlazosServicio(
+                repositorioProceso,
+                new EtapasAlCrearse(repositorio, lector, plantilla),
+                datos,
+                repositorioPlazos,
+                notificacionDeTransiciones,
+                registroDeCambiosValidacionocs,
+                transaccionValidacionocs,
+                Clock.systemUTC());
+    }
+
+    /** El adaptador programado de la revisión de plazos. */
+    @Bean
+    public RevisionDiariaDePlazos revisionDiariaDePlazos(RevisarPlazos revisarPlazos) {
+        return new RevisionDiariaDePlazos(revisarPlazos);
+    }
+
     @Bean
     public CierreDeLaFirma cierreDeLaFirma(
             CompletarFirmas completarFirmas, RegistrarRechazoEnFirma registrarRechazoEnFirma) {

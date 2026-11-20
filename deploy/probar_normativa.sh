@@ -80,7 +80,7 @@ sin_periodos() {
 es_la_politica_de_2024() {
     [[ $estado == 200 ]] \
         && [[ $(jq '.tablaCargaHoraria | length' <<<"$cuerpo") == 22 ]] \
-        && [[ $(jq '.reglas | length' <<<"$cuerpo") == 16 ]] \
+        && [[ $(jq '.reglas | length' <<<"$cuerpo") == 17 ]] \
         && [[ $(jq -c '.tablaCargaHoraria[] | select(.perfil == "DOCENTE_TC")
                 | [.horasClase, .horasClaseMinimo, .horasClaseMaximo, .horasOtrasDocencia]' <<<"$cuerpo") \
             == '[22,18,24,18]' ]]
@@ -158,7 +158,7 @@ verificar 1 "vicerrectorado.demo: la primera versión es la 1, SENESCYT-2024-03 
 
 # 2. La versión 1 es la política 2024
 pedir GET "$GATEWAY/api/normativa/versiones/1" "Bearer $token_vicerrector"
-verificar 2 "La versión 1 tiene 22 filas y 16 reglas; DOCENTE_TC con 22 h de clase entre 18 y 24 y 18 de otras de docencia (recibido: $estado)" es_la_politica_de_2024
+verificar 2 "La versión 1 tiene 22 filas y 17 reglas (RN-23 desde F12-H03); DOCENTE_TC con 22 h de clase entre 18 y 24 y 18 de otras de docencia (recibido: $estado)" es_la_politica_de_2024
 guardada=$cuerpo
 
 # 3. El Administrador la ve igual; un docente recibe el 403; una versión que no existe, 404

@@ -5,6 +5,7 @@ import ec.mdd.validacionocs.dominio.ConfiguracionFlujo;
 import ec.mdd.validacionocs.dominio.DocumentoDeFirma;
 import ec.mdd.validacionocs.dominio.EtapaDelProceso;
 import ec.mdd.validacionocs.dominio.PasoFirma;
+import ec.mdd.validacionocs.dominio.PlazosDeEtapas;
 import ec.mdd.validacionocs.puertos.salida.LectorDeConfiguracion;
 import ec.mdd.validacionocs.puertos.salida.PlantillaDelFlujo;
 import ec.mdd.validacionocs.puertos.salida.RepositorioConfiguracion;
@@ -13,10 +14,10 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Las etapas que regían cuando se creó un distributivo (F12-H02, FR-003, research §5), y desde
- * F13-H02 su cadena de firmas del consolidado: las de la última carga anterior a su creación o, si
- * no había, las de la configuración por defecto. Las cargas son solo de inserción, así que se
- * pueden reconstruir.
+ * Las etapas que regían cuando se creó un distributivo (F12-H02, FR-003, research §5), desde
+ * F13-H02 su cadena de firmas del consolidado y desde F12-H03 sus plazos: las de la última carga
+ * anterior a su creación o, si no había, las de la configuración por defecto. Las cargas son solo
+ * de inserción, así que se pueden reconstruir.
  */
 public final class EtapasAlCrearse {
 
@@ -60,6 +61,20 @@ public final class EtapasAlCrearse {
                 .filter(paso -> paso.documento() == DocumentoDeFirma.CONSOLIDADO)
                 .sorted(Comparator.comparingInt(PasoFirma::orden))
                 .toList();
+    }
+
+    /**
+     * Los plazos de cada etapa como regían al crearse el distributivo (F12-H03, D-114). La copia de
+     * la configuración del proceso no guarda el plazo; se reconstruye de la misma carga que la
+     * copia, que es solo de inserción, así que un cambio posterior no afecta al distributivo en
+     * curso (RF-34).
+     *
+     * @param periodo el código del periodo
+     * @param creadoEn cuándo se creó el distributivo
+     * @return los días de cada etapa activa
+     */
+    public PlazosDeEtapas plazos(String periodo, Instant creadoEn) {
+        return PlazosDeEtapas.de(configuracion(periodo, creadoEn).etapas());
     }
 
     // Lo guardado ya se validó al cargarlo, como en ConsultarConfiguracionServicio.

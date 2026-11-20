@@ -15,11 +15,13 @@ import ec.mdd.normativa.puertos.entrada.ConsultarPesosDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarProporcionDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarReglasDeAsignacion;
 import ec.mdd.normativa.puertos.entrada.ConsultarReglasDelPanel;
+import ec.mdd.normativa.puertos.entrada.ConsultarRemisionDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.PeriodoSinVersion;
 import ec.mdd.normativa.puertos.entrada.PesosDeLaVersion;
 import ec.mdd.normativa.puertos.entrada.ProporcionDeLaVersion;
 import ec.mdd.normativa.puertos.entrada.ReglasDeLaVersion;
 import ec.mdd.normativa.puertos.entrada.ReglasDelPanelDeLaVersion;
+import ec.mdd.normativa.puertos.entrada.RemisionDeLaVersion;
 import ec.mdd.plataforma.errores.ErroresAutoConfiguracion;
 import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
 import ec.mdd.plataforma.seguridad.SeguridadProcesoAutoConfiguracion;
@@ -51,6 +53,7 @@ class InternoNormativaContratoTest {
     private static final String RUTA = "/interno/normativa/periodos/%s/pesos-de-afinidad";
     private static final String RUTA_ACTIVIDADES = "/interno/normativa/periodos/%s/actividades";
     private static final String RUTA_PROPORCION = "/interno/normativa/periodos/%s/proporcion";
+    private static final String RUTA_REMISION = "/interno/normativa/periodos/%s/remision";
 
     private final ValidadorDeContrato contrato = ValidadorDeContrato.para("normativa");
 
@@ -146,6 +149,36 @@ class InternoNormativaContratoTest {
     @Test
     void dadoUnTokenDeUsuario_cuandoConsultaLaProporcion_entonces403() throws Exception {
         MvcResult resultado = pedirProporcion("2026-I", jwt());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(403);
+        contrato.validar(resultado);
+    }
+
+    // F12-H03, D-114: los días de RN-23 de la versión que rige el periodo.
+    @Test
+    void dadoUnProceso_cuandoConsultaLaRemision_entonces200ConLosDiasDeRn23() throws Exception {
+        MvcResult resultado =
+                mvc.perform(get(RUTA_REMISION.formatted("2026-I")).with(deProceso())).andReturn();
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString())
+                .isEqualTo("{\"periodo\":\"2026-I\",\"version\":2,\"diasAntesDelInicio\":30}");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnPeriodoSinVersion_cuandoConsultaLaRemision_entonces404() throws Exception {
+        MvcResult resultado =
+                mvc.perform(get(RUTA_REMISION.formatted("2099-I")).with(deProceso())).andReturn();
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(404);
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnTokenDeUsuario_cuandoConsultaLaRemision_entonces403() throws Exception {
+        MvcResult resultado =
+                mvc.perform(get(RUTA_REMISION.formatted("2026-I")).with(jwt())).andReturn();
 
         assertThat(resultado.getResponse().getStatus()).isEqualTo(403);
         contrato.validar(resultado);
@@ -275,6 +308,16 @@ class InternoNormativaContratoTest {
                     throw new PeriodoSinVersion(periodo);
                 }
                 return new ProporcionDeLaVersion(2, new BigDecimal("60"), new BigDecimal("40"));
+            };
+        }
+
+        @Bean
+        ConsultarRemisionDelPeriodo consultarRemisionDelPeriodo() {
+            return periodo -> {
+                if (!"2026-I".equals(periodo)) {
+                    throw new PeriodoSinVersion(periodo);
+                }
+                return new RemisionDeLaVersion(2, 30);
             };
         }
 

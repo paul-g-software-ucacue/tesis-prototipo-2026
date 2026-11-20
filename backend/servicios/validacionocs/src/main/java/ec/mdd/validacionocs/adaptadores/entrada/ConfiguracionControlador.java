@@ -1,11 +1,13 @@
 package ec.mdd.validacionocs.adaptadores.entrada;
 
+import ec.mdd.validacionocs.adaptadores.entrada.api.AdvertenciaDelFlujo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.CargaDelFlujo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.ConfiguracionDelFlujo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.EtapaDelFlujo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.FlujoApi;
 import ec.mdd.validacionocs.adaptadores.entrada.api.PasoDeFirma;
 import ec.mdd.validacionocs.adaptadores.entrada.api.TipoDeEtapa;
+import ec.mdd.validacionocs.dominio.AdvertenciaDeRemision;
 import ec.mdd.validacionocs.dominio.CargaGuardada;
 import ec.mdd.validacionocs.dominio.Etapa;
 import ec.mdd.validacionocs.dominio.PasoFirma;
@@ -99,7 +101,28 @@ class ConfiguracionControlador implements FlujoApi {
                             respuesta.setVersion(carga.numero());
                             respuesta.setCargada(cargada(carga));
                         });
+        // F12-H03 (D-114): la advertencia de RN-23 con la que se cargó; la de por defecto, ninguna.
+        respuesta.advertencias(
+                vigente
+                        .carga()
+                        .flatMap(CargaGuardada::advertencia)
+                        .map(ConfiguracionControlador::advertencia)
+                        .stream()
+                        .toList());
         return respuesta;
+    }
+
+    private static AdvertenciaDelFlujo advertencia(AdvertenciaDeRemision una) {
+        AdvertenciaDelFlujo advertencia =
+                new AdvertenciaDelFlujo(
+                        AdvertenciaDelFlujo.CodigoEnum.fromValue(una.codigo().name()),
+                        una.mensaje(),
+                        una.ultimoPlazo(),
+                        una.inicioDelPeriodo());
+        una.diasAntesDelInicio().ifPresent(advertencia::diasAntesDelInicio);
+        una.fechaDeRemision().ifPresent(advertencia::fechaDeRemision);
+        una.diasDeMargen().ifPresent(advertencia::diasDeMargen);
+        return advertencia;
     }
 
     private static CargaDelFlujo cargada(CargaGuardada carga) {

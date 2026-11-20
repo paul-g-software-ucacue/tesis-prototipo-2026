@@ -5,20 +5,25 @@ import ec.mdd.validacionocs.dominio.EstadoDelPeriodo;
 import ec.mdd.validacionocs.dominio.Firmantes;
 import ec.mdd.validacionocs.puertos.salida.DatosDelPeriodo;
 import ec.mdd.validacionocs.puertos.salida.NombresDeCarreras;
+import ec.mdd.validacionocs.puertos.salida.NormativaDelPeriodo;
 import java.net.URI;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /**
- * Pide a Académico (proceso datos) y a Roles (proceso identidad) lo que necesita de un periodo, y a
- * Académico el nombre de las carreras, por sus rutas internas (principio V, ADR-023).
+ * Pide a Académico (proceso datos) y a Roles (proceso identidad) lo que necesita de un periodo, a
+ * Académico el nombre de las carreras y, desde F12-H03, a Normativa (también en el proceso datos)
+ * los días de RN-23, por sus rutas internas (principio V, ADR-023).
  */
-public final class DatosDesdeProcesos implements DatosDelPeriodo, NombresDeCarreras {
+public final class DatosDesdeProcesos
+        implements DatosDelPeriodo, NombresDeCarreras, NormativaDelPeriodo {
 
     private final ConsultasEntreProcesos consultas;
     private final URI datos;
@@ -45,7 +50,26 @@ public final class DatosDesdeProcesos implements DatosDelPeriodo, NombresDeCarre
                         .toUri();
         return consultas
                 .obtener(ruta, RespuestaEstado.class)
-                .map(respuesta -> new EstadoDelPeriodo(respuesta.estado()));
+                .map(
+                        respuesta ->
+                                new EstadoDelPeriodo(
+                                        respuesta.estado(),
+                                        Optional.ofNullable(respuesta.inicio())));
+    }
+
+    // F12-H03 (D-114): un 404 es un periodo sin versión de normativa, no un error.
+    @Override
+    public OptionalInt diasDeRemision(String periodo) {
+        URI ruta =
+                UriComponentsBuilder.fromUri(datos)
+                        .pathSegment("interno", "normativa", "periodos", periodo, "remision")
+                        .build()
+                        .encode()
+                        .toUri();
+        return consultas
+                .obtener(ruta, RespuestaRemision.class)
+                .map(respuesta -> OptionalInt.of(respuesta.diasAntesDelInicio()))
+                .orElseGet(OptionalInt::empty);
     }
 
     @Override
@@ -86,7 +110,10 @@ public final class DatosDesdeProcesos implements DatosDelPeriodo, NombresDeCarre
     }
 
     /** La respuesta de Académico. */
-    record RespuestaEstado(String periodo, String estado) {}
+    record RespuestaEstado(String periodo, String estado, LocalDate inicio) {}
+
+    /** La respuesta de Normativa. */
+    record RespuestaRemision(String periodo, int version, int diasAntesDelInicio) {}
 
     /** Una carrera en la respuesta de Académico. */
     record NombreDeCarrera(String codigo, String nombre) {}

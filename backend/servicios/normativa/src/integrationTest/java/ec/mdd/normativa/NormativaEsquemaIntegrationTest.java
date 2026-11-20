@@ -147,7 +147,7 @@ class NormativaEsquemaIntegrationTest {
 
             completo.migrate();
 
-            assertThat(reglasDe(jdbc, 2)).isEqualTo(reglasDe(jdbc, 1)).hasSize(16);
+            assertThat(reglasDe(jdbc, 2)).isEqualTo(reglasDe(jdbc, 1)).hasSize(17);
             assertThat(
                             jdbc.sql(
                                             "select (detalle ->> 'numero')::int from"
@@ -155,10 +155,50 @@ class NormativaEsquemaIntegrationTest {
                                                     + " where accion = 'VERSION_EDITADA'"
                                                     + " and detalle::text not like '%actividades%'"
                                                     + " and detalle::text not like '%margen_puntos%'"
+                                                    + " and detalle::text not like"
+                                                    + " '%dias_antes_del_inicio%'"
                                                     + " order by 1")
                                     .query(Integer.class)
                                     .list())
                     .containsExactly(1, 2);
+        }
+    }
+
+    /**
+     * V7 (F12-H03, D-114): cada versión trae RN-23 con los 30 días antes del inicio del periodo de
+     * POL 5.2, sin severidad porque solo da un parámetro, y su registro de sistema (D-68).
+     */
+    @Test
+    void dadaCadaVersion_cuandoSeMigra_entoncesTraeLosDiasDeRemisionDeRn23ConSuRegistro() {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
+            postgres.start();
+            DataSource dataSource =
+                    new DriverManagerDataSource(
+                            postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+
+            new NormativaFlywayConfig().flywayNormativa(dataSource).migrate();
+
+            JdbcClient jdbc = JdbcClient.create(dataSource);
+            assertThat(reglasDe(jdbc, 1)).contains("RN-23:-");
+            assertThat(
+                            jdbc.sql(
+                                            "select valor from normativa.parametro_regla p join"
+                                                    + " normativa.version_normativa v on v.id ="
+                                                    + " p.version_id where v.numero = 1 and"
+                                                    + " p.regla = 'RN-23' and p.nombre ="
+                                                    + " 'dias_antes_del_inicio'")
+                                    .query(java.math.BigDecimal.class)
+                                    .single())
+                    .isEqualByComparingTo("30");
+            assertThat(
+                            jdbc.sql(
+                                            "select count(*) from normativa.registro_cambio"
+                                                    + " where accion = 'VERSION_EDITADA' and"
+                                                    + " detalle::text like"
+                                                    + " '%RN-23.dias_antes_del_inicio%'")
+                                    .query(Long.class)
+                                    .single())
+                    .isEqualTo(1);
         }
     }
 

@@ -33,6 +33,9 @@ mdd.eventos.proceso: distributivo
 # formulario (D-88, F14-H02).
 spring.servlet.multipart.max-file-size: 11MB
 spring.servlet.multipart.max-request-size: 11MB
+# La revisión diaria de plazos (F12-H03, D-114): un cron de Spring en hora de Ecuador; además corre
+# al arrancar.
+mdd.validacionocs.plazos.revision: ${MDD_REVISION_DE_PLAZOS:0 0 7 * * *}
 # Los archivos del negocio, en el volumen archivos (D-88). La carpeta se crea al guardar.
 mdd.archivos.raiz: ${MDD_ARCHIVOS_RAIZ:/var/mdd/archivos}
 # Las consultas a los procesos datos e identidad, por sus rutas internas (ADR-023).

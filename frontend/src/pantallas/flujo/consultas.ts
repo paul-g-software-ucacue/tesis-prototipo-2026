@@ -7,6 +7,8 @@ import { FalloDeApi } from '../../errores/traducir';
 import { guardar, nombreDelServidor } from '../plantillas/consultas';
 
 export type ConfiguracionDelFlujo = components['schemas']['ConfiguracionDelFlujo'];
+// F12-H03 (D-114): la advertencia de RN-23 de la carga.
+export type AdvertenciaDelFlujo = components['schemas']['AdvertenciaDelFlujo'];
 export type EtapaDelFlujo = components['schemas']['EtapaDelFlujo'];
 export type PasoDeFirma = components['schemas']['PasoDeFirma'];
 

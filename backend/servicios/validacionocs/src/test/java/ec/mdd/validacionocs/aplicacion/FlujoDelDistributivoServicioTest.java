@@ -17,6 +17,7 @@ import ec.mdd.validacionocs.dominio.AccionDelProceso;
 import ec.mdd.validacionocs.dominio.CargaGuardada;
 import ec.mdd.validacionocs.dominio.CondicionesDeRevision;
 import ec.mdd.validacionocs.dominio.DevolucionDeParcial;
+import ec.mdd.validacionocs.dominio.EstadoDeEnvio;
 import ec.mdd.validacionocs.dominio.EstadoDelPeriodo;
 import ec.mdd.validacionocs.dominio.EtapaConOperacionPropia;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteAprobacion;
@@ -828,6 +829,98 @@ class FlujoDelDistributivoServicioTest {
     /**
      * Los procesos en memoria. {@link #revertir()} deshace lo guardado en la última transacción.
      */
+    // F12-H03, D-114: el plazo de la etapa actual y las etapas activas, con el mismo reloj.
+
+    @Test
+    void dadoUnDistributivoRecienCreado_cuandoSeConsulta_entoncesTraeSuPlazoYLasEtapasActivas() {
+        FlujoDelDistributivo flujo = servicio.flujo(PERIODO, COORDINADOR_DS);
+
+        assertThat(flujo.plazo())
+                .contains(
+                        new FlujoDelDistributivo.PlazoDeLaEtapa(
+                                TipoDeEtapa.BORRADOR_CARRERA,
+                                CREADO,
+                                15,
+                                java.time.LocalDate.of(2026, 11, 16),
+                                9,
+                                ec.mdd.validacionocs.dominio.EstadoDelPlazo.A_TIEMPO));
+        assertThat(flujo.etapas())
+                .extracting(
+                        FlujoDelDistributivo.EtapaDelDistributivo::etapa,
+                        FlujoDelDistributivo.EtapaDelDistributivo::actual)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(TipoDeEtapa.BORRADOR_CARRERA, true),
+                        org.assertj.core.groups.Tuple.tuple(TipoDeEtapa.EN_CONSOLIDACION, false),
+                        org.assertj.core.groups.Tuple.tuple(TipoDeEtapa.EN_REVISION_VRA, false),
+                        org.assertj.core.groups.Tuple.tuple(TipoDeEtapa.CONGELADO_EN_FIRMA, false),
+                        org.assertj.core.groups.Tuple.tuple(TipoDeEtapa.EN_OCS, false),
+                        org.assertj.core.groups.Tuple.tuple(TipoDeEtapa.APROBADO, false),
+                        org.assertj.core.groups.Tuple.tuple(TipoDeEtapa.PUBLICADO, false));
+        assertThat(flujo.etapas().getFirst().nombre()).isEqualTo("Propuesta de carrera");
+        assertThat(flujo.etapas().getFirst().plazoDias()).hasValue(15);
+        assertThat(flujo.etapas().getLast().plazoDias()).isEmpty();
+    }
+
+    @Test
+    void dadoElDiaDeLaFechaLimite_cuandoSeConsulta_entoncesVenceHoy() {
+        assertThat(servicioEn(Instant.parse("2026-11-16T20:00:00Z")).flujo(PERIODO, VICERRECTOR))
+                .extracting(FlujoDelDistributivo::plazo)
+                .satisfies(
+                        plazo -> {
+                            assertThat(plazo.orElseThrow().estado())
+                                    .isEqualTo(
+                                            ec.mdd.validacionocs.dominio.EstadoDelPlazo.VENCE_HOY);
+                            assertThat(plazo.orElseThrow().diasRestantes()).isZero();
+                        });
+    }
+
+    @Test
+    void dadoElPlazoVencido_cuandoSeConsulta_entoncesDiceCuantoLlevaVencido() {
+        FlujoDelDistributivo.PlazoDeLaEtapa plazo =
+                servicioEn(Instant.parse("2026-11-19T15:00:00Z"))
+                        .flujo(PERIODO, VICERRECTOR)
+                        .plazo()
+                        .orElseThrow();
+
+        assertThat(plazo.estado()).isEqualTo(ec.mdd.validacionocs.dominio.EstadoDelPlazo.VENCIDO);
+        assertThat(plazo.diasRestantes()).isEqualTo(-3);
+    }
+
+    @Test
+    void dadoElDistributivoPublicado_cuandoSeConsulta_entoncesNoHayPlazo() {
+        procesos.crear(
+                ProcesoAprobacion.de(
+                        PERIODO,
+                        new EtapasAlCrearse(
+                                        configuraciones,
+                                        new LectorYaml(),
+                                        new PlantillaEnRecursos())
+                                .de(PERIODO, CREADO),
+                        TipoDeEtapa.PUBLICADO,
+                        CREADO,
+                        Map.of("DS", EstadoDeEnvio.ENVIADO, "TDS", EstadoDeEnvio.ENVIADO),
+                        List.of()),
+                CREADO);
+
+        FlujoDelDistributivo flujo = servicio.flujo(PERIODO, VICERRECTOR);
+
+        assertThat(flujo.plazo()).isEmpty();
+        assertThat(flujo.etapas().getLast().actual()).isTrue();
+    }
+
+    private FlujoDelDistributivoServicio servicioEn(Instant ahora) {
+        return new FlujoDelDistributivoServicio(
+                distributivo,
+                procesos,
+                new EtapasAlCrearse(configuraciones, new LectorYaml(), new PlantillaEnRecursos()),
+                datos,
+                registro,
+                transaccion,
+                Clock.fixed(ahora, ZoneOffset.UTC),
+                aviso,
+                notificacion);
+    }
+
     private static final class ProcesosEnMemoria implements RepositorioProceso {
 
         private final Map<String, ProcesoAprobacion> guardados = new HashMap<>();
@@ -841,6 +934,17 @@ class FlujoDelDistributivoServicioTest {
         @Override
         public Optional<ProcesoAprobacion> bloquear(String periodo) {
             return de(periodo);
+        }
+
+        @Override
+        public List<String> enCurso() {
+            return guardados.values().stream()
+                    .filter(
+                            uno ->
+                                    uno.estado()
+                                            != ec.mdd.validacionocs.dominio.TipoDeEtapa.PUBLICADO)
+                    .map(ProcesoAprobacion::periodo)
+                    .toList();
         }
 
         @Override

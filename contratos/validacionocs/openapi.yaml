@@ -88,7 +88,9 @@ paths:
       description: >-
         Valida el esqueleto, las firmas y los firmantes, y responde todos los problemas. Un archivo
         rechazado no cambia lo que rige. Cada carga crea una versión nueva, y las anteriores se
-        conservan (ADR-007).
+        conservan (ADR-007). Una configuración válida se carga aunque traiga la advertencia de
+        RN-23, que se guarda con ella (F12-H03, D-114). Si Académico, Roles o Normativa no
+        responden, el 502 o el 504, sin cargar nada.
       x-mdd-permiso: FLUJO_FIRMAS:ESCRITURA
       requestBody:
         required: true
@@ -789,6 +791,51 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PasoDeFirma'
+        advertencias:
+          description: >-
+            Las advertencias de la carga (F12-H03, D-114). En la carga, las calculadas; en la
+            consulta, las que se guardaron con la carga vigente; con la configuración por defecto,
+            ninguna. Una advertencia no rechaza la carga.
+          type: array
+          maxItems: 1
+          items:
+            $ref: '#/components/schemas/AdvertenciaDelFlujo'
+    AdvertenciaDelFlujo:
+      description: >-
+        La advertencia de RN-23 (POL 5.2): con estos plazos, contados desde el día de la carga, el
+        distributivo se aprobaría después de la fecha que pide RN-23, o no se pudo comprobar porque
+        el periodo no tiene versión de normativa. El código es estable y no es del catálogo de
+        errores.
+      type: object
+      additionalProperties: false
+      required: [codigo, mensaje, ultimoPlazo, inicioDelPeriodo]
+      properties:
+        codigo:
+          type: string
+          enum: [RN23_MARGEN_INSUFICIENTE, RN23_SIN_NORMATIVA]
+        mensaje:
+          description: En español, con qué hacer.
+          type: string
+        ultimoPlazo:
+          description: La fecha de la carga más la suma de los plazos de las etapas activas hasta APROBADO.
+          type: string
+          format: date
+        inicioDelPeriodo:
+          type: string
+          format: date
+        diasAntesDelInicio:
+          description: Los días de RN-23 de la normativa del periodo; ausente con RN23_SIN_NORMATIVA.
+          type: integer
+          format: int32
+          minimum: 0
+        fechaDeRemision:
+          description: El inicio del periodo menos los días de RN-23; ausente con RN23_SIN_NORMATIVA.
+          type: string
+          format: date
+        diasDeMargen:
+          description: La fecha de RN-23 menos el último plazo, negativo; ausente con RN23_SIN_NORMATIVA.
+          type: integer
+          format: int32
     CargaDelFlujo:
       type: object
       required: [por, en]
@@ -839,6 +886,64 @@ components:
           $ref: '#/components/schemas/PublicacionDelDistributivo'
         reforma:
           $ref: '#/components/schemas/ReformaDelDistributivo'
+        plazo:
+          $ref: '#/components/schemas/PlazoDeLaEtapa'
+        etapas:
+          type: array
+          description: >-
+            Las etapas activas de la configuración del distributivo, en orden, con su plazo
+            (F12-H03, D-114).
+          items:
+            $ref: '#/components/schemas/EtapaDelDistributivo'
+    PlazoDeLaEtapa:
+      description: >-
+        El plazo de la etapa actual (F12-H03, D-114): la llegada a la etapa más sus días corridos,
+        en hora de Ecuador. Lo calcula el servidor con el mismo reloj que la revisión diaria. Ausente
+        en PUBLICADO, que no tiene plazo. Lo ve todo el que lee el estado del flujo.
+      type: object
+      additionalProperties: false
+      required: [etapa, llegada, dias, fechaLimite, diasRestantes, estado]
+      properties:
+        etapa:
+          $ref: '#/components/schemas/TipoDeEtapa'
+        llegada:
+          description: Cuándo llegó el distributivo a la etapa.
+          type: string
+          format: date-time
+        dias:
+          description: El plazo de la etapa, en días corridos.
+          type: integer
+          format: int32
+          minimum: 1
+        fechaLimite:
+          description: La fecha de la llegada en Ecuador más los días. La etapa vence al terminar ese día.
+          type: string
+          format: date
+        diasRestantes:
+          description: La fecha límite menos hoy, en Ecuador; negativo si ya venció.
+          type: integer
+          format: int32
+        estado:
+          type: string
+          enum: [A_TIEMPO, VENCE_HOY, VENCIDO]
+    EtapaDelDistributivo:
+      description: Una etapa activa del flujo del distributivo, con su plazo (F12-H03).
+      type: object
+      additionalProperties: false
+      required: [etapa, nombre, actual]
+      properties:
+        etapa:
+          $ref: '#/components/schemas/TipoDeEtapa'
+        nombre:
+          type: string
+        plazoDias:
+          description: Días corridos desde que el distributivo llega a la etapa; ausente en PUBLICADO.
+          type: integer
+          format: int32
+          minimum: 1
+        actual:
+          description: Si es la etapa en la que está el distributivo.
+          type: boolean
     ReformaDelDistributivo:
       description: >-
         La reforma en curso (F18-H02, D-113): desde que se inicia hasta que se publica la versión de
