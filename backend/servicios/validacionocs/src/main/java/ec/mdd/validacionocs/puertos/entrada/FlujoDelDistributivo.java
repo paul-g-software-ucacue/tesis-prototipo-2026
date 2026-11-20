@@ -24,7 +24,9 @@ import java.util.Optional;
  * @param rechazoEnFirma el rechazo en firma por el que volvió, mientras sea la última transición
  *     (F14-H04)
  * @param resolucion la resolución del OCS, si ya se registró (F15-H01)
- * @param publicacion la publicación, si ya se publicó (F18-H01)
+ * @param publicacion la publicación, si ya se publicó (F18-H01); durante una reforma, la anterior,
+ *     que sigue vigente
+ * @param reforma la reforma en curso, si la hay (F18-H02)
  */
 public record FlujoDelDistributivo(
         String periodo,
@@ -37,7 +39,8 @@ public record FlujoDelDistributivo(
         Optional<Congelacion> congelacion,
         Optional<RechazoEnFirma> rechazoEnFirma,
         Optional<Resolucion> resolucion,
-        Optional<Publicacion> publicacion) {
+        Optional<Publicacion> publicacion,
+        Optional<ReformaEnCurso> reforma) {
 
     /** Exige los datos y copia las listas. */
     public FlujoDelDistributivo {
@@ -47,9 +50,38 @@ public record FlujoDelDistributivo(
         Objects.requireNonNull(rechazoEnFirma, "rechazoEnFirma");
         Objects.requireNonNull(resolucion, "resolucion");
         Objects.requireNonNull(publicacion, "publicacion");
+        Objects.requireNonNull(reforma, "reforma");
         parciales = List.copyOf(parciales);
         acciones = List.copyOf(acciones);
         transiciones = List.copyOf(transiciones);
+    }
+
+    /** Un flujo sin una reforma en curso. */
+    public FlujoDelDistributivo(
+            String periodo,
+            TipoDeEtapa etapa,
+            String nombreDeEtapa,
+            int version,
+            List<Parcial> parciales,
+            List<AccionDelProceso> acciones,
+            List<Transicion> transiciones,
+            Optional<Congelacion> congelacion,
+            Optional<RechazoEnFirma> rechazoEnFirma,
+            Optional<Resolucion> resolucion,
+            Optional<Publicacion> publicacion) {
+        this(
+                periodo,
+                etapa,
+                nombreDeEtapa,
+                version,
+                parciales,
+                acciones,
+                transiciones,
+                congelacion,
+                rechazoEnFirma,
+                resolucion,
+                publicacion,
+                Optional.empty());
     }
 
     /** Un flujo sin publicar. */
@@ -99,6 +131,23 @@ public record FlujoDelDistributivo(
                 Optional.empty(),
                 Optional.empty());
     }
+
+    /**
+     * La reforma en curso (F18-H02, D-113): desde que se inicia hasta que se publica la versión
+     * nueva. Mientras tanto, la publicada sigue siendo la vigente.
+     *
+     * @param versionPublicada la versión publicada que se reforma
+     * @param version la versión nueva, de la reforma
+     * @param motivo por qué
+     * @param iniciadaPor quién la inició
+     * @param iniciadaEn cuándo
+     */
+    public record ReformaEnCurso(
+            int versionPublicada,
+            int version,
+            String motivo,
+            String iniciadaPor,
+            Instant iniciadaEn) {}
 
     /**
      * La publicación del distributivo (F18-H01, D-111): la versión publicada, la congelada que

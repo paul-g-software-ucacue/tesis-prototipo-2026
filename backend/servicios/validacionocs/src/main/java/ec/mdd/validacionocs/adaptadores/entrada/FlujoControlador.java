@@ -10,8 +10,10 @@ import ec.mdd.validacionocs.adaptadores.entrada.api.EstadoDelFlujo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.ParcialDelFlujo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.PublicacionDelDistributivo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.RechazoEnFirmaDelFlujo;
+import ec.mdd.validacionocs.adaptadores.entrada.api.ReformaDelDistributivo;
 import ec.mdd.validacionocs.adaptadores.entrada.api.ResolucionDelOcs;
 import ec.mdd.validacionocs.adaptadores.entrada.api.SolicitudDeDevolucion;
+import ec.mdd.validacionocs.adaptadores.entrada.api.SolicitudDeReforma;
 import ec.mdd.validacionocs.adaptadores.entrada.api.TipoDeEtapa;
 import ec.mdd.validacionocs.adaptadores.entrada.api.TransicionDelFlujo;
 import ec.mdd.validacionocs.dominio.DevolucionDeParcial;
@@ -27,6 +29,7 @@ import ec.mdd.validacionocs.puertos.entrada.DevolverParciales;
 import ec.mdd.validacionocs.puertos.entrada.EnviarARevision;
 import ec.mdd.validacionocs.puertos.entrada.EnviarParcial;
 import ec.mdd.validacionocs.puertos.entrada.FlujoDelDistributivo;
+import ec.mdd.validacionocs.puertos.entrada.IniciarReforma;
 import ec.mdd.validacionocs.puertos.entrada.PublicarDistributivo;
 import ec.mdd.validacionocs.puertos.entrada.RegistrarResolucion;
 import java.time.ZoneOffset;
@@ -65,6 +68,7 @@ class FlujoControlador implements AprobacionApi {
     private final RegistrarResolucion registrar;
     private final DescargarResolucion descargar;
     private final PublicarDistributivo publicar;
+    private final IniciarReforma reformar;
 
     FlujoControlador(
             ConsultarFlujo consultar,
@@ -75,7 +79,8 @@ class FlujoControlador implements AprobacionApi {
             AprobarContenido aprobar,
             RegistrarResolucion registrar,
             DescargarResolucion descargar,
-            PublicarDistributivo publicar) {
+            PublicarDistributivo publicar,
+            IniciarReforma reformar) {
         this.consultar = consultar;
         this.enviar = enviar;
         this.avanzar = avanzar;
@@ -85,6 +90,7 @@ class FlujoControlador implements AprobacionApi {
         this.registrar = registrar;
         this.descargar = descargar;
         this.publicar = publicar;
+        this.reformar = reformar;
     }
 
     @Override
@@ -180,6 +186,17 @@ class FlujoControlador implements AprobacionApi {
     public ResponseEntity<EstadoDelFlujo> publicarDistributivo(String periodo) {
         Solicitante quien = solicitante(true);
         return ResponseEntity.ok(respuesta(sinPermiso(() -> publicar.publicar(periodo, quien))));
+    }
+
+    // F18-H02, D-113: el permiso de la matriz D-16 y, en el dominio, el rol de EN_REVISION_VRA.
+    @Override
+    @PreAuthorize("hasAuthority('PERMISO_DISTRIBUTIVO:APROBACION')")
+    public ResponseEntity<EstadoDelFlujo> iniciarReforma(
+            String periodo, SolicitudDeReforma solicitud) {
+        Solicitante quien = solicitante(true);
+        return ResponseEntity.ok(
+                respuesta(
+                        sinPermiso(() -> reformar.iniciar(periodo, solicitud.getMotivo(), quien))));
     }
 
     // F15-H01: con el permiso de leer la resolución (D-16, D-107), el PDF con su nombre.
@@ -291,6 +308,17 @@ class FlujoControlador implements AprobacionApi {
                                                 una.version(),
                                                 una.publicadaPor(),
                                                 una.publicadaEn().atOffset(ZoneOffset.UTC))));
+        // F18-H02: la reforma en curso, para todo el que lee el flujo (D-113).
+        flujo.reforma()
+                .ifPresent(
+                        una ->
+                                respuesta.reforma(
+                                        new ReformaDelDistributivo(
+                                                una.versionPublicada(),
+                                                una.version(),
+                                                una.motivo(),
+                                                una.iniciadaPor(),
+                                                una.iniciadaEn().atOffset(ZoneOffset.UTC))));
         return respuesta;
     }
 

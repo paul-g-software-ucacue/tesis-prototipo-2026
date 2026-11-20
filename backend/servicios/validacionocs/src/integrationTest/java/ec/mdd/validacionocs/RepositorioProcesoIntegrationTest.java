@@ -443,6 +443,97 @@ class RepositorioProcesoIntegrationTest {
                 });
     }
 
+    // F18-H02: la reforma se guarda con su motivo y se lee igual; la publicada sigue vigente.
+    @Test
+    void dadaUnaReforma_cuandoSeGuarda_entoncesSeLeeConSuMotivoYLaPublicadaVigente() {
+        String periodo = publicado();
+        ProcesoAprobacion proceso = repositorio.de(periodo).orElseThrow();
+        Transicion publicacion = proceso.publicacion().orElseThrow();
+
+        List<Transicion> nuevas =
+                proceso.iniciarReforma(
+                        VICERRECTOR_EN_REVISION, MOTIVO, 2, "e".repeat(64), AHORA.plusSeconds(300));
+        repositorio.guardar(proceso, nuevas);
+
+        ProcesoAprobacion leido = repositorio.de(periodo).orElseThrow();
+        assertThat(leido.estado()).isEqualTo(TipoDeEtapa.EN_CONSOLIDACION);
+        assertThat(leido.reformaEnCurso()).contains(nuevas.getFirst());
+        assertThat(leido.reformaEnCurso().orElseThrow().reforma())
+                .contains(new ec.mdd.validacionocs.dominio.Reforma(1, MOTIVO));
+        assertThat(leido.publicacion()).contains(publicacion);
+    }
+
+    // F18-H02, FR-008: dos reformas a la vez; la segunda espera el bloqueo y encuentra la etapa
+    // de llegada.
+    @Test
+    void dadasDosReformasALaVez_cuandoSeGuardan_entoncesQuedaUnaSola() throws Exception {
+        String periodo = publicado();
+        CountDownLatch salida = new CountDownLatch(1);
+        ExecutorService hilos = Executors.newFixedThreadPool(2);
+        List<Throwable> rechazos =
+                java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+        try {
+            List<Future<?>> tareas = new java.util.ArrayList<>();
+            for (int i = 0; i < 2; i++) {
+                tareas.add(
+                        hilos.submit(
+                                () -> {
+                                    esperar(salida);
+                                    try {
+                                        reformarEnUnaTransaccion(periodo);
+                                    } catch (RuntimeException rechazo) {
+                                        rechazos.add(rechazo);
+                                    }
+                                }));
+            }
+            salida.countDown();
+            for (Future<?> tarea : tareas) {
+                tarea.get(30, TimeUnit.SECONDS);
+            }
+        } finally {
+            hilos.shutdownNow();
+        }
+
+        assertThat(rechazos)
+                .singleElement()
+                .isInstanceOf(ec.mdd.validacionocs.dominio.EtapaNoAdmiteReforma.class);
+        assertThat(repositorio.de(periodo).orElseThrow().transiciones())
+                .filteredOn(
+                        una -> una.tipo() == ec.mdd.validacionocs.dominio.TipoDeTransicion.REFORMA)
+                .hasSize(1);
+    }
+
+    // En las etapas de esta prueba, EN_REVISION_VRA es del VICERRECTOR.
+    private static final Solicitante VICERRECTOR_EN_REVISION =
+            new Solicitante("vicerrectorado.demo", Set.of("VICERRECTOR"), Optional.empty());
+    private static final ec.mdd.validacionocs.dominio.Observacion MOTIVO =
+            new ec.mdd.validacionocs.dominio.Observacion(
+                    "Cambia el docente de Software por una licencia.");
+
+    private String publicado() {
+        String periodo = enOcs();
+        registrarEnUnaTransaccion(periodo, "RPC-SO-12-No.123-2026");
+        publicarEnUnaTransaccion(periodo);
+        return periodo;
+    }
+
+    // Como IniciarReformaServicio: el proceso bloqueado, el agregado decide y se guarda.
+    private static void reformarEnUnaTransaccion(String periodo) {
+        transaccion.executeWithoutResult(
+                estado -> {
+                    ProcesoAprobacion bloqueado = repositorio.bloquear(periodo).orElseThrow();
+                    pausa();
+                    repositorio.guardar(
+                            bloqueado,
+                            bloqueado.iniciarReforma(
+                                    VICERRECTOR_EN_REVISION,
+                                    MOTIVO,
+                                    2,
+                                    "e".repeat(64),
+                                    AHORA.plusSeconds(300)));
+                });
+    }
+
     private String enOcs() {
         String periodo = periodo();
         repositorio.crear(

@@ -15,5 +15,7 @@ public enum AccionDelProceso {
     /** Registrar la resolución del OCS y aprobar el distributivo, desde EN_OCS (F15-H01). */
     REGISTRAR_RESOLUCION,
     /** Publicar el distributivo aprobado, desde APROBADO (F18-H01). */
-    PUBLICAR
+    PUBLICAR,
+    /** Iniciar una reforma del distributivo publicado, desde PUBLICADO (F18-H02). */
+    INICIAR_REFORMA
 }

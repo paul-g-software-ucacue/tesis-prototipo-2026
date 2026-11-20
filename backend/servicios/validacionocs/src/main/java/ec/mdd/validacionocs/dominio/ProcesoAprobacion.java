@@ -182,6 +182,8 @@ public final class ProcesoAprobacion {
      *   <li>en la publicación (F18-H01, D-111), los docentes, Talento Humano y las coordinaciones
      *       (DOCENTE, OPERADOR_DATOS y COORDINADOR_CARRERA), sin carrera: el rol de la etapa
      *       PUBLICADO es el de quien publica, así que con la regla general nadie se enteraría;
+     *   <li>en una reforma (F18-H02, D-113), el de la etapa a la que vuelve el distributivo y,
+     *       además, los tres de la publicación, que tienen que saber que va a cambiar;
      *   <li>en los demás, el de la etapa {@code hacia}.
      * </ul>
      *
@@ -210,6 +212,18 @@ public final class ProcesoAprobacion {
                                             new DestinoDeNotificacion(
                                                     etapa(transicion.hacia()).rol(),
                                                     Optional.of(carrera)))
+                            .toList();
+            // F18-H02, D-113: quien recibe el distributivo para corregirlo y los tres a los que se
+            // avisó la publicación, que va a cambiar; una por usuario por la clave de
+            // Notificaciones.
+            case REFORMA ->
+                    java.util.stream.Stream.concat(
+                                    java.util.stream.Stream.of(
+                                            new DestinoDeNotificacion(
+                                                    etapa(transicion.hacia()).rol(),
+                                                    Optional.empty())),
+                                    DESTINOS_DE_LA_PUBLICACION.stream())
+                            .distinct()
                             .toList();
             case PASO_DE_ETAPA, RECHAZO_EN_FIRMA, VERSION_NUEVA ->
                     List.of(
@@ -393,6 +407,84 @@ public final class ProcesoAprobacion {
         if (resolucion.fecha().isBefore(llegada) || resolucion.fecha().isAfter(hoy)) {
             throw new ResolucionFueraDeRango();
         }
+    }
+
+    /**
+     * Comprueba, sin cambiar nada, que {@code quien} puede iniciar una reforma (F18-H02, D-113): el
+     * distributivo publicado y el rol que aprueba el contenido, el de la etapa EN_REVISION_VRA en
+     * la copia de la configuración. El caso de uso lo llama antes de pedirle a Generación la
+     * versión nueva, para no crearla si la reforma no procede.
+     *
+     * @param quien quien la inicia
+     * @throws EtapaNoAdmiteReforma si el distributivo no está en PUBLICADO
+     * @throws RolDeOtraEtapa si no tiene el rol de EN_REVISION_VRA
+     */
+    public void validarReforma(Solicitante quien) {
+        if (estado != TipoDeEtapa.PUBLICADO) {
+            throw new EtapaNoAdmiteReforma();
+        }
+        exigirRol(quien, TipoDeEtapa.EN_REVISION_VRA);
+    }
+
+    /**
+     * Inicia una reforma del distributivo publicado (F18-H02, RF-40, D-113): vuelve a
+     * EN_CONSOLIDACION, o a la siguiente etapa activa desde ella, con la versión nueva que ya creó
+     * Generación, para recorrer el ciclo completo de aprobación y firmas.
+     *
+     * <p>La versión publicada no se anula: sigue siendo la vigente ({@link #publicacion}) hasta que
+     * se publique la de la reforma, y después queda histórica, con sus firmas y su resolución. La
+     * transición guarda cuál era y el motivo.
+     *
+     * @param quien quien la inicia: el rol de EN_REVISION_VRA en la copia de la configuración
+     * @param motivo por qué hay que cambiar el distributivo publicado
+     * @param nueva la versión que creó Generación para la reforma
+     * @param hash el hash del distributivo de la versión nueva
+     * @param ahora cuándo
+     * @return la transición {@code REFORMA}
+     * @throws EtapaNoAdmiteReforma si el distributivo no está en PUBLICADO
+     * @throws RolDeOtraEtapa si no tiene el rol de EN_REVISION_VRA
+     */
+    public List<Transicion> iniciarReforma(
+            Solicitante quien, Observacion motivo, int nueva, String hash, Instant ahora) {
+        validarReforma(quien);
+        Transicion publicada =
+                publicacion()
+                        .orElseThrow(() -> new IllegalStateException("Publicado sin publicar"));
+        TipoDeEtapa desde = estado;
+        estado = siguienteActiva(TipoDeEtapa.BORRADOR_UNIDADES);
+        Transicion reforma =
+                new Transicion(
+                        TipoDeTransicion.REFORMA,
+                        desde,
+                        estado,
+                        Optional.empty(),
+                        nueva,
+                        hash,
+                        quien.usuario(),
+                        ahora,
+                        Map.of(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.of(new Reforma(publicada.version(), motivo)));
+        transiciones.add(reforma);
+        return List.of(reforma);
+    }
+
+    /**
+     * @return la reforma en curso (F18-H02): la última transición {@code REFORMA}, si no hubo una
+     *     publicación después
+     */
+    public Optional<Transicion> reformaEnCurso() {
+        for (int i = transiciones.size() - 1; i >= 0; i--) {
+            Transicion una = transiciones.get(i);
+            if (una.tipo() == TipoDeTransicion.REFORMA) {
+                return Optional.of(una);
+            }
+            if (una.hacia() == TipoDeEtapa.PUBLICADO) {
+                return Optional.empty();
+            }
+        }
+        return Optional.empty();
     }
 
     /**
@@ -907,9 +999,13 @@ public final class ProcesoAprobacion {
         if (estado == TipoDeEtapa.EN_OCS && tieneRol(quien, TipoDeEtapa.EN_OCS)) {
             return List.of(AccionDelProceso.REGISTRAR_RESOLUCION);
         }
-        // F18-H01: la Secretaría publica el distributivo aprobado; publicado, nadie hace nada.
+        // F18-H01: la Secretaría publica el distributivo aprobado.
         if (estado == TipoDeEtapa.APROBADO && tieneRol(quien, TipoDeEtapa.APROBADO)) {
             return List.of(AccionDelProceso.PUBLICAR);
+        }
+        // F18-H02, D-113: publicado, nadie lo edita; el Vicerrector puede iniciar una reforma.
+        if (estado == TipoDeEtapa.PUBLICADO && tieneRol(quien, TipoDeEtapa.EN_REVISION_VRA)) {
+            return List.of(AccionDelProceso.INICIAR_REFORMA);
         }
         // Con un rechazo en firma pendiente no se aprueba hasta la versión nueva (F14-H04).
         if (estado == TipoDeEtapa.EN_REVISION_VRA

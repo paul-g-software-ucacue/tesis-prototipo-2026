@@ -434,6 +434,23 @@ public final class FlujoDelDistributivoServicio
                     Map.of("estado", transicion.desde().name()),
                     Map.of("estado", transicion.hacia().name()));
         }
+        // F18-H02, D-113: la versión publicada que se reforma, la nueva y el motivo.
+        if (transicion.tipo() == TipoDeTransicion.REFORMA) {
+            transicion
+                    .reforma()
+                    .ifPresent(
+                            reforma -> {
+                                detalle.put("versionPublicada", reforma.versionPublicada());
+                                detalle.put("motivo", reforma.motivo().texto());
+                            });
+            return new CambioDeFlujo(
+                    transicion.momento(),
+                    transicion.quien(),
+                    CambioDeFlujo.Accion.REFORMA_INICIADA,
+                    detalle,
+                    Map.of("estado", transicion.desde().name()),
+                    Map.of("estado", transicion.hacia().name()));
+        }
         // F12-H04: la versión anulada es la anterior a la nueva; hoy el único motivo es el rechazo.
         if (transicion.tipo() == TipoDeTransicion.VERSION_NUEVA) {
             detalle.put("versionAnulada", transicion.version() - 1);
@@ -510,8 +527,11 @@ public final class FlujoDelDistributivoServicio
                                                                         versionNueva(
                                                                                 proceso,
                                                                                 transicion)))),
-                // F15-H01: la resolución del OCS, si ya se registró.
+                // F15-H01: la resolución del OCS, si ya se registró. F18-H02: solo la de la versión
+                // de
+                // trabajo; durante una reforma, la de la publicada sigue en la base y la bitácora.
                 proceso.resolucion()
+                        .filter(transicion -> transicion.version() == actual.version())
                         .flatMap(
                                 transicion ->
                                         transicion
@@ -531,7 +551,22 @@ public final class FlujoDelDistributivoServicio
                         .map(
                                 una ->
                                         new FlujoDelDistributivo.Publicacion(
-                                                una.version(), una.quien(), una.momento())));
+                                                una.version(), una.quien(), una.momento())),
+                // F18-H02: la reforma en curso, con la versión publicada que se reforma (D-113).
+                proceso.reformaEnCurso()
+                        .flatMap(
+                                transicion ->
+                                        transicion
+                                                .reforma()
+                                                .map(
+                                                        reforma ->
+                                                                new FlujoDelDistributivo
+                                                                        .ReformaEnCurso(
+                                                                        reforma.versionPublicada(),
+                                                                        transicion.version(),
+                                                                        reforma.motivo().texto(),
+                                                                        transicion.quien(),
+                                                                        transicion.momento()))));
     }
 
     // F12-H04: la versión nueva registrada justo después del rechazo, si ya llegó.

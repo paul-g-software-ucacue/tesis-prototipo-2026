@@ -79,6 +79,22 @@ public interface Distributivo {
             String periodo, int anulada, java.time.Instant momento);
 
     /**
+     * Le ordena a Generación crear la versión de una reforma, que copia la publicada, en su propia
+     * transacción (F18-H02, D-113). La publicada no se anula: sigue CONGELADA. Es idempotente: si
+     * ya la creó, devuelve la misma.
+     *
+     * @param periodo el código del periodo
+     * @param publicada la versión publicada que se reforma
+     * @param quien quien inició la reforma
+     * @param momento cuándo
+     * @return el número y el hash de la versión nueva; vacío si Generación no tiene esa versión
+     *     congelada como vigente ni la siguiente ya creada para una reforma
+     * @throws SinDistributivo si el periodo no tiene distributivo
+     */
+    Optional<VersionNuevaEnAprobacion> crearVersionDeReforma(
+            String periodo, int publicada, String quien, java.time.Instant momento);
+
+    /**
      * El distributivo de un periodo.
      *
      * @param version el número de la versión vigente

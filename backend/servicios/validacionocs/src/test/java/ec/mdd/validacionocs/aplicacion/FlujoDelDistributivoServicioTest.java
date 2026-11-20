@@ -927,9 +927,58 @@ class FlujoDelDistributivoServicioTest {
         assertThat(notificadas).isEmpty();
         verify(distributivo, never()).congelar(anyString());
         verify(distributivo, never()).condicionesDeRevision(anyString());
-        for (Solicitante quien : List.of(SECRETARIA, RESPONSABLE, VICERRECTOR, COORDINADOR_DS)) {
+        for (Solicitante quien : List.of(SECRETARIA, RESPONSABLE, COORDINADOR_DS)) {
             assertThat(servicio.flujo(PERIODO, quien).acciones()).as(quien.usuario()).isEmpty();
         }
+        // F18-H02, D-113: el Vicerrector puede iniciar una reforma, que no edita la publicada.
+        assertThat(servicio.flujo(PERIODO, VICERRECTOR).acciones())
+                .containsExactly(ec.mdd.validacionocs.dominio.AccionDelProceso.INICIAR_REFORMA);
+    }
+
+    // F18-H02, D-113: la reforma en curso, con la publicada vigente; la resolución y la
+    // congelación, solo de la versión de trabajo.
+    @Test
+    void dadaUnaReformaEnCurso_cuandoSeConsulta_entoncesLaMuestraConLaPublicadaVigente() {
+        publicado();
+        ProcesoAprobacion proceso = procesos.de(PERIODO).orElseThrow();
+        procesos.guardar(
+                proceso,
+                proceso.iniciarReforma(
+                        VICERRECTOR,
+                        new ec.mdd.validacionocs.dominio.Observacion(
+                                "Cambia el docente de Software por una licencia."),
+                        2,
+                        "f".repeat(64),
+                        AHORA.plusSeconds(60)));
+        when(distributivo.actual(PERIODO))
+                .thenReturn(Optional.of(new DistributivoActual(2, CREADO, enviadosEnGeneracion)));
+
+        FlujoDelDistributivo flujo = servicio.flujo(PERIODO, VICERRECTOR);
+
+        assertThat(flujo.etapa()).isEqualTo(TipoDeEtapa.EN_CONSOLIDACION);
+        assertThat(flujo.version()).isEqualTo(2);
+        assertThat(flujo.reforma())
+                .contains(
+                        new FlujoDelDistributivo.ReformaEnCurso(
+                                1,
+                                2,
+                                "Cambia el docente de Software por una licencia.",
+                                "vicerrectorado.demo",
+                                AHORA.plusSeconds(60)));
+        assertThat(flujo.publicacion().orElseThrow().version()).isEqualTo(1);
+        // La resolución es de la versión 1, no de la de trabajo.
+        assertThat(flujo.resolucion()).isEmpty();
+    }
+
+    @Test
+    void dadoElDistributivoPublicadoSinReforma_cuandoSeConsulta_entoncesSinReformaYConResolucion() {
+        publicado();
+
+        FlujoDelDistributivo flujo = servicio.flujo(PERIODO, SECRETARIA);
+
+        assertThat(flujo.reforma()).isEmpty();
+        assertThat(flujo.resolucion()).isPresent();
+        assertThat(flujo.publicacion()).isPresent();
     }
 
     // Cada transición nueva se notifica en su transacción (F16-H01, D-108).

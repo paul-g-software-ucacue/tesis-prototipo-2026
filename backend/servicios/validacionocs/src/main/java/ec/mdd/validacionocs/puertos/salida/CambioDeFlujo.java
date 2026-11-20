@@ -133,6 +133,13 @@ public record CambioDeFlujo(
          * El distributivo publicado (F18-H01, D-111): el paso de APROBADO a PUBLICADO por quien
          * publica, con la etapa antes y después, y la versión y el hash en el detalle.
          */
-        DISTRIBUTIVO_PUBLICADO
+        DISTRIBUTIVO_PUBLICADO,
+
+        /**
+         * Una reforma del distributivo publicado (F18-H02, D-113): de PUBLICADO a la etapa de
+         * llegada, por quien la inició, con la versión publicada, la nueva, su hash y el motivo en
+         * el detalle.
+         */
+        REFORMA_INICIADA
     }
 }

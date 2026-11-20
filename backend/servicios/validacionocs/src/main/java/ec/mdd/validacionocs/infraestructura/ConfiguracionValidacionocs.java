@@ -27,6 +27,7 @@ import ec.mdd.validacionocs.aplicacion.DescargarResolucionServicio;
 import ec.mdd.validacionocs.aplicacion.EtapaDelConsolidadoServicio;
 import ec.mdd.validacionocs.aplicacion.EtapasAlCrearse;
 import ec.mdd.validacionocs.aplicacion.FlujoDelDistributivoServicio;
+import ec.mdd.validacionocs.aplicacion.IniciarReformaServicio;
 import ec.mdd.validacionocs.aplicacion.PublicarDistributivoServicio;
 import ec.mdd.validacionocs.aplicacion.RegistrarRechazoEnFirmaServicio;
 import ec.mdd.validacionocs.aplicacion.RegistrarResolucionServicio;
@@ -150,6 +151,27 @@ public class ConfiguracionValidacionocs {
             FlujoDelDistributivoServicio flujoDelDistributivo,
             NotificacionDeTransiciones notificacionDeTransiciones) {
         return new PublicarDistributivoServicio(
+                repositorioProceso,
+                distributivoDeGeneracion,
+                datos,
+                registroDeCambiosValidacionocs,
+                transaccionValidacionocs,
+                flujoDelDistributivo,
+                Clock.systemUTC(),
+                notificacionDeTransiciones);
+    }
+
+    /** Iniciar una reforma del distributivo publicado (F18-H02, D-113). */
+    @Bean
+    public IniciarReformaServicio iniciarReforma(
+            RepositorioProceso repositorioProceso,
+            Distributivo distributivoDeGeneracion,
+            DatosDelPeriodo datos,
+            RegistroDeCambios registroDeCambiosValidacionocs,
+            Transaccion transaccionValidacionocs,
+            FlujoDelDistributivoServicio flujoDelDistributivo,
+            NotificacionDeTransiciones notificacionDeTransiciones) {
+        return new IniciarReformaServicio(
                 repositorioProceso,
                 distributivoDeGeneracion,
                 datos,

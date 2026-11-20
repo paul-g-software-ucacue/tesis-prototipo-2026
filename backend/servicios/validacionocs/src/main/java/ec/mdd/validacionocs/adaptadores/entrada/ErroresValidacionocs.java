@@ -14,9 +14,11 @@ import ec.mdd.validacionocs.dominio.EtapaNoAdmiteAprobacion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteDevolucion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteEnvio;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmitePublicacion;
+import ec.mdd.validacionocs.dominio.EtapaNoAdmiteReforma;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteResolucion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteRevision;
 import ec.mdd.validacionocs.dominio.InconsistenciasAbiertas;
+import ec.mdd.validacionocs.dominio.MotivoDeReformaInvalido;
 import ec.mdd.validacionocs.dominio.NumeroDeResolucionInvalido;
 import ec.mdd.validacionocs.dominio.ObservacionInvalida;
 import ec.mdd.validacionocs.dominio.ParcialNoEncontrado;
@@ -198,6 +200,20 @@ class ErroresValidacionocs implements CatalogoDeErrores {
                         409,
                         "Etapa sin publicación",
                         "El distributivo solo se publica cuando está aprobado."),
+                // Iniciar una reforma fuera de PUBLICADO, o con un motivo inválido (F18-H02,
+                // D-113).
+                EntradaCatalogo.de(
+                        EtapaNoAdmiteReforma.class,
+                        "VALIDACIONOCS_ETAPA_NO_ADMITE_REFORMA",
+                        409,
+                        "Etapa sin reforma",
+                        "Solo se reforma un distributivo publicado."),
+                EntradaCatalogo.de(
+                        MotivoDeReformaInvalido.class,
+                        "VALIDACIONOCS_MOTIVO_DE_REFORMA_INVALIDO",
+                        400,
+                        "Motivo no válido",
+                        "El motivo de la reforma tiene de 10 a 500 caracteres."),
                 // Volver a congelar después de un rechazo en firma (F14-H04, D-105).
                 EntradaCatalogo.de(
                         RequiereVersionNueva.class,

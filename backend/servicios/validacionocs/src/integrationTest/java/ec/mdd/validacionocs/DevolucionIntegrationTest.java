@@ -343,6 +343,12 @@ class DevolucionIntegrationTest {
             }
 
             @Override
+            public java.util.Optional<VersionNuevaEnAprobacion> crearVersionDeReforma(
+                    String periodo, int publicada, String quien, java.time.Instant momento) {
+                throw new UnsupportedOperationException("sin reformas en esta prueba");
+            }
+
+            @Override
             public Optional<DistributivoActual> actual(String periodo) {
                 return Optional.ofNullable(ENVIADOS.get(periodo))
                         .map(carreras -> new DistributivoActual(1, CREADO, Map.copyOf(carreras)));

@@ -5,6 +5,7 @@ import ec.mdd.validacionocs.dominio.EtapaDelProceso;
 import ec.mdd.validacionocs.dominio.Observacion;
 import ec.mdd.validacionocs.dominio.ProcesoAprobacion;
 import ec.mdd.validacionocs.dominio.RechazoDelFirmante;
+import ec.mdd.validacionocs.dominio.Reforma;
 import ec.mdd.validacionocs.dominio.ResolucionOcs;
 import ec.mdd.validacionocs.dominio.TipoDeEtapa;
 import ec.mdd.validacionocs.dominio.TipoDeTransicion;
@@ -187,6 +188,21 @@ public final class RepositorioProcesoJdbc implements RepositorioProceso {
                                         .param("nombre", resolucion.nombre())
                                         .param("tamano", resolucion.tamano())
                                         .update());
+        // La reforma (F18-H02), también solo de inserción.
+        transicion
+                .reforma()
+                .ifPresent(
+                        reforma ->
+                                jdbc.sql(
+                                                "INSERT INTO validacionocs.reforma (transicion_id,"
+                                                        + " periodo, version_publicada, motivo)"
+                                                        + " VALUES (:id, :periodo, :publicada,"
+                                                        + " :motivo)")
+                                        .param("id", id)
+                                        .param("periodo", periodo)
+                                        .param("publicada", reforma.versionPublicada())
+                                        .param("motivo", reforma.motivo().texto())
+                                        .update());
     }
 
     private Optional<ProcesoAprobacion> leer(String consulta, String periodo) {
@@ -231,6 +247,7 @@ public final class RepositorioProcesoJdbc implements RepositorioProceso {
         Map<UUID, Map<String, Observacion>> observaciones = observaciones(periodo);
         Map<UUID, RechazoDelFirmante> rechazos = rechazos(periodo);
         Map<UUID, ResolucionOcs> resoluciones = resoluciones(periodo);
+        Map<UUID, Reforma> reformas = reformas(periodo);
         // El orden de inserción dentro de un mismo momento: el envío antes que su paso de etapa.
         return jdbc.sql(
                         "SELECT id, tipo, desde, hacia, carrera, version, hash, quien, momento"
@@ -254,9 +271,27 @@ public final class RepositorioProcesoJdbc implements RepositorioProceso {
                                         Optional.ofNullable(
                                                 rechazos.get(fila.getObject("id", UUID.class))),
                                         Optional.ofNullable(
-                                                resoluciones.get(
-                                                        fila.getObject("id", UUID.class)))))
+                                                resoluciones.get(fila.getObject("id", UUID.class))),
+                                        Optional.ofNullable(
+                                                reformas.get(fila.getObject("id", UUID.class)))))
                 .list();
+    }
+
+    private Map<UUID, Reforma> reformas(String periodo) {
+        Map<UUID, Reforma> porTransicion = new HashMap<>();
+        jdbc.sql(
+                        "SELECT transicion_id, version_publicada, motivo FROM validacionocs.reforma"
+                                + " WHERE periodo = :periodo")
+                .param("periodo", periodo)
+                .query(
+                        (fila, numero) ->
+                                porTransicion.put(
+                                        fila.getObject("transicion_id", UUID.class),
+                                        new Reforma(
+                                                fila.getInt("version_publicada"),
+                                                new Observacion(fila.getString("motivo")))))
+                .list();
+        return porTransicion;
     }
 
     private Map<UUID, ResolucionOcs> resoluciones(String periodo) {

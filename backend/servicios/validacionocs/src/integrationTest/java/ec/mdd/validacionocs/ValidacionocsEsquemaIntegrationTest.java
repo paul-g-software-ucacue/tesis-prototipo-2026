@@ -132,6 +132,70 @@ class ValidacionocsEsquemaIntegrationTest {
         }
     }
 
+    // F18-H02, V8: la transición de una reforma, con su motivo y la versión publicada.
+    @Test
+    void dadaUnaReforma_cuandoSeGuardaConSuTransicion_entoncesQuedaYSuMotivoSeExige() {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
+            postgres.start();
+            DataSource dataSource =
+                    new DriverManagerDataSource(
+                            postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+            new ValidacionocsFlywayConfig().flywayValidacionocs(dataSource).migrate();
+            JdbcClient jdbc = JdbcClient.create(dataSource);
+            jdbc.sql(
+                            "insert into validacionocs.proceso_aprobacion (periodo, estado, etapas,"
+                                    + " distributivo_creado_en, creado_en) values ('2026-I',"
+                                    + " 'EN_CONSOLIDACION', '[]'::jsonb, now(), now())")
+                    .update();
+
+            UUID transicion = transicionDeReforma(jdbc);
+            reforma(jdbc, transicion, 1, "Cambia el docente de Software por una licencia.");
+
+            assertThat(
+                            jdbc.sql(
+                                            "select version_publicada from validacionocs.reforma"
+                                                    + " where transicion_id = :id")
+                                    .param("id", transicion)
+                                    .query(Integer.class)
+                                    .single())
+                    .isEqualTo(1);
+            assertThatThrownBy(() -> reforma(jdbc, transicionDeReforma(jdbc), 1, "   corta   "))
+                    .isInstanceOf(DataAccessException.class);
+            assertThatThrownBy(
+                            () ->
+                                    reforma(
+                                            jdbc,
+                                            transicionDeReforma(jdbc),
+                                            0,
+                                            "Un motivo de reforma con su largo."))
+                    .isInstanceOf(DataAccessException.class);
+        }
+    }
+
+    private static UUID transicionDeReforma(JdbcClient jdbc) {
+        UUID id = UUID.randomUUID();
+        jdbc.sql(
+                        "insert into validacionocs.transicion (id, periodo, tipo, desde, hacia,"
+                                + " version, hash, quien, momento) values (:id, '2026-I',"
+                                + " 'REFORMA', 'PUBLICADO', 'EN_CONSOLIDACION', 2, :hash,"
+                                + " 'vicerrectorado.demo', now())")
+                .param("id", id)
+                .param("hash", "c".repeat(64))
+                .update();
+        return id;
+    }
+
+    private static void reforma(JdbcClient jdbc, UUID transicion, int publicada, String motivo) {
+        jdbc.sql(
+                        "insert into validacionocs.reforma (transicion_id, periodo,"
+                                + " version_publicada, motivo) values (:id, '2026-I', :publicada,"
+                                + " :motivo)")
+                .param("id", transicion)
+                .param("publicada", publicada)
+                .param("motivo", motivo)
+                .update();
+    }
+
     // F15-H01, V7: una resolución por versión aprobada, con sus reglas.
     @Test
     void dadaUnaResolucion_cuandoSeGuardaConSuTransicion_entoncesQuedaUnaPorVersion() {

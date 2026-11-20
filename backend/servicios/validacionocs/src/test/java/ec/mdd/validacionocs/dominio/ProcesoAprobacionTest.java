@@ -1562,7 +1562,8 @@ class ProcesoAprobacionTest {
                                 PUBLICADA));
         assertThat(proceso.publicacion()).contains(nuevas.getFirst());
         assertThat(proceso.acciones(SECRETARIA)).isEmpty();
-        assertThat(proceso.acciones(VICERRECTOR)).isEmpty();
+        // F18-H02, D-113: publicado, el Vicerrector puede iniciar una reforma; nadie edita.
+        assertThat(proceso.acciones(VICERRECTOR)).containsExactly(AccionDelProceso.INICIAR_REFORMA);
     }
 
     @Test
@@ -1664,5 +1665,236 @@ class ProcesoAprobacionTest {
                 .isInstanceOf(RolDeOtraEtapa.class);
         assertThat(proceso.publicar(ocs, PUBLICADA)).hasSize(1);
         assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.PUBLICADO);
+    }
+
+    // La reforma (F18-H02, D-113): desde PUBLICADO, el rol de EN_REVISION_VRA, con su motivo; la
+    // versión publicada sigue vigente hasta que se publique la de la reforma.
+
+    private static final Instant REFORMADA = PUBLICADA.plusSeconds(3600);
+    private static final String HASH_REFORMA = "f".repeat(64);
+    private static final Observacion MOTIVO =
+            new Observacion("Cambia el docente de Software por una licencia.");
+
+    private static ProcesoAprobacion publicado() {
+        ProcesoAprobacion proceso = aprobado();
+        proceso.publicar(SECRETARIA, PUBLICADA);
+        return proceso;
+    }
+
+    private static Transicion pasoA(TipoDeEtapa desde, TipoDeEtapa hacia, int version, Instant en) {
+        return new Transicion(
+                TipoDeTransicion.PASO_DE_ETAPA,
+                desde,
+                hacia,
+                Optional.empty(),
+                version,
+                HASH_CONGELADO,
+                "secretaria.demo",
+                en);
+    }
+
+    // Publicado con otra configuración: solo la transición a PUBLICADO, que es lo que se lee.
+    private static ProcesoAprobacion publicadoCon(List<EtapaDelProceso> etapas) {
+        return ProcesoAprobacion.de(
+                "2026-I",
+                etapas,
+                TipoDeEtapa.PUBLICADO,
+                CREADO,
+                Map.of("DS", EstadoDeEnvio.ENVIADO),
+                List.of(pasoA(TipoDeEtapa.APROBADO, TipoDeEtapa.PUBLICADO, 2, PUBLICADA)));
+    }
+
+    @Test
+    void
+            dadoElDistributivoPublicado_cuandoElVicerrectorIniciaUnaReforma_entoncesVuelveAConsolidacion() {
+        ProcesoAprobacion proceso = publicado();
+        Transicion publicacion = proceso.publicacion().orElseThrow();
+
+        List<Transicion> nuevas =
+                proceso.iniciarReforma(VICERRECTOR, MOTIVO, 3, HASH_REFORMA, REFORMADA);
+
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_CONSOLIDACION);
+        assertThat(nuevas)
+                .containsExactly(
+                        new Transicion(
+                                TipoDeTransicion.REFORMA,
+                                TipoDeEtapa.PUBLICADO,
+                                TipoDeEtapa.EN_CONSOLIDACION,
+                                Optional.empty(),
+                                3,
+                                HASH_REFORMA,
+                                "vicerrectorado.demo",
+                                REFORMADA,
+                                Map.of(),
+                                Optional.empty(),
+                                Optional.empty(),
+                                Optional.of(new Reforma(2, MOTIVO))));
+        assertThat(proceso.transiciones()).endsWith(nuevas.getFirst());
+        assertThat(proceso.reformaEnCurso()).contains(nuevas.getFirst());
+        // La publicada sigue vigente hasta que se publique la de la reforma.
+        assertThat(proceso.publicacion()).contains(publicacion);
+    }
+
+    @Test
+    void dadoElDistributivoPublicado_cuandoSeValidaLaReforma_entoncesNoCambiaNada() {
+        ProcesoAprobacion proceso = publicado();
+        int antes = proceso.transiciones().size();
+
+        proceso.validarReforma(VICERRECTOR);
+
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.PUBLICADO);
+        assertThat(proceso.transiciones()).hasSize(antes);
+        assertThat(proceso.reformaEnCurso()).isEmpty();
+    }
+
+    @Test
+    void dadoOtroRol_cuandoIniciaUnaReforma_entoncesRolDeOtraEtapaSinCambiar() {
+        for (Solicitante quien : List.of(SECRETARIA, RECTOR, RESPONSABLE)) {
+            ProcesoAprobacion proceso = publicado();
+            int antes = proceso.transiciones().size();
+
+            assertThatThrownBy(() -> proceso.validarReforma(quien))
+                    .as(quien.usuario())
+                    .isInstanceOf(RolDeOtraEtapa.class);
+            assertThatThrownBy(
+                            () -> proceso.iniciarReforma(quien, MOTIVO, 3, HASH_REFORMA, REFORMADA))
+                    .isInstanceOf(RolDeOtraEtapa.class);
+            assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.PUBLICADO);
+            assertThat(proceso.transiciones()).hasSize(antes);
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = TipoDeEtapa.class,
+            names = {"PUBLICADO"},
+            mode = EnumSource.Mode.EXCLUDE)
+    void dadoElDistributivoEnOtraEtapa_cuandoSeIniciaUnaReforma_entoncesSeRechazaSinCambiar(
+            TipoDeEtapa etapa) {
+        ProcesoAprobacion proceso = en(etapa, etapasTodasActivas());
+
+        assertThatThrownBy(() -> proceso.validarReforma(VICERRECTOR))
+                .isInstanceOf(EtapaNoAdmiteReforma.class);
+        assertThatThrownBy(
+                        () ->
+                                proceso.iniciarReforma(
+                                        VICERRECTOR, MOTIVO, 3, HASH_REFORMA, REFORMADA))
+                .isInstanceOf(EtapaNoAdmiteReforma.class);
+        assertThat(proceso.estado()).isEqualTo(etapa);
+        assertThat(proceso.transiciones()).isEmpty();
+    }
+
+    @Test
+    void dadoOtroRolEnLaRevisionDeLaConfiguracion_cuandoIniciaUnaReforma_entoncesLoUsa() {
+        List<EtapaDelProceso> etapas =
+                etapas(false).stream()
+                        .map(
+                                una ->
+                                        una.tipo() == TipoDeEtapa.EN_REVISION_VRA
+                                                ? new EtapaDelProceso(
+                                                        una.tipo(),
+                                                        una.activa(),
+                                                        una.nombre(),
+                                                        "RECTOR",
+                                                        una.admiteDevolucion())
+                                                : una)
+                        .toList();
+
+        assertThatThrownBy(() -> publicadoCon(etapas).validarReforma(VICERRECTOR))
+                .isInstanceOf(RolDeOtraEtapa.class);
+        ProcesoAprobacion proceso = publicadoCon(etapas);
+        proceso.iniciarReforma(RECTOR, MOTIVO, 3, HASH_REFORMA, REFORMADA);
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_CONSOLIDACION);
+    }
+
+    @Test
+    void dadaLaConsolidacionDesactivada_cuandoSeIniciaUnaReforma_entoncesVaALaSiguienteActiva() {
+        List<EtapaDelProceso> etapas =
+                etapas(false).stream()
+                        .map(
+                                una ->
+                                        una.tipo() == TipoDeEtapa.EN_CONSOLIDACION
+                                                ? new EtapaDelProceso(
+                                                        una.tipo(),
+                                                        false,
+                                                        una.nombre(),
+                                                        una.rol(),
+                                                        una.admiteDevolucion())
+                                                : una)
+                        .toList();
+        ProcesoAprobacion proceso = publicadoCon(etapas);
+
+        List<Transicion> nuevas =
+                proceso.iniciarReforma(VICERRECTOR, MOTIVO, 3, HASH_REFORMA, REFORMADA);
+
+        assertThat(proceso.estado()).isEqualTo(TipoDeEtapa.EN_REVISION_VRA);
+        assertThat(nuevas.getFirst().hacia()).isEqualTo(TipoDeEtapa.EN_REVISION_VRA);
+    }
+
+    @Test
+    void dadaLaReformaPublicada_cuandoSeConsulta_entoncesYaNoEstaEnCursoYSePuedeReformarOtraVez() {
+        Transicion reforma =
+                new Transicion(
+                        TipoDeTransicion.REFORMA,
+                        TipoDeEtapa.PUBLICADO,
+                        TipoDeEtapa.EN_CONSOLIDACION,
+                        Optional.empty(),
+                        3,
+                        HASH_REFORMA,
+                        "vicerrectorado.demo",
+                        REFORMADA,
+                        Map.of(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.of(new Reforma(2, MOTIVO)));
+        Transicion segunda =
+                pasoA(TipoDeEtapa.APROBADO, TipoDeEtapa.PUBLICADO, 3, REFORMADA.plusSeconds(3600));
+        ProcesoAprobacion proceso =
+                ProcesoAprobacion.de(
+                        "2026-I",
+                        etapas(false),
+                        TipoDeEtapa.PUBLICADO,
+                        CREADO,
+                        Map.of("DS", EstadoDeEnvio.ENVIADO),
+                        List.of(
+                                pasoA(TipoDeEtapa.APROBADO, TipoDeEtapa.PUBLICADO, 2, PUBLICADA),
+                                reforma,
+                                segunda));
+
+        assertThat(proceso.reformaEnCurso()).isEmpty();
+        assertThat(proceso.publicacion()).contains(segunda);
+
+        // Una reforma de la reforma: la publicada es la 3, y sigue vigente durante la nueva.
+        List<Transicion> nuevas =
+                proceso.iniciarReforma(
+                        VICERRECTOR, MOTIVO, 4, HASH_REFORMA, REFORMADA.plusSeconds(7200));
+        assertThat(nuevas.getFirst().reforma()).contains(new Reforma(3, MOTIVO));
+        assertThat(proceso.publicacion()).contains(segunda);
+        assertThat(proceso.reformaEnCurso()).contains(nuevas.getFirst());
+    }
+
+    @Test
+    void
+            dadoElDistributivoPublicado_cuandoSeConsultanLasAcciones_entoncesSoloElVicerrectorReforma() {
+        ProcesoAprobacion proceso = publicado();
+
+        assertThat(proceso.acciones(VICERRECTOR)).containsExactly(AccionDelProceso.INICIAR_REFORMA);
+        for (Solicitante quien : List.of(SECRETARIA, RECTOR, RESPONSABLE, COORDINADOR_DS)) {
+            assertThat(proceso.acciones(quien)).as(quien.usuario()).isEmpty();
+        }
+    }
+
+    @Test
+    void dadaLaReforma_cuandoSePideSuDestino_entoncesLaLlegadaYLosTresDeLaPublicacion() {
+        ProcesoAprobacion proceso = publicado();
+        Transicion reforma =
+                proceso.iniciarReforma(VICERRECTOR, MOTIVO, 3, HASH_REFORMA, REFORMADA).getFirst();
+
+        assertThat(proceso.destinoDe(reforma))
+                .containsExactly(
+                        new DestinoDeNotificacion("RESPONSABLE_CONSOLIDACION", Optional.empty()),
+                        new DestinoDeNotificacion("DOCENTE", Optional.empty()),
+                        new DestinoDeNotificacion("OPERADOR_DATOS", Optional.empty()),
+                        new DestinoDeNotificacion("COORDINADOR_CARRERA", Optional.empty()));
     }
 }
