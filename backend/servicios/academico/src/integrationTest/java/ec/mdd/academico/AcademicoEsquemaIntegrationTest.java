@@ -36,7 +36,7 @@ class AcademicoEsquemaIntegrationTest {
     @Test
     void dadoUnaBaseVacia_cuandoElServicioMigra_entoncesTodasSusTablasQuedanEnSuEsquema()
             throws SQLException {
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
             postgres.start();
             DataSource dataSource =
                     new DriverManagerDataSource(
@@ -64,7 +64,7 @@ class AcademicoEsquemaIntegrationTest {
 
     @Test
     void dadoLasTablasDeLosPeriodos_cuandoSeGuardaAlgoFueraDeSusReglas_entoncesLaBaseLoRechaza() {
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
             postgres.start();
             DataSource dataSource =
                     new DriverManagerDataSource(
@@ -107,7 +107,7 @@ class AcademicoEsquemaIntegrationTest {
 
     @Test
     void dadaLaMigracion_cuandoSeLeeElCatalogo_entoncesTraeLas21GestionesDePol6() {
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
             postgres.start();
             JdbcClient jdbc = migrada(postgres);
 
@@ -125,7 +125,7 @@ class AcademicoEsquemaIntegrationTest {
 
     @Test
     void dadaLaTablaDeLasUnidades_cuandoSeGuardaAlgoFueraDeSusReglas_entoncesLaBaseLoRechaza() {
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
             postgres.start();
             JdbcClient jdbc = migrada(postgres);
 
@@ -183,7 +183,7 @@ class AcademicoEsquemaIntegrationTest {
 
     @Test
     void dadaLaMigracion_cuandoSeLeenLosCamposAmplios_entoncesTraeLos11DeCine() {
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
             postgres.start();
             JdbcClient jdbc = migrada(postgres);
 
@@ -206,7 +206,7 @@ class AcademicoEsquemaIntegrationTest {
     @Test
     void
             dadasLasTablasDeCarrerasMallasYAsignaturas_cuandoSeGuardaAlgoFueraDeSusReglas_entoncesLaBaseLoRechaza() {
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
             postgres.start();
             JdbcClient jdbc = migrada(postgres);
             assertThat(unidad(jdbc, "MATRIZ", "SEDE_MATRIZ", null, null, null)).isEqualTo(1);
@@ -291,7 +291,7 @@ class AcademicoEsquemaIntegrationTest {
 
     @Test
     void dadaLaTablaDeLaOferta_cuandoSeGuardaAlgoFueraDeSusReglas_entoncesLaBaseLoRechaza() {
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
             postgres.start();
             JdbcClient jdbc = migrada(postgres);
             unidad(jdbc, "MATRIZ", "SEDE_MATRIZ", null, null, null);

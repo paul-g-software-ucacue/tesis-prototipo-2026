@@ -30,7 +30,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 class HistorialDeCargasJdbcIntegrationTest {
 
     private static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:18.6-alpine");
+            new PostgreSQLContainer("postgres:18.7-alpine");
     private static final String HASH = "a".repeat(64);
     private static final Instant PRIMERA = Instant.parse("2026-10-26T10:00:00Z");
 

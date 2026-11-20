@@ -25,7 +25,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 class RepositorioMatriculasJdbcIntegrationTest {
 
     private static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:18.6-alpine");
+            new PostgreSQLContainer("postgres:18.7-alpine");
     private static final Instant AHORA = Instant.parse("2026-10-26T15:00:00Z");
     private static final LocalDate CORTE = LocalDate.of(2026, 4, 30);
 

@@ -19,7 +19,7 @@ class MigracionUsuariosDemoIntegrationTest {
 
     @Test
     void dadoUnUsuarioConMayusculasDeAntes_cuandoSeMigraAV4_entoncesQuedaNormalizadoYConNombre() {
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
             postgres.start();
             DataSource dataSource =
                     new DriverManagerDataSource(

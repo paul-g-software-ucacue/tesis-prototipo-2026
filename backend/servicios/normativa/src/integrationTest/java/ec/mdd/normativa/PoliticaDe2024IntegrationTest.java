@@ -32,7 +32,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 class PoliticaDe2024IntegrationTest {
 
     private static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:18.6-alpine");
+            new PostgreSQLContainer("postgres:18.7-alpine");
 
     private static final String FILAS =
             "select f.aplica_a, f.perfil, f.dedicacion_total, f.horas_clase, f.horas_clase_minimo,"

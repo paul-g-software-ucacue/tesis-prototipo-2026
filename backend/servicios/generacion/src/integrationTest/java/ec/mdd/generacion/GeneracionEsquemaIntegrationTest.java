@@ -35,7 +35,7 @@ class GeneracionEsquemaIntegrationTest {
     @Test
     void dadoUnaBaseVacia_cuandoElServicioMigra_entoncesTodasSusTablasQuedanEnSuEsquema()
             throws SQLException {
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
             postgres.start();
             DataSource dataSource =
                     new DriverManagerDataSource(
@@ -56,7 +56,7 @@ class GeneracionEsquemaIntegrationTest {
     // versiones, pero no dentro de una.
     @Test
     void dadaLaV8_cuandoSeGuardanVersionesEInformes_entoncesElMotivoYLaClaveCumplenSusReglas() {
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
             postgres.start();
             DataSource dataSource =
                     new DriverManagerDataSource(

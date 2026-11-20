@@ -46,7 +46,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 class VersionesNuevasJdbcIntegrationTest {
 
     private static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:18.6-alpine");
+            new PostgreSQLContainer("postgres:18.7-alpine");
 
     // La base guarda microsegundos.
     private static final Instant AHORA = Instant.now().truncatedTo(ChronoUnit.MICROS);

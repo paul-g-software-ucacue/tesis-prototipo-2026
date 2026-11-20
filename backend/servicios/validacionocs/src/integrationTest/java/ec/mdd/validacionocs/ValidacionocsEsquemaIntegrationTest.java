@@ -35,7 +35,7 @@ class ValidacionocsEsquemaIntegrationTest {
     @Test
     void dadoUnaBaseVacia_cuandoElServicioMigra_entoncesTodasSusTablasQuedanEnSuEsquema()
             throws SQLException {
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
             postgres.start();
             DataSource dataSource =
                     new DriverManagerDataSource(
@@ -57,7 +57,7 @@ class ValidacionocsEsquemaIntegrationTest {
 
     @Test
     void dadoUnRechazoEnFirma_cuandoSeGuardaConSuTransicion_entoncesQuedaYSuObservacionSeExige() {
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
             postgres.start();
             DataSource dataSource =
                     new DriverManagerDataSource(
@@ -100,7 +100,7 @@ class ValidacionocsEsquemaIntegrationTest {
     // F12-H04, V6: la versión nueva queda como transición, de la etapa a la misma.
     @Test
     void dadaUnaVersionNueva_cuandoSeGuardaSuTransicion_entoncesQueda() {
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
             postgres.start();
             DataSource dataSource =
                     new DriverManagerDataSource(
@@ -135,7 +135,7 @@ class ValidacionocsEsquemaIntegrationTest {
     // F15-H01, V7: una resolución por versión aprobada, con sus reglas.
     @Test
     void dadaUnaResolucion_cuandoSeGuardaConSuTransicion_entoncesQuedaUnaPorVersion() {
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
             postgres.start();
             DataSource dataSource =
                     new DriverManagerDataSource(

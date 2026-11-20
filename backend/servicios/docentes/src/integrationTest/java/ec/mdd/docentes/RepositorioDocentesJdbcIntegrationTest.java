@@ -46,7 +46,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 class RepositorioDocentesJdbcIntegrationTest {
 
     private static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:18.6-alpine");
+            new PostgreSQLContainer("postgres:18.7-alpine");
     private static final Instant AHORA = Instant.parse("2026-10-24T15:00:00Z");
     private static final Year ANIO = Year.of(2026);
 
