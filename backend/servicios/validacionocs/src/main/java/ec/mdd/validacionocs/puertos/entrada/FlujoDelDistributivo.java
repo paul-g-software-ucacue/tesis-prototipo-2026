@@ -23,6 +23,8 @@ import java.util.Optional;
  *     CONGELADO_EN_FIRMA (F13-H01)
  * @param rechazoEnFirma el rechazo en firma por el que volvió, mientras sea la última transición
  *     (F14-H04)
+ * @param resolucion la resolución del OCS, si ya se registró (F15-H01)
+ * @param publicacion la publicación, si ya se publicó (F18-H01)
  */
 public record FlujoDelDistributivo(
         String periodo,
@@ -34,7 +36,8 @@ public record FlujoDelDistributivo(
         List<Transicion> transiciones,
         Optional<Congelacion> congelacion,
         Optional<RechazoEnFirma> rechazoEnFirma,
-        Optional<Resolucion> resolucion) {
+        Optional<Resolucion> resolucion,
+        Optional<Publicacion> publicacion) {
 
     /** Exige los datos y copia las listas. */
     public FlujoDelDistributivo {
@@ -43,9 +46,36 @@ public record FlujoDelDistributivo(
         Objects.requireNonNull(congelacion, "congelacion");
         Objects.requireNonNull(rechazoEnFirma, "rechazoEnFirma");
         Objects.requireNonNull(resolucion, "resolucion");
+        Objects.requireNonNull(publicacion, "publicacion");
         parciales = List.copyOf(parciales);
         acciones = List.copyOf(acciones);
         transiciones = List.copyOf(transiciones);
+    }
+
+    /** Un flujo sin publicar. */
+    public FlujoDelDistributivo(
+            String periodo,
+            TipoDeEtapa etapa,
+            String nombreDeEtapa,
+            int version,
+            List<Parcial> parciales,
+            List<AccionDelProceso> acciones,
+            List<Transicion> transiciones,
+            Optional<Congelacion> congelacion,
+            Optional<RechazoEnFirma> rechazoEnFirma,
+            Optional<Resolucion> resolucion) {
+        this(
+                periodo,
+                etapa,
+                nombreDeEtapa,
+                version,
+                parciales,
+                acciones,
+                transiciones,
+                congelacion,
+                rechazoEnFirma,
+                resolucion,
+                Optional.empty());
     }
 
     /** Un flujo antes de la congelación. */
@@ -69,6 +99,16 @@ public record FlujoDelDistributivo(
                 Optional.empty(),
                 Optional.empty());
     }
+
+    /**
+     * La publicación del distributivo (F18-H01, D-111): la versión publicada, la congelada que
+     * llegó a APROBADO.
+     *
+     * @param version la versión publicada
+     * @param publicadaPor quién publicó
+     * @param publicadaEn cuándo
+     */
+    public record Publicacion(int version, String publicadaPor, Instant publicadaEn) {}
 
     /**
      * La resolución del OCS que aprobó el distributivo (F15-H01, esquema {@code ResolucionDelOcs}).

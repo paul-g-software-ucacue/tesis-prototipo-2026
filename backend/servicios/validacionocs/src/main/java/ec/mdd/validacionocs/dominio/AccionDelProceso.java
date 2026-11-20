@@ -13,5 +13,7 @@ public enum AccionDelProceso {
     /** Aprobar el contenido y congelar la versión, desde EN_REVISION_VRA (F13-H01). */
     APROBAR_CONTENIDO,
     /** Registrar la resolución del OCS y aprobar el distributivo, desde EN_OCS (F15-H01). */
-    REGISTRAR_RESOLUCION
+    REGISTRAR_RESOLUCION,
+    /** Publicar el distributivo aprobado, desde APROBADO (F18-H01). */
+    PUBLICAR
 }

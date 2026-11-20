@@ -18,7 +18,8 @@ public final class MensajesDeTransicion {
     /**
      * La ruta de la SPA donde se ve el distributivo en cada etapa de llegada, que el rol de la
      * etapa por defecto puede abrir. El Gestor de unidad no tiene una pantalla del distributivo: va
-     * al inicio. PUBLICADO es provisorio hasta F18-H01.
+     * al inicio. PUBLICADO va al inicio, salvo las coordinaciones, que van a la oferta (F18-H01,
+     * D-111; ver {@link #de}).
      */
     private static final Map<TipoDeEtapa, String> ENLACES =
             Map.of(
@@ -30,7 +31,7 @@ public final class MensajesDeTransicion {
                     TipoDeEtapa.CONGELADO_EN_FIRMA, "/firmas-pendientes",
                     TipoDeEtapa.EN_OCS, "/resolucion-ocs",
                     TipoDeEtapa.APROBADO, "/resolucion-ocs",
-                    TipoDeEtapa.PUBLICADO, "/resolucion-ocs");
+                    TipoDeEtapa.PUBLICADO, "/");
 
     /** El largo máximo de un título en el contrato de Notificaciones. */
     private static final int TITULO_MAXIMO = 200;
@@ -62,7 +63,27 @@ public final class MensajesDeTransicion {
         List<MensajeDeTransicion> mensajes = new ArrayList<>();
         String datos = "Periodo " + proceso.periodo() + ", versión " + transicion.version() + ".";
         String llegada = "«" + proceso.etapaDe(transicion.hacia()).nombre() + "»";
+        boolean publicacion =
+                transicion.tipo() == TipoDeTransicion.PASO_DE_ETAPA
+                        && transicion.hacia() == TipoDeEtapa.PUBLICADO;
         for (DestinoDeNotificacion destino : proceso.destinoDe(transicion)) {
+            // F18-H01 (D-111): la publicación dice que es la versión oficial. Las coordinaciones
+            // van
+            // a la oferta, cuya tarjeta del flujo muestra la constancia; los docentes y Talento
+            // Humano no pueden abrir otra pantalla del distributivo hasta F19, y van al inicio.
+            if (publicacion) {
+                mensajes.add(
+                        new MensajeDeTransicion(
+                                destino,
+                                "El distributivo de " + proceso.periodo() + " fue publicado",
+                                "Versión "
+                                        + transicion.version()
+                                        + ". Es la versión oficial del periodo.",
+                                destino.rol().equals("COORDINADOR_CARRERA")
+                                        ? "/oferta"
+                                        : enlaceDe(TipoDeEtapa.PUBLICADO)));
+                continue;
+            }
             mensajes.add(
                     switch (transicion.tipo()) {
                         case ENVIO_PARCIAL ->

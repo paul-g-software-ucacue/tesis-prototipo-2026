@@ -128,6 +128,11 @@ public record CambioDeFlujo(
          * quien la registra, con la etapa antes y después, y la versión, el hash, el número, la
          * fecha y la huella del PDF en el detalle.
          */
-        RESOLUCION_REGISTRADA
+        RESOLUCION_REGISTRADA,
+        /**
+         * El distributivo publicado (F18-H01, D-111): el paso de APROBADO a PUBLICADO por quien
+         * publica, con la etapa antes y después, y la versión y el hash en el detalle.
+         */
+        DISTRIBUTIVO_PUBLICADO
     }
 }

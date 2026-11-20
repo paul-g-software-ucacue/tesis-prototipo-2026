@@ -878,6 +878,60 @@ class FlujoDelDistributivoServicioTest {
         }
     }
 
+    // F18-H01, US3: con el distributivo publicado, ninguna operación del flujo cambia nada.
+
+    private static final Solicitante SECRETARIA =
+            new Solicitante("secretaria.demo", Set.of("SECRETARIA_GENERAL"), Optional.empty());
+
+    private void publicado() {
+        enRevision();
+        congelaEnGeneracion();
+        servicio.aprobarContenido(PERIODO, VICERRECTOR);
+        ProcesoAprobacion proceso = procesos.de(PERIODO).orElseThrow();
+        List<Transicion> nuevas = new ArrayList<>(proceso.completarFirmas(1, AHORA));
+        nuevas.addAll(
+                proceso.registrarResolucion(
+                        SECRETARIA,
+                        new ec.mdd.validacionocs.dominio.ResolucionOcs(
+                                "RPC-SO-12-No.123-2026",
+                                java.time.LocalDate.ofInstant(AHORA, ProcesoAprobacion.ZONA),
+                                "f".repeat(64),
+                                "resolucion.pdf",
+                                2048),
+                        AHORA));
+        nuevas.addAll(proceso.publicar(SECRETARIA, AHORA));
+        procesos.guardar(proceso, nuevas);
+        org.mockito.Mockito.clearInvocations(registro, distributivo);
+        notificadas.clear();
+        eventos.clear();
+    }
+
+    @Test
+    void dadoElDistributivoPublicado_cuandoSeIntentaCadaOperacion_entoncesSuErrorSinCambiarNada() {
+        publicado();
+        conCondiciones(LISTO);
+        marcarDevueltosEnGeneracion();
+        congelaEnGeneracion();
+
+        assertThatThrownBy(() -> servicio.avanzar(PERIODO, SECRETARIA))
+                .isInstanceOf(ec.mdd.validacionocs.dominio.EtapaConOperacionPropia.class);
+        assertThatThrownBy(() -> servicio.enviarARevision(PERIODO, RESPONSABLE))
+                .isInstanceOf(EtapaNoAdmiteRevision.class);
+        assertThatThrownBy(() -> servicio.devolver(PERIODO, DEVOLVER_DS_Y_TDS, RESPONSABLE))
+                .isInstanceOf(EtapaNoAdmiteDevolucion.class);
+        assertThatThrownBy(() -> servicio.aprobarContenido(PERIODO, VICERRECTOR))
+                .isInstanceOf(EtapaNoAdmiteAprobacion.class);
+
+        assertThat(procesos.de(PERIODO).orElseThrow().estado()).isEqualTo(TipoDeEtapa.PUBLICADO);
+        assertThat(registrado()).isEmpty();
+        assertThat(notificadas).isEmpty();
+        verify(distributivo, never()).congelar(anyString());
+        verify(distributivo, never()).condicionesDeRevision(anyString());
+        for (Solicitante quien : List.of(SECRETARIA, RESPONSABLE, VICERRECTOR, COORDINADOR_DS)) {
+            assertThat(servicio.flujo(PERIODO, quien).acciones()).as(quien.usuario()).isEmpty();
+        }
+    }
+
     // Cada transición nueva se notifica en su transacción (F16-H01, D-108).
 
     private List<TipoDeTransicion> notificadasPorTipo() {

@@ -382,6 +382,67 @@ class RepositorioProcesoIntegrationTest {
         assertThat(leido.transiciones()).filteredOn(una -> una.resolucion().isPresent()).hasSize(1);
     }
 
+    // F18-H01, FR-004: dos publicaciones a la vez; la segunda espera el bloqueo y encuentra
+    // PUBLICADO.
+    @Test
+    void dadasDosPublicacionesALaVez_cuandoSeGuardan_entoncesQuedaUnaSola() throws Exception {
+        String periodo = enOcs();
+        registrarEnUnaTransaccion(periodo, "RPC-SO-12-No.123-2026");
+        CountDownLatch salida = new CountDownLatch(1);
+        ExecutorService hilos = Executors.newFixedThreadPool(2);
+        List<Throwable> rechazos =
+                java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+        try {
+            List<Future<?>> tareas = new java.util.ArrayList<>();
+            for (int i = 0; i < 2; i++) {
+                tareas.add(
+                        hilos.submit(
+                                () -> {
+                                    esperar(salida);
+                                    try {
+                                        publicarEnUnaTransaccion(periodo);
+                                    } catch (RuntimeException rechazo) {
+                                        rechazos.add(rechazo);
+                                    }
+                                }));
+            }
+            salida.countDown();
+            for (Future<?> tarea : tareas) {
+                tarea.get(30, TimeUnit.SECONDS);
+            }
+        } finally {
+            hilos.shutdownNow();
+        }
+
+        assertThat(rechazos)
+                .singleElement()
+                .isInstanceOf(ec.mdd.validacionocs.dominio.EtapaNoAdmitePublicacion.class);
+        ProcesoAprobacion leido = repositorio.de(periodo).orElseThrow();
+        assertThat(leido.estado()).isEqualTo(TipoDeEtapa.PUBLICADO);
+        assertThat(leido.transiciones())
+                .filteredOn(una -> una.hacia() == TipoDeEtapa.PUBLICADO)
+                .hasSize(1);
+        assertThat(leido.publicacion()).isPresent();
+    }
+
+    // Como PublicarDistributivoServicio: el proceso bloqueado, el agregado decide y se guarda.
+    private static void publicarEnUnaTransaccion(String periodo) {
+        transaccion.executeWithoutResult(
+                estado -> {
+                    ProcesoAprobacion bloqueado = repositorio.bloquear(periodo).orElseThrow();
+                    pausa();
+                    repositorio.guardar(
+                            bloqueado,
+                            bloqueado.publicar(
+                                    // En las etapas de esta prueba, APROBADO es del VICERRECTOR.
+                                    new Solicitante(
+                                            "secretaria.demo",
+                                            Set.of("VICERRECTOR"),
+                                            Optional.empty()),
+                                    AHORA.plusSeconds(180)));
+                });
+    }
+
     private String enOcs() {
         String periodo = periodo();
         repositorio.crear(

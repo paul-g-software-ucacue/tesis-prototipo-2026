@@ -13,6 +13,7 @@ import ec.mdd.validacionocs.dominio.EtapaConOperacionPropia;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteAprobacion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteDevolucion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteEnvio;
+import ec.mdd.validacionocs.dominio.EtapaNoAdmitePublicacion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteResolucion;
 import ec.mdd.validacionocs.dominio.EtapaNoAdmiteRevision;
 import ec.mdd.validacionocs.dominio.InconsistenciasAbiertas;
@@ -190,6 +191,13 @@ class ErroresValidacionocs implements CatalogoDeErrores {
                         500,
                         "Resolución no disponible",
                         "No se pudo leer el PDF guardado de la resolución. Avisa al administrador."),
+                // Publicar fuera de APROBADO (F18-H01, D-111).
+                EntradaCatalogo.de(
+                        EtapaNoAdmitePublicacion.class,
+                        "VALIDACIONOCS_ETAPA_NO_ADMITE_PUBLICACION",
+                        409,
+                        "Etapa sin publicación",
+                        "El distributivo solo se publica cuando está aprobado."),
                 // Volver a congelar después de un rechazo en firma (F14-H04, D-105).
                 EntradaCatalogo.de(
                         RequiereVersionNueva.class,

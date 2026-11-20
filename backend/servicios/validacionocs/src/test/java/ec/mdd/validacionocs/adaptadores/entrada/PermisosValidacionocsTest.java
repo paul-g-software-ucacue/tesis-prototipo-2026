@@ -52,7 +52,7 @@ class PermisosValidacionocsTest {
     void dadoElContrato_cuandoSeVerificaCadaOperacion_entoncesExigeSuPermiso() {
         assertThat(verificador.operaciones())
                 .extracting(VerificadorDePermisos.OperacionProtegida::toString)
-                .hasSize(10)
+                .hasSize(11)
                 .anySatisfy(operacion -> assertThat(operacion).contains("FLUJO_FIRMAS:LECTURA"))
                 .anySatisfy(operacion -> assertThat(operacion).contains("FLUJO_FIRMAS:ESCRITURA"))
                 .anySatisfy(operacion -> assertThat(operacion).contains("PROYECTOS:LECTURA"))
@@ -61,7 +61,9 @@ class PermisosValidacionocsTest {
                 .anySatisfy(operacion -> assertThat(operacion).contains("DISTRIBUTIVO:APROBACION"))
                 // F15-H01: registrar y descargar la resolución (D-16, D-107).
                 .anySatisfy(operacion -> assertThat(operacion).contains("RESOLUCION_OCS:ESCRITURA"))
-                .anySatisfy(operacion -> assertThat(operacion).contains("RESOLUCION_OCS:LECTURA"));
+                .anySatisfy(operacion -> assertThat(operacion).contains("RESOLUCION_OCS:LECTURA"))
+                // F18-H01: publicar (D-16, D-111).
+                .anySatisfy(operacion -> assertThat(operacion).contains("PUBLICACION:APROBACION"));
 
         verificador.verificar(mvc, conversor);
     }
@@ -99,6 +101,25 @@ class PermisosValidacionocsTest {
         ec.mdd.validacionocs.puertos.entrada.RegistrarResolucion registrarResolucion() {
             return org.mockito.Mockito.mock(
                     ec.mdd.validacionocs.puertos.entrada.RegistrarResolucion.class);
+        }
+
+        /** F18-H01: solo el permiso del contrato. */
+        @Bean
+        ec.mdd.validacionocs.puertos.entrada.PublicarDistributivo publicarDistributivo() {
+            ec.mdd.validacionocs.puertos.entrada.PublicarDistributivo publicar =
+                    org.mockito.Mockito.mock(
+                            ec.mdd.validacionocs.puertos.entrada.PublicarDistributivo.class);
+            when(publicar.publicar(anyString(), any()))
+                    .thenReturn(
+                            new FlujoDelDistributivo(
+                                    "2026-I",
+                                    TipoDeEtapa.PUBLICADO,
+                                    "Publicado",
+                                    1,
+                                    List.of(),
+                                    List.of(),
+                                    List.of()));
+            return publicar;
         }
 
         @Bean

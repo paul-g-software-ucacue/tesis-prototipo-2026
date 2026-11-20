@@ -160,6 +160,24 @@ final class FlujoEnMemoria {
                 (sinUso, nuevas) -> {});
     }
 
+    /** Publicar con el caso de uso real, sobre esta memoria (F18-H01). */
+    ec.mdd.validacionocs.puertos.entrada.PublicarDistributivo publicarDistributivo() {
+        return new ec.mdd.validacionocs.aplicacion.PublicarDistributivoServicio(
+                repositorio(),
+                distributivo(),
+                datos(),
+                cambio -> {},
+                new Transaccion() {
+                    @Override
+                    public <T> T ejecutar(Supplier<T> trabajo) {
+                        return trabajo.get();
+                    }
+                },
+                servicio(),
+                Clock.fixed(AHORA.plusSeconds(7200), ZoneOffset.UTC),
+                (sinUso, nuevas) -> {});
+    }
+
     /** Todo como al empezar: distributivos sin parciales enviados y sin procesos. */
     void reiniciar() {
         enviados.clear();
