@@ -9,6 +9,9 @@
 # problemas los dice todos, y ninguno de los rechazos cambia lo vigente. Un archivo peligroso no se
 # interpreta. Fuera de Planificación no se carga. Cada operación exige su permiso. Con datos o con
 # identidad detenidos responde el error del catálogo, sin guardar: distributivo llama a los dos.
+# Desde F12-H03 (specs/057-plazos-etapas/contracts/demostracion.md, R1 a R3), la advertencia de RN-23:
+# con dos periodos más, abiertos con la versión 1 de normativa, uno que empieza dentro de 60 días
+# advierte y otro dentro de 120 no; el periodo sin normativa dice que no se pudo comprobar.
 # Al terminar, aunque un paso falle, borra todo lo que creó y devuelve el rol al usuario del paso 6.
 # Termina con 0 si todos los pasos pasan y con 1 si alguno falla. Nunca imprime el token ni la
 # contraseña.
@@ -95,18 +98,26 @@ dice() {  # dice <texto>: uno de los detalles del error
 }
 
 periodo="prueba-$RANDOM$RANDOM"
+# F12-H03: los dos periodos de la advertencia de RN-23, que empiezan dentro de 60 y de 120 días.
+cercano="prueba-$RANDOM$RANDOM"
+lejano="prueba-$RANDOM$RANDOM"
 rol_quitado=""
 limpiar() {
-    local sql
-    sql="delete from validacionocs.configuracion_flujo where periodo = '$periodo';
-delete from roles.designacion_responsable where periodo = '$periodo';
-delete from roles.periodo_conocido where codigo = '$periodo';
-delete from roles.registro_cambio where detalle ->> 'periodo' = '$periodo';
+    local sql="" uno
+    for uno in "$periodo" "$cercano" "$lejano"; do
+        sql+="delete from validacionocs.configuracion_flujo where periodo = '$uno';
+delete from roles.designacion_responsable where periodo = '$uno';
+delete from roles.periodo_conocido where codigo = '$uno';
+delete from roles.registro_cambio where detalle ->> 'periodo' = '$uno';
 delete from roles.evento_recibido where id_evento in (select (serialized_event::jsonb ->> 'idEvento')::uuid
-    from eventos_datos.event_publication where serialized_event::jsonb -> 'contenido' ->> 'codigo' = '$periodo');
-delete from eventos_datos.event_publication where serialized_event::jsonb -> 'contenido' ->> 'codigo' = '$periodo';
-delete from academico.registro_cambio where detalle ->> 'codigo' = '$periodo';
-delete from academico.periodo_academico where codigo = '$periodo';"
+    from eventos_datos.event_publication where serialized_event::jsonb -> 'contenido' ->> 'codigo' = '$uno');
+delete from eventos_datos.event_publication where serialized_event::jsonb -> 'contenido' ->> 'codigo' = '$uno';
+delete from normativa.asignacion_normativa where periodo = '$uno';
+delete from normativa.registro_cambio where detalle ->> 'periodo' = '$uno';
+delete from academico.registro_cambio where detalle ->> 'codigo' = '$uno';
+delete from academico.periodo_academico where codigo = '$uno';
+"
+    done
     [[ -n $rol_quitado ]] && sql+="
 $(devolver_rol)"
     consultar_base "$sql" >/dev/null 2>&1 \
@@ -380,6 +391,57 @@ el_contenido_no_va_a_los_registros() {
         | grep -c 'ScriptEngineManager\|otra_clave' || true) == 0 ]]
 }
 
+# --- F12-H03: la advertencia de RN-23 (contracts/demostracion.md, R1 a R3) ---
+# preparar_con_normativa <periodo> <días hasta el inicio>: lo registra, lo abre con la versión 1 de
+# normativa y designa al Responsable, para que la plantilla se pueda cargar.
+preparar_con_normativa() {
+    local inicio fin anterior=$periodo
+    # El paso 12 reinicia identidad: los tokens del principio ya no valen.
+    iniciar "$VICERRECTOR"
+    token_vicerrector=$token
+    iniciar "$ADMIN"
+    token_admin=$token
+    inicio=$(TZ=America/Guayaquil date -d "+$2 days" +%F)
+    fin=$(TZ=America/Guayaquil date -d "+$(($2 + 150)) days" +%F)
+    pedir POST "$GATEWAY/api/academico/periodos" "Bearer $token_vicerrector" \
+        "$(jq -cn --arg c "$1" --arg i "$inicio" --arg f "$fin" \
+            '{codigo: $c, nombre: "Periodo de prueba", inicio: $i, fin: $f}')"
+    [[ $estado == 201 ]] || return 1
+    pedir PUT "$GATEWAY/api/academico/periodos/$1/normativa" "Bearer $token_vicerrector" '{"version":1}'
+    [[ $estado == 200 ]] || return 1
+    periodo=$1
+    esperar_designacion
+    local designado_bien=$?
+    periodo=$anterior
+    return $designado_bien
+}
+
+advierte_a_60_dias() {
+    preparar_con_normativa "$cercano" 60 || return 1
+    subir "$cercano" "$trabajo/plantilla.yaml"
+    [[ $estado == 200 ]] || return 1
+    local hoy
+    hoy=$(TZ=America/Guayaquil date +%F)
+    jq -e --arg u "$(date -d "$hoy +43 days" +%F)" --arg r "$(date -d "$hoy +30 days" +%F)" \
+        '.advertencias | length == 1 and .[0].codigo == "RN23_MARGEN_INSUFICIENTE"
+            and .[0].ultimoPlazo == $u and .[0].fechaDeRemision == $r and .[0].diasDeMargen == -13
+            and .[0].diasAntesDelInicio == 30' <<<"$cuerpo" >/dev/null || return 1
+    pedir GET "$(ruta "$cercano")" "Bearer $token_admin"
+    jq -e '.advertencias[0].codigo == "RN23_MARGEN_INSUFICIENTE"' <<<"$cuerpo" >/dev/null
+}
+
+no_advierte_a_120_dias() {
+    preparar_con_normativa "$lejano" 120 || return 1
+    subir "$lejano" "$trabajo/plantilla.yaml"
+    [[ $estado == 200 ]] && jq -e '.advertencias == []' <<<"$cuerpo" >/dev/null
+}
+
+sin_normativa_no_se_comprueba() {
+    consultar
+    jq -e '.advertencias | length == 1 and .[0].codigo == "RN23_SIN_NORMATIVA"
+        and (.[0] | has("diasDeMargen") | not)' <<<"$cuerpo" >/dev/null
+}
+
 verificar 0 "vicerrectorado.demo registra $periodo, en Planificación" periodo_registrado
 verificar 1 "Sin archivo rige la configuración por defecto: 9 etapas y F1, F2 y F3" rige_la_de_por_defecto
 verificar 2 "El Administrador descarga la plantilla comentada" se_descarga_la_plantilla
@@ -410,6 +472,11 @@ verificar 13 "Con los procesos de vuelta se carga la versión 3" vuelve_con_los_
 verificar 14 "Fuera de Planificación se ve y no se carga: 409" fuera_de_planificacion
 verificar 15 "Cada carga queda con su texto, quién y cuándo" queda_quien_y_cuando
 verificar 16 "El contenido de los archivos no va a los registros" el_contenido_no_va_a_los_registros
+verificar 17 "RN-23: a 60 días del inicio, la plantilla se carga con RN23_MARGEN_INSUFICIENTE y 13 días de menos" \
+    advierte_a_60_dias
+verificar 18 "RN-23: a 120 días, la plantilla se carga sin advertencias" no_advierte_a_120_dias
+verificar 19 "RN-23: sin versión de normativa, la carga vigente de $periodo dice RN23_SIN_NORMATIVA" \
+    sin_normativa_no_se_comprueba
 
 if ((fallas > 0)); then
     echo "Fallaron $fallas pasos."
