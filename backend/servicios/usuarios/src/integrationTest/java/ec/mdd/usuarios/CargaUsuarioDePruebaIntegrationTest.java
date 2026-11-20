@@ -60,7 +60,7 @@ class CargaUsuarioDePruebaIntegrationTest {
         @Bean
         @ServiceConnection
         PostgreSQLContainer postgres() {
-            return new PostgreSQLContainer("postgres:18.6-alpine");
+            return new PostgreSQLContainer("postgres:18.7-alpine");
         }
     }
 }

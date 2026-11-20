@@ -39,7 +39,7 @@ class NormativaEsquemaIntegrationTest {
     @Test
     void dadoUnaBaseVacia_cuandoElServicioMigra_entoncesTodasSusTablasQuedanEnSuEsquema()
             throws SQLException {
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
             postgres.start();
             DataSource dataSource =
                     new DriverManagerDataSource(
@@ -80,7 +80,7 @@ class NormativaEsquemaIntegrationTest {
                 Files.copy(archivo, anterior.resolve(migracion));
             }
         }
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
             postgres.start();
             DataSource dataSource =
                     new DriverManagerDataSource(
@@ -114,7 +114,7 @@ class NormativaEsquemaIntegrationTest {
      */
     @Test
     void dadoUnaVersionCreadaAntesDeV4_cuandoSeMigra_entoncesQuedaCompletaConSuRegistro() {
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
             postgres.start();
             DataSource dataSource =
                     new DriverManagerDataSource(

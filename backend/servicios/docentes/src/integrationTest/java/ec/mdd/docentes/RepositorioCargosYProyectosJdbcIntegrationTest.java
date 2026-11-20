@@ -39,7 +39,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 class RepositorioCargosYProyectosJdbcIntegrationTest {
 
     private static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:18.6-alpine");
+            new PostgreSQLContainer("postgres:18.7-alpine");
     private static final Instant AHORA = Instant.parse("2026-10-25T15:00:00Z");
     private static final List<String> DOCENTES = List.of("0109990010", "0109990028", "0109990044");
 

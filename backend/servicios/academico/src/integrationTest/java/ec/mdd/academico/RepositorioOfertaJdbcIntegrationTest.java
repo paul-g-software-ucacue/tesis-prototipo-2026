@@ -43,7 +43,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 class RepositorioOfertaJdbcIntegrationTest {
 
     private static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:18.6-alpine");
+            new PostgreSQLContainer("postgres:18.7-alpine");
     private static final Instant AHORA = Instant.parse("2026-10-24T15:00:00Z");
 
     private static DataSource dataSource;

@@ -49,7 +49,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 class AplicadorDocentesIntegrationTest {
 
     private static final PostgreSQLContainer POSTGRES =
-            new PostgreSQLContainer("postgres:18.6-alpine");
+            new PostgreSQLContainer("postgres:18.7-alpine");
     // Un docente de prueba de medio tiempo (los de cargo son a tiempo completo).
     private static final String MEDIO_TIEMPO = "0109990424";
 

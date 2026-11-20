@@ -17,7 +17,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
- * Lo común a las pruebas de integración de la entrega: PostgreSQL 18.6 de Testcontainers, el
+ * Lo común a las pruebas de integración de la entrega: PostgreSQL 18.7 de Testcontainers, el
  * registro en {@code eventos_prueba}, el receptor simulado y consultas al registro.
  */
 abstract class BaseDeEntrega {
@@ -84,7 +84,7 @@ abstract class BaseDeEntrega {
         @Bean
         @ServiceConnection
         PostgreSQLContainer postgres() {
-            return new PostgreSQLContainer("postgres:18.6-alpine");
+            return new PostgreSQLContainer("postgres:18.7-alpine");
         }
     }
 }

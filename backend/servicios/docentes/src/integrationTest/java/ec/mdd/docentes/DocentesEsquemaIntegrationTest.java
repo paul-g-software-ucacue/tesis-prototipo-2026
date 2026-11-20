@@ -35,7 +35,7 @@ class DocentesEsquemaIntegrationTest {
     @Test
     void dadoUnaBaseVacia_cuandoElServicioMigra_entoncesTodasSusTablasQuedanEnSuEsquema()
             throws SQLException {
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
             postgres.start();
             DataSource dataSource =
                     new DriverManagerDataSource(
@@ -52,7 +52,7 @@ class DocentesEsquemaIntegrationTest {
 
     @Test
     void dadaLaTablaDeLosDocentes_cuandoSeGuardaAlgoFueraDeSusReglas_entoncesLaBaseLoRechaza() {
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.6-alpine")) {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
             postgres.start();
             DataSource dataSource =
                     new DriverManagerDataSource(
