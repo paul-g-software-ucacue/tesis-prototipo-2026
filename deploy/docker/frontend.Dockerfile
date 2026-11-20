@@ -12,15 +12,19 @@ COPY contratos/ /app/contratos/
 # prebuild genera los tipos desde los contratos; tsc los revisa antes de construir.
 RUN npm run build
 
-FROM nginxinc/nginx-unprivileged:stable-alpine
+# La rama mainline de nginx.org (D-112): trae los arreglos antes que stable. nginx viene del
+# repositorio de nginx.org, fijado en /etc/apk/world, así que apk upgrade no lo cambia.
+FROM nginxinc/nginx-unprivileged:mainline-alpine
 # Paquetes de la base con vulnerabilidades altas ya corregidas (Grype): zlib 1.3.2-r0 → 1.3.2-r1
 # (B00-H08), libexpat 2.8.5-r0 → 2.9.0-r0 (CVE-2026-77214, F05-H02) y brotli-libs 1.2.0-r1 → 1.2.1-r0
 # (CVE-2026-111497, crítica), curl y libcurl 8.22.0-r0 → 8.23.0-r0 (CVE-2026-92392, F01-H04) y musl y
 # musl-utils 1.2.6-r2 → 1.2.6-r3 (CVE-2026-107891, D-93) y libxslt 1.1.43-r3 → 1.1.43-r4
-# (CVE-2026-125350, CVE-2026-87636 y CVE-2026-9947). Se actualizan como root y se vuelve al usuario
-# sin privilegios de la imagen (101).
+# (CVE-2026-125350, CVE-2026-87636 y CVE-2026-9947) y libcrypto3 y libssl3 3.5.9-r0 → 3.5.9-r1
+# (CVE-2026-95692, CVE-2026-107496, CVE-2026-95691 y CVE-2026-88823). Se actualizan como root y se
+# vuelve al usuario sin privilegios de la imagen (101).
 USER root
-RUN apk upgrade --no-cache zlib libexpat brotli-libs curl libcurl musl musl-utils libxslt
+RUN apk upgrade --no-cache zlib libexpat brotli-libs curl libcurl musl musl-utils libxslt libcrypto3 \
+    libssl3
 USER 101
 # El API Gateway del perfil consolidado; se cambia con la variable (contracts/perfil.md).
 ENV MDD_URI_GATEWAY=http://gateway:8080

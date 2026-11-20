@@ -109,6 +109,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-108 | 2026-11-15 | Las notificaciones de cada transición: Aprobación decide el rol y arma el mensaje, Notificaciones resuelve los usuarios con Roles en su proceso y la bandeja solo pide sesión | Aceptada | RF-41, V-09, MD-03, MD-09, ADR-018, ADR-024, D-97, D-98, D-100 |
 | D-109 | 2026-11-17 | identidad sube a 768 MiB, con el heap al 40 % y las arenas de malloc acotadas | Aceptada | R-19, ADR-008, D-34, D-36, issue #224 |
 | D-110 | 2026-11-18 | La notificación de firma pendiente: Firma la publica al aceptar una firma, con el firmante esperado como destino, y Notificaciones lo resuelve a su cuenta; la cadena con su estado va en la consulta del documento firmable | Aceptada | RF-41, D-17, MD-05, ADR-018, D-102, D-104, D-105, D-106, D-108 |
+| D-112 | 2026-11-19 | El frontend usa la rama mainline de nginx.org: la stable todavía no trae los arreglos de cinco vulnerabilidades críticas de nginx 1.30.6 | Aceptada | D-52, D-54, ADR-019 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -2393,3 +2394,23 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 - Con la versión nueva (D-106), la cadena de la versión anulada no se muestra, y la de la nueva empieza sin firmas.
 
 **Documentos que hay que poner al día.** Ninguno: el glosario ya tiene `Notificacion`, la cadena de firmas y el firmante.
+
+## D-112. El frontend usa la rama mainline de nginx.org: la stable todavía no trae los arreglos de cinco vulnerabilidades críticas de nginx 1.30.6
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-19 · **Decidido por:** autor de la tesis
+- **Origen:** el check «5 · imágenes» de los PR #248 y #249 falla por vulnerabilidades nuevas. Las de PostgreSQL 18.6 se resuelven con 18.7, y las de `openssl` del frontend, con `apk upgrade`. Quedan las de `nginx` 1.30.6-r1 del frontend: cinco críticas (CVE-2026-113425, CVE-2026-121810, CVE-2026-123007, CVE-2026-123633 y CVE-2026-123634) y una alta (CVE-2026-118899).
+- **Cambia:** la base del frontend de specs/007-spa-base (research), `nginxinc/nginx-unprivileged:stable-alpine`
+
+**Decisión.** `deploy/docker/frontend.Dockerfile` parte de `nginxinc/nginx-unprivileged:mainline-alpine` (nginx 1.31.7 el 2026-11-19), con la misma configuración, el mismo usuario sin privilegios y las mismas cabeceras.
+
+**Por qué.**
+- nginx viene del repositorio de nginx.org y está fijado en `/etc/apk/world`: `apk upgrade` no lo cambia. La 1.30.7-r0 que sugiere Grype es el paquete de Alpine, otra compilación con otra configuración y sin los módulos de la imagen.
+- La imagen stable más reciente sigue con nginx 1.30.6, y no hay una con 1.30.7.
+- La mainline la publica el mismo proyecto, recibe los arreglos primero, y nginx.org la recomienda para uso general. Con ella, Grype (v0.120.1) no encuentra nada alto ni crítico con arreglo, y la imagen sirve la SPA con la misma configuración (comprobado en local; en la CI, `perfil-consolidado` y Playwright).
+- Este nginx sí corre en la demo y sirve la SPA: una excepción de Grype (D-54) dejaría cinco críticas en un servicio expuesto, a diferencia de D-96.
+
+**Alternativas.**
+- Una excepción temporal de Grype para las seis, hasta que stable traiga 1.30.7: más débil que D-96, porque este nginx corre.
+- Cambiar al paquete `nginx` de Alpine: otra configuración, otro usuario y sin los módulos de la imagen.
+
+**Consecuencias.** La mainline cambia de versión menor más seguido que stable; cada cambio llega al reconstruir la imagen y lo revisan Grype, `perfil-consolidado` y Playwright. Si stable vuelve a tener los arreglos a tiempo, se puede volver a ella con otra decisión.
