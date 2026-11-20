@@ -59,7 +59,7 @@ class RepositorioVersionesJdbcIntegrationTest {
                             assertThat(version.tipoIst()).isEqualTo(TipoIst.T2);
                             assertThat(version.tabla().filas()).hasSize(22);
                             // 7 de F04-H01 y 9 de V4 (F04-H03, D-68).
-                            assertThat(version.reglas()).hasSize(16);
+                            assertThat(version.reglas()).hasSize(17);
                         });
     }
 

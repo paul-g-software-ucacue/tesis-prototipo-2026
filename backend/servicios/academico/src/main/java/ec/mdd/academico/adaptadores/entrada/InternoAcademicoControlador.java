@@ -7,6 +7,7 @@ import ec.mdd.academico.adaptadores.entrada.api.EstadoPeriodo;
 import ec.mdd.academico.adaptadores.entrada.api.InternoApi;
 import ec.mdd.academico.adaptadores.entrada.api.NombreDeCarrera;
 import ec.mdd.academico.adaptadores.entrada.api.ParaleloDeLaOferta;
+import ec.mdd.academico.dominio.PeriodoAcademico;
 import ec.mdd.academico.puertos.entrada.ConsultarAsignaturasOfertadas;
 import ec.mdd.academico.puertos.entrada.ConsultarCarreras;
 import ec.mdd.academico.puertos.entrada.ConsultarParaleloDeLaOferta;
@@ -58,11 +59,13 @@ class InternoAcademicoControlador implements InternoApi {
     @Override
     public ResponseEntity<EstadoDelPeriodo> consultarEstadoDelPeriodo(String codigo) {
         try {
+            // F12-H03 (D-114): el inicio, para la advertencia de RN-23 de Aprobación.
+            PeriodoAcademico periodo = periodos.porCodigo(codigo).periodo();
             return ResponseEntity.ok(
                     new EstadoDelPeriodo(
                             codigo,
-                            EstadoPeriodo.valueOf(
-                                    periodos.porCodigo(codigo).periodo().estado().name())));
+                            EstadoPeriodo.valueOf(periodo.estado().name()),
+                            periodo.inicio()));
         } catch (PeriodoNoEncontrado error) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }

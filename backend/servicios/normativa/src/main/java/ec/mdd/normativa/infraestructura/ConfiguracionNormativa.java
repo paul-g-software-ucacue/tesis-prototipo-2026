@@ -11,6 +11,7 @@ import ec.mdd.normativa.aplicacion.ConsultarPesosDelPeriodoServicio;
 import ec.mdd.normativa.aplicacion.ConsultarProporcionDelPeriodoServicio;
 import ec.mdd.normativa.aplicacion.ConsultarReglasDeAsignacionServicio;
 import ec.mdd.normativa.aplicacion.ConsultarReglasDelPanelServicio;
+import ec.mdd.normativa.aplicacion.ConsultarRemisionDelPeriodoServicio;
 import ec.mdd.normativa.aplicacion.CrearVersionServicio;
 import ec.mdd.normativa.aplicacion.EditarVersionServicio;
 import ec.mdd.normativa.aplicacion.cargas.CargasDeNormativa;
@@ -21,6 +22,7 @@ import ec.mdd.normativa.puertos.entrada.ConsultarPesosDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarProporcionDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.ConsultarReglasDeAsignacion;
 import ec.mdd.normativa.puertos.entrada.ConsultarReglasDelPanel;
+import ec.mdd.normativa.puertos.entrada.ConsultarRemisionDelPeriodo;
 import ec.mdd.normativa.puertos.entrada.CrearVersion;
 import ec.mdd.normativa.puertos.entrada.EditarVersion;
 import ec.mdd.normativa.puertos.salida.RegistroDeCambios;
@@ -86,6 +88,13 @@ public class ConfiguracionNormativa {
     public ConsultarProporcionDelPeriodo consultarProporcionDelPeriodo(
             RepositorioVersiones repositorio) {
         return new ConsultarProporcionDelPeriodoServicio(repositorio);
+    }
+
+    /** Los días de RN-23 de un periodo, para la advertencia de Aprobación (F12-H03, D-114). */
+    @Bean
+    public ConsultarRemisionDelPeriodo consultarRemisionDelPeriodo(
+            RepositorioVersiones repositorio) {
+        return new ConsultarRemisionDelPeriodoServicio(repositorio);
     }
 
     /** Los pesos de afinidad de un periodo, para otros procesos (F06-H01, ADR-023). */

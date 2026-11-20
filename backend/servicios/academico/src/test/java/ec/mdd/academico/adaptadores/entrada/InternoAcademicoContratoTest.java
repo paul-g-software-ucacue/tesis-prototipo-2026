@@ -60,7 +60,9 @@ class InternoAcademicoContratoTest {
 
         assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
         assertThat(resultado.getResponse().getContentAsString())
-                .isEqualTo("{\"periodo\":\"2026-I\",\"estado\":\"PLANIFICACION\"}");
+                .isEqualTo(
+                        "{\"periodo\":\"2026-I\",\"estado\":\"PLANIFICACION\","
+                                + "\"inicio\":\"2026-04-01\"}");
         contrato.validar(resultado);
     }
 

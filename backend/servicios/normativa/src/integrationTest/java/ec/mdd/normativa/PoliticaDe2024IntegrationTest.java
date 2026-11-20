@@ -101,7 +101,7 @@ class PoliticaDe2024IntegrationTest {
     }
 
     @Test
-    void dadoLaMigracion_cuandoSeLeenLasReglas_entoncesSonLas16ConSus37Parametros() {
+    void dadoLaMigracion_cuandoSeLeenLasReglas_entoncesSonLas17ConSus39Parametros() {
         Map<String, String> severidades = new LinkedHashMap<>();
         jdbc.sql(
                         "select r.identificador, coalesce(r.severidad, '—') from normativa.regla r"
@@ -129,9 +129,11 @@ class PoliticaDe2024IntegrationTest {
                         Map.entry("RN-18", "DURA"),
                         Map.entry("RN-19", "BLANDA"),
                         Map.entry("RN-22", "DURA"),
+                        // F12-H03 (V7): RN-23 solo da los días de remisión.
+                        Map.entry("RN-23", "—"),
                         Map.entry("RN-24", "—"),
                         Map.entry("RN-25", "DURA"));
-        assertThat(parametros).hasSize(38);
+        assertThat(parametros).hasSize(39);
         // F04-H03: los pesos de RN-24 y el mínimo de RN-19 (escenario «Valores por defecto»).
         assertThat(parametros)
                 .containsEntry("RN-24.cuarto_nivel_campo_especifico", new BigDecimal("3.00"))
@@ -150,7 +152,8 @@ class PoliticaDe2024IntegrationTest {
                 .containsEntry("RN-06.t2_hasta", new BigDecimal("600.00"))
                 .containsEntry("RN-09.estudiantes_minimos", new BigDecimal("500.00"))
                 .containsEntry("RN-10.t2_maximo", new BigDecimal("11.00"))
-                .containsEntry("RN-13.porcentaje_nomina", new BigDecimal("10.00"));
+                .containsEntry("RN-13.porcentaje_nomina", new BigDecimal("10.00"))
+                .containsEntry("RN-23.dias_antes_del_inicio", new BigDecimal("30.00"));
     }
 
     @Test
@@ -178,7 +181,8 @@ class PoliticaDe2024IntegrationTest {
                                         + " from normativa.registro_cambio"
                                         + " where accion = 'VERSION_EDITADA'"
                                         + " and detalle::text not like '%actividades%'"
-                                        + " and detalle::text not like '%margen_puntos%'")
+                                        + " and detalle::text not like '%margen_puntos%'"
+                                        + " and detalle::text not like '%dias_antes_del_inicio%'")
                         .query()
                         .singleRow();
         List<Map<String, Object>> severidades =
