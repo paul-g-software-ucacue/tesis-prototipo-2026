@@ -306,7 +306,7 @@ describe('Roles', () => {
         const tabla = await tablaDeUsuarios(userEvent.setup());
 
         expect(
-          within(tabla).getByRole('button', { name: 'Indicar la carrera de coordinacion.demo' }),
+          within(tabla).getByRole('button', { name: 'Indicar carrera de coordinacion.demo' }),
         ).toBeInTheDocument();
         expect(
           within(tabla).queryByRole('button', { name: /carrera de docente\.demo/ }),
@@ -317,7 +317,7 @@ describe('Roles', () => {
         const usuario = userEvent.setup();
         const tabla = await tablaDeUsuarios(usuario);
         await usuario.click(
-          within(tabla).getByRole('button', { name: 'Indicar la carrera de coordinacion.demo' }),
+          within(tabla).getByRole('button', { name: 'Indicar carrera de coordinacion.demo' }),
         );
 
         const dialogo = await screen.findByRole('dialog', {
@@ -339,7 +339,7 @@ describe('Roles', () => {
         const usuario = userEvent.setup();
         const tabla = await tablaDeUsuarios(usuario);
         await usuario.click(
-          within(tabla).getByRole('button', { name: 'Indicar la carrera de coordinacion.demo' }),
+          within(tabla).getByRole('button', { name: 'Indicar carrera de coordinacion.demo' }),
         );
         const dialogo = await screen.findByRole('dialog', {
           name: 'Carrera de coordinacion.demo',
@@ -361,7 +361,7 @@ describe('Roles', () => {
         const usuario = userEvent.setup();
         const tabla = await tablaDeUsuarios(usuario);
         await usuario.click(
-          within(tabla).getByRole('button', { name: 'Indicar la carrera de coordinacion.demo' }),
+          within(tabla).getByRole('button', { name: 'Indicar carrera de coordinacion.demo' }),
         );
 
         const dialogo = await screen.findByRole('dialog', {
@@ -383,7 +383,7 @@ describe('Roles', () => {
         const usuario = userEvent.setup();
         const tabla = await tablaDeUsuarios(usuario);
         await usuario.click(
-          within(tabla).getByRole('button', { name: 'Indicar la carrera de coordinacion.demo' }),
+          within(tabla).getByRole('button', { name: 'Indicar carrera de coordinacion.demo' }),
         );
         const dialogo = await screen.findByRole('dialog', {
           name: 'Carrera de coordinacion.demo',
@@ -409,7 +409,7 @@ describe('Roles', () => {
         const usuario = userEvent.setup();
         const tabla = await tablaDeUsuarios(usuario);
         await usuario.click(
-          within(tabla).getByRole('button', { name: 'Indicar la carrera de coordinacion.demo' }),
+          within(tabla).getByRole('button', { name: 'Indicar carrera de coordinacion.demo' }),
         );
         const dialogo = await screen.findByRole('dialog', {
           name: 'Carrera de coordinacion.demo',

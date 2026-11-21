@@ -236,7 +236,7 @@ test.describe('accesibilidad de la pantalla «Roles»', () => {
       'Sin carrera',
     );
 
-    await page.getByRole('button', { name: 'Indicar la carrera de coordinacion.demo' }).click();
+    await page.getByRole('button', { name: 'Indicar carrera de coordinacion.demo' }).click();
     const dialogo = page.getByRole('dialog', { name: 'Carrera de coordinacion.demo' });
     await expect(dialogo).toBeVisible();
     await expect(page.locator('.MuiDialog-container')).toHaveCSS('opacity', '1');

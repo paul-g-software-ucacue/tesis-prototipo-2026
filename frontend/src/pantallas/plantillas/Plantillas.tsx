@@ -263,7 +263,7 @@ function SubirArchivo({
       <Button
         size="small"
         variant="contained"
-        aria-label={`Subir un archivo de ${carga.nombre}`}
+        aria-label={`Subir archivo de ${carga.nombre}`}
         aria-describedby={faltan.length > 0 ? `faltan-${carga.codigo}` : undefined}
         disabled={faltan.length > 0}
         onClick={() => selector.current?.click()}
@@ -479,7 +479,7 @@ export function Plantillas() {
                               size="small"
                               aria-expanded={abierta}
                               aria-controls={idDelDiccionario}
-                              aria-label={`Ver el diccionario de ${carga.nombre}`}
+                              aria-label={`${abierta ? 'Ocultar' : 'Ver'} el diccionario de ${carga.nombre}`}
                               onClick={() => setDesplegada(abierta ? null : carga.numero)}
                             >
                               {abierta ? 'Ocultar el diccionario' : 'Ver el diccionario'}

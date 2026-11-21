@@ -107,7 +107,7 @@ export function RolesDeUsuarios({ escritura }: { escritura: boolean }) {
                     </Button>
                     {rolesDe(usuario.usuario).includes(COORDINADOR) && (
                       <Button
-                        aria-label={`Indicar la carrera de ${usuario.usuario}`}
+                        aria-label={`Indicar carrera de ${usuario.usuario}`}
                         onClick={() => setAbierto({ que: 'carrera', usuario: usuario.usuario })}
                       >
                         Indicar carrera

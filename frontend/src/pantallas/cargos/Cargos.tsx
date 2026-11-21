@@ -32,6 +32,11 @@ import { NOMBRE_DEL_CARGO, NOMBRE_DEL_ESTADO_DEL_CARGO, cargos } from './nombres
 /** Lo que está abierto: el diálogo de registrar o el de un cargo. */
 type Abierto = { que: 'registrar' } | { que: 'corregir'; cargo: Cargo } | null;
 
+/** El texto del botón; el nombre accesible empieza igual (WCAG 2.5.3). */
+function accionSobreElCargo(cargo: Cargo): string {
+  return cargo.estado === 'VIGENTE' ? 'Corregir o finalizar' : 'Corregir';
+}
+
 export function Cargos() {
   useTitulo('Cargos');
   const sesion = useSesionActual();
@@ -152,10 +157,10 @@ export function Cargos() {
                         <TableCell>
                           <Button
                             size="small"
-                            aria-label={`Corregir el cargo de ${nombre}: ${NOMBRE_DEL_CARGO[cargo.tipo]}`}
+                            aria-label={`${accionSobreElCargo(cargo)} el cargo de ${nombre}: ${NOMBRE_DEL_CARGO[cargo.tipo]}`}
                             onClick={() => setAbierto({ que: 'corregir', cargo })}
                           >
-                            {cargo.estado === 'VIGENTE' ? 'Corregir o finalizar' : 'Corregir'}
+                            {accionSobreElCargo(cargo)}
                           </Button>
                         </TableCell>
                       )}

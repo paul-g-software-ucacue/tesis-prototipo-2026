@@ -250,7 +250,7 @@ describe('Periodos', () => {
 
     const fila = await filaDe('2026-2');
     expect(
-      within(fila).getByRole('button', { name: 'Pasar 2026-2 a En aprobación' }),
+      within(fila).getByRole('button', { name: 'Pasar a En aprobación 2026-2' }),
     ).toBeDisabled();
     expect(fila).toHaveTextContent('Ábrelo antes con su versión de normativa.');
   });
@@ -266,7 +266,7 @@ describe('Periodos', () => {
     montarSpa('/periodos');
 
     await usuario.click(
-      within(await filaDe('2026-1')).getByRole('button', { name: 'Pasar 2026-1 a Cerrado' }),
+      within(await filaDe('2026-1')).getByRole('button', { name: 'Pasar a Cerrado 2026-1' }),
     );
     const dialogo = await screen.findByRole('dialog', { name: 'Cerrar el periodo 2026-1' });
     expect(dialogo).toHaveTextContent('ya no admite cambios');
@@ -299,7 +299,7 @@ describe('Periodos', () => {
     montarSpa('/periodos');
 
     await usuario.click(
-      within(await filaDe('2026-2')).getByRole('button', { name: 'Pasar 2026-2 a En aprobación' }),
+      within(await filaDe('2026-2')).getByRole('button', { name: 'Pasar a En aprobación 2026-2' }),
     );
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Periodo cerrado');
