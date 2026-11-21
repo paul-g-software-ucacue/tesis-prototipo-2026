@@ -496,18 +496,10 @@ en_la_bitacora() {
 }
 
 # --- 14. La tarjeta dice VENCIDO, y las acciones de quien consolida no cambian ---
-# Una sesión nueva, aceptada: identidad volvió en el paso 12 con otra llave efímera (en la CI no hay
-# llave fija), y el inicio de sesión o el JWKS del API Gateway y de distributivo pueden tardar unos
-# segundos en estar listos. Nimbus vuelve a pedir el JWKS como mucho una vez cada 30 s.
-flujo_con_sesion_nueva() {
-    iniciar "$RESPONSABLE"
-    [[ -n $token ]] || return 1
-    pedir GET "$FLUJO" "Bearer $token"
-    [[ $estado == 200 ]]
-}
-
 vencido_sin_bloquear() {
-    esperar 60 flujo_con_sesion_nueva || return 1
+    iniciar "$RESPONSABLE"
+    pedir GET "$FLUJO" "Bearer $token"
+    [[ $estado == 200 ]] || return 1
     jq -e '.plazo.estado == "VENCIDO" and .plazo.diasRestantes == -1' <<<"$cuerpo" >/dev/null || return 1
     [[ $(jq -c '.acciones' <<<"$cuerpo") == "$acciones_del_responsable" ]]
 }

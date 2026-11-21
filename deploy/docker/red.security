@@ -1,2 +1,5 @@
 # Propiedades de seguridad de Java para los contenedores (D-84).
 networkaddress.cache.negative.ttl=0
+# Las respuestas del DNS de Docker, como mucho 5 s (#274, D-116): si un contenedor cambia de IP al
+# reiniciarse y otro se queda con la vieja, las conexiones nuevas dejan pronto de ir a la vieja.
+networkaddress.cache.ttl=5
