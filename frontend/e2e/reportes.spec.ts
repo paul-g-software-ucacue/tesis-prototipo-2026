@@ -144,6 +144,54 @@ test.describe('reportes', () => {
     await expect(page.getByRole('button', { name: 'Descargar CSV' })).toBeFocused();
   });
 
+  test('solo con el teclado: elegir el docente, recorrer el reporte, descargar y cerrar el aviso (FR-016)', async ({
+    page,
+  }) => {
+    await simularApi(page, { sesion: RECTOR });
+    await simularReportes(page);
+    await page.goto('/iniciar-sesion');
+    await ingresar(page, RECTOR.cuerpo.usuario);
+    // El token vive solo en memoria (D-51): se entra por el menú, con Enter.
+    await page.getByRole('link', { name: 'Reportes' }).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('heading', { level: 1, name: 'Reportes' })).toBeVisible();
+
+    // El periodo y el docente, en el orden de la lectura.
+    const periodo = page.getByRole('combobox', { name: 'Periodo' });
+    const docente = page.getByRole('combobox', { name: 'Docente' });
+    await periodo.focus();
+    await page.keyboard.press('Tab');
+    await expect(docente).toBeFocused();
+    await page.keyboard.type(ANA);
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+
+    // Al cargar, el foco va al nombre del docente.
+    await expect(page.getByRole('heading', { level: 2, name: 'PÉREZ ANA' })).toBeFocused();
+
+    // Con Tab se llega a «Copiar la huella», «Descargar PDF» y «Descargar CSV», en ese orden.
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Copiar la huella' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Descargar PDF' })).toBeFocused();
+    const pdf = page.waitForEvent('download');
+    await page.keyboard.press('Enter');
+    expect((await pdf).suggestedFilename()).toBe(`reporte-individual-2026-I-${ANA}.pdf`);
+
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Descargar CSV' })).toBeFocused();
+    const csv = page.waitForEvent('download');
+    await page.keyboard.press('Enter');
+    expect((await csv).suggestedFilename()).toBe(`reporte-individual-2026-I-${ANA}.csv`);
+
+    // El aviso del CSV toma el foco, Escape lo cierra y el foco vuelve al botón.
+    const dialogo = page.getByRole('dialog', { name: 'CSV descargado' });
+    await expect(dialogo.getByRole('button', { name: 'Entendido' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(dialogo).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Descargar CSV' })).toBeFocused();
+  });
+
   test('un Coordinador de carrera no ve la opción y la dirección muestra el aviso (FR-011)', async ({
     page,
   }) => {

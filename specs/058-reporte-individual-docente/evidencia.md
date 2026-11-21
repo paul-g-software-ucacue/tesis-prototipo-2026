@@ -57,7 +57,9 @@ Hecho por el autor el 2026-11-21 en el perfil local (`http://localhost:8081`), c
 | §3. Sin permiso | OK: `coordinacion.demo` no ve «Reportes», y `/reportes` muestra «Acceso no autorizado» |
 | §4. La reforma | Lo cubre el paso R5 del script |
 
-**Pendiente del autor:** el recorrido con el lector de pantalla y solo con el teclado (SC-007).
+**Solo con el teclado** (FR-016): automatizado en `reportes.spec.ts`, en Chromium, 12 de 12 en tres corridas. Se entra a «Reportes» por el menú con Enter; Tab va de «Periodo» a «Docente»; se escribe la cédula, flecha abajo y Enter; el foco pasa al nombre del docente; Tab llega a «Copiar la huella», «Descargar PDF» y «Descargar CSV», y Enter descarga cada uno; el modal del CSV toma el foco en «Entendido», Escape lo cierra y el foco vuelve a «Descargar CSV».
+
+**Pendiente del autor:** el recorrido con un lector de pantalla (SC-007).
 
 ## Desviaciones del plan
 
@@ -78,9 +80,9 @@ Hecho por el autor el 2026-11-21 en el perfil local (`http://localhost:8081`), c
 | Los dos escenarios del issue (US1-1 y US2-1) | Cumplidos: R2 y R3 en el perfil real, y las pruebas de dominio, contrato y SPA |
 | SC-001 a SC-004 y SC-006 | Cumplidos: R2, R3, `EscritorCsvTest`, `GeneradorDeReportePdfaTest` y R4 con `Marco.test.tsx` |
 | SC-005 | Cumplido en la medición; falta el recorrido del autor para el minuto de punta a punta |
-| SC-007 | axe-core sin fallas en Playwright; falta el recorrido con lector de pantalla (T032) |
+| SC-007 | axe-core sin fallas en Playwright y el recorrido solo con teclado automatizado; falta el recorrido con lector de pantalla (T032) |
 | D-115 registrada | Sí, con los dos ajustes de la implementación |
-| El glosario (`sdd/modelo_dominio.md` §7) | Pendiente del autor: está fuera del repositorio |
+| El glosario (`sdd/modelo_dominio.md` §7) | Hecho el 2026-11-21, fuera del repositorio: «Contenido congelado» (`CargaCongelada`) y «Reporte individual» sale de la versión publicada vigente (`ReporteIndividual`) |
 
 ## El equipo de demostración
 
