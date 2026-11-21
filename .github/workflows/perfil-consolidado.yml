@@ -70,6 +70,12 @@ jobs:
         shell: bash
         run: deploy/probar_consulta_bitacora.sh
 
+      # #274, D-116: un proceso cambia de IP y otro se queda con la vieja; el API Gateway sigue
+      # mandando cada petición al proceso correcto.
+      - name: Un proceso que cambia de IP
+        shell: bash
+        run: deploy/probar_cambio_de_ip.sh
+
       # F12-H02: el envío de los parciales y el paso de etapa, con su entrada en la bitácora.
       - name: Avance por etapas
         shell: bash

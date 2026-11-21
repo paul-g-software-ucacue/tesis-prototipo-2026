@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtValidators;
@@ -12,6 +13,8 @@ import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository;
 import org.springframework.security.web.server.savedrequest.NoOpServerRequestCache;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.http.client.HttpClient;
 
 /**
  * Seguridad del API Gateway: valida el JWT RS256 de toda petición a {@code /api/**} antes de
@@ -32,9 +35,18 @@ class SeguridadGatewayConfig {
     ReactiveJwtDecoder reactiveJwtDecoder(
             @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}") String jwks,
             @Value("${mdd.seguridad.emisor:mdd-usuarios}") String emisor) {
+        // El JWKS se pide con la caché de DNS de un segundo (ResolucionDeNombres, #274): si
+        // identidad cambia de IP, la próxima petición del JWKS ya va a la nueva.
         NimbusReactiveJwtDecoder decodificador =
                 NimbusReactiveJwtDecoder.withJwkSetUri(jwks)
                         .jwsAlgorithm(SignatureAlgorithm.RS256)
+                        .webClient(
+                                WebClient.builder()
+                                        .clientConnector(
+                                                new ReactorClientHttpConnector(
+                                                        ResolucionDeNombres.conCacheCorta(
+                                                                HttpClient.create())))
+                                        .build())
                         .build();
         decodificador.setJwtValidator(JwtValidators.createDefaultWithIssuer(emisor));
         return decodificador;
