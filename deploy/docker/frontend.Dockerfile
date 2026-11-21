@@ -20,11 +20,11 @@ FROM nginxinc/nginx-unprivileged:mainline-alpine
 # (CVE-2026-111497, crítica), curl y libcurl 8.22.0-r0 → 8.23.0-r0 (CVE-2026-92392, F01-H04) y musl y
 # musl-utils 1.2.6-r2 → 1.2.6-r3 (CVE-2026-107891, D-93) y libxslt 1.1.43-r3 → 1.1.43-r4
 # (CVE-2026-125350, CVE-2026-87636 y CVE-2026-9947) y libcrypto3 y libssl3 3.5.9-r0 → 3.5.9-r1
-# (CVE-2026-95692, CVE-2026-107496, CVE-2026-95691 y CVE-2026-88823). Se actualizan como root y se
-# vuelve al usuario sin privilegios de la imagen (101).
+# (CVE-2026-95692, CVE-2026-107496, CVE-2026-95691 y CVE-2026-88823) y libxml2 2.13.9-r2 → 2.13.9-r3
+# (CVE-2026-86144). Se actualizan como root y se vuelve al usuario sin privilegios de la imagen (101).
 USER root
 RUN apk upgrade --no-cache zlib libexpat brotli-libs curl libcurl musl musl-utils libxslt libcrypto3 \
-    libssl3
+    libssl3 libxml2
 USER 101
 # El API Gateway del perfil consolidado; se cambia con la variable (contracts/perfil.md).
 ENV MDD_URI_GATEWAY=http://gateway:8080
