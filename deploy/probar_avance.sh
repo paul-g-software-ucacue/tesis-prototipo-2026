@@ -506,25 +506,8 @@ flujo_con_sesion_nueva() {
     [[ $estado == 200 ]]
 }
 
-# DIAGNÓSTICO TEMPORAL: qué rechaza la sesión nueva en la CI (se quita antes de fusionar).
-diagnosticar_401() {
-    local red kid jwks directo
-    red="$(docker compose ps -q gateway | xargs docker inspect -f '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{end}}')"
-    echo "       DIAG token: ${#token} caracteres" >&2
-    kid=$(cut -d. -f1 <<<"$token" | tr '_-' '/+' | base64 -d 2>/dev/null | jq -r '.kid // "sin kid"' 2>/dev/null || echo '?')
-    echo "       DIAG kid del token: $kid" >&2
-    jwks=$(docker run --rm --network "$red" curlimages/curl:8.22.0 -s http://identidad:8080/api/usuarios/jwks | jq -c '[.keys[].kid]' 2>/dev/null || echo '?')
-    echo "       DIAG kids del JWKS de identidad: $jwks" >&2
-    directo=$(docker run --rm --network "$red" curlimages/curl:8.22.0 -s -o /dev/null -w '%{http_code}' \
-        -H "Authorization: Bearer $token" "http://distributivo:8080/api/validacionocs/periodos/$PERIODO/flujo")
-    echo "       DIAG directo a distributivo: $directo" >&2
-    pedir GET "$FLUJO" "Bearer $token"
-    echo "       DIAG por el API Gateway: $estado" >&2
-    docker compose logs --no-color --since 3m gateway distributivo 2>&1 | grep -iE "jwt|jwk|bearer|invalid|unauthor|signed|kid" | tail -20 >&2 || true
-}
-
 vencido_sin_bloquear() {
-    esperar 60 flujo_con_sesion_nueva || { diagnosticar_401; return 1; }
+    esperar 60 flujo_con_sesion_nueva || return 1
     jq -e '.plazo.estado == "VENCIDO" and .plazo.diasRestantes == -1' <<<"$cuerpo" >/dev/null || return 1
     [[ $(jq -c '.acciones' <<<"$cuerpo") == "$acciones_del_responsable" ]]
 }
