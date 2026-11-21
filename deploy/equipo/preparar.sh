@@ -116,7 +116,9 @@ fi
 # En un .env nuevo o que ya existe, agrega la que falte al final, sin tocar las demás líneas: así un
 # equipo ya preparado gana la clave de una versión nueva corriendo otra vez preparar.sh.
 #   MDD_CLAVE_PROCESO_DATOS: Académico, en datos, avisa a Roles de cada periodo (F05-H03, ADR-018).
-claves_nuevas=(MDD_CLAVE_PROCESO_DATOS)
+#   MDD_CLAVE_PROCESO_SALIDA: Reporting, en salida, lee Aprobación y Generación y registra las
+#   descargas en la bitácora (F20-H01, D-115).
+claves_nuevas=(MDD_CLAVE_PROCESO_DATOS MDD_CLAVE_PROCESO_SALIDA)
 for clave in "${claves_nuevas[@]}"; do
     if ! grep -q "^$clave=" "$raiz/.env"; then
         echo "$clave=$(aleatorio)" >>"$raiz/.env"

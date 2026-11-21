@@ -108,6 +108,31 @@ class RepositorioBitacoraIntegrationTest {
                 .isEqualTo("firma");
     }
 
+    // F20-H01, V8: Reporting registra cada descarga de un reporte individual (D-115).
+    @Test
+    void dadaUnaEntradaDeReporting_cuandoSeRegistra_entoncesQuedaConSuServicio() {
+        Map<String, Object> contenido = new java.util.LinkedHashMap<>();
+        contenido.put("usuario", "rectorado.demo");
+        contenido.put("accion", "REPORTE_INDIVIDUAL_DESCARGADO");
+        contenido.put("momento", "2026-11-21T15:00:00Z");
+        contenido.put("periodo", "2026-I");
+        contenido.put(
+                "objeto",
+                Map.of("periodo", "2026-I", "version", 1, "identificacion", "0109990010"));
+        contenido.put("nuevo", Map.of("formato", "PDF"));
+        EntradaBitacora entrada = EntradaBitacora.de(UUID.randomUUID(), "reporting", contenido);
+
+        repositorio.registrar(entrada);
+
+        assertThat(
+                        comoProceso
+                                .sql("select servicio from usuarios.bitacora where id_evento = :id")
+                                .param("id", entrada.idEvento())
+                                .query(String.class)
+                                .single())
+                .isEqualTo("reporting");
+    }
+
     @Test
     void dadoUnaEntradaSinPeriodoNiAnterior_cuandoSeRegistra_entoncesQuedanNulos() {
         EntradaBitacora entrada = entrada(null, false, true);

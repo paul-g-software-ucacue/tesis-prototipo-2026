@@ -47,7 +47,8 @@ public final class EntradaBitacora {
                     "normativa",
                     "roles",
                     "validacionocs",
-                    "firma");
+                    "firma",
+                    "reporting");
     private static final Set<String> CAMPOS =
             Set.of("usuario", "accion", "momento", "periodo", "objeto", "anterior", "nuevo");
     private static final Pattern ACCION = Pattern.compile("^[A-Z][A-Z_]{2,39}$");

@@ -17,6 +17,8 @@ mdd.seguridad.rutas-publicas:
 mdd.usuarios.procesos.distributivo.clave: ${MDD_CLAVE_PROCESO_DISTRIBUTIVO:}
 # Académico, en datos, avisa a Roles de cada periodo (F05-H03).
 mdd.usuarios.procesos.datos.clave: ${MDD_CLAVE_PROCESO_DATOS:}
+# Reporting, en salida, lee Aprobación y Generación y registra las descargas (F20-H01, D-115).
+mdd.usuarios.procesos.salida.clave: ${MDD_CLAVE_PROCESO_SALIDA:}
 # Llave de firma: sin archivo, efímera (research §2); en el equipo de demostración, un PEM (D-55).
 mdd.usuarios.llave-privada: ${MDD_LLAVE_PRIVADA:}
 # Usuario de prueba autor.prueba, solo donde se habilita (research §8).
