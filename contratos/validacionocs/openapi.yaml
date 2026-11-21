@@ -18,6 +18,8 @@ tags:
     description: >-
       El flujo del distributivo, el envío de los parciales, el avance por etapas (F12-H02) y el envío
       a revisión (F10-H03).
+  - name: Interno
+    description: Rutas entre procesos, solo con el token de proceso (ADR-023).
 paths:
   /api/validacionocs/plantilla-flujo:
     get:
@@ -760,11 +762,58 @@ paths:
             application/json:
               schema:
                 $ref: '../comun/errores.yaml#/components/schemas/Error'
+  /interno/validacionocs/publicaciones:
+    get:
+      tags: [Interno]
+      operationId: consultarPublicacionesVigentes
+      summary: Devuelve la publicación vigente de cada periodo con distributivo publicado.
+      description: >-
+        Solo entre procesos, con el token de proceso: lo usa Reporting (F20-H01, D-115, ADR-023).
+        La publicación vigente es la última transición a PUBLICADO; durante una reforma, la
+        anterior (D-113). Vacío si no hay ninguna.
+      responses:
+        '200':
+          description: Las publicaciones vigentes, una por periodo.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PublicacionVigente'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
 components:
   securitySchemes:
     bearer:
       $ref: '../comun/seguridad.yaml#/components/securitySchemes/bearer'
   schemas:
+    PublicacionVigente:
+      description: La versión publicada vigente de un periodo (F20-H01, D-115).
+      type: object
+      additionalProperties: false
+      required: [periodo, version, hash, publicadaPor, publicadaEn, enReforma]
+      properties:
+        periodo:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+        hash:
+          description: El hash de contenido registrado en la transición a PUBLICADO.
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+        publicadaPor:
+          type: string
+        publicadaEn:
+          type: string
+          format: date-time
+        enReforma:
+          description: Hay una reforma en curso; esta versión sigue siendo la vigente.
+          type: boolean
     ConfiguracionDelFlujo:
       type: object
       required: [periodo, porDefecto, modificable, etapas, firmas]
