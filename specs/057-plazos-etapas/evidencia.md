@@ -82,7 +82,16 @@ El autor, el 2026-11-20, sobre el perfil local con `MDD_CONSERVAR=1 deploy/proba
 
 ## Equipo de demostración (T033)
 
-Pendiente: después de fusionar. Lo esperado: «Sano», V9 de Validación OCS y V7 de Normativa aplicadas, y el aviso real del vencimiento de 2026-I, una sola vez, a quien consolida y al Vicerrector.
+| Comprobación | Resultado |
+|---|---|
+| Fusión | PR #253 (`d31bf16`), con las 12 comprobaciones en verde en la segunda corrida. En la primera falló `probar_normativa.sh`, que contaba 16 reglas en la versión 1; con RN-23 son 17 (`b9731b1`) |
+| Despliegue | `cd` exitoso; `mdd-actualizar` tomó `d31bf16` y dice «Sano en 57 s», con las cinco comprobaciones del proxy en OK; los 8 contenedores sanos con las imágenes `*-d31bf16ae93d` |
+| Migraciones | Validación OCS en V9 (`plazo_vencido` y `configuracion_flujo.advertencia`) y Normativa en V7 (RN-23), las dos con éxito |
+| El vencimiento real | La revisión al arrancar registró el de 2026-I: EN_CONSOLIDACION desde el 08/11/2026, plazo de 5 días, fecha límite 13/11/2026, detectado el 20/11/2026 a las 14:32 |
+| Los avisos | Uno por usuario, «Venció el plazo de «Consolidación»», a las 14:32: `consolidacion.demo` (el rol de la etapa), `docente.demo` (el Responsable designado del periodo, D-108) y `vicerrectorado.demo`; ninguna publicación pendiente en `eventos_distributivo` |
+| Memoria | Después del arranque, `identidad` usa 431 de sus 768 MiB (56 %), `distributivo` 235 de 512 y `datos` 235 de 512 (D-109) |
+
+Es la evidencia en vivo de la historia, sin simular nada: 2026-I llevaba semanas en consolidación.
 
 ## Criterios de terminado
 
