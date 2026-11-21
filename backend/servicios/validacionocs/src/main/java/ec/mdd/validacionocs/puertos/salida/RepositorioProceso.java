@@ -65,5 +65,14 @@ public interface RepositorioProceso {
      */
     List<String> enCurso();
 
+    /**
+     * Los periodos con al menos una transición a PUBLICADO, para la publicación vigente que lee
+     * Reporting (F20-H01, D-115). Durante una reforma el proceso ya no está en PUBLICADO, pero
+     * sigue teniendo la publicación anterior.
+     *
+     * @return los periodos, ordenados
+     */
+    List<String> conPublicacion();
+
     record EstadoCompartido(TipoDeEtapa estado, Instant distributivoCreadoEn) {}
 }

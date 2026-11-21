@@ -120,6 +120,31 @@ class DocumentoFirmableIntegrationTest {
                 .isOne();
     }
 
+    // F20-H01, D-115: con el mismo aviso, Aprobación le ordena a Generación guardar el contenido
+    // congelado, después de confirmar el paso; si el paso se revierte, no se ordena nada.
+    @Test
+    void dadoElPasoAFirma_cuandoTermina_entoncesGeneracionGuardaElContenidoSoloSiSeConfirmo()
+            throws Exception {
+        String confirmado = periodo();
+        String revertido = periodo();
+
+        transacciones.executeWithoutResult(estado -> eventos.publishEvent(aviso(confirmado)));
+        assertThatThrownBy(
+                        () ->
+                                transacciones.executeWithoutResult(
+                                        estado -> {
+                                            eventos.publishEvent(aviso(revertido));
+                                            throw new IllegalStateException("se revierte");
+                                        }))
+                .isInstanceOf(IllegalStateException.class);
+
+        esperar(() -> Dobles.CONTENIDOS_GUARDADOS.contains(confirmado + "/1"));
+        Thread.sleep(1000);
+        assertThat(Dobles.CONTENIDOS_GUARDADOS)
+                .filteredOn(una -> una.startsWith(confirmado) || una.startsWith(revertido))
+                .containsExactly(confirmado + "/1");
+    }
+
     @Test
     void dadoElPasoAFirmaRevertido_cuandoTermina_entoncesNoSeGeneraNada() throws Exception {
         String periodo = periodo();
@@ -459,6 +484,20 @@ class DocumentoFirmableIntegrationTest {
         /** Los avisos de cadena completa que recibió Aprobación, como «periodo/versión». */
         static final List<String> CADENAS_COMPLETAS =
                 java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+
+        /** Las órdenes de guardar el contenido congelado que recibió Generación (F20-H01). */
+        static final List<String> CONTENIDOS_GUARDADOS =
+                java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+
+        /**
+         * Generación, sin un distributivo real del periodo: anota la orden. El guardado lo prueban
+         * ContenidoCongeladoIntegrationTest y el paso R5 del script de punta a punta.
+         */
+        @Bean
+        @Primary
+        ec.mdd.generacion.puertos.entrada.GuardarContenidoCongelado guardarContenidoDePrueba() {
+            return (periodo, version) -> CONTENIDOS_GUARDADOS.add(periodo + "/" + version);
+        }
 
         /**
          * Aprobación, sin un proceso de aprobación real del periodo: anota el aviso. El paso a

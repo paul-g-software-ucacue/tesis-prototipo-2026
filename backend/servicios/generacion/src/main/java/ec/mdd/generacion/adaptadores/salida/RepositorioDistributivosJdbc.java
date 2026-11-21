@@ -31,6 +31,11 @@ public final class RepositorioDistributivosJdbc implements RepositorioDistributi
                     + " JOIN generacion.distributivo d ON d.id = v.distributivo_id"
                     + " WHERE d.periodo = :periodo ORDER BY v.numero DESC LIMIT 1";
 
+    private static final String POR_NUMERO =
+            "SELECT v.id, v.numero, v.estado FROM generacion.version_distributivo v"
+                    + " JOIN generacion.distributivo d ON d.id = v.distributivo_id"
+                    + " WHERE d.periodo = :periodo AND v.numero = :numero";
+
     private static final String PARCIALES =
             "SELECT carrera, estado FROM generacion.parcial_carrera WHERE version_id = :version"
                     + " ORDER BY carrera";
@@ -424,5 +429,20 @@ public final class RepositorioDistributivosJdbc implements RepositorioDistributi
                 .query(String.class)
                 .optional()
                 .map(EstadoDeVersion::valueOf);
+    }
+
+    @Override
+    public Optional<VersionDistributivo> version(String periodo, int numero) {
+        return jdbc.sql(POR_NUMERO)
+                .param("periodo", periodo)
+                .param("numero", numero)
+                .query(
+                        (fila, n) ->
+                                new Cabecera(
+                                        fila.getObject("id", UUID.class),
+                                        fila.getInt("numero"),
+                                        EstadoDeVersion.valueOf(fila.getString("estado"))))
+                .optional()
+                .map(this::completa);
     }
 }

@@ -21,8 +21,6 @@ import ec.mdd.generacion.puertos.entrada.VersionNuevaEnGeneracion;
 import ec.mdd.generacion.puertos.salida.RepositorioDistributivos;
 import ec.mdd.generacion.puertos.salida.Transaccion;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * Los parciales del distributivo para Aprobación (F12-H02, MD-04). Marcar un parcial cambia su
@@ -202,15 +200,7 @@ public final class ParcialesDelDistributivoServicio implements ParcialesDelDistr
     }
 
     private static String hashDe(String periodo, VersionDistributivo version) {
-        Map<String, String> hashes = new TreeMap<>();
-        version.parciales()
-                .forEach(
-                        parcial ->
-                                hashes.put(
-                                        parcial.carrera(),
-                                        ContenidoDelParcial.de(periodo, parcial.carrera(), version)
-                                                .hash()));
-        return ContenidoDelParcial.hashDelDistributivo(periodo, version.numero(), hashes);
+        return ContenidoDelParcial.hashDeLaVersion(periodo, version);
     }
 
     // Solo lee: el consolidado se calcula al pedirlo, con el panel (F10-H03, research §1). Las

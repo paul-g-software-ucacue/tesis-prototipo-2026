@@ -124,4 +124,15 @@ public interface RepositorioDistributivos {
      */
     Optional<ec.mdd.generacion.puertos.entrada.MotivoDeVersion> motivoDe(
             String periodo, int numero);
+
+    /**
+     * Una versión por su número, con sus parciales, propuestas y actividades (F20-H01): el
+     * contenido congelado de una versión que ya no es la vigente, por ejemplo la publicada durante
+     * una reforma.
+     *
+     * @param periodo el código del periodo
+     * @param numero el número de la versión
+     * @return vacío si el periodo no tiene esa versión
+     */
+    Optional<VersionDistributivo> version(String periodo, int numero);
 }
