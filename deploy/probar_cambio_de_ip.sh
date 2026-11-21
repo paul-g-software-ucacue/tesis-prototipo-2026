@@ -6,7 +6,7 @@
 # Reproduce lo que pasaba en la CI: identidad se detiene, distributivo se queda con su IP, e
 # identidad vuelve con otra. Con el DNS guardado 600 s, el API Gateway mandaba el inicio de sesión a
 # distributivo y respondía 401. Comprueba que el inicio de sesión sigue llegando a identidad.
-# Al terminar, aunque un paso falle, devuelve distributivo a una IP propia.
+# Al terminar, aunque un paso falle, devuelve distributivo a una IP propia y lo reinicia.
 # Termina con 0 si todos los pasos pasan y con 1 si alguno falla. Nunca imprime una clave ni un token.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -53,6 +53,9 @@ restaurar() {
     docker compose start identidad >/dev/null 2>&1 || true
     docker network disconnect "$red_del_perfil" "$(contenedor distributivo)" >/dev/null 2>&1 || true
     docker network connect --alias distributivo "$red_del_perfil" "$(contenedor distributivo)" >/dev/null 2>&1 || true
+    # Al sacarlo de la red, sus conexiones abiertas (PostgreSQL, datos, identidad) quedan muertas sin
+    # que nadie le avise: se reinicia para que los scripts siguientes lo encuentren como nuevo.
+    docker compose restart distributivo >/dev/null 2>&1 || true
     docker compose up -d --wait --no-recreate identidad distributivo >/dev/null 2>&1 || true
 }
 trap restaurar EXIT
