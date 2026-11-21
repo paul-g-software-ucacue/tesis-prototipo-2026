@@ -86,4 +86,16 @@ Hecho por el autor el 2026-11-21 en el perfil local (`http://localhost:8081`), c
 
 ## El equipo de demostración
 
-Pendiente hasta después de fusionar: correr `deploy/equipo/preparar.sh` para que el `.env` del equipo gane `MDD_CLAVE_PROCESO_SALIDA` antes del despliegue (`compose.demo.yml` la exige), y verificar V10 de Generación, V8 de Usuarios y un reporte de 2026-I. El contenido de la versión publicada antes de esta historia quedará «tardío», lo que es esperado.
+Verificado el 2026-11-21 en solo lectura, después de fusionar el #272 (`a95c4fe`).
+
+| Comprobación | Resultado |
+|---|---|
+| La clave nueva | El autor corrió `sudo deploy/equipo/preparar.sh` antes de fusionar: `MDD_CLAVE_PROCESO_SALIDA` quedó en `/opt/mdd/.env` |
+| El despliegue | `mdd-actualizar` desplegó `a95c4fe` a las 14:40: «Sano en 58 s», con la prueba de humo 5/5. Los ocho contenedores, en `*-a95c4fec0aa5` y sanos |
+| Las migraciones | Generación en V10 (`contenido_congelado` y `carga_congelada`) y Usuarios en V8 (`bitacora_servicio_check` admite `reporting`); existe `eventos_salida.event_publication` |
+| La ruta pública | `GET /api/reporting/publicaciones` a través de Caddy responde 401 `SEGURIDAD_NO_AUTENTICADO` sin token: llega al proceso `salida`. `/interno/**` no se expone desde fuera |
+| Un reporte de 2026-I | **No aplica todavía:** en la demo, 2026-I está en EN_CONSOLIDACION y nunca se publicó, así que «Reportes» dice que no hay un distributivo publicado. El primer reporte saldrá cuando se publique; el contenido de su versión se guardará al entrar en firma, no «tardío» |
+
+**Antes de fusionar** hubo que resolver dos cosas ajenas a esta historia:
+- **#273:** `libxml2` del frontend a `2.13.9-r3` (CVE-2026-86144, alta con corrección), que bloqueaba la publicación en Docker Hub (D-54).
+- **#274:** el 401 intermitente del paso 14 de `probar_avance.sh` en la CI, también con `main`. El #273 deja una espera de 60 s que no lo garantiza; la causa no se reprodujo en local ni en una corrida con diagnóstico. En la corrida del #272 el paso pasó, y R1 a R6 dieron OK en la CI.

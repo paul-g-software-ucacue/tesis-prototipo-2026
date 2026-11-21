@@ -268,9 +268,11 @@ Pasos R3, R5 y R6 de `contracts/demostracion.md`.
 - [X] T031 Medir SC-005 (cada descarga en menos de 5 s con los datos de prueba) y repetir `deploy/medir_memoria.sh` con `salida` cargando PDFBox. Anotar los dos resultados en la evidencia.
 - [ ] T032 El recorrido del autor, `quickstart.md` §1 a §4, con el teclado y un lector de pantalla (SC-005, SC-007). Incluye abrir el CSV en una hoja de cálculo con la configuración de Ecuador y verificar el PDF con veraPDF.
 - [X] T033 Crear `specs/058-reporte-individual-docente/evidencia.md`, como la de 057: las pruebas, el script, el recorrido, las mediciones, las desviaciones y los criterios de terminado. La sección del equipo de demostración queda para después de fusionar.
-- [ ] T034 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde.
+- [X] T034 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde.
   - **Verificar la demo en solo lectura:** «Sano», V10 de Generación aplicada, `MDD_CLAVE_PROCESO_SALIDA` presente y un reporte de 2026-I descargado (el contenido de la versión publicada queda «tardío», lo que es esperado).
   - Abrir el PR de evidencia con `Closes #268`.
+
+  **Resultado (2026-11-21):** PR #272 fusionado (`a95c4fe`) con las 12 comprobaciones en verde, después del #273 (libxml2 del frontend) y con el 401 intermitente de `probar_avance.sh` en #274. La demo tomó `a95c4fe`, «Sano en 58 s», con V10 de Generación y V8 de Usuarios. 2026-I no está publicado en la demo, así que todavía no hay reporte que descargar. PR de evidencia con `Closes #268`.
 
 ---
 
