@@ -496,10 +496,27 @@ en_la_bitacora() {
 }
 
 # --- 14. La tarjeta dice VENCIDO, y las acciones de quien consolida no cambian ---
+# DIAGNÓSTICO TEMPORAL (#274): se quita antes de fusionar.
+diagnosticar_401() {
+    local red carga directo
+    echo "       DIAG inicio de sesión: $estado_del_inicio $(jq -c '{codigo, titulo}' <<<"$cuerpo_del_inicio" 2>/dev/null)" >&2
+    echo "       DIAG token: ${#token} caracteres" >&2
+    carga=$(cut -d. -f2 <<<"$token" | tr '_-' '/+' | base64 -d 2>/dev/null | jq -c '{iss, sub, iat, exp}' 2>/dev/null || echo '?')
+    echo "       DIAG carga: $carga · ahora $(date +%s)" >&2
+    red="$(docker compose ps -q gateway | xargs docker inspect -f '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{end}}')"
+    directo=$(docker run --rm --network "$red" curlimages/curl:8.22.0 -s -o /dev/null -w '%{http_code}' \
+        -H "Authorization: Bearer $token" "http://distributivo:8080/api/validacionocs/periodos/$PERIODO/flujo")
+    echo "       DIAG directo a distributivo: $directo" >&2
+    docker compose logs --no-color --since 2m gateway distributivo 2>&1 \
+        | grep -iE "jwt|bearer|authenticat|invalid|expired|issuer|signature|denied" | tail -25 >&2 || true
+}
+
 vencido_sin_bloquear() {
     iniciar "$RESPONSABLE"
+    estado_del_inicio=$estado
+    cuerpo_del_inicio=$cuerpo
     pedir GET "$FLUJO" "Bearer $token"
-    [[ $estado == 200 ]] || return 1
+    [[ $estado == 200 ]] || { diagnosticar_401; return 1; }
     jq -e '.plazo.estado == "VENCIDO" and .plazo.diasRestantes == -1' <<<"$cuerpo" >/dev/null || return 1
     [[ $(jq -c '.acciones' <<<"$cuerpo") == "$acciones_del_responsable" ]]
 }

@@ -9,3 +9,11 @@ services:
       MDD_LLAVE_PRIVADA: /run/mdd/jwt.pem
     volumes:
       - ${MDD_LLAVE_CI:?falta MDD_LLAVE_CI, la ruta del PEM que genera el workflow}:/run/mdd/jwt.pem:ro,z
+
+  # DIAGNÓSTICO TEMPORAL (#274): por qué se rechaza la sesión. Se quita antes de fusionar.
+  gateway:
+    environment:
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: DEBUG
+  distributivo:
+    environment:
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: DEBUG
