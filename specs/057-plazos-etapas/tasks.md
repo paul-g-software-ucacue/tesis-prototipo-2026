@@ -302,10 +302,12 @@ description: "Tareas de F12-H03: seguir los plazos de cada etapa"
   - por qué la advertencia no rechaza ni es un error del catálogo.
 - [X] T031 El recorrido del autor, `quickstart.md` §3, con el teclado y un lector de pantalla (SC-005, SC-007).
 - [X] T032 Crear `specs/057-plazos-etapas/evidencia.md`, como la de 056: las pruebas, los scripts, el recorrido, las desviaciones y los criterios de terminado. La sección del equipo de demostración queda para después de fusionar.
-- [ ] T033 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde.
+- [X] T033 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde.
   - Verificar la demo en solo lectura (`quickstart.md` §4): «Sano», V9 de Validación OCS y V7 de Normativa aplicadas, y el aviso real del vencimiento de 2026-I, una sola vez.
   - Abrir el PR de evidencia con `Closes #58`.
   - Con #58 cerrada, cerrar la épica F12 (#11) y el milestone «Ola 3 · Aprobado y firmado» si el autor lo aprueba.
+
+  **Resultado (2026-11-20):** PR #253 fusionado (`d31bf16`) con las 12 comprobaciones en verde, después de corregir el conteo de reglas de `probar_normativa.sh` (`b9731b1`). La demo tomó `d31bf16`, «Sano en 57 s», con V9 de Validación OCS y V7 de Normativa aplicadas; registró el vencimiento real de 2026-I en EN_CONSOLIDACION y avisó una vez a `consolidacion.demo`, `docente.demo` y `vicerrectorado.demo`. PR de evidencia con `Closes #58`.
 
 ---
 
