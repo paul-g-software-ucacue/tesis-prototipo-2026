@@ -187,7 +187,7 @@ describe('Cargos', () => {
 
     await usuario.click(
       await screen.findByRole('button', {
-        name: 'Corregir el cargo de PERALTA MALDONADO JUAN ANDRES: Coordinador de carrera',
+        name: 'Corregir o finalizar el cargo de PERALTA MALDONADO JUAN ANDRES: Coordinador de carrera',
       }),
     );
     const dialogo = await screen.findByRole('dialog', {

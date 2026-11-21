@@ -217,7 +217,7 @@ function Acciones({
         {destino && (
           <Button
             size="small"
-            aria-label={`Pasar ${periodo.codigo} a ${NOMBRE_DEL_ESTADO[destino]}`}
+            aria-label={`Pasar a ${NOMBRE_DEL_ESTADO[destino]} ${periodo.codigo}`}
             disabled={bloqueado}
             onClick={() => (destino === 'CERRADO' ? alAbrir('cerrar') : alPasar(destino))}
           >

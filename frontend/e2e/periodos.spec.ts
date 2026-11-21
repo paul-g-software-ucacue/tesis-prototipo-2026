@@ -162,7 +162,7 @@ test('el Vicerrector registra un periodo, lo abre con su versión y lo pasa a En
   await abrir.getByRole('button', { name: 'Abrir' }).click();
   await expect(fila(page, '2027-1')).toContainText('Versión 2');
 
-  await fila(page, '2027-1').getByRole('button', { name: 'Pasar 2027-1 a En aprobación' }).click();
+  await fila(page, '2027-1').getByRole('button', { name: 'Pasar a En aprobación 2027-1' }).click();
   await expect(fila(page, '2027-1')).toContainText('En aprobación');
 });
 
@@ -191,7 +191,7 @@ for (const [codigo, boton, titulo] of [
   [undefined, 'Registrar periodo', 'Registrar periodo'],
   ['2026-2', 'Abrir 2026-2', 'Abrir el periodo 2026-2'],
   ['2026-2', 'Corregir 2026-2', 'Corregir el periodo 2026-2'],
-  ['2026-1', 'Pasar 2026-1 a Cerrado', 'Cerrar el periodo 2026-1'],
+  ['2026-1', 'Pasar a Cerrado 2026-1', 'Cerrar el periodo 2026-1'],
   ['2026-2', 'Designar responsable 2026-2', 'Designar al Responsable de consolidación de 2026-2'],
 ] as const) {
   test(`el diálogo «${titulo}»`, async ({ page }) => {

@@ -488,7 +488,7 @@ test('con Carreras pendiente, «Subir archivo» de Asignaturas está deshabilita
     ),
   );
 
-  const subir = page.getByRole('button', { name: 'Subir un archivo de Asignaturas y malla' });
+  const subir = page.getByRole('button', { name: 'Subir archivo de Asignaturas y malla' });
   await expect(subir).toBeDisabled();
   await expect(subir).toHaveAccessibleDescription('Falta la carga de Carreras.');
   await expect(page.locator('tr[data-carga="carreras"]')).toContainText('Pendiente');

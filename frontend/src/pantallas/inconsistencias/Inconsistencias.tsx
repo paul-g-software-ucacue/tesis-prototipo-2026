@@ -220,7 +220,7 @@ function Tabla({
                     {puedeJustificar && sePuedeJustificar(una) && (
                       <Button
                         size="small"
-                        aria-label={`${una.justificacion ? 'Cambiar la justificación' : 'Justificar'}: ${nombre}`}
+                        aria-label={`${una.justificacion ? 'Cambiar justificación' : 'Justificar'}: ${nombre}`}
                         onClick={() => alJustificar(una)}
                       >
                         {una.justificacion ? 'Cambiar justificación' : 'Justificar'}

@@ -247,7 +247,7 @@ describe('Panel de inconsistencias', () => {
       });
 
       await userEvent.click(
-        within(justificadas).getByRole('button', { name: 'Cambiar la justificación: 2026-2' }),
+        within(justificadas).getByRole('button', { name: 'Cambiar justificación: 2026-2' }),
       );
 
       const dialogo = await screen.findByRole('dialog');

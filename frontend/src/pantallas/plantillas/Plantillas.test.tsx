@@ -207,6 +207,8 @@ describe('Plantillas de carga', () => {
     await usuario.click(boton);
 
     expect(boton).toHaveAttribute('aria-expanded', 'true');
+    // El nombre accesible empieza como el texto visible (WCAG 2.5.3).
+    expect(boton).toHaveAccessibleName('Ocultar el diccionario de Estructura orgánica');
     const diccionario = screen.getByRole('table', { name: 'Diccionario de Estructura orgánica' });
     const columnas = within(diccionario).getAllByRole('row').slice(1);
     expect(columnas).toHaveLength(2);
@@ -304,7 +306,7 @@ describe('Plantillas de carga', () => {
     montarSpa('/plantillas');
 
     const boton = await screen.findByRole('button', {
-      name: 'Subir un archivo de Docentes contratados (con ficha académica)',
+      name: 'Subir archivo de Docentes contratados (con ficha académica)',
     });
     expect(boton).toBeInTheDocument();
     const archivo = new File(['tipo_identificacion\n'], '06_docentes.csv', { type: 'text/csv' });
@@ -710,14 +712,14 @@ describe('Plantillas de carga', () => {
     montarSpa('/plantillas');
 
     const asignaturas = await screen.findByRole('button', {
-      name: 'Subir un archivo de Asignaturas y malla',
+      name: 'Subir archivo de Asignaturas y malla',
     });
     await waitFor(() => expect(asignaturas).toBeDisabled());
     expect(asignaturas).toHaveAccessibleDescription('Falta la carga de Carreras.');
     expect(
-      screen.getByRole('button', { name: 'Subir un archivo de Cargos y autoridades' }),
+      screen.getByRole('button', { name: 'Subir archivo de Cargos y autoridades' }),
     ).toHaveAccessibleDescription(`Faltan las cargas de Carreras y ${DOCENTES}.`);
-    expect(screen.getByRole('button', { name: 'Subir un archivo de Carreras' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Subir archivo de Carreras' })).toBeEnabled();
   });
 
   it('al confirmar la carga que faltaba, la siguiente se habilita sin recargar la página', async () => {
@@ -748,7 +750,7 @@ describe('Plantillas de carga', () => {
     const usuario = userEvent.setup();
     montarSpa('/plantillas');
     const cargos = await screen.findByRole('button', {
-      name: 'Subir un archivo de Cargos y autoridades',
+      name: 'Subir archivo de Cargos y autoridades',
     });
     await waitFor(() => expect(cargos).toBeDisabled());
 
@@ -757,7 +759,7 @@ describe('Plantillas de carga', () => {
 
     await waitFor(() =>
       expect(
-        screen.getByRole('button', { name: 'Subir un archivo de Cargos y autoridades' }),
+        screen.getByRole('button', { name: 'Subir archivo de Cargos y autoridades' }),
       ).toBeEnabled(),
     );
     expect(await filaDe(DOCENTES)).toHaveTextContent('Cargada');
