@@ -114,6 +114,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-113 | 2026-11-20 | La reforma: el Vicerrector la inicia desde PUBLICADO con un motivo; Generación crea la versión nueva sin anular la publicada, que sigue vigente hasta que se publique la reforma; el distributivo vuelve a EN_CONSOLIDACION | Aceptada | RF-40, RF-41, MD-01, MD-04, D-100, D-101, D-106, D-107, D-108, D-111 |
 | D-114 | 2026-11-20 | Los plazos de cada etapa: se reconstruyen de la configuración que regía al crear el distributivo; una revisión diaria y al arrancar avisa una vez por llegada al rol de la etapa y al de EN_REVISION_VRA, sin bloquear; RN-23 advierte al cargar la configuración, con la cifra de Normativa | Aceptada | RF-34, RN-23, RF-41, MD-03, ADR-007, ADR-023, D-86, D-89, D-108, D-113 |
 | D-115 | 2026-11-21 | El reporte individual: Reporting lee la publicación vigente de Aprobación y el contenido congelado de Generación por rutas internas; Generación guarda el contenido por docente al congelar; PDF/A-2b sin campos y CSV con `;`, coma decimal y fórmulas neutralizadas; cada descarga queda en la bitácora antes de responder | Aceptada | RF-45, RF-48, RNF-SEG-04, MD-04, MD-11, ADR-006, ADR-018, ADR-023, D-101, D-111, D-113 |
+| D-116 | 2026-11-21 | El API Gateway guarda las respuestas del DNS un segundo como mucho y la JVM cinco: si un contenedor cambia de IP y otro se queda con la vieja, el tráfico no va al proceso equivocado | Aceptada | ADR-006, D-84, #274 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -2599,3 +2600,36 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 **Documentos que hay que poner al día.**
 - El modelo de dominio (§7): suma «Contenido congelado» (`CargaCongelada`, Generación), y «Reporte individual» pasa a decir que sale de la versión publicada vigente.
 - La spec de F20-H01: FR-014 propone el periodo de la publicación más reciente (se corrigió con esta decisión).
+
+## D-116. El API Gateway guarda las respuestas del DNS un segundo como mucho y la JVM cinco: si un contenedor cambia de IP y otro se queda con la vieja, el tráfico no va al proceso equivocado
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-21 · **Decidido por:** autor de la tesis
+- **Origen:** el issue #274: el 401 intermitente del paso 14 de `probar_avance.sh` en la CI, visto al cerrar F20-H01 (#272, #273)
+- **Relacionadas:** ADR-006, ADR-014, D-84; principios VIII y X
+
+**Contexto.**
+- **El síntoma:** en la CI, a veces, una sesión nueva se rechazaba con 401 después de que `probar_avance.sh` detenía `identidad` (paso 10), reiniciaba `distributivo` (paso 11) y levantaba `identidad` otra vez (paso 12).
+- **La causa,** encontrada con el registro DEBUG de seguridad: `distributivo` recibió `POST /api/usuarios/sesion`. Al reiniciarse se había quedado con la IP que `identidad` acababa de liberar, y el API Gateway seguía resolviendo `identidad` a esa IP. El cliente de Reactor Netty usa su propio resolvedor y guarda cada respuesta lo que dice su TTL, y el DNS interno de Docker responde con 600 s. En `distributivo` el inicio de sesión no es público, así que respondía 401 sin token.
+- **Por qué solo a veces:** depende del orden en que Docker asigna las IP. Esperar 60 s no alcanzaba, porque la respuesta del DNS seguía guardada.
+- **No era de la llave de firma,** como se supuso primero: con una llave fija, el 401 seguía.
+- **No es solo de la prueba:** puede pasar en la demo si un contenedor se reinicia y otro toma su IP.
+
+**Decisión.**
+- **El API Gateway** guarda las respuestas del DNS un segundo como mucho, el mínimo que admite Netty, tanto para enrutar (`HttpClientCustomizer`) como para pedir el JWKS a `identidad` (`ResolucionDeNombres`).
+- **Las JVM de los procesos** guardan las respuestas cinco segundos como mucho (`networkaddress.cache.ttl=5` en `red.security`, junto a la negativa de D-84). Por defecto eran 30 s.
+- **`deploy/probar_cambio_de_ip.sh`,** en `perfil-consolidado`, fuerza el caso: detiene `identidad`, conecta `distributivo` con su IP y levanta `identidad` con otra. El inicio de sesión tiene que seguir llegando a `identidad`. Con el gateway anterior falla el paso 3; con este, pasa.
+- **El paso 14 de `probar_avance.sh`** vuelve a su forma original, sin la espera de 60 s del #273.
+
+**Por qué.**
+- Resolver un nombre dentro de la red de Docker cuesta menos de un milisegundo. La caché larga no ahorra nada y deja una ventana de hasta diez minutos con el tráfico en el proceso equivocado.
+- Es la corrección mínima, sin IP fijas ni cambios en compose.
+
+**Alternativas.**
+- IP fijas para cada contenedor en `compose.yaml` y `compose.demo.yml`: más configuración que mantener, y lo mismo podría pasar con otra red.
+- Una llave de firma fija en la CI (el #277, cerrado): no era la causa.
+- Reintentar en el script: escondía el error en vez de corregirlo.
+
+**Consecuencias.**
+- Cada conexión nueva del API Gateway hace una consulta al DNS de Docker, que es local y barata.
+- Queda una ventana de un segundo en el gateway y de cinco en los procesos, si una petición llega justo mientras un contenedor cambia de IP.
+- Cierra el #274.
