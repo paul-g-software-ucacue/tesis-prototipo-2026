@@ -35,8 +35,24 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    # D-116 (#274): identidad con una llave de firma fija, como la demo. Con la efímera, cada
+    # reinicio de identidad cambiaba la llave y el paso 14 de probar_avance.sh recibía a veces un 401.
+    env:
+      COMPOSE_FILE: compose.yaml:deploy/ci/compose.llave.yml
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # PKCS#8, como la del equipo (preparar.sh); legible para el usuario 10001 del contenedor.
+      # Se genera en cada corrida, fuera del repositorio, y no sale del runner. MDD_LLAVE_CI queda
+      # para los pasos siguientes (compose.llave.yml la exige).
+      - name: La llave de firma de identidad
+        shell: bash
+        run: |
+          llave="$RUNNER_TEMP/llave-ci/jwt.pem"
+          mkdir -p "$(dirname "$llave")"
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$llave" 2>/dev/null
+          chmod 0444 "$llave"
+          echo "MDD_LLAVE_CI=$llave" >>"$GITHUB_ENV"
 
       - name: Construcción de las imágenes
         shell: bash

@@ -1,0 +1,11 @@
+# Solo en la CI (perfil-consolidado, D-116): identidad firma con una llave fija, como el equipo de
+# demostración, en lugar de una efímera que cambia en cada reinicio. La llave la genera el workflow
+# en el runner, en cada corrida, y nunca entra al repositorio (Gitleaks rechaza los .pem).
+# El workflow pone COMPOSE_FILE=compose.yaml:deploy/ci/compose.llave.yml, así que también lo usan
+# los scripts que reinician identidad.
+services:
+  identidad:
+    environment:
+      MDD_LLAVE_PRIVADA: /run/mdd/jwt.pem
+    volumes:
+      - ${MDD_LLAVE_CI:?falta MDD_LLAVE_CI, la ruta del PEM que genera el workflow}:/run/mdd/jwt.pem:ro,z

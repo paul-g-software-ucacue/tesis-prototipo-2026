@@ -114,6 +114,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-113 | 2026-11-20 | La reforma: el Vicerrector la inicia desde PUBLICADO con un motivo; Generación crea la versión nueva sin anular la publicada, que sigue vigente hasta que se publique la reforma; el distributivo vuelve a EN_CONSOLIDACION | Aceptada | RF-40, RF-41, MD-01, MD-04, D-100, D-101, D-106, D-107, D-108, D-111 |
 | D-114 | 2026-11-20 | Los plazos de cada etapa: se reconstruyen de la configuración que regía al crear el distributivo; una revisión diaria y al arrancar avisa una vez por llegada al rol de la etapa y al de EN_REVISION_VRA, sin bloquear; RN-23 advierte al cargar la configuración, con la cifra de Normativa | Aceptada | RF-34, RN-23, RF-41, MD-03, ADR-007, ADR-023, D-86, D-89, D-108, D-113 |
 | D-115 | 2026-11-21 | El reporte individual: Reporting lee la publicación vigente de Aprobación y el contenido congelado de Generación por rutas internas; Generación guarda el contenido por docente al congelar; PDF/A-2b sin campos y CSV con `;`, coma decimal y fórmulas neutralizadas; cada descarga queda en la bitácora antes de responder | Aceptada | RF-45, RF-48, RNF-SEG-04, MD-04, MD-11, ADR-006, ADR-018, ADR-023, D-101, D-111, D-113 |
+| D-116 | 2026-11-21 | La CI firma los tokens con una llave fija, generada en cada corrida, como la demo; cambiar la llave de firma exige reiniciar el API Gateway y los procesos | Aceptada | ADR-014, D-55, B00-H08, #274 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -2599,3 +2600,29 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 **Documentos que hay que poner al día.**
 - El modelo de dominio (§7): suma «Contenido congelado» (`CargaCongelada`, Generación), y «Reporte individual» pasa a decir que sale de la versión publicada vigente.
 - La spec de F20-H01: FR-014 propone el periodo de la publicación más reciente (se corrigió con esta decisión).
+
+## D-116. La CI firma los tokens con una llave fija, generada en cada corrida, como la demo; cambiar la llave de firma exige reiniciar el API Gateway y los procesos
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-21 · **Decidido por:** autor de la tesis
+- **Origen:** el issue #274: el 401 intermitente del paso 14 de `probar_avance.sh` en la CI, visto al cerrar F20-H01 (#272, #273)
+- **Modifica a:** ADR-014, que dejaba la llave efímera en local y en la CI
+- **Relacionadas:** D-55, B00-H08, ADR-018; principios VIII y IX
+
+**Contexto.** En la CI, `identidad` arrancaba sin `MDD_LLAVE_PRIVADA` y generaba una llave efímera, distinta en cada reinicio. Los scripts que reinician `identidad` (`probar_bitacora.sh`, `probar_avance.sh` y `probar_documento_firmable.sh`) cambiaban así la llave de firma en medio de la corrida, y una sesión nueva a veces se rechazaba con 401 durante más de 60 s. En local no se reprodujo, ni con la misma secuencia de scripts. La causa probable es que el API Gateway o un proceso siguen validando con el JWKS que tienen en caché. En la demo y en producción la llave es fija (`/opt/mdd/secretos/jwt.pem`), así que reiniciar `identidad` no la cambia.
+
+**Decisión.**
+- **La CI usa una llave fija.** El workflow `perfil-consolidado` genera en el runner, en cada corrida, una llave RSA de 2048 bits en PKCS#8, como `preparar.sh`, y la monta en `identidad` con `deploy/ci/compose.llave.yml`. El workflow pone `COMPOSE_FILE=compose.yaml:deploy/ci/compose.llave.yml`, así que también la usan los scripts que reinician `identidad`. La llave no sale del runner ni entra al repositorio.
+- **El paso 14 de `probar_avance.sh` vuelve a su forma original**, sin la espera de 60 s del #273, que no lo resolvía.
+- **Local sigue con la llave efímera:** reiniciar `identidad` invalida las sesiones, y basta con volver a iniciar sesión.
+- **Cambiar la llave de firma** (rotarla, o reemplazar `jwt.pem` en el equipo) exige reiniciar también el API Gateway y los procesos `datos`, `distributivo` y `salida`, porque guardan el JWKS. El procedimiento está en `deploy/equipo/README.md`.
+
+**Por qué.** La CI prueba lo mismo que corre en la demo y en producción: una llave que no cambia al reiniciar. Lo que fallaba era un caso que el sistema real no tiene, salvo al rotar la llave, y la rotación queda cubierta por el procedimiento.
+
+**Alternativas.**
+- Seguir con la llave efímera y esperar en el script: se probó en el #273 y no alcanzó.
+- Investigar y cambiar la caché del JWKS en el gateway y en los procesos: la causa no se pudo reproducir. Queda como mejora posible si algún día se rota la llave en caliente.
+- Una llave de prueba versionada en el repositorio: el principio IX y Gitleaks lo impiden.
+
+**Consecuencias.**
+- La CI ya no prueba el cambio de llave en caliente. No es un caso de uso del sistema, y la rotación tiene un procedimiento.
+- Cierra el #274.

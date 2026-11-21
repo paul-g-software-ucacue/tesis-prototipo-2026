@@ -18,3 +18,17 @@ Ningún secreto vive en el repositorio: todos se generan o se guardan en `/opt/m
 El informe sustentado se guarda en el volumen `mdd_archivos`, montado solo en `distributivo` (D-88). La base guarda su clave y su huella.
 
 Si haces copias de seguridad, incluye ese volumen junto con la base: si se pierde, la base sigue, pero el informe no se puede descargar. El sistema todavía no hace copias por su cuenta.
+
+## Rotar la llave de firma de los tokens
+
+`identidad` firma las sesiones con `/opt/mdd/secretos/jwt.pem` (ADR-014). El API Gateway y los procesos validan las sesiones con las llaves públicas que guardan en caché, así que cambiar la llave exige reiniciarlos a todos (D-116). Si solo se reinicia `identidad`, las sesiones nuevas pueden rechazarse con «Sesión no válida».
+
+```bash
+sudo mv /opt/mdd/secretos/jwt.pem /opt/mdd/secretos/jwt.pem.anterior
+sudo deploy/equipo/preparar.sh          # genera la llave nueva; no toca lo demás
+# identidad con la llave nueva y, después, los que validan las sesiones con su caché de llaves
+sudo docker restart mdd-identidad-1
+sudo docker restart mdd-gateway-1 mdd-datos-1 mdd-distributivo-1 mdd-salida-1
+```
+
+Todas las sesiones abiertas terminan, y cada usuario vuelve a iniciar sesión. Si todo funciona, se puede borrar `jwt.pem.anterior`.
