@@ -2617,7 +2617,7 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 **Decisión.**
 - **El API Gateway** guarda las respuestas del DNS un segundo como mucho, el mínimo que admite Netty, tanto para enrutar (`HttpClientCustomizer`) como para pedir el JWKS a `identidad` (`ResolucionDeNombres`).
 - **Las JVM de los procesos** guardan las respuestas cinco segundos como mucho (`networkaddress.cache.ttl=5` en `red.security`, junto a la negativa de D-84). Por defecto eran 30 s.
-- **`deploy/probar_cambio_de_ip.sh`,** en `perfil-consolidado`, fuerza el caso: detiene `identidad`, conecta `distributivo` con su IP y levanta `identidad` con otra. El inicio de sesión tiene que seguir llegando a `identidad`. Con el gateway anterior falla el paso 3; con este, pasa.
+- **`deploy/probar_cambio_de_ip.sh`,** en `perfil-consolidado`, fuerza el caso: detiene `identidad` y `distributivo`, le da a `distributivo` la IP de `identidad` y los levanta, `identidad` con otra IP. La IP se cambia con el contenedor detenido, como en un reinicio real: sacarlo de la red en marcha deja sus conexiones medio abiertas en el pool del API Gateway. El inicio de sesión tiene que seguir llegando a `identidad`. Con el gateway anterior falla el paso 3; con este, pasa.
 - **El paso 14 de `probar_avance.sh`** vuelve a su forma original, sin la espera de 60 s del #273.
 
 **Por qué.**
