@@ -85,4 +85,48 @@ describe('Marco', () => {
       expect(screen.queryByRole('link', { name: 'Bitácora' })).not.toBeInTheDocument();
     });
   });
+
+  describe('la opción «Reportes» (F20-H01, FR-014)', () => {
+    // Los cinco roles con REPORTES:LECTURA en la matriz D-16 (V2__matriz_d16.sql) y los que no.
+    const CON_REPORTES = {
+      ADMINISTRADOR: ['USUARIOS_ROLES:LECTURA', 'REPORTES:LECTURA', 'BITACORA:LECTURA'],
+      VICERRECTOR: ['DISTRIBUTIVO:LECTURA', 'REPORTES:LECTURA', 'BITACORA:LECTURA'],
+      RECTOR: ['DISTRIBUTIVO:LECTURA', 'REPORTES:LECTURA'],
+      MIEMBRO_OCS: ['DISTRIBUTIVO:LECTURA', 'REPORTES:LECTURA'],
+      SECRETARIA_GENERAL: ['DISTRIBUTIVO:LECTURA', 'REPORTES:LECTURA', 'RESOLUCION_OCS:LECTURA'],
+    };
+    const SIN_REPORTES = {
+      OPERADOR_DATOS: ['CARGAS:LECTURA', 'DOCENTES:LECTURA'],
+      COORDINADOR_CARRERA: ['OFERTA:LECTURA', 'DISTRIBUTIVO:LECTURA', 'DOCENTES:LECTURA'],
+      GESTOR_UNIDAD: ['PROYECTOS:LECTURA'],
+      RESPONSABLE_CONSOLIDACION: ['DISTRIBUTIVO:LECTURA', 'CONSOLIDACION:LECTURA'],
+      DOCENTE: ['MI_DISTRIBUTIVO:LECTURA'],
+    };
+
+    function sesionCon(permisos: string[]) {
+      instalarApiSimulada().responder(
+        'GET',
+        '/api/usuarios/sesion',
+        json(200, { usuario: 'demo', roles: [], permisos }),
+      );
+    }
+
+    it.each(Object.entries(CON_REPORTES))('aparece para %s', async (_, permisos) => {
+      sesionCon(permisos);
+      montarSpa('/');
+
+      expect(await screen.findByRole('link', { name: 'Reportes' })).toHaveAttribute(
+        'href',
+        '/reportes',
+      );
+    });
+
+    it.each(Object.entries(SIN_REPORTES))('no aparece para %s', async (_, permisos) => {
+      sesionCon(permisos);
+      montarSpa('/');
+
+      await screen.findByText('demo', { selector: '[data-usuario]' });
+      expect(screen.queryByRole('link', { name: 'Reportes' })).not.toBeInTheDocument();
+    });
+  });
 });
