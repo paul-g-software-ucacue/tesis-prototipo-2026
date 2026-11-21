@@ -948,6 +948,15 @@ class FlujoDelDistributivoServicioTest {
         }
 
         @Override
+        public List<String> conPublicacion() {
+            return guardados.values().stream()
+                    .filter(uno -> uno.publicacion().isPresent())
+                    .map(ProcesoAprobacion::periodo)
+                    .sorted()
+                    .toList();
+        }
+
+        @Override
         public Optional<RepositorioProceso.EstadoCompartido> estadoCompartido(String periodo) {
             return de(periodo)
                     .map(

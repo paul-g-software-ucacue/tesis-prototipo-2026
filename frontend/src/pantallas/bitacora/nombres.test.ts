@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { NOMBRE_DEL_SERVICIO, entradas, formatearMomento, lineas, resumen } from './nombres';
 
 describe('nombres de la bitácora', () => {
-  it('nombra los siete servicios, Firma desde F13-H02', () => {
+  it('nombra los ocho servicios, Firma desde F13-H02 y Reporting desde F20-H01', () => {
     expect(Object.values(NOMBRE_DEL_SERVICIO)).toEqual([
       'Generación',
       'Académico',
@@ -11,6 +11,7 @@ describe('nombres de la bitácora', () => {
       'Roles',
       'Validación OCS',
       'Firma',
+      'Reporting',
     ]);
   });
 

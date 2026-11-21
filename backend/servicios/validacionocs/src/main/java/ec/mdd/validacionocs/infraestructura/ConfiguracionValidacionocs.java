@@ -2,6 +2,7 @@ package ec.mdd.validacionocs.infraestructura;
 
 import ec.mdd.firma.puertos.entrada.AnularFirmas;
 import ec.mdd.firma.puertos.entrada.PrepararDocumentoFirmable;
+import ec.mdd.generacion.puertos.entrada.GuardarContenidoCongelado;
 import ec.mdd.generacion.puertos.entrada.ParcialesDelDistributivo;
 import ec.mdd.generacion.puertos.requeridos.EtapaDelConsolidado;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
@@ -11,6 +12,7 @@ import ec.mdd.validacionocs.adaptadores.entrada.RevisionDiariaDePlazos;
 import ec.mdd.validacionocs.adaptadores.salida.AlmacenDeResolucionesEnDisco;
 import ec.mdd.validacionocs.adaptadores.salida.AnulacionDeLasFirmas;
 import ec.mdd.validacionocs.adaptadores.salida.AvisoDeFirmaSpring;
+import ec.mdd.validacionocs.adaptadores.salida.ContenidoDeLaFirma;
 import ec.mdd.validacionocs.adaptadores.salida.DatosDesdeProcesos;
 import ec.mdd.validacionocs.adaptadores.salida.DistributivoDesdeGeneracion;
 import ec.mdd.validacionocs.adaptadores.salida.LectorYaml;
@@ -25,6 +27,7 @@ import ec.mdd.validacionocs.adaptadores.salida.TransaccionSpring;
 import ec.mdd.validacionocs.aplicacion.CargarConfiguracionServicio;
 import ec.mdd.validacionocs.aplicacion.CompletarFirmasServicio;
 import ec.mdd.validacionocs.aplicacion.ConsultarConfiguracionServicio;
+import ec.mdd.validacionocs.aplicacion.ConsultarPublicacionesServicio;
 import ec.mdd.validacionocs.aplicacion.DescargarResolucionServicio;
 import ec.mdd.validacionocs.aplicacion.EtapaDelConsolidadoServicio;
 import ec.mdd.validacionocs.aplicacion.EtapasAlCrearse;
@@ -37,6 +40,7 @@ import ec.mdd.validacionocs.aplicacion.RevisarPlazosServicio;
 import ec.mdd.validacionocs.puertos.entrada.CargarConfiguracion;
 import ec.mdd.validacionocs.puertos.entrada.CompletarFirmas;
 import ec.mdd.validacionocs.puertos.entrada.ConsultarConfiguracion;
+import ec.mdd.validacionocs.puertos.entrada.ConsultarPublicaciones;
 import ec.mdd.validacionocs.puertos.entrada.RegistrarRechazoEnFirma;
 import ec.mdd.validacionocs.puertos.entrada.RevisarPlazos;
 import ec.mdd.validacionocs.puertos.salida.AlmacenDeResoluciones;
@@ -119,6 +123,21 @@ public class ConfiguracionValidacionocs {
     @Bean
     public PreparacionDelDocumento preparacionDelDocumento(PrepararDocumentoFirmable firma) {
         return new PreparacionDelDocumento(firma);
+    }
+
+    /**
+     * Al entrar en firma, le ordena a Generación guardar el contenido congelado después de
+     * confirmar (F20-H01, D-115).
+     */
+    @Bean
+    public ContenidoDeLaFirma contenidoDeLaFirma(GuardarContenidoCongelado generacion) {
+        return new ContenidoDeLaFirma(generacion);
+    }
+
+    /** La publicación vigente de cada periodo, para Reporting (F20-H01, D-115). */
+    @Bean
+    public ConsultarPublicaciones consultarPublicaciones(RepositorioProceso procesos) {
+        return new ConsultarPublicacionesServicio(procesos);
     }
 
     /**

@@ -12,6 +12,10 @@ dependencies {
     implementation project(':plataforma:seguridad')
     // Un solo @RestControllerAdvice por proceso y la página /error (ADR-016).
     implementation project(':plataforma:errores')
+    // Registro de publicaciones, entrega y reenvío de eventos hacia otros procesos, y consultas por
+    // las rutas internas (ADR-018, ADR-023): Reporting registra cada descarga en la bitácora y lee
+    // Aprobación y Generación (F20-H01, D-115).
+    implementation project(':plataforma:eventos')
 
     // Servicios que ensambla este proceso (ADR-006).
     implementation project(':servicios:reporting')

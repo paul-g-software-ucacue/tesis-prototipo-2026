@@ -221,21 +221,23 @@ verificar 7 "Sitio del túnel: 401 sin credenciales, 200 con ellas y /api sin ba
 
 # 11. Contraseñas de la demo (D-59): una por usuario de usuarios-demo.yaml, legibles por la prueba de
 # humo; volver a correr preparar.sh agrega la que falte sin cambiar las demás. Lo mismo con las
-# claves de proceso del .env que agregan las versiones nuevas (MDD_CLAVE_PROCESO_DATOS, F05-H03).
+# claves de proceso del .env que agregan las versiones nuevas (MDD_CLAVE_PROCESO_DATOS, F05-H03, y
+# MDD_CLAVE_PROCESO_SALIDA, F20-H01).
 usuarios_en_archivo=$(awk '/^  - usuario: / { print $3 }' backend/servicios/usuarios/src/main/resources/usuarios-demo.yaml | sort)
 antes_claves=$(grep -v '^docente.coordinador.demo=' "$equipo/secretos/claves-demo")
 chmod u+w "$equipo/secretos/claves-demo"
 printf '%s\n' "$antes_claves" >"$equipo/secretos/claves-demo"
-antes_env=$(grep -v '^MDD_CLAVE_PROCESO_DATOS=' "$equipo/.env")
+antes_env=$(grep -v -e '^MDD_CLAVE_PROCESO_DATOS=' -e '^MDD_CLAVE_PROCESO_SALIDA=' "$equipo/.env")
 printf '%s\n' "$antes_env" >"$equipo/.env"
 preparar_equipo "$equipo"
 verificar 11 "claves-demo: una contraseña por usuario de la demo, preparar.sh agrega la que falta y no cambia las demás" \
     eval '[[ $(cut -d= -f1 "$equipo/secretos/claves-demo" | sort) == "$usuarios_en_archivo" ]] \
         && [[ $(grep -v "^docente.coordinador.demo=" "$equipo/secretos/claves-demo") == "$antes_claves" ]] \
         && [[ -r $equipo/secretos/claves-demo && $(stat -c %a "$equipo/secretos/claves-demo") == 444 ]]'
-verificar 11 ".env: preparar.sh agrega MDD_CLAVE_PROCESO_DATOS si falta y no cambia las demás líneas" \
+verificar 11 ".env: preparar.sh agrega MDD_CLAVE_PROCESO_DATOS y MDD_CLAVE_PROCESO_SALIDA si faltan y no cambia las demás líneas" \
     eval '[[ $(grep -c "^MDD_CLAVE_PROCESO_DATOS=." "$equipo/.env") == 1 ]] \
-        && [[ $(grep -v "^MDD_CLAVE_PROCESO_DATOS=" "$equipo/.env") == "$antes_env" ]]'
+        && [[ $(grep -c "^MDD_CLAVE_PROCESO_SALIDA=." "$equipo/.env") == 1 ]] \
+        && [[ $(grep -v -e "^MDD_CLAVE_PROCESO_DATOS=" -e "^MDD_CLAVE_PROCESO_SALIDA=" "$equipo/.env") == "$antes_env" ]]'
 
 # 13. El repositorio de Docker Hub: sin REPOSITORIO, preparar.sh lo arma con DOCKERHUB_REPOSITORIO,
 # el mismo valor que la variable de GitHub; sin él o mal escrito, termina sin crear el .env.

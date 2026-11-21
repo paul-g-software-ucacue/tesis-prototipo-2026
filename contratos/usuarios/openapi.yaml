@@ -200,8 +200,8 @@ paths:
       summary: Registra un evento de otro proceso una sola vez por idEvento.
       description: >-
         Receptor de la bitácora (F17-H01): admite los tipos <servicio>.EntradaBitacora de
-        generacion, academico, docentes, normativa, roles y validacionocs, con un contenido
-        EntradaBitacora, y registra cada uno como una entrada que no se puede borrar. Solo con un
+        generacion, academico, docentes, normativa, roles, validacionocs, firma y reporting
+        (F20-H01), con un contenido EntradaBitacora, y registra cada uno como una entrada que no se puede borrar. Solo con un
         token de proceso (rol PROCESO). Un evento ya registrado también responde 204, sin
         registrarlo de nuevo. Dentro del proceso identidad, Roles entrega sin HTTP (ADR-024).
       requestBody:
@@ -216,7 +216,7 @@ paths:
         '400':
           description: >-
             El cuerpo no cumple el contrato (COMUN_SOLICITUD_INVALIDA, con detalles), el tipo no es
-            uno de los seis o su prefijo no coincide con el origen (COMUN_EVENTO_NO_RECONOCIDO), o
+            uno de los ocho o su prefijo no coincide con el origen (COMUN_EVENTO_NO_RECONOCIDO), o
             el contenido no es una EntradaBitacora válida (USUARIOS_ENTRADA_BITACORA_INVALIDA). En
             los tres casos no se registra nada y la publicación queda pendiente en el emisor.
           content:
@@ -529,7 +529,7 @@ components:
     ServicioDeBitacora:
       type: string
       description: Un servicio que registra cambios en la bitácora (D-90).
-      enum: [generacion, academico, docentes, normativa, roles, validacionocs, firma]
+      enum: [generacion, academico, docentes, normativa, roles, validacionocs, firma, reporting]
       example: generacion
     PaginaDeBitacora:
       type: object

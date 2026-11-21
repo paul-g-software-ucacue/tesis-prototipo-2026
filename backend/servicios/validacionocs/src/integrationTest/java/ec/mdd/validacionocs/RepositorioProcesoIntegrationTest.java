@@ -617,6 +617,25 @@ class RepositorioProcesoIntegrationTest {
         assertThat(repositorio.enCurso()).contains(enCurso).doesNotContain(publicado);
     }
 
+    // F20-H01: Reporting lee los periodos con una transición a PUBLICADO, aunque una reforma los
+    // haya devuelto a consolidación.
+    @Test
+    void dadosProcesosConYSinPublicacion_cuandoSePidenLosPublicados_entoncesSoloLosQueTienenUna() {
+        String publicado = periodo();
+        String sinPublicar = periodo();
+        repositorio.crear(nuevo(publicado, "DS"), AHORA);
+        repositorio.crear(nuevo(sinPublicar, "DS"), AHORA);
+        jdbc.sql(
+                        "insert into validacionocs.transicion (id, periodo, tipo, desde, hacia,"
+                                + " version, hash, quien, momento) values (gen_random_uuid(),"
+                                + " :periodo, 'PASO_DE_ETAPA', 'APROBADO', 'PUBLICADO', 1,"
+                                + " repeat('d', 64), 'secretaria.demo', now())")
+                .param("periodo", publicado)
+                .update();
+
+        assertThat(repositorio.conPublicacion()).contains(publicado).doesNotContain(sinPublicar);
+    }
+
     private static ProcesoAprobacion nuevo(String periodo, String... carreras) {
         return ProcesoAprobacion.nuevo(periodo, etapas(), CREADO, List.of(carreras));
     }

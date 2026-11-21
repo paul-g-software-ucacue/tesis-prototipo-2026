@@ -113,6 +113,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-112 | 2026-11-19 | El frontend usa la rama mainline de nginx.org: la stable todavía no trae los arreglos de cinco vulnerabilidades críticas de nginx 1.30.6 | Aceptada | D-52, D-54, ADR-019 |
 | D-113 | 2026-11-20 | La reforma: el Vicerrector la inicia desde PUBLICADO con un motivo; Generación crea la versión nueva sin anular la publicada, que sigue vigente hasta que se publique la reforma; el distributivo vuelve a EN_CONSOLIDACION | Aceptada | RF-40, RF-41, MD-01, MD-04, D-100, D-101, D-106, D-107, D-108, D-111 |
 | D-114 | 2026-11-20 | Los plazos de cada etapa: se reconstruyen de la configuración que regía al crear el distributivo; una revisión diaria y al arrancar avisa una vez por llegada al rol de la etapa y al de EN_REVISION_VRA, sin bloquear; RN-23 advierte al cargar la configuración, con la cifra de Normativa | Aceptada | RF-34, RN-23, RF-41, MD-03, ADR-007, ADR-023, D-86, D-89, D-108, D-113 |
+| D-115 | 2026-11-21 | El reporte individual: Reporting lee la publicación vigente de Aprobación y el contenido congelado de Generación por rutas internas; Generación guarda el contenido por docente al congelar; PDF/A-2b sin campos y CSV con `;`, coma decimal y fórmulas neutralizadas; cada descarga queda en la bitácora antes de responder | Aceptada | RF-45, RF-48, RNF-SEG-04, MD-04, MD-11, ADR-006, ADR-018, ADR-023, D-101, D-111, D-113 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -2542,3 +2543,59 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 - El modelo de dominio: la pregunta 5 de §9.2 queda decidida por esta decisión.
 - La spec de F12-H03: FR-005 dice el rol de EN_REVISION_VRA, no `VICERRECTOR` fijo (se corrigió con esta decisión).
 
+## D-115. El reporte individual: Reporting lee la publicación vigente de Aprobación y el contenido congelado de Generación por rutas internas; Generación guarda el contenido por docente al congelar; PDF/A-2b sin campos y CSV con `;`, coma decimal y fórmulas neutralizadas; cada descarga queda en la bitácora antes de responder
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-21 · **Decidido por:** autor de la tesis
+- **Origen:** F20-H01 (#268); aclaraciones de `specs/058-reporte-individual-docente/spec.md` y su plan (`research.md` §1 a §10)
+- **Relacionadas:** RF-45, RF-48, RNF-SEG-04, MD-04, MD-11, ADR-006, ADR-018, ADR-023, D-55, D-101, D-111, D-113; principios V, VII, IX, X y XIII
+
+**Decisión.**
+- **Qué versión:** el reporte sale solo de la versión publicada vigente del periodo: la última transición a PUBLICADO. Durante una reforma, la anterior (D-113). Un periodo sin publicación responde `REPORTING_SIN_PUBLICACION` (409).
+- **Qué lee Reporting:** por dos rutas internas nuevas del proceso `distributivo`, con el token de proceso:
+  - `/interno/validacionocs/publicaciones`, la publicación vigente de cada periodo;
+  - `/interno/generacion/periodos/{periodo}/versiones/{numero}/cargas[/{identificacion}]`, el contenido congelado por docente.
+  - Reporting no guarda nada del distributivo: su esquema sigue sin tablas.
+- **El contenido congelado:** las horas de clase de una versión salen de la oferta actual de Académico, que se puede corregir después de publicar, y la dedicación sale de Docentes. Para que lo publicado no cambie:
+  - **Qué guarda:** Generación guarda, una vez por versión, el contenido de cada docente: sus asignaturas con las horas de clase de ese momento, sus actividades, su carga por componente, su dedicación y sus horas contratadas. Va en `generacion.contenido_congelado` y `carga_congelada`, que son solo de inserción.
+  - **Cuándo:** por orden de Aprobación, con el aviso `DistributivoEnFirma`, el mismo que prepara el documento firmable.
+  - **Si falta:** se calcula al pedirlo, con la oferta de ese momento, y se marca `tardio`.
+- **La comprobación del hash:** si el hash de la publicación no es el del contenido congelado, el reporte responde `REPORTING_CONTENIDO_INCONSISTENTE` (500) y no genera nada.
+- **El PDF:** PDF/A-2b con openhtmltopdf y PDFBox, en un adaptador propio de Reporting, con el mismo camino de D-101:
+  - sin campos de formulario, sin anotaciones ni JavaScript, y sin cifrado;
+  - el periodo, la versión, el hash y la página en el pie de cada página;
+  - verificado con veraPDF en las pruebas.
+- **El CSV:**
+  - **Formato:** UTF-8 con BOM, separador `;`, CRLF y horas con dos decimales y coma.
+  - **Filas:** una por asignatura y por actividad, y seis de totales.
+  - **Fórmulas:** una celda de texto que empieza con `=`, `+`, `-`, `@`, tabulación o retorno de carro lleva un apóstrofo delante.
+  - **Sin generador ni fecha:** no lleva quién lo generó ni cuándo, así que dos CSV de la misma versión son idénticos.
+  - **La cédula:** una hoja de cálculo le quita el cero inicial al leerla como número. El archivo la trae completa, entre comillas, y, al descargar el CSV, un modal avisa que la columna «Identificación» se importa como texto (opción del autor del 2026-11-21, después del recorrido). Ni fórmula (`="…"`) ni apóstrofo.
+- **Las rutas públicas:** `/api/reporting/publicaciones`, los docentes del periodo, el reporte en JSON y las descargas `reporte.pdf` y `reporte.csv`, todas con `REPORTES:LECTURA`. La pantalla propone el periodo de la publicación más reciente.
+- **La bitácora:** cada descarga publica `reporting.EntradaBitacora` (`REPORTE_INDIVIDUAL_DESCARGADO`, con el periodo, la versión, la identificación y el formato) por el registro de publicaciones de `salida`, en una transacción. Solo después de confirmarla se entrega el archivo. Ver el reporte en pantalla no se registra.
+  - Para eso, `salida` tiene su clave de proceso (`MDD_CLAVE_PROCESO_SALIDA`) y Usuarios admite el origen `reporting`.
+
+**Por qué.**
+- El principio VII: un documento sobre la versión publicada tiene que decir siempre lo mismo y coincidir con lo firmado.
+- El principio V: cada módulo lee al dueño por su API.
+- El PDF/A es verificable de forma automática. El cifrado con permisos no es compatible con PDF/A y se quita fácilmente.
+- El separador `;` y la coma decimal son la configuración regional de Ecuador.
+
+**Alternativas.**
+- Recalcular el contenido con la oferta actual: el reporte podría no coincidir con el PDF firmado.
+- Una copia en Reporting al publicar: exige eventos de `distributivo` a `salida`, y la copia sería de la oferta al publicar, no al congelar.
+- Guardar las horas en cada propuesta al congelar: cambia cada cálculo de la carga horaria.
+- Un módulo `plataforma:pdfa` compartido con Firma: queda para cuando lo necesite una tercera historia.
+- El CSV con coma y punto decimal.
+- Registrar la descarga después de responder.
+
+**Consecuencias.**
+- **El caso aceptado:** una corrección de la oferta en los milisegundos entre la congelación y el guardado del contenido quedaría en el contenido guardado. El PDF firmable se calcula con el mismo aviso.
+- **En la demo:** las versiones congeladas antes de esta decisión se guardan «tardías» la primera vez que se piden.
+- **F20-H02 y F19** leen el mismo contenido congelado.
+- **El despliegue:** exige la clave de proceso de `salida`.
+- **La bitácora:** Usuarios suma V8, que agrega `reporting` al check de servicios de `usuarios.bitacora` (como V6 con Firma). Sin ella, cada entrada de una descarga quedaba rechazada y pendiente en el emisor.
+- **El contenido congelado cuelga de la versión** (`version_id`, con borrado en cascada), no de (periodo, número): la limpieza de los scripts recrea el distributivo de un periodo, y un contenido guardado por número quedaría de otra versión.
+
+**Documentos que hay que poner al día.**
+- El modelo de dominio (§7): suma «Contenido congelado» (`CargaCongelada`, Generación), y «Reporte individual» pasa a decir que sale de la versión publicada vigente.
+- La spec de F20-H01: FR-014 propone el periodo de la publicación más reciente (se corrigió con esta decisión).

@@ -42,7 +42,8 @@ class RegistrarEventoRecibidoServicioTest {
                 "normativa",
                 "roles",
                 "validacionocs",
-                "firma"
+                "firma",
+                "reporting"
             })
     void dadoUnaEntradaNuevaDeCadaServicio_cuandoSeRegistra_entoncesQuedaEnLaBitacora(
             String servicioDeOrigen) {

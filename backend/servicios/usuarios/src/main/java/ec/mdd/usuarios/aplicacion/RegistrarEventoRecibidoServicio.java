@@ -31,7 +31,8 @@ public class RegistrarEventoRecibidoServicio implements RegistrarEventoRecibido 
                     "normativa",
                     "roles",
                     "validacionocs",
-                    "firma");
+                    "firma",
+                    "reporting");
 
     private final RepositorioEventosRecibidos eventos;
     private final RepositorioBitacora bitacora;

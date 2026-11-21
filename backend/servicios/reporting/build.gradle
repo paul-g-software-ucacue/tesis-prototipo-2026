@@ -3,4 +3,53 @@
 // SpotBugs. Vale para todos los servicios, centrales o no.
 plugins {
     id 'mdd.servicio'
+    id 'mdd.contrato'
+}
+
+def versionPdfbox = providers.gradleProperty('versionPdfbox').get()
+def versionOpenHtmlToPdf = providers.gradleProperty('versionOpenHtmlToPdf').get()
+def versionVeraPdf = providers.gradleProperty('versionVeraPdf').get()
+
+dependencies {
+    // F20-H01, D-115: la publicación vigente de Aprobación y el contenido congelado de Generación,
+    // por sus rutas internas (ADR-023), y el registro de cada descarga en la bitácora (ADR-018).
+    implementation project(':plataforma:eventos')
+    // La transacción del registro de la descarga, con el registro de publicaciones del proceso.
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    // El permiso de cada operación y quién la pide, en el token (ADR-021).
+    implementation 'org.springframework.security:spring-security-oauth2-resource-server'
+    implementation 'org.springframework.security:spring-security-oauth2-jose'
+    // F20-H01, D-115: el PDF/A-2b del reporte, con el mismo camino de D-101 (Firma). Solo en los
+    // adaptadores (ArquitecturaTest).
+    implementation "org.apache.pdfbox:pdfbox:${versionPdfbox}"
+    implementation "io.github.openhtmltopdf:openhtmltopdf-pdfbox:${versionOpenHtmlToPdf}"
+}
+
+testing {
+    suites {
+        test {
+            dependencies {
+                // Solo en pruebas: la verificación de PDF/A con veraPDF, que necesita JAXB 2.3
+                // (D-46, D-101). No entra a la imagen.
+                implementation "org.verapdf:validation-model:${versionVeraPdf}"
+            }
+        }
+    }
+}
+
+// veraPDF usa JAXB 2.3 (javax.xml.bind); el BOM de Spring Boot sube jaxb-impl y jaxb-core a la
+// 4.x (jakarta) y veraPDF ya no carga sus perfiles. Solo en el classpath de las pruebas: la
+// jaxb-impl 2.3.9 ya incluye el núcleo, así que jaxb-core se excluye. Es el mismo ajuste de Firma.
+configurations.named('testRuntimeClasspath') {
+    exclude group: 'com.sun.xml.bind', module: 'jaxb-core'
+    resolutionStrategy.eachDependency { detalle ->
+        if (detalle.requested.group == 'com.sun.xml.bind' && detalle.requested.name == 'jaxb-impl') {
+            detalle.useVersion '2.3.9'
+            detalle.because 'veraPDF necesita JAXB 2.3 (javax.xml.bind), no la 4.x del BOM'
+        }
+        if (detalle.requested.group == 'javax.xml.bind' && detalle.requested.name == 'jaxb-api') {
+            detalle.useVersion '2.3.1'
+            detalle.because 'la versión estable de la API de JAXB 2.3'
+        }
+    }
 }

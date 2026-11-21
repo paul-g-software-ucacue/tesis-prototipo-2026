@@ -21,6 +21,7 @@ import { Inconsistencias } from './pantallas/inconsistencias/Inconsistencias';
 import { Oferta } from './pantallas/oferta/Oferta';
 import { Plantillas } from './pantallas/plantillas/Plantillas';
 import { Preparacion } from './pantallas/preparacion/Preparacion';
+import { Reportes } from './pantallas/reportes/Reportes';
 import { Periodos } from './pantallas/periodos/Periodos';
 import { Roles } from './pantallas/roles/Roles';
 import { RutaConPermiso } from './sesion/RutaConPermiso';
@@ -180,6 +181,14 @@ export const rutasDeLaSpa: RouteObject[] = [
         element: (
           <RutaConPermiso funcionalidad="BITACORA" tipo="LECTURA">
             <Bitacora />
+          </RutaConPermiso>
+        ),
+      },
+      {
+        path: 'reportes',
+        element: (
+          <RutaConPermiso funcionalidad="REPORTES" tipo="LECTURA">
+            <Reportes />
           </RutaConPermiso>
         ),
       },
