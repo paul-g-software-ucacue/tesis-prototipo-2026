@@ -83,14 +83,15 @@ class EntradaBitacoraTest {
                 "normativa",
                 "roles",
                 "validacionocs",
-                "firma"
+                "firma",
+                "reporting"
             })
     void dadoCadaServicioAdmitido_cuandoSeConstruye_entoncesSeAcepta(String servicio) {
         assertThat(EntradaBitacora.de(ID, servicio, valida()).servicio()).isEqualTo(servicio);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"usuarios", "cargas", "reporting", "", "Generacion"})
+    @ValueSource(strings = {"usuarios", "cargas", "dashboard", "", "Generacion"})
     void dadoUnServicioNoAdmitido_cuandoSeConstruye_entoncesSeRechaza(String servicio) {
         assertThatThrownBy(() -> EntradaBitacora.de(ID, servicio, valida()))
                 .isInstanceOf(EntradaBitacoraInvalida.class);

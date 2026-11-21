@@ -50,7 +50,14 @@
 # detenido, el distributivo vuelve a EN_CONSOLIDACION con la versión 2 y la 1 sigue CONGELADA y
 # vigente; la notificación llega una vez a quien consolida, los docentes, Talento Humano y las
 # coordinaciones; la versión 2 recorre el ciclo completo hasta publicarse, y la 1 conserva sus
-# firmas, su documento y su resolución. Si la base ya tiene
+# firmas, su documento y su resolución. Desde F20-H01 (D-115;
+# specs/058-reporte-individual-docente/contracts/demostracion.md), los pasos R1 a R6: en EN_OCS,
+# Reporting no tiene publicación (409); con la versión 1 publicada, rectorado.demo y
+# secretaria.demo ven el reporte de un docente y lo descargan en PDF/A (veraPDF, sin campos) y en
+# CSV (los mismos datos, idéntico entre descargas), cada descarga queda en la bitácora y ver el
+# reporte no; coordinacion.demo y docente.demo reciben 403; durante la reforma, el reporte sigue
+# saliendo de la versión 1 y no cambia al corregir las horas de un paralelo (que después se
+# restauran); con la versión 2 publicada, sale de ella. Si la base ya tiene
 # alguno de esos datos, falla sin tocar nada. Al terminar, aunque un paso falle, borra lo que creó (también los archivos del volumen),
 # salvo las entradas de la bitácora, que no se pueden borrar. Termina con 0 si todos los pasos pasan
 # y con 1 si alguno falla. Nunca imprime una clave ni un token.
@@ -1419,6 +1426,209 @@ if [[ -n $CONSERVAR && $CONSERVAR != EN_OCS && $CONSERVAR != F2 && $CONSERVAR !=
     exit 0
 fi
 
+# --- R. Los reportes de la versión publicada (F20-H01, D-115; specs/058-reporte-individual-docente/contracts/demostracion.md) ---
+readonly REPORTES="$GATEWAY/api/reporting"
+readonly RECTOR=rectorado.demo
+readonly DESCARGADO="servicio = 'reporting' and accion = 'REPORTE_INDIVIDUAL_DESCARGADO'"
+
+hash_publicado() {
+    consultar_base "select hash from validacionocs.transicion where periodo = '$PERIODO'
+        and hacia = 'PUBLICADO' order by momento desc limit 1"
+}
+
+ruta_del_reporte() {  # ruta_del_reporte <identificación>
+    printf '%s/periodos/%s/docentes/%s/reporte' "$REPORTES" "$PERIODO" "$1"
+}
+
+# bajar <identificación> <formato> <archivo>: la descarga, con el token de $token y sus cabeceras.
+bajar() {
+    estado=$(curl -s -D "$carpeta/cabeceras" -o "$3" -w '%{http_code}' \
+        -H "Authorization: Bearer $token" "$(ruta_del_reporte "$1").$2" || echo '000')
+}
+
+# El primer docente de la versión publicada con asignaturas, y uno sin actividades si lo hay.
+elegir_docentes() {
+    local una
+    pedir GET "$REPORTES/periodos/$PERIODO/docentes" "Bearer $token"
+    [[ $estado == 200 ]] || return 1
+    docente_con_clase=''
+    sin_actividades=''
+    for una in $(jq -r '.docentes[].identificacion' <<<"$cuerpo"); do
+        pedir GET "$(ruta_del_reporte "$una")" "Bearer $token"
+        [[ $estado == 200 ]] || return 1
+        if [[ -z $docente_con_clase && $(jq '.asignaturas | length' <<<"$cuerpo") -gt 0 ]]; then
+            docente_con_clase=$una
+            printf '%s' "$cuerpo" >"$carpeta/reporte.json"
+        fi
+        [[ -z $sin_actividades && $(jq '.actividades | length' <<<"$cuerpo") == 0 ]] && sin_actividades=$una
+        [[ -n $docente_con_clase && -n $sin_actividades ]] && break
+    done
+    [[ -n $docente_con_clase ]]
+}
+
+# El CSV tiene las mismas filas y los mismos totales que el JSON: lo compara Python, sin red.
+csv_igual_al_json() {  # csv_igual_al_json <csv> <json>
+    python3 -I - "$1" "$2" <<'PY'
+import csv, json, sys
+from decimal import Decimal
+crudo = open(sys.argv[1], 'rb').read()
+assert crudo.startswith(b'\xef\xbb\xbf'), 'sin BOM'
+assert b'\r\n' in crudo, 'sin CRLF'
+filas = list(csv.reader(crudo.decode('utf-8-sig').splitlines(), delimiter=';'))
+reporte = json.load(open(sys.argv[2]))
+encabezado, filas = filas[0], filas[1:]
+assert encabezado[0] == 'Periodo' and encabezado[-1] == 'Horas', encabezado
+horas = lambda texto: Decimal(texto.replace(',', '.'))
+asignaturas = [f for f in filas if f[7] == 'ASIGNATURA']
+actividades = [f for f in filas if f[7] == 'ACTIVIDAD']
+totales = {f[12]: horas(f[13]) for f in filas if f[7] == 'TOTAL'}
+assert [(f[9], f[11], horas(f[13])) for f in asignaturas] == \
+    [(a['codigo'], a['paralelo'], Decimal(str(a['horas']))) for a in reporte['asignaturas']], 'asignaturas'
+assert [(f[9], horas(f[13])) for f in actividades] == \
+    [(a['codigo'], Decimal(str(a['horas']))) for a in reporte['actividades']], 'actividades'
+esperados = {'Clase': 'clase', 'Otras actividades de docencia': 'otrasDocencia',
+             'Investigación': 'investigacion', 'Vinculación': 'vinculacion', 'Gestión': 'gestion',
+             'Total': 'total'}
+assert totales == {k: Decimal(str(reporte['horas'][v])) for k, v in esperados.items()}, 'totales'
+assert all(f[1] == str(reporte['publicacion']['version']) and f[2] == reporte['publicacion']['hash']
+           for f in filas), 'versión o hash'
+PY
+}
+
+# El PDF es PDF/A-2b para veraPDF y no tiene campos de formulario.
+pdf_sin_campos() {  # pdf_sin_campos <pdf>
+    local pdf="$carpeta/verapdf-reporte"
+    mkdir -p "$pdf" && cp "$1" "$pdf/reporte.pdf" && chmod 755 "$pdf" && chmod 644 "$pdf/reporte.pdf"
+    docker run --rm -v "$pdf":/datos:ro,z "$VERAPDF" --flavour 2b -x interactiveFormField \
+        /datos/reporte.pdf >"$carpeta/verapdf-reporte.xml" 2>&1 || true
+    grep -q 'isCompliant="true"' "$carpeta/verapdf-reporte.xml" || { echo "       veraPDF: no conforme" >&2; return 1; }
+    ! grep -q '<fullyQualifiedName>' "$carpeta/verapdf-reporte.xml"
+}
+
+# --- R1. Sin publicación: ninguna publicación del periodo y el reporte responde 409 ---
+reportes_sin_publicacion() {
+    iniciar "$RECTOR"
+    pedir GET "$REPORTES/publicaciones" "Bearer $token"
+    [[ $estado == 200 && $(jq --arg p "$PERIODO" '[.[] | select(.periodo == $p)] | length' <<<"$cuerpo") == 0 ]] \
+        || return 1
+    pedir GET "$REPORTES/periodos/$PERIODO/docentes" "Bearer $token"
+    es_codigo 409 REPORTING_SIN_PUBLICACION || return 1
+    pedir GET "$(ruta_del_reporte 0109990010)" "Bearer $token"
+    es_codigo 409 REPORTING_SIN_PUBLICACION || return 1
+    hay_entradas 0 "$DESCARGADO"
+}
+
+# --- R2. El reporte de la versión 1 publicada, con el contenido guardado al congelar ---
+reporte_de_la_version_1() {
+    iniciar "$RECTOR"
+    pedir GET "$REPORTES/publicaciones" "Bearer $token"
+    [[ $estado == 200 && $(jq -c --arg p "$PERIODO" '[.[] | select(.periodo == $p) | .version, .hash, .enReforma]' <<<"$cuerpo") \
+        == "$(jq -cn --arg h "$(hash_publicado)" '[1, $h, false]')" ]] || return 1
+    elegir_docentes || return 1
+    echo "       con clase: $docente_con_clase; sin actividades: ${sin_actividades:-ninguno}"
+    [[ $(jq -c '[.publicacion.version, .publicacion.hash]' "$carpeta/reporte.json") \
+        == "$(jq -cn --arg h "$(hash_publicado)" '[1, $h]')" ]] || return 1
+    # La suma de las filas es el total, y el total es la carga horaria de la versión vigente.
+    # En centésimas, para comparar 8 con 8.00 sin errores de redondeo.
+    [[ $(jq 'def c: . * 100 | round;
+        (([.asignaturas[].horas] | add) | c) == (.horas.clase | c)
+        and ((.horas.clase + .horas.otrasDocencia + .horas.investigacion + .horas.vinculacion
+            + .horas.gestion) | c) == (.horas.total | c)' "$carpeta/reporte.json") == true ]] || return 1
+    iniciar "$VICERRECTOR"
+    pedir GET "$GATEWAY/api/generacion/periodos/$PERIODO/docentes/$docente_con_clase/carga-horaria" "Bearer $token"
+    [[ $estado == 200 && $(jq -n --argjson carga "$cuerpo" --slurpfile reporte "$carpeta/reporte.json" '
+        def c: . * 100 | round;
+        [$carga.totales | .clase, .otrasDocencia, .investigacion, .vinculacion, .gestion | c]
+            == [$reporte[0].horas | .clase, .otrasDocencia, .investigacion, .vinculacion, .gestion | c]') \
+        == true ]] || { echo "       carga: $cuerpo" >&2; return 1; }
+    # Guardado al congelar (D-115), no tarde.
+    [[ $(consultar_base "select tardio from generacion.contenido_congelado where periodo = '$PERIODO'
+        and numero = 1") == f ]]
+}
+
+# --- R3. Los dos formatos: los mismos datos, el PDF sin campos y cada descarga en la bitácora ---
+reporte_en_dos_formatos() {
+    local usuario vuelta
+    for usuario in "$RECTOR" "$SECRETARIA"; do
+        iniciar "$usuario"
+        for vuelta in 1 2; do
+            bajar "$docente_con_clase" pdf "$carpeta/reporte-$usuario-$vuelta.pdf"
+            [[ $estado == 200 && $(cabecera Content-Type) == application/pdf \
+                && $(cabecera Content-Disposition) == "attachment; filename=\"reporte-individual-$PERIODO-$docente_con_clase.pdf\"" \
+                && $(cabecera Cache-Control) == no-store ]] || { echo "       PDF de $usuario: $estado" >&2; return 1; }
+            bajar "$docente_con_clase" csv "$carpeta/reporte-$usuario-$vuelta.csv"
+            [[ $estado == 200 ]] || { echo "       CSV de $usuario: $estado" >&2; return 1; }
+        done
+    done
+    pdf_sin_campos "$carpeta/reporte-$RECTOR-1.pdf" || return 1
+    csv_igual_al_json "$carpeta/reporte-$RECTOR-1.csv" "$carpeta/reporte.json" || return 1
+    # FR-010: los CSV de la misma versión son idénticos, aunque los pidan otras personas.
+    cmp -s "$carpeta/reporte-$RECTOR-1.csv" "$carpeta/reporte-$SECRETARIA-2.csv" || return 1
+    cp "$carpeta/reporte-$RECTOR-1.csv" "$carpeta/reporte-version-1.csv"
+    # Ver el reporte (R2) no dejó entradas; las ocho descargas, sí, con su formato.
+    esperar 60 hay_entradas 8 "$DESCARGADO" || { echo "       entradas: $(entradas "$DESCARGADO")" >&2; return 1; }
+    hay_entradas 4 "$DESCARGADO and nuevo ->> 'formato' = 'CSV'
+        and objeto ->> 'identificacion' = '$docente_con_clase' and (objeto ->> 'version')::int = 1"
+}
+
+# --- R4. Sin permiso, 403; un docente que no está, 404; una identificación inválida, 400 ---
+reporte_sin_acceso() {
+    local usuario
+    for usuario in "$COORDINADOR" "$DESIGNADO"; do
+        iniciar "$usuario"
+        pedir GET "$(ruta_del_reporte "$docente_con_clase")" "Bearer $token"
+        es_codigo 403 SEGURIDAD_ACCESO_NO_AUTORIZADO || { echo "       $usuario: $estado" >&2; return 1; }
+    done
+    iniciar "$RECTOR"
+    pedir GET "$(ruta_del_reporte 9999999999)" "Bearer $token"
+    es_codigo 404 REPORTING_DOCENTE_SIN_DISTRIBUTIVO || return 1
+    pedir GET "$(ruta_del_reporte no-valida)" "Bearer $token"
+    es_codigo 400 COMUN_SOLICITUD_INVALIDA
+}
+
+# --- R5. Durante la reforma, la versión 1 no cambia aunque se corrijan las horas de la oferta ---
+reporte_durante_la_reforma() {
+    local asignatura paralelo oferta nuevas
+    iniciar "$RECTOR"
+    pedir GET "$REPORTES/publicaciones" "Bearer $token"
+    [[ $(jq -c --arg p "$PERIODO" '[.[] | select(.periodo == $p) | .version, .enReforma]' <<<"$cuerpo") == '[1,true]' ]] \
+        || return 1
+    asignatura=$(jq -r '.asignaturas[0].codigo' "$carpeta/reporte.json")
+    paralelo=$(jq -r '.asignaturas[0].paralelo' "$carpeta/reporte.json")
+    oferta="$GATEWAY/api/academico/periodos/$PERIODO/oferta/$asignatura/$paralelo"
+    iniciar "$VICERRECTOR"
+    pedir GET "$oferta" "Bearer $token"
+    [[ $estado == 200 ]] || return 1
+    printf '%s' "$cuerpo" >"$carpeta/paralelo.json"
+    nuevas=$(jq '[.horasSemanales - 1, 0.5] | max' "$carpeta/paralelo.json")
+    pedir PUT "$oferta" "Bearer $token" "$(jq -c --argjson h "$nuevas" \
+        '{jornada, modalidad, estudiantes, horasSemanales: $h} + (if .sedeIndicada then {sede} else {} end)' \
+        "$carpeta/paralelo.json")"
+    [[ $estado == 200 ]] || { echo "       corregir la oferta: $estado" >&2; return 1; }
+    iniciar "$RECTOR"
+    bajar "$docente_con_clase" csv "$carpeta/reporte-en-reforma.csv"
+    local igual=0
+    cmp -s "$carpeta/reporte-version-1.csv" "$carpeta/reporte-en-reforma.csv" || igual=1
+    # Las horas vuelven a las de antes: los pasos 25 a 27 recorren la versión 2 con la oferta del
+    # inicio de la prueba.
+    iniciar "$VICERRECTOR"
+    pedir PUT "$oferta" "Bearer $token" "$(jq -c \
+        '{jornada, modalidad, estudiantes} + (if .horasIndicadas then {horasSemanales} else {} end)
+            + (if .sedeIndicada then {sede} else {} end)' "$carpeta/paralelo.json")"
+    [[ $estado == 200 ]] || { echo "       restaurar la oferta: $estado" >&2; return 1; }
+    ((igual == 0))
+}
+
+# --- R6. Con la versión 2 publicada, el reporte sale de ella ---
+reporte_de_la_version_2() {
+    iniciar "$RECTOR"
+    pedir GET "$(ruta_del_reporte "$docente_con_clase")" "Bearer $token"
+    [[ $estado == 200 && $(jq -c '[.publicacion.version, .publicacion.hash, .publicacion.enReforma]' <<<"$cuerpo") \
+        == "$(jq -cn --arg h "$(hash_publicado)" '[2, $h, false]')" ]] || return 1
+    [[ $(consultar_base "select tardio from generacion.contenido_congelado where periodo = '$PERIODO'
+        and numero = 2") == f ]]
+}
+
 verificar 1 "El consolidado listo, enviado a revisión y aprobado por vicerrectorado.demo: CONGELADO_EN_FIRMA" aprobado_y_congelado
 verificar 2 "El documento GENERADO en menos de 30 s sin que nadie lo pida, por sistema y con el hash congelado" generado_solo
 verificar 3 "El archivo del volumen es documentos/<sha256>.pdf y su SHA-256 es el registrado" archivo_por_su_hash
@@ -1441,6 +1651,7 @@ if [[ $CONSERVAR == F2 ]]; then
 fi
 verificar 11 "F2 de la persona de F1 se rechaza; F1, F2 y F3 se aceptan en orden con la cadena; al final nadie está en turno" tres_firmas
 verificar 12 "3 aceptadas y 8 rechazadas, los 4 archivos y la bitácora; el proceso en EN_OCS por sistema" registro_de_firmas
+verificar R1 "En EN_OCS, sin publicación: Reporting no la lista y el reporte responde 409 REPORTING_SIN_PUBLICACION, sin bitácora" reportes_sin_publicacion
 
 if [[ $CONSERVAR == EN_OCS ]]; then
     if ((fallas > 0)); then
@@ -1468,6 +1679,9 @@ fi
 
 verificar 16 "En APROBADO, otros roles reciben 403; $SECRETARIA publica con identidad detenido, con la constancia y la bitácora; la segunda, 409" publicado
 verificar 17 "Publicado: nadie edita (solo $VICERRECTOR puede reformar); proponer, consolidar, enviar, aprobar y registrar responden con su error, sin cambiar nada" sin_acciones
+verificar R2 "El reporte de la versión 1: su hash, filas que suman su total, la carga horaria de la versión y el contenido guardado al congelar" reporte_de_la_version_1
+verificar R3 "PDF/A sin campos y CSV con los mismos datos; dos CSV idénticos; 8 descargas en la bitácora y ver el reporte no deja entrada" reporte_en_dos_formatos
+verificar R4 "$COORDINADOR y $DESIGNADO, 403; un docente que no está, 404; una identificación inválida, 400" reporte_sin_acceso
 if [[ $CONSERVAR == PUBLICADO ]]; then
     if ((fallas > 0)); then
         echo "No quedó publicado. Para limpiar: docker compose -p tesis-prototipo-2026 down -v"
@@ -1486,9 +1700,11 @@ verificar 21 "F1 subida con identidad detenido: aceptada, y la notificación de 
 
 verificar 22 "En PUBLICADO, otros roles reciben 403 y un motivo corto 400; $VICERRECTOR reforma con identidad detenido: la versión 2 y la 1 CONGELADA; la segunda, 409" reforma_iniciada
 verificar 23 "Durante la reforma, la versión 1 sigue publicada y vigente, y el flujo muestra la reforma en curso" publicada_vigente
+verificar R5 "Durante la reforma, el reporte sale de la versión 1 y no cambia al corregir las horas de un paralelo en la oferta" reporte_durante_la_reforma
 verificar 24 "La reforma llegó una vez a quien consolida, los docentes, Talento Humano y las coordinaciones; no al Vicerrector" reforma_notificada
 verificar 25 "La versión 2 vuelve por el ciclo: devolver, reenviar, consolidar, revisión y aprobación, con su documento desde F1" ciclo_de_la_version_2
 verificar 26 "F1, F2 y F3 sobre la versión 2, su resolución y su publicación: la versión 2 es la publicada, sin reforma en curso" firmas_y_publicacion_de_la_version_2
+verificar R6 "Con la versión 2 publicada, el reporte sale de ella, con su hash y su contenido guardado al congelar" reporte_de_la_version_2
 verificar 27 "La versión 1, histórica: CONGELADA, con sus tres firmas, su documento y su resolución, sin anulación" version_1_historica
 
 if ((fallas > 0)); then

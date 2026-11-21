@@ -31,7 +31,8 @@ public final class FiltroDeBitacora {
                     "normativa",
                     "roles",
                     "validacionocs",
-                    "firma");
+                    "firma",
+                    "reporting");
 
     private static final int USUARIO_MAXIMO = 64;
     private static final Pattern ACCION = Pattern.compile("^[A-Z][A-Z_]{2,39}$");

@@ -1,0 +1,405 @@
+# Contrato de Reporting (Publicación y consulta). F20-H01 (#268, D-115): el reporte individual del
+# docente sobre la versión publicada vigente, en pantalla, en PDF/A-2b y en CSV.
+openapi: 3.0.3
+info:
+  title: MDD · reporting
+  version: 1.0.0
+servers:
+  - url: /
+security:
+  - bearer: []
+tags:
+  - name: Reportes
+    description: Reportes de la versión publicada vigente, para la pantalla (RF-45).
+  - name: Descargas
+    description: >-
+      Las descargas del reporte en PDF/A y en CSV, cada una registrada en la bitácora (RF-48,
+      D-115).
+paths:
+  /api/reporting/publicaciones:
+    get:
+      tags: [Reportes]
+      operationId: listarPublicaciones
+      summary: Devuelve los periodos con versión publicada vigente.
+      description: >-
+        De la publicación más reciente a la más antigua. Durante una reforma, la versión publicada
+        anterior sigue siendo la vigente (D-113), con enReforma en true. Vacío si no hay ninguna.
+      x-mdd-permiso: [REPORTES:LECTURA]
+      responses:
+        '200':
+          description: Las publicaciones vigentes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Publicacion'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/reporting/periodos/{periodo}/docentes:
+    parameters:
+      - $ref: '#/components/parameters/Periodo'
+    get:
+      tags: [Reportes]
+      operationId: listarDocentesDelPeriodo
+      summary: Devuelve la publicación vigente del periodo y los docentes de esa versión.
+      x-mdd-permiso: [REPORTES:LECTURA]
+      responses:
+        '200':
+          description: La publicación y sus docentes, por nombre.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocentesDelPeriodo'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '409':
+          $ref: '#/components/responses/SinPublicacion'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/reporting/periodos/{periodo}/docentes/{identificacion}/reporte:
+    parameters:
+      - $ref: '#/components/parameters/Periodo'
+      - $ref: '#/components/parameters/Identificacion'
+    get:
+      tags: [Reportes]
+      operationId: consultarReporteIndividual
+      summary: Devuelve el reporte individual del docente, para la pantalla.
+      description: >-
+        Sale de la versión publicada vigente del periodo y de su contenido congelado (D-115). Ver
+        el reporte no deja entrada en la bitácora; las descargas sí.
+      x-mdd-permiso: [REPORTES:LECTURA]
+      responses:
+        '200':
+          description: El reporte individual.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReporteIndividual'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/DocenteSinDistributivo'
+        '409':
+          $ref: '#/components/responses/SinPublicacion'
+        '500':
+          $ref: '#/components/responses/ErrorDelReporte'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/reporting/periodos/{periodo}/docentes/{identificacion}/reporte.pdf:
+    parameters:
+      - $ref: '#/components/parameters/Periodo'
+      - $ref: '#/components/parameters/Identificacion'
+    get:
+      tags: [Descargas]
+      operationId: descargarReporteIndividualPdf
+      summary: Descarga el reporte individual en PDF/A-2b, sin campos ni contenido activo.
+      description: >-
+        Cada descarga deja la entrada REPORTE_INDIVIDUAL_DESCARGADO en la bitácora, registrada
+        antes de responder (D-115). Si el registro falla, no se entrega nada.
+      x-mdd-permiso: [REPORTES:LECTURA]
+      responses:
+        '200':
+          description: El PDF/A del reporte.
+          headers:
+            Content-Disposition:
+              $ref: '#/components/headers/ContentDisposition'
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/DocenteSinDistributivo'
+        '409':
+          $ref: '#/components/responses/SinPublicacion'
+        '500':
+          $ref: '#/components/responses/ErrorDelReporte'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/reporting/periodos/{periodo}/docentes/{identificacion}/reporte.csv:
+    parameters:
+      - $ref: '#/components/parameters/Periodo'
+      - $ref: '#/components/parameters/Identificacion'
+    get:
+      tags: [Descargas]
+      operationId: descargarReporteIndividualCsv
+      summary: Descarga el reporte individual en CSV, con los mismos datos del PDF.
+      description: >-
+        UTF-8 con BOM, separador punto y coma, fin de línea CRLF y horas con dos decimales y coma.
+        Las celdas de texto que empiezan con =, +, -, @, tabulación o retorno de carro llevan un
+        apóstrofo delante (RNF-SEG-04). No lleva quién lo generó ni cuándo. Cada descarga deja su
+        entrada en la bitácora antes de responder (D-115).
+      x-mdd-permiso: [REPORTES:LECTURA]
+      responses:
+        '200':
+          description: El CSV del reporte.
+          headers:
+            Content-Disposition:
+              $ref: '#/components/headers/ContentDisposition'
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          $ref: '#/components/responses/DocenteSinDistributivo'
+        '409':
+          $ref: '#/components/responses/SinPublicacion'
+        '500':
+          $ref: '#/components/responses/ErrorDelReporte'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+components:
+  securitySchemes:
+    bearer:
+      $ref: '../comun/seguridad.yaml#/components/securitySchemes/bearer'
+  parameters:
+    Periodo:
+      name: periodo
+      in: path
+      required: true
+      description: Código del periodo académico, el que usa Académico.
+      schema:
+        $ref: '#/components/schemas/CodigoDePeriodo'
+      example: 2026-I
+    Identificacion:
+      name: identificacion
+      in: path
+      required: true
+      description: Cédula o pasaporte del docente.
+      schema:
+        $ref: '#/components/schemas/NumeroDeIdentificacion'
+  headers:
+    ContentDisposition:
+      description: >-
+        attachment; filename="reporte-individual-<periodo>-<identificacion>.pdf" (o .csv).
+      schema:
+        type: string
+    CacheControl:
+      description: no-store, porque lleva datos personales.
+      schema:
+        type: string
+  responses:
+    SinPublicacion:
+      description: El periodo no tiene versión publicada (REPORTING_SIN_PUBLICACION).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
+    DocenteSinDistributivo:
+      description: >-
+        El docente no tiene asignaciones en la versión publicada del periodo
+        (REPORTING_DOCENTE_SIN_DISTRIBUTIVO).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
+    ErrorDelReporte:
+      description: >-
+        El hash de la publicación no es el del contenido congelado
+        (REPORTING_CONTENIDO_INCONSISTENTE), o un error interno (COMUN_ERROR_INTERNO). No se
+        entrega nada.
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
+  schemas:
+    CodigoDePeriodo:
+      type: string
+      pattern: '^[A-Za-z0-9._-]{1,20}$'
+      example: 2026-I
+    NumeroDeIdentificacion:
+      description: Cédula de 10 dígitos o pasaporte de hasta 13 letras mayúsculas o dígitos.
+      type: string
+      pattern: '^[0-9A-Z]{1,13}$'
+    Hash:
+      description: SHA-256 en hexadecimal, en minúsculas.
+      type: string
+      pattern: '^[0-9a-f]{64}$'
+    Horas:
+      description: Horas semanales, con hasta dos decimales (D-77).
+      type: number
+      minimum: 0
+      multipleOf: 0.01
+    Componente:
+      description: El componente de una actividad no lectiva; las asignaturas son de clase.
+      type: string
+      enum: [OTRAS_DOCENCIA, INVESTIGACION, VINCULACION, GESTION]
+    Dedicacion:
+      type: string
+      enum: [TC, MT, TP]
+    Publicacion:
+      type: object
+      additionalProperties: false
+      required: [periodo, version, hash, publicadaEn, publicadaPor, enReforma]
+      properties:
+        periodo:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        version:
+          type: integer
+          minimum: 1
+        hash:
+          $ref: '#/components/schemas/Hash'
+        publicadaEn:
+          type: string
+          format: date-time
+        publicadaPor:
+          type: string
+        enReforma:
+          description: Hay una reforma en curso; esta versión sigue siendo la vigente.
+          type: boolean
+    DocenteDeLaVersion:
+      type: object
+      additionalProperties: false
+      required: [identificacion, nombre]
+      properties:
+        identificacion:
+          $ref: '#/components/schemas/NumeroDeIdentificacion'
+        nombre:
+          description: Los apellidos y los nombres.
+          type: string
+    DocentesDelPeriodo:
+      type: object
+      additionalProperties: false
+      required: [publicacion, docentes]
+      properties:
+        publicacion:
+          $ref: '#/components/schemas/Publicacion'
+        docentes:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocenteDeLaVersion'
+    DatosDelDocente:
+      type: object
+      additionalProperties: false
+      required: [identificacion, nombre]
+      properties:
+        identificacion:
+          $ref: '#/components/schemas/NumeroDeIdentificacion'
+        nombre:
+          type: string
+        dedicacion:
+          $ref: '#/components/schemas/Dedicacion'
+        horasContratadas:
+          type: integer
+          minimum: 1
+          maximum: 40
+    FilaDeAsignatura:
+      type: object
+      additionalProperties: false
+      required: [carrera, codigo, nombre, paralelo, horas]
+      properties:
+        carrera:
+          description: El nombre de la carrera.
+          type: string
+        codigo:
+          type: string
+        nombre:
+          type: string
+        paralelo:
+          type: string
+        horas:
+          $ref: '#/components/schemas/Horas'
+    FilaDeActividad:
+      type: object
+      additionalProperties: false
+      required: [componente, codigo, nombre, horas]
+      properties:
+        componente:
+          $ref: '#/components/schemas/Componente'
+        codigo:
+          type: string
+        nombre:
+          type: string
+        unidad:
+          description: La carrera del parcial o el proyecto, si lo tiene.
+          type: string
+        horas:
+          $ref: '#/components/schemas/Horas'
+    HorasPorComponente:
+      type: object
+      additionalProperties: false
+      required: [clase, otrasDocencia, investigacion, vinculacion, gestion, total]
+      properties:
+        clase:
+          $ref: '#/components/schemas/Horas'
+        otrasDocencia:
+          $ref: '#/components/schemas/Horas'
+        investigacion:
+          $ref: '#/components/schemas/Horas'
+        vinculacion:
+          $ref: '#/components/schemas/Horas'
+        gestion:
+          $ref: '#/components/schemas/Horas'
+        total:
+          $ref: '#/components/schemas/Horas'
+    ReporteIndividual:
+      type: object
+      additionalProperties: false
+      required:
+        [publicacion, docente, asignaturas, actividades, horas, generadoPor, generadoEn]
+      properties:
+        publicacion:
+          $ref: '#/components/schemas/Publicacion'
+        docente:
+          $ref: '#/components/schemas/DatosDelDocente'
+        asignaturas:
+          description: Por carrera, código y paralelo.
+          type: array
+          items:
+            $ref: '#/components/schemas/FilaDeAsignatura'
+        actividades:
+          description: Por componente y nombre.
+          type: array
+          items:
+            $ref: '#/components/schemas/FilaDeActividad'
+        horas:
+          $ref: '#/components/schemas/HorasPorComponente'
+        generadoPor:
+          type: string
+        generadoEn:
+          type: string
+          format: date-time

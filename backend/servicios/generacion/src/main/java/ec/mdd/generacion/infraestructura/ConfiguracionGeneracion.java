@@ -4,6 +4,7 @@ import ec.mdd.generacion.adaptadores.salida.AlmacenEnDisco;
 import ec.mdd.generacion.adaptadores.salida.DatosDesdeProcesoDatos;
 import ec.mdd.generacion.adaptadores.salida.RegistroDeCambiosJdbc;
 import ec.mdd.generacion.adaptadores.salida.RepositorioConsolidacionJdbc;
+import ec.mdd.generacion.adaptadores.salida.RepositorioContenidoCongeladoJdbc;
 import ec.mdd.generacion.adaptadores.salida.RepositorioDistributivosJdbc;
 import ec.mdd.generacion.adaptadores.salida.RepositorioJustificacionesJdbc;
 import ec.mdd.generacion.adaptadores.salida.TransaccionSpring;
@@ -14,12 +15,14 @@ import ec.mdd.generacion.aplicacion.ConsultarActividadesServicio;
 import ec.mdd.generacion.aplicacion.ConsultarAfinidadServicio;
 import ec.mdd.generacion.aplicacion.ConsultarCargaHorariaServicio;
 import ec.mdd.generacion.aplicacion.ConsultarConsolidadoServicio;
+import ec.mdd.generacion.aplicacion.ConsultarContenidoCongeladoServicio;
 import ec.mdd.generacion.aplicacion.ConsultarPanelServicio;
 import ec.mdd.generacion.aplicacion.ConsultarParcialesServicio;
 import ec.mdd.generacion.aplicacion.ConsultarSugerenciaServicio;
 import ec.mdd.generacion.aplicacion.ContenidoCongeladoServicio;
 import ec.mdd.generacion.aplicacion.CrearDistributivoServicio;
 import ec.mdd.generacion.aplicacion.EnRevisionServicio;
+import ec.mdd.generacion.aplicacion.GuardarContenidoCongeladoServicio;
 import ec.mdd.generacion.aplicacion.InformeSustentadoServicio;
 import ec.mdd.generacion.aplicacion.JustificarInconsistenciaServicio;
 import ec.mdd.generacion.aplicacion.ParcialesDelDistributivoServicio;
@@ -31,6 +34,7 @@ import ec.mdd.generacion.puertos.entrada.ConsultarActividadesPosibles;
 import ec.mdd.generacion.puertos.entrada.ConsultarAfinidad;
 import ec.mdd.generacion.puertos.entrada.ConsultarCargaHoraria;
 import ec.mdd.generacion.puertos.entrada.ConsultarConsolidado;
+import ec.mdd.generacion.puertos.entrada.ConsultarContenidoCongelado;
 import ec.mdd.generacion.puertos.entrada.ConsultarPanel;
 import ec.mdd.generacion.puertos.entrada.ConsultarParciales;
 import ec.mdd.generacion.puertos.entrada.ConsultarSugerencia;
@@ -49,6 +53,7 @@ import ec.mdd.generacion.puertos.salida.DatosParaElPanel;
 import ec.mdd.generacion.puertos.salida.DatosParaSugerencia;
 import ec.mdd.generacion.puertos.salida.RegistroDeCambios;
 import ec.mdd.generacion.puertos.salida.RepositorioConsolidacion;
+import ec.mdd.generacion.puertos.salida.RepositorioContenidoCongelado;
 import ec.mdd.generacion.puertos.salida.RepositorioDistributivos;
 import ec.mdd.generacion.puertos.salida.RepositorioJustificaciones;
 import ec.mdd.generacion.puertos.salida.Transaccion;
@@ -115,6 +120,31 @@ public class ConfiguracionGeneracion {
             ParcialesDelDistributivo parciales) {
         return new ContenidoCongeladoServicio(
                 distributivos, consultarConsolidado, datos, nombres, parciales);
+    }
+
+    /** El contenido congelado de cada versión, en su esquema (F20-H01, D-115). */
+    @Bean
+    public RepositorioContenidoCongelado repositorioContenidoCongelado(JdbcClient jdbc) {
+        return new RepositorioContenidoCongeladoJdbc(jdbc);
+    }
+
+    /** Guarda el contenido congelado, por orden de Aprobación al congelar (F20-H01, D-115). */
+    @Bean
+    public GuardarContenidoCongeladoServicio guardarContenidoCongelado(
+            RepositorioDistributivos distributivos,
+            RepositorioContenidoCongelado repositorio,
+            DatosParaSugerencia datos,
+            DatosParaElDocumento nombres,
+            Transaccion transaccion) {
+        return new GuardarContenidoCongeladoServicio(
+                distributivos, repositorio, datos, nombres, transaccion, Clock.systemUTC());
+    }
+
+    /** El contenido congelado para Reporting, por la ruta interna (F20-H01, D-115). */
+    @Bean
+    public ConsultarContenidoCongelado consultarContenidoCongelado(
+            GuardarContenidoCongeladoServicio guardado, RepositorioContenidoCongelado repositorio) {
+        return new ConsultarContenidoCongeladoServicio(guardado, repositorio);
     }
 
     /** La bitácora de los cambios del distributivo (F06-H03). */

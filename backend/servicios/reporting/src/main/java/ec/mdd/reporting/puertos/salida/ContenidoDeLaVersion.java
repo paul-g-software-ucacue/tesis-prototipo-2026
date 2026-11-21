@@ -1,0 +1,27 @@
+package ec.mdd.reporting.puertos.salida;
+
+import ec.mdd.reporting.dominio.ContenidoDelDocente;
+import ec.mdd.reporting.dominio.DocentesDeLaVersion;
+import java.util.Optional;
+
+/**
+ * El contenido congelado de una versión, de Generación (D-115): el que se guardó al congelarla.
+ * Solo lee.
+ */
+public interface ContenidoDeLaVersion {
+
+    /**
+     * @param periodo el código del periodo
+     * @param version el número de la versión
+     * @return el hash y los docentes; vacío si la versión no existe o no está congelada
+     */
+    Optional<DocentesDeLaVersion> docentes(String periodo, int version);
+
+    /**
+     * @param periodo el código del periodo
+     * @param version el número de la versión
+     * @param identificacion el número de identificación del docente
+     * @return su contenido; vacío si la versión no está o el docente no está en ella
+     */
+    Optional<ContenidoDelDocente> contenido(String periodo, int version, String identificacion);
+}

@@ -74,6 +74,25 @@ public final class ContenidoDelParcial {
     }
 
     /**
+     * El hash de una versión: el de los hashes de cada uno de sus parciales (F20-H01). Es el mismo
+     * que se registra al pasar de etapa, calculado para una versión dada y no solo para la vigente.
+     *
+     * @param periodo el periodo del distributivo
+     * @param version la versión con sus parciales, propuestas y actividades
+     * @return el SHA-256 en hexadecimal
+     */
+    public static String hashDeLaVersion(String periodo, VersionDistributivo version) {
+        Map<String, String> hashes = new TreeMap<>();
+        version.parciales()
+                .forEach(
+                        parcial ->
+                                hashes.put(
+                                        parcial.carrera(),
+                                        de(periodo, parcial.carrera(), version).hash()));
+        return hashDelDistributivo(periodo, version.numero(), hashes);
+    }
+
+    /**
      * El hash del distributivo al pasar de etapa: el de los hashes de sus parciales, ordenados por
      * carrera.
      *

@@ -124,6 +124,79 @@ class GeneracionEsquemaIntegrationTest {
         }
     }
 
+    // F20-H01, V10: el contenido congelado no se modifica, y se borra con su versión.
+    @Test
+    void dadaLaV10_cuandoSeGuardaElContenidoCongelado_entoncesNoCambiaYSeBorraConSuVersion() {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:18.7-alpine")) {
+            postgres.start();
+            DataSource dataSource =
+                    new DriverManagerDataSource(
+                            postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+            new GeneracionFlywayConfig().flywayGeneracion(dataSource).migrate();
+            JdbcClient jdbc = JdbcClient.create(dataSource);
+            UUID distributivo = UUID.randomUUID();
+            jdbc.sql(
+                            "insert into generacion.distributivo (id, periodo, creado_en, creado_por)"
+                                    + " values (:id, '2026-I', now(), 'consolidacion.demo')")
+                    .param("id", distributivo)
+                    .update();
+            UUID v1 = version(jdbc, distributivo, 1, null);
+            jdbc.sql(
+                            "insert into generacion.contenido_congelado (version_id, periodo,"
+                                    + " numero, hash, guardado_en, tardio) values (:v, '2026-I', 1,"
+                                    + " repeat('a', 64), now(), false)")
+                    .param("v", v1)
+                    .update();
+            jdbc.sql(
+                            "insert into generacion.carga_congelada (version_id, docente, nombre,"
+                                    + " contenido) values (:v, '0109990010', 'Pérez Ana', '{}')")
+                    .param("v", v1)
+                    .update();
+
+            assertThatThrownBy(
+                            () ->
+                                    jdbc.sql(
+                                                    "update generacion.carga_congelada set"
+                                                            + " nombre = 'Otro'")
+                                            .update())
+                    .rootCause()
+                    .hasMessageContaining("no se puede modificar");
+            assertThatThrownBy(
+                            () ->
+                                    jdbc.sql(
+                                                    "update generacion.contenido_congelado set"
+                                                            + " tardio = true")
+                                            .update())
+                    .rootCause()
+                    .hasMessageContaining("no se puede modificar");
+            assertThatThrownBy(
+                            () ->
+                                    jdbc.sql(
+                                                    "insert into generacion.contenido_congelado"
+                                                            + " (version_id, periodo, numero, hash,"
+                                                            + " guardado_en, tardio) values"
+                                                            + " (gen_random_uuid(), '2026-I', 1,"
+                                                            + " repeat('a', 64), now(), false)")
+                                            .update())
+                    .isInstanceOf(DataIntegrityViolationException.class);
+
+            jdbc.sql("delete from generacion.version_distributivo where id = :v")
+                    .param("v", v1)
+                    .update();
+
+            assertThat(
+                            jdbc.sql("select count(*) from generacion.carga_congelada")
+                                    .query(Integer.class)
+                                    .single())
+                    .isZero();
+            assertThat(
+                            jdbc.sql("select count(*) from generacion.contenido_congelado")
+                                    .query(Integer.class)
+                                    .single())
+                    .isZero();
+        }
+    }
+
     private static UUID version(JdbcClient jdbc, UUID distributivo, int numero, String motivo) {
         UUID id = UUID.randomUUID();
         jdbc.sql(

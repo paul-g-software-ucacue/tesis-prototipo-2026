@@ -10,3 +10,25 @@ spring.security.oauth2.resourceserver.jwt.jwk-set-uri: ${MDD_JWKS_URI:http://ide
 management.endpoints.web.exposure.include: health
 management.endpoint.health.probes.enabled: true
 management.endpoint.health.group.readiness.include: readinessState,db
+# Eventos hacia otros procesos (principio V, ADR-018): el registro de publicaciones vive en
+# eventos_salida y lo migra flywayEventos; la creación de Spring Modulith queda apagada. Reporting
+# registra cada descarga en la bitácora (F20-H01, D-115).
+spring.modulith.events.jdbc.schema: eventos_salida
+spring.modulith.events.jdbc.schema-initialization.enabled: false
+spring.modulith.events.completion-mode: update
+spring.modulith.events.republish-outstanding-events-on-restart: false
+spring.modulith.events.staleness.published: PT2M
+spring.modulith.events.staleness.processing: PT2M
+spring.modulith.events.staleness.resubmitted: PT2M
+mdd.eventos.plazo: PT5S
+mdd.eventos.reenvio.intervalo: PT30S
+mdd.eventos.destinos.usuarios: ${MDD_URI_IDENTIDAD:http://identidad:8080}/interno/usuarios/eventos
+mdd.eventos.token-proceso: ${MDD_URI_IDENTIDAD:http://identidad:8080}/interno/usuarios/token-proceso
+mdd.eventos.proceso: salida
+# Las consultas a Aprobación y Generación, en el proceso distributivo, por sus rutas internas
+# (ADR-023, F20-H01).
+mdd.procesos.distributivo: ${MDD_URI_DISTRIBUTIVO:http://distributivo:8080}
+mdd.procesos.identidad: ${MDD_URI_IDENTIDAD:http://identidad:8080}
+# Clave del proceso (D-49); vacía, el proceso arranca y las consultas y las entregas fallan hasta
+# configurarla.
+mdd.eventos.clave: ${MDD_CLAVE_PROCESO_SALIDA:}

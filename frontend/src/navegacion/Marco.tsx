@@ -70,6 +70,7 @@ const ENTRADAS: Entrada[] = [
     permiso: FIRMA_DEL_DISTRIBUTIVO,
   },
   { ruta: '/resolucion-ocs', texto: 'Resolución del OCS', permiso: RESOLUCION_DEL_OCS },
+  { ruta: '/reportes', texto: 'Reportes', permiso: { funcionalidad: 'REPORTES', tipo: 'LECTURA' } },
   { ruta: '/bitacora', texto: 'Bitácora', permiso: { funcionalidad: 'BITACORA', tipo: 'LECTURA' } },
 ];
 
