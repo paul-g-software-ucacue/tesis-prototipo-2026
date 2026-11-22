@@ -2,6 +2,7 @@ package ec.mdd.reporting.adaptadores.salida;
 
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
 import ec.mdd.plataforma.eventos.ProcesoConError;
+import ec.mdd.reporting.dominio.CargasDeLaVersion;
 import ec.mdd.reporting.dominio.Componente;
 import ec.mdd.reporting.dominio.ContenidoDelDocente;
 import ec.mdd.reporting.dominio.DatosDelDocente;
@@ -10,6 +11,7 @@ import ec.mdd.reporting.dominio.DocentesDeLaVersion;
 import ec.mdd.reporting.dominio.FilaDeActividad;
 import ec.mdd.reporting.dominio.FilaDeAsignatura;
 import ec.mdd.reporting.dominio.HorasPorComponente;
+import ec.mdd.reporting.dominio.TipoDeIdentificacion;
 import ec.mdd.reporting.puertos.salida.ContenidoDeLaVersion;
 import java.math.BigDecimal;
 import java.net.URI;
@@ -41,7 +43,7 @@ public final class ContenidoDesdeGeneracion implements ContenidoDeLaVersion {
     @Override
     public Optional<DocentesDeLaVersion> docentes(String periodo, int version) {
         return consultas
-                .obtener(cargas(periodo, version).build().encode().toUri(), Cargas.class)
+                .obtener(rutaDeCargas(periodo, version).build().encode().toUri(), Cargas.class)
                 .map(
                         cargas ->
                                 new DocentesDeLaVersion(
@@ -56,7 +58,7 @@ public final class ContenidoDesdeGeneracion implements ContenidoDeLaVersion {
             String periodo, int version, String identificacion) {
         return consultas
                 .obtener(
-                        cargas(periodo, version)
+                        rutaDeCargas(periodo, version)
                                 .pathSegment(identificacion)
                                 .build()
                                 .encode()
@@ -65,7 +67,38 @@ public final class ContenidoDesdeGeneracion implements ContenidoDeLaVersion {
                 .map(ContenidoDesdeGeneracion::contenido);
     }
 
-    private UriComponentsBuilder cargas(String periodo, int version) {
+    @Override
+    public Optional<CargasDeLaVersion> cargas(String periodo, int version) {
+        return consultas
+                .obtener(
+                        UriComponentsBuilder.fromUri(distributivo)
+                                .pathSegment(
+                                        "interno",
+                                        "generacion",
+                                        "periodos",
+                                        periodo,
+                                        "versiones",
+                                        String.valueOf(version),
+                                        "contenido")
+                                .build()
+                                .encode()
+                                .toUri(),
+                        Completo.class)
+                .map(ContenidoDesdeGeneracion::completo);
+    }
+
+    // Leído con su esquema (principio XIV): sin hash o sin cargas no es una respuesta válida.
+    private static CargasDeLaVersion completo(Completo completo) {
+        if (completo.hash() == null || completo.cargas() == null) {
+            throw new ProcesoConError(
+                    "Generación respondió el contenido de una versión sin hash o sin cargas.");
+        }
+        return new CargasDeLaVersion(
+                completo.hash(),
+                completo.cargas().stream().map(ContenidoDesdeGeneracion::contenido).toList());
+    }
+
+    private UriComponentsBuilder rutaDeCargas(String periodo, int version) {
         return UriComponentsBuilder.fromUri(distributivo)
                 .pathSegment(
                         "interno",
@@ -112,7 +145,11 @@ public final class ContenidoDesdeGeneracion implements ContenidoDeLaVersion {
                         carga.docente().dedicacion() == null
                                 ? null
                                 : Dedicacion.valueOf(carga.docente().dedicacion()),
-                        carga.docente().horasContratadas()),
+                        carga.docente().horasContratadas(),
+                        carga.docente().tipoIdentificacion() == null
+                                ? null
+                                : TipoDeIdentificacion.valueOf(
+                                        carga.docente().tipoIdentificacion())),
                 carga.asignaturas().stream()
                         .map(
                                 una ->
@@ -121,7 +158,8 @@ public final class ContenidoDesdeGeneracion implements ContenidoDeLaVersion {
                                                 una.codigo(),
                                                 una.nombre(),
                                                 una.paralelo(),
-                                                una.horas()))
+                                                una.horas(),
+                                                una.carrera()))
                         .toList(),
                 carga.actividades().stream()
                         .map(
@@ -133,7 +171,9 @@ public final class ContenidoDesdeGeneracion implements ContenidoDeLaVersion {
                                                 una.nombreProyecto() != null
                                                         ? una.nombreProyecto()
                                                         : una.carrera(),
-                                                una.horas()))
+                                                una.horas(),
+                                                una.carrera(),
+                                                una.proyecto()))
                         .toList(),
                 horas(carga.horas()));
     }
@@ -153,8 +193,14 @@ public final class ContenidoDesdeGeneracion implements ContenidoDeLaVersion {
             Horas horas) {}
 
     /** Los datos del docente. */
+    record Completo(String hash, List<Carga> cargas) {}
+
     record DocenteDeLaCarga(
-            String identificacion, String nombre, String dedicacion, Integer horasContratadas) {}
+            String identificacion,
+            String nombre,
+            String dedicacion,
+            Integer horasContratadas,
+            String tipoIdentificacion) {}
 
     /** Una asignatura-paralelo. */
     record Asignatura(

@@ -23,6 +23,9 @@ dependencies {
     // adaptadores (ArquitecturaTest).
     implementation "org.apache.pdfbox:pdfbox:${versionPdfbox}"
     implementation "io.github.openhtmltopdf:openhtmltopdf-pdfbox:${versionOpenHtmlToPdf}"
+    // F19-H01, D-119: el archivo de mapeo del CSV para SIGA, leído sin anclas, alias ni etiquetas.
+    // Solo en los adaptadores (ArquitecturaTest). La versión es la del BOM de Spring Boot.
+    implementation 'org.yaml:snakeyaml'
 }
 
 testing {

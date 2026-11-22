@@ -26,7 +26,7 @@ import ec.mdd.reporting.puertos.entrada.DescargarReporte.ArchivoDelReporte;
 import ec.mdd.reporting.puertos.salida.ContenidoDeLaVersion;
 import ec.mdd.reporting.puertos.salida.GeneradorDePdf;
 import ec.mdd.reporting.puertos.salida.PublicacionesDelDistributivo;
-import ec.mdd.reporting.puertos.salida.RegistroDeDescargas;
+import ec.mdd.reporting.puertos.salida.RegistroEnBitacora;
 import ec.mdd.reporting.puertos.salida.Transaccion;
 import java.time.Clock;
 import java.time.Instant;
@@ -62,7 +62,7 @@ class DescargarReporteServicioTest {
             mock(PublicacionesDelDistributivo.class);
     private final ContenidoDeLaVersion contenido = mock(ContenidoDeLaVersion.class);
     private final GeneradorDePdf pdf = mock(GeneradorDePdf.class);
-    private final RegistroDeDescargas registro = mock(RegistroDeDescargas.class);
+    private final RegistroEnBitacora registro = mock(RegistroEnBitacora.class);
     private final List<String> pasos = new ArrayList<>();
     private boolean dentro;
     private final Transaccion transaccion =
@@ -114,7 +114,7 @@ class DescargarReporteServicioTest {
                             return null;
                         })
                 .when(registro)
-                .registrar(any());
+                .registrar(any(DescargaDeReporte.class));
 
         ArchivoDelReporte archivo =
                 servicio.descargar("2026-I", ANA, Formato.PDF, "rectorado.demo");
@@ -148,7 +148,9 @@ class DescargarReporteServicioTest {
 
     @Test
     void dadoUnRegistroQueFalla_cuandoSeDescarga_entoncesNoSeEntregaNada() {
-        doThrow(new IllegalStateException("sin registro")).when(registro).registrar(any());
+        doThrow(new IllegalStateException("sin registro"))
+                .when(registro)
+                .registrar(any(DescargaDeReporte.class));
 
         assertThatThrownBy(() -> servicio.descargar("2026-I", ANA, Formato.PDF, "rectorado.demo"))
                 .isInstanceOf(IllegalStateException.class);
@@ -161,7 +163,7 @@ class DescargarReporteServicioTest {
 
         assertThatThrownBy(() -> servicio.descargar("2026-I", ANA, Formato.PDF, "rectorado.demo"))
                 .isInstanceOf(java.io.UncheckedIOException.class);
-        verify(registro, never()).registrar(any());
+        verify(registro, never()).registrar(any(DescargaDeReporte.class));
     }
 
     @Test
@@ -175,7 +177,7 @@ class DescargarReporteServicioTest {
                                 servicio.descargar(
                                         "2026-I", "0109990099", Formato.CSV, "rectorado.demo"))
                 .isInstanceOf(DocenteSinDistributivo.class);
-        verify(registro, never()).registrar(any());
+        verify(registro, never()).registrar(any(DescargaDeReporte.class));
     }
 
     // --- El reporte general (F20-H02, D-117) ---
@@ -195,7 +197,7 @@ class DescargarReporteServicioTest {
                             return null;
                         })
                 .when(registro)
-                .registrar(any());
+                .registrar(any(DescargaDeReporte.class));
 
         ArchivoDelReporte archivo =
                 servicio.descargarGeneral("2026-I", Formato.PDF, "rectorado.demo");
@@ -224,13 +226,15 @@ class DescargarReporteServicioTest {
                 .startsWith("\uFEFF\"Periodo\"")
                 .contains("\"Total institucional\"");
         verify(pdf, never()).generar(any(ReporteGeneral.class));
-        verify(registro).registrar(any());
+        verify(registro).registrar(any(DescargaDeReporte.class));
     }
 
     @Test
     void dadoUnRegistroQueFalla_cuandoSeDescargaElGeneral_entoncesNoSeEntregaNada() {
         conElGeneral();
-        doThrow(new IllegalStateException("sin registro")).when(registro).registrar(any());
+        doThrow(new IllegalStateException("sin registro"))
+                .when(registro)
+                .registrar(any(DescargaDeReporte.class));
 
         assertThatThrownBy(() -> servicio.descargarGeneral("2026-I", Formato.CSV, "rectorado.demo"))
                 .isInstanceOf(IllegalStateException.class);
@@ -244,7 +248,7 @@ class DescargarReporteServicioTest {
 
         assertThatThrownBy(() -> servicio.descargarGeneral("2026-I", Formato.PDF, "rectorado.demo"))
                 .isInstanceOf(java.io.UncheckedIOException.class);
-        verify(registro, never()).registrar(any());
+        verify(registro, never()).registrar(any(DescargaDeReporte.class));
     }
 
     @Test
@@ -257,7 +261,7 @@ class DescargarReporteServicioTest {
                 .thenReturn(Optional.of(new DocentesDeLaVersion("b".repeat(64), List.of())));
         assertThatThrownBy(() -> servicio.descargarGeneral("2026-I", Formato.CSV, "rectorado.demo"))
                 .isInstanceOf(ContenidoInconsistente.class);
-        verify(registro, never()).registrar(any());
+        verify(registro, never()).registrar(any(DescargaDeReporte.class));
         verify(pdf, never()).generar(any(ReporteGeneral.class));
     }
 
