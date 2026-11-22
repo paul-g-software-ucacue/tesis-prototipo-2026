@@ -62,7 +62,14 @@
 # ampliados: el reporte general tiene a los docentes del listado, cada fila igual a su reporte
 # individual y los totales iguales a la suma de las filas; se descarga en PDF/A y en CSV con los
 # mismos datos, cada descarga queda como REPORTE_GENERAL_DESCARGADO y no cambia durante la
-# reforma. Si la base ya tiene
+# reforma. Desde F19-H01 (D-119; specs/060-csv-siga/contracts/demostracion.md), R9 y R10, y R1, R4
+# y R5 ampliados: secretaria.demo genera el CSV para SIGA de la versión 1, con una fila por
+# asignatura y por actividad, los totales del reporte general y las convenciones de SENESCYT,
+# idéntico entre dos pedidos y con CSV_SIGA_GENERADO en la bitácora; carga un layout nuevo (otros
+# nombres, otro orden, sin la fecha y con el componente traducido) y el CSV sale con sus columnas y
+# los mismos totales; uno inválido se rechaza con sus problemas sin cambiar el vigente; el Rector,
+# la coordinación y el Administrador reciben 403; y durante la reforma el CSV no cambia. Las
+# versiones del layout de exportación y sus entradas no se borran (principio VII). Si la base ya tiene
 # alguno de esos datos, falla sin tocar nada. Al terminar, aunque un paso falle, borra lo que creó (también los archivos del volumen),
 # salvo las entradas de la bitácora, que no se pueden borrar. Termina con 0 si todos los pasos pasan
 # y con 1 si alguno falla. Nunca imprime una clave ni un token.
@@ -1437,6 +1444,13 @@ readonly REPORTES="$GATEWAY/api/reporting"
 readonly RECTOR=rectorado.demo
 readonly DESCARGADO="servicio = 'reporting' and accion = 'REPORTE_INDIVIDUAL_DESCARGADO'"
 readonly DESCARGADO_GENERAL="servicio = 'reporting' and accion = 'REPORTE_GENERAL_DESCARGADO'"
+# F19-H01 (D-119): el CSV para SIGA y el layout de exportación.
+readonly CSV_SIGA="$GATEWAY/api/reporting/periodos/$PERIODO/csv-siga"
+readonly LAYOUT_SIGA="$GATEWAY/api/reporting/layout-siga"
+readonly PLANTILLA_SIGA=backend/servicios/reporting/src/main/resources/reporting/layout-siga-por-defecto.yaml
+readonly GENERADO_SIGA="servicio = 'reporting' and accion = 'CSV_SIGA_GENERADO'"
+readonly CARGADO_SIGA="servicio = 'reporting' and accion = 'LAYOUT_SIGA_CARGADO'"
+readonly ADMINISTRADOR=admin.demo
 
 hash_publicado() {
     consultar_base "select hash from validacionocs.transicion where periodo = '$PERIODO'
@@ -1542,7 +1556,11 @@ reportes_sin_publicacion() {
     # F20-H02: tampoco hay reporte general.
     pedir GET "$(ruta_del_general)" "Bearer $token"
     es_codigo 409 REPORTING_SIN_PUBLICACION || return 1
-    hay_entradas 0 "$DESCARGADO" && hay_entradas 0 "$DESCARGADO_GENERAL"
+    # F19-H01: tampoco hay CSV para SIGA.
+    iniciar "$SECRETARIA"
+    pedir GET "$CSV_SIGA" "Bearer $token"
+    es_codigo 409 REPORTING_SIN_PUBLICACION || return 1
+    hay_entradas 0 "$DESCARGADO" && hay_entradas 0 "$DESCARGADO_GENERAL" && hay_entradas 0 "$GENERADO_SIGA"
 }
 
 # --- R2. El reporte de la versión 1 publicada, con el contenido guardado al congelar ---
@@ -1669,6 +1687,190 @@ reporte_general_en_dos_formatos() {
         and objeto ->> 'identificacion' is null and (objeto ->> 'version')::int = 1"
 }
 
+# --- F19-H01: el CSV para SIGA y el layout de exportación (D-119; specs/060-csv-siga/contracts/demostracion.md) ---
+
+# generar_siga <archivo>: el CSV para SIGA de $PERIODO, con el token de $token y sus cabeceras.
+generar_siga() {
+    estado=$(curl -s -D "$carpeta/cabeceras" -o "$1" -w '%{http_code}' \
+        -H "Authorization: Bearer $token" "$CSV_SIGA" || echo '000')
+}
+
+# cargar_layout <archivo>: lo sube como archivo de mapeo, con el token de $token.
+cargar_layout() {
+    enviar PUT "$LAYOUT_SIGA" -F "archivo=@$1;type=text/yaml"
+}
+
+# El layout vigente y cuántas versiones hay guardadas.
+layout_vigente() {
+    pedir GET "$LAYOUT_SIGA" "Bearer $token"
+    [[ $estado == 200 ]] || return 1
+    printf '%s' "$cuerpo" >"$carpeta/layouts.json"
+}
+
+versiones_del_layout() {
+    consultar_base "select count(*) from reporting.layout_exportacion"
+}
+
+# csv_siga_igual_al_general <csv> <general.json> <individuales> <layout.json> <convenciones 0|1>:
+# Python, con el módulo csv (RFC 4180): sin BOM, CRLF, el encabezado del layout, una fila por cada
+# asignatura y actividad de los reportes individuales, y las sumas por docente y componente, y por
+# componente, iguales al general. Con 1, además las convenciones de SENESCYT del layout por defecto.
+csv_siga_igual_al_general() {
+    python3 -I - "$@" <<'PY'
+import csv, io, json, os, re, sys
+from collections import defaultdict
+from decimal import Decimal
+ruta, ruta_general, individuales, ruta_layout, convenciones = sys.argv[1:6]
+crudo = open(ruta, 'rb').read()
+assert not crudo.startswith(b'\xef\xbb\xbf'), 'con BOM'
+assert crudo.endswith(b'\r\n') and b'\n' not in crudo.replace(b'\r\n', b''), 'sin CRLF'
+filas = list(csv.reader(io.StringIO(crudo.decode('utf-8'), newline='')))
+layout = json.load(open(ruta_layout))
+columnas = layout['columnas']
+encabezado, filas = filas[0], filas[1:]
+assert encabezado == [c['nombre'] for c in columnas], encabezado
+def columna(campo):
+    return next(i for i, c in enumerate(columnas) if c['campo'] == campo)
+inversa = {}
+for c in columnas:
+    if c['campo'] == 'componente':
+        inversa = {t['valor'].upper(): t['codigo'] for t in c.get('traduccion', [])}
+de_json = {'CLASE': 'clase', 'OTRAS_DOCENCIA': 'otrasDocencia', 'INVESTIGACION': 'investigacion',
+           'VINCULACION': 'vinculacion', 'GESTION': 'gestion'}
+ident, comp, horas = columna('identificacion'), columna('componente'), columna('horas')
+sumas = defaultdict(Decimal)
+for f in filas:
+    assert len(f) == len(columnas), f
+    componente = inversa.get(f[comp], f[comp])
+    sumas[(f[ident], de_json[componente])] += Decimal(f[horas])
+general = json.load(open(ruta_general))
+esperadas = 0
+for d in general['docentes']:
+    individual = json.load(open(os.path.join(individuales, d['identificacion'] + '.json')))
+    esperadas += len(individual['asignaturas']) + len(individual['actividades'])
+    for k in de_json.values():
+        assert sumas[(d['identificacion'], k)] == Decimal(str(d['horas'][k])), (d['identificacion'], k)
+assert len(filas) == esperadas, ('filas', len(filas), esperadas)
+for k in de_json.values():
+    total = sum((v for (i, c), v in sumas.items() if c == k), Decimal(0))
+    assert total == Decimal(str(general['totales'][k])), ('total', k)
+if convenciones == '1':
+    por_nombre = {c['nombre']: i for i, c in enumerate(columnas)}
+    for f in filas:
+        tipo = f[por_nombre['TIPO_IDENTIFICACION']]
+        numero = f[por_nombre['NUMERO_IDENTIFICACION']]
+        assert tipo in ('CEDULA', 'PASAPORTE', 'NA'), tipo
+        if tipo == 'CEDULA':
+            assert re.fullmatch(r'[0-9]{10}', numero), numero
+        assert all(celda == celda.upper() for celda in f), f
+        if f[por_nombre['COMPONENTE']] != 'CLASE':
+            assert f[por_nombre['CODIGO_ASIGNATURA']] == 'NA' and f[por_nombre['PARALELO']] == 'NA', f
+        assert re.fullmatch(r'[0-9]+\.[0-9]{2}', f[por_nombre['HORAS_SEMANALES']]), f
+        assert re.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}', f[por_nombre['FECHA_PUBLICACION']]), f
+PY
+}
+
+# Los reportes individuales de los docentes del general, para contar las filas que espera el CSV.
+bajar_individuales() {
+    local una
+    mkdir -p "$carpeta/individuales"
+    for una in $(jq -r '.docentes[].identificacion' "$carpeta/general.json"); do
+        pedir GET "$(ruta_del_reporte "$una")" "Bearer $token"
+        [[ $estado == 200 ]] || return 1
+        printf '%s' "$cuerpo" >"$carpeta/individuales/$una.json"
+    done
+}
+
+# --- R9. El CSV para SIGA de la versión 1, con la plantilla como layout vigente (US1 y US2) ---
+csv_siga_por_defecto() {
+    local antes numero
+    iniciar "$SECRETARIA"
+    # Al empezar, la plantilla como una versión más del layout de exportación: R9 no depende de lo
+    # que dejó una corrida anterior, y la tabla no admite borrar (principio VII).
+    antes=$(versiones_del_layout)
+    cargar_layout "$PLANTILLA_SIGA"
+    [[ $estado == 200 ]] || { echo "       cargar la plantilla: $estado" >&2; return 1; }
+    numero=$(jq '.numero' <<<"$cuerpo")
+    [[ $numero == $((antes + 1)) ]] || return 1
+    layout_vigente || return 1
+    [[ $(jq '.vigente.numero' "$carpeta/layouts.json") == "$numero" \
+        && $(jq '.vigente.columnas | length' "$carpeta/layouts.json") == 13 ]] || return 1
+    jq '.vigente' "$carpeta/layouts.json" >"$carpeta/layout-vigente.json"
+    bajar_individuales || return 1
+    generar_siga "$carpeta/siga-1.csv"
+    [[ $estado == 200 && $(cabecera Content-Disposition) == "attachment; filename=\"siga-$PERIODO-v1.csv\"" \
+        && $(cabecera Cache-Control) == no-store ]] || { echo "       CSV para SIGA: $estado" >&2; return 1; }
+    generar_siga "$carpeta/siga-2.csv"
+    [[ $estado == 200 ]] || return 1
+    # SC-001, SC-002 y SC-003: las filas, los totales del general y las convenciones de SENESCYT.
+    csv_siga_igual_al_general "$carpeta/siga-1.csv" "$carpeta/general.json" "$carpeta/individuales" \
+        "$carpeta/layout-vigente.json" 1 || return 1
+    # SC-006: dos archivos de la misma versión y el mismo layout son idénticos.
+    cmp -s "$carpeta/siga-1.csv" "$carpeta/siga-2.csv" || return 1
+    cp "$carpeta/siga-1.csv" "$carpeta/siga-version-1.csv"
+    echo "       $(($(wc -l <"$carpeta/siga-1.csv") - 1)) filas con la versión $numero del layout de exportación"
+    esperar 60 hay_entradas 2 "$GENERADO_SIGA" \
+        || { echo "       entradas: $(entradas "$GENERADO_SIGA")" >&2; return 1; }
+    hay_entradas 2 "$GENERADO_SIGA and periodo = '$PERIODO' and (objeto ->> 'version')::int = 1
+        and (nuevo ->> 'layout')::int = $numero and objeto ->> 'identificacion' is null"
+}
+
+# --- R10. Otro layout cambia las columnas sin tocar el código; uno inválido se rechaza (US3) ---
+layout_siga_nuevo() {
+    local antes numero
+    iniciar "$SECRETARIA"
+    estado=$(curl -s -D "$carpeta/cabeceras" -o "$carpeta/plantilla.yaml" -w '%{http_code}' \
+        -H "Authorization: Bearer $token" "$LAYOUT_SIGA/plantilla.yaml" || echo '000')
+    [[ $estado == 200 ]] && cmp -s "$carpeta/plantilla.yaml" "$PLANTILLA_SIGA" \
+        || { echo "       la plantilla no es el recurso: $estado" >&2; return 1; }
+    # Dos nombres cambiados, la asignatura y el paralelo invertidos, sin la fecha y el componente
+    # traducido a 01…05.
+    python3 -I - "$carpeta/plantilla.yaml" "$carpeta/layout-nuevo.yaml" <<'PY'
+import sys
+texto = open(sys.argv[1], encoding='utf-8').read()
+cuerpo = texto[texto.index('columnas:'):]
+cuerpo = cuerpo.replace('NUMERO_IDENTIFICACION', 'CEDULA_DOCENTE').replace('APELLIDOS_NOMBRES', 'DOCENTE')
+asignatura = '  - nombre: CODIGO_ASIGNATURA\n    campo: asignatura\n'
+paralelo = '  - nombre: PARALELO\n    campo: paralelo\n'
+cuerpo = cuerpo.replace(asignatura + paralelo, paralelo + asignatura)
+cuerpo = cuerpo.replace('  - nombre: FECHA_PUBLICACION\n    campo: fecha_publicacion\n', '')
+cuerpo = cuerpo.replace('    campo: componente\n', '    campo: componente\n    traduccion:\n'
+    '      CLASE: "01"\n      OTRAS_DOCENCIA: "02"\n      INVESTIGACION: "03"\n'
+    '      VINCULACION: "04"\n      GESTION: "05"\n')
+open(sys.argv[2], 'w', encoding='utf-8').write(cuerpo)
+PY
+    antes=$(versiones_del_layout)
+    cargar_layout "$carpeta/layout-nuevo.yaml"
+    [[ $estado == 200 ]] || { echo "       el layout nuevo: $estado ${cuerpo:0:300}" >&2; return 1; }
+    numero=$(jq '.numero' <<<"$cuerpo")
+    [[ $numero == $((antes + 1)) ]] || return 1
+    esperar 60 hay_entradas 1 "$CARGADO_SIGA and (objeto ->> 'layout')::int = $numero" || return 1
+    # Uno inválido: un campo que no existe y dos nombres repetidos; el vigente no cambia (SC-005).
+    printf 'columnas:\n  - {nombre: CEDULA, campo: identificacion}\n  - {nombre: COMPONENTE, campo: componente}\n  - {nombre: HORAS, campo: horas_semanales}\n  - {nombre: horas, campo: horas}\n' \
+        >"$carpeta/layout-invalido.yaml"
+    cargar_layout "$carpeta/layout-invalido.yaml"
+    es_codigo 400 REPORTING_LAYOUT_INVALIDO || return 1
+    [[ $(jq '.detalles | length' <<<"$cuerpo") == 2 ]] || { echo "       detalles: ${cuerpo:0:300}" >&2; return 1; }
+    [[ $(versiones_del_layout) == $((antes + 1)) ]] || return 1
+    layout_vigente || return 1
+    [[ $(jq '.vigente.numero' "$carpeta/layouts.json") == "$numero" ]] || return 1
+    jq '.vigente' "$carpeta/layouts.json" >"$carpeta/layout-nuevo.json"
+    # SC-004: el CSV sale con las columnas nuevas, en su orden, sin la fecha, con 01…05, y los mismos
+    # totales.
+    generar_siga "$carpeta/siga-nuevo.csv"
+    [[ $estado == 200 ]] || return 1
+    [[ $(head -1 "$carpeta/siga-nuevo.csv" | tr -d '\r') == \
+        PERIODO,TIPO_IDENTIFICACION,CEDULA_DOCENTE,DOCENTE,DEDICACION,COMPONENTE,CODIGO_ACTIVIDAD,CODIGO_CARRERA,PARALELO,CODIGO_ASIGNATURA,HORAS_SEMANALES,VERSION ]] \
+        || { echo "       encabezado: $(head -1 "$carpeta/siga-nuevo.csv")" >&2; return 1; }
+    [[ $(tail -n +2 "$carpeta/siga-nuevo.csv" | cut -d, -f6 | sort -u | tr -d '\r' | grep -cv '^0[1-5]$') == 0 ]] \
+        || { echo "       el componente no está traducido" >&2; return 1; }
+    csv_siga_igual_al_general "$carpeta/siga-nuevo.csv" "$carpeta/general.json" "$carpeta/individuales" \
+        "$carpeta/layout-nuevo.json" 0 || return 1
+    # Al terminar, la plantilla otra vez: R5 compara con el CSV de R9.
+    cargar_layout "$PLANTILLA_SIGA"
+    [[ $estado == 200 ]]
+}
+
 # --- R4. Sin permiso, 403; un docente que no está, 404; una identificación inválida, 400 ---
 reporte_sin_acceso() {
     local usuario
@@ -1688,7 +1890,19 @@ reporte_sin_acceso() {
     pedir GET "$(ruta_del_reporte no-valida)" "Bearer $token"
     es_codigo 400 COMUN_SOLICITUD_INVALIDA || return 1
     pedir GET "$(ruta_del_general periodo-con-mas-de-veinte)" "Bearer $token"
-    es_codigo 400 COMUN_SOLICITUD_INVALIDA
+    es_codigo 400 COMUN_SOLICITUD_INVALIDA || return 1
+    # F19-H01 (SC-009): solo la Secretaría genera el CSV para SIGA y carga el layout.
+    local versiones generados
+    versiones=$(versiones_del_layout)
+    generados=$(entradas "$GENERADO_SIGA")
+    for usuario in "$RECTOR" "$COORDINADOR" "$ADMINISTRADOR"; do
+        iniciar "$usuario"
+        pedir GET "$CSV_SIGA" "Bearer $token"
+        es_codigo 403 SEGURIDAD_ACCESO_NO_AUTORIZADO || { echo "       $usuario, CSV para SIGA: $estado" >&2; return 1; }
+        cargar_layout "$PLANTILLA_SIGA"
+        [[ $estado == 403 ]] || { echo "       $usuario, cargar el layout: $estado" >&2; return 1; }
+    done
+    [[ $(versiones_del_layout) == "$versiones" && $(entradas "$GENERADO_SIGA") == "$generados" ]]
 }
 
 # --- R5. Durante la reforma, la versión 1 no cambia aunque se corrijan las horas de la oferta ---
@@ -1718,6 +1932,11 @@ reporte_durante_la_reforma() {
     bajar "$(ruta_del_general)" csv "$carpeta/general-en-reforma.csv"
     cmp -s "$carpeta/general-version-1.csv" "$carpeta/general-en-reforma.csv" \
         || { echo "       el CSV del general cambió durante la reforma" >&2; igual=1; }
+    # F19-H01: el CSV para SIGA tampoco cambia; sale de la versión 1.
+    iniciar "$SECRETARIA"
+    generar_siga "$carpeta/siga-en-reforma.csv"
+    [[ $estado == 200 ]] && cmp -s "$carpeta/siga-version-1.csv" "$carpeta/siga-en-reforma.csv" \
+        || { echo "       el CSV para SIGA cambió durante la reforma: $estado" >&2; igual=1; }
     # Las horas vuelven a las de antes: los pasos 25 a 27 recorren la versión 2 con la oferta del
     # inicio de la prueba.
     iniciar "$VICERRECTOR"
@@ -1766,7 +1985,7 @@ if [[ $CONSERVAR == F2 ]]; then
 fi
 verificar 11 "F2 de la persona de F1 se rechaza; F1, F2 y F3 se aceptan en orden con la cadena; al final nadie está en turno" tres_firmas
 verificar 12 "3 aceptadas y 8 rechazadas, los 4 archivos y la bitácora; el proceso en EN_OCS por sistema" registro_de_firmas
-verificar R1 "En EN_OCS, sin publicación: Reporting no la lista y el individual y el general responden 409 REPORTING_SIN_PUBLICACION, sin bitácora" reportes_sin_publicacion
+verificar R1 "En EN_OCS, sin publicación: Reporting no la lista y el individual, el general y el CSV para SIGA responden 409 REPORTING_SIN_PUBLICACION, sin bitácora" reportes_sin_publicacion
 
 if [[ $CONSERVAR == EN_OCS ]]; then
     if ((fallas > 0)); then
@@ -1798,7 +2017,9 @@ verificar R2 "El reporte de la versión 1: su hash, filas que suman su total, la
 verificar R3 "PDF/A sin campos y CSV con los mismos datos; dos CSV idénticos; 8 descargas en la bitácora y ver el reporte no deja entrada" reporte_en_dos_formatos
 verificar R7 "El reporte general de la versión 1: los docentes del listado sin repetidos, cada fila igual a su individual y los totales, la suma de las filas" reporte_general_de_la_version_1
 verificar R8 "El general en PDF/A sin campos y en CSV con los mismos datos; dos CSV idénticos; 4 descargas REPORTE_GENERAL_DESCARGADO sin docente" reporte_general_en_dos_formatos
-verificar R4 "$COORDINADOR y $DESIGNADO, 403 en el individual y el general; un docente que no está, 404; una identificación o un periodo inválidos, 400" reporte_sin_acceso
+verificar R9 "El CSV para SIGA de la versión 1: una fila por asignatura y actividad, los totales del general, las convenciones de SENESCYT, dos archivos idénticos y 2 entradas CSV_SIGA_GENERADO" csv_siga_por_defecto
+verificar R10 "Un layout nuevo cambia las columnas sin tocar el código; uno inválido se rechaza con 2 problemas y no cambia el vigente" layout_siga_nuevo
+verificar R4 "$COORDINADOR y $DESIGNADO, 403 en el individual y el general; un docente que no está, 404; una identificación o un periodo inválidos, 400; $RECTOR, $COORDINADOR y $ADMINISTRADOR, 403 en el CSV para SIGA y el layout" reporte_sin_acceso
 if [[ $CONSERVAR == PUBLICADO ]]; then
     if ((fallas > 0)); then
         echo "No quedó publicado. Para limpiar: docker compose -p tesis-prototipo-2026 down -v"
@@ -1817,7 +2038,7 @@ verificar 21 "F1 subida con identidad detenido: aceptada, y la notificación de 
 
 verificar 22 "En PUBLICADO, otros roles reciben 403 y un motivo corto 400; $VICERRECTOR reforma con identidad detenido: la versión 2 y la 1 CONGELADA; la segunda, 409" reforma_iniciada
 verificar 23 "Durante la reforma, la versión 1 sigue publicada y vigente, y el flujo muestra la reforma en curso" publicada_vigente
-verificar R5 "Durante la reforma, el individual y el general salen de la versión 1 y no cambian al corregir las horas de un paralelo en la oferta" reporte_durante_la_reforma
+verificar R5 "Durante la reforma, el individual, el general y el CSV para SIGA salen de la versión 1 y no cambian al corregir las horas de un paralelo en la oferta" reporte_durante_la_reforma
 verificar 24 "La reforma llegó una vez a quien consolida, los docentes, Talento Humano y las coordinaciones; no al Vicerrector" reforma_notificada
 verificar 25 "La versión 2 vuelve por el ciclo: devolver, reenviar, consolidar, revisión y aprobación, con su documento desde F1" ciclo_de_la_version_2
 verificar 26 "F1, F2 y F3 sobre la versión 2, su resolución y su publicación: la versión 2 es la publicada, sin reforma en curso" firmas_y_publicacion_de_la_version_2
