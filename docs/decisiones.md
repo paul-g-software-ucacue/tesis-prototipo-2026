@@ -115,6 +115,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-114 | 2026-11-20 | Los plazos de cada etapa: se reconstruyen de la configuración que regía al crear el distributivo; una revisión diaria y al arrancar avisa una vez por llegada al rol de la etapa y al de EN_REVISION_VRA, sin bloquear; RN-23 advierte al cargar la configuración, con la cifra de Normativa | Aceptada | RF-34, RN-23, RF-41, MD-03, ADR-007, ADR-023, D-86, D-89, D-108, D-113 |
 | D-115 | 2026-11-21 | El reporte individual: Reporting lee la publicación vigente de Aprobación y el contenido congelado de Generación por rutas internas; Generación guarda el contenido por docente al congelar; PDF/A-2b sin campos y CSV con `;`, coma decimal y fórmulas neutralizadas; cada descarga queda en la bitácora antes de responder | Aceptada | RF-45, RF-48, RNF-SEG-04, MD-04, MD-11, ADR-006, ADR-018, ADR-023, D-101, D-111, D-113 |
 | D-116 | 2026-11-21 | El API Gateway guarda las respuestas del DNS un segundo como mucho y la JVM cinco: si un contenedor cambia de IP y otro se queda con la vieja, el tráfico no va al proceso equivocado | Aceptada | ADR-006, D-84, #274 |
+| D-118 | 2026-11-22 | `libc6` de `cloudflared` espera con una excepción de Grype hasta que Cloudflare reconstruya la imagen | Aceptada | D-54, D-81, D-96 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -2633,3 +2634,25 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 - Cada conexión nueva del API Gateway hace una consulta al DNS de Docker, que es local y barata.
 - Queda una ventana de un segundo en el gateway y de cinco en los procesos, si una petición llega justo mientras un contenedor cambia de IP.
 - Cierra el #274.
+
+## D-118. `libc6` de `cloudflared` espera con una excepción de Grype hasta que Cloudflare reconstruya la imagen
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-22 · **Decidido por:** autor de la tesis
+- **Origen:** el check «5 · imágenes» del PR #280 (F20-H02) falla por CVE-2026-19499 y CVE-2026-5435 (altas) en `libc6` de la imagen de `cloudflared`
+- **Sigue a:** D-96, la misma situación con `zlib1g`
+
+**Decisión.** `.grype.yaml` agrega dos excepciones según D-54, una por CVE, solo para `libc6` 2.41-12+deb13u4 de Debian, que es la versión de la imagen de `cloudflared`. Rigen desde el 2026-11-22 y vencen el 2026-12-22. Cuando Cloudflare publique una imagen con el arreglo (deb13u5), se sube su digest en `deploy/equipo/compose.demo.yml` y se quitan las excepciones, junto con las de D-96 si también las resuelve.
+
+**Por qué.** Las dos vulnerabilidades se publicaron después del último despliegue, y Debian ya tiene el arreglo. Actualizar no alcanza: la imagen oficial más reciente, la 2026.11.1 del 2026-11-17, trae la misma `libc6` (Grype v0.120.1 reporta las mismas dos altas). El binario `cloudflared` es Go enlazado estáticamente, sin intérprete dinámico ni bibliotecas compartidas (comprobado con `file` y `readelf`), así que no carga la libc del sistema. Además, el túnel sigue apagado (D-81). Mientras tanto, «5 · imágenes» bloquea `main` y todos los PR.
+
+**Alternativas.**
+- Subir a `cloudflared` 2026.11.1: trae la misma `libc6`, no resuelve nada.
+- Esperar a Cloudflare sin excepción: no se fusiona nada durante días.
+- Construir una imagen propia de `cloudflared` o quitarla de la demo: las mismas razones de D-96.
+
+**Consecuencias.**
+- Las excepciones solo cubren esa versión de `libc6`. Si otra imagen la trae, Grype la sigue reportando.
+- Al vencer, `deploy/sca/excepciones.sh` las quita y el check vuelve a fallar si la imagen no cambió.
+- Antes de encender el túnel, la imagen tiene que estar sin esta excepción.
+
+**Documentos que hay que poner al día.** Ninguno.
