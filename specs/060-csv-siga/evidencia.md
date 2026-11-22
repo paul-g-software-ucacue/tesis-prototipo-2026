@@ -41,9 +41,28 @@ Una segunda corrida con `MDD_CONSERVAR=PUBLICADO` pasó 26 de 26 y dejó la vers
 |---|---|
 | 300 docentes, en `GenerarCsvSigaServicioTest` (los puertos de lectura simulados y `ExportadorSigaCsv` real) | 55 ms |
 | De punta a punta en el perfil local, 46 docentes, por el API Gateway (`curl -w '%{time_total}'`, cinco pedidos): las tres lecturas internas, la comprobación, el archivo y el registro en la bitácora | 42 a 65 ms |
-| La Secretaría, desde que abre la pantalla hasta tener el archivo (menos de 1 minuto) | Pendiente: el recorrido del autor (T038) |
+| La Secretaría, desde que abre la pantalla hasta tener el archivo (menos de 1 minuto) | 1,5 s, solo con el teclado, en el perfil real (T038) |
 
 SC-008 (menos de 10 s con 300 docentes) se cumple con amplio margen.
+
+## El recorrido (T038)
+
+Lo hizo Claude, a pedido del autor, el 2026-11-22, sobre el perfil local con la versión 1 de 2026-I publicada (`MDD_CONSERVAR=PUBLICADO`), **sin API simulada**: Playwright (`mcr.microsoft.com/playwright:v1.64.0-noble`, Chromium, 1366 px) contra la SPA del perfil, y LibreOffice Calc sin interfaz (`libreoffice-calc-nogui` en `python:3.13-slim`). El archivo de Playwright fue temporal y no se versiona.
+
+| Qué | Resultado |
+|---|---|
+| Ingreso y navegación solo con el teclado | `secretaria.demo` entra escribiendo y con Enter; el enlace «Exportación a SIGA» con Enter; desde «Periodo», un Tab llega a «Generar CSV para SIGA», y Enter descarga `siga-2026-I-v1.csv`. «Se generó siga-2026-I-v1.csv.» en la región `aria-live` |
+| Los textos | «Versión 1, publicada el 2026-11-22 por secretaria.demo.» y «Se generará con la versión 6 del layout de exportación, cargada el 2026-11-22 por secretaria.demo.»; después de la carga, la versión 7 en las dos secciones |
+| El CSV real | 165 filas más el encabezado de FR-004; cédulas de 10 dígitos, mayúsculas, `NA` y la fecha `aaaa-mm-dd` |
+| Un layout con problemas | «El archivo tiene 3 problemas. El layout vigente no cambió.», con el foco en ese título, y cada problema con su columna: el campo `horas_semanales` que no existe, el nombre `id` repetido sin distinguir mayúsculas y la falta de la columna `horas` |
+| La plantilla otra vez | «Se cargó la versión 7 del layout de exportación…»; las versiones anteriores se expanden con Enter y `aria-expanded` |
+| axe-core (WCAG 2.1 AA) con los datos reales | Sin fallas con publicaciones, con el layout rechazado y con versiones anteriores |
+| El Rector | Ve «Reportes» y no «Exportación a SIGA» |
+| LibreOffice Calc, SC-007 | El CSV real y uno con `'=1+1`, `'+57`, `'-3`, `'@SUMA(A1)` y `'=HYPERLINK(…)` (como los escribe `ExportadorSigaCsv`): 0 fórmulas; cada celda es texto con el apóstrofo delante |
+| **Hallazgo:** LibreOffice Calc y la cédula | Con la importación por defecto, Calc lee `0109990341` como el número `109990341` y pierde el cero inicial. El archivo lo trae bien (SC-003); es lo mismo que en el CSV de los reportes (F20-H01), donde la pantalla avisa que se importe la columna como texto. El CSV para SIGA es para una carga masiva, no para una hoja de cálculo (`quickstart.md` pide abrirlo en un editor de texto), así que no se cambia; queda como posible aviso en la pantalla si el autor lo pide |
+| El lector de pantalla | **No se hizo:** necesita a una persona. La estructura que usa (encabezados, `caption`, regiones `aria-live`, `role="alert"`, el foco en el título de los problemas) está comprobada por Vitest, Playwright y axe-core |
+
+El recorrido dejó dos versiones más del layout de exportación en el perfil local (la 6 y la 7 son la plantilla); no se pueden borrar (principio VII).
 
 ## Las desviaciones
 
@@ -51,13 +70,13 @@ SC-008 (menos de 10 s con 300 docentes) se cumple con amplio margen.
 - **La pantalla (T025, T032):** las pruebas de Vitest y Playwright se escribieron junto con el componente y pasaron a la primera, sin verse fallar antes.
 - **El orden de US3:** la interfaz generada `SigaApi` exige las cuatro operaciones en el mismo controlador, así que el servicio y la bitácora del layout (T029, T030) se hicieron antes de cerrar el controlador (T024, T031).
 - **La carga del archivo en la pantalla:** sigue el patrón de «Flujo y firmas» (un botón que abre el selector y carga al elegir), sin un segundo botón «Cargar»; `contracts/spa.md` quedó ajustado.
-- **El glosario (T003):** el `.md` está actualizado; el `.docx` queda pendiente, porque en el equipo no hay con qué editarlo.
+- **El glosario (T003):** el `.md` y el `.docx` están actualizados (el `.docx` con `python-docx` en `python:3.13-slim`, copiando el formato de las filas vecinas); los originales quedan como `modelo_dominio.md.antes-F19-H01` y `modelo_dominio.docx.antes-F19-H01`.
 
 ## Los criterios de terminado
 
 | Criterio | Estado |
 |---|---|
 | SC-001 a SC-007, SC-009 y SC-010 | Cumplidos: pruebas automáticas y R9, R10, R4 y R5 |
-| SC-008 | Cumplido en la generación; falta medir el recorrido de la Secretaría (T038) |
-| El recorrido del autor (`quickstart.md` §1 a §3, teclado, lector de pantalla y LibreOffice Calc) | Pendiente (T038) |
+| SC-008 | Cumplido: 55 ms con 300 docentes; 1,5 s desde que se abre la pantalla |
+| El recorrido (`quickstart.md` §1 a §3, teclado y LibreOffice Calc) | Hecho por Claude en el perfil real, con un hallazgo sobre la cédula en Calc. El lector de pantalla queda para el autor |
 | El equipo de demostración | Pendiente: después de fusionar |

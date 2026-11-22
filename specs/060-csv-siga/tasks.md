@@ -50,7 +50,7 @@ description: "Tareas de F19-H01: generar el CSV para SIGA con el layout configur
   - que la rama es `060-csv-siga`, creada desde `main` actualizado;
   - que `.specify/feature.json` apunta a `specs/060-csv-siga`;
   - que el issue #266 tiene cargadas sus «Horas estimadas» en el proyecto (principio X y definición de listo del issue). **Hecho:** el proyecto no tiene ese campo; el autor confirmó 24 h el 2026-11-22 (D-119).
-- [ ] T003 Principio III: los términos nuevos entran al glosario antes del código. En `~/Downloads/MDD_artefactos_desarrollo/requerimientos_mdd/sdd/modelo_dominio.md` y en su `modelo_dominio.docx`:
+- [X] T003 Principio III: los términos nuevos entran al glosario antes del código. En `~/Downloads/MDD_artefactos_desarrollo/requerimientos_mdd/sdd/modelo_dominio.md` y en su `modelo_dominio.docx`:
   - **§7**, tres filas nuevas:
     - «CSV para SIGA»: «El archivo de la versión publicada con el layout de exportación vigente, una fila por docente y actividad. Con su suma de verificación y su registro es la Exportación a SIGA.» (`FilasParaSiga`, `ExportadorSiga`; Publicación y consulta; RF-52, ADR-002);
     - «Versión del layout de exportación»: «Número correlativo de cada layout cargado; 0 es el layout por defecto. No se edita ni se borra.» (`LayoutExportacion.numero`; Publicación y consulta; RF-52, ADR-007);
@@ -59,7 +59,7 @@ description: "Tareas de F19-H01: generar el CSV para SIGA con el layout configur
 
   Estado:
   - [x] `modelo_dominio.md`, actualizado al cerrar el análisis (2026-11-22), con copia en `modelo_dominio.md.antes-F19-H01`;
-  - [ ] `modelo_dominio.docx`, con los mismos cambios. La tarea se marca cuando esté hecho.
+  - [x] `modelo_dominio.docx`, con los mismos cambios (2026-11-22), con copia en `modelo_dominio.docx.antes-F19-H01`.
 
 ---
 
@@ -399,10 +399,12 @@ description: "Tareas de F19-H01: generar el CSV para SIGA con el layout configur
   - el tiempo de la Secretaría desde que abre la pantalla hasta tener el archivo (menos de 1 minuto).
 
   Si no se cumple, anotarlo como desviación con su causa.
-- [ ] T038 El recorrido del autor, `quickstart.md` §1 a §3, con el teclado y un lector de pantalla:
+- [X] T038 El recorrido del autor, `quickstart.md` §1 a §3, con el teclado y un lector de pantalla:
   - abrir el CSV en un editor de texto y en un lector de la RFC 4180;
   - comparar los totales con el reporte general en la pantalla;
   - abrir el CSV en LibreOffice Calc y confirmar que la celda con `=` no se evalúa (SC-007).
+
+  **Hecho por Claude** el 2026-11-22 en el perfil real (Playwright y LibreOffice Calc sin interfaz; detalle en la evidencia), salvo el lector de pantalla, que queda para el autor.
 - [X] T039 Crear `specs/060-csv-siga/evidencia.md`, como la de 059: las pruebas, el script, el recorrido, las mediciones, las desviaciones y los criterios de terminado. La sección del equipo de demostración queda para después de fusionar.
 - [ ] T040 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde.
   - **Verificar la demo en solo lectura:** «Sano» y, si 2026-I está publicado, un CSV para SIGA generado. Antes, regenerar la base si el contenido es anterior a la historia (Riesgos del plan).
