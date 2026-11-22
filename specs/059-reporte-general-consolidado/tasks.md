@@ -268,9 +268,11 @@ description: "Tareas de F20-H02: reporte general consolidado en PDF y CSV"
   - verificar el PDF con veraPDF;
   - comparar los totales institucionales con los del PDF/A del consolidado firmado. Si difieren, se anota como hallazgo (Riesgos del plan).
 - [X] T029 Crear `specs/059-reporte-general-consolidado/evidencia.md`, como la de 058: las pruebas, el script, el recorrido, las mediciones, las desviaciones y los criterios de terminado. La sección del equipo de demostración queda para después de fusionar.
-- [ ] T030 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde.
+- [X] T030 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde.
   - **Verificar la demo en solo lectura:** «Sano», y si 2026-I está publicado, un reporte general descargado.
   - Abrir el PR de evidencia con `Closes #269`. Con eso F20 (#259) queda completa.
+
+  **Resultado (2026-11-22):** PR #280 fusionado (`d79a826`) con las 12 comprobaciones en verde, después del #281 (las excepciones de `libc6` de `cloudflared`, D-118), que desbloqueó «5 · imágenes». La demo tomó `d79a826`, «Sano en 57 s», con las rutas nuevas respondiendo 401 sin token por Caddy. PR de evidencia con `Closes #269`.
 
 ---
 
