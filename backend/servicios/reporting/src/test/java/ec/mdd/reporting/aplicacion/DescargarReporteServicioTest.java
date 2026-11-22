@@ -10,13 +10,18 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ec.mdd.reporting.dominio.ContenidoDelDocente;
+import ec.mdd.reporting.dominio.ContenidoInconsistente;
 import ec.mdd.reporting.dominio.DatosDelDocente;
 import ec.mdd.reporting.dominio.DescargaDeReporte;
 import ec.mdd.reporting.dominio.DocenteSinDistributivo;
 import ec.mdd.reporting.dominio.DocentesDeLaVersion;
+import ec.mdd.reporting.dominio.DocentesDePrueba;
 import ec.mdd.reporting.dominio.Formato;
 import ec.mdd.reporting.dominio.HorasPorComponente;
 import ec.mdd.reporting.dominio.Publicacion;
+import ec.mdd.reporting.dominio.ReporteGeneral;
+import ec.mdd.reporting.dominio.ReporteIndividual;
+import ec.mdd.reporting.dominio.SinPublicacion;
 import ec.mdd.reporting.puertos.entrada.DescargarReporte.ArchivoDelReporte;
 import ec.mdd.reporting.puertos.salida.ContenidoDeLaVersion;
 import ec.mdd.reporting.puertos.salida.GeneradorDePdf;
@@ -35,8 +40,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 /**
- * Descargar el reporte (F20-H01, RF-48): el archivo se genera completo y se registra en una
- * transacción antes de entregarlo; si el registro falla, no se entrega nada.
+ * Descargar el reporte individual (F20-H01) o el general (F20-H02), RF-48: el archivo se genera
+ * completo y se registra en una transacción antes de entregarlo; si el registro falla, no se
+ * entrega nada.
  */
 class DescargarReporteServicioTest {
 
@@ -92,7 +98,7 @@ class DescargarReporteServicioTest {
                                         List.of(),
                                         List.of(),
                                         HorasPorComponente.NINGUNA)));
-        when(pdf.generar(any()))
+        when(pdf.generar(any(ReporteIndividual.class)))
                 .thenAnswer(
                         uso -> {
                             pasos.add("pdf, dentro: " + dentro);
@@ -121,7 +127,7 @@ class DescargarReporteServicioTest {
         verify(registro).registrar(descarga.capture());
         assertThat(descarga.getValue())
                 .isEqualTo(
-                        new DescargaDeReporte(
+                        DescargaDeReporte.individual(
                                 "rectorado.demo", AHORA, "2026-I", 1, ANA, Formato.PDF));
     }
 
@@ -137,7 +143,7 @@ class DescargarReporteServicioTest {
                 ArgumentCaptor.forClass(DescargaDeReporte.class);
         verify(registro).registrar(descarga.capture());
         assertThat(descarga.getValue().formato()).isEqualTo(Formato.CSV);
-        verify(pdf, never()).generar(any());
+        verify(pdf, never()).generar(any(ReporteIndividual.class));
     }
 
     @Test
@@ -150,7 +156,7 @@ class DescargarReporteServicioTest {
 
     @Test
     void dadaUnaGeneracionQueFalla_cuandoSeDescarga_entoncesNoSeRegistraNada() {
-        when(pdf.generar(any()))
+        when(pdf.generar(any(ReporteIndividual.class)))
                 .thenThrow(new java.io.UncheckedIOException(new java.io.IOException()));
 
         assertThatThrownBy(() -> servicio.descargar("2026-I", ANA, Formato.PDF, "rectorado.demo"))
@@ -170,5 +176,94 @@ class DescargarReporteServicioTest {
                                         "2026-I", "0109990099", Formato.CSV, "rectorado.demo"))
                 .isInstanceOf(DocenteSinDistributivo.class);
         verify(registro, never()).registrar(any());
+    }
+
+    // --- El reporte general (F20-H02, D-117) ---
+
+    @Test
+    void dadoElPdfDelGeneral_cuandoSeDescarga_entoncesSeGeneraAntesYSeRegistraSinDocente() {
+        conElGeneral();
+        when(pdf.generar(any(ReporteGeneral.class)))
+                .thenAnswer(
+                        uso -> {
+                            pasos.add("pdf, dentro: " + dentro);
+                            return new byte[] {'%', 'P', 'D', 'F'};
+                        });
+        org.mockito.Mockito.doAnswer(
+                        uso -> {
+                            pasos.add("registro, dentro: " + dentro);
+                            return null;
+                        })
+                .when(registro)
+                .registrar(any());
+
+        ArchivoDelReporte archivo =
+                servicio.descargarGeneral("2026-I", Formato.PDF, "rectorado.demo");
+
+        assertThat(pasos).containsExactly("pdf, dentro: false", "registro, dentro: true");
+        assertThat(archivo.nombre()).isEqualTo("reporte-general-2026-I.pdf");
+        assertThat(archivo.formato()).isEqualTo(Formato.PDF);
+        ArgumentCaptor<DescargaDeReporte> descarga =
+                ArgumentCaptor.forClass(DescargaDeReporte.class);
+        verify(registro).registrar(descarga.capture());
+        assertThat(descarga.getValue())
+                .isEqualTo(
+                        DescargaDeReporte.general(
+                                "rectorado.demo", AHORA, "2026-I", 1, Formato.PDF));
+    }
+
+    @Test
+    void dadoElCsvDelGeneral_cuandoSeDescarga_entoncesSonLosBytesDelEscritor() {
+        conElGeneral();
+
+        ArchivoDelReporte archivo =
+                servicio.descargarGeneral("2026-I", Formato.CSV, "rectorado.demo");
+
+        assertThat(archivo.nombre()).isEqualTo("reporte-general-2026-I.csv");
+        assertThat(new String(archivo.contenido(), java.nio.charset.StandardCharsets.UTF_8))
+                .startsWith("\uFEFF\"Periodo\"")
+                .contains("\"Total institucional\"");
+        verify(pdf, never()).generar(any(ReporteGeneral.class));
+        verify(registro).registrar(any());
+    }
+
+    @Test
+    void dadoUnRegistroQueFalla_cuandoSeDescargaElGeneral_entoncesNoSeEntregaNada() {
+        conElGeneral();
+        doThrow(new IllegalStateException("sin registro")).when(registro).registrar(any());
+
+        assertThatThrownBy(() -> servicio.descargarGeneral("2026-I", Formato.CSV, "rectorado.demo"))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void dadaUnaGeneracionDelGeneralQueFalla_cuandoSeDescarga_entoncesNoSeRegistraNada() {
+        conElGeneral();
+        when(pdf.generar(any(ReporteGeneral.class)))
+                .thenThrow(new java.io.UncheckedIOException(new java.io.IOException()));
+
+        assertThatThrownBy(() -> servicio.descargarGeneral("2026-I", Formato.PDF, "rectorado.demo"))
+                .isInstanceOf(java.io.UncheckedIOException.class);
+        verify(registro, never()).registrar(any());
+    }
+
+    @Test
+    void
+            dadoUnPeriodoSinPublicacionOUnContenidoInconsistente_cuandoSeDescargaElGeneral_nadaQueda() {
+        assertThatThrownBy(
+                        () -> servicio.descargarGeneral("2025-II", Formato.PDF, "rectorado.demo"))
+                .isInstanceOf(SinPublicacion.class);
+        when(contenido.docentes("2026-I", 1))
+                .thenReturn(Optional.of(new DocentesDeLaVersion("b".repeat(64), List.of())));
+        assertThatThrownBy(() -> servicio.descargarGeneral("2026-I", Formato.CSV, "rectorado.demo"))
+                .isInstanceOf(ContenidoInconsistente.class);
+        verify(registro, never()).registrar(any());
+        verify(pdf, never()).generar(any(ReporteGeneral.class));
+    }
+
+    private void conElGeneral() {
+        when(contenido.docentes("2026-I", 1))
+                .thenReturn(
+                        Optional.of(new DocentesDeLaVersion(HASH, DocentesDePrueba.repetidos(3))));
     }
 }

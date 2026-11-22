@@ -16,8 +16,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Las descargas del reporte individual en PDF/A y en CSV (F20-H01, RF-48, D-115). Cada una queda en
- * la bitácora antes de responder. {@code no-store}: el archivo lleva datos personales.
+ * Las descargas de los reportes individual (F20-H01) y general (F20-H02) en PDF/A y en CSV (RF-48,
+ * D-115, D-117). Cada una queda en la bitácora antes de responder. {@code no-store}: el archivo
+ * lleva datos personales.
  */
 @RestController
 class DescargasControlador implements DescargasApi {
@@ -46,6 +47,20 @@ class DescargasControlador implements DescargasApi {
         return respuesta(
                 descargar.descargar(
                         periodo, identificacion, Formato.CSV, ReportesControlador.quien()));
+    }
+
+    @Override
+    @PreAuthorize("hasAuthority('PERMISO_REPORTES:LECTURA')")
+    public ResponseEntity<Resource> descargarReporteGeneralPdf(String periodo) {
+        return respuesta(
+                descargar.descargarGeneral(periodo, Formato.PDF, ReportesControlador.quien()));
+    }
+
+    @Override
+    @PreAuthorize("hasAuthority('PERMISO_REPORTES:LECTURA')")
+    public ResponseEntity<Resource> descargarReporteGeneralCsv(String periodo) {
+        return respuesta(
+                descargar.descargarGeneral(periodo, Formato.CSV, ReportesControlador.quien()));
     }
 
     private static ResponseEntity<Resource> respuesta(ArchivoDelReporte archivo) {

@@ -49,7 +49,7 @@ class InternoGeneracionContratoTest {
     @Autowired private MockMvc mvc;
 
     @Test
-    void dadaUnaVersionCongelada_cuandoUnProcesoPideSusCargas_entonces200ConElHashYLosDocentes()
+    void dadaUnaVersionCongelada_cuandoUnProcesoPideSusCargas_entonces200ConLosDocentesYSusHoras()
             throws Exception {
         MvcResult resultado = pedir(CARGAS.formatted("2026-I", 1), deProceso());
 
@@ -59,7 +59,12 @@ class InternoGeneracionContratoTest {
                         "{\"hash\":\""
                                 + HASH
                                 + "\",\"docentes\":[{\"identificacion\":\"0109990010\","
-                                + "\"nombre\":\"PEREZ ANA\"}]}");
+                                + "\"nombre\":\"PEREZ ANA\",\"horas\":"
+                                + "{\"clase\":8.00,\"otrasDocencia\":0,\"investigacion\":2.50,"
+                                + "\"vinculacion\":0,\"gestion\":0},\"dedicacion\":\"TC\"},"
+                                + "{\"identificacion\":\"0109990020\",\"nombre\":\"VEGA LUIS\","
+                                + "\"horas\":{\"clase\":0,\"otrasDocencia\":0,"
+                                + "\"investigacion\":0,\"vinculacion\":0,\"gestion\":3}}]}");
         contrato.validar(resultado);
     }
 
@@ -161,7 +166,19 @@ class InternoGeneracionContratoTest {
                             ? Optional.of(
                                     new CargasCongeladas(
                                             HASH,
-                                            List.of(new DocenteDeLaVersion(ANA, "PEREZ ANA"))))
+                                            List.of(
+                                                    DocenteDeLaVersion.de(ana),
+                                                    // Sin dedicación: no estaba activo al congelar.
+                                                    new DocenteDeLaVersion(
+                                                            "0109990020",
+                                                            "VEGA LUIS",
+                                                            null,
+                                                            new CargaHoraria(
+                                                                    BigDecimal.ZERO,
+                                                                    BigDecimal.ZERO,
+                                                                    BigDecimal.ZERO,
+                                                                    BigDecimal.ZERO,
+                                                                    new BigDecimal("3"))))))
                             : Optional.empty();
                 }
 

@@ -39,6 +39,22 @@ public record HorasPorComponente(
         gestion = Horas.validas(gestion);
     }
 
+    /**
+     * Suma componente por componente, sin redondear: así se acumulan los totales institucionales
+     * del reporte general (F20-H02, D-117).
+     *
+     * @param otras las horas que se suman
+     * @return una instancia nueva con la suma
+     */
+    public HorasPorComponente mas(HorasPorComponente otras) {
+        return new HorasPorComponente(
+                clase.add(otras.clase),
+                otrasDocencia.add(otras.otrasDocencia),
+                investigacion.add(otras.investigacion),
+                vinculacion.add(otras.vinculacion),
+                gestion.add(otras.gestion));
+    }
+
     /** La suma de los cinco componentes. */
     public BigDecimal total() {
         return clase.add(otrasDocencia).add(investigacion).add(vinculacion).add(gestion);

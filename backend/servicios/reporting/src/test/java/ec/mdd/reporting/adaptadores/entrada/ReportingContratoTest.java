@@ -19,6 +19,7 @@ import ec.mdd.reporting.dominio.FilaDeActividad;
 import ec.mdd.reporting.dominio.FilaDeAsignatura;
 import ec.mdd.reporting.dominio.HorasPorComponente;
 import ec.mdd.reporting.dominio.Publicacion;
+import ec.mdd.reporting.dominio.ReporteGeneral;
 import ec.mdd.reporting.dominio.ReporteIndividual;
 import ec.mdd.reporting.dominio.SinPublicacion;
 import ec.mdd.reporting.puertos.entrada.ConsultarReportes;
@@ -37,7 +38,9 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
-/** Las consultas de Reporting cumplen su contrato (F20-H01, RF-45, principio IV). */
+/**
+ * Las consultas de Reporting cumplen su contrato (F20-H01, F20-H02, RF-45, RF-46, principio IV).
+ */
 @WebMvcTest(ReportesControlador.class)
 @ImportAutoConfiguration({SeguridadProcesoAutoConfiguracion.class, ErroresAutoConfiguracion.class})
 @Import({ReportingContratoTest.Dobles.class, ErroresReporting.class, ErroresEntreProcesos.class})
@@ -136,12 +139,60 @@ class ReportingContratoTest {
     }
 
     @Test
+    void dadoUnPeriodoPublicado_cuandoSeConsultaElReporteGeneral_entonces200ConLosTotales()
+            throws Exception {
+        MvcResult resultado = pedir(general("2026-I"), "REPORTES:LECTURA");
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString())
+                .contains(
+                        "\"docentes\":[{\"identificacion\":\"0109990010\","
+                                + "\"nombre\":\"PERALTA MALDONADO JUAN ANDRES\","
+                                + "\"horas\":{\"clase\":8.00,"
+                                + "\"otrasDocencia\":2.50,\"investigacion\":0.00,"
+                                + "\"vinculacion\":0.00,\"gestion\":0.00,\"total\":10.50},"
+                                + "\"dedicacion\":\"TC\"},"
+                                + "{\"identificacion\":\"0109990020\","
+                                + "\"nombre\":\"ZAMBRANO PAREDES ROSA ELENA\",\"horas\":")
+                .contains(
+                        "\"totales\":{\"clase\":20.25,\"otrasDocencia\":2.50,"
+                                + "\"investigacion\":3.00,\"vinculacion\":0.00,"
+                                + "\"gestion\":0.00,\"total\":25.75}")
+                .contains("\"generadoPor\":\"rectorado.demo\"");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadosLosErroresDelCatalogo_cuandoSeConsultaElGeneral_entoncesSuCodigoYSuEstado()
+            throws Exception {
+        MvcResult sinPublicacion = pedir(general("2026-II"), "REPORTES:LECTURA");
+        MvcResult inconsistente = pedir(general("2026-X"), "REPORTES:LECTURA");
+        MvcResult caido = pedir(general("2026-Y"), "REPORTES:LECTURA");
+        MvcResult invalido = pedir(general("p".repeat(21)), "REPORTES:LECTURA");
+
+        assertThat(sinPublicacion.getResponse().getStatus()).isEqualTo(409);
+        assertThat(sinPublicacion.getResponse().getContentAsString())
+                .contains("REPORTING_SIN_PUBLICACION");
+        assertThat(inconsistente.getResponse().getStatus()).isEqualTo(500);
+        assertThat(inconsistente.getResponse().getContentAsString())
+                .contains("REPORTING_CONTENIDO_INCONSISTENTE")
+                .doesNotContain("repetido")
+                .doesNotContain("Exception");
+        assertThat(caido.getResponse().getStatus()).isEqualTo(502);
+        assertThat(invalido.getResponse().getStatus()).isEqualTo(400);
+        for (MvcResult uno : List.of(sinPublicacion, inconsistente, caido, invalido)) {
+            contrato.validar(uno);
+        }
+    }
+
+    @Test
     void dadoUnUsuarioSinReportes_cuandoConsultaCualquierOperacion_entonces403() throws Exception {
         for (String ruta :
                 List.of(
                         "/api/reporting/publicaciones",
                         "/api/reporting/periodos/2026-I/docentes",
-                        reporte("2026-I", "0109990010"))) {
+                        reporte("2026-I", "0109990010"),
+                        general("2026-I"))) {
             MvcResult resultado = pedir(ruta, "DISTRIBUTIVO:LECTURA");
             assertThat(resultado.getResponse().getStatus()).as(ruta).isEqualTo(403);
             contrato.validar(resultado);
@@ -150,6 +201,10 @@ class ReportingContratoTest {
 
     private static String reporte(String periodo, String identificacion) {
         return "/api/reporting/periodos/" + periodo + "/docentes/" + identificacion + "/reporte";
+    }
+
+    private static String general(String periodo) {
+        return "/api/reporting/periodos/" + periodo + "/reporte-general";
     }
 
     private MvcResult pedir(String ruta, String permiso) throws Exception {
@@ -188,6 +243,40 @@ class ReportingContratoTest {
                 Instant.parse("2026-11-21T15:00:00Z"));
     }
 
+    /**
+     * El reporte general de dos docentes de los datos de prueba, uno sin dedicación; el que usan
+     * también las descargas (F20-H02).
+     */
+    static ReporteGeneral reporteGeneral(String quien) {
+        return ReporteGeneral.de(
+                PUBLICACION,
+                new DocentesDeLaVersion(
+                        HASH,
+                        List.of(
+                                new DocentesDeLaVersion.Docente(
+                                        "0109990020",
+                                        "ZAMBRANO PAREDES ROSA ELENA",
+                                        null,
+                                        new HorasPorComponente(
+                                                new BigDecimal("12.25"),
+                                                BigDecimal.ZERO,
+                                                new BigDecimal("3"),
+                                                BigDecimal.ZERO,
+                                                BigDecimal.ZERO)),
+                                new DocentesDeLaVersion.Docente(
+                                        "0109990010",
+                                        "PERALTA MALDONADO JUAN ANDRES",
+                                        Dedicacion.TC,
+                                        new HorasPorComponente(
+                                                new BigDecimal("8"),
+                                                new BigDecimal("2.5"),
+                                                BigDecimal.ZERO,
+                                                BigDecimal.ZERO,
+                                                BigDecimal.ZERO)))),
+                quien,
+                Instant.parse("2026-11-21T15:00:00Z"));
+    }
+
     /** El caso de uso, con un resultado por periodo y por docente. */
     @TestConfiguration(proxyBeanMethods = false)
     static class Dobles {
@@ -205,7 +294,12 @@ class ReportingContratoTest {
                     exigirPublicado(periodo);
                     return new DocentesDelPeriodo(
                             PUBLICACION,
-                            List.of(new DocentesDeLaVersion.Docente("0109990010", "PEREZ ANA")));
+                            List.of(
+                                    new DocentesDeLaVersion.Docente(
+                                            "0109990010",
+                                            "PEREZ ANA",
+                                            Dedicacion.TC,
+                                            HorasPorComponente.NINGUNA)));
                 }
 
                 @Override
@@ -217,6 +311,16 @@ class ReportingContratoTest {
                         case "0109990077" -> throw new ContenidoInconsistente("otro hash");
                         case "0109990066" -> throw new ProcesoConError("distributivo caído");
                         default -> throw new DocenteSinDistributivo(periodo, 1);
+                    };
+                }
+
+                @Override
+                public ReporteGeneral reporteGeneral(String periodo, String quien) {
+                    return switch (periodo) {
+                        case "2026-I" -> ReportingContratoTest.reporteGeneral(quien);
+                        case "2026-X" -> throw new ContenidoInconsistente("docente repetido");
+                        case "2026-Y" -> throw new ProcesoConError("distributivo caído");
+                        default -> throw new SinPublicacion(periodo);
                     };
                 }
 

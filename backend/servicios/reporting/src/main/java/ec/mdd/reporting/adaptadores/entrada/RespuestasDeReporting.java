@@ -7,8 +7,10 @@ import ec.mdd.reporting.adaptadores.entrada.api.DocenteDeLaVersion;
 import ec.mdd.reporting.adaptadores.entrada.api.DocentesDelPeriodo;
 import ec.mdd.reporting.adaptadores.entrada.api.FilaDeActividad;
 import ec.mdd.reporting.adaptadores.entrada.api.FilaDeAsignatura;
+import ec.mdd.reporting.adaptadores.entrada.api.FilaDelDocente;
 import ec.mdd.reporting.adaptadores.entrada.api.HorasPorComponente;
 import ec.mdd.reporting.adaptadores.entrada.api.Publicacion;
+import ec.mdd.reporting.adaptadores.entrada.api.ReporteGeneral;
 import ec.mdd.reporting.adaptadores.entrada.api.ReporteIndividual;
 import ec.mdd.reporting.puertos.entrada.ConsultarReportes;
 import java.math.BigDecimal;
@@ -48,7 +50,6 @@ final class RespuestasDeReporting {
                 .dedicacion()
                 .ifPresent(una -> docente.dedicacion(Dedicacion.fromValue(una.name())));
         reporte.docente().horasContratadas().ifPresent(docente::horasContratadas);
-        ec.mdd.reporting.dominio.HorasPorComponente horas = reporte.horas();
         return new ReporteIndividual(
                 publicacion(reporte.publicacion()),
                 docente,
@@ -73,15 +74,37 @@ final class RespuestasDeReporting {
                                                         horas(una.horas()))
                                                 .unidad(una.unidad().orElse(null)))
                         .toList(),
-                new HorasPorComponente(
-                        horas(horas.clase()),
-                        horas(horas.otrasDocencia()),
-                        horas(horas.investigacion()),
-                        horas(horas.vinculacion()),
-                        horas(horas.gestion()),
-                        horas(horas.total())),
+                horasPorComponente(reporte.horas()),
                 reporte.generadoPor(),
                 reporte.generadoEn().atOffset(ZoneOffset.UTC));
+    }
+
+    static ReporteGeneral reporteGeneral(ec.mdd.reporting.dominio.ReporteGeneral reporte) {
+        return new ReporteGeneral(
+                publicacion(reporte.publicacion()),
+                reporte.docentes().stream().map(RespuestasDeReporting::fila).toList(),
+                horasPorComponente(reporte.totales()),
+                reporte.generadoPor(),
+                reporte.generadoEn().atOffset(ZoneOffset.UTC));
+    }
+
+    private static FilaDelDocente fila(ec.mdd.reporting.dominio.FilaDelDocente fila) {
+        FilaDelDocente respuesta =
+                new FilaDelDocente(
+                        fila.identificacion(), fila.nombre(), horasPorComponente(fila.horas()));
+        fila.dedicacion().ifPresent(una -> respuesta.dedicacion(Dedicacion.fromValue(una.name())));
+        return respuesta;
+    }
+
+    private static HorasPorComponente horasPorComponente(
+            ec.mdd.reporting.dominio.HorasPorComponente horas) {
+        return new HorasPorComponente(
+                horas(horas.clase()),
+                horas(horas.otrasDocencia()),
+                horas(horas.investigacion()),
+                horas(horas.vinculacion()),
+                horas(horas.gestion()),
+                horas(horas.total()));
     }
 
     // Con dos decimales, como el PDF y el CSV. El dominio ya exige que no tengan más.

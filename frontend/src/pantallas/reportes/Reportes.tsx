@@ -1,13 +1,19 @@
-// «Reportes» (F20-H01, RF-45, RF-48, D-115): el reporte individual de un docente de la versión
-// publicada vigente, en pantalla y en sus dos descargas. La pantalla propone el periodo de la
-// publicación más reciente. Ver el reporte no deja entrada en la bitácora; cada descarga sí.
+// «Reportes» (F20-H01, F20-H02, RF-45, RF-46, RF-48, D-115, D-117): el reporte general del
+// periodo y el individual de un docente de la versión publicada vigente, en pantalla y en sus dos
+// descargas. La pantalla propone el periodo de la publicación más reciente y el reporte general.
+// Ver un reporte no deja entrada en la bitácora; cada descarga sí.
 import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Radio from '@mui/material/Radio';
+import RadioGroup from '@mui/material/RadioGroup';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
+import TableFooter from '@mui/material/TableFooter';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
@@ -26,11 +32,16 @@ import {
   horas,
   useDocentesDelPeriodo,
   usePublicaciones,
+  useReporteGeneral,
   useReporteIndividual,
+  type DeQueReporte,
   type Formato,
   type Publicacion,
+  type ReporteGeneral,
   type ReporteIndividual,
 } from './consultas';
+
+type TipoDeReporte = 'general' | 'docente';
 
 const MOMENTO = new Intl.DateTimeFormat('es-EC', {
   dateStyle: 'short',
@@ -64,7 +75,7 @@ function DeLaPublicacion({ publicacion }: { publicacion: Publicacion }) {
   );
 }
 
-function Descargas({ periodo, identificacion }: { periodo: string; identificacion: string }) {
+function Descargas({ reporte }: { reporte: DeQueReporte }) {
   const [descargando, setDescargando] = useState<Formato | null>(null);
   const [fallo, setFallo] = useState<MensajeDeError | null>(null);
   const [avisoDelCsv, setAvisoDelCsv] = useState(false);
@@ -76,7 +87,7 @@ function Descargas({ periodo, identificacion }: { periodo: string; identificacio
     setAvisoDelCsv(false);
     setDescargando(formato);
     try {
-      await descargarReporte(periodo, identificacion, formato);
+      await descargarReporte(reporte, formato);
       setAvisoDelCsv(formato === 'csv');
     } catch (error) {
       setFallo(traducirError(error));
@@ -253,15 +264,151 @@ function Reporte({ reporte }: { reporte: ReporteIndividual }) {
         </Table>
       </TableContainer>
 
-      <Descargas periodo={reporte.publicacion.periodo} identificacion={docente.identificacion} />
+      <Descargas
+        reporte={{
+          tipo: 'individual',
+          periodo: reporte.publicacion.periodo,
+          identificacion: docente.identificacion,
+        }}
+      />
     </section>
   );
 }
 
-function DelPeriodo({ periodo }: { periodo: string }) {
+const COLUMNA_DE_HORAS = { textAlign: 'right', whiteSpace: 'nowrap' } as const;
+// Los encabezados de horas se parten en varias líneas, como en el PDF: «Otras actividades de
+// docencia» en una sola línea dejaba poco ancho a los nombres, que ocupaban tres renglones.
+const ENCABEZADO_DE_HORAS = {
+  textAlign: 'right',
+  whiteSpace: 'normal',
+  width: '6.5rem',
+  verticalAlign: 'bottom',
+} as const;
+
+function General({ reporte }: { reporte: ReporteGeneral }) {
+  return (
+    <section aria-labelledby="reporte-general">
+      <Typography id="reporte-general" component="h2" variant="h5" sx={{ mt: 1 }}>
+        Reporte general del distributivo
+      </Typography>
+      <DeLaPublicacion publicacion={reporte.publicacion} />
+      <Typography variant="body2" color="text.secondary">
+        {`Periodo ${reporte.publicacion.periodo}, versión ${String(reporte.publicacion.version)} · ${String(
+          reporte.docentes.length,
+        )} docentes`}
+      </Typography>
+      <HuellaCopiable etiqueta="Huella de la versión" hash={reporte.publicacion.hash} />
+
+      <TableContainer sx={{ my: 2 }}>
+        <Table size="small">
+          <caption style={{ captionSide: 'top' }}>
+            <Typography component="span" variant="h6" sx={CAPTION}>
+              Docentes del distributivo publicado
+            </Typography>
+          </caption>
+          <TableHead>
+            <TableRow>
+              <TableCell scope="col" sx={{ verticalAlign: 'bottom' }}>
+                Identificación
+              </TableCell>
+              <TableCell scope="col" sx={{ verticalAlign: 'bottom', minWidth: '16rem' }}>
+                Docente
+              </TableCell>
+              <TableCell scope="col" sx={{ verticalAlign: 'bottom' }}>
+                Dedicación
+              </TableCell>
+              {COMPONENTES.map(([campo, nombre]) => (
+                <TableCell key={campo} scope="col" sx={ENCABEZADO_DE_HORAS}>
+                  {nombre}
+                </TableCell>
+              ))}
+              <TableCell scope="col" sx={ENCABEZADO_DE_HORAS}>
+                Total
+              </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {reporte.docentes.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={9}>La versión publicada no tiene docentes.</TableCell>
+              </TableRow>
+            )}
+            {reporte.docentes.map((una) => (
+              <TableRow key={una.identificacion}>
+                <TableCell>{una.identificacion}</TableCell>
+                <TableCell component="th" scope="row">
+                  {una.nombre}
+                </TableCell>
+                <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                  {una.dedicacion ? NOMBRE_DE_LA_DEDICACION[una.dedicacion] : 'sin dato'}
+                </TableCell>
+                {COMPONENTES.map(([campo]) => (
+                  <TableCell key={campo} sx={COLUMNA_DE_HORAS}>
+                    {horas(una.horas[campo])}
+                  </TableCell>
+                ))}
+                <TableCell sx={COLUMNA_DE_HORAS}>{horas(una.horas.total)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+          <TableFooter>
+            <TableRow>
+              <TableCell
+                component="th"
+                scope="row"
+                colSpan={3}
+                sx={{ fontWeight: 'bold', color: 'text.primary' }}
+              >
+                Total institucional
+              </TableCell>
+              {COMPONENTES.map(([campo]) => (
+                <TableCell
+                  key={campo}
+                  sx={{ ...COLUMNA_DE_HORAS, fontWeight: 'bold', color: 'text.primary' }}
+                >
+                  {horas(reporte.totales[campo])}
+                </TableCell>
+              ))}
+              <TableCell sx={{ ...COLUMNA_DE_HORAS, fontWeight: 'bold', color: 'text.primary' }}>
+                {horas(reporte.totales.total)}
+              </TableCell>
+            </TableRow>
+          </TableFooter>
+        </Table>
+      </TableContainer>
+
+      <Descargas reporte={{ tipo: 'general', periodo: reporte.publicacion.periodo }} />
+    </section>
+  );
+}
+
+function GeneralDelPeriodo({ periodo }: { periodo: string }) {
+  const reporte = useReporteGeneral(periodo, true);
+  if (reporte.error) {
+    return <AvisoDeError mensaje={traducirError(reporte.error)} />;
+  }
+  if (!reporte.data) {
+    return (
+      <Typography role="status" aria-live="polite">
+        Cargando el reporte general…
+      </Typography>
+    );
+  }
+  return <General reporte={reporte.data} />;
+}
+
+function DelPeriodo({ periodo, enfocar }: { periodo: string; enfocar: boolean }) {
   const docentes = useDocentesDelPeriodo(periodo);
   const [elegido, setElegido] = useState('');
   const reporte = useReporteIndividual(periodo, elegido === '' ? null : elegido);
+  // Al pasar a «Por docente», el foco va al buscador (contracts/spa.md).
+  const buscador = useRef<HTMLDivElement>(null);
+  const cargados = docentes.data !== undefined;
+  useEffect(() => {
+    if (enfocar && cargados) {
+      buscador.current?.querySelector('input')?.focus();
+    }
+  }, [enfocar, cargados]);
 
   if (docentes.error) {
     return <AvisoDeError mensaje={traducirError(docentes.error)} />;
@@ -279,15 +426,17 @@ function DelPeriodo({ periodo }: { periodo: string }) {
   return (
     <>
       <DeLaPublicacion publicacion={docentes.data.publicacion} />
-      <EleccionBuscable
-        etiqueta="Docente"
-        campo="docente"
-        valor={elegido}
-        opciones={opciones}
-        aviso={null}
-        pista={`${String(opciones.length)} docentes en la versión publicada. Escribe su nombre o su identificación.`}
-        alCambiar={setElegido}
-      />
+      <div ref={buscador}>
+        <EleccionBuscable
+          etiqueta="Docente"
+          campo="docente"
+          valor={elegido}
+          opciones={opciones}
+          aviso={null}
+          pista={`${String(opciones.length)} docentes en la versión publicada. Escribe su nombre o su identificación.`}
+          alCambiar={setElegido}
+        />
+      </div>
       {reporte.error && <AvisoDeError mensaje={traducirError(reporte.error)} />}
       {elegido !== '' && !reporte.data && !reporte.error && (
         <Typography role="status" aria-live="polite" sx={{ my: 2 }}>
@@ -303,6 +452,9 @@ export function Reportes() {
   useTitulo('Reportes');
   const publicaciones = usePublicaciones();
   const [periodo, setPeriodo] = useState<string | null>(null);
+  // Se mantiene al cambiar de periodo; el foco va al buscador solo si se eligió «Por docente».
+  const [tipo, setTipo] = useState<TipoDeReporte>('general');
+  const [cambioATipo, setCambioATipo] = useState(false);
   const elegido = periodo ?? publicaciones.data?.[0]?.periodo ?? null;
 
   return (
@@ -311,7 +463,7 @@ export function Reportes() {
         Reportes
       </Typography>
       <Typography variant="body1" sx={{ mb: 2 }}>
-        El reporte individual de un docente sale de la versión publicada del periodo.
+        El reporte general y el individual de un docente salen de la versión publicada del periodo.
       </Typography>
       {publicaciones.error && <AvisoDeError mensaje={traducirError(publicaciones.error)} />}
       {!publicaciones.data && !publicaciones.error && (
@@ -332,9 +484,34 @@ export function Reportes() {
             valor={elegido}
             opciones={publicaciones.data.map((una) => [una.periodo, una.periodo] as const)}
             aviso={null}
-            alCambiar={(valor) => setPeriodo(valor === '' ? null : valor)}
+            alCambiar={(valor) => {
+              setPeriodo(valor === '' ? null : valor);
+              // Cambiar de periodo no le quita el foco a la lista para llevarlo al buscador.
+              setCambioATipo(false);
+            }}
           />
-          <DelPeriodo key={elegido} periodo={elegido} />
+          <Box component="fieldset" sx={{ border: 0, p: 0, m: 0 }}>
+            <Typography component="legend" variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+              Tipo de reporte
+            </Typography>
+            <RadioGroup
+              row
+              name="tipo-de-reporte"
+              value={tipo}
+              onChange={(evento) => {
+                setTipo(evento.target.value as TipoDeReporte);
+                setCambioATipo(true);
+              }}
+            >
+              <FormControlLabel value="general" control={<Radio />} label="General" />
+              <FormControlLabel value="docente" control={<Radio />} label="Por docente" />
+            </RadioGroup>
+          </Box>
+          {tipo === 'general' ? (
+            <GeneralDelPeriodo key={elegido} periodo={elegido} />
+          ) : (
+            <DelPeriodo key={elegido} periodo={elegido} enfocar={cambioATipo} />
+          )}
         </Stack>
       )}
     </>

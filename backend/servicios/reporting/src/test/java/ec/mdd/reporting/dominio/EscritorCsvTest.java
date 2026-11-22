@@ -11,7 +11,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-/** El CSV del reporte individual (F20-H01, RF-48, RNF-SEG-04, research §5). */
+/**
+ * El CSV del reporte individual (F20-H01, RF-48, RNF-SEG-04, research §5 de 058) y del general
+ * (F20-H02, research §4 de 059).
+ */
 class EscritorCsvTest {
 
     private static final String HASH = "a".repeat(64);
@@ -135,6 +138,143 @@ class EscritorCsvTest {
                                 new BigDecimal("2.5"),
                                 BigDecimal.ZERO,
                                 BigDecimal.ZERO)),
+                "rectorado.demo",
+                Instant.parse("2026-11-21T15:00:00Z"));
+    }
+
+    // --- El reporte general (F20-H02, D-117) ---
+
+    private static final String ENCABEZADO_GENERAL =
+            "\"Periodo\";\"Versión\";\"Hash de contenido\";\"Publicada el\";\"Tipo\";"
+                    + "\"Identificación\";\"Docente\";\"Dedicación\";\"Clase\";"
+                    + "\"Otras actividades de docencia\";\"Investigación\";\"Vinculación\";"
+                    + "\"Gestión\";\"Total\"";
+    private static final String VERSION = "\"2026-I\";1;\"" + HASH + "\";\"2026-11-18 10:00\";";
+
+    @Test
+    void dadoUnReporteGeneral_cuandoSeEscribe_entoncesTieneUnaFilaPorDocenteYLaDeTotales() {
+        String csv =
+                texto(
+                        EscritorCsv.escribir(
+                                general(
+                                        docente(
+                                                "0109990010",
+                                                "PERALTA MALDONADO JUAN ANDRES",
+                                                Dedicacion.TC,
+                                                "8",
+                                                "2.5",
+                                                "0"),
+                                        docente(
+                                                "0109990020",
+                                                "ÁLVAREZ PEÑA ROSA",
+                                                null,
+                                                "12.25",
+                                                "0",
+                                                "3"))));
+
+        assertThat(csv).startsWith("\uFEFF");
+        List<String> lineas = Arrays.asList(csv.substring(1).split("\r\n", -1));
+        assertThat(lineas)
+                .containsExactly(
+                        ENCABEZADO_GENERAL,
+                        VERSION
+                                + "\"DOCENTE\";\"0109990020\";\"ÁLVAREZ PEÑA ROSA\";\"sin dato\";"
+                                + "12,25;0,00;0,00;0,00;3,00;15,25",
+                        VERSION
+                                + "\"DOCENTE\";\"0109990010\";\"PERALTA MALDONADO JUAN ANDRES\";"
+                                + "\"Tiempo completo\";8,00;2,50;0,00;0,00;0,00;10,50",
+                        VERSION
+                                + "\"TOTAL\";\"\";\"Total institucional\";\"\";"
+                                + "20,25;2,50;0,00;0,00;3,00;25,75",
+                        "");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"=HYPERLINK(\"x\")", "+1", "-2", "@SUMA(A1)", "\tX", "\rX"})
+    void dadoUnNombreQueEmpiezaComoFormula_cuandoSeEscribeElGeneral_entoncesLlevaUnApostrofo(
+            String peligroso) {
+        String csv =
+                texto(
+                        EscritorCsv.escribir(
+                                general(
+                                        docente(
+                                                "0109990010",
+                                                peligroso,
+                                                Dedicacion.TC,
+                                                "8",
+                                                "0",
+                                                "0"))));
+
+        assertThat(csv)
+                .contains(";\"'" + peligroso.replace("\"", "\"\"") + "\";")
+                .doesNotContain(";\"" + peligroso.replace("\"", "\"\"") + "\";");
+    }
+
+    @Test
+    void dadoElMismoGeneral_cuandoLoEscribeOtraPersonaEnOtroMomento_entoncesLosBytesSonIguales() {
+        DocentesDeLaVersion contenido = new DocentesDeLaVersion(HASH, DocentesDePrueba.todos());
+        ReporteGeneral uno =
+                ReporteGeneral.de(
+                        PUBLICACION,
+                        contenido,
+                        "rectorado.demo",
+                        Instant.parse("2026-11-21T15:00:00Z"));
+        ReporteGeneral otro =
+                ReporteGeneral.de(
+                        PUBLICACION,
+                        contenido,
+                        "secretaria.demo",
+                        Instant.parse("2026-11-22T09:30:00Z"));
+
+        assertThat(EscritorCsv.escribir(uno)).isEqualTo(EscritorCsv.escribir(otro));
+    }
+
+    @Test
+    void dadosTrescientosDocentes_cuandoSeEscribeElGeneral_entoncesTiene301FilasYSeMideElTiempo() {
+        ReporteGeneral reporte =
+                ReporteGeneral.de(
+                        PUBLICACION,
+                        new DocentesDeLaVersion(HASH, DocentesDePrueba.repetidos(300)),
+                        "rectorado.demo",
+                        Instant.parse("2026-11-21T15:00:00Z"));
+
+        long inicio = System.nanoTime();
+        String csv = texto(EscritorCsv.escribir(reporte));
+        long milisegundos = (System.nanoTime() - inicio) / 1_000_000;
+
+        // SC-007: el tiempo queda en la salida de la prueba, para la evidencia (T027).
+        System.out.println(
+                "SC-007 · CSV del reporte general de 300 docentes: " + milisegundos + " ms");
+        List<String> lineas = Arrays.asList(csv.substring(1).split("\r\n", -1));
+        // El encabezado, 300 docentes, la fila de totales y la línea vacía del último CRLF.
+        assertThat(lineas).hasSize(303);
+        assertThat(lineas.stream().filter(una -> una.contains(";\"DOCENTE\";"))).hasSize(300);
+        assertThat(lineas.get(301)).contains(";\"TOTAL\";");
+    }
+
+    private static DocentesDeLaVersion.Docente docente(
+            String identificacion,
+            String nombre,
+            Dedicacion dedicacion,
+            String clase,
+            String otras,
+            String gestion) {
+        return new DocentesDeLaVersion.Docente(
+                identificacion,
+                nombre,
+                dedicacion,
+                new HorasPorComponente(
+                        new BigDecimal(clase),
+                        new BigDecimal(otras),
+                        BigDecimal.ZERO,
+                        BigDecimal.ZERO,
+                        new BigDecimal(gestion)));
+    }
+
+    private static ReporteGeneral general(DocentesDeLaVersion.Docente... docentes) {
+        return ReporteGeneral.de(
+                PUBLICACION,
+                new DocentesDeLaVersion(HASH, List.of(docentes)),
                 "rectorado.demo",
                 Instant.parse("2026-11-21T15:00:00Z"));
     }

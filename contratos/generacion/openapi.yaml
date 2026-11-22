@@ -1048,14 +1048,16 @@ paths:
     get:
       tags: [Interno]
       operationId: consultarCargasCongeladas
-      summary: Devuelve el hash de una versión congelada y sus docentes.
+      summary: Devuelve el hash de una versión congelada y sus docentes, con sus horas.
       description: >-
         Solo entre procesos, con el token de proceso: lo usa Reporting (F20-H01, D-115, ADR-023).
         El contenido congelado se guarda al congelar la versión; si falta, se calcula y se guarda
         en ese momento, marcado como tardío.
       responses:
         '200':
-          description: El hash y los docentes de la versión, por nombre.
+          description: >-
+            El hash y los docentes de la versión, por nombre, cada uno con su dedicación y sus
+            horas (F20-H02, D-117).
           content:
             application/json:
               schema:
@@ -1147,15 +1149,24 @@ components:
           items:
             $ref: '#/components/schemas/DocenteCongelado'
     DocenteCongelado:
+      description: >-
+        Un docente de la versión, con su dedicación y sus horas por componente, las mismas de su
+        carga congelada (F20-H02, D-117).
       type: object
       additionalProperties: false
-      required: [identificacion, nombre]
+      required: [identificacion, nombre, horas]
       properties:
         identificacion:
           type: string
         nombre:
           description: Los apellidos y los nombres, como se guardaron con la asignación.
           type: string
+        dedicacion:
+          description: Ausente si el docente ya no estaba activo al congelar.
+          allOf:
+            - $ref: '#/components/schemas/Dedicacion'
+        horas:
+          $ref: '#/components/schemas/HorasPorComponente'
     CargaCongeladaDelDocente:
       description: El contenido congelado de un docente (F20-H01, D-115).
       type: object

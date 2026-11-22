@@ -5,6 +5,7 @@ import ec.mdd.reporting.dominio.ContenidoInconsistente;
 import ec.mdd.reporting.dominio.DocenteSinDistributivo;
 import ec.mdd.reporting.dominio.DocentesDeLaVersion;
 import ec.mdd.reporting.dominio.Publicacion;
+import ec.mdd.reporting.dominio.ReporteGeneral;
 import ec.mdd.reporting.dominio.ReporteIndividual;
 import ec.mdd.reporting.dominio.SinPublicacion;
 import ec.mdd.reporting.puertos.entrada.ConsultarReportes;
@@ -15,9 +16,9 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Los reportes de la versión publicada vigente (F20-H01, D-115). Aprobación dice cuál versión es la
- * publicada y Generación da su contenido congelado; Reporting solo los junta y comprueba que sean
- * de la misma versión, por su hash.
+ * Los reportes de la versión publicada vigente (F20-H01, F20-H02, D-115, D-117). Aprobación dice
+ * cuál versión es la publicada y Generación da su contenido congelado; Reporting solo los junta y
+ * comprueba que sean de la misma versión, por su hash.
  */
 public final class ConsultarReportesServicio implements ConsultarReportes {
 
@@ -71,6 +72,12 @@ public final class ConsultarReportesServicio implements ConsultarReportes {
                                             periodo, publicacion.version());
                                 });
         return ReporteIndividual.de(publicacion, delDocente, quien, reloj.instant());
+    }
+
+    @Override
+    public ReporteGeneral reporteGeneral(String periodo, String quien) {
+        Publicacion publicacion = publicacion(periodo);
+        return ReporteGeneral.de(publicacion, docentesDe(publicacion), quien, reloj.instant());
     }
 
     /**

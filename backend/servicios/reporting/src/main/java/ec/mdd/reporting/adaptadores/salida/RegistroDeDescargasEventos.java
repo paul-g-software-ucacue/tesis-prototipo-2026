@@ -10,8 +10,9 @@ import org.springframework.context.ApplicationEventPublisher;
 
 /**
  * Cada descarga como el evento {@value #TIPO} hacia Usuarios, para la bitácora (F17-H01, F20-H01,
- * D-115). El registro de publicaciones del proceso salida lo guarda en la transacción en curso y lo
- * entrega después de confirmarla (ADR-018); si identidad no responde, lo reenvía.
+ * F20-H02, D-115, D-117), con la acción de su tipo de reporte. El registro de publicaciones del
+ * proceso salida lo guarda en la transacción en curso y lo entrega después de confirmarla
+ * (ADR-018); si identidad no responde, lo reenvía.
  *
  * <p>Reporting no guarda una copia local: su esquema no tiene otra cosa (principio X).
  */
@@ -21,9 +22,6 @@ public final class RegistroDeDescargasEventos implements RegistroDeDescargas {
      * El tipo del evento, con el contenido {@code EntradaBitacora} de {@code contratos/usuarios}.
      */
     public static final String TIPO = "reporting.EntradaBitacora";
-
-    /** La acción de la bitácora. */
-    public static final String ACCION = "REPORTE_INDIVIDUAL_DESCARGADO";
 
     private static final String ORIGEN = "reporting";
     private static final String DESTINO = "usuarios";
@@ -46,15 +44,20 @@ public final class RegistroDeDescargasEventos implements RegistroDeDescargas {
                 EventoEntreProcesos.nuevo(TIPO, ORIGEN, DESTINO, entrada(descarga), reloj));
     }
 
-    /** El contenido {@code EntradaBitacora}, sin el nombre del docente ni sus horas. */
+    /**
+     * El contenido {@code EntradaBitacora}, sin nombres ni horas. La acción depende del tipo de
+     * reporte (D-117); el objeto del general es el periodo y la versión, sin docente.
+     */
     static Map<String, Object> entrada(DescargaDeReporte descarga) {
         Map<String, Object> objeto = new LinkedHashMap<>();
         objeto.put("periodo", descarga.periodo());
         objeto.put("version", descarga.version());
-        objeto.put("identificacion", descarga.identificacion());
+        if (descarga.identificacion() != null) {
+            objeto.put("identificacion", descarga.identificacion());
+        }
         Map<String, Object> entrada = new LinkedHashMap<>();
         entrada.put("usuario", descarga.usuario());
-        entrada.put("accion", ACCION);
+        entrada.put("accion", descarga.tipo().accion());
         entrada.put("momento", descarga.momento().toString());
         entrada.put("periodo", descarga.periodo());
         entrada.put("objeto", objeto);
