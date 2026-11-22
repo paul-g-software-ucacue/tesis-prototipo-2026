@@ -17,6 +17,7 @@ import { cerrarSesion } from '../sesion/almacen';
 import { Campana } from './Campana';
 import {
   DESCARGA_DE_PLANTILLAS,
+  EXPORTACION_A_SIGA,
   LECTURA_DE_LA_ESTRUCTURA,
   LECTURA_DE_LA_OFERTA,
   LECTURA_DE_LOS_DOCENTES,
@@ -71,6 +72,7 @@ const ENTRADAS: Entrada[] = [
   },
   { ruta: '/resolucion-ocs', texto: 'Resolución del OCS', permiso: RESOLUCION_DEL_OCS },
   { ruta: '/reportes', texto: 'Reportes', permiso: { funcionalidad: 'REPORTES', tipo: 'LECTURA' } },
+  { ruta: '/exportacion-siga', texto: 'Exportación a SIGA', permiso: EXPORTACION_A_SIGA },
   { ruta: '/bitacora', texto: 'Bitácora', permiso: { funcionalidad: 'BITACORA', tipo: 'LECTURA' } },
 ];
 

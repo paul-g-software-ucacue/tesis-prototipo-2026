@@ -86,6 +86,42 @@ describe('Marco', () => {
     });
   });
 
+  describe('la opción «Exportación a SIGA» (F19-H01, D-119)', () => {
+    // Solo PUBLICACION:APROBACION (aclaración del 2026-11-22): la Secretaría general académica.
+    const SIN_APROBACION = {
+      ADMINISTRADOR: ['USUARIOS_ROLES:LECTURA', 'REPORTES:LECTURA', 'BITACORA:LECTURA'],
+      VICERRECTOR: ['DISTRIBUTIVO:LECTURA', 'REPORTES:LECTURA', 'BITACORA:LECTURA'],
+      RECTOR: ['DISTRIBUTIVO:LECTURA', 'REPORTES:LECTURA'],
+      COORDINADOR_CARRERA: ['OFERTA:LECTURA', 'DISTRIBUTIVO:LECTURA', 'DOCENTES:LECTURA'],
+    };
+
+    function sesionCon(permisos: string[]) {
+      instalarApiSimulada().responder(
+        'GET',
+        '/api/usuarios/sesion',
+        json(200, { usuario: 'demo', roles: [], permisos }),
+      );
+    }
+
+    it('aparece para SECRETARIA_GENERAL', async () => {
+      sesionCon(['DISTRIBUTIVO:LECTURA', 'REPORTES:LECTURA', 'PUBLICACION:APROBACION']);
+      montarSpa('/');
+
+      expect(await screen.findByRole('link', { name: 'Exportación a SIGA' })).toHaveAttribute(
+        'href',
+        '/exportacion-siga',
+      );
+    });
+
+    it.each(Object.entries(SIN_APROBACION))('no aparece para %s', async (_, permisos) => {
+      sesionCon(permisos);
+      montarSpa('/');
+
+      await screen.findByText('demo', { selector: '[data-usuario]' });
+      expect(screen.queryByRole('link', { name: 'Exportación a SIGA' })).not.toBeInTheDocument();
+    });
+  });
+
   describe('la opción «Reportes» (F20-H01, FR-014)', () => {
     // Los cinco roles con REPORTES:LECTURA en la matriz D-16 (V2__matriz_d16.sql) y los que no.
     const CON_REPORTES = {
