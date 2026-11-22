@@ -17,6 +17,7 @@ F19-H01 (#266). Cada sección dice qué se verificó, cómo y con qué resultado
 | SPA: Vitest | `Siga.test.tsx` (11) y `Marco.test.tsx` (27, +5): los estados, el layout por defecto y cargado, la reforma, la descarga del CSV y de la plantilla, el 409, la carga válida, los problemas con el foco en su título, el archivo de más de 256 KB sin enviarse, las versiones anteriores; el menú solo para `SECRETARIA_GENERAL` | `vitest run` |
 | SPA: Playwright | `siga.spec.ts`: 4 de 4 en Chromium. La Secretaría genera el CSV y descarga la plantilla; carga un layout con problemas y uno válido; las versiones anteriores; el Rector sin la opción; axe-core sin fallas en los tres estados (SC-010) | `mcr.microsoft.com/playwright:v1.64.0-noble` |
 | Gitleaks | Sin hallazgos en los archivos cambiados, con `.gitleaks.toml` | `ghcr.io/gitleaks/gitleaks:v8.30.1 dir` |
+| CI del PR #289 (primera corrida) | `2 · test-backend` falló en `BitacoraSinBorradoContratoTest` (Usuarios): la descripción del `PUT` de `cargarLayoutSiga` nombraba la bitácora, y la prueba no admite que una escritura la nombre. Se reescribió como «su entrada LAYOUT_SIGA_CARGADO». En local no había corrido: la prueba lee `contratos/`, que Gradle no declara como su entrada, y la tomó por al día | `:servicios:usuarios:test --rerun-tasks` |
 
 ## El script
 

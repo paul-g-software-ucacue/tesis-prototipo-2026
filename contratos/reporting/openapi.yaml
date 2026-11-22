@@ -385,8 +385,8 @@ paths:
       summary: Carga un archivo de mapeo nuevo, que queda vigente para el próximo CSV.
       description: >-
         Valida el archivo y responde todos sus problemas, con la columna y la regla. Un archivo
-        rechazado no cambia el vigente ni deja entrada en la bitácora. Uno válido es la versión
-        siguiente del layout de exportación, y deja LAYOUT_SIGA_CARGADO en la bitácora en la
+        rechazado no cambia el vigente ni deja la entrada LAYOUT_SIGA_CARGADO. Uno válido es la
+        versión siguiente del layout de exportación, con su entrada LAYOUT_SIGA_CARGADO en la
         misma transacción. Las versiones anteriores se conservan (ADR-007, D-119).
       x-mdd-permiso: [PUBLICACION:APROBACION]
       requestBody:
