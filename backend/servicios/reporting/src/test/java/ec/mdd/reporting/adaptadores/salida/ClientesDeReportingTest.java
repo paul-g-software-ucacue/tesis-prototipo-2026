@@ -7,11 +7,13 @@ import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
 import ec.mdd.plataforma.eventos.ProcesoConError;
 import ec.mdd.plataforma.eventos.ProveedorDeTokenDeProceso;
 import ec.mdd.plataforma.pruebas.ReceptorSimulado;
+import ec.mdd.reporting.dominio.CargasDeLaVersion;
 import ec.mdd.reporting.dominio.Componente;
 import ec.mdd.reporting.dominio.ContenidoDelDocente;
 import ec.mdd.reporting.dominio.Dedicacion;
 import ec.mdd.reporting.dominio.DocentesDeLaVersion;
 import ec.mdd.reporting.dominio.Publicacion;
+import ec.mdd.reporting.dominio.TipoDeIdentificacion;
 import java.time.Clock;
 import java.time.Instant;
 import org.junit.jupiter.api.AfterEach;
@@ -149,6 +151,63 @@ class ClientesDeReportingTest {
                         org.assertj.core.groups.Tuple.tuple(Componente.INVESTIGACION, "Suelos"),
                         org.assertj.core.groups.Tuple.tuple(Componente.GESTION, "TDS"));
         assertThat(leido.horas().total()).isEqualByComparingTo("11.5");
+    }
+
+    @Test
+    void dadoElContenidoCompleto_cuandoSePide_entoncesTraduceCadaCargaConSusCodigosYSuTipo() {
+        receptor.responderConsulta(
+                "/interno/generacion/periodos/2026-I/versiones/1/contenido",
+                200,
+                "{\"hash\":\""
+                        + HASH
+                        + "\",\"cargas\":[{\"hash\":\""
+                        + HASH
+                        + "\",\"docente\":{\"identificacion\":\"0109990010\","
+                        + "\"nombre\":\"PEREZ ANA\",\"tipoIdentificacion\":\"PASAPORTE\","
+                        + "\"dedicacion\":\"TC\",\"horasContratadas\":40},"
+                        + "\"asignaturas\":[{\"codigo\":\"BD-301\",\"nombre\":\"Bases de datos\","
+                        + "\"paralelo\":\"A\",\"carrera\":\"TDS\",\"nombreCarrera\":\"Software\","
+                        + "\"horas\":8.00}],\"actividades\":[{\"codigo\":\"141-a\","
+                        + "\"nombre\":\"Proyecto\",\"componente\":\"INVESTIGACION\","
+                        + "\"carrera\":\"TDS\",\"horas\":2.50,\"nombreProyecto\":\"Suelos\","
+                        + "\"proyecto\":\"INV-01\"}],"
+                        + "\"horas\":{\"clase\":8.00,\"otrasDocencia\":0,\"investigacion\":2.50,"
+                        + "\"vinculacion\":0,\"gestion\":0}},{\"hash\":\""
+                        + HASH
+                        + "\",\"docente\":{\"identificacion\":\"0109990020\","
+                        + "\"nombre\":\"VEGA LUIS\"},\"asignaturas\":[],\"actividades\":[],"
+                        + "\"horas\":{\"clase\":0,\"otrasDocencia\":0,\"investigacion\":0,"
+                        + "\"vinculacion\":0,\"gestion\":0}}]}");
+
+        CargasDeLaVersion leidas = contenido.cargas("2026-I", 1).orElseThrow();
+
+        assertThat(leidas.hash()).isEqualTo(HASH);
+        assertThat(leidas.cargas()).hasSize(2);
+        ContenidoDelDocente ana = leidas.cargas().get(0);
+        assertThat(ana.docente().tipoIdentificacion()).contains(TipoDeIdentificacion.PASAPORTE);
+        assertThat(ana.asignaturas().get(0).codigoCarrera()).contains("TDS");
+        assertThat(ana.actividades().get(0).codigoCarrera()).contains("TDS");
+        assertThat(ana.actividades().get(0).codigoProyecto()).contains("INV-01");
+        assertThat(leidas.cargas().get(1).docente().tipoIdentificacion()).isEmpty();
+        assertThat(leidas.cargas().get(1).docente().dedicacion()).isEmpty();
+    }
+
+    @Test
+    void dadoUnContenidoSinHash_cuandoSePide_entoncesEsUnErrorDelProceso() {
+        receptor.responderConsulta(
+                "/interno/generacion/periodos/2026-I/versiones/1/contenido",
+                200,
+                "{\"cargas\":[]}");
+
+        assertThatThrownBy(() -> contenido.cargas("2026-I", 1)).isInstanceOf(ProcesoConError.class);
+    }
+
+    @Test
+    void dadaUnaVersionSinContenido_cuandoSePideElCompleto_entoncesVacio() {
+        receptor.responderConsulta(
+                "/interno/generacion/periodos/2026-I/versiones/7/contenido", 404, "{}");
+
+        assertThat(contenido.cargas("2026-I", 7)).isEmpty();
     }
 
     @Test

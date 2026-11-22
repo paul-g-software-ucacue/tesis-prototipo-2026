@@ -11,6 +11,7 @@ import ec.mdd.generacion.dominio.CargaHoraria;
 import ec.mdd.generacion.dominio.Componente;
 import ec.mdd.generacion.dominio.Dedicacion;
 import ec.mdd.generacion.dominio.DocenteDeLaVersion;
+import ec.mdd.generacion.dominio.TipoDeIdentificacion;
 import ec.mdd.generacion.puertos.entrada.ConsultarContenidoCongelado;
 import ec.mdd.plataforma.errores.ErroresAutoConfiguracion;
 import ec.mdd.plataforma.pruebas.ValidadorDeContrato;
@@ -41,6 +42,8 @@ import org.springframework.test.web.servlet.MvcResult;
 class InternoGeneracionContratoTest {
 
     private static final String CARGAS = "/interno/generacion/periodos/%s/versiones/%s/cargas";
+    private static final String CONTENIDO =
+            "/interno/generacion/periodos/%s/versiones/%s/contenido";
     private static final String HASH = "a".repeat(64);
     private static final String ANA = "0109990010";
 
@@ -80,7 +83,7 @@ class InternoGeneracionContratoTest {
                                 + HASH
                                 + "\",\"docente\":{\"identificacion\":\"0109990010\","
                                 + "\"nombre\":\"PEREZ ANA\",\"dedicacion\":\"TC\","
-                                + "\"horasContratadas\":40},\"asignaturas\":[{\"codigo\":"
+                                + "\"horasContratadas\":40,\"tipoIdentificacion\":\"CEDULA\"},\"asignaturas\":[{\"codigo\":"
                                 + "\"BD-301\",\"nombre\":\"Bases de datos\",\"paralelo\":\"A\","
                                 + "\"carrera\":\"TDS\",\"nombreCarrera\":\"Software\","
                                 + "\"horas\":8.00}],\"actividades\":[{\"codigo\":\"141-a\","
@@ -90,6 +93,30 @@ class InternoGeneracionContratoTest {
                                 + "\"horas\":"
                                 + "{\"clase\":8.00,\"otrasDocencia\":0,\"investigacion\":2.50,"
                                 + "\"vinculacion\":0,\"gestion\":0}}");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadaUnaVersionCongelada_cuandoUnProcesoPideSuContenido_entonces200ConCadaCargaCompleta()
+            throws Exception {
+        MvcResult resultado = pedir(CONTENIDO.formatted("2026-I", 1), deProceso());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        String cuerpo = resultado.getResponse().getContentAsString();
+        assertThat(cuerpo)
+                .startsWith("{\"hash\":\"" + HASH + "\",\"cargas\":[{\"hash\":\"" + HASH + "\"")
+                .contains("\"identificacion\":\"0109990010\"", "\"codigo\":\"BD-301\"")
+                .contains("\"identificacion\":\"0109990020\",\"nombre\":\"VEGA LUIS\"}");
+        // Sin tipo de identificación: no estaba activo al congelar (D-119).
+        assertThat(cuerpo.split("tipoIdentificacion", -1)).hasSize(2);
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadaUnaVersionSinCongelar_cuandoUnProcesoPideSuContenido_entonces404() throws Exception {
+        MvcResult resultado = pedir(CONTENIDO.formatted("2026-I", 2), deProceso());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(404);
         contrato.validar(resultado);
     }
 
@@ -134,6 +161,7 @@ class InternoGeneracionContratoTest {
                     new CargaCongelada(
                             ANA,
                             "PEREZ ANA",
+                            TipoDeIdentificacion.CEDULA,
                             Dedicacion.TC,
                             40,
                             List.of(
@@ -179,6 +207,28 @@ class InternoGeneracionContratoTest {
                                                                     BigDecimal.ZERO,
                                                                     BigDecimal.ZERO,
                                                                     new BigDecimal("3"))))))
+                            : Optional.empty();
+                }
+
+                @Override
+                public Optional<ContenidoCompleto> contenido(String periodo, int version) {
+                    CargaCongelada luis =
+                            new CargaCongelada(
+                                    "0109990020",
+                                    "VEGA LUIS",
+                                    null,
+                                    null,
+                                    null,
+                                    List.of(),
+                                    List.of(),
+                                    new CargaHoraria(
+                                            BigDecimal.ZERO,
+                                            BigDecimal.ZERO,
+                                            BigDecimal.ZERO,
+                                            BigDecimal.ZERO,
+                                            BigDecimal.ZERO));
+                    return version == 1
+                            ? Optional.of(new ContenidoCompleto(HASH, List.of(ana, luis)))
                             : Optional.empty();
                 }
 

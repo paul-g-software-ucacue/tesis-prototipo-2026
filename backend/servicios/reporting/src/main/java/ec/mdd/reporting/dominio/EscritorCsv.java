@@ -212,21 +212,7 @@ public final class EscritorCsv {
 
     /** Un texto entre comillas, neutralizado si empieza como una fórmula. */
     static String texto(String valor) {
-        String seguro = comoFormula(valor) ? "'" + valor : valor;
-        return "\"" + seguro.replace("\"", "\"\"") + "\"";
-    }
-
-    private static boolean comoFormula(String valor) {
-        if (valor.isEmpty()) {
-            return false;
-        }
-        char primero = valor.charAt(0);
-        return primero == '='
-                || primero == '+'
-                || primero == '-'
-                || primero == '@'
-                || primero == '\t'
-                || primero == '\r';
+        return "\"" + CeldaCsv.neutralizada(valor).replace("\"", "\"\"") + "\"";
     }
 
     /** Las horas con dos decimales y coma decimal. */

@@ -3,9 +3,11 @@ package ec.mdd;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ec.mdd.reporting.dominio.CsvGenerado;
 import ec.mdd.reporting.dominio.DescargaDeReporte;
 import ec.mdd.reporting.dominio.Formato;
-import ec.mdd.reporting.puertos.salida.RegistroDeDescargas;
+import ec.mdd.reporting.dominio.LayoutCargado;
+import ec.mdd.reporting.puertos.salida.RegistroEnBitacora;
 import ec.mdd.reporting.puertos.salida.Transaccion;
 import java.time.Instant;
 import java.util.UUID;
@@ -23,9 +25,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @Import(EsquemasIntegrationTest.Contenedores.class)
-class RegistroDeDescargasIntegrationTest {
+class RegistroEnBitacoraIntegrationTest {
 
-    @Autowired private RegistroDeDescargas registro;
+    @Autowired private RegistroEnBitacora registro;
     @Autowired private Transaccion transaccion;
     @Autowired private JdbcTemplate jdbc;
 
@@ -77,6 +79,50 @@ class RegistroDeDescargasIntegrationTest {
                 .contains("REPORTE_GENERAL_DESCARGADO")
                 .contains("PDF")
                 .doesNotContain("identificacion");
+    }
+
+    @Test
+    void dadoUnCsvParaSigaConfirmado_cuandoTermina_entoncesSuEventoQuedaSinDatosPersonales() {
+        String periodo = periodo();
+
+        transaccion.ejecutar(
+                () -> {
+                    registro.registrar(
+                            new CsvGenerado("secretaria.demo", Instant.now(), periodo, 1, 0));
+                    return null;
+                });
+
+        assertThat(eventos(periodo)).isOne();
+        String evento =
+                jdbc.queryForObject(
+                        "SELECT serialized_event FROM eventos_salida.event_publication"
+                                + " WHERE serialized_event LIKE ?",
+                        String.class,
+                        "%" + periodo + "%");
+        assertThat(evento)
+                .contains("CSV_SIGA_GENERADO")
+                .contains("layout")
+                .doesNotContain("identificacion");
+    }
+
+    @Test
+    void dadoUnLayoutCargado_cuandoTermina_entoncesSuEventoQuedaConSuHuella() {
+        String huella = java.util.HexFormat.of().toHexDigits(System.nanoTime()) + "a".repeat(48);
+
+        transaccion.ejecutar(
+                () -> {
+                    registro.registrar(
+                            new LayoutCargado("secretaria.demo", Instant.now(), 1, 13, huella));
+                    return null;
+                });
+
+        String evento =
+                jdbc.queryForObject(
+                        "SELECT serialized_event FROM eventos_salida.event_publication"
+                                + " WHERE serialized_event LIKE ?",
+                        String.class,
+                        "%" + huella + "%");
+        assertThat(evento).contains("LAYOUT_SIGA_CARGADO").contains("secretaria.demo");
     }
 
     @Test

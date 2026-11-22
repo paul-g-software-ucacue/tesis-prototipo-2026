@@ -8,7 +8,7 @@ import ec.mdd.reporting.dominio.ReporteIndividual;
 import ec.mdd.reporting.puertos.entrada.ConsultarReportes;
 import ec.mdd.reporting.puertos.entrada.DescargarReporte;
 import ec.mdd.reporting.puertos.salida.GeneradorDePdf;
-import ec.mdd.reporting.puertos.salida.RegistroDeDescargas;
+import ec.mdd.reporting.puertos.salida.RegistroEnBitacora;
 import ec.mdd.reporting.puertos.salida.Transaccion;
 import java.time.Clock;
 
@@ -23,7 +23,7 @@ public final class DescargarReporteServicio implements DescargarReporte {
 
     private final ConsultarReportes consultar;
     private final GeneradorDePdf pdf;
-    private final RegistroDeDescargas registro;
+    private final RegistroEnBitacora registro;
     private final Transaccion transaccion;
     private final Clock reloj;
 
@@ -37,7 +37,7 @@ public final class DescargarReporteServicio implements DescargarReporte {
     public DescargarReporteServicio(
             ConsultarReportes consultar,
             GeneradorDePdf pdf,
-            RegistroDeDescargas registro,
+            RegistroEnBitacora registro,
             Transaccion transaccion,
             Clock reloj) {
         this.consultar = consultar;

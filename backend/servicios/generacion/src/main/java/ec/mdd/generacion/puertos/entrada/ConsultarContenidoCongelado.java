@@ -30,6 +30,16 @@ public interface ConsultarContenidoCongelado {
     Optional<CargaDeLaVersion> carga(String periodo, int version, String docente);
 
     /**
+     * El contenido completo de todos los docentes de una versión, para el CSV para SIGA (F19-H01,
+     * D-119): una sola lectura en lugar de una por docente.
+     *
+     * @param periodo el código del periodo
+     * @param version el número de la versión
+     * @return el hash y las cargas, por nombre; vacío si la versión no existe o no está congelada
+     */
+    Optional<ContenidoCompleto> contenido(String periodo, int version);
+
+    /**
      * El hash de una versión congelada y sus docentes.
      *
      * @param hash el hash de la versión
@@ -41,6 +51,21 @@ public interface ConsultarContenidoCongelado {
         public CargasCongeladas {
             Objects.requireNonNull(hash, "hash");
             docentes = List.copyOf(docentes);
+        }
+    }
+
+    /**
+     * El hash de una versión congelada y la carga de cada docente.
+     *
+     * @param hash el hash de la versión
+     * @param cargas por nombre y, a igual nombre, por identificación
+     */
+    record ContenidoCompleto(String hash, List<CargaCongelada> cargas) {
+
+        /** Exige el hash y copia la lista. */
+        public ContenidoCompleto {
+            Objects.requireNonNull(hash, "hash");
+            cargas = List.copyOf(cargas);
         }
     }
 

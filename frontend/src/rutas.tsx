@@ -22,12 +22,14 @@ import { Oferta } from './pantallas/oferta/Oferta';
 import { Plantillas } from './pantallas/plantillas/Plantillas';
 import { Preparacion } from './pantallas/preparacion/Preparacion';
 import { Reportes } from './pantallas/reportes/Reportes';
+import { Siga } from './pantallas/siga/Siga';
 import { Periodos } from './pantallas/periodos/Periodos';
 import { Roles } from './pantallas/roles/Roles';
 import { RutaConPermiso } from './sesion/RutaConPermiso';
 import { RutaProtegida } from './sesion/RutaProtegida';
 import {
   DESCARGA_DE_PLANTILLAS,
+  EXPORTACION_A_SIGA,
   PREPARACION_DEL_PERIODO,
   LECTURA_DE_LA_ESTRUCTURA,
   LECTURA_DE_LA_OFERTA,
@@ -189,6 +191,14 @@ export const rutasDeLaSpa: RouteObject[] = [
         element: (
           <RutaConPermiso funcionalidad="REPORTES" tipo="LECTURA">
             <Reportes />
+          </RutaConPermiso>
+        ),
+      },
+      {
+        path: 'exportacion-siga',
+        element: (
+          <RutaConPermiso cualquieraDe={EXPORTACION_A_SIGA}>
+            <Siga />
           </RutaConPermiso>
         ),
       },

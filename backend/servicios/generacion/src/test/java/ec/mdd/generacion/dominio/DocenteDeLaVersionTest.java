@@ -27,6 +27,7 @@ class DocenteDeLaVersionTest {
                 new CargaCongelada(
                         "0109990010",
                         "PERALTA MALDONADO JUAN ANDRES",
+                        TipoDeIdentificacion.CEDULA,
                         Dedicacion.TC,
                         40,
                         List.of(

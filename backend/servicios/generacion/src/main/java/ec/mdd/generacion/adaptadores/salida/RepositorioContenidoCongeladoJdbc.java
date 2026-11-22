@@ -8,6 +8,7 @@ import ec.mdd.generacion.dominio.Componente;
 import ec.mdd.generacion.dominio.ContenidoCongelado;
 import ec.mdd.generacion.dominio.Dedicacion;
 import ec.mdd.generacion.dominio.DocenteDeLaVersion;
+import ec.mdd.generacion.dominio.TipoDeIdentificacion;
 import ec.mdd.generacion.puertos.salida.RepositorioContenidoCongelado;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -60,6 +61,12 @@ public final class RepositorioContenidoCongeladoJdbc implements RepositorioConte
                     + " JOIN generacion.contenido_congelado c ON c.version_id = k.version_id"
                     + " WHERE c.periodo = :periodo AND c.numero = :numero"
                     + " AND k.docente = :docente";
+
+    private static final String CARGAS =
+            "SELECT k.docente, k.nombre, k.contenido FROM generacion.carga_congelada k"
+                    + " JOIN generacion.contenido_congelado c ON c.version_id = k.version_id"
+                    + " WHERE c.periodo = :periodo AND c.numero = :numero"
+                    + " ORDER BY k.nombre, k.docente";
 
     private final JdbcClient jdbc;
 
@@ -137,8 +144,24 @@ public final class RepositorioContenidoCongeladoJdbc implements RepositorioConte
                 .optional();
     }
 
+    @Override
+    public List<CargaCongelada> cargas(String periodo, int numero) {
+        return jdbc.sql(CARGAS)
+                .param("periodo", periodo)
+                .param("numero", numero)
+                .query(
+                        (fila, n) ->
+                                carga(
+                                        fila.getString("docente"),
+                                        fila.getString("nombre"),
+                                        JSON.readTree(fila.getString("contenido"))))
+                .list();
+    }
+
     private static Map<String, Object> json(CargaCongelada carga) {
         Map<String, Object> contenido = new LinkedHashMap<>();
+        carga.tipoIdentificacion()
+                .ifPresent(una -> contenido.put("tipoIdentificacion", una.name()));
         carga.dedicacion().ifPresent(una -> contenido.put("dedicacion", una.name()));
         carga.horasContratadas().ifPresent(horas -> contenido.put("horasContratadas", horas));
         List<Map<String, Object>> asignaturas = new ArrayList<>();
@@ -207,6 +230,10 @@ public final class RepositorioContenidoCongeladoJdbc implements RepositorioConte
         return new CargaCongelada(
                 docente,
                 nombre,
+                contenido.has("tipoIdentificacion")
+                        ? TipoDeIdentificacion.valueOf(
+                                contenido.get("tipoIdentificacion").asString())
+                        : null,
                 contenido.has("dedicacion")
                         ? Dedicacion.valueOf(contenido.get("dedicacion").asString())
                         : null,

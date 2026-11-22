@@ -133,6 +133,7 @@ public record ContenidoCongelado(
         return new CargaCongelada(
                 docente,
                 nombre,
+                activo.map(DocenteActivo::tipoIdentificacion).orElse(null),
                 activo.map(DocenteActivo::dedicacion).orElse(null),
                 activo.map(DocenteActivo::horasContratadas).orElse(null),
                 asignaturas,

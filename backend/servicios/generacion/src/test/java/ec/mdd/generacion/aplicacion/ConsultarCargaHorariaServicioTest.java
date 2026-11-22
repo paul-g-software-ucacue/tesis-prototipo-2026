@@ -23,6 +23,7 @@ import ec.mdd.generacion.dominio.Proporcion;
 import ec.mdd.generacion.dominio.Propuesta;
 import ec.mdd.generacion.dominio.ReglasDelPeriodo;
 import ec.mdd.generacion.dominio.Severidad;
+import ec.mdd.generacion.dominio.TipoDeIdentificacion;
 import ec.mdd.generacion.dominio.TipoDeJustificacion;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
 import ec.mdd.generacion.dominio.VersionDistributivo;
@@ -166,6 +167,7 @@ class ConsultarCargaHorariaServicioTest {
 
     private static DocenteActivo activo() {
         return new DocenteActivo(
+                TipoDeIdentificacion.CEDULA,
                 DOCENTE,
                 "PEREZ LUIS",
                 Dedicacion.TC,

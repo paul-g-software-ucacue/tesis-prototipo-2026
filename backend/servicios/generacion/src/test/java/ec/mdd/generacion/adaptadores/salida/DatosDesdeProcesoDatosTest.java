@@ -21,6 +21,7 @@ import ec.mdd.generacion.dominio.ProyectosYCargosDelDocente;
 import ec.mdd.generacion.dominio.ReglasDelPanel;
 import ec.mdd.generacion.dominio.ReglasDelPeriodo;
 import ec.mdd.generacion.dominio.Severidad;
+import ec.mdd.generacion.dominio.TipoDeIdentificacion;
 import ec.mdd.generacion.dominio.TipoDeInconsistencia;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
@@ -309,7 +310,8 @@ class DatosDesdeProcesoDatosTest {
         receptor.responderConsulta(
                 RUTA_ACTIVOS,
                 200,
-                "[{\"identificacion\":\"0109990010\",\"nombre\":\"PEREZ LUIS\","
+                "[{\"tipoIdentificacion\":\"PASAPORTE\","
+                        + "\"identificacion\":\"0109990010\",\"nombre\":\"PEREZ LUIS\","
                         + "\"dedicacion\":\"MT\",\"horasContratadas\":20,\"formacion\":{"
                         + "\"tercerNivel\":{\"nombre\":\"Ingeniería\",\"campoAmplio\":\"06\","
                         + "\"campoEspecifico\":\"061\"},"
@@ -318,6 +320,7 @@ class DatosDesdeProcesoDatosTest {
         assertThat(datos.docentesActivos())
                 .containsExactly(
                         new DocenteActivo(
+                                TipoDeIdentificacion.PASAPORTE,
                                 "0109990010",
                                 "PEREZ LUIS",
                                 Dedicacion.MT,
@@ -327,6 +330,21 @@ class DatosDesdeProcesoDatosTest {
                                         List.of(),
                                         List.of(),
                                         List.of())));
+    }
+
+    @Test
+    void dadoUnActivoSinTipoDeIdentificacion_cuandoSePiden_entoncesFallaEnVezDeCongelarSinEl() {
+        // Principio XIV: Docentes siempre lo envía (D-119); sin él la respuesta no es válida.
+        receptor.responderConsulta(
+                RUTA_ACTIVOS,
+                200,
+                "[{\"identificacion\":\"0109990010\",\"nombre\":\"PEREZ LUIS\","
+                        + "\"dedicacion\":\"MT\",\"horasContratadas\":20,\"formacion\":{"
+                        + "\"tercerNivel\":{\"nombre\":\"Ingeniería\",\"campoAmplio\":\"06\","
+                        + "\"campoEspecifico\":\"061\"},"
+                        + "\"cuartoNivel\":[],\"experiencia\":[],\"cursos\":[]}}]");
+
+        assertThatThrownBy(datos::docentesActivos).isInstanceOf(RuntimeException.class);
     }
 
     @Test

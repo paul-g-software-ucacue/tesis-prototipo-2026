@@ -117,6 +117,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-116 | 2026-11-21 | El API Gateway guarda las respuestas del DNS un segundo como mucho y la JVM cinco: si un contenedor cambia de IP y otro se queda con la vieja, el tráfico no va al proceso equivocado | Aceptada | ADR-006, D-84, #274 |
 | D-117 | 2026-11-21 | El reporte general: la ruta interna de los docentes de una versión congelada suma su dedicación y sus horas; Reporting suma los totales institucionales en su dominio; PDF/A-2b horizontal y CSV con una fila por docente y una de totales; cada descarga queda en la bitácora como `REPORTE_GENERAL_DESCARGADO` | Aceptada | RF-46, RF-48, RNF-SEG-04, D-101, D-115 |
 | D-118 | 2026-11-22 | `libc6` de `cloudflared` espera con una excepción de Grype hasta que Cloudflare reconstruya la imagen | Aceptada | D-54, D-81, D-96 |
+| D-119 | 2026-11-22 | El CSV para SIGA: Reporting arma las filas de la versión publicada desde el contenido congelado completo y las comprueba contra el reporte general; las escribe el puerto `ExportadorSiga` con el layout de exportación, un YAML versionado que carga la Secretaría; el contenido congelado guarda el tipo de identificación | Aceptada | RF-52, RNF-COM-02, RNF-SEG-04, ADR-002, ADR-007, D-04, D-16, D-113, D-115, D-117 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -2691,3 +2692,52 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 - Antes de encender el túnel, la imagen tiene que estar sin esta excepción.
 
 **Documentos que hay que poner al día.** Ninguno.
+
+## D-119. El CSV para SIGA: Reporting arma las filas de la versión publicada desde el contenido congelado completo y las comprueba contra el reporte general; las escribe el puerto `ExportadorSiga` con el layout de exportación, un YAML versionado que carga la Secretaría; el contenido congelado guarda el tipo de identificación
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-22 · **Decidido por:** autor de la tesis
+- **Origen:** F19-H01 (#266); aclaraciones del 2026-11-22 de `specs/060-csv-siga/spec.md` y su plan (`research.md` §1 a §14)
+- **Relacionadas:** RF-52, RNF-COM-02, RNF-SEG-04, ADR-002, ADR-007, D-04, D-16, D-113, D-115, D-117; principios I, III, V, VI, VII, IX, X, XIII y XIV
+- **Estimación:** 24 h para F19-H01, de las 37 h de la feature F19 en la planificación (`lean_inception/taller/dia3-features-revision.md`), por su tamaño M; las 13 h restantes quedan para F19-H02 (S). Las «Horas estimadas» no están en un campo del proyecto de GitHub: las confirmó el autor el 2026-11-22.
+
+**Decisión.**
+- **De dónde salen las filas:** una ruta interna nueva de Generación, `consultarContenidoCongelado` (`/interno/generacion/periodos/{periodo}/versiones/{numero}/contenido`), devuelve en una sola llamada el contenido congelado completo de todos los docentes de una versión, con el esquema `CargaCongeladaDelDocente` que ya existía.
+- **El tipo de identificación:** Docentes lo suma a `DocenteActivo`; Generación lo guarda al congelar en la clave opcional `tipoIdentificacion` de `carga_congelada.contenido`, sin migración. Si falta (docente que no estaba activo al congelar, o contenido anterior a esta decisión), la columna sale «NA».
+- **Los totales:** el caso de uso lee la publicación vigente una sola vez y, con su versión, arma el `ReporteGeneral` (D-117) y las filas (`FilasParaSiga`). Antes de entregar, la suma de las filas por docente y componente, y la de todas por componente, tienen que ser las del reporte general; si no, `REPORTING_CONTENIDO_INCONSISTENTE`, sin entregar nada.
+- **El puerto (principio I):** el dominio solo arma y comprueba las filas. El puerto de salida `ExportadorSiga` (`exportar(filas, layout)`) escribe el archivo, y su adaptador del prototipo, `ExportadorSigaCsv`, aplica el layout y el formato. Una API de SIGA sería otro adaptador del mismo puerto.
+- **El formato, fijo:** RFC 4180 con coma, CRLF también al final, UTF-8 sin BOM, comillas solo cuando hacen falta, todo el texto en mayúsculas con `Locale.ROOT` (también los códigos: «140-B»), «NA» para lo que no aplica o falta, horas con escala 2 y punto, la fecha de publicación `aaaa-mm-dd` en `America/Guayaquil`, y las fórmulas neutralizadas con `CeldaCsv`, extraída de `EscritorCsv`. Sin el momento de generación: dos archivos de la misma versión y el mismo layout son idénticos.
+- **Las filas y su orden:** una por asignatura y paralelo (componente `CLASE`) y una por actividad; por docente (el comparador del reporte general), componente, código y, para desempatar, carrera, paralelo, proyecto y horas.
+- **El layout de exportación:** un YAML; la plantilla comentada `layout-siga-por-defecto.yaml` es a la vez el layout por defecto (versión 0). El orden de la lista es la posición. Hay 15 campos, con `identificacion`, `componente` y `horas` obligatorios. La traducción de códigos solo se admite en `tipo_identificacion`, `dedicacion` y `componente`, cuyos códigos fija el sistema: es el alcance de «si corresponde» de FR-014 en esta historia; actividad y carrera salen con el código interno. Las reglas se reportan todas juntas (hasta 50), con la columna y la regla; límites: 256 KB, 4 niveles, 30 columnas, nombres `^[A-Za-z][A-Za-z0-9_]{0,63}$`.
+- **El lector:** SnakeYAML en un adaptador propio de Reporting, sin anclas, alias ni etiquetas, y sin construir objetos, como el de F12-H01, sin usar sus clases (principio V).
+- **Lo que se guarda:** cada carga válida en `reporting.layout_exportacion` (V2), con el texto, su SHA-256, quién y cuándo, sin `update` ni `delete`. Rige la última. Al generar, el layout vigente se lee una vez.
+- **Los permisos:** las cuatro operaciones (`generarCsvSiga`, `consultarLayoutsSiga`, `descargarPlantillaLayoutSiga` y `cargarLayoutSiga`) exigen `PUBLICACION:APROBACION`: solo la Secretaría general académica genera el CSV y carga el mapeo (aclaración del 2026-11-22). La matriz D-16 no cambia.
+- **La bitácora:** `CSV_SIGA_GENERADO` (objeto `{periodo, version}`, `nuevo` `{layout}`) antes de entregar, y `LAYOUT_SIGA_CARGADO` (objeto `{layout}`, `nuevo` `{columnas, sha256}`) en la transacción de la carga (aclaración del 2026-11-22). El puerto `RegistroDeDescargas` pasa a llamarse `RegistroEnBitacora`.
+- **La validación en la SPA:** solo la presencia y el tamaño del archivo de mapeo; su contenido lo valida el backend, como en las cargas y en F12-H01 (principio XIV).
+- **La pantalla:** «Exportación a SIGA» (`/exportacion-siga`), solo con `PUBLICACION:APROBACION`; «Reportes» no cambia.
+- **El glosario:** entran «CSV para SIGA», «versión del layout de exportación» y «tipo de identificación».
+- **La demostración:** los pasos R9 y R10, y R1, R4 y R5 ampliados.
+- **Errores nuevos:** `REPORTING_LAYOUT_INVALIDO` (400), `REPORTING_ARCHIVO_ILEGIBLE` (400) y `REPORTING_ARCHIVO_DEMASIADO_GRANDE` (413).
+
+**Por qué.**
+- Una llamada interna para 300 docentes, y una sola foto de la versión.
+- El CSV sale del contenido congelado, no de los datos de hoy (principio VII), y deducir el tipo de identificación del número sería una regla inventada.
+- La tabla de puertos de la constitución pone la exportación a SIGA detrás de un puerto.
+- Adaptar el CSV a SIGA es cargar otro archivo, sin tocar el código (ADR-002, principio VI).
+- Traducir actividades y carreras exigiría leer los catálogos de Normativa y Académico al cargar el mapeo, para un formato que nadie conoce todavía.
+
+**Alternativas.**
+- Una llamada por docente, o ampliar el listado de docentes de D-117.
+- Deducir el tipo de identificación del número, o preguntarlo a Docentes al generar.
+- Escribir el CSV en el dominio, sin puerto.
+- El formato del CSV de los reportes (`;`, BOM, coma decimal).
+- JSON para el mapeo, o un campo `posicion` explícito; tablas de columnas y traducciones; un layout por periodo.
+- Mover el lector YAML de Validación OCS a `plataforma`.
+- Un botón en «Reportes».
+
+**Consecuencias.**
+- `datos`, `distributivo` y `salida` se despliegan de la misma versión.
+- Una base de demostración congelada antes de esta decisión saca «NA» en el tipo de identificación; el script la regenera.
+- La traducción de actividades y carreras queda como ampliación del mismo archivo de mapeo.
+- F19-H02 suma la validación previa, la suma de verificación y el registro `ExportacionSiga` sobre este CSV.
+
+**Documentos que hay que poner al día.** El glosario (`sdd/modelo_dominio.md` y su `.docx`), con los tres términos nuevos.

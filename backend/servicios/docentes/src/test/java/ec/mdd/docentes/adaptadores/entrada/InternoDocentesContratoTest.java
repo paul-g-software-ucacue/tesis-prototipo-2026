@@ -140,7 +140,8 @@ class InternoDocentesContratoTest {
         assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
         assertThat(resultado.getResponse().getContentAsString())
                 .startsWith(
-                        "[{\"identificacion\":\"0109990010\","
+                        "[{\"tipoIdentificacion\":\"CEDULA\","
+                                + "\"identificacion\":\"0109990010\","
                                 + "\"nombre\":\"PERALTA MALDONADO JUAN ANDRES\","
                                 + "\"dedicacion\":\"TC\",\"horasContratadas\":40,"
                                 + "\"formacion\":{\"tercerNivel\":")
