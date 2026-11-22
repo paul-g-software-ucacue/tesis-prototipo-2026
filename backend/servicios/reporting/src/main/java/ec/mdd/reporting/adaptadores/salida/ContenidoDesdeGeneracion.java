@@ -1,6 +1,7 @@
 package ec.mdd.reporting.adaptadores.salida;
 
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
+import ec.mdd.plataforma.eventos.ProcesoConError;
 import ec.mdd.reporting.dominio.Componente;
 import ec.mdd.reporting.dominio.ContenidoDelDocente;
 import ec.mdd.reporting.dominio.DatosDelDocente;
@@ -18,8 +19,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 /**
  * El contenido congelado por las rutas internas de Generación, en el proceso distributivo (ADR-023,
- * F20-H01): {@code /interno/generacion/periodos/{periodo}/versiones/{numero}/cargas}. Un 404 es un
- * resultado vacío.
+ * F20-H01, F20-H02): {@code /interno/generacion/periodos/{periodo}/versiones/{numero}/cargas}. Un
+ * 404 es un resultado vacío.
  *
  * <p>La unidad de una actividad es su proyecto, si lo tiene, o la carrera que la registró.
  */
@@ -46,11 +47,7 @@ public final class ContenidoDesdeGeneracion implements ContenidoDeLaVersion {
                                 new DocentesDeLaVersion(
                                         cargas.hash(),
                                         cargas.docentes().stream()
-                                                .map(
-                                                        una ->
-                                                                new DocentesDeLaVersion.Docente(
-                                                                        una.identificacion(),
-                                                                        una.nombre()))
+                                                .map(ContenidoDesdeGeneracion::docente)
                                                 .toList()));
     }
 
@@ -78,6 +75,32 @@ public final class ContenidoDesdeGeneracion implements ContenidoDeLaVersion {
                         "versiones",
                         String.valueOf(version),
                         "cargas");
+    }
+
+    // Leído con su esquema (principio XIV): un docente sin horas no es una respuesta válida de
+    // Generación, y el reporte no debe sumarlo como cero.
+    private static DocentesDeLaVersion.Docente docente(Docente docente) {
+        if (docente.identificacion() == null
+                || docente.nombre() == null
+                || docente.horas() == null) {
+            throw new ProcesoConError(
+                    "Generación respondió un docente de la versión sin identificación, nombre u"
+                            + " horas.");
+        }
+        return new DocentesDeLaVersion.Docente(
+                docente.identificacion(),
+                docente.nombre(),
+                docente.dedicacion() == null ? null : Dedicacion.valueOf(docente.dedicacion()),
+                horas(docente.horas()));
+    }
+
+    private static HorasPorComponente horas(Horas horas) {
+        return new HorasPorComponente(
+                horas.clase(),
+                horas.otrasDocencia(),
+                horas.investigacion(),
+                horas.vinculacion(),
+                horas.gestion());
     }
 
     private static ContenidoDelDocente contenido(Carga carga) {
@@ -112,19 +135,14 @@ public final class ContenidoDesdeGeneracion implements ContenidoDeLaVersion {
                                                         : una.carrera(),
                                                 una.horas()))
                         .toList(),
-                new HorasPorComponente(
-                        carga.horas().clase(),
-                        carga.horas().otrasDocencia(),
-                        carga.horas().investigacion(),
-                        carga.horas().vinculacion(),
-                        carga.horas().gestion()));
+                horas(carga.horas()));
     }
 
     /** Los docentes de una versión, como los responde Generación. */
     record Cargas(String hash, List<Docente> docentes) {}
 
-    /** Un docente de la lista. */
-    record Docente(String identificacion, String nombre) {}
+    /** Un docente de la lista, con su dedicación y sus horas (F20-H02). */
+    record Docente(String identificacion, String nombre, String dedicacion, Horas horas) {}
 
     /** La carga congelada de un docente, como la responde Generación. */
     record Carga(

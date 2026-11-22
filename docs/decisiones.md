@@ -115,6 +115,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-114 | 2026-11-20 | Los plazos de cada etapa: se reconstruyen de la configuración que regía al crear el distributivo; una revisión diaria y al arrancar avisa una vez por llegada al rol de la etapa y al de EN_REVISION_VRA, sin bloquear; RN-23 advierte al cargar la configuración, con la cifra de Normativa | Aceptada | RF-34, RN-23, RF-41, MD-03, ADR-007, ADR-023, D-86, D-89, D-108, D-113 |
 | D-115 | 2026-11-21 | El reporte individual: Reporting lee la publicación vigente de Aprobación y el contenido congelado de Generación por rutas internas; Generación guarda el contenido por docente al congelar; PDF/A-2b sin campos y CSV con `;`, coma decimal y fórmulas neutralizadas; cada descarga queda en la bitácora antes de responder | Aceptada | RF-45, RF-48, RNF-SEG-04, MD-04, MD-11, ADR-006, ADR-018, ADR-023, D-101, D-111, D-113 |
 | D-116 | 2026-11-21 | El API Gateway guarda las respuestas del DNS un segundo como mucho y la JVM cinco: si un contenedor cambia de IP y otro se queda con la vieja, el tráfico no va al proceso equivocado | Aceptada | ADR-006, D-84, #274 |
+| D-117 | 2026-11-21 | El reporte general: la ruta interna de los docentes de una versión congelada suma su dedicación y sus horas; Reporting suma los totales institucionales en su dominio; PDF/A-2b horizontal y CSV con una fila por docente y una de totales; cada descarga queda en la bitácora como `REPORTE_GENERAL_DESCARGADO` | Aceptada | RF-46, RF-48, RNF-SEG-04, D-101, D-115 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -2633,3 +2634,37 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 - Cada conexión nueva del API Gateway hace una consulta al DNS de Docker, que es local y barata.
 - Queda una ventana de un segundo en el gateway y de cinco en los procesos, si una petición llega justo mientras un contenedor cambia de IP.
 - Cierra el #274.
+
+## D-117. El reporte general: la ruta interna de los docentes de una versión congelada suma su dedicación y sus horas; Reporting suma los totales institucionales en su dominio; PDF/A-2b horizontal y CSV con una fila por docente y una de totales; cada descarga queda en la bitácora como `REPORTE_GENERAL_DESCARGADO`
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-21 · **Decidido por:** autor de la tesis
+- **Origen:** F20-H02 (#269); aclaraciones de `specs/059-reporte-general-consolidado/spec.md` y su plan (`research.md` §1 a §10)
+- **Relacionadas:** RF-46, RF-48, RNF-SEG-04, D-101, D-115; principios V, VII, VIII, IX, X y XIII
+
+**Decisión.**
+- **Qué docentes:** los de la versión publicada vigente, los que tienen al menos una asignatura o una actividad en ella (aclaración del 2026-11-21). Un docente activo sin asignaciones no aparece. Sin resumen por carrera: ese está en el PDF/A del consolidado (F13-H02).
+- **De dónde salen las horas:** la ruta interna `consultarCargasCongeladas` de Generación suma, por docente, su dedicación (opcional) y sus horas por componente, leídas de `carga_congelada.contenido`. Sin migración ni cálculo nuevo. El reporte general y el individual leen las mismas horas guardadas, así que la fila de un docente es igual a su reporte individual.
+- **El agregado `ReporteGeneral`** (dominio de Reporting) comprueba el hash, rechaza un docente repetido (`REPORTING_CONTENIDO_INCONSISTENTE`), ordena por nombre e identificación y suma los totales institucionales exactos, sin redondear.
+- **El PDF:** PDF/A-2b con el mismo adaptador de D-115, en A4 horizontal. El encabezado de la tabla se repite en cada página. «Total institucional» es la última fila del cuerpo, no un `tfoot`, para que aparezca una sola vez.
+- **El CSV:** el formato de archivo de D-115, con una fila por docente (`DOCENTE`), una columna por componente y el total, y una fila `TOTAL` al final.
+- **Las rutas públicas:** `/api/reporting/periodos/{periodo}/reporte-general`, `.pdf` y `.csv`, con `REPORTES:LECTURA`. Sin errores nuevos.
+- **La bitácora:** cada descarga publica `REPORTE_GENERAL_DESCARGADO` con el objeto `{periodo, version}` y el formato, antes de responder. Usuarios no cambia.
+- **La pantalla «Reportes»:** el grupo «Tipo de reporte», con «General» propuesto y «Por docente».
+- **Sin caché:** el reporte se arma en cada pedido.
+- **Los datos de las pruebas de volumen:** los 300 docentes salen de los 47 de `06_docentes.csv` de los datos de prueba, repetidos con una identificación derivada en el mismo rango ficticio (`010999xxxx`) y un sufijo en el nombre (principio VIII).
+
+**Por qué.**
+- Una sola fuente para las horas de los dos reportes, y una sola llamada interna aunque haya 300 docentes.
+- Los totales son una regla del reporte; en el dominio se prueban sin dobles, y el PDF y el CSV no se pueden desalinear.
+- El CSV ancho tiene la misma forma que el PDF y facilita comparar con el CSV para SIGA (F19, RF-52).
+
+**Alternativas.**
+- Una ruta interna nueva, o una llamada por docente.
+- Que Generación calcule los totales.
+- El CSV largo del individual (una fila por docente y componente).
+- Dos secciones en la pantalla, una debajo de la otra, o una pantalla aparte.
+
+**Consecuencias.**
+- `distributivo` y `salida` deben desplegarse de la misma versión: una `salida` nueva contra un `distributivo` viejo responde 502.
+- Los totales del reporte general salen de las cargas de los docentes; los del PDF/A del consolidado, del resumen por carrera. Si alguna vez difieren, se registra como hallazgo.
+- Con este reporte, F20 queda completa.

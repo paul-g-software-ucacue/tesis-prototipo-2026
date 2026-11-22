@@ -46,8 +46,11 @@ public final class RepositorioContenidoCongeladoJdbc implements RepositorioConte
             "SELECT hash FROM generacion.contenido_congelado"
                     + " WHERE periodo = :periodo AND numero = :numero";
 
+    // F20-H02 (D-117): la dedicación y las horas salen del mismo contenido que lee carga(), así
+    // el reporte general y el individual no pueden decir cifras distintas.
     private static final String DOCENTES =
-            "SELECT k.docente, k.nombre FROM generacion.carga_congelada k"
+            "SELECT k.docente, k.nombre, k.contenido->>'dedicacion' AS dedicacion,"
+                    + " k.contenido->'horas' AS horas FROM generacion.carga_congelada k"
                     + " JOIN generacion.contenido_congelado c ON c.version_id = k.version_id"
                     + " WHERE c.periodo = :periodo AND c.numero = :numero"
                     + " ORDER BY k.nombre, k.docente";
@@ -110,7 +113,12 @@ public final class RepositorioContenidoCongeladoJdbc implements RepositorioConte
                 .query(
                         (fila, n) ->
                                 new DocenteDeLaVersion(
-                                        fila.getString("docente"), fila.getString("nombre")))
+                                        fila.getString("docente"),
+                                        fila.getString("nombre"),
+                                        fila.getString("dedicacion") == null
+                                                ? null
+                                                : Dedicacion.valueOf(fila.getString("dedicacion")),
+                                        horas(JSON.readTree(fila.getString("horas")))))
                 .list();
     }
 
@@ -196,7 +204,6 @@ public final class RepositorioContenidoCongeladoJdbc implements RepositorioConte
                             texto(una, "nombreProyecto"),
                             new BigDecimal(una.get("horas").asString())));
         }
-        JsonNode horas = contenido.get("horas");
         return new CargaCongelada(
                 docente,
                 nombre,
@@ -208,12 +215,16 @@ public final class RepositorioContenidoCongeladoJdbc implements RepositorioConte
                         : null,
                 asignaturas,
                 actividades,
-                new CargaHoraria(
-                        new BigDecimal(horas.get("clase").asString()),
-                        new BigDecimal(horas.get("otrasDocencia").asString()),
-                        new BigDecimal(horas.get("investigacion").asString()),
-                        new BigDecimal(horas.get("vinculacion").asString()),
-                        new BigDecimal(horas.get("gestion").asString())));
+                horas(contenido.get("horas")));
+    }
+
+    private static CargaHoraria horas(JsonNode horas) {
+        return new CargaHoraria(
+                new BigDecimal(horas.get("clase").asString()),
+                new BigDecimal(horas.get("otrasDocencia").asString()),
+                new BigDecimal(horas.get("investigacion").asString()),
+                new BigDecimal(horas.get("vinculacion").asString()),
+                new BigDecimal(horas.get("gestion").asString()));
     }
 
     private static String texto(JsonNode nodo, String campo) {

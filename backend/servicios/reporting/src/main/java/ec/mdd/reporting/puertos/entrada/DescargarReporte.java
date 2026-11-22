@@ -23,6 +23,17 @@ public interface DescargarReporte {
             String periodo, String identificacion, Formato formato, String quien);
 
     /**
+     * @param periodo el código del periodo
+     * @param formato PDF o CSV
+     * @param quien quién descarga
+     * @return el archivo del reporte general (F20-H02, D-117), ya registrado
+     * @throws ec.mdd.reporting.dominio.SinPublicacion si el periodo no tiene versión publicada
+     * @throws ec.mdd.reporting.dominio.ContenidoInconsistente si el contenido no es el publicado o
+     *     un docente viene repetido
+     */
+    ArchivoDelReporte descargarGeneral(String periodo, Formato formato, String quien);
+
+    /**
      * Un reporte listo para entregar.
      *
      * @param contenido sus bytes

@@ -1,6 +1,7 @@
-// F20-H01 en un navegador, con la API simulada: el Rector elige un docente, ve su reporte y lo
-// descarga en PDF y en CSV (US1, US2); un Coordinador de carrera no ve la opción (FR-011); y la
-// pantalla no tiene fallas de accesibilidad con axe-core (WCAG 2.1 AA, SC-007).
+// F20-H01 y F20-H02 en un navegador, con la API simulada: el Rector ve el reporte general y lo
+// descarga en PDF y en CSV; elige «Por docente», ve el reporte de un docente y lo descarga (US1,
+// US2); un Coordinador de carrera no ve la opción (FR-011); y la pantalla no tiene fallas de
+// accesibilidad con axe-core, con los dos tipos de reporte (WCAG 2.1 AA, SC-007 y SC-009).
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { elegirEscribiendo, ingresar, simularApi } from './simulacion';
@@ -61,7 +62,31 @@ const REPORTE = {
   generadoEn: '2026-11-21T15:00:00Z',
 };
 
+function horasDe(clase: number, otrasDocencia: number, gestion: number) {
+  return {
+    clase,
+    otrasDocencia,
+    investigacion: 0,
+    vinculacion: 0,
+    gestion,
+    total: clase + otrasDocencia + gestion,
+  };
+}
+const GENERAL = {
+  publicacion: PUBLICACION,
+  docentes: [
+    { identificacion: '0109990020', nombre: 'ANDRADE LUIS', horas: horasDe(0, 0, 3) },
+    { identificacion: ANA, nombre: 'PÉREZ ANA', dedicacion: 'TC', horas: horasDe(8, 2.5, 0) },
+  ],
+  totales: horasDe(8, 2.5, 3),
+  generadoPor: 'rectorado.demo',
+  generadoEn: '2026-11-21T15:00:00Z',
+};
+
 async function simularReportes(pagina: Page) {
+  await pagina.route('**/api/reporting/periodos/2026-I/reporte-general', (ruta) =>
+    ruta.fulfill({ json: GENERAL }),
+  );
   await pagina.route('**/api/reporting/publicaciones', (ruta) =>
     ruta.fulfill({ json: [PUBLICACION] }),
   );
@@ -83,6 +108,16 @@ async function simularReportes(pagina: Page) {
     ['pdf', 'application/pdf'],
     ['csv', 'text/csv; charset=UTF-8'],
   ] as const) {
+    await pagina.route(`**/api/reporting/periodos/2026-I/reporte-general.${formato}`, (ruta) =>
+      ruta.fulfill({
+        status: 200,
+        contentType: tipo,
+        headers: {
+          'Content-Disposition': `attachment; filename="reporte-general-2026-I.${formato}"`,
+        },
+        body: formato === 'pdf' ? '%PDF-1.7' : '\uFEFF"Periodo"\r\n',
+      }),
+    );
     await pagina.route(
       `**/api/reporting/periodos/2026-I/docentes/${ANA}/reporte.${formato}`,
       (ruta) =>
@@ -105,6 +140,15 @@ async function abrirComoRector(pagina: Page) {
   await ingresar(pagina, RECTOR.cuerpo.usuario);
   await pagina.getByRole('link', { name: 'Reportes' }).click();
   await expect(pagina.getByRole('heading', { level: 1, name: 'Reportes' })).toBeVisible();
+  // La pantalla propone el reporte general (F20-H02).
+  await expect(
+    pagina.getByRole('table', { name: 'Docentes del distributivo publicado' }),
+  ).toBeVisible();
+}
+
+async function abrirElDeUnDocente(pagina: Page) {
+  await abrirComoRector(pagina);
+  await pagina.getByRole('radio', { name: 'Por docente' }).check();
   await elegirEscribiendo(pagina.getByRole('combobox', { name: 'Docente' }), ANA);
   await expect(pagina.getByRole('heading', { level: 2, name: 'PÉREZ ANA' })).toBeVisible();
 }
@@ -121,10 +165,31 @@ async function sinFallas(pagina: Page) {
 }
 
 test.describe('reportes', () => {
-  test('el Rector ve el reporte de un docente y lo descarga en PDF y en CSV (US1, US2)', async ({
+  test('el Rector ve el reporte general con sus totales y lo descarga en PDF y en CSV (F20-H02)', async ({
     page,
   }) => {
     await abrirComoRector(page);
+    await expect(page.getByRole('radio', { name: 'General' })).toBeChecked();
+    const tabla = page.getByRole('table', { name: 'Docentes del distributivo publicado' });
+    await expect(tabla.getByRole('row')).toHaveCount(4);
+    await expect(tabla.getByRole('rowheader', { name: 'Total institucional' })).toBeVisible();
+    await expect(tabla.getByRole('row').last()).toContainText('13,50');
+
+    for (const formato of ['PDF', 'CSV']) {
+      const descarga = page.waitForEvent('download');
+      await page.getByRole('button', { name: `Descargar ${formato}` }).click();
+      expect((await descarga).suggestedFilename()).toBe(
+        `reporte-general-2026-I.${formato.toLowerCase()}`,
+      );
+    }
+    const dialogo = page.getByRole('dialog', { name: 'CSV descargado' });
+    await expect(dialogo).toContainText('importa la columna «Identificación» como texto');
+  });
+
+  test('el Rector ve el reporte de un docente y lo descarga en PDF y en CSV (US1, US2)', async ({
+    page,
+  }) => {
+    await abrirElDeUnDocente(page);
     await expect(page.getByRole('table', { name: 'Asignaturas' })).toContainText('Bases de datos');
     await expect(page.getByRole('table', { name: 'Actividades' })).toContainText('Suelos andinos');
     await expect(page.getByRole('table', { name: 'Horas por componente' })).toContainText('10,50');
@@ -156,11 +221,15 @@ test.describe('reportes', () => {
     await page.keyboard.press('Enter');
     await expect(page.getByRole('heading', { level: 1, name: 'Reportes' })).toBeVisible();
 
-    // El periodo y el docente, en el orden de la lectura.
+    // El periodo, el tipo de reporte y el docente, en el orden de la lectura. Con las flechas se
+    // pasa a «Por docente» y el foco va al buscador (F20-H02).
     const periodo = page.getByRole('combobox', { name: 'Periodo' });
     const docente = page.getByRole('combobox', { name: 'Docente' });
     await periodo.focus();
     await page.keyboard.press('Tab');
+    await expect(page.getByRole('radio', { name: 'General' })).toBeFocused();
+    await page.keyboard.press('ArrowRight');
+    await expect(page.getByRole('radio', { name: 'Por docente' })).toBeChecked();
     await expect(docente).toBeFocused();
     await page.keyboard.type(ANA);
     await page.keyboard.press('ArrowDown');
@@ -213,8 +282,13 @@ test.describe('reportes', () => {
   test.describe('accesibilidad', () => {
     test.skip(({ browserName }) => browserName !== 'chromium', 'axe-core corre solo en Chromium');
 
-    test('con el reporte de un docente y el aviso del CSV', async ({ page }) => {
+    test('con el reporte general', async ({ page }) => {
       await abrirComoRector(page);
+      await sinFallas(page);
+    });
+
+    test('con el reporte de un docente y el aviso del CSV', async ({ page }) => {
+      await abrirElDeUnDocente(page);
       await sinFallas(page);
 
       await page.getByRole('button', { name: 'Descargar CSV' }).click();

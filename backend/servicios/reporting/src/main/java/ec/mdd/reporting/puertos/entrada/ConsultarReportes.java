@@ -2,6 +2,7 @@ package ec.mdd.reporting.puertos.entrada;
 
 import ec.mdd.reporting.dominio.DocentesDeLaVersion;
 import ec.mdd.reporting.dominio.Publicacion;
+import ec.mdd.reporting.dominio.ReporteGeneral;
 import ec.mdd.reporting.dominio.ReporteIndividual;
 import java.util.List;
 import java.util.Objects;
@@ -35,6 +36,16 @@ public interface ConsultarReportes {
      * @throws ec.mdd.reporting.dominio.ContenidoInconsistente si el contenido no es el publicado
      */
     ReporteIndividual reporte(String periodo, String identificacion, String quien);
+
+    /**
+     * @param periodo el código del periodo
+     * @param quien quién lo pide
+     * @return el reporte general consolidado de la versión publicada vigente (F20-H02, RF-46)
+     * @throws ec.mdd.reporting.dominio.SinPublicacion si el periodo no tiene versión publicada
+     * @throws ec.mdd.reporting.dominio.ContenidoInconsistente si el contenido no es el publicado o
+     *     un docente viene repetido
+     */
+    ReporteGeneral reporteGeneral(String periodo, String quien);
 
     /**
      * La publicación vigente de un periodo y sus docentes.

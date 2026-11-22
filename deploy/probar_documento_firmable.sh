@@ -57,7 +57,12 @@
 # CSV (los mismos datos, idéntico entre descargas), cada descarga queda en la bitácora y ver el
 # reporte no; coordinacion.demo y docente.demo reciben 403; durante la reforma, el reporte sigue
 # saliendo de la versión 1 y no cambia al corregir las horas de un paralelo (que después se
-# restauran); con la versión 2 publicada, sale de ella. Si la base ya tiene
+# restauran); con la versión 2 publicada, sale de ella. Desde F20-H02 (D-117;
+# specs/059-reporte-general-consolidado/contracts/demostracion.md), R7 y R8, y R1, R4, R5 y R6
+# ampliados: el reporte general tiene a los docentes del listado, cada fila igual a su reporte
+# individual y los totales iguales a la suma de las filas; se descarga en PDF/A y en CSV con los
+# mismos datos, cada descarga queda como REPORTE_GENERAL_DESCARGADO y no cambia durante la
+# reforma. Si la base ya tiene
 # alguno de esos datos, falla sin tocar nada. Al terminar, aunque un paso falle, borra lo que creó (también los archivos del volumen),
 # salvo las entradas de la bitácora, que no se pueden borrar. Termina con 0 si todos los pasos pasan
 # y con 1 si alguno falla. Nunca imprime una clave ni un token.
@@ -1426,10 +1431,12 @@ if [[ -n $CONSERVAR && $CONSERVAR != EN_OCS && $CONSERVAR != F2 && $CONSERVAR !=
     exit 0
 fi
 
-# --- R. Los reportes de la versión publicada (F20-H01, D-115; specs/058-reporte-individual-docente/contracts/demostracion.md) ---
+# --- R. Los reportes de la versión publicada (F20-H01, D-115; specs/058-reporte-individual-docente/contracts/demostracion.md;
+# F20-H02, D-117: el reporte general, specs/059-reporte-general-consolidado/contracts/demostracion.md) ---
 readonly REPORTES="$GATEWAY/api/reporting"
 readonly RECTOR=rectorado.demo
 readonly DESCARGADO="servicio = 'reporting' and accion = 'REPORTE_INDIVIDUAL_DESCARGADO'"
+readonly DESCARGADO_GENERAL="servicio = 'reporting' and accion = 'REPORTE_GENERAL_DESCARGADO'"
 
 hash_publicado() {
     consultar_base "select hash from validacionocs.transicion where periodo = '$PERIODO'
@@ -1440,10 +1447,14 @@ ruta_del_reporte() {  # ruta_del_reporte <identificación>
     printf '%s/periodos/%s/docentes/%s/reporte' "$REPORTES" "$PERIODO" "$1"
 }
 
-# bajar <identificación> <formato> <archivo>: la descarga, con el token de $token y sus cabeceras.
+ruta_del_general() {  # ruta_del_general [periodo]
+    printf '%s/periodos/%s/reporte-general' "$REPORTES" "${1:-$PERIODO}"
+}
+
+# bajar <ruta del reporte> <formato> <archivo>: la descarga, con el token de $token y sus cabeceras.
 bajar() {
     estado=$(curl -s -D "$carpeta/cabeceras" -o "$3" -w '%{http_code}' \
-        -H "Authorization: Bearer $token" "$(ruta_del_reporte "$1").$2" || echo '000')
+        -H "Authorization: Bearer $token" "$1.$2" || echo '000')
 }
 
 # El primer docente de la versión publicada con asignaturas, y uno sin actividades si lo hay.
@@ -1467,18 +1478,33 @@ elegir_docentes() {
 }
 
 # El CSV tiene las mismas filas y los mismos totales que el JSON: lo compara Python, sin red.
-csv_igual_al_json() {  # csv_igual_al_json <csv> <json>
-    python3 -I - "$1" "$2" <<'PY'
+csv_igual_al_json() {  # csv_igual_al_json <individual|general> <csv> <json>
+    python3 -I - "$1" "$2" "$3" <<'PY'
 import csv, json, sys
 from decimal import Decimal
-crudo = open(sys.argv[1], 'rb').read()
+tipo = sys.argv[1]
+crudo = open(sys.argv[2], 'rb').read()
 assert crudo.startswith(b'\xef\xbb\xbf'), 'sin BOM'
 assert b'\r\n' in crudo, 'sin CRLF'
 filas = list(csv.reader(crudo.decode('utf-8-sig').splitlines(), delimiter=';'))
-reporte = json.load(open(sys.argv[2]))
+reporte = json.load(open(sys.argv[3]))
 encabezado, filas = filas[0], filas[1:]
-assert encabezado[0] == 'Periodo' and encabezado[-1] == 'Horas', encabezado
 horas = lambda texto: Decimal(texto.replace(',', '.'))
+componentes = ['clase', 'otrasDocencia', 'investigacion', 'vinculacion', 'gestion', 'total']
+assert all(f[1] == str(reporte['publicacion']['version']) and f[2] == reporte['publicacion']['hash']
+           for f in filas), 'versión o hash'
+if tipo == 'general':
+    # F20-H02: una fila DOCENTE por docente, en el orden del JSON, y una fila TOTAL al final.
+    assert encabezado[4] == 'Tipo' and encabezado[-1] == 'Total', encabezado
+    docentes = [f for f in filas if f[4] == 'DOCENTE']
+    assert [(f[5], [horas(h) for h in f[8:14]]) for f in docentes] == \
+        [(d['identificacion'], [Decimal(str(d['horas'][c])) for c in componentes])
+         for d in reporte['docentes']], 'docentes'
+    assert [f[4] for f in filas] == ['DOCENTE'] * len(docentes) + ['TOTAL'], 'la fila TOTAL al final'
+    assert [horas(h) for h in filas[-1][8:14]] == \
+        [Decimal(str(reporte['totales'][c])) for c in componentes], 'totales'
+    sys.exit(0)
+assert encabezado[0] == 'Periodo' and encabezado[-1] == 'Horas', encabezado
 asignaturas = [f for f in filas if f[7] == 'ASIGNATURA']
 actividades = [f for f in filas if f[7] == 'ACTIVIDAD']
 totales = {f[12]: horas(f[13]) for f in filas if f[7] == 'TOTAL'}
@@ -1490,8 +1516,6 @@ esperados = {'Clase': 'clase', 'Otras actividades de docencia': 'otrasDocencia',
              'Investigación': 'investigacion', 'Vinculación': 'vinculacion', 'Gestión': 'gestion',
              'Total': 'total'}
 assert totales == {k: Decimal(str(reporte['horas'][v])) for k, v in esperados.items()}, 'totales'
-assert all(f[1] == str(reporte['publicacion']['version']) and f[2] == reporte['publicacion']['hash']
-           for f in filas), 'versión o hash'
 PY
 }
 
@@ -1515,7 +1539,10 @@ reportes_sin_publicacion() {
     es_codigo 409 REPORTING_SIN_PUBLICACION || return 1
     pedir GET "$(ruta_del_reporte 0109990010)" "Bearer $token"
     es_codigo 409 REPORTING_SIN_PUBLICACION || return 1
-    hay_entradas 0 "$DESCARGADO"
+    # F20-H02: tampoco hay reporte general.
+    pedir GET "$(ruta_del_general)" "Bearer $token"
+    es_codigo 409 REPORTING_SIN_PUBLICACION || return 1
+    hay_entradas 0 "$DESCARGADO" && hay_entradas 0 "$DESCARGADO_GENERAL"
 }
 
 # --- R2. El reporte de la versión 1 publicada, con el contenido guardado al congelar ---
@@ -1552,16 +1579,16 @@ reporte_en_dos_formatos() {
     for usuario in "$RECTOR" "$SECRETARIA"; do
         iniciar "$usuario"
         for vuelta in 1 2; do
-            bajar "$docente_con_clase" pdf "$carpeta/reporte-$usuario-$vuelta.pdf"
+            bajar "$(ruta_del_reporte "$docente_con_clase")" pdf "$carpeta/reporte-$usuario-$vuelta.pdf"
             [[ $estado == 200 && $(cabecera Content-Type) == application/pdf \
                 && $(cabecera Content-Disposition) == "attachment; filename=\"reporte-individual-$PERIODO-$docente_con_clase.pdf\"" \
                 && $(cabecera Cache-Control) == no-store ]] || { echo "       PDF de $usuario: $estado" >&2; return 1; }
-            bajar "$docente_con_clase" csv "$carpeta/reporte-$usuario-$vuelta.csv"
+            bajar "$(ruta_del_reporte "$docente_con_clase")" csv "$carpeta/reporte-$usuario-$vuelta.csv"
             [[ $estado == 200 ]] || { echo "       CSV de $usuario: $estado" >&2; return 1; }
         done
     done
     pdf_sin_campos "$carpeta/reporte-$RECTOR-1.pdf" || return 1
-    csv_igual_al_json "$carpeta/reporte-$RECTOR-1.csv" "$carpeta/reporte.json" || return 1
+    csv_igual_al_json individual "$carpeta/reporte-$RECTOR-1.csv" "$carpeta/reporte.json" || return 1
     # FR-010: los CSV de la misma versión son idénticos, aunque los pidan otras personas.
     cmp -s "$carpeta/reporte-$RECTOR-1.csv" "$carpeta/reporte-$SECRETARIA-2.csv" || return 1
     cp "$carpeta/reporte-$RECTOR-1.csv" "$carpeta/reporte-version-1.csv"
@@ -1571,6 +1598,77 @@ reporte_en_dos_formatos() {
         and objeto ->> 'identificacion' = '$docente_con_clase' and (objeto ->> 'version')::int = 1"
 }
 
+# Los totales del general son la suma de sus filas, y el total general la suma de los cinco (SC-003).
+# En centésimas, para comparar 8 con 8.00 sin errores de redondeo.
+totales_son_la_suma() {  # totales_son_la_suma <json del general>
+    [[ $(jq 'def c: . * 100 | round;
+        . as $r
+        | (["clase", "otrasDocencia", "investigacion", "vinculacion", "gestion", "total"]
+            | map(. as $k | [$r.docentes[].horas[$k] | c] | add // 0)) as $filas
+        | ([.totales | .clase, .otrasDocencia, .investigacion, .vinculacion, .gestion, .total | c]
+            == $filas)
+        and ((.totales | .clase + .otrasDocencia + .investigacion + .vinculacion + .gestion) | c)
+            == (.totales.total | c)' "$1") == true ]] || { echo "       los totales no son la suma" >&2; return 1; }
+}
+
+# --- R7. El reporte general de la versión 1: todos los docentes, cada fila igual a su individual ---
+reporte_general_de_la_version_1() {
+    local una
+    iniciar "$RECTOR"
+    pedir GET "$(ruta_del_general)" "Bearer $token"
+    [[ $estado == 200 ]] || { echo "       general: $estado" >&2; return 1; }
+    printf '%s' "$cuerpo" >"$carpeta/general.json"
+    [[ $(jq -c '[.publicacion.version, .publicacion.hash]' "$carpeta/general.json") \
+        == "$(jq -cn --arg h "$(hash_publicado)" '[1, $h]')" ]] || return 1
+    # SC-001: los mismos docentes del listado, sin repetidos. El orden del general es el alfabético
+    # del español (D-117), que puede no ser el de la base, así que se comparan como conjuntos.
+    pedir GET "$REPORTES/periodos/$PERIODO/docentes" "Bearer $token"
+    [[ $estado == 200 ]] || return 1
+    [[ $(jq -c '[.docentes[].identificacion] | sort' <<<"$cuerpo") \
+        == "$(jq -c '[.docentes[].identificacion] | sort' "$carpeta/general.json")" ]] \
+        || { echo "       los docentes no son los del listado" >&2; return 1; }
+    [[ $(jq '[.docentes[].identificacion] | length == (unique | length)' "$carpeta/general.json") == true ]] \
+        || return 1
+    totales_son_la_suma "$carpeta/general.json" || return 1
+    # SC-002: la fila de cada docente es igual a su reporte individual.
+    for una in $(jq -r '.docentes[].identificacion' "$carpeta/general.json"); do
+        pedir GET "$(ruta_del_reporte "$una")" "Bearer $token"
+        [[ $estado == 200 && $(jq -n --argjson individual "$cuerpo" --slurpfile general "$carpeta/general.json" \
+            --arg id "$una" 'def c: . * 100 | round;
+            [$individual.horas | .clase, .otrasDocencia, .investigacion, .vinculacion, .gestion, .total | c]
+                == [$general[0].docentes[] | select(.identificacion == $id) | .horas
+                    | .clase, .otrasDocencia, .investigacion, .vinculacion, .gestion, .total | c]') \
+            == true ]] || { echo "       $una: su fila no es su reporte individual" >&2; return 1; }
+    done
+    echo "       $(jq '.docentes | length' "$carpeta/general.json") docentes; total institucional $(jq '.totales.total' "$carpeta/general.json") h"
+    # Ver el reporte no deja entrada.
+    hay_entradas 0 "$DESCARGADO_GENERAL"
+}
+
+# --- R8. Los dos formatos del general: los mismos datos, el PDF sin campos y cada descarga en la bitácora ---
+reporte_general_en_dos_formatos() {
+    local usuario
+    for usuario in "$RECTOR" "$SECRETARIA"; do
+        iniciar "$usuario"
+        bajar "$(ruta_del_general)" pdf "$carpeta/general-$usuario.pdf"
+        [[ $estado == 200 && $(cabecera Content-Type) == application/pdf \
+            && $(cabecera Content-Disposition) == "attachment; filename=\"reporte-general-$PERIODO.pdf\"" \
+            && $(cabecera Cache-Control) == no-store ]] || { echo "       PDF del general de $usuario: $estado" >&2; return 1; }
+        bajar "$(ruta_del_general)" csv "$carpeta/general-$usuario.csv"
+        [[ $estado == 200 && $(cabecera Content-Disposition) == "attachment; filename=\"reporte-general-$PERIODO.csv\"" ]] \
+            || { echo "       CSV del general de $usuario: $estado" >&2; return 1; }
+    done
+    pdf_sin_campos "$carpeta/general-$RECTOR.pdf" || return 1
+    csv_igual_al_json general "$carpeta/general-$RECTOR.csv" "$carpeta/general.json" || return 1
+    # FR-011: el CSV de la misma versión es idéntico, aunque lo pida otra persona.
+    cmp -s "$carpeta/general-$RECTOR.csv" "$carpeta/general-$SECRETARIA.csv" || return 1
+    cp "$carpeta/general-$RECTOR.csv" "$carpeta/general-version-1.csv"
+    esperar 60 hay_entradas 4 "$DESCARGADO_GENERAL" \
+        || { echo "       entradas: $(entradas "$DESCARGADO_GENERAL")" >&2; return 1; }
+    hay_entradas 2 "$DESCARGADO_GENERAL and nuevo ->> 'formato' = 'CSV'
+        and objeto ->> 'identificacion' is null and (objeto ->> 'version')::int = 1"
+}
+
 # --- R4. Sin permiso, 403; un docente que no está, 404; una identificación inválida, 400 ---
 reporte_sin_acceso() {
     local usuario
@@ -1578,11 +1676,18 @@ reporte_sin_acceso() {
         iniciar "$usuario"
         pedir GET "$(ruta_del_reporte "$docente_con_clase")" "Bearer $token"
         es_codigo 403 SEGURIDAD_ACCESO_NO_AUTORIZADO || { echo "       $usuario: $estado" >&2; return 1; }
+        # F20-H02 (SC-008): el general y su PDF, tampoco.
+        pedir GET "$(ruta_del_general)" "Bearer $token"
+        es_codigo 403 SEGURIDAD_ACCESO_NO_AUTORIZADO || { echo "       $usuario, general: $estado" >&2; return 1; }
+        bajar "$(ruta_del_general)" pdf "$carpeta/general-sin-permiso.pdf"
+        [[ $estado == 403 ]] || { echo "       $usuario, PDF del general: $estado" >&2; return 1; }
     done
     iniciar "$RECTOR"
     pedir GET "$(ruta_del_reporte 9999999999)" "Bearer $token"
     es_codigo 404 REPORTING_DOCENTE_SIN_DISTRIBUTIVO || return 1
     pedir GET "$(ruta_del_reporte no-valida)" "Bearer $token"
+    es_codigo 400 COMUN_SOLICITUD_INVALIDA || return 1
+    pedir GET "$(ruta_del_general periodo-con-mas-de-veinte)" "Bearer $token"
     es_codigo 400 COMUN_SOLICITUD_INVALIDA
 }
 
@@ -1606,9 +1711,13 @@ reporte_durante_la_reforma() {
         "$carpeta/paralelo.json")"
     [[ $estado == 200 ]] || { echo "       corregir la oferta: $estado" >&2; return 1; }
     iniciar "$RECTOR"
-    bajar "$docente_con_clase" csv "$carpeta/reporte-en-reforma.csv"
+    bajar "$(ruta_del_reporte "$docente_con_clase")" csv "$carpeta/reporte-en-reforma.csv"
     local igual=0
     cmp -s "$carpeta/reporte-version-1.csv" "$carpeta/reporte-en-reforma.csv" || igual=1
+    # F20-H02: el CSV del general tampoco cambia.
+    bajar "$(ruta_del_general)" csv "$carpeta/general-en-reforma.csv"
+    cmp -s "$carpeta/general-version-1.csv" "$carpeta/general-en-reforma.csv" \
+        || { echo "       el CSV del general cambió durante la reforma" >&2; igual=1; }
     # Las horas vuelven a las de antes: los pasos 25 a 27 recorren la versión 2 con la oferta del
     # inicio de la prueba.
     iniciar "$VICERRECTOR"
@@ -1625,6 +1734,12 @@ reporte_de_la_version_2() {
     pedir GET "$(ruta_del_reporte "$docente_con_clase")" "Bearer $token"
     [[ $estado == 200 && $(jq -c '[.publicacion.version, .publicacion.hash, .publicacion.enReforma]' <<<"$cuerpo") \
         == "$(jq -cn --arg h "$(hash_publicado)" '[2, $h, false]')" ]] || return 1
+    # F20-H02: el general también sale de la versión 2, y sus totales son la suma de sus filas.
+    pedir GET "$(ruta_del_general)" "Bearer $token"
+    [[ $estado == 200 && $(jq -c '[.publicacion.version, .publicacion.hash]' <<<"$cuerpo") \
+        == "$(jq -cn --arg h "$(hash_publicado)" '[2, $h]')" ]] || return 1
+    printf '%s' "$cuerpo" >"$carpeta/general-2.json"
+    totales_son_la_suma "$carpeta/general-2.json" || return 1
     [[ $(consultar_base "select tardio from generacion.contenido_congelado where periodo = '$PERIODO'
         and numero = 2") == f ]]
 }
@@ -1651,7 +1766,7 @@ if [[ $CONSERVAR == F2 ]]; then
 fi
 verificar 11 "F2 de la persona de F1 se rechaza; F1, F2 y F3 se aceptan en orden con la cadena; al final nadie está en turno" tres_firmas
 verificar 12 "3 aceptadas y 8 rechazadas, los 4 archivos y la bitácora; el proceso en EN_OCS por sistema" registro_de_firmas
-verificar R1 "En EN_OCS, sin publicación: Reporting no la lista y el reporte responde 409 REPORTING_SIN_PUBLICACION, sin bitácora" reportes_sin_publicacion
+verificar R1 "En EN_OCS, sin publicación: Reporting no la lista y el individual y el general responden 409 REPORTING_SIN_PUBLICACION, sin bitácora" reportes_sin_publicacion
 
 if [[ $CONSERVAR == EN_OCS ]]; then
     if ((fallas > 0)); then
@@ -1681,7 +1796,9 @@ verificar 16 "En APROBADO, otros roles reciben 403; $SECRETARIA publica con iden
 verificar 17 "Publicado: nadie edita (solo $VICERRECTOR puede reformar); proponer, consolidar, enviar, aprobar y registrar responden con su error, sin cambiar nada" sin_acciones
 verificar R2 "El reporte de la versión 1: su hash, filas que suman su total, la carga horaria de la versión y el contenido guardado al congelar" reporte_de_la_version_1
 verificar R3 "PDF/A sin campos y CSV con los mismos datos; dos CSV idénticos; 8 descargas en la bitácora y ver el reporte no deja entrada" reporte_en_dos_formatos
-verificar R4 "$COORDINADOR y $DESIGNADO, 403; un docente que no está, 404; una identificación inválida, 400" reporte_sin_acceso
+verificar R7 "El reporte general de la versión 1: los docentes del listado sin repetidos, cada fila igual a su individual y los totales, la suma de las filas" reporte_general_de_la_version_1
+verificar R8 "El general en PDF/A sin campos y en CSV con los mismos datos; dos CSV idénticos; 4 descargas REPORTE_GENERAL_DESCARGADO sin docente" reporte_general_en_dos_formatos
+verificar R4 "$COORDINADOR y $DESIGNADO, 403 en el individual y el general; un docente que no está, 404; una identificación o un periodo inválidos, 400" reporte_sin_acceso
 if [[ $CONSERVAR == PUBLICADO ]]; then
     if ((fallas > 0)); then
         echo "No quedó publicado. Para limpiar: docker compose -p tesis-prototipo-2026 down -v"
@@ -1700,11 +1817,11 @@ verificar 21 "F1 subida con identidad detenido: aceptada, y la notificación de 
 
 verificar 22 "En PUBLICADO, otros roles reciben 403 y un motivo corto 400; $VICERRECTOR reforma con identidad detenido: la versión 2 y la 1 CONGELADA; la segunda, 409" reforma_iniciada
 verificar 23 "Durante la reforma, la versión 1 sigue publicada y vigente, y el flujo muestra la reforma en curso" publicada_vigente
-verificar R5 "Durante la reforma, el reporte sale de la versión 1 y no cambia al corregir las horas de un paralelo en la oferta" reporte_durante_la_reforma
+verificar R5 "Durante la reforma, el individual y el general salen de la versión 1 y no cambian al corregir las horas de un paralelo en la oferta" reporte_durante_la_reforma
 verificar 24 "La reforma llegó una vez a quien consolida, los docentes, Talento Humano y las coordinaciones; no al Vicerrector" reforma_notificada
 verificar 25 "La versión 2 vuelve por el ciclo: devolver, reenviar, consolidar, revisión y aprobación, con su documento desde F1" ciclo_de_la_version_2
 verificar 26 "F1, F2 y F3 sobre la versión 2, su resolución y su publicación: la versión 2 es la publicada, sin reforma en curso" firmas_y_publicacion_de_la_version_2
-verificar R6 "Con la versión 2 publicada, el reporte sale de ella, con su hash y su contenido guardado al congelar" reporte_de_la_version_2
+verificar R6 "Con la versión 2 publicada, el individual y el general salen de ella, con su hash y su contenido guardado al congelar" reporte_de_la_version_2
 verificar 27 "La versión 1, histórica: CONGELADA, con sus tres firmas, su documento y su resolución, sin anulación" version_1_historica
 
 if ((fallas > 0)); then

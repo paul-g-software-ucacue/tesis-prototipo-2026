@@ -13,7 +13,9 @@ import ec.mdd.generacion.dominio.ActividadNoLectiva;
 import ec.mdd.generacion.dominio.AsignaturaOfertada;
 import ec.mdd.generacion.dominio.AsignaturaParalelo;
 import ec.mdd.generacion.dominio.CargaCongelada;
+import ec.mdd.generacion.dominio.CargaHoraria;
 import ec.mdd.generacion.dominio.ContenidoCongelado;
+import ec.mdd.generacion.dominio.Dedicacion;
 import ec.mdd.generacion.dominio.DocenteDeLaVersion;
 import ec.mdd.generacion.dominio.EstadoDeVersion;
 import ec.mdd.generacion.dominio.Justificacion;
@@ -126,7 +128,18 @@ class GuardarContenidoCongeladoServicioTest {
     void dadaUnaVersionCongeladaSinContenido_cuandoSeConsulta_entoncesLoGuardaTardioYLoLee() {
         VersionDistributivo version = version(EstadoDeVersion.CONGELADA);
         cuandoLaVersionEs(version);
-        List<DocenteDeLaVersion> docentes = List.of(new DocenteDeLaVersion(ANA, "PEREZ ANA"));
+        List<DocenteDeLaVersion> docentes =
+                List.of(
+                        new DocenteDeLaVersion(
+                                ANA,
+                                "PEREZ ANA",
+                                Dedicacion.TC,
+                                new CargaHoraria(
+                                        new BigDecimal("8"),
+                                        BigDecimal.ZERO,
+                                        BigDecimal.ZERO,
+                                        BigDecimal.ZERO,
+                                        BigDecimal.ZERO)));
         when(repositorio.hash(PERIODO, 1))
                 .thenReturn(Optional.empty(), Optional.of("b".repeat(64)));
         when(repositorio.docentes(PERIODO, 1)).thenReturn(docentes);

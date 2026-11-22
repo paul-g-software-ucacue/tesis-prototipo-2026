@@ -1,5 +1,6 @@
 # Contrato de Reporting (Publicación y consulta). F20-H01 (#268, D-115): el reporte individual del
-# docente sobre la versión publicada vigente, en pantalla, en PDF/A-2b y en CSV.
+# docente sobre la versión publicada vigente, en pantalla, en PDF/A-2b y en CSV. F20-H02 (#269,
+# D-117): el reporte general consolidado de la institución, en los mismos tres formatos.
 openapi: 3.0.3
 info:
   title: MDD · reporting
@@ -10,7 +11,7 @@ security:
   - bearer: []
 tags:
   - name: Reportes
-    description: Reportes de la versión publicada vigente, para la pantalla (RF-45).
+    description: Reportes de la versión publicada vigente, para la pantalla (RF-45, RF-46).
   - name: Descargas
     description: >-
       Las descargas del reporte en PDF/A y en CSV, cada una registrada en la bitácora (RF-48,
@@ -192,6 +193,119 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
         '504':
           $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/reporting/periodos/{periodo}/reporte-general:
+    parameters:
+      - $ref: '#/components/parameters/Periodo'
+    get:
+      tags: [Reportes]
+      operationId: consultarReporteGeneral
+      summary: Devuelve el reporte general consolidado del periodo, para la pantalla.
+      description: >-
+        Cada docente de la versión publicada vigente con sus horas por componente y su total, y
+        los totales institucionales (RF-46, D-117). Ver el reporte no deja entrada en la bitácora;
+        las descargas sí.
+      x-mdd-permiso: [REPORTES:LECTURA]
+      responses:
+        '200':
+          description: El reporte general.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReporteGeneral'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '409':
+          $ref: '#/components/responses/SinPublicacion'
+        '500':
+          $ref: '#/components/responses/ErrorDelReporte'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/reporting/periodos/{periodo}/reporte-general.pdf:
+    parameters:
+      - $ref: '#/components/parameters/Periodo'
+    get:
+      tags: [Descargas]
+      operationId: descargarReporteGeneralPdf
+      summary: Descarga el reporte general en PDF/A-2b, sin campos ni contenido activo.
+      description: >-
+        A4 horizontal, con el encabezado de la tabla en cada página y «Total institucional» una
+        sola vez, al final. Cada descarga deja la entrada REPORTE_GENERAL_DESCARGADO en la
+        bitácora, registrada antes de responder (D-117). Si el registro falla, no se entrega nada.
+      x-mdd-permiso: [REPORTES:LECTURA]
+      responses:
+        '200':
+          description: El PDF/A del reporte general.
+          headers:
+            Content-Disposition:
+              $ref: '#/components/headers/ContentDispositionGeneral'
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '409':
+          $ref: '#/components/responses/SinPublicacion'
+        '500':
+          $ref: '#/components/responses/ErrorDelReporte'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/reporting/periodos/{periodo}/reporte-general.csv:
+    parameters:
+      - $ref: '#/components/parameters/Periodo'
+    get:
+      tags: [Descargas]
+      operationId: descargarReporteGeneralCsv
+      summary: Descarga el reporte general en CSV, con los mismos datos del PDF.
+      description: >-
+        El formato del reporte individual (UTF-8 con BOM, punto y coma, CRLF, horas con dos
+        decimales y coma, fórmulas neutralizadas). Una fila DOCENTE por docente, con una columna
+        por componente y el total, y una fila TOTAL al final. No lleva quién lo generó ni cuándo.
+        Cada descarga deja la entrada REPORTE_GENERAL_DESCARGADO en la bitácora antes de
+        responder (D-117).
+      x-mdd-permiso: [REPORTES:LECTURA]
+      responses:
+        '200':
+          description: El CSV del reporte general.
+          headers:
+            Content-Disposition:
+              $ref: '#/components/headers/ContentDispositionGeneral'
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '409':
+          $ref: '#/components/responses/SinPublicacion'
+        '500':
+          $ref: '#/components/responses/ErrorDelReporte'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
 components:
   securitySchemes:
     bearer:
@@ -218,6 +332,10 @@ components:
         attachment; filename="reporte-individual-<periodo>-<identificacion>.pdf" (o .csv).
       schema:
         type: string
+    ContentDispositionGeneral:
+      description: attachment; filename="reporte-general-<periodo>.pdf" (o .csv).
+      schema:
+        type: string
     CacheControl:
       description: no-store, porque lleva datos personales.
       schema:
@@ -239,9 +357,9 @@ components:
             $ref: '../comun/errores.yaml#/components/schemas/Error'
     ErrorDelReporte:
       description: >-
-        El hash de la publicación no es el del contenido congelado
-        (REPORTING_CONTENIDO_INCONSISTENTE), o un error interno (COMUN_ERROR_INTERNO). No se
-        entrega nada.
+        El hash de la publicación no es el del contenido congelado, Generación no tiene esa
+        versión o un docente viene repetido (REPORTING_CONTENIDO_INCONSISTENTE), o un error
+        interno (COMUN_ERROR_INTERNO). No se entrega nada.
       content:
         application/json:
           schema:
@@ -397,6 +515,48 @@ components:
           items:
             $ref: '#/components/schemas/FilaDeActividad'
         horas:
+          $ref: '#/components/schemas/HorasPorComponente'
+        generadoPor:
+          type: string
+        generadoEn:
+          type: string
+          format: date-time
+    FilaDelDocente:
+      description: >-
+        Un docente del reporte general, con sus horas por componente (F20-H02, D-117). Sin
+        dedicacion si el docente no estaba activo al congelar.
+      type: object
+      additionalProperties: false
+      required: [identificacion, nombre, horas]
+      properties:
+        identificacion:
+          $ref: '#/components/schemas/NumeroDeIdentificacion'
+        nombre:
+          description: Los apellidos y los nombres.
+          type: string
+        dedicacion:
+          $ref: '#/components/schemas/Dedicacion'
+        horas:
+          $ref: '#/components/schemas/HorasPorComponente'
+    ReporteGeneral:
+      description: >-
+        El distributivo consolidado de la institución en la versión publicada vigente (RF-46,
+        D-117). El número de docentes es el largo de docentes; totales son los totales
+        institucionales (la suma exacta de las filas) y su total, el total general.
+      type: object
+      additionalProperties: false
+      required: [publicacion, docentes, totales, generadoPor, generadoEn]
+      properties:
+        publicacion:
+          $ref: '#/components/schemas/Publicacion'
+        docentes:
+          description: >-
+            Por nombre, en orden alfabético del español (ÁLVAREZ antes que PERALTA), y a igual
+            nombre por identificación.
+          type: array
+          items:
+            $ref: '#/components/schemas/FilaDelDocente'
+        totales:
           $ref: '#/components/schemas/HorasPorComponente'
         generadoPor:
           type: string

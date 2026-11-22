@@ -2,6 +2,7 @@ package ec.mdd.reporting.adaptadores.entrada;
 
 import ec.mdd.reporting.adaptadores.entrada.api.DocentesDelPeriodo;
 import ec.mdd.reporting.adaptadores.entrada.api.Publicacion;
+import ec.mdd.reporting.adaptadores.entrada.api.ReporteGeneral;
 import ec.mdd.reporting.adaptadores.entrada.api.ReporteIndividual;
 import ec.mdd.reporting.adaptadores.entrada.api.ReportesApi;
 import ec.mdd.reporting.puertos.entrada.ConsultarReportes;
@@ -12,8 +13,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Los reportes de la versión publicada vigente, para la pantalla «Reportes» (F20-H01, RF-45). Ver
- * el reporte no deja entrada en la bitácora; las descargas sí ({@code DescargasControlador}).
+ * Los reportes de la versión publicada vigente, para la pantalla «Reportes» (F20-H01, F20-H02,
+ * RF-45, RF-46). Ver el reporte no deja entrada en la bitácora; las descargas sí ({@code
+ * DescargasControlador}).
  */
 @RestController
 class ReportesControlador implements ReportesApi {
@@ -47,6 +49,13 @@ class ReportesControlador implements ReportesApi {
             String periodo, String identificacion) {
         return ResponseEntity.ok(
                 RespuestasDeReporting.reporte(consultar.reporte(periodo, identificacion, quien())));
+    }
+
+    @Override
+    @PreAuthorize(PERMISO)
+    public ResponseEntity<ReporteGeneral> consultarReporteGeneral(String periodo) {
+        return ResponseEntity.ok(
+                RespuestasDeReporting.reporteGeneral(consultar.reporteGeneral(periodo, quien())));
     }
 
     /** Quién pide: el usuario del token. */

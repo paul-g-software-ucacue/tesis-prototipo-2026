@@ -78,10 +78,18 @@ class ContenidoCongeladoIntegrationTest {
         assertThat(primera).isTrue();
         assertThat(segunda).isFalse();
         assertThat(repositorio.hash(periodo, 1)).contains(HASH);
+        // F20-H02 (D-117): cada docente trae la dedicación y las horas de su propia carga.
         assertThat(repositorio.docentes(periodo, 1))
                 .containsExactly(
-                        new DocenteDeLaVersion("0109990020", "Andrade Luis"),
-                        new DocenteDeLaVersion("0109990010", "Pérez Ana"));
+                        DocenteDeLaVersion.de(
+                                repositorio.carga(periodo, 1, "0109990020").orElseThrow()),
+                        DocenteDeLaVersion.de(
+                                repositorio.carga(periodo, 1, "0109990010").orElseThrow()));
+        DocenteDeLaVersion ana = repositorio.docentes(periodo, 1).get(1);
+        assertThat(ana.identificacion()).isEqualTo("0109990010");
+        assertThat(ana.dedicacion()).contains(Dedicacion.TC);
+        assertThat(ana.horas().clase()).isEqualByComparingTo("8");
+        assertThat(repositorio.docentes(periodo, 1).get(0).dedicacion()).contains(Dedicacion.MT);
         CargaCongelada leida = repositorio.carga(periodo, 1, "0109990010").orElseThrow();
         assertThat(leida).isEqualTo(carga("0109990010", "Pérez Ana", "8", Dedicacion.TC, 40));
         assertThat(leida.horas().clase()).isEqualByComparingTo("8");
@@ -104,6 +112,13 @@ class ContenidoCongeladoIntegrationTest {
         CargaCongelada leida = repositorio.carga(periodo, 1, "0109990010").orElseThrow();
         assertThat(leida.dedicacion()).isEmpty();
         assertThat(leida.horasContratadas()).isEmpty();
+        assertThat(repositorio.docentes(periodo, 1))
+                .singleElement()
+                .satisfies(
+                        docente -> {
+                            assertThat(docente.dedicacion()).isEmpty();
+                            assertThat(docente.horas()).isEqualTo(leida.horas());
+                        });
     }
 
     @Test

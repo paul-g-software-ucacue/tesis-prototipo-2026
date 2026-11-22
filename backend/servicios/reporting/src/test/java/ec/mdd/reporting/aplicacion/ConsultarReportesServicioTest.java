@@ -10,8 +10,10 @@ import ec.mdd.reporting.dominio.ContenidoInconsistente;
 import ec.mdd.reporting.dominio.DatosDelDocente;
 import ec.mdd.reporting.dominio.DocenteSinDistributivo;
 import ec.mdd.reporting.dominio.DocentesDeLaVersion;
+import ec.mdd.reporting.dominio.DocentesDePrueba;
 import ec.mdd.reporting.dominio.HorasPorComponente;
 import ec.mdd.reporting.dominio.Publicacion;
+import ec.mdd.reporting.dominio.ReporteGeneral;
 import ec.mdd.reporting.dominio.ReporteIndividual;
 import ec.mdd.reporting.dominio.SinPublicacion;
 import ec.mdd.reporting.puertos.entrada.ConsultarReportes.DocentesDelPeriodo;
@@ -24,7 +26,7 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
-/** Consultar los reportes de la versión publicada vigente (F20-H01, RF-45). */
+/** Consultar los reportes de la versión publicada vigente (F20-H01, F20-H02, RF-45, RF-46). */
 class ConsultarReportesServicioTest {
 
     private static final Instant AHORA = Instant.parse("2026-11-21T15:00:00Z");
@@ -47,7 +49,8 @@ class ConsultarReportesServicioTest {
                     "secretaria.demo",
                     true);
     private static final DocentesDeLaVersion.Docente ANA =
-            new DocentesDeLaVersion.Docente("0109990010", "PEREZ ANA");
+            new DocentesDeLaVersion.Docente(
+                    "0109990010", "PEREZ ANA", null, HorasPorComponente.NINGUNA);
 
     private final PublicacionesDelDistributivo publicaciones =
             mock(PublicacionesDelDistributivo.class);
@@ -120,6 +123,44 @@ class ConsultarReportesServicioTest {
         when(contenido.docentes("2026-I", 1))
                 .thenReturn(Optional.of(new DocentesDeLaVersion(HASH_2, List.of(ANA))));
         assertThatThrownBy(() -> servicio.docentes("2026-I"))
+                .isInstanceOf(ContenidoInconsistente.class);
+    }
+
+    @Test
+    void dadaUnaReforma_cuandoSePideElReporteGeneral_entoncesSaleDeLaVersionPublicada() {
+        when(publicaciones.vigentes()).thenReturn(List.of(EN_REFORMA));
+        when(contenido.docentes("2026-I", 1))
+                .thenReturn(
+                        Optional.of(
+                                new DocentesDeLaVersion(HASH_1, DocentesDePrueba.repetidos(3))));
+
+        ReporteGeneral reporte = servicio.reporteGeneral("2026-I", "rectorado.demo");
+
+        assertThat(reporte.publicacion()).isEqualTo(EN_REFORMA);
+        assertThat(reporte.cantidadDeDocentes()).isEqualTo(3);
+        assertThat(reporte.generadoPor()).isEqualTo("rectorado.demo");
+        assertThat(reporte.generadoEn()).isEqualTo(AHORA);
+    }
+
+    @Test
+    void dadoUnPeriodoSinPublicacion_cuandoSePideElReporteGeneral_entoncesSinPublicacion() {
+        when(publicaciones.vigentes()).thenReturn(List.of(ANTIGUA));
+
+        assertThatThrownBy(() -> servicio.reporteGeneral("2026-I", "rectorado.demo"))
+                .isInstanceOf(SinPublicacion.class);
+    }
+
+    @Test
+    void dadaUnaVersionSinContenidoOConOtroHash_cuandoSePideElGeneral_entoncesInconsistente() {
+        when(publicaciones.vigentes()).thenReturn(List.of(EN_REFORMA));
+        when(contenido.docentes("2026-I", 1)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> servicio.reporteGeneral("2026-I", "rectorado.demo"))
+                .isInstanceOf(ContenidoInconsistente.class);
+
+        when(contenido.docentes("2026-I", 1))
+                .thenReturn(Optional.of(new DocentesDeLaVersion(HASH_2, List.of(ANA))));
+        assertThatThrownBy(() -> servicio.reporteGeneral("2026-I", "rectorado.demo"))
                 .isInstanceOf(ContenidoInconsistente.class);
     }
 

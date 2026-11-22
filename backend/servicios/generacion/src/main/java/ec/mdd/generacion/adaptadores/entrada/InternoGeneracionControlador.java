@@ -11,6 +11,8 @@ import ec.mdd.generacion.adaptadores.entrada.api.DocenteCongelado;
 import ec.mdd.generacion.adaptadores.entrada.api.HorasPorComponente;
 import ec.mdd.generacion.adaptadores.entrada.api.InternoApi;
 import ec.mdd.generacion.dominio.CargaCongelada;
+import ec.mdd.generacion.dominio.CargaHoraria;
+import ec.mdd.generacion.dominio.DocenteDeLaVersion;
 import ec.mdd.generacion.puertos.entrada.ConsultarContenidoCongelado;
 import ec.mdd.generacion.puertos.entrada.ConsultarContenidoCongelado.CargaDeLaVersion;
 import org.springframework.http.HttpStatus;
@@ -42,11 +44,7 @@ class InternoGeneracionControlador implements InternoApi {
                                 new CargasCongeladas(
                                         cargas.hash(),
                                         cargas.docentes().stream()
-                                                .map(
-                                                        una ->
-                                                                new DocenteCongelado(
-                                                                        una.identificacion(),
-                                                                        una.nombre()))
+                                                .map(InternoGeneracionControlador::docente)
                                                 .toList()))
                 .map(ResponseEntity::ok)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
@@ -60,6 +58,25 @@ class InternoGeneracionControlador implements InternoApi {
                 .map(InternoGeneracionControlador::respuesta)
                 .map(ResponseEntity::ok)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    // F20-H02 (D-117): las horas y la dedicación de cada docente, para el reporte general.
+    private static DocenteCongelado docente(DocenteDeLaVersion docente) {
+        DocenteCongelado respuesta =
+                new DocenteCongelado(
+                        docente.identificacion(), docente.nombre(), horas(docente.horas()));
+        docente.dedicacion()
+                .ifPresent(una -> respuesta.dedicacion(Dedicacion.fromValue(una.name())));
+        return respuesta;
+    }
+
+    private static HorasPorComponente horas(CargaHoraria horas) {
+        return new HorasPorComponente(
+                horas.clase(),
+                horas.otrasDocencia(),
+                horas.investigacion(),
+                horas.vinculacion(),
+                horas.gestion());
     }
 
     private static CargaCongeladaDelDocente respuesta(CargaDeLaVersion deLaVersion) {
@@ -95,11 +112,6 @@ class InternoGeneracionControlador implements InternoApi {
                                                 .proyecto(una.proyecto())
                                                 .nombreProyecto(una.nombreProyecto()))
                         .toList(),
-                new HorasPorComponente(
-                        carga.horas().clase(),
-                        carga.horas().otrasDocencia(),
-                        carga.horas().investigacion(),
-                        carga.horas().vinculacion(),
-                        carga.horas().gestion()));
+                horas(carga.horas()));
     }
 }

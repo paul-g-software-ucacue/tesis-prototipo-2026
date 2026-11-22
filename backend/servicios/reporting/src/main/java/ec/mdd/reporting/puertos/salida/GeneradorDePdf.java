@@ -1,5 +1,6 @@
 package ec.mdd.reporting.puertos.salida;
 
+import ec.mdd.reporting.dominio.ReporteGeneral;
 import ec.mdd.reporting.dominio.ReporteIndividual;
 
 /**
@@ -13,4 +14,10 @@ public interface GeneradorDePdf {
      * @return los bytes del PDF
      */
     byte[] generar(ReporteIndividual reporte);
+
+    /**
+     * @param reporte el reporte general (F20-H02, D-117)
+     * @return los bytes del PDF
+     */
+    byte[] generar(ReporteGeneral reporte);
 }

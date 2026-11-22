@@ -6,10 +6,13 @@ import ec.mdd.reporting.dominio.Componente;
 import ec.mdd.reporting.dominio.ContenidoDelDocente;
 import ec.mdd.reporting.dominio.DatosDelDocente;
 import ec.mdd.reporting.dominio.Dedicacion;
+import ec.mdd.reporting.dominio.DocentesDeLaVersion;
+import ec.mdd.reporting.dominio.DocentesDePrueba;
 import ec.mdd.reporting.dominio.FilaDeActividad;
 import ec.mdd.reporting.dominio.FilaDeAsignatura;
 import ec.mdd.reporting.dominio.HorasPorComponente;
 import ec.mdd.reporting.dominio.Publicacion;
+import ec.mdd.reporting.dominio.ReporteGeneral;
 import ec.mdd.reporting.dominio.ReporteIndividual;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -22,8 +25,9 @@ import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.Test;
 
 /**
- * El PDF/A-2b del reporte individual (F20-H01, RF-48, aclaración del 2026-11-21): conforme según
- * veraPDF, sin formulario ni anotaciones, con el pie de la versión y su hash en cada página.
+ * El PDF/A-2b del reporte individual (F20-H01, RF-48, aclaración del 2026-11-21) y del general
+ * (F20-H02, D-117): conforme según veraPDF, sin formulario ni anotaciones, con el pie de la versión
+ * y su hash en cada página.
  */
 class GeneradorDeReportePdfaTest {
 
@@ -112,6 +116,72 @@ class GeneradorDeReportePdfaTest {
                     .contains("No tiene asignaturas en esta versión.")
                     .contains("No tiene actividades en esta versión.")
                     .contains("sin dato");
+        }
+    }
+
+    @Test
+    void
+            dadosTrescientosDocentes_cuandoSeGeneraElGeneral_entoncesEsPdfaHorizontalConElTotalAlFinal()
+                    throws Exception {
+        List<DocentesDeLaVersion.Docente> docentes =
+                new ArrayList<>(DocentesDePrueba.repetidos(299));
+        docentes.add(
+                new DocentesDeLaVersion.Docente(
+                        "0109995999",
+                        "=SUMA(A1) <b>&</b> " + "APELLIDO MUY LARGO ".repeat(8),
+                        null,
+                        HorasPorComponente.NINGUNA));
+        ReporteGeneral reporte =
+                ReporteGeneral.de(
+                        PUBLICACION,
+                        new DocentesDeLaVersion(HASH, docentes),
+                        "rectorado.demo",
+                        Instant.parse("2026-11-21T15:00:00Z"));
+
+        long inicio = System.nanoTime();
+        byte[] pdf = generador.generar(reporte);
+        long milisegundos = (System.nanoTime() - inicio) / 1_000_000;
+
+        // SC-007: el tiempo queda en la salida de la prueba, para la evidencia (T027).
+        System.out.println(
+                "SC-007 · PDF/A del reporte general de 300 docentes: " + milisegundos + " ms");
+        assertThat(VerificadorPdfa.reglasIncumplidas(pdf)).isEmpty();
+        try (PDDocument documento = Loader.loadPDF(pdf)) {
+            assertThat(documento.getDocumentCatalog().getAcroForm()).isNull();
+            assertThat(documento.isEncrypted()).isFalse();
+            int paginas = documento.getNumberOfPages();
+            assertThat(paginas).isGreaterThan(1);
+            int conElTotal = 0;
+            for (int pagina = 1; pagina <= paginas; pagina++) {
+                PDPage hoja = documento.getPage(pagina - 1);
+                assertThat(hoja.getAnnotations()).isEmpty();
+                assertThat(hoja.getMediaBox().getWidth())
+                        .as("A4 horizontal")
+                        .isGreaterThan(hoja.getMediaBox().getHeight());
+                PDFTextStripper lector = new PDFTextStripper();
+                lector.setStartPage(pagina);
+                lector.setEndPage(pagina);
+                String texto = lector.getText(documento);
+                assertThat(texto)
+                        .as("página %d", pagina)
+                        .contains("2026-I · versión 1 · hash " + HASH)
+                        .contains("Página " + pagina + " de " + paginas)
+                        .as("el encabezado de la tabla se repite en la página %d", pagina)
+                        .contains("Dedicación");
+                if (texto.contains("Total institucional")) {
+                    conElTotal++;
+                    assertThat(pagina).as("el total va en la última página").isEqualTo(paginas);
+                }
+            }
+            assertThat(conElTotal).as("el total institucional aparece una sola vez").isEqualTo(1);
+            String todo = new PDFTextStripper().getText(documento);
+            assertThat(todo)
+                    .contains("Reporte general del distributivo")
+                    .contains("300 docentes")
+                    .contains("PERALTA MALDONADO JUAN ANDRES")
+                    .contains("=SUMA(A1) <b>&</b>")
+                    .contains("sin dato")
+                    .contains("rectorado.demo");
         }
     }
 
