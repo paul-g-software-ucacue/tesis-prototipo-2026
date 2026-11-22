@@ -12,6 +12,7 @@ import ec.mdd.generacion.dominio.DocenteActivo;
 import ec.mdd.generacion.dominio.FormacionDelDocente;
 import ec.mdd.generacion.dominio.ProyectoDelDocente;
 import ec.mdd.generacion.dominio.ProyectosYCargosDelDocente;
+import ec.mdd.generacion.dominio.TipoDeIdentificacion;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
 import ec.mdd.generacion.puertos.entrada.ActividadPosible;
 import ec.mdd.generacion.puertos.entrada.DocenteNoActivo;
@@ -119,6 +120,7 @@ class ConsultarActividadesPosiblesServicioTest {
                 .thenReturn(
                         List.of(
                                 new DocenteActivo(
+                                        TipoDeIdentificacion.CEDULA,
                                         DOCENTE,
                                         "PEREZ LUIS",
                                         Dedicacion.TC,

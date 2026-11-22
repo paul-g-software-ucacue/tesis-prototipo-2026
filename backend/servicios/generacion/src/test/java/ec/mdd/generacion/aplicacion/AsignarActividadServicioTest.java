@@ -32,6 +32,7 @@ import ec.mdd.generacion.dominio.ProyectoNoValido;
 import ec.mdd.generacion.dominio.ProyectosYCargosDelDocente;
 import ec.mdd.generacion.dominio.ReglasDelPeriodo;
 import ec.mdd.generacion.dominio.Severidad;
+import ec.mdd.generacion.dominio.TipoDeIdentificacion;
 import ec.mdd.generacion.dominio.TipoDeJustificacion;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
 import ec.mdd.generacion.dominio.VersionCongelada;
@@ -900,6 +901,7 @@ class AsignarActividadServicioTest {
 
     private static DocenteActivo docente() {
         return new DocenteActivo(
+                TipoDeIdentificacion.CEDULA,
                 DOCENTE,
                 "PEREZ LUIS",
                 Dedicacion.TC,

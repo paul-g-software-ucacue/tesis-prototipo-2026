@@ -18,6 +18,8 @@ import java.util.OptionalInt;
  *
  * @param identificacion el número de identificación del docente
  * @param nombre sus apellidos y nombres, como en la asignación
+ * @param tipoIdentificacionAlCongelar cédula o pasaporte al congelar; {@code null} si ya no estaba
+ *     activo o si el contenido se guardó antes de F19-H01 (D-119)
  * @param dedicacionAlCongelar su dedicación al congelar; {@code null} si ya no estaba activo
  * @param horasContratadasAlCongelar sus horas contratadas al congelar, de 1 a 40; {@code null} si
  *     no estaba activo
@@ -28,6 +30,7 @@ import java.util.OptionalInt;
 public record CargaCongelada(
         String identificacion,
         String nombre,
+        TipoDeIdentificacion tipoIdentificacionAlCongelar,
         Dedicacion dedicacionAlCongelar,
         Integer horasContratadasAlCongelar,
         List<AsignaturaCongelada> asignaturas,
@@ -70,6 +73,11 @@ public record CargaCongelada(
                         de(horas, componente));
             }
         }
+    }
+
+    /** Su tipo de identificación al congelar; vacío si no se conoce (D-119). */
+    public Optional<TipoDeIdentificacion> tipoIdentificacion() {
+        return Optional.ofNullable(tipoIdentificacionAlCongelar);
     }
 
     /** Su dedicación al congelar; vacía si ya no estaba activo. */

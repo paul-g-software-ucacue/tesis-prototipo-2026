@@ -27,6 +27,7 @@ import ec.mdd.generacion.dominio.ReglaDeAsignacion;
 import ec.mdd.generacion.dominio.ReglasDelPeriodo;
 import ec.mdd.generacion.dominio.Severidad;
 import ec.mdd.generacion.dominio.Sugerencia;
+import ec.mdd.generacion.dominio.TipoDeIdentificacion;
 import ec.mdd.generacion.dominio.TipoDeJustificacion;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
 import ec.mdd.generacion.dominio.VersionDistributivo;
@@ -66,6 +67,7 @@ class ConsultarSugerenciaServicioTest {
 
     private static final DocenteActivo DOCENTE =
             new DocenteActivo(
+                    TipoDeIdentificacion.CEDULA,
                     "0109990010",
                     "PEREZ LUIS",
                     Dedicacion.TC,
@@ -78,6 +80,7 @@ class ConsultarSugerenciaServicioTest {
 
     private static final DocenteActivo AJENO =
             new DocenteActivo(
+                    TipoDeIdentificacion.CEDULA,
                     "0109990020",
                     "LOPEZ ANA",
                     Dedicacion.TC,
@@ -182,6 +185,7 @@ class ConsultarSugerenciaServicioTest {
     void dadaUnaPropuestaDeUnDocenteSinHoras_cuandoSeConsulta_entoncesLoAvisa() {
         DocenteActivo sinHoras =
                 new DocenteActivo(
+                        TipoDeIdentificacion.CEDULA,
                         DOCENTE.identificacion(),
                         DOCENTE.nombre(),
                         Dedicacion.TP,

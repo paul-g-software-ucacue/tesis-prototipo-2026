@@ -13,6 +13,7 @@ import ec.mdd.generacion.dominio.Componente;
 import ec.mdd.generacion.dominio.ContenidoCongelado;
 import ec.mdd.generacion.dominio.Dedicacion;
 import ec.mdd.generacion.dominio.DocenteDeLaVersion;
+import ec.mdd.generacion.dominio.TipoDeIdentificacion;
 import ec.mdd.generacion.dominio.VersionDistributivo;
 import ec.mdd.generacion.infraestructura.GeneracionFlywayConfig;
 import ec.mdd.generacion.puertos.entrada.MotivoDeVersion;
@@ -95,6 +96,14 @@ class ContenidoCongeladoIntegrationTest {
         assertThat(leida.horas().clase()).isEqualByComparingTo("8");
         assertThat(repositorio.carga(periodo, 1, "0109990099")).isEmpty();
         assertThat(repositorio.carga(periodo, 2, "0109990010")).isEmpty();
+        // F19-H01 (D-119): el tipo de identificación vuelve igual, y todas las cargas de una vez
+        // son las mismas que de a una, por nombre.
+        assertThat(leida.tipoIdentificacion()).contains(TipoDeIdentificacion.CEDULA);
+        assertThat(repositorio.cargas(periodo, 1))
+                .containsExactly(
+                        repositorio.carga(periodo, 1, "0109990020").orElseThrow(),
+                        repositorio.carga(periodo, 1, "0109990010").orElseThrow());
+        assertThat(repositorio.cargas(periodo, 2)).isEmpty();
     }
 
     @Test
@@ -112,6 +121,8 @@ class ContenidoCongeladoIntegrationTest {
         CargaCongelada leida = repositorio.carga(periodo, 1, "0109990010").orElseThrow();
         assertThat(leida.dedicacion()).isEmpty();
         assertThat(leida.horasContratadas()).isEmpty();
+        // Sin la clave tipoIdentificacion en el JSON: el tipo queda vacío (D-119).
+        assertThat(leida.tipoIdentificacion()).isEmpty();
         assertThat(repositorio.docentes(periodo, 1))
                 .singleElement()
                 .satisfies(
@@ -176,6 +187,7 @@ class ContenidoCongeladoIntegrationTest {
         return new CargaCongelada(
                 docente,
                 nombre,
+                dedicacion == null ? null : TipoDeIdentificacion.CEDULA,
                 dedicacion,
                 horas,
                 asignaturas,

@@ -126,6 +126,8 @@ class InternoDocentesControlador implements InternoApi {
 
     private static DocenteActivo respuesta(Docente docente) {
         return new DocenteActivo(
+                DocenteActivo.TipoIdentificacionEnum.fromValue(
+                        docente.identificacion().tipo().name()),
                 docente.identificacion().numero(),
                 docente.datos().nombreCompleto(),
                 Dedicacion.fromValue(docente.datos().dedicacion().name()),

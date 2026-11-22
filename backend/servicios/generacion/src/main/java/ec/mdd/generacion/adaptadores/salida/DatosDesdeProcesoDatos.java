@@ -15,6 +15,7 @@ import ec.mdd.generacion.dominio.PesosDelPeriodo;
 import ec.mdd.generacion.dominio.ProyectosYCargosDelDocente;
 import ec.mdd.generacion.dominio.ReglasDelPanel;
 import ec.mdd.generacion.dominio.ReglasDelPeriodo;
+import ec.mdd.generacion.dominio.TipoDeIdentificacion;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
 import ec.mdd.generacion.puertos.salida.DatosParaActividades;
 import ec.mdd.generacion.puertos.salida.DatosParaAfinidad;
@@ -227,6 +228,7 @@ public final class DatosDesdeProcesoDatos
     }
 
     private record Activo(
+            TipoDeIdentificacion tipoIdentificacion,
             String identificacion,
             String nombre,
             Dedicacion dedicacion,
@@ -235,7 +237,12 @@ public final class DatosDesdeProcesoDatos
 
         DocenteActivo docente() {
             return new DocenteActivo(
-                    identificacion, nombre, dedicacion, horasContratadas, formacion.delDocente());
+                    tipoIdentificacion,
+                    identificacion,
+                    nombre,
+                    dedicacion,
+                    horasContratadas,
+                    formacion.delDocente());
         }
     }
 

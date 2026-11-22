@@ -20,6 +20,7 @@ import ec.mdd.generacion.dominio.FormacionDelDocente;
 import ec.mdd.generacion.dominio.Justificacion;
 import ec.mdd.generacion.dominio.ParcialCarrera;
 import ec.mdd.generacion.dominio.Propuesta;
+import ec.mdd.generacion.dominio.TipoDeIdentificacion;
 import ec.mdd.generacion.dominio.TipoDeJustificacion;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
 import ec.mdd.generacion.dominio.VersionDistributivo;
@@ -247,6 +248,7 @@ class ConsultarParcialesServicioTest {
                 .thenReturn(
                         List.of(
                                 new DocenteActivo(
+                                        TipoDeIdentificacion.CEDULA,
                                         DOCENTE,
                                         "PEREZ LUIS",
                                         Dedicacion.TC,

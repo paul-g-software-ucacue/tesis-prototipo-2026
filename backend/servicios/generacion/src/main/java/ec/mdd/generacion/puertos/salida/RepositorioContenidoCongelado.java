@@ -53,4 +53,14 @@ public interface RepositorioContenidoCongelado {
      * @return vacía si la versión no tiene contenido guardado o el docente no está
      */
     Optional<CargaCongelada> carga(String periodo, int numero, String docente);
+
+    /**
+     * Las cargas guardadas de todos los docentes de una versión (F19-H01, D-119).
+     *
+     * @param periodo el código del periodo
+     * @param numero el número de la versión
+     * @return por nombre y, a igual nombre, por identificación; vacía si no tiene contenido
+     *     guardado
+     */
+    List<CargaCongelada> cargas(String periodo, int numero);
 }
