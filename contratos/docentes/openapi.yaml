@@ -886,8 +886,12 @@ components:
     DocenteActivo:
       description: Lo que Generación necesita de un docente activo (principio IX).
       type: object
-      required: [identificacion, nombre, dedicacion, horasContratadas, formacion]
+      required: [tipoIdentificacion, identificacion, nombre, dedicacion, horasContratadas, formacion]
       properties:
+        tipoIdentificacion:
+          description: El tipo de documento; Generación lo guarda al congelar (F19-H01, D-119).
+          type: string
+          enum: [CEDULA, PASAPORTE]
         identificacion:
           type: string
         nombre:

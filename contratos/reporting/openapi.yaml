@@ -1,6 +1,7 @@
 # Contrato de Reporting (Publicación y consulta). F20-H01 (#268, D-115): el reporte individual del
 # docente sobre la versión publicada vigente, en pantalla, en PDF/A-2b y en CSV. F20-H02 (#269,
-# D-117): el reporte general consolidado de la institución, en los mismos tres formatos.
+# D-117): el reporte general consolidado de la institución, en los mismos tres formatos. F19-H01
+# (#266, D-119): el CSV para SIGA con el layout de exportación configurable.
 openapi: 3.0.3
 info:
   title: MDD · reporting
@@ -16,6 +17,10 @@ tags:
     description: >-
       Las descargas del reporte en PDF/A y en CSV, cada una registrada en la bitácora (RF-48,
       D-115).
+  - name: Siga
+    description: >-
+      El CSV para SIGA de la versión publicada y el layout de exportación que lo define (RF-52,
+      ADR-002, D-119). Solo la Secretaría general académica (PUBLICACION:APROBACION).
 paths:
   /api/reporting/publicaciones:
     get:
@@ -306,6 +311,144 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
         '504':
           $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/reporting/periodos/{periodo}/csv-siga:
+    parameters:
+      - $ref: '#/components/parameters/Periodo'
+    get:
+      tags: [Siga]
+      operationId: generarCsvSiga
+      summary: Genera el CSV para SIGA de la versión publicada vigente del periodo.
+      description: >-
+        Una fila por docente y actividad (cada asignatura y paralelo, y cada actividad), con las
+        columnas del layout de exportación vigente, en su orden. RFC 4180 con coma, CRLF y UTF-8
+        sin BOM; texto en mayúsculas; NA para lo que no aplica; horas con punto y dos decimales;
+        la fecha como aaaa-mm-dd; fórmulas neutralizadas. Sus sumas por docente y componente son
+        las del reporte general de la misma versión: si no, no se entrega nada. No lleva quién lo
+        generó ni cuándo, así que la misma versión con el mismo layout da el mismo archivo. Cada
+        CSV deja la entrada CSV_SIGA_GENERADO en la bitácora antes de responder (D-119).
+      x-mdd-permiso: [PUBLICACION:APROBACION]
+      responses:
+        '200':
+          description: El CSV para SIGA.
+          headers:
+            Content-Disposition:
+              $ref: '#/components/headers/ContentDispositionSiga'
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '409':
+          $ref: '#/components/responses/SinPublicacion'
+        '500':
+          $ref: '#/components/responses/ErrorDelReporte'
+        '502':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
+        '504':
+          $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/reporting/layout-siga:
+    get:
+      tags: [Siga]
+      operationId: consultarLayoutsSiga
+      summary: Devuelve el layout de exportación vigente y las versiones anteriores.
+      description: >-
+        El vigente es la última versión cargada o, si no hay, el layout por defecto (versión 0).
+        Las anteriores van de la más reciente a la más antigua, sin el por defecto.
+      x-mdd-permiso: [PUBLICACION:APROBACION]
+      responses:
+        '200':
+          description: El vigente y los anteriores.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LayoutsSiga'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+    put:
+      tags: [Siga]
+      operationId: cargarLayoutSiga
+      summary: Carga un archivo de mapeo nuevo, que queda vigente para el próximo CSV.
+      description: >-
+        Valida el archivo y responde todos sus problemas, con la columna y la regla. Un archivo
+        rechazado no cambia el vigente ni deja entrada en la bitácora. Uno válido es la versión
+        siguiente del layout de exportación, y deja LAYOUT_SIGA_CARGADO en la bitácora en la
+        misma transacción. Las versiones anteriores se conservan (ADR-007, D-119).
+      x-mdd-permiso: [PUBLICACION:APROBACION]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [archivo]
+              properties:
+                archivo:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: La versión nueva, ya vigente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LayoutSiga'
+        '400':
+          description: >-
+            Tiene problemas, uno por detalle (REPORTING_LAYOUT_INVALIDO), no se puede leer
+            (REPORTING_ARCHIVO_ILEGIBLE), o falta el archivo (COMUN_SOLICITUD_INVALIDA).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '413':
+          description: Pasa de 256 KB (REPORTING_ARCHIVO_DEMASIADO_GRANDE).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+  /api/reporting/layout-siga/plantilla.yaml:
+    get:
+      tags: [Siga]
+      operationId: descargarPlantillaLayoutSiga
+      summary: Descarga la plantilla del archivo de mapeo, que es el layout por defecto comentado.
+      x-mdd-permiso: [PUBLICACION:APROBACION]
+      responses:
+        '200':
+          description: El archivo YAML, comentado en español.
+          headers:
+            Content-Disposition:
+              $ref: '#/components/headers/ContentDispositionPlantilla'
+          content:
+            text/yaml:
+              schema:
+                type: string
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
 components:
   securitySchemes:
     bearer:
@@ -336,6 +479,14 @@ components:
       description: attachment; filename="reporte-general-<periodo>.pdf" (o .csv).
       schema:
         type: string
+    ContentDispositionSiga:
+      description: attachment; filename="siga-<periodo>-v<version>.csv".
+      schema:
+        type: string
+    ContentDispositionPlantilla:
+      description: attachment; filename="layout-siga-plantilla.yaml".
+      schema:
+        type: string
     CacheControl:
       description: no-store, porque lleva datos personales.
       schema:
@@ -358,8 +509,9 @@ components:
     ErrorDelReporte:
       description: >-
         El hash de la publicación no es el del contenido congelado, Generación no tiene esa
-        versión o un docente viene repetido (REPORTING_CONTENIDO_INCONSISTENTE), o un error
-        interno (COMUN_ERROR_INTERNO). No se entrega nada.
+        versión, un docente viene repetido o, en el CSV para SIGA, sus sumas no son las del
+        reporte general (REPORTING_CONTENIDO_INCONSISTENTE), o un error interno
+        (COMUN_ERROR_INTERNO). No se entrega nada.
       content:
         application/json:
           schema:
@@ -563,3 +715,90 @@ components:
         generadoEn:
           type: string
           format: date-time
+    LayoutsSiga:
+      description: El layout de exportación vigente y las versiones anteriores (D-119).
+      type: object
+      additionalProperties: false
+      required: [vigente, anteriores]
+      properties:
+        vigente:
+          $ref: '#/components/schemas/LayoutSiga'
+        anteriores:
+          description: De la más reciente a la más antigua; sin el layout por defecto.
+          type: array
+          items:
+            $ref: '#/components/schemas/LayoutSiga'
+    LayoutSiga:
+      description: Una versión del layout de exportación; la 0 es el layout por defecto.
+      type: object
+      additionalProperties: false
+      required: [numero, porDefecto, sha256, columnas]
+      properties:
+        numero:
+          type: integer
+          minimum: 0
+        porDefecto:
+          type: boolean
+        cargadoPor:
+          description: Ausente en el layout por defecto.
+          type: string
+        cargadoEn:
+          description: Ausente en el layout por defecto.
+          type: string
+          format: date-time
+        sha256:
+          $ref: '#/components/schemas/Hash'
+        columnas:
+          description: En el orden del archivo, que es su posición en el CSV.
+          type: array
+          minItems: 1
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/ColumnaDelLayoutSiga'
+    ColumnaDelLayoutSiga:
+      type: object
+      additionalProperties: false
+      required: [nombre, campo]
+      properties:
+        nombre:
+          description: El encabezado de la columna en el CSV.
+          type: string
+          pattern: '^[A-Za-z][A-Za-z0-9_]{0,63}$'
+        campo:
+          $ref: '#/components/schemas/CampoDelLayoutSiga'
+        traduccion:
+          description: >-
+            Los códigos de su catálogo y su valor en SIGA, en el orden del catálogo. Solo en
+            tipo_identificacion, dedicacion y componente.
+          type: array
+          items:
+            $ref: '#/components/schemas/TraduccionDeCodigo'
+    TraduccionDeCodigo:
+      type: object
+      additionalProperties: false
+      required: [codigo, valor]
+      properties:
+        codigo:
+          type: string
+        valor:
+          type: string
+          pattern: '^[A-Za-z0-9][A-Za-z0-9 ._-]{0,29}$'
+    CampoDelLayoutSiga:
+      description: De dónde sale el valor de una columna (D-119).
+      type: string
+      enum:
+        - periodo
+        - version
+        - fecha_publicacion
+        - hash_version
+        - tipo_identificacion
+        - identificacion
+        - docente
+        - dedicacion
+        - componente
+        - actividad
+        - carrera
+        - asignatura
+        - paralelo
+        - proyecto
+        - horas
