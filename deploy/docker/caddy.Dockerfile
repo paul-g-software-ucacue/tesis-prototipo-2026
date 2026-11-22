@@ -3,7 +3,7 @@
 # al reconstruirla. El contexto es la raíz del repositorio, como el de las demás imágenes.
 # Ejemplo: docker build -f deploy/docker/caddy.Dockerfile -t mdd-caddy .
 
-FROM golang:1.26.9-alpine@sha256:3082400e369fa24d5fc60bca20edab3f6d604e0c5a690ec66b295eff4dd87ade AS compilacion
+FROM golang:1.27.4-alpine@sha256:70bd7ddea8b6cbe5d6943cde279d6b67feb10cc924fb9100d1d8757c1575b280 AS compilacion
 ENV GOTOOLCHAIN=local CGO_ENABLED=0
 WORKDIR /src
 COPY deploy/docker/caddy/ ./
