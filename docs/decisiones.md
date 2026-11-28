@@ -119,6 +119,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-118 | 2026-11-22 | `libc6` de `cloudflared` espera con una excepción de Grype hasta que Cloudflare reconstruya la imagen | Aceptada | D-54, D-81, D-96 |
 | D-119 | 2026-11-22 | El CSV para SIGA: Reporting arma las filas de la versión publicada desde el contenido congelado completo y las comprueba contra el reporte general; las escribe el puerto `ExportadorSiga` con el layout de exportación, un YAML versionado que carga la Secretaría; el contenido congelado guarda el tipo de identificación | Aceptada | RF-52, RNF-COM-02, RNF-SEG-04, ADR-002, ADR-007, D-04, D-16, D-113, D-115, D-117 |
 | D-120 | 2026-11-28 | La exportación a SIGA: Reporting valida las firmas (ruta interna de Firma por versión) y las inconsistencias abiertas que Generación fija al congelar, rechaza con todos los motivos y lo anota en la bitácora; cada CSV entregado es una `ExportacionSiga` con su SHA-256, guardada con su entrada `CSV_SIGA_GENERADO` antes de entregar | Aceptada | RF-44, RF-53, RNF-INT-01, MD-07, MD-11, D-113, D-115, D-119 |
+| D-121 | 2026-11-28 | Tomcat sube a 11.0.29 y CVE-2026-133325 espera con una excepción de Grype hasta que se publique la 11.0.30 | Aceptada | D-54, D-118 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -2783,3 +2784,28 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 - El rechazo por firmas o inconsistencias no se puede provocar por el flujo normal: lo cubren las pruebas, no el script.
 
 **Documentos que hay que poner al día.** El glosario (`sdd/modelo_dominio.md` y su `.docx`), con «Suma de verificación».
+
+## D-121. Tomcat sube a 11.0.29 y CVE-2026-133325 espera con una excepción de Grype hasta que se publique la 11.0.30
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-28 · **Decidido por:** autor de la tesis
+- **Origen:** los checks «4 · sca» y «5 · imágenes» del PR #290 (F19-H02) fallan por vulnerabilidades nuevas de Tomcat embebido, que viene del BOM de Spring Boot
+- **Sigue a:** D-54 y D-118
+
+**Decisión.**
+- `versionTomcat` pasa de 11.0.27 a 11.0.29 en `backend/gradle.properties`. Corrige CVE-2026-116561 y CVE-2026-118028 (críticas) y seis altas en `tomcat-embed-core` y `tomcat-embed-websocket`.
+- `.grype.yaml` agrega una excepción según D-54 para CVE-2026-133325 (crítica), solo en `tomcat-embed-core` 11.0.29. Rige desde el 2026-11-28 y vence el 2026-12-28.
+- Cuando la 11.0.30 esté en Maven Central, se sube `versionTomcat` y se quita la excepción.
+
+**Por qué.** Las vulnerabilidades se publicaron el 2026-11-28, después del último despliegue. La 11.0.29 es la última versión publicada en Maven Central, y la 11.0.30, que Grype da como corregida, todavía no está: es una versión corregida que todavía no se puede aplicar, el caso de D-54. Mientras tanto, «4 · sca» y «5 · imágenes» bloquean `main` y todos los PR. Las altas de OpenSSL de las imágenes Alpine (`frontend`, `caddy` y `postgres`) y las de `cloudflared` no tienen arreglo todavía y no bloquean, así que no llevan excepción.
+
+**Alternativas.**
+- Esperar la 11.0.30 sin excepción: no se fusiona nada mientras tanto.
+- Quedarse en 11.0.27: deja dos críticas y seis altas con arreglo.
+- Bajar a Tomcat 10.1: no es compatible con Spring Boot 4.1.
+
+**Consecuencias.**
+- La excepción solo cubre esa CVE en la 11.0.29. Una subida de versión la deja sin efecto.
+- Al vencer, `deploy/sca/excepciones.sh` la quita y los checks vuelven a fallar si Tomcat no cambió.
+- `datos`, `distributivo`, `identidad` y `salida` se despliegan con Tomcat 11.0.29.
+
+**Documentos que hay que poner al día.** Ninguno.
