@@ -214,7 +214,7 @@ description: "Tareas de F19-H02: validar antes de exportar y registrar la export
   - `secretaria.demo` genera el CSV y la suma de la pantalla es el SHA-256 del archivo descargado (`crypto` de Node);
   - la exportación aparece en la lista;
   - axe-core sin fallas con la suma y la lista, y con la lista vacía (SC-009).
-- [ ] T028 [US2] En `deploy/probar_documento_firmable.sh`, según `contracts/demostracion.md`:
+- [X] T028 [US2] En `deploy/probar_documento_firmable.sh`, según `contracts/demostracion.md`:
   - la función `exportaciones_siga`;
   - **R1:** sin `EXPORTACION_SIGA_RECHAZADA` y la lista vacía;
   - **R4:** 403 en las exportaciones para `rectorado.demo`, `coordinacion.demo` y `admin.demo`;
@@ -229,30 +229,30 @@ description: "Tareas de F19-H02: validar antes de exportar y registrar la export
 
 ## Phase 5: Polish & Cross-Cutting Concerns
 
-- [ ] T029 Correr el build completo (`./gradlew build integrationTest jacocoTestReport --continue`), la SPA (`npm run tipos`, `lint`, `formato:verificar`, `test`) y Playwright. Comprobar:
+- [X] T029 Correr el build completo (`./gradlew build integrationTest jacocoTestReport --continue`), la SPA (`npm run tipos`, `lint`, `formato:verificar`, `test`) y Playwright. Comprobar:
   - la cobertura de Reporting, Firma y Generación (mínimo 60 %, D-32);
   - Spotless, SpotBugs, ArchUnit y Spring Modulith en verde;
   - que Reporting no depende de clases de Firma, Generación ni Aprobación (FR-023);
   - Gitleaks sobre `main..HEAD`;
   - `BitacoraSinBorradoContratoTest` de Usuarios con `--rerun-tasks`: ninguna descripción de escritura nombra la bitácora (lección del PR #289);
   - el script completo contra el perfil local, con la base recreada (R1 a R11).
-- [ ] T030 [P] Revisar el JavaDoc (principio XII) en `CondicionesDeExportacion`, `FirmasDeLaVersion`, `ExportacionSiga`, `SumaDeVerificacion`, `GenerarCsvSiga`, `FirmasDeLasVersiones`, `ExportacionesSiga`, `RegistroEnBitacora`, `ConsultarFirmasDeLaVersion` y `GuardarContenidoCongeladoServicio`:
+- [X] T030 [P] Revisar el JavaDoc (principio XII) en `CondicionesDeExportacion`, `FirmasDeLaVersion`, `ExportacionSiga`, `SumaDeVerificacion`, `GenerarCsvSiga`, `FirmasDeLasVersiones`, `ExportacionesSiga`, `RegistroEnBitacora`, `ConsultarFirmasDeLaVersion` y `GuardarContenidoCongeladoServicio`:
   - por qué las inconsistencias se fijan al congelar y solo si la versión es la vigente;
   - por qué se falla cerrado sin el dato;
   - por qué el rechazo se registra sin bloquear el 409;
   - por qué se conserva `CSV_SIGA_GENERADO`;
   - por qué Firma no decide qué es «firmada».
-- [ ] T031 [P] Medir SC-007 y anotarlo en la evidencia:
+- [X] T031 [P] Medir SC-007 y anotarlo en la evidencia:
   - el tiempo de T023 con 300 docentes;
   - de punta a punta en el perfil local, por el API Gateway (`curl -w '%{time_total}'`, cinco pedidos);
   - el tiempo de la Secretaría desde que abre la pantalla hasta tener la suma (menos de 1 minuto).
-- [ ] T032 El recorrido de `quickstart.md` §1 a §3, con el teclado, en el perfil real:
+- [X] T032 El recorrido de `quickstart.md` §1 a §3, con el teclado, en el perfil real:
   - comparar la suma de la pantalla con `sha256sum`;
   - copiarla;
   - ver la lista y la bitácora.
 
   El lector de pantalla de «Exportación a SIGA» (pendiente desde F19-H01) queda para el autor, y se anota.
-- [ ] T033 Crear `specs/061-exportacion-siga/evidencia.md`, como la de 060: las pruebas, el script, las mediciones, el recorrido, las desviaciones y los criterios de terminado. Anotar que el caso límite «La conexión se corta después de registrar» se cumple por diseño (el registro se guarda antes de responder, T023) y no tiene una prueba propia. Anotar como pendientes del autor el lector de pantalla (de F19-H01 y de esta historia) y la sección del equipo de demostración, después de fusionar.
+- [X] T033 Crear `specs/061-exportacion-siga/evidencia.md`, como la de 060: las pruebas, el script, las mediciones, el recorrido, las desviaciones y los criterios de terminado. Anotar que el caso límite «La conexión se corta después de registrar» se cumple por diseño (el registro se guarda antes de responder, T023) y no tiene una prueba propia. Anotar como pendientes del autor el lector de pantalla (de F19-H01 y de esta historia) y la sección del equipo de demostración, después de fusionar.
 - [ ] T034 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde.
   - Antes, verificar la demo en solo lectura: «Sano» y la V3 de Reporting y la V11 de Generación aplicadas.
   - El PR lleva `Closes #267` y, si el autor lo confirma, cierra también la feature F19 (#258).
