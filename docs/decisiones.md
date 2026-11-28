@@ -118,6 +118,7 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-117 | 2026-11-21 | El reporte general: la ruta interna de los docentes de una versión congelada suma su dedicación y sus horas; Reporting suma los totales institucionales en su dominio; PDF/A-2b horizontal y CSV con una fila por docente y una de totales; cada descarga queda en la bitácora como `REPORTE_GENERAL_DESCARGADO` | Aceptada | RF-46, RF-48, RNF-SEG-04, D-101, D-115 |
 | D-118 | 2026-11-22 | `libc6` de `cloudflared` espera con una excepción de Grype hasta que Cloudflare reconstruya la imagen | Aceptada | D-54, D-81, D-96 |
 | D-119 | 2026-11-22 | El CSV para SIGA: Reporting arma las filas de la versión publicada desde el contenido congelado completo y las comprueba contra el reporte general; las escribe el puerto `ExportadorSiga` con el layout de exportación, un YAML versionado que carga la Secretaría; el contenido congelado guarda el tipo de identificación | Aceptada | RF-52, RNF-COM-02, RNF-SEG-04, ADR-002, ADR-007, D-04, D-16, D-113, D-115, D-117 |
+| D-120 | 2026-11-28 | La exportación a SIGA: Reporting valida las firmas (ruta interna de Firma por versión) y las inconsistencias abiertas que Generación fija al congelar, rechaza con todos los motivos y lo anota en la bitácora; cada CSV entregado es una `ExportacionSiga` con su SHA-256, guardada con su entrada `CSV_SIGA_GENERADO` antes de entregar | Aceptada | RF-44, RF-53, RNF-INT-01, MD-07, MD-11, D-113, D-115, D-119 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -2741,3 +2742,44 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 - F19-H02 suma la validación previa, la suma de verificación y el registro `ExportacionSiga` sobre este CSV.
 
 **Documentos que hay que poner al día.** El glosario (`sdd/modelo_dominio.md` y su `.docx`), con los tres términos nuevos.
+
+## D-120. La exportación a SIGA: Reporting valida las firmas (ruta interna de Firma por versión) y las inconsistencias abiertas que Generación fija al congelar, rechaza con todos los motivos y lo anota en la bitácora; cada CSV entregado es una `ExportacionSiga` con su SHA-256, guardada con su entrada `CSV_SIGA_GENERADO` antes de entregar
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-28 · **Decidido por:** autor de la tesis
+- **Origen:** F19-H02 (#267); aclaraciones del 2026-11-22 de `specs/061-exportacion-siga/spec.md` y su plan (`research.md` §1 a §12)
+- **Relacionadas:** RF-44, RF-53, RNF-INT-01, MD-07, MD-11, D-16, D-23, D-105, D-113, D-115, D-119, ADR-018, ADR-023; principios I, III, V, VII, VIII, IX, X y XIII
+- **Estimación:** las 13 h restantes de la feature F19 (D-119), por su tamaño S.
+
+**Decisión.**
+- **«Firmada»:** Firma publica `consultarFirmasDeLaVersion` (`/interno/firma/periodos/{periodo}/versiones/{numero}/firmas`), con el token de proceso. Devuelve el `hashContenido` del documento CONSOLIDADO de esa versión, sus pasos (`FIRMADO`, `PENDIENTE` o `RECHAZADO`; el `EN_TURNO` público sale como `PENDIENTE`), y si sus firmas están anuladas o se rechazó en firma. Sin documento, 404. Firma solo informa; la regla es de Reporting: el `hashContenido` es el de la publicación, hay al menos un paso, todos están firmados y no está anulada ni rechazada.
+- **«Sin inconsistencias»:** Generación guarda, al guardar el contenido congelado (D-115), las duras y las blandas sin justificar del panel, en dos columnas opcionales de `contenido_congelado` (V11), solo si el panel es de esa misma versión. `consultarContenidoCongelado` las devuelve como `inconsistenciasAbiertas`. Reporting exige 0 y 0. **Ajuste a FR-003:** sin el registro (contenido anterior a esta decisión, o tardío con una reforma en curso), la versión no se exporta (`INCONSISTENCIAS_SIN_REGISTRO`).
+- **La validación:** `CondicionesDeExportacion`, en el dominio de Reporting, junta todos los motivos (`SIN_DOCUMENTO_FIRMADO`, `DOCUMENTO_DE_OTRA_VERSION`, `FIRMAS_ANULADAS_O_RECHAZADAS`, `FIRMAS_INCOMPLETAS`, `INCONSISTENCIAS_SIN_REGISTRO`, `INCONSISTENCIAS_ABIERTAS`) y rechaza con `ExportacionRechazada`, que sale como `REPORTING_VERSION_NO_EXPORTABLE` (409): la descripción es la fija del catálogo, y cada condición que falla va en un detalle (`firmas`, `inconsistencias`) con sus números, como `VALIDACIONOCS_INCONSISTENCIAS_ABIERTAS`; sin hashes. Va después de `SinPublicacion` y antes de las comprobaciones de D-119.
+- **La suma de verificación:** `SumaDeVerificacion`, el SHA-256 de los bytes entregados en hexadecimal en minúsculas, con `MessageDigest` del JDK. Llega en el encabezado `X-Suma-Verificacion`, no en `Repr-Digest`, que usa base64. La operación sigue siendo GET.
+- **El registro:** el agregado `ExportacionSiga` (id, quién, cuándo, periodo, versión y su hash, versión del layout, nombre, filas y suma) en `reporting.exportacion_siga` (V3), sin `update` ni `delete`. Se guarda en la misma transacción que su entrada, antes de entregar. El archivo no se guarda: la versión y el layout bastan para regenerarlo idéntico. `consultarExportacionesSiga` lista las del periodo, de la más reciente a la más antigua.
+- **La bitácora:** `CSV_SIGA_GENERADO` se conserva y suma `{exportacion, filas, sha256}` a su `nuevo`: una sola entrada por exportación. `EXPORTACION_SIGA_RECHAZADA` (objeto `{periodo, version}`, `nuevo` `{motivos, firmados, pasos, duras, blandas}`) solo para el rechazo de `CondicionesDeExportacion`, en su propia transacción; si no se guarda, el 409 sale igual. `SinPublicacion`, un proceso caído y el contenido inconsistente no dejan entrada (aclaración del 2026-11-22).
+- **Los permisos:** `PUBLICACION:APROBACION` en las dos operaciones públicas; la ruta de Firma, solo `PROCESO`. La matriz D-16 no cambia.
+- **La pantalla:** «Exportación a SIGA» suma el aviso de la hoja de cálculo (`AVISO_DEL_CSV_SIGA`, aclaración del 2026-11-22), la suma con un botón para copiarla, la línea de `certutil` y `sha256sum`, y la tabla «Exportaciones del periodo». La validación corre solo al exportar.
+- **El glosario:** entra «Suma de verificación».
+- **La demostración:** R1, R4, R5 y R9 ampliados; R11, la tabla sin `update` ni `delete`.
+- **Error nuevo:** `REPORTING_VERSION_NO_EXPORTABLE` (409, Negocio).
+
+**Por qué.**
+- RF-53 pide comprobar «firmado, sin inconsistencias», no darlo por hecho porque llegó a PUBLICADO.
+- Firma es el dueño de la cadena, y la versión publicada vigente puede no ser la última del periodo (D-113): por eso la ruta es por versión.
+- Las inconsistencias se calculan al abrir el panel, con la oferta y las reglas del día; fijarlas al congelar es la única forma de comprobarlas sobre lo que se firmó, y cubre los ajustes del Vicerrector posteriores a la revisión (RF-35).
+- Solo se exporta lo que se pudo comprobar.
+- Un solo nombre de acción por exportación en la bitácora.
+
+**Alternativas.**
+- Dar «firmada» por hecho; usar `consultarDocumentoFirmable`, que da el documento vigente; que Firma responda un booleano.
+- Evaluar el panel al exportar; generalizar el motor para versiones que no son la vigente; guardar la lista completa; que Aprobación anote el número al pasar a revisión.
+- `Repr-Digest`; guardar el CSV; un número correlativo por periodo; pasar a POST.
+- Renombrar la acción a `EXPORTACION_SIGA_REGISTRADA`; fallar con 500 si no se guarda la entrada del rechazo.
+- Un indicador previo en la pantalla; una pantalla para subir un archivo y verificarlo (aclaraciones del 2026-11-22).
+
+**Consecuencias.**
+- Una versión congelada antes de esta decisión no se exporta; el script recrea el distributivo, y en el equipo de demostración 2026-I todavía no se congeló.
+- `datos`, `distributivo` y `salida` se despliegan de la misma versión.
+- El rechazo por firmas o inconsistencias no se puede provocar por el flujo normal: lo cubren las pruebas, no el script.
+
+**Documentos que hay que poner al día.** El glosario (`sdd/modelo_dominio.md` y su `.docx`), con «Suma de verificación».

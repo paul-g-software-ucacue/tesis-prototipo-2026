@@ -2,13 +2,17 @@ package ec.mdd.reporting.adaptadores.entrada;
 
 import ec.mdd.reporting.adaptadores.entrada.api.CampoDelLayoutSiga;
 import ec.mdd.reporting.adaptadores.entrada.api.ColumnaDelLayoutSiga;
+import ec.mdd.reporting.adaptadores.entrada.api.ExportacionesSiga;
 import ec.mdd.reporting.adaptadores.entrada.api.LayoutSiga;
 import ec.mdd.reporting.adaptadores.entrada.api.LayoutsSiga;
 import ec.mdd.reporting.adaptadores.entrada.api.SigaApi;
 import ec.mdd.reporting.adaptadores.entrada.api.TraduccionDeCodigo;
 import ec.mdd.reporting.dominio.ArchivoSiga;
 import ec.mdd.reporting.dominio.ColumnaDelLayout;
+import ec.mdd.reporting.dominio.CsvExportado;
+import ec.mdd.reporting.dominio.ExportacionSiga;
 import ec.mdd.reporting.dominio.LayoutExportacion;
+import ec.mdd.reporting.puertos.entrada.ConsultarExportacionesSiga;
 import ec.mdd.reporting.puertos.entrada.GenerarCsvSiga;
 import ec.mdd.reporting.puertos.entrada.GestionarLayoutSiga;
 import java.io.IOException;
@@ -34,6 +38,9 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 class SigaControlador implements SigaApi {
 
+    /** El encabezado con el SHA-256 del CSV entregado (F19-H02, D-120). */
+    static final String SUMA_VERIFICACION = "X-Suma-Verificacion";
+
     private static final String PERMISO = "hasAuthority('PERMISO_PUBLICACION:APROBACION')";
     private static final MediaType CSV = new MediaType("text", "csv", StandardCharsets.UTF_8);
     private static final MediaType YAML = new MediaType("text", "yaml", StandardCharsets.UTF_8);
@@ -43,18 +50,26 @@ class SigaControlador implements SigaApi {
 
     private final GenerarCsvSiga generar;
     private final GestionarLayoutSiga layouts;
+    private final ConsultarExportacionesSiga exportaciones;
 
-    SigaControlador(GenerarCsvSiga generar, GestionarLayoutSiga layouts) {
+    SigaControlador(
+            GenerarCsvSiga generar,
+            GestionarLayoutSiga layouts,
+            ConsultarExportacionesSiga exportaciones) {
         this.generar = generar;
         this.layouts = layouts;
+        this.exportaciones = exportaciones;
     }
 
     @Override
     @PreAuthorize(PERMISO)
     public ResponseEntity<Resource> generarCsvSiga(String periodo) {
-        ArchivoSiga archivo = generar.generar(periodo, ReportesControlador.quien());
+        CsvExportado exportado = generar.generar(periodo, ReportesControlador.quien());
+        ArchivoSiga archivo = exportado.archivo();
         return ResponseEntity.ok()
                 .contentType(CSV)
+                // F19-H02 (D-120): la suma de los bytes del cuerpo, la del registro.
+                .header(SUMA_VERIFICACION, exportado.exportacion().suma().valor())
                 .header(
                         HttpHeaders.CONTENT_DISPOSITION,
                         ContentDisposition.attachment()
@@ -63,6 +78,33 @@ class SigaControlador implements SigaApi {
                                 .toString())
                 .cacheControl(CacheControl.noStore())
                 .body(new ByteArrayResource(archivo.contenido()));
+    }
+
+    // F19-H02 (D-120, FR-018): las exportaciones del periodo, de la más reciente a la más antigua.
+    @Override
+    @PreAuthorize(PERMISO)
+    public ResponseEntity<ExportacionesSiga> consultarExportacionesSiga(String periodo) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(
+                        new ExportacionesSiga(
+                                periodo,
+                                exportaciones.delPeriodo(periodo).stream()
+                                        .map(SigaControlador::exportacion)
+                                        .toList()));
+    }
+
+    private static ec.mdd.reporting.adaptadores.entrada.api.ExportacionSiga exportacion(
+            ExportacionSiga exportacion) {
+        return new ec.mdd.reporting.adaptadores.entrada.api.ExportacionSiga(
+                exportacion.id(),
+                exportacion.version(),
+                exportacion.layout(),
+                exportacion.nombre(),
+                exportacion.filas(),
+                exportacion.suma().valor(),
+                exportacion.usuario(),
+                exportacion.momento().atOffset(ZoneOffset.UTC));
     }
 
     @Override

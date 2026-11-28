@@ -1102,7 +1102,8 @@ paths:
       description: >-
         Solo entre procesos, con el token de proceso: lo usa Reporting para el CSV para SIGA
         (F19-H01, D-119). El contenido completo de cada docente de una versión congelada, con el
-        mismo cálculo tardío de las otras dos rutas.
+        mismo cálculo tardío de las otras dos rutas. Las inconsistencias abiertas se fijan al guardar el
+        contenido, no se recalculan (F19-H02, D-120).
       responses:
         '200':
           description: El hash de la versión y la carga congelada de cada docente.
@@ -1228,6 +1229,23 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CargaCongeladaDelDocente'
+        inconsistenciasAbiertas:
+          $ref: '#/components/schemas/InconsistenciasAlCongelar'
+    InconsistenciasAlCongelar:
+      description: >-
+        Las duras y las blandas sin justificar de la versión cuando se guardó su contenido
+        (F19-H02, D-120). Falta si se guardó antes de F19-H02, o tarde, cuando la versión ya no era
+        la vigente.
+      type: object
+      additionalProperties: false
+      required: [duras, blandas]
+      properties:
+        duras:
+          type: integer
+          minimum: 0
+        blandas:
+          type: integer
+          minimum: 0
     TipoDeIdentificacion:
       type: string
       enum: [CEDULA, PASAPORTE]

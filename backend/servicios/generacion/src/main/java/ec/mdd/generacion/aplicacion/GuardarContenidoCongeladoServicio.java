@@ -3,7 +3,11 @@ package ec.mdd.generacion.aplicacion;
 import ec.mdd.generacion.dominio.ContenidoCongelado;
 import ec.mdd.generacion.dominio.DocenteActivo;
 import ec.mdd.generacion.dominio.EstadoDeVersion;
+import ec.mdd.generacion.dominio.InconsistenciasAlCongelar;
+import ec.mdd.generacion.dominio.PanelDeInconsistencias;
+import ec.mdd.generacion.dominio.Severidad;
 import ec.mdd.generacion.dominio.VersionDistributivo;
+import ec.mdd.generacion.puertos.entrada.ConsultarPanel;
 import ec.mdd.generacion.puertos.entrada.GuardarContenidoCongelado;
 import ec.mdd.generacion.puertos.entrada.PeriodoNoEncontrado;
 import ec.mdd.generacion.puertos.salida.DatosParaElDocumento;
@@ -38,6 +42,7 @@ public final class GuardarContenidoCongeladoServicio implements GuardarContenido
     private final RepositorioContenidoCongelado repositorio;
     private final DatosParaSugerencia datos;
     private final DatosParaElDocumento carreras;
+    private final ConsultarPanel panel;
     private final Transaccion transaccion;
     private final Clock reloj;
 
@@ -46,6 +51,7 @@ public final class GuardarContenidoCongeladoServicio implements GuardarContenido
      * @param repositorio el contenido congelado
      * @param datos la oferta del periodo y los docentes activos
      * @param carreras los nombres de las carreras
+     * @param panel las inconsistencias de la versión vigente (F19-H02, D-120)
      * @param transaccion la transacción del guardado
      * @param reloj el momento del guardado
      */
@@ -54,12 +60,14 @@ public final class GuardarContenidoCongeladoServicio implements GuardarContenido
             RepositorioContenidoCongelado repositorio,
             DatosParaSugerencia datos,
             DatosParaElDocumento carreras,
+            ConsultarPanel panel,
             Transaccion transaccion,
             Clock reloj) {
         this.distributivos = distributivos;
         this.repositorio = repositorio;
         this.datos = datos;
         this.carreras = carreras;
+        this.panel = panel;
         this.transaccion = transaccion;
         this.reloj = reloj;
     }
@@ -105,11 +113,17 @@ public final class GuardarContenidoCongeladoServicio implements GuardarContenido
                         datos.ofertaDelPeriodo(periodo).orElseThrow(PeriodoNoEncontrado::new),
                         carreras.nombresDeCarreras(),
                         activos);
+        Optional<InconsistenciasAlCongelar> inconsistencias =
+                inconsistencias(periodo, numero, tardio);
         boolean guardado =
                 transaccion.ejecutar(
                         () ->
                                 repositorio.guardar(
-                                        version.id(), contenido, reloj.instant(), tardio));
+                                        version.id(),
+                                        contenido,
+                                        inconsistencias,
+                                        reloj.instant(),
+                                        tardio));
         if (guardado && tardio) {
             LOG.warn(
                     "Contenido congelado calculado tarde, con la oferta de ahora: periodo {},"
@@ -118,5 +132,40 @@ public final class GuardarContenidoCongeladoServicio implements GuardarContenido
                     numero);
         }
         return true;
+    }
+
+    /**
+     * Las inconsistencias abiertas de la versión, del panel, que siempre evalúa la vigente
+     * (F19-H02, D-120). Solo cuentan si el panel es de esta misma versión: al congelar lo es; en un
+     * guardado tardío, durante una reforma ya no, y no se adivinan.
+     *
+     * <p>Si el panel falla al congelar, se propaga: el reenvío de publicaciones repite el guardado
+     * (ADR-018), porque el contenido no se puede guardar dos veces y sin el dato la versión no se
+     * exporta. En un guardado tardío se guarda sin él, para no dejar sin reporte a quien lo pidió.
+     */
+    private Optional<InconsistenciasAlCongelar> inconsistencias(
+            String periodo, int numero, boolean tardio) {
+        PanelDeInconsistencias actual;
+        try {
+            actual = panel.panel(periodo);
+        } catch (RuntimeException fallo) {
+            if (!tardio) {
+                throw fallo;
+            }
+            LOG.warn(
+                    "Contenido congelado tardío sin inconsistencias: el panel no se pudo evaluar"
+                            + " (periodo {}, versión {})",
+                    periodo,
+                    numero,
+                    fallo);
+            return Optional.empty();
+        }
+        if (!actual.creado() || actual.numero() != numero) {
+            return Optional.empty();
+        }
+        return Optional.of(
+                new InconsistenciasAlCongelar(
+                        Math.toIntExact(actual.abiertas(Severidad.DURA)),
+                        Math.toIntExact(actual.abiertas(Severidad.BLANDA))));
     }
 }

@@ -11,6 +11,7 @@ import ec.mdd.generacion.dominio.CargaHoraria;
 import ec.mdd.generacion.dominio.Componente;
 import ec.mdd.generacion.dominio.Dedicacion;
 import ec.mdd.generacion.dominio.DocenteDeLaVersion;
+import ec.mdd.generacion.dominio.InconsistenciasAlCongelar;
 import ec.mdd.generacion.dominio.TipoDeIdentificacion;
 import ec.mdd.generacion.puertos.entrada.ConsultarContenidoCongelado;
 import ec.mdd.plataforma.errores.ErroresAutoConfiguracion;
@@ -109,6 +110,19 @@ class InternoGeneracionContratoTest {
                 .contains("\"identificacion\":\"0109990020\",\"nombre\":\"VEGA LUIS\"}");
         // Sin tipo de identificación: no estaba activo al congelar (D-119).
         assertThat(cuerpo.split("tipoIdentificacion", -1)).hasSize(2);
+        // F19-H02 (D-120): las inconsistencias abiertas fijadas al congelar.
+        assertThat(cuerpo).endsWith(",\"inconsistenciasAbiertas\":{\"duras\":1,\"blandas\":2}}");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void dadoUnContenidoSinInconsistenciasRegistradas_cuandoUnProcesoLoPide_entoncesSinElCampo()
+            throws Exception {
+        MvcResult resultado = pedir(CONTENIDO.formatted("2026-I", 3), deProceso());
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getContentAsString())
+                .doesNotContain("inconsistenciasAbiertas");
         contrato.validar(resultado);
     }
 
@@ -227,9 +241,16 @@ class InternoGeneracionContratoTest {
                                             BigDecimal.ZERO,
                                             BigDecimal.ZERO,
                                             BigDecimal.ZERO));
-                    return version == 1
-                            ? Optional.of(new ContenidoCompleto(HASH, List.of(ana, luis)))
-                            : Optional.empty();
+                    return switch (version) {
+                        case 1 ->
+                                Optional.of(
+                                        new ContenidoCompleto(
+                                                HASH,
+                                                List.of(ana, luis),
+                                                Optional.of(new InconsistenciasAlCongelar(1, 2))));
+                        case 3 -> Optional.of(new ContenidoCompleto(HASH, List.of(ana)));
+                        default -> Optional.empty();
+                    };
                 }
 
                 @Override

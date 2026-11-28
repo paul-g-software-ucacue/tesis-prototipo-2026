@@ -162,3 +162,11 @@ No hay estados nuevos. Una `ExportacionSiga` existe o no existe.
 | Rechazado por `CondicionesDeExportacion` | Una entrada `EXPORTACION_SIGA_RECHAZADA`, si se pudo guardar |
 | Falla técnica (contenido, totales, proceso) | Nada |
 | Entregado | Una `ExportacionSiga` y su entrada `CSV_SIGA_GENERADO`, guardadas juntas |
+
+## Ajustes al implementar (2026-11-28)
+
+- **Generación:** las inconsistencias no van en el record `ContenidoCongelado`, que tiene muchos usos, sino en `RepositorioContenidoCongelado.guardar(..., Optional<InconsistenciasAlCongelar>, ...)`, en `inconsistencias(periodo, numero)` y en `ConsultarContenidoCongelado.ContenidoCompleto`. Si el panel falla al congelar, el error se propaga para que el reenvío de publicaciones lo reintente (ADR-018). En un guardado tardío, el contenido se guarda sin ellas.
+- **Reporting:** `ExportacionSiga.de` recibe el número del layout y la cantidad de filas, no el `LayoutExportacion` ni las `FilasParaSiga`: así el agregado no depende de ellos.
+- **El 409:** `VerificadorDeCatalogo` exige que la descripción sea la del catálogo, así que el mensaje no se arma con los motivos. Cada condición que falla va en un `detalle` (`firmas`, `inconsistencias`), como en `VALIDACIONOCS_INCONSISTENCIAS_ABIERTAS` (research §8).
+- **La pantalla:** el aviso de FR-019a usa `role="note"`. El `Alert` de MUI tiene `role="alert"` por defecto, y con ese rol el aviso se confundía con los errores.
+- **El script:** las exportaciones de corridas anteriores no se pueden borrar, así que se cuentan desde que empezó la corrida (contracts/demostracion.md).

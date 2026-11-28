@@ -11,7 +11,7 @@ F19-H02 (#267). Se amplía `frontend/src/pantallas/siga/Siga.tsx` (research §7)
   - **el botón «Copiar la suma de verificación»:** usa `navigator.clipboard.writeText`. Al copiar, «Se copió la suma de verificación.» en la región `aria-live`. Si el navegador no deja copiar, «No se pudo copiar; selecciónela y cópiela a mano.», sin error;
   - **la línea de FR-011:** «Para comprobarla: en Windows, `certutil -hashfile siga-2026-I-v1.csv SHA256`; en Linux, `sha256sum siga-2026-I-v1.csv`.», con el nombre del archivo generado;
   - se invalida la consulta de las exportaciones del periodo.
-- **Si falla:** el `titulo` y la `descripcion` del catálogo en el `Alert` con `role="alert"` que ya existe. El 409 de `REPORTING_VERSION_NO_EXPORTABLE` muestra «Versión no exportable» y el mensaje con los motivos. Ni la suma ni la línea aparecen.
+- **Si falla:** el `titulo` y la `descripcion` del catálogo en el `Alert` con `role="alert"` que ya existe. El 409 de `REPORTING_VERSION_NO_EXPORTABLE` muestra «Versión no exportable», la descripción del catálogo y la lista de sus `detalles` (uno por condición que falla). Ni la suma ni la línea aparecen.
 - **Al cambiar de periodo** se borran el mensaje, la suma y el error del anterior.
 
 ## Sección «Exportaciones del periodo» (US2, FR-018)

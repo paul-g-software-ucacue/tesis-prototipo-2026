@@ -24,13 +24,22 @@ import {
   CLAVE_LAYOUT,
   MAXIMO_DEL_ARCHIVO,
   cargarLayout,
+  claveDeExportaciones,
   descargarPlantilla,
   generarCsvSiga,
+  useExportacionesSiga,
   useLayoutsSiga,
+  type CsvGenerado,
   type LayoutSiga,
 } from './consultas';
 
 const FECHA = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil' });
+const HORA = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'America/Guayaquil',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
 const CAPTION = { captionSide: 'top', textAlign: 'left', px: 0 } as const;
 const ACCION_DE_CARGA = 'Cargar archivo de mapeo';
 // Para el lector de pantalla: el encabezado de la columna de los botones.
@@ -46,8 +55,117 @@ const OCULTO = {
   width: 1,
 } as const;
 
+/**
+ * El aviso de FR-019a (F19-H02, aclaración del 2026-11-22): como el de «Reportes», más la suma de
+ * verificación, que deja de coincidir si el archivo se vuelve a guardar.
+ */
+export const AVISO_DEL_CSV_SIGA =
+  'El archivo va a SIGA tal como sale. Si lo abre en una hoja de cálculo, importe la columna de la identificación como texto para no perder el cero inicial de la cédula, y no lo vuelva a guardar: un archivo guardado de nuevo deja de coincidir con su suma de verificación.';
+
 function fecha(momento: string) {
   return FECHA.format(new Date(momento));
+}
+
+/** «aaaa-mm-dd hh:mm» en la hora de Ecuador. */
+function fechaYHora(momento: string) {
+  return `${fecha(momento)} ${HORA.format(new Date(momento))}`;
+}
+
+/**
+ * La suma de verificación del CSV generado, con un botón para copiarla y cómo comprobarla en
+ * Windows y en Linux (F19-H02, FR-011, FR-019). Si el navegador no deja copiar, se puede
+ * seleccionar a mano.
+ */
+function SumaDelCsv({ generado }: { generado: CsvGenerado & { suma: string } }) {
+  const [copia, setCopia] = useState('');
+  const copiar = async () => {
+    try {
+      await navigator.clipboard.writeText(generado.suma);
+      setCopia('Se copió la suma de verificación.');
+    } catch {
+      setCopia('No se pudo copiar; selecciónela y cópiela a mano.');
+    }
+  };
+  return (
+    <Box sx={{ my: 1 }}>
+      <Typography variant="body1">Suma de verificación (SHA-256):</Typography>
+      <Box
+        component="code"
+        sx={{ display: 'block', wordBreak: 'break-all', fontFamily: 'monospace', my: 0.5 }}
+      >
+        {generado.suma}
+      </Box>
+      <Button variant="outlined" size="small" onClick={() => void copiar()}>
+        Copiar la suma de verificación
+      </Button>
+      <Typography role="status" aria-live="polite" variant="body2" sx={{ my: 0.5 }}>
+        {copia}
+      </Typography>
+      <Typography variant="body2">
+        {`Para comprobarla: en Windows, certutil -hashfile ${generado.nombre} SHA256; en Linux, sha256sum ${generado.nombre}.`}
+      </Typography>
+    </Box>
+  );
+}
+
+/** Las exportaciones del periodo, de la más reciente a la más antigua (F19-H02, FR-018). */
+function ExportacionesDelPeriodo({ periodo }: { periodo: string }) {
+  const exportaciones = useExportacionesSiga(periodo);
+  return (
+    <section aria-labelledby="exportaciones-del-periodo">
+      <Typography id="exportaciones-del-periodo" component="h2" variant="h5" gutterBottom>
+        Exportaciones del periodo
+      </Typography>
+      {exportaciones.error && <AvisoDeError mensaje={traducirError(exportaciones.error)} />}
+      {!exportaciones.data && !exportaciones.error && (
+        <Typography role="status" aria-live="polite">
+          Cargando…
+        </Typography>
+      )}
+      {exportaciones.data?.exportaciones.length === 0 && (
+        <Typography>Todavía no se exportó el CSV para SIGA de este periodo.</Typography>
+      )}
+      {exportaciones.data && exportaciones.data.exportaciones.length > 0 && (
+        <TableContainer sx={{ my: 2 }}>
+          <Table size="small">
+            <caption style={{ captionSide: 'top' }}>
+              <Typography component="span" variant="h6" sx={CAPTION}>
+                {`Exportaciones del CSV para SIGA de ${periodo}`}
+              </Typography>
+            </caption>
+            <TableHead>
+              <TableRow>
+                <TableCell scope="col">Fecha y hora</TableCell>
+                <TableCell scope="col">Usuario</TableCell>
+                <TableCell scope="col">Versión</TableCell>
+                <TableCell scope="col">Layout</TableCell>
+                <TableCell scope="col">Archivo</TableCell>
+                <TableCell scope="col">Suma de verificación</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {exportaciones.data.exportaciones.map((una) => (
+                <TableRow key={una.id}>
+                  <TableCell>{fechaYHora(una.exportadaEn)}</TableCell>
+                  <TableCell>{una.exportadaPor}</TableCell>
+                  <TableCell>{una.version}</TableCell>
+                  <TableCell>
+                    {una.layout === 0 ? 'Por defecto' : `Versión ${String(una.layout)}`}
+                  </TableCell>
+                  <TableCell>{una.nombre}</TableCell>
+                  <TableCell>
+                    <Box component="code" sx={{ wordBreak: 'break-all', fontFamily: 'monospace' }}>
+                      {una.sumaVerificacion}
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+    </section>
+  );
 }
 
 /** «Se generará con el layout por defecto.» o con la versión cargada, su fecha y quién. */
@@ -80,7 +198,8 @@ function CsvParaSiga({ layout }: { layout: LayoutSiga | undefined }) {
   const publicaciones = usePublicaciones();
   const [periodo, setPeriodo] = useState<string | null>(null);
   const [generando, setGenerando] = useState(false);
-  const [generado, setGenerado] = useState<string | null>(null);
+  const [generado, setGenerado] = useState<CsvGenerado | null>(null);
+  const cliente = useQueryClient();
   const [fallo, setFallo] = useState<MensajeDeError | null>(null);
   const elegido = periodo ?? publicaciones.data?.[0]?.periodo ?? null;
   const publicacion = publicaciones.data?.find((una) => una.periodo === elegido);
@@ -91,6 +210,7 @@ function CsvParaSiga({ layout }: { layout: LayoutSiga | undefined }) {
     setGenerando(true);
     try {
       setGenerado(await generarCsvSiga(codigo));
+      await cliente.invalidateQueries({ queryKey: claveDeExportaciones(codigo) });
     } catch (error) {
       setFallo(traducirError(error));
     } finally {
@@ -99,50 +219,71 @@ function CsvParaSiga({ layout }: { layout: LayoutSiga | undefined }) {
   };
 
   return (
-    <section aria-labelledby="csv-para-siga">
-      <Typography id="csv-para-siga" component="h2" variant="h5" gutterBottom>
-        CSV para SIGA
-      </Typography>
-      {publicaciones.error && <AvisoDeError mensaje={traducirError(publicaciones.error)} />}
-      {!publicaciones.data && !publicaciones.error && (
-        <Typography role="status" aria-live="polite">
-          Cargando…
+    <>
+      <section aria-labelledby="csv-para-siga">
+        <Typography id="csv-para-siga" component="h2" variant="h5" gutterBottom>
+          CSV para SIGA
         </Typography>
-      )}
-      {publicaciones.data?.length === 0 && (
-        <Alert severity="info" role="status" sx={{ my: 2 }}>
-          Ningún periodo tiene un distributivo publicado. El CSV para SIGA sale de la versión
-          publicada.
-        </Alert>
-      )}
-      {publicaciones.data && publicacion && elegido !== null && (
-        <Stack spacing={1}>
-          <Eleccion
-            etiqueta="Periodo"
-            campo="periodo"
-            valor={elegido}
-            opciones={publicaciones.data.map((una) => [una.periodo, una.periodo] as const)}
-            aviso={null}
-            alCambiar={(valor) => {
-              setPeriodo(valor === '' ? null : valor);
-              setGenerado(null);
-              setFallo(null);
-            }}
-          />
-          <DeLaPublicacion publicacion={publicacion} />
-          {layout && <Typography variant="body1">{conQueLayout(layout)}</Typography>}
-          <div>
-            <Button variant="contained" disabled={generando} onClick={() => void generar(elegido)}>
-              {generando ? 'Generando…' : 'Generar CSV para SIGA'}
-            </Button>
-          </div>
-        </Stack>
-      )}
-      <Typography role="status" aria-live="polite" sx={{ my: 1 }}>
-        {generado ? `Se generó ${generado}.` : ''}
-      </Typography>
-      {fallo && <AvisoDeError mensaje={fallo} />}
-    </section>
+        {publicaciones.error && <AvisoDeError mensaje={traducirError(publicaciones.error)} />}
+        {!publicaciones.data && !publicaciones.error && (
+          <Typography role="status" aria-live="polite">
+            Cargando…
+          </Typography>
+        )}
+        {publicaciones.data?.length === 0 && (
+          <Alert severity="info" role="status" sx={{ my: 2 }}>
+            Ningún periodo tiene un distributivo publicado. El CSV para SIGA sale de la versión
+            publicada.
+          </Alert>
+        )}
+        {publicaciones.data && publicacion && elegido !== null && (
+          <Stack spacing={1}>
+            <Eleccion
+              etiqueta="Periodo"
+              campo="periodo"
+              valor={elegido}
+              opciones={publicaciones.data.map((una) => [una.periodo, una.periodo] as const)}
+              aviso={null}
+              alCambiar={(valor) => {
+                setPeriodo(valor === '' ? null : valor);
+                setGenerado(null);
+                setFallo(null);
+              }}
+            />
+            <DeLaPublicacion publicacion={publicacion} />
+            {layout && <Typography variant="body1">{conQueLayout(layout)}</Typography>}
+            <Alert severity="info" role="note">
+              {AVISO_DEL_CSV_SIGA}
+            </Alert>
+            <div>
+              <Button
+                variant="contained"
+                disabled={generando}
+                onClick={() => void generar(elegido)}
+              >
+                {generando ? 'Generando…' : 'Generar CSV para SIGA'}
+              </Button>
+            </div>
+          </Stack>
+        )}
+        <Typography role="status" aria-live="polite" sx={{ my: 1 }}>
+          {generado ? `Se generó ${generado.nombre}.` : ''}
+        </Typography>
+        {generado?.suma && <SumaDelCsv generado={{ ...generado, suma: generado.suma }} />}
+        {fallo && (
+          <AvisoDeError mensaje={fallo}>
+            {fallo.detalles.length > 0 && (
+              <Box component="ul" sx={{ mt: 1, mb: 0, pl: 3 }}>
+                {fallo.detalles.map((detalle) => (
+                  <li key={`${detalle.campo}-${detalle.descripcion}`}>{detalle.descripcion}</li>
+                ))}
+              </Box>
+            )}
+          </AvisoDeError>
+        )}
+      </section>
+      {publicacion && elegido !== null && <ExportacionesDelPeriodo periodo={elegido} />}
+    </>
   );
 }
 

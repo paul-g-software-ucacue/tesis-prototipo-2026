@@ -2,12 +2,21 @@ package ec.mdd.reporting.adaptadores.salida;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ec.mdd.reporting.dominio.CsvGenerado;
+import ec.mdd.reporting.dominio.CondicionesDeExportacion;
 import ec.mdd.reporting.dominio.DescargaDeReporte;
+import ec.mdd.reporting.dominio.ExportacionSiga;
+import ec.mdd.reporting.dominio.FirmasDeLaVersion;
 import ec.mdd.reporting.dominio.Formato;
+import ec.mdd.reporting.dominio.InconsistenciasAbiertas;
 import ec.mdd.reporting.dominio.LayoutCargado;
+import ec.mdd.reporting.dominio.Publicacion;
+import ec.mdd.reporting.dominio.RechazoDeExportacion;
+import ec.mdd.reporting.dominio.SumaDeVerificacion;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -51,10 +60,23 @@ class RegistroEnBitacoraEventosTest {
     }
 
     @Test
-    void dadoUnCsvParaSiga_cuandoSeRegistra_entoncesLlevaLaVersionYElLayoutSinDatosPersonales() {
-        Map<String, Object> entrada =
-                RegistroEnBitacoraEventos.entrada(
-                        new CsvGenerado("secretaria.demo", AHORA, "2026-I", 1, 3));
+    void
+            dadoUnCsvParaSiga_cuandoSeRegistra_entoncesLlevaLaVersionElLayoutYLaSumaSinDatosPersonales() {
+        // F19-H02 (D-120): la misma entrada, desde la exportación, con su suma y su registro.
+        UUID id = UUID.fromString("00000000-0000-0000-0000-000000000007");
+        ExportacionSiga exportacion =
+                new ExportacionSiga(
+                        id,
+                        "secretaria.demo",
+                        AHORA,
+                        "2026-I",
+                        1,
+                        "a".repeat(64),
+                        3,
+                        "siga-2026-I-v1.csv",
+                        165,
+                        new SumaDeVerificacion("b".repeat(64)));
+        Map<String, Object> entrada = RegistroEnBitacoraEventos.entrada(exportacion);
 
         assertThat(entrada)
                 .containsEntry("accion", "CSV_SIGA_GENERADO")
@@ -62,8 +84,84 @@ class RegistroEnBitacoraEventosTest {
                 .containsEntry("momento", "2026-11-21T15:00:00Z")
                 .containsEntry("periodo", "2026-I")
                 .containsEntry("objeto", Map.of("periodo", "2026-I", "version", 1))
-                .containsEntry("nuevo", Map.of("layout", 3))
+                .containsEntry(
+                        "nuevo",
+                        Map.of(
+                                "layout",
+                                3,
+                                "exportacion",
+                                id.toString(),
+                                "filas",
+                                165,
+                                "sha256",
+                                "b".repeat(64)))
                 .doesNotContainKey("anterior");
+        assertThat(entrada.toString()).doesNotContain("a".repeat(64));
+    }
+
+    // F19-H02 (D-120): el rechazo por firmas o inconsistencias, sin hashes ni datos personales.
+    @Test
+    void dadoUnRechazoDeExportacion_cuandoSeRegistra_entoncesLlevaLosMotivosYSusNumeros() {
+        CondicionesDeExportacion condiciones =
+                CondicionesDeExportacion.de(
+                        new Publicacion("2026-I", 1, "a".repeat(64), AHORA, "secretaria", false),
+                        Optional.of(
+                                new FirmasDeLaVersion(
+                                        "a".repeat(64),
+                                        List.of(
+                                                new FirmasDeLaVersion.PasoFirmado(1, true),
+                                                new FirmasDeLaVersion.PasoFirmado(2, false)),
+                                        false,
+                                        false)),
+                        Optional.of(new InconsistenciasAbiertas(1, 0)));
+
+        Map<String, Object> entrada =
+                RegistroEnBitacoraEventos.entrada(
+                        new RechazoDeExportacion(
+                                "secretaria.demo", AHORA, "2026-I", 1, condiciones));
+
+        assertThat(entrada)
+                .containsEntry("accion", "EXPORTACION_SIGA_RECHAZADA")
+                .containsEntry("usuario", "secretaria.demo")
+                .containsEntry("momento", "2026-11-21T15:00:00Z")
+                .containsEntry("periodo", "2026-I")
+                .containsEntry("objeto", Map.of("periodo", "2026-I", "version", 1))
+                .containsEntry(
+                        "nuevo",
+                        Map.of(
+                                "motivos",
+                                List.of("FIRMAS_INCOMPLETAS", "INCONSISTENCIAS_ABIERTAS"),
+                                "firmados",
+                                1,
+                                "pasos",
+                                2,
+                                "duras",
+                                1,
+                                "blandas",
+                                0))
+                .doesNotContainKey("anterior");
+        assertThat(entrada.toString()).doesNotContain("a".repeat(64));
+    }
+
+    @Test
+    void dadoUnRechazoSinDocumentoNiRegistro_cuandoSeRegistra_entoncesSoloLosMotivos() {
+        CondicionesDeExportacion condiciones =
+                CondicionesDeExportacion.de(
+                        new Publicacion("2026-I", 1, "a".repeat(64), AHORA, "secretaria", false),
+                        Optional.empty(),
+                        Optional.empty());
+
+        Map<String, Object> entrada =
+                RegistroEnBitacoraEventos.entrada(
+                        new RechazoDeExportacion(
+                                "secretaria.demo", AHORA, "2026-I", 1, condiciones));
+
+        assertThat(entrada)
+                .containsEntry(
+                        "nuevo",
+                        Map.of(
+                                "motivos",
+                                List.of("SIN_DOCUMENTO_FIRMADO", "INCONSISTENCIAS_SIN_REGISTRO")));
     }
 
     @Test

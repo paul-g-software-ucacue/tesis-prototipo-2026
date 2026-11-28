@@ -135,9 +135,10 @@ public class ConfiguracionGeneracion {
             RepositorioContenidoCongelado repositorio,
             DatosParaSugerencia datos,
             DatosParaElDocumento nombres,
+            ConsultarPanel panel,
             Transaccion transaccion) {
         return new GuardarContenidoCongeladoServicio(
-                distributivos, repositorio, datos, nombres, transaccion, Clock.systemUTC());
+                distributivos, repositorio, datos, nombres, panel, transaccion, Clock.systemUTC());
     }
 
     /** El contenido congelado para Reporting, por la ruta interna (F20-H01, D-115). */

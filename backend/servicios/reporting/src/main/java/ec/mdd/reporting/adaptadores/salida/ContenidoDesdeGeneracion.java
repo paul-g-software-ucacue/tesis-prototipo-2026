@@ -11,6 +11,7 @@ import ec.mdd.reporting.dominio.DocentesDeLaVersion;
 import ec.mdd.reporting.dominio.FilaDeActividad;
 import ec.mdd.reporting.dominio.FilaDeAsignatura;
 import ec.mdd.reporting.dominio.HorasPorComponente;
+import ec.mdd.reporting.dominio.InconsistenciasAbiertas;
 import ec.mdd.reporting.dominio.TipoDeIdentificacion;
 import ec.mdd.reporting.puertos.salida.ContenidoDeLaVersion;
 import java.math.BigDecimal;
@@ -95,7 +96,23 @@ public final class ContenidoDesdeGeneracion implements ContenidoDeLaVersion {
         }
         return new CargasDeLaVersion(
                 completo.hash(),
-                completo.cargas().stream().map(ContenidoDesdeGeneracion::contenido).toList());
+                completo.cargas().stream().map(ContenidoDesdeGeneracion::contenido).toList(),
+                inconsistencias(completo.inconsistenciasAbiertas()));
+    }
+
+    // F19-H02 (D-120): opcionales, pero si vienen, con sus dos números desde 0.
+    private static Optional<InconsistenciasAbiertas> inconsistencias(Inconsistencias leidas) {
+        if (leidas == null) {
+            return Optional.empty();
+        }
+        if (leidas.duras() == null
+                || leidas.blandas() == null
+                || leidas.duras() < 0
+                || leidas.blandas() < 0) {
+            throw new ProcesoConError(
+                    "Generación respondió las inconsistencias de una versión incompletas.");
+        }
+        return Optional.of(new InconsistenciasAbiertas(leidas.duras(), leidas.blandas()));
     }
 
     private UriComponentsBuilder rutaDeCargas(String periodo, int version) {
@@ -193,7 +210,10 @@ public final class ContenidoDesdeGeneracion implements ContenidoDeLaVersion {
             Horas horas) {}
 
     /** Los datos del docente. */
-    record Completo(String hash, List<Carga> cargas) {}
+    record Completo(String hash, List<Carga> cargas, Inconsistencias inconsistenciasAbiertas) {}
+
+    /** Las inconsistencias abiertas al congelar, como las responde Generación (F19-H02). */
+    record Inconsistencias(Integer duras, Integer blandas) {}
 
     record DocenteDeLaCarga(
             String identificacion,

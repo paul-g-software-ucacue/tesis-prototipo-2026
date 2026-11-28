@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { instalarApiSimulada, json, type ApiSimulada } from '../../pruebas/apiSimulada';
 import { montarSpa } from '../../pruebas/montarSpa';
 import { cerrarSesion, iniciarSesion } from '../../sesion/almacen';
+import { AVISO_DEL_CSV_SIGA } from './Siga';
 
 const HASH = 'a'.repeat(64);
 const PUBLICACION = {
@@ -42,6 +43,20 @@ function cargado(numero: number) {
 }
 const LAYOUT = '/api/reporting/layout-siga';
 const CSV = '/api/reporting/periodos/2026-I/csv-siga';
+const EXPORTACIONES = '/api/reporting/periodos/2026-I/exportaciones-siga';
+const SUMA = 'b'.repeat(64);
+function exportada(id: string, layout: number, exportadaEn: string, suma = SUMA) {
+  return {
+    id,
+    version: 1,
+    layout,
+    nombre: 'siga-2026-I-v1.csv',
+    filas: 165,
+    sumaVerificacion: suma,
+    exportadaPor: 'secretaria.demo',
+    exportadaEn,
+  };
+}
 
 describe('Exportación a SIGA', () => {
   let simulada: ApiSimulada;
@@ -59,6 +74,7 @@ describe('Exportación a SIGA', () => {
     );
     simulada.responder('GET', '/api/reporting/publicaciones', json(200, [PUBLICACION]));
     simulada.responder('GET', LAYOUT, json(200, { vigente: POR_DEFECTO, anteriores: [] }));
+    simulada.responder('GET', EXPORTACIONES, json(200, { periodo: '2026-I', exportaciones: [] }));
     iniciarSesion('cabecera.cuerpo.firma', new Date(Date.now() + 60_000));
   });
 
@@ -154,6 +170,164 @@ describe('Exportación a SIGA', () => {
       'aria-live',
       'polite',
     );
+  });
+
+  // F19-H02 (D-120, FR-019a): el aviso de la hoja de cálculo y el rechazo por firmas o
+  // inconsistencias.
+  it('con publicaciones, avisa que el archivo va tal como sale y cómo abrirlo', async () => {
+    montarSpa('/exportacion-siga');
+
+    expect(await screen.findByText(AVISO_DEL_CSV_SIGA)).toBeVisible();
+  });
+
+  it('sin publicaciones, no muestra el aviso', async () => {
+    simulada.responder('GET', '/api/reporting/publicaciones', json(200, []));
+    montarSpa('/exportacion-siga');
+
+    await screen.findByText(
+      'Ningún periodo tiene un distributivo publicado. El CSV para SIGA sale de la versión publicada.',
+    );
+    expect(screen.queryByText(AVISO_DEL_CSV_SIGA)).toBeNull();
+  });
+
+  it('si la versión no se puede exportar, muestra el catálogo y cada condición que falla', async () => {
+    simulada.responder(
+      'GET',
+      CSV,
+      json(409, {
+        titulo: 'Versión no exportable',
+        descripcion:
+          'La versión publicada no tiene todas sus firmas o tiene inconsistencias abiertas, así que no se exporta. Avisa al Vicerrector académico.',
+        codigo: 'REPORTING_VERSION_NO_EXPORTABLE',
+        detalles: [
+          { campo: 'firmas', descripcion: 'Tiene 2 de 3 firmas.' },
+          { campo: 'inconsistencias', descripcion: 'Tiene 1 dura y 2 blandas sin justificar.' },
+        ],
+      }),
+    );
+    montarSpa('/exportacion-siga');
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Generar CSV para SIGA' }));
+
+    const alerta = await screen.findByRole('alert');
+    expect(within(alerta).getByText('Versión no exportable')).toBeVisible();
+    const lista = within(alerta).getByRole('list');
+    expect(
+      within(lista)
+        .getAllByRole('listitem')
+        .map((uno) => uno.textContent),
+    ).toEqual(['Tiene 2 de 3 firmas.', 'Tiene 1 dura y 2 blandas sin justificar.']);
+    expect(screen.queryByText(/Suma de verificación/)).toBeNull();
+  });
+
+  // F19-H02 (D-120): la suma de verificación, cómo comprobarla y las exportaciones del periodo.
+  function conSuma() {
+    simulada.responder(
+      'GET',
+      CSV,
+      () =>
+        new Response(new Blob(['ID\r\n']), {
+          status: 200,
+          headers: {
+            'Content-Disposition': 'attachment; filename="siga-2026-I-v1.csv"',
+            'X-Suma-Verificacion': SUMA,
+          },
+        }),
+    );
+  }
+
+  it('después de generar, muestra la suma, cómo comprobarla y la exportación nueva', async () => {
+    capturarDescargas();
+    conSuma();
+    montarSpa('/exportacion-siga');
+    expect(
+      await screen.findByText('Todavía no se exportó el CSV para SIGA de este periodo.'),
+    ).toBeVisible();
+    simulada.responder(
+      'GET',
+      EXPORTACIONES,
+      json(200, {
+        periodo: '2026-I',
+        exportaciones: [
+          exportada('00000000-0000-0000-0000-000000000001', 0, '2026-11-28T15:30:00Z'),
+        ],
+      }),
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Generar CSV para SIGA' }));
+
+    expect(await screen.findByText('Suma de verificación (SHA-256):')).toBeVisible();
+    expect(screen.getAllByText(SUMA)[0]).toBeVisible();
+    expect(
+      screen.getByText(
+        'Para comprobarla: en Windows, certutil -hashfile siga-2026-I-v1.csv SHA256; en Linux, sha256sum siga-2026-I-v1.csv.',
+      ),
+    ).toBeVisible();
+    const tabla = await screen.findByRole('table', {
+      name: 'Exportaciones del CSV para SIGA de 2026-I',
+    });
+    expect(within(tabla).getByText('2026-11-28 10:30')).toBeVisible();
+    expect(within(tabla).getByText('Por defecto')).toBeVisible();
+  });
+
+  it('copia la suma, y si el navegador no deja, dice cómo hacerlo a mano', async () => {
+    capturarDescargas();
+    conSuma();
+    const escribir = vi
+      .fn()
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error('no'));
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: escribir },
+      configurable: true,
+    });
+    montarSpa('/exportacion-siga');
+    await userEvent.click(await screen.findByRole('button', { name: 'Generar CSV para SIGA' }));
+    const copiar = await screen.findByRole('button', { name: 'Copiar la suma de verificación' });
+
+    await userEvent.click(copiar);
+    expect(await screen.findByText('Se copió la suma de verificación.')).toBeVisible();
+    expect(escribir).toHaveBeenCalledWith(SUMA);
+
+    await userEvent.click(copiar);
+    expect(
+      await screen.findByText('No se pudo copiar; selecciónela y cópiela a mano.'),
+    ).toBeVisible();
+  });
+
+  it('lista las exportaciones del periodo con su layout y su suma', async () => {
+    simulada.responder(
+      'GET',
+      EXPORTACIONES,
+      json(200, {
+        periodo: '2026-I',
+        exportaciones: [
+          exportada(
+            '00000000-0000-0000-0000-000000000002',
+            2,
+            '2026-11-28T16:00:00Z',
+            'c'.repeat(64),
+          ),
+          exportada('00000000-0000-0000-0000-000000000001', 0, '2026-11-28T15:00:00Z'),
+        ],
+      }),
+    );
+    montarSpa('/exportacion-siga');
+
+    const tabla = await screen.findByRole('table', {
+      name: 'Exportaciones del CSV para SIGA de 2026-I',
+    });
+    const filas = within(tabla).getAllByRole('row').slice(1);
+    expect(filas.map((fila) => within(fila).getAllByRole('cell')[3]?.textContent)).toEqual([
+      'Versión 2',
+      'Por defecto',
+    ]);
+    expect(within(filas[0] as HTMLElement).getByText('c'.repeat(64))).toBeVisible();
+    expect(
+      within(tabla)
+        .getAllByRole('columnheader')
+        .map((uno) => uno.textContent),
+    ).toEqual(['Fecha y hora', 'Usuario', 'Versión', 'Layout', 'Archivo', 'Suma de verificación']);
   });
 
   it('si el periodo no tiene publicación, muestra el error del catálogo', async () => {

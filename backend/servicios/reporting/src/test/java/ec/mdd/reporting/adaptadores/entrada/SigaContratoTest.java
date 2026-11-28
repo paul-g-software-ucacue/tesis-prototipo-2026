@@ -15,11 +15,20 @@ import ec.mdd.reporting.dominio.ArchivoIlegible;
 import ec.mdd.reporting.dominio.ArchivoSiga;
 import ec.mdd.reporting.dominio.CampoDelLayout;
 import ec.mdd.reporting.dominio.ColumnaDelLayout;
+import ec.mdd.reporting.dominio.CondicionesDeExportacion;
 import ec.mdd.reporting.dominio.ContenidoInconsistente;
+import ec.mdd.reporting.dominio.CsvExportado;
+import ec.mdd.reporting.dominio.ExportacionRechazada;
+import ec.mdd.reporting.dominio.ExportacionSiga;
+import ec.mdd.reporting.dominio.FirmasDeLaVersion;
+import ec.mdd.reporting.dominio.InconsistenciasAbiertas;
 import ec.mdd.reporting.dominio.LayoutExportacion;
 import ec.mdd.reporting.dominio.LayoutInvalido;
 import ec.mdd.reporting.dominio.ProblemaDelLayout;
+import ec.mdd.reporting.dominio.Publicacion;
 import ec.mdd.reporting.dominio.SinPublicacion;
+import ec.mdd.reporting.dominio.SumaDeVerificacion;
+import ec.mdd.reporting.puertos.entrada.ConsultarExportacionesSiga;
 import ec.mdd.reporting.puertos.entrada.GenerarCsvSiga;
 import ec.mdd.reporting.puertos.entrada.GestionarLayoutSiga;
 import java.nio.charset.StandardCharsets;
@@ -27,6 +36,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +64,7 @@ import org.springframework.test.web.servlet.request.AbstractMockHttpServletReque
 class SigaContratoTest {
 
     private static final String CSV = "/api/reporting/periodos/%s/csv-siga";
+    private static final String EXPORTACIONES = "/api/reporting/periodos/%s/exportaciones-siga";
     private static final String LAYOUT = "/api/reporting/layout-siga";
     private static final String PLANTILLA = "/api/reporting/layout-siga/plantilla.yaml";
     private static final String APROBACION = "PUBLICACION:APROBACION";
@@ -80,7 +92,55 @@ class SigaContratoTest {
         assertThat(resultado.getResponse().getContentAsString(StandardCharsets.UTF_8))
                 .startsWith("NUMERO_IDENTIFICACION,");
         assertThat(PEDIDOS).containsExactly("csv/secretaria.demo/2026-I");
+        // F19-H02 (D-120): la suma de verificación es el SHA-256 del cuerpo.
+        assertThat(resultado.getResponse().getHeader("X-Suma-Verificacion"))
+                .isEqualTo(
+                        SumaDeVerificacion.de(resultado.getResponse().getContentAsByteArray())
+                                .valor());
         contrato.validar(resultado);
+    }
+
+    @Test
+    void dadasLasExportacionesDelPeriodo_cuandoSeConsultan_entoncesLaMasRecientePrimeroSinCache()
+            throws Exception {
+        MvcResult resultado = pedir(get(EXPORTACIONES.formatted("2026-I")), APROBACION);
+
+        assertThat(resultado.getResponse().getStatus()).isEqualTo(200);
+        assertThat(resultado.getResponse().getHeader("Cache-Control")).isEqualTo("no-store");
+        assertThat(resultado.getResponse().getContentAsString())
+                .isEqualTo(
+                        "{\"periodo\":\"2026-I\",\"exportaciones\":[{\"id\":"
+                                + "\"00000000-0000-0000-0000-000000000002\",\"version\":1,"
+                                + "\"layout\":2,\"nombre\":\"siga-2026-I-v1.csv\",\"filas\":165,"
+                                + "\"sumaVerificacion\":\""
+                                + "c".repeat(64)
+                                + "\",\"exportadaPor\":\"secretaria.demo\","
+                                + "\"exportadaEn\":\"2026-11-22T15:01:00Z\"},{\"id\":"
+                                + "\"00000000-0000-0000-0000-000000000001\",\"version\":1,"
+                                + "\"layout\":0,\"nombre\":\"siga-2026-I-v1.csv\",\"filas\":165,"
+                                + "\"sumaVerificacion\":\""
+                                + "b".repeat(64)
+                                + "\",\"exportadaPor\":\"secretaria.demo\","
+                                + "\"exportadaEn\":\"2026-11-22T15:00:00Z\"}]}");
+        contrato.validar(resultado);
+    }
+
+    @Test
+    void
+            dadosUnPeriodoSinExportacionesUnoInvalidoYSinPermiso_cuandoSeConsultan_entonces200O400O403()
+                    throws Exception {
+        MvcResult vacia = pedir(get(EXPORTACIONES.formatted("2027-I")), APROBACION);
+        MvcResult invalido = pedir(get(EXPORTACIONES.formatted("p".repeat(21))), APROBACION);
+        MvcResult sinPermiso = pedir(get(EXPORTACIONES.formatted("2026-I")), "REPORTES:LECTURA");
+
+        assertThat(vacia.getResponse().getStatus()).isEqualTo(200);
+        assertThat(vacia.getResponse().getContentAsString())
+                .isEqualTo("{\"periodo\":\"2027-I\",\"exportaciones\":[]}");
+        assertThat(invalido.getResponse().getStatus()).isEqualTo(400);
+        assertThat(sinPermiso.getResponse().getStatus()).isEqualTo(403);
+        contrato.validar(vacia);
+        contrato.validar(invalido);
+        contrato.validar(sinPermiso);
     }
 
     @Test
@@ -218,6 +278,32 @@ class SigaContratoTest {
     }
 
     /** Los casos de uso, que anotan quién pide. */
+    // F19-H02 (D-120): la versión publicada sin todas sus firmas o con inconsistencias abiertas.
+    @Test
+    void dadaUnaVersionNoExportable_cuandoSeGenera_entonces409ConUnDetallePorCondicion()
+            throws Exception {
+        MvcResult faltan = pedir(get(CSV.formatted("2026-N")), APROBACION);
+        MvcResult sinNada = pedir(get(CSV.formatted("2026-R")), APROBACION);
+
+        assertThat(faltan.getResponse().getStatus()).isEqualTo(409);
+        assertThat(faltan.getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .contains(
+                        "REPORTING_VERSION_NO_EXPORTABLE",
+                        "Versión no exportable",
+                        "{\"campo\":\"firmas\",\"descripcion\":\"Tiene 2 de 3 firmas.\"}",
+                        "{\"campo\":\"inconsistencias\",\"descripcion\":\"Tiene 1 dura y 2"
+                                + " blandas sin justificar.\"}")
+                .doesNotContain("a".repeat(64))
+                .doesNotContain("Exception");
+        assertThat(sinNada.getResponse().getContentAsString(StandardCharsets.UTF_8))
+                .contains(
+                        "{\"campo\":\"firmas\",\"descripcion\":\"No tiene documento firmado.\"}",
+                        "{\"campo\":\"inconsistencias\",\"descripcion\":\"No se registraron sus"
+                                + " inconsistencias al congelarla.\"}");
+        contrato.validar(faltan);
+        contrato.validar(sinNada);
+    }
+
     @TestConfiguration(proxyBeanMethods = false)
     static class Dobles {
 
@@ -234,13 +320,80 @@ class SigaContratoTest {
                                             + "a".repeat(64));
                     case "2026-Y" -> throw new ProcesoConError("distributivo caído");
                     case "2026-Z" -> throw new ProcesoSinRespuesta();
+                    case "2026-N" -> throw rechazo(periodo, true);
+                    case "2026-R" -> throw rechazo(periodo, false);
                     default -> throw new SinPublicacion(periodo);
                 }
-                return new ArchivoSiga(
-                        "NUMERO_IDENTIFICACION,COMPONENTE,HORAS_SEMANALES\r\n"
-                                .getBytes(StandardCharsets.UTF_8),
-                        "siga-2026-I-v1.csv");
+                ArchivoSiga archivo =
+                        new ArchivoSiga(
+                                "NUMERO_IDENTIFICACION,COMPONENTE,HORAS_SEMANALES\r\n"
+                                        .getBytes(StandardCharsets.UTF_8),
+                                "siga-2026-I-v1.csv");
+                return new CsvExportado(
+                        archivo,
+                        ExportacionSiga.de(
+                                new Publicacion(
+                                        periodo, 1, "a".repeat(64), AHORA, "secretaria", false),
+                                0,
+                                archivo,
+                                0,
+                                quien,
+                                AHORA));
             };
+        }
+
+        private static ExportacionRechazada rechazo(String periodo, boolean conDatos) {
+            CondicionesDeExportacion condiciones =
+                    CondicionesDeExportacion.de(
+                            new Publicacion(periodo, 1, "a".repeat(64), AHORA, "secretaria", false),
+                            conDatos
+                                    ? Optional.of(
+                                            new FirmasDeLaVersion(
+                                                    "a".repeat(64),
+                                                    List.of(
+                                                            new FirmasDeLaVersion.PasoFirmado(
+                                                                    1, true),
+                                                            new FirmasDeLaVersion.PasoFirmado(
+                                                                    2, true),
+                                                            new FirmasDeLaVersion.PasoFirmado(
+                                                                    3, false)),
+                                                    false,
+                                                    false))
+                                    : Optional.empty(),
+                            conDatos
+                                    ? Optional.of(new InconsistenciasAbiertas(1, 2))
+                                    : Optional.empty());
+            return new ExportacionRechazada(periodo, 1, condiciones);
+        }
+
+        @Bean
+        ConsultarExportacionesSiga consultarExportacionesSiga() {
+            return periodo ->
+                    "2026-I".equals(periodo)
+                            ? List.of(
+                                    new ExportacionSiga(
+                                            UUID.fromString("00000000-0000-0000-0000-000000000002"),
+                                            "secretaria.demo",
+                                            AHORA.plusSeconds(60),
+                                            periodo,
+                                            1,
+                                            "a".repeat(64),
+                                            2,
+                                            "siga-2026-I-v1.csv",
+                                            165,
+                                            new SumaDeVerificacion("c".repeat(64))),
+                                    new ExportacionSiga(
+                                            UUID.fromString("00000000-0000-0000-0000-000000000001"),
+                                            "secretaria.demo",
+                                            AHORA,
+                                            periodo,
+                                            1,
+                                            "a".repeat(64),
+                                            0,
+                                            "siga-2026-I-v1.csv",
+                                            165,
+                                            new SumaDeVerificacion("b".repeat(64))))
+                            : List.of();
         }
 
         @Bean

@@ -1,6 +1,7 @@
 package ec.mdd.generacion;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ec.mdd.generacion.adaptadores.salida.RepositorioContenidoCongeladoJdbc;
 import ec.mdd.generacion.adaptadores.salida.RepositorioDistributivosJdbc;
@@ -13,6 +14,7 @@ import ec.mdd.generacion.dominio.Componente;
 import ec.mdd.generacion.dominio.ContenidoCongelado;
 import ec.mdd.generacion.dominio.Dedicacion;
 import ec.mdd.generacion.dominio.DocenteDeLaVersion;
+import ec.mdd.generacion.dominio.InconsistenciasAlCongelar;
 import ec.mdd.generacion.dominio.TipoDeIdentificacion;
 import ec.mdd.generacion.dominio.VersionDistributivo;
 import ec.mdd.generacion.infraestructura.GeneracionFlywayConfig;
@@ -20,6 +22,7 @@ import ec.mdd.generacion.puertos.entrada.MotivoDeVersion;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.AfterAll;
@@ -44,6 +47,7 @@ class ContenidoCongeladoIntegrationTest {
     private static RepositorioDistributivosJdbc distributivos;
     private static RepositorioContenidoCongeladoJdbc repositorio;
     private static TransaccionSpring transaccion;
+    private static JdbcClient jdbc;
 
     @BeforeAll
     static void levantar() {
@@ -53,7 +57,7 @@ class ContenidoCongeladoIntegrationTest {
                 new DriverManagerDataSource(
                         postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
         new GeneracionFlywayConfig().flywayGeneracion(dataSource).migrate();
-        JdbcClient jdbc = JdbcClient.create(dataSource);
+        jdbc = JdbcClient.create(dataSource);
         distributivos = new RepositorioDistributivosJdbc(jdbc);
         repositorio = new RepositorioContenidoCongeladoJdbc(jdbc);
         transaccion =
@@ -72,9 +76,11 @@ class ContenidoCongeladoIntegrationTest {
         VersionDistributivo version = congelada(periodo);
         ContenidoCongelado contenido = contenido(periodo, 1, "8");
 
-        boolean primera = repositorio.guardar(version.id(), contenido, MOMENTO, false);
+        boolean primera =
+                repositorio.guardar(version.id(), contenido, Optional.empty(), MOMENTO, false);
         boolean segunda =
-                repositorio.guardar(version.id(), contenido(periodo, 1, "6"), MOMENTO, true);
+                repositorio.guardar(
+                        version.id(), contenido(periodo, 1, "6"), Optional.empty(), MOMENTO, true);
 
         assertThat(primera).isTrue();
         assertThat(segunda).isFalse();
@@ -115,6 +121,7 @@ class ContenidoCongeladoIntegrationTest {
         repositorio.guardar(
                 version.id(),
                 new ContenidoCongelado(periodo, 1, HASH, List.of(sinDedicacion)),
+                Optional.empty(),
                 MOMENTO,
                 true);
 
@@ -136,7 +143,8 @@ class ContenidoCongeladoIntegrationTest {
     void dadaUnaReforma_cuandoSePideLaVersionPublicada_entoncesSeLeeAunqueNoSeaLaVigente() {
         String periodo = periodo();
         VersionDistributivo publicada = congelada(periodo);
-        repositorio.guardar(publicada.id(), contenido(periodo, 1, "8"), MOMENTO, false);
+        repositorio.guardar(
+                publicada.id(), contenido(periodo, 1, "8"), Optional.empty(), MOMENTO, false);
 
         transaccion.ejecutar(
                 () ->
@@ -150,6 +158,73 @@ class ContenidoCongeladoIntegrationTest {
         assertThat(distributivos.version(periodo, 1).orElseThrow().id()).isEqualTo(publicada.id());
         assertThat(distributivos.version(periodo, 3)).isEmpty();
         assertThat(repositorio.docentes(periodo, 1)).hasSize(2);
+    }
+
+    // F19-H02 (D-120): las inconsistencias abiertas se guardan con el contenido y no cambian.
+    @Test
+    void dadasLasInconsistenciasAlCongelar_cuandoSeGuarda_entoncesVuelvenIgualesYSinEllasVacias() {
+        String conEllas = periodo();
+        String sinEllas = periodo();
+        repositorio.guardar(
+                congelada(conEllas).id(),
+                contenido(conEllas, 1, "8"),
+                Optional.of(new InconsistenciasAlCongelar(1, 2)),
+                MOMENTO,
+                false);
+        repositorio.guardar(
+                congelada(sinEllas).id(),
+                contenido(sinEllas, 1, "8"),
+                Optional.empty(),
+                MOMENTO,
+                true);
+
+        assertThat(repositorio.inconsistencias(conEllas, 1))
+                .contains(new InconsistenciasAlCongelar(1, 2));
+        assertThat(repositorio.inconsistencias(sinEllas, 1)).isEmpty();
+        assertThat(repositorio.inconsistencias(conEllas, 2)).isEmpty();
+    }
+
+    @Test
+    void dadoElContenidoGuardado_cuandoSeCambianSusInconsistencias_entoncesLaBaseLoRechaza() {
+        String periodo = periodo();
+        repositorio.guardar(
+                congelada(periodo).id(),
+                contenido(periodo, 1, "8"),
+                Optional.of(new InconsistenciasAlCongelar(0, 0)),
+                MOMENTO,
+                false);
+
+        assertThatThrownBy(
+                        () ->
+                                jdbc.sql(
+                                                "UPDATE generacion.contenido_congelado SET"
+                                                        + " duras_abiertas = 3 WHERE periodo = :p")
+                                        .param("p", periodo)
+                                        .update())
+                .rootCause()
+                .hasMessageContaining("no se puede modificar");
+        assertThat(repositorio.inconsistencias(periodo, 1))
+                .contains(new InconsistenciasAlCongelar(0, 0));
+    }
+
+    @Test
+    void dadaUnaSolaColumnaLlena_cuandoSeInserta_entoncesElCheckLaRechaza() {
+        String periodo = periodo();
+        VersionDistributivo version = congelada(periodo);
+
+        assertThatThrownBy(
+                        () ->
+                                jdbc.sql(
+                                                "INSERT INTO generacion.contenido_congelado"
+                                                        + " (version_id, periodo, numero, hash,"
+                                                        + " guardado_en, tardio, duras_abiertas)"
+                                                        + " VALUES (:v, :p, 1, :h, now(), false,"
+                                                        + " 1)")
+                                        .param("v", version.id())
+                                        .param("p", periodo)
+                                        .param("h", HASH)
+                                        .update())
+                .hasMessageContaining("check");
     }
 
     private static VersionDistributivo congelada(String periodo) {

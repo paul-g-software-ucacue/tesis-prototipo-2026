@@ -170,7 +170,7 @@ Lo que se encontró en el código, y que cambia el diseño:
 `REPORTING_VERSION_NO_EXPORTABLE`:
 - **Estado y clasificación:** 409, Negocio.
 - **Título:** «Versión no exportable».
-- **Mensaje:** se arma con los motivos, sin datos técnicos. Por ejemplo: «La versión 1 de 2026-I no se puede exportar: tiene 2 de 3 firmas y 1 inconsistencia abierta.», o «… no se registraron sus inconsistencias al congelarla.».
+- **Mensaje:** el fijo del catálogo: «La versión publicada no tiene todas sus firmas o tiene inconsistencias abiertas, así que no se exporta. Avisa al Vicerrector académico.» Cada condición que falla va en un detalle, con sus números: `firmas` («Tiene 2 de 3 firmas.», «No tiene documento firmado.», «Su documento firmado es de otra versión.», «Sus firmas se anularon o se rechazó en firma.») e `inconsistencias` («Tiene 1 dura y 2 blandas sin justificar.», «No se registraron sus inconsistencias al congelarla.»). **Ajuste al implementar** (2026-11-28): `VerificadorDeCatalogo` exige que la descripción sea la del catálogo, así que no se puede armar; se sigue `VALIDACIONOCS_INCONSISTENCIAS_ABIERTAS`, que también es un 409 de negocio con detalles.
 - **Acción:** «Avisar al Vicerrector académico: la versión publicada debe tener todas sus firmas y ninguna inconsistencia abierta.».
 - **Causa:** `CondicionesDeExportacion` con motivos.
 - **Descripción técnica:**
@@ -183,7 +183,7 @@ Lo que se encontró en el código, y que cambia el diseño:
 - Los comunes 502 y 504 suman a Firma en su causa.
 - Firma no suma códigos: su 404 interno es `COMUN_RECURSO_NO_ENCONTRADO`.
 
-**El mensaje se arma** como el de Aprobación para las inconsistencias abiertas (`ErroresValidacionocs`, «N duras y M blandas»). El principio XIII reserva `detalles` para los errores de entrada.
+**Los detalles** siguen a Aprobación para las inconsistencias abiertas (`ErroresValidacionocs`, «N duras y M blandas»), el precedente de un 409 de negocio con detalles en el repositorio.
 
 ## §9. Permisos (FR-017)
 

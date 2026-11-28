@@ -324,8 +324,13 @@ paths:
         sin BOM; texto en mayúsculas; NA para lo que no aplica; horas con punto y dos decimales;
         la fecha como aaaa-mm-dd; fórmulas neutralizadas. Sus sumas por docente y componente son
         las del reporte general de la misma versión: si no, no se entrega nada. No lleva quién lo
-        generó ni cuándo, así que la misma versión con el mismo layout da el mismo archivo. Cada
-        CSV deja la entrada CSV_SIGA_GENERADO en la bitácora antes de responder (D-119).
+        generó ni cuándo, así que la misma versión con el mismo layout da el mismo archivo. Antes
+        de generar, valida que la versión publicada vigente tenga todas sus firmas sobre el
+        documento de esa versión y ninguna inconsistencia abierta registrada al congelarla; si no,
+        responde 409 REPORTING_VERSION_NO_EXPORTABLE y deja la entrada EXPORTACION_SIGA_RECHAZADA.
+        Cada archivo entregado es una Exportación a SIGA: su registro y su entrada
+        CSV_SIGA_GENERADO, con la suma de verificación, se guardan juntos antes de responder
+        (D-119, F19-H02, D-120).
       x-mdd-permiso: [PUBLICACION:APROBACION]
       responses:
         '200':
@@ -335,6 +340,8 @@ paths:
               $ref: '#/components/headers/ContentDispositionSiga'
             Cache-Control:
               $ref: '#/components/headers/CacheControl'
+            X-Suma-Verificacion:
+              $ref: '#/components/headers/SumaVerificacion'
           content:
             text/csv:
               schema:
@@ -347,13 +354,43 @@ paths:
         '403':
           $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
         '409':
-          $ref: '#/components/responses/SinPublicacion'
+          $ref: '#/components/responses/NoExportable'
         '500':
           $ref: '#/components/responses/ErrorDelReporte'
         '502':
           $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
         '504':
           $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /api/reporting/periodos/{periodo}/exportaciones-siga:
+    parameters:
+      - $ref: '#/components/parameters/Periodo'
+    get:
+      tags: [Siga]
+      operationId: consultarExportacionesSiga
+      summary: Devuelve las exportaciones a SIGA del periodo, de la más reciente a la más antigua.
+      description: >-
+        Cada CSV para SIGA entregado, con quién, cuándo, la versión, la versión del layout de
+        exportación, el archivo, sus filas y su suma de verificación (F19-H02, D-120). Un periodo
+        sin exportaciones, o sin publicación, da la lista vacía.
+      x-mdd-permiso: [PUBLICACION:APROBACION]
+      responses:
+        '200':
+          description: Las exportaciones del periodo.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportacionesSiga'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
   /api/reporting/layout-siga:
     get:
       tags: [Siga]
@@ -491,7 +528,22 @@ components:
       description: no-store, porque lleva datos personales.
       schema:
         type: string
+    SumaVerificacion:
+      description: >-
+        El SHA-256 de los bytes del cuerpo, en hexadecimal en minúsculas. Es el del registro de la
+        exportación (F19-H02, D-120).
+      schema:
+        type: string
+        pattern: '^[0-9a-f]{64}$'
   responses:
+    NoExportable:
+      description: >-
+        Sin distributivo publicado (REPORTING_SIN_PUBLICACION), o la versión publicada no tiene
+        todas sus firmas o tiene inconsistencias abiertas (REPORTING_VERSION_NO_EXPORTABLE).
+      content:
+        application/json:
+          schema:
+            $ref: '../comun/errores.yaml#/components/schemas/Error'
     SinPublicacion:
       description: El periodo no tiene versión publicada (REPORTING_SIN_PUBLICACION).
       content:
@@ -713,6 +765,51 @@ components:
         generadoPor:
           type: string
         generadoEn:
+          type: string
+          format: date-time
+    ExportacionesSiga:
+      description: Las exportaciones a SIGA de un periodo (F19-H02, D-120).
+      type: object
+      additionalProperties: false
+      required: [periodo, exportaciones]
+      properties:
+        periodo:
+          $ref: '#/components/schemas/CodigoDePeriodo'
+        exportaciones:
+          description: De la más reciente a la más antigua.
+          type: array
+          items:
+            $ref: '#/components/schemas/ExportacionSiga'
+    ExportacionSiga:
+      description: >-
+        Un CSV para SIGA entregado, con su suma de verificación (RF-53). No se edita ni se borra.
+      type: object
+      additionalProperties: false
+      required: [id, version, layout, nombre, filas, sumaVerificacion, exportadaPor, exportadaEn]
+      properties:
+        id:
+          type: string
+          format: uuid
+        version:
+          description: La versión publicada de la que salió.
+          type: integer
+          minimum: 1
+        layout:
+          description: La versión del layout de exportación; 0 es el layout por defecto.
+          type: integer
+          minimum: 0
+        nombre:
+          type: string
+          pattern: '^siga-[A-Za-z0-9._-]{1,20}-v[0-9]+\.csv$'
+        filas:
+          description: Las filas del archivo, sin el encabezado.
+          type: integer
+          minimum: 0
+        sumaVerificacion:
+          $ref: '#/components/schemas/Hash'
+        exportadaPor:
+          type: string
+        exportadaEn:
           type: string
           format: date-time
     LayoutsSiga:

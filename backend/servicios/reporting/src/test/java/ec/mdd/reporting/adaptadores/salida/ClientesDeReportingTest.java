@@ -12,10 +12,13 @@ import ec.mdd.reporting.dominio.Componente;
 import ec.mdd.reporting.dominio.ContenidoDelDocente;
 import ec.mdd.reporting.dominio.Dedicacion;
 import ec.mdd.reporting.dominio.DocentesDeLaVersion;
+import ec.mdd.reporting.dominio.FirmasDeLaVersion;
+import ec.mdd.reporting.dominio.InconsistenciasAbiertas;
 import ec.mdd.reporting.dominio.Publicacion;
 import ec.mdd.reporting.dominio.TipoDeIdentificacion;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.client.RestClient;
@@ -42,6 +45,7 @@ class ClientesDeReportingTest {
             new PublicacionesDesdeAprobacion(consultas, receptor.base());
     private final ContenidoDesdeGeneracion contenido =
             new ContenidoDesdeGeneracion(consultas, receptor.base());
+    private final FirmasDesdeFirma firmas = new FirmasDesdeFirma(consultas, receptor.base());
 
     @AfterEach
     void cerrar() {
@@ -190,6 +194,66 @@ class ClientesDeReportingTest {
         assertThat(ana.actividades().get(0).codigoProyecto()).contains("INV-01");
         assertThat(leidas.cargas().get(1).docente().tipoIdentificacion()).isEmpty();
         assertThat(leidas.cargas().get(1).docente().dedicacion()).isEmpty();
+        // F19-H02 (D-120): un contenido sin inconsistencias registradas.
+        assertThat(leidas.inconsistencias()).isEmpty();
+    }
+
+    // F19-H02 (D-120): las inconsistencias abiertas registradas al congelar.
+    @Test
+    void dadoUnContenidoConSusInconsistencias_cuandoSePide_entoncesLasTraduce() {
+        receptor.responderConsulta(
+                "/interno/generacion/periodos/2026-I/versiones/1/contenido",
+                200,
+                "{\"hash\":\""
+                        + HASH
+                        + "\",\"cargas\":[],\"inconsistenciasAbiertas\":{\"duras\":1,\"blandas\":2}}");
+
+        assertThat(contenido.cargas("2026-I", 1).orElseThrow().inconsistencias())
+                .contains(new InconsistenciasAbiertas(1, 2));
+    }
+
+    @Test
+    void dadasLasFirmasDeUnaVersion_cuandoSePiden_entoncesLasTraduce() {
+        receptor.responderConsulta(
+                "/interno/firma/periodos/2026-I/versiones/1/firmas",
+                200,
+                "{\"periodo\":\"2026-I\",\"version\":1,\"hashContenido\":\""
+                        + HASH
+                        + "\",\"pasos\":[{\"orden\":1,\"estado\":\"FIRMADO\"},"
+                        + "{\"orden\":2,\"estado\":\"PENDIENTE\"},"
+                        + "{\"orden\":3,\"estado\":\"RECHAZADO\"}],"
+                        + "\"anulada\":false,\"rechazada\":true}");
+
+        assertThat(firmas.firmas("2026-I", 1))
+                .contains(
+                        new FirmasDeLaVersion(
+                                HASH,
+                                List.of(
+                                        new FirmasDeLaVersion.PasoFirmado(1, true),
+                                        new FirmasDeLaVersion.PasoFirmado(2, false),
+                                        new FirmasDeLaVersion.PasoFirmado(3, false)),
+                                false,
+                                true));
+    }
+
+    @Test
+    void dadaUnaVersionSinDocumento_cuandoSePidenSusFirmas_entoncesVacio() {
+        receptor.responderConsulta("/interno/firma/periodos/2026-I/versiones/7/firmas", 404, "{}");
+
+        assertThat(firmas.firmas("2026-I", 7)).isEmpty();
+    }
+
+    @Test
+    void dadoUnErrorDeFirmaOUnaRespuestaSinHash_cuandoSePidenLasFirmas_entoncesErrorDelProceso() {
+        receptor.responderConsulta("/interno/firma/periodos/2026-I/versiones/1/firmas", 500, "{}");
+        receptor.responderConsulta(
+                "/interno/firma/periodos/2026-I/versiones/2/firmas",
+                200,
+                "{\"periodo\":\"2026-I\",\"version\":2,\"pasos\":[],"
+                        + "\"anulada\":false,\"rechazada\":false}");
+
+        assertThatThrownBy(() -> firmas.firmas("2026-I", 1)).isInstanceOf(ProcesoConError.class);
+        assertThatThrownBy(() -> firmas.firmas("2026-I", 2)).isInstanceOf(ProcesoConError.class);
     }
 
     @Test

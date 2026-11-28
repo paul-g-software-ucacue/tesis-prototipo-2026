@@ -8,6 +8,7 @@ import ec.mdd.plataforma.pruebas.VerificadorDeCatalogo;
 import ec.mdd.reporting.dominio.ArchivoIlegible;
 import ec.mdd.reporting.dominio.ContenidoInconsistente;
 import ec.mdd.reporting.dominio.DocenteSinDistributivo;
+import ec.mdd.reporting.dominio.ExportacionRechazada;
 import ec.mdd.reporting.dominio.LayoutInvalido;
 import ec.mdd.reporting.dominio.SinPublicacion;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,7 @@ class ErroresReportingTest {
                                 ArchivoDemasiadoGrande.class,
                                 "REPORTING_ARCHIVO_DEMASIADO_GRANDE",
                                 413),
+                        tuple(ExportacionRechazada.class, "REPORTING_VERSION_NO_EXPORTABLE", 409),
                         tuple(
                                 ContenidoInconsistente.class,
                                 "REPORTING_CONTENIDO_INCONSISTENTE",

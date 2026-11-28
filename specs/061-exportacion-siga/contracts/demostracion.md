@@ -6,7 +6,10 @@ F19-H02 (#267). El script ya tiene R1 a R10. Esta historia:
 
 Los demás pasos no cambian. Por el flujo normal no se puede publicar una versión sin firmas ni con inconsistencias abiertas, así que el script no provoca ese rechazo; lo cubren las pruebas (research §10 y §11).
 
-**La función nueva:**
+**Ajuste al implementar (2026-11-28):** `reporting.exportacion_siga` no admite borrar, así que las exportaciones de corridas anteriores se conservan. El script las cuenta desde que empezó la corrida (`exportada_en >= $inicio`), como la bitácora, y la API solo se usa para revisar el contenido de las más recientes. «La lista vacía» de R1 y «2 exportaciones» de R9 se leen así.
+
+**Las funciones nuevas:**
+- **`exportaciones_de_la_corrida`:** cuenta en la base las exportaciones del periodo desde `$inicio`.
 - **`exportaciones_siga`:** pide `consultarExportacionesSiga` de un periodo y devuelve el JSON.
 
 ## R1 · Sin publicación (amplía)

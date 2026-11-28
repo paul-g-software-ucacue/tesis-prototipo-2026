@@ -2,6 +2,8 @@
 // SIGA, descarga la plantilla, carga un layout válido y uno con problemas (US1, US3); el Rector no
 // ve la opción (FR-019); y la pantalla no tiene fallas de accesibilidad con axe-core en sus tres
 // estados (WCAG 2.1 AA, SC-010).
+import { createHash } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { ingresar, simularApi } from './simulacion';
@@ -67,19 +69,40 @@ function version(numero: number, traducida = false) {
 }
 const POR_DEFECTO = { numero: 0, porDefecto: true, sha256: HASH, columnas: COLUMNAS };
 
+// F19-H02 (D-120): el CSV con su suma de verificación, y las exportaciones del periodo.
+const CUERPO_CSV = 'NUMERO_IDENTIFICACION,COMPONENTE,HORAS_SEMANALES\r\n';
+const SUMA = createHash('sha256').update(CUERPO_CSV, 'utf8').digest('hex');
+
 async function simularSiga(pagina: Page) {
   let layouts: unknown = { vigente: POR_DEFECTO, anteriores: [] };
+  const exportaciones: unknown[] = [];
+  await pagina.route('**/api/reporting/periodos/2026-I/exportaciones-siga', (ruta) =>
+    ruta.fulfill({ json: { periodo: '2026-I', exportaciones } }),
+  );
   await pagina.route('**/api/reporting/publicaciones', (ruta) =>
     ruta.fulfill({ json: [PUBLICACION] }),
   );
-  await pagina.route('**/api/reporting/periodos/2026-I/csv-siga', (ruta) =>
-    ruta.fulfill({
+  await pagina.route('**/api/reporting/periodos/2026-I/csv-siga', (ruta) => {
+    exportaciones.unshift({
+      id: `00000000-0000-0000-0000-00000000000${String(exportaciones.length + 1)}`,
+      version: 1,
+      layout: 0,
+      nombre: 'siga-2026-I-v1.csv',
+      filas: 0,
+      sumaVerificacion: SUMA,
+      exportadaPor: 'secretaria.demo',
+      exportadaEn: '2026-11-28T15:30:00Z',
+    });
+    return ruta.fulfill({
       status: 200,
       contentType: 'text/csv; charset=UTF-8',
-      headers: { 'Content-Disposition': 'attachment; filename="siga-2026-I-v1.csv"' },
-      body: 'NUMERO_IDENTIFICACION,COMPONENTE,HORAS_SEMANALES\r\n',
-    }),
-  );
+      headers: {
+        'Content-Disposition': 'attachment; filename="siga-2026-I-v1.csv"',
+        'X-Suma-Verificacion': SUMA,
+      },
+      body: CUERPO_CSV,
+    });
+  });
   await pagina.route('**/api/reporting/layout-siga/plantilla.yaml', (ruta) =>
     ruta.fulfill({
       status: 200,
@@ -171,6 +194,30 @@ test.describe('exportación a SIGA', () => {
     const plantilla = page.waitForEvent('download');
     await page.getByRole('button', { name: 'Descargar plantilla' }).click();
     expect((await plantilla).suggestedFilename()).toBe('layout-siga-plantilla.yaml');
+  });
+
+  test('la suma de la pantalla es el SHA-256 del archivo, y la exportación queda en la lista (US2)', async ({
+    page,
+  }) => {
+    await abrirComoSecretaria(page);
+    await expect(
+      page.getByText('Todavía no se exportó el CSV para SIGA de este periodo.'),
+    ).toBeVisible();
+    await sinFallas(page);
+
+    const csv = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Generar CSV para SIGA' }).click();
+    const ruta = await (await csv).path();
+    const descargado = createHash('sha256')
+      .update(await readFile(ruta))
+      .digest('hex');
+
+    await expect(page.getByText('Suma de verificación (SHA-256):')).toBeVisible();
+    await expect(page.locator('code').first()).toHaveText(descargado);
+    const tabla = page.getByRole('table', { name: 'Exportaciones del CSV para SIGA de 2026-I' });
+    await expect(tabla).toContainText(descargado);
+    await expect(tabla).toContainText('Por defecto');
+    await sinFallas(page);
   });
 
   test('la Secretaría carga un layout con problemas y después uno válido (US3)', async ({

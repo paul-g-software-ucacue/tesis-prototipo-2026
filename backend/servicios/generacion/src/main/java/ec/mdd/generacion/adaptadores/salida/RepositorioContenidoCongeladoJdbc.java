@@ -8,10 +8,12 @@ import ec.mdd.generacion.dominio.Componente;
 import ec.mdd.generacion.dominio.ContenidoCongelado;
 import ec.mdd.generacion.dominio.Dedicacion;
 import ec.mdd.generacion.dominio.DocenteDeLaVersion;
+import ec.mdd.generacion.dominio.InconsistenciasAlCongelar;
 import ec.mdd.generacion.dominio.TipoDeIdentificacion;
 import ec.mdd.generacion.puertos.salida.RepositorioContenidoCongelado;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -36,8 +38,15 @@ public final class RepositorioContenidoCongeladoJdbc implements RepositorioConte
 
     private static final String GUARDAR_CABECERA =
             "INSERT INTO generacion.contenido_congelado (version_id, periodo, numero, hash,"
-                    + " guardado_en, tardio) VALUES (:version, :periodo, :numero, :hash,"
-                    + " :momento, :tardio) ON CONFLICT DO NOTHING";
+                    + " guardado_en, tardio, duras_abiertas, blandas_abiertas) VALUES (:version,"
+                    + " :periodo, :numero, :hash, :momento, :tardio, :duras, :blandas)"
+                    + " ON CONFLICT DO NOTHING";
+
+    // F19-H02 (D-120): las dos columnas se llenan juntas o ninguna.
+    private static final String INCONSISTENCIAS =
+            "SELECT duras_abiertas, blandas_abiertas FROM generacion.contenido_congelado"
+                    + " WHERE periodo = :periodo AND numero = :numero"
+                    + " AND duras_abiertas IS NOT NULL";
 
     private static final String GUARDAR_CARGA =
             "INSERT INTO generacion.carga_congelada (version_id, docente, nombre, contenido)"
@@ -79,7 +88,11 @@ public final class RepositorioContenidoCongeladoJdbc implements RepositorioConte
     // vez, el segundo espera la clave del primero, no inserta nada y tampoco las cargas.
     @Override
     public boolean guardar(
-            UUID version, ContenidoCongelado contenido, Instant momento, boolean tardio) {
+            UUID version,
+            ContenidoCongelado contenido,
+            Optional<InconsistenciasAlCongelar> inconsistencias,
+            Instant momento,
+            boolean tardio) {
         int guardadas =
                 jdbc.sql(GUARDAR_CABECERA)
                         .param("version", version)
@@ -88,6 +101,16 @@ public final class RepositorioContenidoCongeladoJdbc implements RepositorioConte
                         .param("hash", contenido.hash())
                         .param("momento", Timestamp.from(momento))
                         .param("tardio", tardio)
+                        .param(
+                                "duras",
+                                inconsistencias.map(InconsistenciasAlCongelar::duras).orElse(null),
+                                Types.INTEGER)
+                        .param(
+                                "blandas",
+                                inconsistencias
+                                        .map(InconsistenciasAlCongelar::blandas)
+                                        .orElse(null),
+                                Types.INTEGER)
                         .update();
         if (guardadas == 0) {
             return false;
@@ -101,6 +124,19 @@ public final class RepositorioContenidoCongeladoJdbc implements RepositorioConte
                     .update();
         }
         return true;
+    }
+
+    @Override
+    public Optional<InconsistenciasAlCongelar> inconsistencias(String periodo, int numero) {
+        return jdbc.sql(INCONSISTENCIAS)
+                .param("periodo", periodo)
+                .param("numero", numero)
+                .query(
+                        (fila, n) ->
+                                new InconsistenciasAlCongelar(
+                                        fila.getInt("duras_abiertas"),
+                                        fila.getInt("blandas_abiertas")))
+                .optional();
     }
 
     @Override

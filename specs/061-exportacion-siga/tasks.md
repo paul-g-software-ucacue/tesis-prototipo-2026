@@ -28,7 +28,7 @@ description: "Tareas de F19-H02: validar antes de exportar y registrar la export
 
 ## Phase 1: Setup
 
-- [ ] T001 Escribir **D-120** en `docs/decisiones.md`, en la fila del índice (después de D-119) y en su sección, con research §1 a §12:
+- [X] T001 Escribir **D-120** en `docs/decisiones.md`, en la fila del índice (después de D-119) y en su sección, con research §1 a §12:
   - la ruta interna de Firma `consultarFirmasDeLaVersion`: Firma informa la cadena del documento de una versión, y la regla de «firmada» es de Reporting;
   - las inconsistencias abiertas que guarda Generación con el contenido congelado (V11), solo si la versión es la vigente del panel. Sin el dato, la versión no se exporta (`INCONSISTENCIAS_SIN_REGISTRO`), como ajuste a FR-003;
   - `CondicionesDeExportacion` con todos los motivos, y el 409 `REPORTING_VERSION_NO_EXPORTABLE`;
@@ -41,11 +41,13 @@ description: "Tareas de F19-H02: validar antes de exportar y registrar la export
   - R11.
 
   **Alternativas:** las de cada sección de research. **Consecuencias:** una versión congelada antes de D-120 no se exporta; `datos`, `distributivo` y `salida` salen de la misma versión. **Estimación:** las 13 h restantes de F19 (D-119). Relacionar con RF-44, RF-53, RNF-INT-01, MD-07, MD-11, D-16, D-23, D-105, D-113, D-115, D-119 y ADR-018 y ADR-023.
-- [ ] T002 Confirmar tres cosas y, si algo falta, pedírselo al autor antes de seguir:
+- [X] T002 Confirmar tres cosas y, si algo falta, pedírselo al autor antes de seguir:
   - que la rama es `061-exportacion-siga` y tiene el commit `1c78fca` (los pendientes de F19-H01) sobre `main`;
   - que `.specify/feature.json` apunta a `specs/061-exportacion-siga`;
   - que el issue #267 tiene sus 13 h estimadas (D-119). El proyecto no tiene ese campo: confirmarlo con el autor.
-- [ ] T003 Principio III: el término nuevo entra al glosario antes del código. En `~/Downloads/MDD_artefactos_desarrollo/requerimientos_mdd/sdd/modelo_dominio.md` y en su `modelo_dominio.docx` (copiar antes los originales como `*.antes-F19-H02`), en §7, después de «Exportación a SIGA», agregar una fila: «Suma de verificación»: «SHA-256 de los bytes del CSV para SIGA entregado, en hexadecimal. Se registra con la exportación y cualquiera la puede recalcular sobre el archivo.» (`SumaDeVerificacion`; Publicación y consulta; RF-53).
+
+  **Hecho** (2026-11-28): la rama y `feature.json` están bien; las 13 h son las que dejó D-119 para F19-H02, y D-120 las repite. Falta que el autor las confirme.
+- [X] T003 Principio III: el término nuevo entra al glosario antes del código. En `~/Downloads/MDD_artefactos_desarrollo/requerimientos_mdd/sdd/modelo_dominio.md` y en su `modelo_dominio.docx` (copiar antes los originales como `*.antes-F19-H02`), en §7, después de «Exportación a SIGA», agregar una fila (**hecho** el 2026-11-28 en el `.md` y en el `.docx`, con copias `*.antes-F19-H02`): «Suma de verificación»: «SHA-256 de los bytes del CSV para SIGA entregado, en hexadecimal. Se registra con la exportación y cualquiera la puede recalcular sobre el archivo.» (`SumaDeVerificacion`; Publicación y consulta; RF-53).
 
 ---
 
@@ -53,7 +55,7 @@ description: "Tareas de F19-H02: validar antes de exportar y registrar la export
 
 **Propósito:** los contratos y el catálogo. Ninguna historia empieza antes (principio IV).
 
-- [ ] T004 [P] Ampliar `contratos/reporting/openapi.yaml` según `contracts/reporting.md`:
+- [X] T004 [P] Ampliar `contratos/reporting/openapi.yaml` según `contracts/reporting.md`:
   - **en `generarCsvSiga`:**
     - el encabezado `X-Suma-Verificacion` (`components/headers/SumaVerificacion`, string, `pattern: '^[0-9a-f]{64}$'`) en el 200;
     - el 409 como `components/responses/NoExportable`, con `REPORTING_SIN_PUBLICACION` y `REPORTING_VERSION_NO_EXPORTABLE`;
@@ -61,15 +63,15 @@ description: "Tareas de F19-H02: validar antes de exportar y registrar la export
   - **la operación `consultarExportacionesSiga`**: `GET /api/reporting/periodos/{periodo}/exportaciones-siga`, tag `Siga`, `x-mdd-permiso: [PUBLICACION:APROBACION]`. Respuestas 200 con `Cache-Control`, 400, 401, 403 y 500;
   - **`ExportacionesSiga`** (`periodo`, `exportaciones`);
   - **`ExportacionSiga`**, todos obligatorios y con `additionalProperties: false`: `id` (`format: uuid`), `version` (≥ 1), `layout` (≥ 0), `nombre` (`^siga-[A-Za-z0-9._-]{1,20}-v[0-9]+\.csv$`), `filas` (≥ 0), `sumaVerificacion` (`^[0-9a-f]{64}$`), `exportadaPor` y `exportadaEn` (`date-time`).
-- [ ] T005 [P] Ampliar `contratos/firma/openapi.yaml` según `contracts/interno.md`:
+- [X] T005 [P] Ampliar `contratos/firma/openapi.yaml` según `contracts/interno.md`:
   - **la operación `consultarFirmasDeLaVersion`**: `GET /interno/firma/periodos/{periodo}/versiones/{numero}/firmas`, tag `Interno`, `periodo` con `^[A-Za-z0-9._-]{1,20}$` y `numero` con `minimum: 1`. Respuestas 200, 400, 401, 403, 404 (`COMUN_RECURSO_NO_ENCONTRADO`) y 500;
   - **`FirmasDeLaVersion`** (`periodo`, `version`, `hashContenido` con `^[0-9a-f]{64}$`, `pasos`, `anulada`, `rechazada`);
   - **`PasoDeLaVersion`** (`orden` ≥ 1, `estado` con `enum: [FIRMADO, PENDIENTE, RECHAZADO]`), los dos con `additionalProperties: false` y sin nombres ni rótulos.
-- [ ] T006 [P] En `contratos/generacion/openapi.yaml`, sumar a `ContenidoCongeladoCompleto` el campo opcional `inconsistenciasAbiertas`, con el esquema nuevo `InconsistenciasAlCongelar` (`duras` y `blandas`, integer, `minimum: 0`, los dos obligatorios, `additionalProperties: false`). Sumar también la frase de `contracts/interno.md` a la descripción de `consultarContenidoCongelado`.
-- [ ] T007 [P] En `contratos/comun/errores.md`, según research §8:
+- [X] T006 [P] En `contratos/generacion/openapi.yaml`, sumar a `ContenidoCongeladoCompleto` el campo opcional `inconsistenciasAbiertas`, con el esquema nuevo `InconsistenciasAlCongelar` (`duras` y `blandas`, integer, `minimum: 0`, los dos obligatorios, `additionalProperties: false`). Sumar también la frase de `contracts/interno.md` a la descripción de `consultarContenidoCongelado`.
+- [X] T007 [P] En `contratos/comun/errores.md`, según research §8:
   - **el código nuevo** `REPORTING_VERSION_NO_EXPORTABLE` (409, Negocio), con su título, mensaje, acción, causa y descripción técnica;
   - **las causas ampliadas** de `COMUN_PROCESO_CON_ERROR` y `COMUN_PROCESO_SIN_RESPUESTA`: Firma, al validar el CSV para SIGA.
-- [ ] T008 Regenerar las interfaces de los servicios y los tipos de la SPA (`npm run tipos` en `frontend/`, que actualiza `SPA/api/generado/reporting.d.ts`) y confirmar que todo compila. Los controladores que no implementan aún las operaciones nuevas fallan solo en lo nuevo.
+- [X] T008 Regenerar las interfaces de los servicios y los tipos de la SPA (`npm run tipos` en `frontend/`, que actualiza `SPA/api/generado/reporting.d.ts`) y confirmar que todo compila. Los controladores que no implementan aún las operaciones nuevas fallan solo en lo nuevo.
 
 ---
 
@@ -81,14 +83,14 @@ description: "Tareas de F19-H02: validar antes de exportar y registrar la export
 
 ### Firma: la cadena de una versión
 
-- [ ] T009 [US1] TDD. Primero, en `FirmasDelDocumentoTest` (`FIR/test/java/.../dominio/`), fijar lo que la ruta interna va a usar de `cadenaConEstado()`: una cadena completa; una con el paso en turno; una rechazada; una anulada. Después, en `DocumentoFirmableServicioTest` (`FIR/test/java/.../aplicacion/`), el caso de uso nuevo: las firmas del documento CONSOLIDADO de la versión pedida, aunque la vigente del periodo sea otra (D-113), y vacío si la versión no tiene documento. Verlos fallar y después:
+- [X] T009 [US1] TDD. Primero, en `FirmasDelDocumentoTest` (`FIR/test/java/.../dominio/`), fijar lo que la ruta interna va a usar de `cadenaConEstado()`: una cadena completa; una con el paso en turno; una rechazada; una anulada. Después, en `DocumentoFirmableServicioTest` (`FIR/test/java/.../aplicacion/`), el caso de uso nuevo: las firmas del documento CONSOLIDADO de la versión pedida, aunque la vigente del periodo sea otra (D-113), y vacío si la versión no tiene documento. Verlos fallar y después:
   - crear el puerto de entrada `ConsultarFirmasDeLaVersion` (`FIR/main/java/.../puertos/entrada/`), con `Optional<FirmasDelDocumento> firmas(String periodo, int version)` y su JavaDoc: «Firma solo informa; la regla es de quien la usa»;
   - implementarlo en `DocumentoFirmableServicio` con `RepositorioDocumentos.documento(periodo, version)` y `firmas(id)`.
-- [ ] T010 [US1] Primero, `InternoFirmaContratoTest` (`FIR/test/java/.../adaptadores/entrada/`, con `ValidadorDeContrato`): el 200 con pasos `FIRMADO`, `PENDIENTE` (de `EN_TURNO` y de `PENDIENTE`) y `RECHAZADO`; `anulada` y `rechazada`; el 404 sin documento; el 403 con un token de usuario y el 401 sin token. Después, el controlador `InternoFirmaControlador` (`FIR/main/java/.../adaptadores/entrada/`), con la interfaz generada, y el bean en la configuración de Firma.
+- [X] T010 [US1] Primero, `InternoFirmaContratoTest` (`FIR/test/java/.../adaptadores/entrada/`, con `ValidadorDeContrato`): el 200 con pasos `FIRMADO`, `PENDIENTE` (de `EN_TURNO` y de `PENDIENTE`) y `RECHAZADO`; `anulada` y `rechazada`; el 404 sin documento; el 403 con un token de usuario y el 401 sin token. Después, el controlador `InternoFirmaControlador` (`FIR/main/java/.../adaptadores/entrada/`), con la interfaz generada, y el bean en la configuración de Firma.
 
 ### Generación: las inconsistencias al congelar
 
-- [ ] T011 [US1] TDD. Primero, en `GuardarContenidoCongeladoServicioTest` (`GEN/test/java/.../aplicacion/`), con `ConsultarPanel` simulado:
+- [X] T011 [US1] TDD. Primero, en `GuardarContenidoCongeladoServicioTest` (`GEN/test/java/.../aplicacion/`), con `ConsultarPanel` simulado:
   - si `panel.numero()` es la versión que se guarda, el contenido lleva `abiertas(DURA)` y `abiertas(BLANDA)`;
   - si es otra, o el panel no está creado, queda sin inconsistencias;
   - el guardado tardío sigue la misma regla.
@@ -98,14 +100,14 @@ description: "Tareas de F19-H02: validar antes de exportar y registrar la export
   - sumar `Optional<InconsistenciasAlCongelar>` a `ContenidoCongelado`;
   - en `GuardarContenidoCongeladoServicio`, recibir `ConsultarPanel` y pedir el panel fuera de la transacción;
   - ajustar `ConfiguracionGeneracion`.
-- [ ] T012 [US1] Primero, en `ContenidoCongeladoIntegrationTest` (`GEN/integrationTest/`, PostgreSQL real): guardar con y sin inconsistencias y leerlas; el `check` rechaza una columna llena y la otra vacía; el disparador sigue rechazando el `update`. Después:
+- [X] T012 [US1] Primero, en `ContenidoCongeladoIntegrationTest` (`GEN/integrationTest/`, PostgreSQL real): guardar con y sin inconsistencias y leerlas; el `check` rechaza una columna llena y la otra vacía; el disparador sigue rechazando el `update`. Después:
   - `GEN/main/resources/db/migration/generacion/V11__inconsistencias_al_congelar.sql`: `alter table contenido_congelado add column duras_abiertas integer check (duras_abiertas >= 0), add column blandas_abiertas integer check (blandas_abiertas >= 0)` y `check ((duras_abiertas is null) = (blandas_abiertas is null))`, con su comentario;
   - el `insert` y la lectura en `RepositorioContenidoCongeladoJdbc`.
-- [ ] T013 [US1] Primero, en `InternoGeneracionContratoTest`, `consultarContenidoCongelado` con `inconsistenciasAbiertas` y sin él. Después, el mapeo en `InternoGeneracionControlador` (`GEN/main/java/.../adaptadores/entrada/`).
+- [X] T013 [US1] Primero, en `InternoGeneracionContratoTest`, `consultarContenidoCongelado` con `inconsistenciasAbiertas` y sin él. Después, el mapeo en `InternoGeneracionControlador` (`GEN/main/java/.../adaptadores/entrada/`).
 
 ### Reporting: la validación
 
-- [ ] T014 [P] [US1] Primero, `CondicionesDeExportacionTest` (`REP/test/java/.../dominio/`), sin dobles:
+- [X] T014 [P] [US1] Primero, `CondicionesDeExportacionTest` (`REP/test/java/.../dominio/`), sin dobles:
   - firmas completas y 0 inconsistencias: sin motivos;
   - sin firmas: `SIN_DOCUMENTO_FIRMADO`;
   - `hashContenido` distinto del `hash` de la publicación: `DOCUMENTO_DE_OTRA_VERSION`;
@@ -123,7 +125,7 @@ description: "Tareas de F19-H02: validar antes de exportar y registrar la export
   - `MotivoDeRechazo`;
   - `CondicionesDeExportacion`;
   - `ExportacionRechazada`, con su JavaDoc: por qué falla cerrada sin el dato.
-- [ ] T015 [US1] Primero, los casos en `ClientesDeReportingTest` (`REP/test/java/.../adaptadores/salida/`):
+- [X] T015 [US1] Primero, los casos en `ClientesDeReportingTest` (`REP/test/java/.../adaptadores/salida/`):
   - `firmas(periodo, version)` lee `FirmasDeLaVersion`;
   - el 404 da vacío;
   - un 500 da `ProcesoConError` (502) y un tiempo agotado, `ProcesoSinRespuesta` (504);
@@ -135,10 +137,10 @@ description: "Tareas de F19-H02: validar antes de exportar y registrar la export
   - el adaptador `FirmasDesdeFirma` (`REP/main/java/.../adaptadores/salida/`), con `ConsultasEntreProcesos` y `mdd.procesos.distributivo`;
   - `CargasDeLaVersion` suma `Optional<InconsistenciasAbiertas>`, y `ContenidoDesdeGeneracion` lo mapea;
   - el bean en `ConfiguracionReporting`.
-- [ ] T016 [US1] Primero, en `RegistroEnBitacoraEventosTest` y en `RegistroEnBitacoraIntegrationTest` (`backend/apps/salida/src/integrationTest/`), la entrada `EXPORTACION_SIGA_RECHAZADA`: objeto `{periodo, version}` y `nuevo` `{motivos, firmados, pasos, duras, blandas}`, sin nombres, identificaciones, horas ni hashes. Después:
+- [X] T016 [US1] Primero, en `RegistroEnBitacoraEventosTest` y en `RegistroEnBitacoraIntegrationTest` (`backend/apps/salida/src/integrationTest/`), la entrada `EXPORTACION_SIGA_RECHAZADA`: objeto `{periodo, version}` y `nuevo` `{motivos, firmados, pasos, duras, blandas}`, sin nombres, identificaciones, horas ni hashes. Después:
   - `RechazoDeExportacion` en el dominio;
   - `registrar(RechazoDeExportacion)` en `RegistroEnBitacora` y en `RegistroEnBitacoraEventos`.
-- [ ] T017 [US1] Primero, los casos en `GenerarCsvSigaServicioTest` (`REP/test/java/.../aplicacion/`):
+- [X] T017 [US1] Primero, los casos en `GenerarCsvSigaServicioTest` (`REP/test/java/.../aplicacion/`):
   - con firmas incompletas o inconsistencias abiertas: lanza `ExportacionRechazada`, no llama a `ExportadorSiga`, y registra el rechazo;
   - si el registro del rechazo falla, sigue lanzando `ExportacionRechazada`, y el fallo va al log;
   - `SinPublicacion` no pide las firmas ni registra nada;
@@ -147,12 +149,12 @@ description: "Tareas de F19-H02: validar antes de exportar y registrar la export
   - una lectura de las firmas por pedido.
 
   Después, en `GenerarCsvSigaServicio`, el orden de research §3: la publicación, el layout, las firmas y el contenido, `CondicionesDeExportacion.exigir()`, y el registro del rechazo en su propia transacción antes de relanzar. `ConfiguracionReporting` le pasa `FirmasDeLasVersiones`.
-- [ ] T018 [US1] Primero, en `SigaContratoTest` y `ErroresReportingTest` (`REP/test/java/.../adaptadores/entrada/`):
-  - el 409 `REPORTING_VERSION_NO_EXPORTABLE`, con el mensaje de los motivos («tiene 2 de 3 firmas y 1 inconsistencia abierta», «no se registraron sus inconsistencias al congelarla»), sin hashes ni `detalles`;
+- [X] T018 [US1] Primero, en `SigaContratoTest` y `ErroresReportingTest` (`REP/test/java/.../adaptadores/entrada/`):
+  - el 409 `REPORTING_VERSION_NO_EXPORTABLE`, con la descripción del catálogo y un detalle por condición (`firmas`: «Tiene 2 de 3 firmas.»; `inconsistencias`: «Tiene 1 dura y 2 blandas sin justificar.» o «No se registraron sus inconsistencias al congelarla.»), sin hashes;
   - el 409 `REPORTING_SIN_PUBLICACION` sigue igual.
 
   Después, la traducción en `ErroresReporting` y el código en la prueba del catálogo.
-- [ ] T019 [P] [US1] En `SPA/pantallas/siga/Siga.tsx`, primero `Siga.test.tsx` (el aviso con publicaciones y sin él, y el 409 `REPORTING_VERSION_NO_EXPORTABLE` con su título y su mensaje, sin suma) y después:
+- [X] T019 [P] [US1] En `SPA/pantallas/siga/Siga.tsx`, primero `Siga.test.tsx` (el aviso con publicaciones y sin él, y el 409 `REPORTING_VERSION_NO_EXPORTABLE` con su título y su mensaje, sin suma) y después:
   - la constante `AVISO_DEL_CSV_SIGA`, con el texto de research §7, en un `Alert` `info` entre el texto del layout y el botón (FR-019a);
   - el 409 nuevo, por el `Alert` de errores que ya existe.
 
@@ -166,14 +168,14 @@ description: "Tareas de F19-H02: validar antes de exportar y registrar la export
 
 **Independent Test**: R9 del script (el encabezado igual a `sha256sum`, 2 exportaciones con la misma suma y 2 entradas con la suma), R11 (inmutable) y `quickstart.md` §1.
 
-- [ ] T020 [P] [US2] Primero, `SumaDeVerificacionTest` y `ExportacionSigaTest` (`REP/test/java/.../dominio/`), sin dobles:
+- [X] T020 [P] [US2] Primero, `SumaDeVerificacionTest` y `ExportacionSigaTest` (`REP/test/java/.../dominio/`), sin dobles:
   - el SHA-256 de `abc` (`ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad`) y el del vacío;
   - un valor con mayúsculas o de 63 caracteres se rechaza;
   - `ExportacionSiga.de(...)` toma la suma de `archivo.contenido()`, el nombre de `ArchivoSiga.nombreDe`, la versión y el hash de la publicación, el número del layout y las filas;
   - las reglas de `data-model.md`: `usuario` «no vacío, hasta 64», `periodo` `^[A-Za-z0-9._-]{1,20}$`, `version` «≥ 1», `layout` «≥ 0» y `filas` «≥ 0».
 
   Después, `SumaDeVerificacion`, `ExportacionSiga` y `CsvExportado(ArchivoSiga, ExportacionSiga)` en `REP/main/java/.../dominio/`.
-- [ ] T021 [US2] Primero, `ExportacionesSigaJdbcIntegrationTest` (`REP/integrationTest/`, PostgreSQL real):
+- [X] T021 [US2] Primero, `ExportacionesSigaJdbcIntegrationTest` (`REP/integrationTest/`, PostgreSQL real):
   - guardar y leer;
   - `delPeriodo` de la más reciente a la más antigua, y solo del periodo;
   - un `update` y un `delete` fallan con `insufficient_privilege`;
@@ -184,11 +186,11 @@ description: "Tareas de F19-H02: validar antes de exportar y registrar la export
   - el puerto `ExportacionesSiga` (`guardar`, `delPeriodo`), con su JavaDoc;
   - el adaptador `ExportacionesSigaJdbc`;
   - el bean.
-- [ ] T022 [US2] Primero, en `RegistroEnBitacoraEventosTest` y `RegistroEnBitacoraIntegrationTest`, la entrada `CSV_SIGA_GENERADO` desde la exportación: objeto `{periodo, version}` y `nuevo` `{layout, exportacion, filas, sha256}`, sin datos personales. Después:
+- [X] T022 [US2] Primero, en `RegistroEnBitacoraEventosTest` y `RegistroEnBitacoraIntegrationTest`, la entrada `CSV_SIGA_GENERADO` desde la exportación: objeto `{periodo, version}` y `nuevo` `{layout, exportacion, filas, sha256}`, sin datos personales. Después:
   - `registrar(ExportacionSiga)` reemplaza a `registrar(CsvGenerado)` en `RegistroEnBitacora` y en `RegistroEnBitacoraEventos`;
   - borrar `CsvGenerado`;
   - el JavaDoc dice por qué se conserva el nombre de la acción (research §5).
-- [ ] T023 [US2] Primero, en `GenerarCsvSigaServicioTest`:
+- [X] T023 [US2] Primero, en `GenerarCsvSigaServicioTest`:
   - devuelve `CsvExportado`, con la suma de los bytes que entrega;
   - `exportaciones.guardar` y `registro.registrar(ExportacionSiga)` van en la misma `Transaccion`, antes de devolver;
   - si cualquiera de los dos falla, no se devuelve el archivo;
@@ -196,19 +198,19 @@ description: "Tareas de F19-H02: validar antes de exportar y registrar la export
   - los 300 docentes en menos de 10 s (SC-007).
 
   Después, en `GenerarCsvSiga` (devuelve `CsvExportado`) y en `GenerarCsvSigaServicio`.
-- [ ] T024 [US2] Primero, `ConsultarExportacionesSigaServicioTest` (`REP/test/java/.../aplicacion/`): delega en `ExportacionesSiga.delPeriodo` y respeta el orden. Después, el puerto de entrada `ConsultarExportacionesSiga` y `ConsultarExportacionesSigaServicio`.
-- [ ] T025 [US2] Primero, en `SigaContratoTest`:
+- [X] T024 [US2] Primero, `ConsultarExportacionesSigaServicioTest` (`REP/test/java/.../aplicacion/`): delega en `ExportacionesSiga.delPeriodo` y respeta el orden. Después, el puerto de entrada `ConsultarExportacionesSiga` y `ConsultarExportacionesSigaServicio`.
+- [X] T025 [US2] Primero, en `SigaContratoTest`:
   - el 200 del CSV con `X-Suma-Verificacion`, que es el SHA-256 del cuerpo;
   - `consultarExportacionesSiga` con datos (`no-store`), vacía, 400 con un periodo inválido, y 403 sin `PUBLICACION:APROBACION`.
 
   Después, en `SigaControlador` (`REP/main/java/.../adaptadores/entrada/`), el encabezado y la operación nueva, con su mapeo a `ExportacionSiga` del contrato.
-- [ ] T026 [P] [US2] En `SPA/pantallas/siga/`, primero los casos de `Siga.test.tsx` y después `Siga.tsx` y `consultas.ts`, según `contracts/spa.md`:
+- [X] T026 [P] [US2] En `SPA/pantallas/siga/`, primero los casos de `Siga.test.tsx` y después `Siga.tsx` y `consultas.ts`, según `contracts/spa.md`:
   - **después de generar:** «Suma de verificación (SHA-256):» con el valor de `X-Suma-Verificacion` en `<code>`;
   - **el botón «Copiar la suma de verificación»**, con `navigator.clipboard.writeText`. Si funciona, «Se copió la suma de verificación.»; si no, «No se pudo copiar; selecciónela y cópiela a mano.»;
   - **la línea** «Para comprobarla: en Windows, `certutil -hashfile {archivo} SHA256`; en Linux, `sha256sum {archivo}`.»;
   - **la sección «Exportaciones del periodo»:** su `h2`, la tabla con su `caption` y las seis columnas («Layout» como «Por defecto» o «Versión N», la fecha en `America/Guayaquil`), y el texto «Todavía no se exportó el CSV para SIGA de este periodo.» cuando no hay;
   - **la invalidación** de `['exportaciones-siga', periodo]` al generar, y la limpieza del mensaje y de la suma al cambiar de periodo.
-- [ ] T027 [US2] En `frontend/e2e/siga.spec.ts`:
+- [X] T027 [US2] En `frontend/e2e/siga.spec.ts`:
   - `secretaria.demo` genera el CSV y la suma de la pantalla es el SHA-256 del archivo descargado (`crypto` de Node);
   - la exportación aparece en la lista;
   - axe-core sin fallas con la suma y la lista, y con la lista vacía (SC-009).

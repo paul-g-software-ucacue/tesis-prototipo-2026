@@ -1,9 +1,11 @@
 package ec.mdd.reporting.adaptadores.salida;
 
 import ec.mdd.plataforma.eventos.EventoEntreProcesos;
-import ec.mdd.reporting.dominio.CsvGenerado;
+import ec.mdd.reporting.dominio.CondicionesDeExportacion;
 import ec.mdd.reporting.dominio.DescargaDeReporte;
+import ec.mdd.reporting.dominio.ExportacionSiga;
 import ec.mdd.reporting.dominio.LayoutCargado;
+import ec.mdd.reporting.dominio.RechazoDeExportacion;
 import ec.mdd.reporting.puertos.salida.RegistroEnBitacora;
 import java.time.Clock;
 import java.util.LinkedHashMap;
@@ -30,6 +32,7 @@ public final class RegistroEnBitacoraEventos implements RegistroEnBitacora {
     private static final String DESTINO = "usuarios";
     private static final String CSV_SIGA_GENERADO = "CSV_SIGA_GENERADO";
     private static final String LAYOUT_SIGA_CARGADO = "LAYOUT_SIGA_CARGADO";
+    private static final String EXPORTACION_SIGA_RECHAZADA = "EXPORTACION_SIGA_RECHAZADA";
 
     private final ApplicationEventPublisher eventos;
     private final Clock reloj;
@@ -50,27 +53,37 @@ public final class RegistroEnBitacoraEventos implements RegistroEnBitacora {
     }
 
     @Override
-    public void registrar(CsvGenerado generado) {
+    public void registrar(ExportacionSiga exportacion) {
         eventos.publishEvent(
-                EventoEntreProcesos.nuevo(TIPO, ORIGEN, DESTINO, entrada(generado), reloj));
+                EventoEntreProcesos.nuevo(TIPO, ORIGEN, DESTINO, entrada(exportacion), reloj));
     }
 
     /**
-     * Un CSV para SIGA (F19-H01, D-119): el objeto es el periodo y la versión publicada, y lo nuevo
-     * es la versión del layout de exportación con que salió. Sin nombres, identificaciones ni
-     * horas.
+     * Un CSV para SIGA entregado (F19-H01, D-119; F19-H02, D-120): el objeto es el periodo y la
+     * versión publicada, y lo nuevo, la versión del layout de exportación, el registro de la
+     * exportación, sus filas y su suma de verificación. Sin hashes de la versión, nombres,
+     * identificaciones ni horas.
+     *
+     * <p>Se conserva la acción {@code CSV_SIGA_GENERADO} de F19-H01: el CSV con su suma y su
+     * registro es la Exportación a SIGA del glosario, y otra acción dejaría dos nombres para lo
+     * mismo en la historia de la bitácora (research §5).
      */
-    static Map<String, Object> entrada(CsvGenerado generado) {
+    static Map<String, Object> entrada(ExportacionSiga exportacion) {
         Map<String, Object> objeto = new LinkedHashMap<>();
-        objeto.put("periodo", generado.periodo());
-        objeto.put("version", generado.version());
+        objeto.put("periodo", exportacion.periodo());
+        objeto.put("version", exportacion.version());
+        Map<String, Object> nuevo = new LinkedHashMap<>();
+        nuevo.put("layout", exportacion.layout());
+        nuevo.put("exportacion", exportacion.id().toString());
+        nuevo.put("filas", exportacion.filas());
+        nuevo.put("sha256", exportacion.suma().valor());
         Map<String, Object> entrada = new LinkedHashMap<>();
-        entrada.put("usuario", generado.usuario());
+        entrada.put("usuario", exportacion.usuario());
         entrada.put("accion", CSV_SIGA_GENERADO);
-        entrada.put("momento", generado.momento().toString());
-        entrada.put("periodo", generado.periodo());
+        entrada.put("momento", exportacion.momento().toString());
+        entrada.put("periodo", exportacion.periodo());
         entrada.put("objeto", objeto);
-        entrada.put("nuevo", Map.of("layout", generado.layout()));
+        entrada.put("nuevo", nuevo);
         return entrada;
     }
 
@@ -93,6 +106,48 @@ public final class RegistroEnBitacoraEventos implements RegistroEnBitacora {
         Map<String, Object> nuevo = new LinkedHashMap<>();
         nuevo.put("columnas", cargado.columnas());
         nuevo.put("sha256", cargado.sha256());
+        entrada.put("nuevo", nuevo);
+        return entrada;
+    }
+
+    @Override
+    public void registrar(RechazoDeExportacion rechazo) {
+        eventos.publishEvent(
+                EventoEntreProcesos.nuevo(TIPO, ORIGEN, DESTINO, entrada(rechazo), reloj));
+    }
+
+    /**
+     * Un CSV para SIGA rechazado (F19-H02, D-120): el objeto es el periodo y la versión, y lo nuevo
+     * son los motivos y, cuando se conocen, los números: los pasos firmados de cuántos, y las duras
+     * y las blandas abiertas. Sin hashes ni datos personales.
+     */
+    static Map<String, Object> entrada(RechazoDeExportacion rechazo) {
+        Map<String, Object> objeto = new LinkedHashMap<>();
+        objeto.put("periodo", rechazo.periodo());
+        objeto.put("version", rechazo.version());
+        CondicionesDeExportacion condiciones = rechazo.condiciones();
+        Map<String, Object> nuevo = new LinkedHashMap<>();
+        nuevo.put("motivos", condiciones.motivos().stream().map(Enum::name).toList());
+        condiciones
+                .firmas()
+                .ifPresent(
+                        firmas -> {
+                            nuevo.put("firmados", firmas.firmados());
+                            nuevo.put("pasos", firmas.total());
+                        });
+        condiciones
+                .inconsistencias()
+                .ifPresent(
+                        abiertas -> {
+                            nuevo.put("duras", abiertas.duras());
+                            nuevo.put("blandas", abiertas.blandas());
+                        });
+        Map<String, Object> entrada = new LinkedHashMap<>();
+        entrada.put("usuario", rechazo.usuario());
+        entrada.put("accion", EXPORTACION_SIGA_RECHAZADA);
+        entrada.put("momento", rechazo.momento().toString());
+        entrada.put("periodo", rechazo.periodo());
+        entrada.put("objeto", objeto);
         entrada.put("nuevo", nuevo);
         return entrada;
     }

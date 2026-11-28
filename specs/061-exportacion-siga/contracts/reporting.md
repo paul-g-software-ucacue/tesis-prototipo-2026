@@ -61,4 +61,4 @@ No lleva el hash de la versión: la pantalla no lo muestra, y queda en la base y
 - los dos 409 con su código;
 - `consultarExportacionesSiga`: con datos, vacía, 400, y 403 sin `PUBLICACION:APROBACION`.
 
-`ErroresReportingTest` y la prueba del catálogo suman el código nuevo. La descripción arma bien los motivos y nunca lleva hashes ni nombres.
+`ErroresReportingTest` y la prueba del catálogo suman el código nuevo. Un detalle por condición que falla, con sus números, y nunca hashes ni nombres; la descripción es la del catálogo.

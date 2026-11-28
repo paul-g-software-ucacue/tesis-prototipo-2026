@@ -2,6 +2,7 @@ package ec.mdd.generacion.puertos.entrada;
 
 import ec.mdd.generacion.dominio.CargaCongelada;
 import ec.mdd.generacion.dominio.DocenteDeLaVersion;
+import ec.mdd.generacion.dominio.InconsistenciasAlCongelar;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -59,12 +60,23 @@ public interface ConsultarContenidoCongelado {
      *
      * @param hash el hash de la versión
      * @param cargas por nombre y, a igual nombre, por identificación
+     * @param inconsistencias las abiertas al guardar el contenido; vacío si no se registraron
+     *     (F19-H02, D-120)
      */
-    record ContenidoCompleto(String hash, List<CargaCongelada> cargas) {
+    record ContenidoCompleto(
+            String hash,
+            List<CargaCongelada> cargas,
+            Optional<InconsistenciasAlCongelar> inconsistencias) {
+
+        /** Un contenido sin inconsistencias registradas. */
+        public ContenidoCompleto(String hash, List<CargaCongelada> cargas) {
+            this(hash, cargas, Optional.empty());
+        }
 
         /** Exige el hash y copia la lista. */
         public ContenidoCompleto {
             Objects.requireNonNull(hash, "hash");
+            Objects.requireNonNull(inconsistencias, "inconsistencias");
             cargas = List.copyOf(cargas);
         }
     }

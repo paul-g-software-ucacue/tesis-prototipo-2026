@@ -424,6 +424,41 @@ class DocumentoFirmableServicioTest {
         assertThat(anulado.cadena()).isEmpty();
     }
 
+    // F19-H02 (D-120): la cadena de una versión, para la ruta interna de Reporting.
+    @Test
+    void dadoElDocumentoDeLaVersion_cuandoSePidenSusFirmas_entoncesDaLasDeEsaVersion() {
+        servicio.preparar(solicitud());
+
+        assertThat(servicio.firmas(PERIODO, 1))
+                .hasValueSatisfying(
+                        firmas -> {
+                            assertThat(firmas.documento().version()).isEqualTo(1);
+                            assertThat(firmas.documento().hashContenido()).isEqualTo(HASH);
+                            assertThat(firmas.cadena()).hasSize(3);
+                        });
+    }
+
+    @Test
+    void
+            dadaUnaVersionNuevaGenerada_cuandoSePidenLasFirmasDeLaAnterior_entoncesDaLasDeLaAnterior() {
+        servicio.preparar(solicitud());
+        String otro = "f".repeat(64);
+        when(contenido.contenido(PERIODO)).thenReturn(contenidoDe(2, otro));
+        servicio.preparar(
+                new SolicitudDeDocumento(
+                        PERIODO, 2, otro, CADENA, "RESPONSABLE_CONSOLIDACION", ENTRO));
+
+        assertThat(servicio.firmas(PERIODO, 1).orElseThrow().documento().hashContenido())
+                .isEqualTo(HASH);
+        assertThat(servicio.firmas(PERIODO, 2).orElseThrow().documento().hashContenido())
+                .isEqualTo(otro);
+    }
+
+    @Test
+    void dadaUnaVersionSinDocumento_cuandoSePidenSusFirmas_entoncesVacio() {
+        assertThat(servicio.firmas(PERIODO, 1)).isEmpty();
+    }
+
     private static SolicitudDeDocumento solicitud() {
         return new SolicitudDeDocumento(
                 PERIODO, 1, HASH, CADENA, "RESPONSABLE_CONSOLIDACION", ENTRO);
