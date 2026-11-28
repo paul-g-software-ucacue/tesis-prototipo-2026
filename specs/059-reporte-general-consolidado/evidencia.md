@@ -94,4 +94,13 @@ Hecho por el autor el 2026-11-22 en el perfil local (`http://localhost:8081`), c
 
 ## El equipo de demostración
 
-Queda para después de fusionar.
+Verificado el 2026-11-22 en solo lectura, después de fusionar el #280 (`d79a826`).
+
+| Comprobación | Resultado |
+|---|---|
+| El despliegue | `mdd-actualizar` desplegó `d79a826` a las 09:12: «Sano en 57 s» en GitHub Deployments (`demostracion`). Los ocho contenedores, en `*-d79a8264755f` y sanos |
+| Las rutas públicas | Por Caddy y sin token, `GET /api/reporting/periodos/2026-I/reporte-general` y `…/reporte-general.pdf` responden 401 `SEGURIDAD_NO_AUTENTICADO`: llegan al proceso `salida`. `/interno/**` responde 401 sin cuerpo del catálogo: la ruta interna de Generación no se expone desde fuera |
+| Migraciones y claves | Ninguna nueva: la historia no las necesita |
+| Un reporte general de 2026-I | **No se verificó:** pedirlo exige una sesión de la demo, cuyas claves están solo en el equipo (`/opt/mdd/.env`). Lo cubren los pasos R7 y R8 del script en la CI (`perfil-consolidado`) |
+
+**Antes de fusionar** hubo que resolver una cosa ajena a esta historia: el check «5 · imágenes» falló por dos vulnerabilidades altas nuevas de `libc6` (CVE-2026-19499 y CVE-2026-5435) en la imagen oficial de `cloudflared`, el túnel de la demo, con el arreglo ya publicado por Debian. La versión más nueva de Cloudflare (2026.11.1) trae la misma `libc6`, así que se agregaron dos excepciones temporales según D-54, hasta el 2026-12-22 (#281, D-118). El binario de `cloudflared` es Go enlazado estáticamente y el túnel sigue apagado (D-81).
