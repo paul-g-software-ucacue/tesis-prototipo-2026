@@ -1124,6 +1124,7 @@ Copia de la tabla de la ERS v2.1, sección 8.6, al 2026-10-11. El registro origi
 | D-17 | Servicio Dashboard | Versión mínima: estado del periodo | Matriz |
 | D-18 | Ajuste al plazo de 5 meses | Solo el perfil consolidado: 12 módulos en 4 procesos | ADR-006 |
 | D-19 | Recorte para una sola persona | Configuración del flujo y firmas en archivo, firma con certificado solo en F1–F3, validación sin sello de tiempo, una propuesta por asignatura, franjas en Should, un escenario de k6 | ADR-007 |
+| D-121 | 2026-11-28 | Tomcat sube a 11.0.29 y CVE-2026-133325 espera con una excepción de Grype hasta que se publique la 11.0.30 | Aceptada | D-54, D-118 |
 | D-20 | Stack de desarrollo | Java 21 y Spring Boot (Maven multimódulo: 12 módulos en 4 aplicaciones, Spring Modulith y ArchUnit), React con TypeScript, contratos OpenAPI 3.0.3. Modificada por D-27. | ADR-008 |
 | D-21 | Trazabilidad de la implementación | GitLab: issues como historias, milestones como olas, etiquetas por RF y merge requests con GitLab CI. Reemplazada por D-24 | Matriz |
 | D-22 | Metodología de desarrollo | Kanban personal con prácticas XP y SDD, cadencia semanal y olas como hitos (`sdd/metodologia_desarrollo.md`) | Matriz |
@@ -2741,3 +2742,28 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 - F19-H02 suma la validación previa, la suma de verificación y el registro `ExportacionSiga` sobre este CSV.
 
 **Documentos que hay que poner al día.** El glosario (`sdd/modelo_dominio.md` y su `.docx`), con los tres términos nuevos.
+
+## D-121. Tomcat sube a 11.0.29 y CVE-2026-133325 espera con una excepción de Grype hasta que se publique la 11.0.30
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-28 · **Decidido por:** autor de la tesis
+- **Origen:** los checks «4 · sca» y «5 · imágenes» del PR #290 (F19-H02) fallan por vulnerabilidades nuevas de Tomcat embebido, que viene del BOM de Spring Boot
+- **Sigue a:** D-54 y D-118
+
+**Decisión.**
+- `versionTomcat` pasa de 11.0.27 a 11.0.29 en `backend/gradle.properties`. Corrige CVE-2026-116561 y CVE-2026-118028 (críticas) y seis altas en `tomcat-embed-core` y `tomcat-embed-websocket`.
+- `.grype.yaml` agrega una excepción según D-54 para CVE-2026-133325 (crítica), solo en `tomcat-embed-core` 11.0.29. Rige desde el 2026-11-28 y vence el 2026-12-28.
+- Cuando la 11.0.30 esté en Maven Central, se sube `versionTomcat` y se quita la excepción.
+
+**Por qué.** Las vulnerabilidades se publicaron el 2026-11-28, después del último despliegue. La 11.0.29 es la última versión publicada en Maven Central, y la 11.0.30, que Grype da como corregida, todavía no está: es una versión corregida que todavía no se puede aplicar, el caso de D-54. Mientras tanto, «4 · sca» y «5 · imágenes» bloquean `main` y todos los PR. Las altas de OpenSSL de las imágenes Alpine (`frontend`, `caddy` y `postgres`) y las de `cloudflared` no tienen arreglo todavía y no bloquean, así que no llevan excepción.
+
+**Alternativas.**
+- Esperar la 11.0.30 sin excepción: no se fusiona nada mientras tanto.
+- Quedarse en 11.0.27: deja dos críticas y seis altas con arreglo.
+- Bajar a Tomcat 10.1: no es compatible con Spring Boot 4.1.
+
+**Consecuencias.**
+- La excepción solo cubre esa CVE en la 11.0.29. Una subida de versión la deja sin efecto.
+- Al vencer, `deploy/sca/excepciones.sh` la quita y los checks vuelven a fallar si Tomcat no cambió.
+- `datos`, `distributivo`, `identidad` y `salida` se despliegan con Tomcat 11.0.29.
+
+**Documentos que hay que poner al día.** Ninguno.
