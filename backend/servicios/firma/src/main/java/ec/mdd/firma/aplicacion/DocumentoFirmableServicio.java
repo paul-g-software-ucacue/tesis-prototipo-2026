@@ -13,6 +13,7 @@ import ec.mdd.firma.dominio.GeneracionFallida;
 import ec.mdd.firma.dominio.PasoDeFirma;
 import ec.mdd.firma.dominio.SinRolDeFirma;
 import ec.mdd.firma.puertos.entrada.ConsultarDocumentoFirmable;
+import ec.mdd.firma.puertos.entrada.ConsultarFirmasDeLaVersion;
 import ec.mdd.firma.puertos.entrada.EstadoDelDocumento;
 import ec.mdd.firma.puertos.entrada.GenerarDocumentoFirmable;
 import ec.mdd.firma.puertos.entrada.PrepararDocumentoFirmable;
@@ -63,7 +64,10 @@ import org.slf4j.LoggerFactory;
  * publicaciones no repite sin fin una generación que falla por un dato (research §4).
  */
 public final class DocumentoFirmableServicio
-        implements PrepararDocumentoFirmable, ConsultarDocumentoFirmable, GenerarDocumentoFirmable {
+        implements PrepararDocumentoFirmable,
+                ConsultarDocumentoFirmable,
+                GenerarDocumentoFirmable,
+                ConsultarFirmasDeLaVersion {
 
     /** Quien genera cuando nadie lo pidió: la generación automática al entrar en firma. */
     public static final String SISTEMA = "sistema";
@@ -208,6 +212,13 @@ public final class DocumentoFirmableServicio
                 puedeGenerar ? List.of(EstadoDelDocumento.GENERAR) : List.of(),
                 anulacion,
                 cadena);
+    }
+
+    // F19-H02 (D-120): por versión, no la última generación del periodo, porque durante una
+    // reforma la publicada vigente es la anterior (D-113).
+    @Override
+    public Optional<FirmasDelDocumento> firmas(String periodo, int version) {
+        return documentos.documento(periodo, version).flatMap(una -> documentos.firmas(una.id()));
     }
 
     // FR-012: el rol de la etapa que llegó con la solicitud, sobre la última versión que pidió

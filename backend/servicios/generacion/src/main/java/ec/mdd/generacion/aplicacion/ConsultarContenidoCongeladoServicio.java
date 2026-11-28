@@ -40,7 +40,12 @@ public final class ConsultarContenidoCongeladoServicio implements ConsultarConte
         }
         return repositorio
                 .hash(periodo, version)
-                .map(hash -> new ContenidoCompleto(hash, repositorio.cargas(periodo, version)));
+                .map(
+                        hash ->
+                                new ContenidoCompleto(
+                                        hash,
+                                        repositorio.cargas(periodo, version),
+                                        repositorio.inconsistencias(periodo, version)));
     }
 
     @Override

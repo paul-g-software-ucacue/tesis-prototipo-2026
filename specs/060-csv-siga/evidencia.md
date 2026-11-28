@@ -80,4 +80,17 @@ El recorrido dejó dos versiones más del layout de exportación en el perfil lo
 | SC-001 a SC-007, SC-009 y SC-010 | Cumplidos: pruebas automáticas y R9, R10, R4 y R5 |
 | SC-008 | Cumplido: 55 ms con 300 docentes; 1,5 s desde que se abre la pantalla |
 | El recorrido (`quickstart.md` §1 a §3, teclado y LibreOffice Calc) | Hecho por Claude en el perfil real, con un hallazgo sobre la cédula en Calc. El lector de pantalla queda para el autor |
-| El equipo de demostración | Pendiente: después de fusionar |
+| El equipo de demostración | Verificado en solo lectura el 2026-11-22, después de fusionar (sección siguiente) |
+
+## El equipo de demostración
+
+Verificado en solo lectura el 2026-11-22, después de fusionar el PR #289 (`83ccb0c`). Se anota en la rama de F19-H02, a pedido del autor, para no abrir un PR solo con esto.
+
+| Qué | Resultado |
+|---|---|
+| El despliegue | `mdd-actualizar` desplegó `83ccb0c` a las 13:55: «Sano en 55 s» y la prueba de humo 5 de 5. Los 8 contenedores, sanos, con las imágenes `*-83ccb0c3118c` |
+| La base de Reporting | En la V2 (`layout exportacion`); `reporting.layout_exportacion`, vacía, con el disparador `layout_exportacion_sin_cambios` |
+| Por Caddy, sin token (`https://mdd.localhost`, con `--resolve mdd.localhost:443:127.0.0.1`) | `csv-siga` y `layout-siga` responden 401 `SEGURIDAD_NO_AUTENTICADO`: llegan a `salida`. `/interno/**` lo frena el basic auth de Caddy |
+| El CSV para SIGA en la demo | No aplica todavía: 2026-I está en EN_CONSOLIDACION y nunca se publicó. Cuando se congele, ya con esta versión, guardará el tipo de identificación y la columna no saldrá «NA» |
+
+El recorrido con lector de pantalla de «Exportación a SIGA» sigue pendiente para el autor; se anota también en la evidencia de F19-H02.

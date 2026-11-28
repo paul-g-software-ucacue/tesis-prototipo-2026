@@ -3,7 +3,8 @@
 # el rol de la etapa lo reintenta si falló. Desde F14-H01: las firmas pendientes del usuario y la
 # descarga del archivo vigente, solo para el firmante en turno (RF-38, D-102). Desde F14-H02: la
 # subida del PDF firmado con su validación básica (RF-39, D-23, D-103). Desde F14-H03: la vigencia,
-# el orden y el firmante por el CN del certificado, y la cadena completa (D-104).
+# el orden y el firmante por el CN del certificado, y la cadena completa (D-104). Desde F19-H02: la
+# cadena de una versión, por una ruta interna, para validar la exportación a SIGA (D-120).
 openapi: 3.0.3
 info:
   title: MDD · firma
@@ -19,6 +20,8 @@ tags:
     description: >-
       Los documentos que le toca firmar al usuario, su archivo vigente (F14-H01) y la subida del
       PDF firmado (F14-H02).
+  - name: Interno
+    description: Rutas entre procesos, con el token de proceso (ADR-023). El API Gateway no las enruta.
 paths:
   /api/firma/pendientes:
     get:
@@ -332,11 +335,98 @@ paths:
           $ref: '../comun/errores.yaml#/components/responses/ProcesoConError'
         '504':
           $ref: '../comun/errores.yaml#/components/responses/ProcesoSinRespuesta'
+  /interno/firma/periodos/{periodo}/versiones/{numero}/firmas:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2026-I
+      - name: numero
+        in: path
+        required: true
+        description: El número de la versión.
+        schema:
+          type: integer
+          minimum: 1
+    get:
+      tags: [Interno]
+      operationId: consultarFirmasDeLaVersion
+      summary: Devuelve la cadena de firmas del documento de una versión, con el estado de cada paso.
+      description: >-
+        Solo entre procesos, con el token de proceso: lo usa Reporting para validar el CSV para
+        SIGA (F19-H02, D-120). La cadena de firmas del documento CONSOLIDADO de esa versión, con el
+        estado de cada paso. Firma solo informa: la regla de qué es una versión firmada es de quien
+        la usa.
+      responses:
+        '200':
+          description: La cadena del documento de la versión.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FirmasDeLaVersion'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: La versión no tiene documento firmable (COMUN_RECURSO_NO_ENCONTRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
 components:
   securitySchemes:
     bearer:
       $ref: '../comun/seguridad.yaml#/components/securitySchemes/bearer'
   schemas:
+    FirmasDeLaVersion:
+      description: >-
+        La cadena de firmas del documento CONSOLIDADO de una versión (F19-H02, D-120). Sin
+        rótulos, nombres ni firmantes.
+      type: object
+      additionalProperties: false
+      required: [periodo, version, hashContenido, pasos, anulada, rechazada]
+      properties:
+        periodo:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+        hashContenido:
+          description: El hash de la versión congelada de la que se generó el documento.
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+        pasos:
+          description: Por orden.
+          type: array
+          items:
+            $ref: '#/components/schemas/PasoDeLaVersion'
+        anulada:
+          description: Sus firmas se anularon (F12-H04).
+          type: boolean
+        rechazada:
+          description: Se rechazó en firma (D-105).
+          type: boolean
+    PasoDeLaVersion:
+      type: object
+      additionalProperties: false
+      required: [orden, estado]
+      properties:
+        orden:
+          type: integer
+          minimum: 1
+        estado:
+          description: El paso en turno se informa como PENDIENTE.
+          type: string
+          enum: [FIRMADO, PENDIENTE, RECHAZADO]
     EstadoDelDocumento:
       type: object
       additionalProperties: false

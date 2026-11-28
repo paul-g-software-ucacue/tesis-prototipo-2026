@@ -178,4 +178,27 @@ class CadenaConEstadoTest {
 
         assertThat(firmas.siguienteTrasFirmar(1)).isEmpty();
     }
+
+    // F19-H02 (D-120): la ruta interna informa la anulación aparte; la cadena no la oculta.
+    @Test
+    void dadasFirmasAnuladas_cuandoSePideLaCadena_entoncesConservaLosPasosYLaAnulacionVaAparte() {
+        FirmasDelDocumento firmas =
+                new FirmasDelDocumento(
+                        DOCUMENTO,
+                        CADENA,
+                        FIRMANTES,
+                        List.of(firma(1), firma(2), firma(3)),
+                        Optional.empty(),
+                        Optional.of(
+                                new AnulacionDeFirmas(
+                                        "Reforma del distributivo",
+                                        3,
+                                        "sistema",
+                                        Instant.parse("2026-11-19T08:00:00Z"))));
+
+        assertThat(firmas.cadenaConEstado())
+                .extracting(PasoConEstado::estado)
+                .containsExactly(Estado.FIRMADO, Estado.FIRMADO, Estado.FIRMADO);
+        assertThat(firmas.anulacion()).isPresent();
+    }
 }

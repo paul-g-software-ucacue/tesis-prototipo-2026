@@ -1,8 +1,9 @@
 package ec.mdd.reporting.puertos.salida;
 
-import ec.mdd.reporting.dominio.CsvGenerado;
 import ec.mdd.reporting.dominio.DescargaDeReporte;
+import ec.mdd.reporting.dominio.ExportacionSiga;
 import ec.mdd.reporting.dominio.LayoutCargado;
+import ec.mdd.reporting.dominio.RechazoDeExportacion;
 
 /**
  * Registra en la bitácora lo que hace Reporting: cada descarga de un reporte (F20-H01, D-115), cada
@@ -18,12 +19,20 @@ public interface RegistroEnBitacora {
     void registrar(DescargaDeReporte descarga);
 
     /**
-     * @param generado un CSV para SIGA, antes de entregarlo (FR-021)
+     * Un CSV para SIGA entregado: una sola entrada por exportación, con su suma de verificación
+     * (F19-H02, FR-014). Se llama en la misma transacción que guarda la exportación.
+     *
+     * @param exportacion la exportación, antes de entregar el archivo
      */
-    void registrar(CsvGenerado generado);
+    void registrar(ExportacionSiga exportacion);
 
     /**
      * @param cargado una versión nueva del layout de exportación (FR-017)
      */
     void registrar(LayoutCargado cargado);
+
+    /**
+     * @param rechazo un CSV para SIGA rechazado por firmas o inconsistencias (F19-H02, FR-016)
+     */
+    void registrar(RechazoDeExportacion rechazo);
 }

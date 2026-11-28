@@ -3,7 +3,6 @@ package ec.mdd;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import ec.mdd.reporting.dominio.CsvGenerado;
 import ec.mdd.reporting.dominio.DescargaDeReporte;
 import ec.mdd.reporting.dominio.Formato;
 import ec.mdd.reporting.dominio.LayoutCargado;
@@ -88,7 +87,18 @@ class RegistroEnBitacoraIntegrationTest {
         transaccion.ejecutar(
                 () -> {
                     registro.registrar(
-                            new CsvGenerado("secretaria.demo", Instant.now(), periodo, 1, 0));
+                            new ec.mdd.reporting.dominio.ExportacionSiga(
+                                    java.util.UUID.randomUUID(),
+                                    "secretaria.demo",
+                                    Instant.now(),
+                                    periodo,
+                                    1,
+                                    "c".repeat(64),
+                                    0,
+                                    "siga-" + periodo + "-v1.csv",
+                                    3,
+                                    new ec.mdd.reporting.dominio.SumaDeVerificacion(
+                                            "d".repeat(64))));
                     return null;
                 });
 
@@ -102,7 +112,41 @@ class RegistroEnBitacoraIntegrationTest {
         assertThat(evento)
                 .contains("CSV_SIGA_GENERADO")
                 .contains("layout")
+                .contains("d".repeat(64))
+                .doesNotContain("c".repeat(64))
                 .doesNotContain("identificacion");
+    }
+
+    // F19-H02 (D-120): el rechazo de una exportación, sin hashes ni datos personales.
+    @Test
+    void dadoUnRechazoDeExportacionConfirmado_cuandoTermina_entoncesSuEventoLlevaLosMotivos() {
+        String periodo = periodo();
+        ec.mdd.reporting.dominio.CondicionesDeExportacion condiciones =
+                ec.mdd.reporting.dominio.CondicionesDeExportacion.de(
+                        new ec.mdd.reporting.dominio.Publicacion(
+                                periodo, 1, "c".repeat(64), Instant.now(), "secretaria", false),
+                        java.util.Optional.empty(),
+                        java.util.Optional.empty());
+
+        transaccion.ejecutar(
+                () -> {
+                    registro.registrar(
+                            new ec.mdd.reporting.dominio.RechazoDeExportacion(
+                                    "secretaria.demo", Instant.now(), periodo, 1, condiciones));
+                    return null;
+                });
+
+        assertThat(eventos(periodo)).isOne();
+        String evento =
+                jdbc.queryForObject(
+                        "SELECT serialized_event FROM eventos_salida.event_publication"
+                                + " WHERE serialized_event LIKE ?",
+                        String.class,
+                        "%" + periodo + "%");
+        assertThat(evento)
+                .contains("EXPORTACION_SIGA_RECHAZADA")
+                .contains("SIN_DOCUMENTO_FIRMADO")
+                .doesNotContain("c".repeat(64));
     }
 
     @Test

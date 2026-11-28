@@ -3,6 +3,7 @@ package ec.mdd.generacion.puertos.salida;
 import ec.mdd.generacion.dominio.CargaCongelada;
 import ec.mdd.generacion.dominio.ContenidoCongelado;
 import ec.mdd.generacion.dominio.DocenteDeLaVersion;
+import ec.mdd.generacion.dominio.InconsistenciasAlCongelar;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -19,11 +20,18 @@ public interface RepositorioContenidoCongelado {
      *
      * @param version el identificador de la versión, de la que cuelga
      * @param contenido el contenido
+     * @param inconsistencias las abiertas de la versión al guardarlo; vacío si no se conocen
+     *     (F19-H02, D-120)
      * @param momento cuándo se guarda
      * @param tardio si se calculó al pedirlo y no al congelar
      * @return si lo guardó
      */
-    boolean guardar(UUID version, ContenidoCongelado contenido, Instant momento, boolean tardio);
+    boolean guardar(
+            UUID version,
+            ContenidoCongelado contenido,
+            Optional<InconsistenciasAlCongelar> inconsistencias,
+            Instant momento,
+            boolean tardio);
 
     /**
      * El hash guardado de una versión.
@@ -63,4 +71,14 @@ public interface RepositorioContenidoCongelado {
      *     guardado
      */
     List<CargaCongelada> cargas(String periodo, int numero);
+
+    /**
+     * Las inconsistencias abiertas de una versión, fijadas al guardar su contenido (F19-H02,
+     * D-120).
+     *
+     * @param periodo el código del periodo
+     * @param numero el número de la versión
+     * @return vacío si la versión no tiene contenido, o si se guardó sin ellas
+     */
+    Optional<InconsistenciasAlCongelar> inconsistencias(String periodo, int numero);
 }

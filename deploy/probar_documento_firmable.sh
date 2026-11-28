@@ -62,7 +62,9 @@
 # ampliados: el reporte general tiene a los docentes del listado, cada fila igual a su reporte
 # individual y los totales iguales a la suma de las filas; se descarga en PDF/A y en CSV con los
 # mismos datos, cada descarga queda como REPORTE_GENERAL_DESCARGADO y no cambia durante la
-# reforma. Desde F19-H01 (D-119; specs/060-csv-siga/contracts/demostracion.md), R9 y R10, y R1, R4
+# reforma. Desde F19-H02 (D-120; specs/061-exportacion-siga/contracts/demostracion.md), R11 y la suma
+# de verificación y el registro de cada exportación en R1, R4, R5 y R9. Desde F19-H01 (D-119;
+# specs/060-csv-siga/contracts/demostracion.md), R9 y R10, y R1, R4
 # y R5 ampliados: secretaria.demo genera el CSV para SIGA de la versión 1, con una fila por
 # asignatura y por actividad, los totales del reporte general y las convenciones de SENESCYT,
 # idéntico entre dos pedidos y con CSV_SIGA_GENERADO en la bitácora; carga un layout nuevo (otros
@@ -1450,6 +1452,9 @@ readonly LAYOUT_SIGA="$GATEWAY/api/reporting/layout-siga"
 readonly PLANTILLA_SIGA=backend/servicios/reporting/src/main/resources/reporting/layout-siga-por-defecto.yaml
 readonly GENERADO_SIGA="servicio = 'reporting' and accion = 'CSV_SIGA_GENERADO'"
 readonly CARGADO_SIGA="servicio = 'reporting' and accion = 'LAYOUT_SIGA_CARGADO'"
+# F19-H02 (D-120): las exportaciones a SIGA y el rechazo de una versión no exportable.
+readonly EXPORTACIONES_SIGA="$GATEWAY/api/reporting/periodos/$PERIODO/exportaciones-siga"
+readonly RECHAZADA_SIGA="servicio = 'reporting' and accion = 'EXPORTACION_SIGA_RECHAZADA'"
 readonly ADMINISTRADOR=admin.demo
 
 hash_publicado() {
@@ -1560,7 +1565,11 @@ reportes_sin_publicacion() {
     iniciar "$SECRETARIA"
     pedir GET "$CSV_SIGA" "Bearer $token"
     es_codigo 409 REPORTING_SIN_PUBLICACION || return 1
-    hay_entradas 0 "$DESCARGADO" && hay_entradas 0 "$DESCARGADO_GENERAL" && hay_entradas 0 "$GENERADO_SIGA"
+    # F19-H02: el 409 de «sin publicación» no es un rechazo por firmas ni una exportación.
+    [[ $(exportaciones_de_la_corrida) == 0 ]] || return 1
+    exportaciones_siga || return 1
+    hay_entradas 0 "$DESCARGADO" && hay_entradas 0 "$DESCARGADO_GENERAL" && hay_entradas 0 "$GENERADO_SIGA" \
+        && hay_entradas 0 "$RECHAZADA_SIGA"
 }
 
 # --- R2. El reporte de la versión 1 publicada, con el contenido guardado al congelar ---
@@ -1711,6 +1720,20 @@ versiones_del_layout() {
     consultar_base "select count(*) from reporting.layout_exportacion"
 }
 
+# F19-H02 (D-120): las exportaciones a SIGA del periodo, por la API, en $carpeta/exportaciones.json.
+exportaciones_siga() {
+    pedir GET "$EXPORTACIONES_SIGA" "Bearer $token"
+    [[ $estado == 200 && $(jq -r '.periodo' <<<"$cuerpo") == "$PERIODO" ]] || return 1
+    printf '%s' "$cuerpo" >"$carpeta/exportaciones.json"
+}
+
+# Las de esta corrida, en la base: la tabla no admite borrar (principio VII), así que se cuentan
+# desde que empezó, como la bitácora.
+exportaciones_de_la_corrida() {
+    consultar_base "select count(*) from reporting.exportacion_siga
+        where periodo = '$PERIODO' and exportada_en >= '$inicio'"
+}
+
 # csv_siga_igual_al_general <csv> <general.json> <individuales> <layout.json> <convenciones 0|1>:
 # Python, con el módulo csv (RFC 4180): sin BOM, CRLF, el encabezado del layout, una fila por cada
 # asignatura y actividad de los reportes individuales, y las sumas por docente y componente, y por
@@ -1797,11 +1820,18 @@ csv_siga_por_defecto() {
         && $(jq '.vigente.columnas | length' "$carpeta/layouts.json") == 13 ]] || return 1
     jq '.vigente' "$carpeta/layouts.json" >"$carpeta/layout-vigente.json"
     bajar_individuales || return 1
+    local antes_exportadas suma_1 suma_2
+    antes_exportadas=$(exportaciones_de_la_corrida)
     generar_siga "$carpeta/siga-1.csv"
     [[ $estado == 200 && $(cabecera Content-Disposition) == "attachment; filename=\"siga-$PERIODO-v1.csv\"" \
         && $(cabecera Cache-Control) == no-store ]] || { echo "       CSV para SIGA: $estado" >&2; return 1; }
+    suma_1=$(cabecera X-Suma-Verificacion)
     generar_siga "$carpeta/siga-2.csv"
     [[ $estado == 200 ]] || return 1
+    suma_2=$(cabecera X-Suma-Verificacion)
+    # F19-H02 (SC-002, SC-005): la suma es el sha256sum del archivo, y la misma en los dos.
+    [[ $suma_1 =~ ^[0-9a-f]{64}$ && $suma_1 == "$(sha256sum "$carpeta/siga-1.csv" | cut -d' ' -f1)" \
+        && $suma_2 == "$suma_1" ]] || { echo "       la suma de verificación: $suma_1 / $suma_2" >&2; return 1; }
     # SC-001, SC-002 y SC-003: las filas, los totales del general y las convenciones de SENESCYT.
     csv_siga_igual_al_general "$carpeta/siga-1.csv" "$carpeta/general.json" "$carpeta/individuales" \
         "$carpeta/layout-vigente.json" 1 || return 1
@@ -1812,7 +1842,36 @@ csv_siga_por_defecto() {
     esperar 60 hay_entradas 2 "$GENERADO_SIGA" \
         || { echo "       entradas: $(entradas "$GENERADO_SIGA")" >&2; return 1; }
     hay_entradas 2 "$GENERADO_SIGA and periodo = '$PERIODO' and (objeto ->> 'version')::int = 1
-        and (nuevo ->> 'layout')::int = $numero and objeto ->> 'identificacion' is null"
+        and (nuevo ->> 'layout')::int = $numero and objeto ->> 'identificacion' is null
+        and nuevo ->> 'sha256' = '$suma_1' and nuevo ->> 'exportacion' is not null" || return 1
+    # F19-H02 (SC-003): dos exportaciones registradas, las más recientes de la lista, con la suma.
+    [[ $(exportaciones_de_la_corrida) == $((antes_exportadas + 2)) ]] || return 1
+    exportaciones_siga || return 1
+    local filas
+    filas=$(($(wc -l <"$carpeta/siga-1.csv") - 1))
+    [[ $(jq -c --arg s "$suma_1" --argjson l "$numero" --argjson f "$filas" --arg n "siga-$PERIODO-v1.csv" \
+        '[.exportaciones[:2][] | select(.version == 1 and .layout == $l and .filas == $f and .nombre == $n
+            and .sumaVerificacion == $s and .exportadaPor == "secretaria.demo")] | length' \
+        "$carpeta/exportaciones.json") == 2 ]] || { echo "       las exportaciones: $(cat "$carpeta/exportaciones.json")" >&2; return 1; }
+    printf '%s' "$suma_1" >"$carpeta/suma-version-1"
+    hay_entradas 0 "$RECHAZADA_SIGA"
+}
+
+# --- R11. Las exportaciones a SIGA no se modifican ni se borran (F19-H02, SC-006) ---
+exportacion_siga_inmutable() {
+    local antes salida
+    antes=$(consultar_base "select count(*) from reporting.exportacion_siga")
+    [[ $antes -gt 0 ]] || return 1
+    # El disparador frena también al superusuario con el que corre consultar_base.
+    if salida=$(consultar_base "update reporting.exportacion_siga set filas = 0" 2>&1); then
+        echo "       el update pasó" >&2; return 1
+    fi
+    grep -q 'no se puede modificar ni borrar' <<<"$salida" || { echo "       $salida" >&2; return 1; }
+    if salida=$(consultar_base "delete from reporting.exportacion_siga" 2>&1); then
+        echo "       el delete pasó" >&2; return 1
+    fi
+    grep -q 'no se puede modificar ni borrar' <<<"$salida" || { echo "       $salida" >&2; return 1; }
+    [[ $(consultar_base "select count(*) from reporting.exportacion_siga") == "$antes" ]]
 }
 
 # --- R10. Otro layout cambia las columnas sin tocar el código; uno inválido se rechaza (US3) ---
@@ -1901,6 +1960,9 @@ reporte_sin_acceso() {
         es_codigo 403 SEGURIDAD_ACCESO_NO_AUTORIZADO || { echo "       $usuario, CSV para SIGA: $estado" >&2; return 1; }
         cargar_layout "$PLANTILLA_SIGA"
         [[ $estado == 403 ]] || { echo "       $usuario, cargar el layout: $estado" >&2; return 1; }
+        # F19-H02 (SC-008): tampoco ven las exportaciones.
+        pedir GET "$EXPORTACIONES_SIGA" "Bearer $token"
+        es_codigo 403 SEGURIDAD_ACCESO_NO_AUTORIZADO || { echo "       $usuario, exportaciones: $estado" >&2; return 1; }
     done
     [[ $(versiones_del_layout) == "$versiones" && $(entradas "$GENERADO_SIGA") == "$generados" ]]
 }
@@ -1934,9 +1996,15 @@ reporte_durante_la_reforma() {
         || { echo "       el CSV del general cambió durante la reforma" >&2; igual=1; }
     # F19-H01: el CSV para SIGA tampoco cambia; sale de la versión 1.
     iniciar "$SECRETARIA"
+    local exportadas_antes
+    exportadas_antes=$(exportaciones_de_la_corrida)
     generar_siga "$carpeta/siga-en-reforma.csv"
     [[ $estado == 200 ]] && cmp -s "$carpeta/siga-version-1.csv" "$carpeta/siga-en-reforma.csv" \
         || { echo "       el CSV para SIGA cambió durante la reforma: $estado" >&2; igual=1; }
+    # F19-H02: la misma suma que en R9 y una exportación más de la versión 1.
+    [[ $(cabecera X-Suma-Verificacion) == "$(cat "$carpeta/suma-version-1")" \
+        && $(exportaciones_de_la_corrida) == $((exportadas_antes + 1)) ]] \
+        || { echo "       la exportación durante la reforma no es la de la versión 1" >&2; igual=1; }
     # Las horas vuelven a las de antes: los pasos 25 a 27 recorren la versión 2 con la oferta del
     # inicio de la prueba.
     iniciar "$VICERRECTOR"
@@ -2017,8 +2085,9 @@ verificar R2 "El reporte de la versión 1: su hash, filas que suman su total, la
 verificar R3 "PDF/A sin campos y CSV con los mismos datos; dos CSV idénticos; 8 descargas en la bitácora y ver el reporte no deja entrada" reporte_en_dos_formatos
 verificar R7 "El reporte general de la versión 1: los docentes del listado sin repetidos, cada fila igual a su individual y los totales, la suma de las filas" reporte_general_de_la_version_1
 verificar R8 "El general en PDF/A sin campos y en CSV con los mismos datos; dos CSV idénticos; 4 descargas REPORTE_GENERAL_DESCARGADO sin docente" reporte_general_en_dos_formatos
-verificar R9 "El CSV para SIGA de la versión 1: una fila por asignatura y actividad, los totales del general, las convenciones de SENESCYT, dos archivos idénticos y 2 entradas CSV_SIGA_GENERADO" csv_siga_por_defecto
+verificar R9 "El CSV para SIGA de la versión 1: una fila por asignatura y actividad, los totales del general, las convenciones de SENESCYT, dos archivos idénticos con la misma suma de verificación, 2 exportaciones registradas y 2 entradas CSV_SIGA_GENERADO con la suma" csv_siga_por_defecto
 verificar R10 "Un layout nuevo cambia las columnas sin tocar el código; uno inválido se rechaza con 2 problemas y no cambia el vigente" layout_siga_nuevo
+verificar R11 "Las exportaciones a SIGA no se modifican ni se borran" exportacion_siga_inmutable
 verificar R4 "$COORDINADOR y $DESIGNADO, 403 en el individual y el general; un docente que no está, 404; una identificación o un periodo inválidos, 400; $RECTOR, $COORDINADOR y $ADMINISTRADOR, 403 en el CSV para SIGA y el layout" reporte_sin_acceso
 if [[ $CONSERVAR == PUBLICADO ]]; then
     if ((fallas > 0)); then

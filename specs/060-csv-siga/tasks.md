@@ -406,7 +406,7 @@ description: "Tareas de F19-H01: generar el CSV para SIGA con el layout configur
 
   **Hecho por Claude** el 2026-11-22 en el perfil real (Playwright y LibreOffice Calc sin interfaz; detalle en la evidencia), salvo el lector de pantalla, que queda para el autor.
 - [X] T039 Crear `specs/060-csv-siga/evidencia.md`, como la de 059: las pruebas, el script, el recorrido, las mediciones, las desviaciones y los criterios de terminado. La sección del equipo de demostración queda para después de fusionar.
-- [ ] T040 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde.
+- [X] T040 Fusionar solo con la aprobación del autor y todas las comprobaciones en verde.
   - **Verificar la demo en solo lectura:** «Sano» y, si 2026-I está publicado, un CSV para SIGA generado. Antes, regenerar la base si el contenido es anterior a la historia (Riesgos del plan).
   - El PR principal lleva `Refs #266`, y el de evidencia, `Closes #266`. F19 (#258) sigue abierta hasta F19-H02 (#267).
 
