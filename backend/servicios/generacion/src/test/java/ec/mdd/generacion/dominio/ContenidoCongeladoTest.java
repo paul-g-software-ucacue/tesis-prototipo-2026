@@ -58,6 +58,7 @@ class ContenidoCongeladoTest {
         assertThat(ana.horas().clase()).isEqualByComparingTo("11.25");
         assertThat(ana.horas().investigacion()).isEqualByComparingTo("3");
         assertThat(ana.dedicacion()).contains(Dedicacion.TC);
+        assertThat(ana.tipoIdentificacion()).contains(TipoDeIdentificacion.PASAPORTE);
         assertThat(ana.horasContratadas()).hasValue(40);
     }
 
@@ -73,6 +74,7 @@ class ContenidoCongeladoTest {
 
         CargaCongelada luis = contenido.cargas().get(0);
         assertThat(luis.dedicacion()).isEmpty();
+        assertThat(luis.tipoIdentificacion()).isEmpty();
         assertThat(luis.actividades())
                 .extracting(ActividadCongelada::componente)
                 .containsExactly(Componente.GESTION);
@@ -84,6 +86,7 @@ class ContenidoCongeladoTest {
 
     private static DocenteActivo activo(String docente) {
         return new DocenteActivo(
+                TipoDeIdentificacion.PASAPORTE,
                 docente,
                 "PEREZ ANA",
                 Dedicacion.TC,

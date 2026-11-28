@@ -368,7 +368,12 @@ class SugerenciaTest {
     private static DocenteActivo docente(
             String nombre, int horasContratadas, FormacionDelDocente formacion) {
         return new DocenteActivo(
-                "ID-" + nombre, nombre, Dedicacion.TC, horasContratadas, formacion);
+                TipoDeIdentificacion.CEDULA,
+                "ID-" + nombre,
+                nombre,
+                Dedicacion.TC,
+                horasContratadas,
+                formacion);
     }
 
     private static FormacionDelDocente formacion(String tercerNivel, String... cuartosNiveles) {

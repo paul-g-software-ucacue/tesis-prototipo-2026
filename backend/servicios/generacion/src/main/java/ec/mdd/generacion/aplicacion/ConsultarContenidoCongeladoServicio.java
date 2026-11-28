@@ -34,6 +34,21 @@ public final class ConsultarContenidoCongeladoServicio implements ConsultarConte
     }
 
     @Override
+    public Optional<ContenidoCompleto> contenido(String periodo, int version) {
+        if (!guardado.guardarSiFalta(periodo, version, true)) {
+            return Optional.empty();
+        }
+        return repositorio
+                .hash(periodo, version)
+                .map(
+                        hash ->
+                                new ContenidoCompleto(
+                                        hash,
+                                        repositorio.cargas(periodo, version),
+                                        repositorio.inconsistencias(periodo, version)));
+    }
+
+    @Override
     public Optional<CargaDeLaVersion> carga(String periodo, int version, String docente) {
         if (!guardado.guardarSiFalta(periodo, version, true)) {
             return Optional.empty();

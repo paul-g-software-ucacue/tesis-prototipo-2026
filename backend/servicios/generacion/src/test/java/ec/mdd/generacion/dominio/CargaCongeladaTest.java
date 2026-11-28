@@ -40,6 +40,7 @@ class CargaCongeladaTest {
                 new CargaCongelada(
                         "0109990010",
                         "Pérez Ana",
+                        TipoDeIdentificacion.CEDULA,
                         Dedicacion.TC,
                         40,
                         List.of(BD_A, SOC_B),
@@ -63,6 +64,7 @@ class CargaCongeladaTest {
                 new CargaCongelada(
                         "0109990010",
                         "Pérez Ana",
+                        TipoDeIdentificacion.CEDULA,
                         null,
                         null,
                         List.of(),
@@ -85,6 +87,7 @@ class CargaCongeladaTest {
                                 new CargaCongelada(
                                         "0109990010",
                                         "Pérez Ana",
+                                        TipoDeIdentificacion.CEDULA,
                                         Dedicacion.TC,
                                         40,
                                         List.of(BD_A),
@@ -106,6 +109,7 @@ class CargaCongeladaTest {
                                 new CargaCongelada(
                                         "0109990010",
                                         "Pérez Ana",
+                                        TipoDeIdentificacion.CEDULA,
                                         Dedicacion.TC,
                                         40,
                                         List.of(),
@@ -127,6 +131,7 @@ class CargaCongeladaTest {
                                 new CargaCongelada(
                                         "0109990010",
                                         "Pérez Ana",
+                                        TipoDeIdentificacion.CEDULA,
                                         Dedicacion.TC,
                                         41,
                                         List.of(),

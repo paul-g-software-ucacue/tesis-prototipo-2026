@@ -7,13 +7,18 @@ import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
 import ec.mdd.plataforma.eventos.ProcesoConError;
 import ec.mdd.plataforma.eventos.ProveedorDeTokenDeProceso;
 import ec.mdd.plataforma.pruebas.ReceptorSimulado;
+import ec.mdd.reporting.dominio.CargasDeLaVersion;
 import ec.mdd.reporting.dominio.Componente;
 import ec.mdd.reporting.dominio.ContenidoDelDocente;
 import ec.mdd.reporting.dominio.Dedicacion;
 import ec.mdd.reporting.dominio.DocentesDeLaVersion;
+import ec.mdd.reporting.dominio.FirmasDeLaVersion;
+import ec.mdd.reporting.dominio.InconsistenciasAbiertas;
 import ec.mdd.reporting.dominio.Publicacion;
+import ec.mdd.reporting.dominio.TipoDeIdentificacion;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.client.RestClient;
@@ -40,6 +45,7 @@ class ClientesDeReportingTest {
             new PublicacionesDesdeAprobacion(consultas, receptor.base());
     private final ContenidoDesdeGeneracion contenido =
             new ContenidoDesdeGeneracion(consultas, receptor.base());
+    private final FirmasDesdeFirma firmas = new FirmasDesdeFirma(consultas, receptor.base());
 
     @AfterEach
     void cerrar() {
@@ -149,6 +155,123 @@ class ClientesDeReportingTest {
                         org.assertj.core.groups.Tuple.tuple(Componente.INVESTIGACION, "Suelos"),
                         org.assertj.core.groups.Tuple.tuple(Componente.GESTION, "TDS"));
         assertThat(leido.horas().total()).isEqualByComparingTo("11.5");
+    }
+
+    @Test
+    void dadoElContenidoCompleto_cuandoSePide_entoncesTraduceCadaCargaConSusCodigosYSuTipo() {
+        receptor.responderConsulta(
+                "/interno/generacion/periodos/2026-I/versiones/1/contenido",
+                200,
+                "{\"hash\":\""
+                        + HASH
+                        + "\",\"cargas\":[{\"hash\":\""
+                        + HASH
+                        + "\",\"docente\":{\"identificacion\":\"0109990010\","
+                        + "\"nombre\":\"PEREZ ANA\",\"tipoIdentificacion\":\"PASAPORTE\","
+                        + "\"dedicacion\":\"TC\",\"horasContratadas\":40},"
+                        + "\"asignaturas\":[{\"codigo\":\"BD-301\",\"nombre\":\"Bases de datos\","
+                        + "\"paralelo\":\"A\",\"carrera\":\"TDS\",\"nombreCarrera\":\"Software\","
+                        + "\"horas\":8.00}],\"actividades\":[{\"codigo\":\"141-a\","
+                        + "\"nombre\":\"Proyecto\",\"componente\":\"INVESTIGACION\","
+                        + "\"carrera\":\"TDS\",\"horas\":2.50,\"nombreProyecto\":\"Suelos\","
+                        + "\"proyecto\":\"INV-01\"}],"
+                        + "\"horas\":{\"clase\":8.00,\"otrasDocencia\":0,\"investigacion\":2.50,"
+                        + "\"vinculacion\":0,\"gestion\":0}},{\"hash\":\""
+                        + HASH
+                        + "\",\"docente\":{\"identificacion\":\"0109990020\","
+                        + "\"nombre\":\"VEGA LUIS\"},\"asignaturas\":[],\"actividades\":[],"
+                        + "\"horas\":{\"clase\":0,\"otrasDocencia\":0,\"investigacion\":0,"
+                        + "\"vinculacion\":0,\"gestion\":0}}]}");
+
+        CargasDeLaVersion leidas = contenido.cargas("2026-I", 1).orElseThrow();
+
+        assertThat(leidas.hash()).isEqualTo(HASH);
+        assertThat(leidas.cargas()).hasSize(2);
+        ContenidoDelDocente ana = leidas.cargas().get(0);
+        assertThat(ana.docente().tipoIdentificacion()).contains(TipoDeIdentificacion.PASAPORTE);
+        assertThat(ana.asignaturas().get(0).codigoCarrera()).contains("TDS");
+        assertThat(ana.actividades().get(0).codigoCarrera()).contains("TDS");
+        assertThat(ana.actividades().get(0).codigoProyecto()).contains("INV-01");
+        assertThat(leidas.cargas().get(1).docente().tipoIdentificacion()).isEmpty();
+        assertThat(leidas.cargas().get(1).docente().dedicacion()).isEmpty();
+        // F19-H02 (D-120): un contenido sin inconsistencias registradas.
+        assertThat(leidas.inconsistencias()).isEmpty();
+    }
+
+    // F19-H02 (D-120): las inconsistencias abiertas registradas al congelar.
+    @Test
+    void dadoUnContenidoConSusInconsistencias_cuandoSePide_entoncesLasTraduce() {
+        receptor.responderConsulta(
+                "/interno/generacion/periodos/2026-I/versiones/1/contenido",
+                200,
+                "{\"hash\":\""
+                        + HASH
+                        + "\",\"cargas\":[],\"inconsistenciasAbiertas\":{\"duras\":1,\"blandas\":2}}");
+
+        assertThat(contenido.cargas("2026-I", 1).orElseThrow().inconsistencias())
+                .contains(new InconsistenciasAbiertas(1, 2));
+    }
+
+    @Test
+    void dadasLasFirmasDeUnaVersion_cuandoSePiden_entoncesLasTraduce() {
+        receptor.responderConsulta(
+                "/interno/firma/periodos/2026-I/versiones/1/firmas",
+                200,
+                "{\"periodo\":\"2026-I\",\"version\":1,\"hashContenido\":\""
+                        + HASH
+                        + "\",\"pasos\":[{\"orden\":1,\"estado\":\"FIRMADO\"},"
+                        + "{\"orden\":2,\"estado\":\"PENDIENTE\"},"
+                        + "{\"orden\":3,\"estado\":\"RECHAZADO\"}],"
+                        + "\"anulada\":false,\"rechazada\":true}");
+
+        assertThat(firmas.firmas("2026-I", 1))
+                .contains(
+                        new FirmasDeLaVersion(
+                                HASH,
+                                List.of(
+                                        new FirmasDeLaVersion.PasoFirmado(1, true),
+                                        new FirmasDeLaVersion.PasoFirmado(2, false),
+                                        new FirmasDeLaVersion.PasoFirmado(3, false)),
+                                false,
+                                true));
+    }
+
+    @Test
+    void dadaUnaVersionSinDocumento_cuandoSePidenSusFirmas_entoncesVacio() {
+        receptor.responderConsulta("/interno/firma/periodos/2026-I/versiones/7/firmas", 404, "{}");
+
+        assertThat(firmas.firmas("2026-I", 7)).isEmpty();
+    }
+
+    @Test
+    void dadoUnErrorDeFirmaOUnaRespuestaSinHash_cuandoSePidenLasFirmas_entoncesErrorDelProceso() {
+        receptor.responderConsulta("/interno/firma/periodos/2026-I/versiones/1/firmas", 500, "{}");
+        receptor.responderConsulta(
+                "/interno/firma/periodos/2026-I/versiones/2/firmas",
+                200,
+                "{\"periodo\":\"2026-I\",\"version\":2,\"pasos\":[],"
+                        + "\"anulada\":false,\"rechazada\":false}");
+
+        assertThatThrownBy(() -> firmas.firmas("2026-I", 1)).isInstanceOf(ProcesoConError.class);
+        assertThatThrownBy(() -> firmas.firmas("2026-I", 2)).isInstanceOf(ProcesoConError.class);
+    }
+
+    @Test
+    void dadoUnContenidoSinHash_cuandoSePide_entoncesEsUnErrorDelProceso() {
+        receptor.responderConsulta(
+                "/interno/generacion/periodos/2026-I/versiones/1/contenido",
+                200,
+                "{\"cargas\":[]}");
+
+        assertThatThrownBy(() -> contenido.cargas("2026-I", 1)).isInstanceOf(ProcesoConError.class);
+    }
+
+    @Test
+    void dadaUnaVersionSinContenido_cuandoSePideElCompleto_entoncesVacio() {
+        receptor.responderConsulta(
+                "/interno/generacion/periodos/2026-I/versiones/7/contenido", 404, "{}");
+
+        assertThat(contenido.cargas("2026-I", 7)).isEmpty();
     }
 
     @Test

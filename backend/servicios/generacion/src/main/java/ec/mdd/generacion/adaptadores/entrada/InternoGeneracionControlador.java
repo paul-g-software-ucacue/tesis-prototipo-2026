@@ -5,10 +5,12 @@ import ec.mdd.generacion.adaptadores.entrada.api.AsignaturaCongelada;
 import ec.mdd.generacion.adaptadores.entrada.api.CargaCongeladaDelDocente;
 import ec.mdd.generacion.adaptadores.entrada.api.CargasCongeladas;
 import ec.mdd.generacion.adaptadores.entrada.api.Componente;
+import ec.mdd.generacion.adaptadores.entrada.api.ContenidoCongeladoCompleto;
 import ec.mdd.generacion.adaptadores.entrada.api.DatosDelDocenteCongelado;
 import ec.mdd.generacion.adaptadores.entrada.api.Dedicacion;
 import ec.mdd.generacion.adaptadores.entrada.api.DocenteCongelado;
 import ec.mdd.generacion.adaptadores.entrada.api.HorasPorComponente;
+import ec.mdd.generacion.adaptadores.entrada.api.InconsistenciasAlCongelar;
 import ec.mdd.generacion.adaptadores.entrada.api.InternoApi;
 import ec.mdd.generacion.dominio.CargaCongelada;
 import ec.mdd.generacion.dominio.CargaHoraria;
@@ -60,6 +62,39 @@ class InternoGeneracionControlador implements InternoApi {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
+    // F19-H01 (D-119): el contenido de todos los docentes en una llamada, para el CSV para SIGA.
+    @Override
+    public ResponseEntity<ContenidoCongeladoCompleto> consultarContenidoCongelado(
+            String periodo, Integer numero) {
+        return contenido
+                .contenido(periodo, numero)
+                .map(
+                        completo -> {
+                            ContenidoCongeladoCompleto respuesta =
+                                    new ContenidoCongeladoCompleto(
+                                            completo.hash(),
+                                            completo.cargas().stream()
+                                                    .map(
+                                                            carga ->
+                                                                    respuesta(
+                                                                            new CargaDeLaVersion(
+                                                                                    completo.hash(),
+                                                                                    carga)))
+                                                    .toList());
+                            // F19-H02 (D-120): solo si se registraron al congelar.
+                            completo.inconsistencias()
+                                    .ifPresent(
+                                            abiertas ->
+                                                    respuesta.setInconsistenciasAbiertas(
+                                                            new InconsistenciasAlCongelar(
+                                                                    abiertas.duras(),
+                                                                    abiertas.blandas())));
+                            return respuesta;
+                        })
+                .map(ResponseEntity::ok)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
     // F20-H02 (D-117): las horas y la dedicación de cada docente, para el reporte general.
     private static DocenteCongelado docente(DocenteDeLaVersion docente) {
         DocenteCongelado respuesta =
@@ -83,6 +118,12 @@ class InternoGeneracionControlador implements InternoApi {
         CargaCongelada carga = deLaVersion.carga();
         DatosDelDocenteCongelado docente =
                 new DatosDelDocenteCongelado(carga.identificacion(), carga.nombre());
+        carga.tipoIdentificacion()
+                .ifPresent(
+                        una ->
+                                docente.tipoIdentificacion(
+                                        ec.mdd.generacion.adaptadores.entrada.api
+                                                .TipoDeIdentificacion.fromValue(una.name())));
         carga.dedicacion().ifPresent(una -> docente.dedicacion(Dedicacion.fromValue(una.name())));
         carga.horasContratadas().ifPresent(docente::horasContratadas);
         return new CargaCongeladaDelDocente(

@@ -1,0 +1,78 @@
+# Layout de exportación del CSV para SIGA (F19-H01, RF-52, ADR-002, D-119).
+#
+# Este archivo es a la vez la plantilla y el layout por defecto (versión 0). Para adaptar el CSV al
+# formato de SIGA, copia este archivo, cámbialo y cárgalo en «Exportación a SIGA»: no hace falta
+# cambiar el sistema. Cada carga válida es una versión nueva del layout de exportación; las
+# anteriores se conservan.
+#
+# Cómo se escribe:
+# - «columnas» es la lista de columnas del CSV, en su orden: la primera de la lista es la primera
+#   columna del archivo. Puede tener de 1 a 30 columnas.
+# - Cada columna tiene:
+#   - «nombre»: su encabezado en la primera fila del CSV. Empieza con una letra y usa solo letras
+#     sin tildes, dígitos o «_», hasta 64 caracteres. No se puede repetir (tampoco cambiando
+#     mayúsculas por minúsculas).
+#   - «campo»: de dónde sale el valor. Uno de esta lista:
+#       periodo             el código del periodo, por ejemplo 2026-I
+#       version             el número de la versión publicada
+#       fecha_publicacion   la fecha en que se publicó, como aaaa-mm-dd
+#       hash_version        el hash de la versión publicada
+#       tipo_identificacion CEDULA o PASAPORTE (se puede traducir)
+#       identificacion      el número de cédula o pasaporte (obligatorio)
+#       docente             los apellidos y nombres
+#       dedicacion          TC, MT o TP (se puede traducir)
+#       componente          CLASE, OTRAS_DOCENCIA, INVESTIGACION, VINCULACION o GESTION
+#                           (obligatorio; se puede traducir)
+#       actividad           el código de la actividad del catálogo (NA en una clase)
+#       carrera             el código de la carrera
+#       asignatura          el código de la asignatura (NA en una actividad)
+#       paralelo            el paralelo (NA en una actividad)
+#       proyecto            el código del proyecto (NA si no tiene)
+#       horas               las horas semanales, con punto y dos decimales (obligatorio)
+#   - «traduccion» (opcional): cambia los códigos del sistema por los de SIGA. Solo en
+#     tipo_identificacion, dedicacion y componente, y tiene que traducir todos sus códigos, cada
+#     uno a un valor distinto, de 1 a 30 letras sin tildes, dígitos, espacio, «.», «_» o «-».
+#     Ningún código se puede traducir a «NA», que significa «no aplica».
+# - Tiene que haber al menos una columna con «identificacion», una con «componente» y una con
+#   «horas».
+#
+# Lo que el layout no cambia: el CSV tiene una fila por docente y actividad; usa coma, CRLF y
+# UTF-8 sin BOM (RFC 4180); el texto va en mayúsculas («140-b» sale «140-B»); lo que no aplica
+# sale «NA»; y una celda que empieza como una fórmula lleva un apóstrofo delante.
+#
+# Ejemplo de traducción (quita los «#» para usarla):
+#   - nombre: COMPONENTE
+#     campo: componente
+#     traduccion:
+#       CLASE: "01"
+#       OTRAS_DOCENCIA: "02"
+#       INVESTIGACION: "03"
+#       VINCULACION: "04"
+#       GESTION: "05"
+columnas:
+  - nombre: PERIODO
+    campo: periodo
+  - nombre: TIPO_IDENTIFICACION
+    campo: tipo_identificacion
+  - nombre: NUMERO_IDENTIFICACION
+    campo: identificacion
+  - nombre: APELLIDOS_NOMBRES
+    campo: docente
+  - nombre: DEDICACION
+    campo: dedicacion
+  - nombre: COMPONENTE
+    campo: componente
+  - nombre: CODIGO_ACTIVIDAD
+    campo: actividad
+  - nombre: CODIGO_CARRERA
+    campo: carrera
+  - nombre: CODIGO_ASIGNATURA
+    campo: asignatura
+  - nombre: PARALELO
+    campo: paralelo
+  - nombre: HORAS_SEMANALES
+    campo: horas
+  - nombre: VERSION
+    campo: version
+  - nombre: FECHA_PUBLICACION
+    campo: fecha_publicacion

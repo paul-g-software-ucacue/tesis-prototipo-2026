@@ -33,6 +33,7 @@ import ec.mdd.generacion.dominio.ProyectosYCargosDelDocente;
 import ec.mdd.generacion.dominio.ReglaDeAsignacion;
 import ec.mdd.generacion.dominio.ReglasDelPeriodo;
 import ec.mdd.generacion.dominio.Severidad;
+import ec.mdd.generacion.dominio.TipoDeIdentificacion;
 import ec.mdd.generacion.dominio.TipoDeJustificacion;
 import ec.mdd.generacion.dominio.TituloDeTercerNivel;
 import ec.mdd.generacion.dominio.VersionCongelada;
@@ -988,6 +989,7 @@ class ProponerDocenteServicioTest {
 
     private static DocenteActivo docente(String id, int horas, String campo) {
         return new DocenteActivo(
+                TipoDeIdentificacion.CEDULA,
                 id,
                 "DOCENTE " + id,
                 Dedicacion.TC,

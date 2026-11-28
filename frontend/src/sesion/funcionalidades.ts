@@ -94,6 +94,14 @@ export const RESOLUCION_DEL_OCS: readonly { funcionalidad: string; tipo: TipoDeP
   { funcionalidad: 'RESOLUCION_OCS', tipo: 'ESCRITURA' },
 ];
 
+/**
+ * Quién abre «Exportación a SIGA» (F19-H01, D-119): solo la Secretaría general académica, que
+ * publica, genera el CSV y carga el layout de exportación. Lo comparten la ruta y el menú.
+ */
+export const EXPORTACION_A_SIGA: readonly { funcionalidad: string; tipo: TipoDePermiso }[] = [
+  { funcionalidad: 'PUBLICACION', tipo: 'APROBACION' },
+];
+
 /** Quién firma algún paso del árbol (F14-H01): su entrada «Pendientes de firma» y su ruta. */
 export const FIRMA_DEL_DISTRIBUTIVO: readonly { funcionalidad: string; tipo: TipoDePermiso }[] = [
   { funcionalidad: 'DISTRIBUTIVO', tipo: 'FIRMA' },

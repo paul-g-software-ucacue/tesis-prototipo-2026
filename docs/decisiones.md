@@ -117,6 +117,9 @@ Este archivo es la **fuente única** de las decisiones que se toman durante el d
 | D-116 | 2026-11-21 | El API Gateway guarda las respuestas del DNS un segundo como mucho y la JVM cinco: si un contenedor cambia de IP y otro se queda con la vieja, el tráfico no va al proceso equivocado | Aceptada | ADR-006, D-84, #274 |
 | D-117 | 2026-11-21 | El reporte general: la ruta interna de los docentes de una versión congelada suma su dedicación y sus horas; Reporting suma los totales institucionales en su dominio; PDF/A-2b horizontal y CSV con una fila por docente y una de totales; cada descarga queda en la bitácora como `REPORTE_GENERAL_DESCARGADO` | Aceptada | RF-46, RF-48, RNF-SEG-04, D-101, D-115 |
 | D-118 | 2026-11-22 | `libc6` de `cloudflared` espera con una excepción de Grype hasta que Cloudflare reconstruya la imagen | Aceptada | D-54, D-81, D-96 |
+| D-119 | 2026-11-22 | El CSV para SIGA: Reporting arma las filas de la versión publicada desde el contenido congelado completo y las comprueba contra el reporte general; las escribe el puerto `ExportadorSiga` con el layout de exportación, un YAML versionado que carga la Secretaría; el contenido congelado guarda el tipo de identificación | Aceptada | RF-52, RNF-COM-02, RNF-SEG-04, ADR-002, ADR-007, D-04, D-16, D-113, D-115, D-117 |
+| D-120 | 2026-11-28 | La exportación a SIGA: Reporting valida las firmas (ruta interna de Firma por versión) y las inconsistencias abiertas que Generación fija al congelar, rechaza con todos los motivos y lo anota en la bitácora; cada CSV entregado es una `ExportacionSiga` con su SHA-256, guardada con su entrada `CSV_SIGA_GENERADO` antes de entregar | Aceptada | RF-44, RF-53, RNF-INT-01, MD-07, MD-11, D-113, D-115, D-119 |
+| D-121 | 2026-11-28 | Tomcat sube a 11.0.29 y CVE-2026-133325 espera con una excepción de Grype hasta que se publique la 11.0.30 | Aceptada | D-54, D-118 |
 | ADR-020 | 2026-10-17 | Sesión por inactividad sin estado: token corto que la SPA renueva mientras hay actividad | Aceptada | ADR-014 (claims `nombre` e `inicio`, operación de renovación) |
 
 ---
@@ -2689,5 +2692,120 @@ La raíz del BCE se sacó de la cadena que trae el certificado de firma del auto
 - Las excepciones solo cubren esa versión de `libc6`. Si otra imagen la trae, Grype la sigue reportando.
 - Al vencer, `deploy/sca/excepciones.sh` las quita y el check vuelve a fallar si la imagen no cambió.
 - Antes de encender el túnel, la imagen tiene que estar sin esta excepción.
+
+**Documentos que hay que poner al día.** Ninguno.
+
+## D-119. El CSV para SIGA: Reporting arma las filas de la versión publicada desde el contenido congelado completo y las comprueba contra el reporte general; las escribe el puerto `ExportadorSiga` con el layout de exportación, un YAML versionado que carga la Secretaría; el contenido congelado guarda el tipo de identificación
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-22 · **Decidido por:** autor de la tesis
+- **Origen:** F19-H01 (#266); aclaraciones del 2026-11-22 de `specs/060-csv-siga/spec.md` y su plan (`research.md` §1 a §14)
+- **Relacionadas:** RF-52, RNF-COM-02, RNF-SEG-04, ADR-002, ADR-007, D-04, D-16, D-113, D-115, D-117; principios I, III, V, VI, VII, IX, X, XIII y XIV
+- **Estimación:** 24 h para F19-H01, de las 37 h de la feature F19 en la planificación (`lean_inception/taller/dia3-features-revision.md`), por su tamaño M; las 13 h restantes quedan para F19-H02 (S). Las «Horas estimadas» no están en un campo del proyecto de GitHub: las confirmó el autor el 2026-11-22.
+
+**Decisión.**
+- **De dónde salen las filas:** una ruta interna nueva de Generación, `consultarContenidoCongelado` (`/interno/generacion/periodos/{periodo}/versiones/{numero}/contenido`), devuelve en una sola llamada el contenido congelado completo de todos los docentes de una versión, con el esquema `CargaCongeladaDelDocente` que ya existía.
+- **El tipo de identificación:** Docentes lo suma a `DocenteActivo`; Generación lo guarda al congelar en la clave opcional `tipoIdentificacion` de `carga_congelada.contenido`, sin migración. Si falta (docente que no estaba activo al congelar, o contenido anterior a esta decisión), la columna sale «NA».
+- **Los totales:** el caso de uso lee la publicación vigente una sola vez y, con su versión, arma el `ReporteGeneral` (D-117) y las filas (`FilasParaSiga`). Antes de entregar, la suma de las filas por docente y componente, y la de todas por componente, tienen que ser las del reporte general; si no, `REPORTING_CONTENIDO_INCONSISTENTE`, sin entregar nada.
+- **El puerto (principio I):** el dominio solo arma y comprueba las filas. El puerto de salida `ExportadorSiga` (`exportar(filas, layout)`) escribe el archivo, y su adaptador del prototipo, `ExportadorSigaCsv`, aplica el layout y el formato. Una API de SIGA sería otro adaptador del mismo puerto.
+- **El formato, fijo:** RFC 4180 con coma, CRLF también al final, UTF-8 sin BOM, comillas solo cuando hacen falta, todo el texto en mayúsculas con `Locale.ROOT` (también los códigos: «140-B»), «NA» para lo que no aplica o falta, horas con escala 2 y punto, la fecha de publicación `aaaa-mm-dd` en `America/Guayaquil`, y las fórmulas neutralizadas con `CeldaCsv`, extraída de `EscritorCsv`. Sin el momento de generación: dos archivos de la misma versión y el mismo layout son idénticos.
+- **Las filas y su orden:** una por asignatura y paralelo (componente `CLASE`) y una por actividad; por docente (el comparador del reporte general), componente, código y, para desempatar, carrera, paralelo, proyecto y horas.
+- **El layout de exportación:** un YAML; la plantilla comentada `layout-siga-por-defecto.yaml` es a la vez el layout por defecto (versión 0). El orden de la lista es la posición. Hay 15 campos, con `identificacion`, `componente` y `horas` obligatorios. La traducción de códigos solo se admite en `tipo_identificacion`, `dedicacion` y `componente`, cuyos códigos fija el sistema: es el alcance de «si corresponde» de FR-014 en esta historia; actividad y carrera salen con el código interno. Las reglas se reportan todas juntas (hasta 50), con la columna y la regla; límites: 256 KB, 4 niveles, 30 columnas, nombres `^[A-Za-z][A-Za-z0-9_]{0,63}$`.
+- **El lector:** SnakeYAML en un adaptador propio de Reporting, sin anclas, alias ni etiquetas, y sin construir objetos, como el de F12-H01, sin usar sus clases (principio V).
+- **Lo que se guarda:** cada carga válida en `reporting.layout_exportacion` (V2), con el texto, su SHA-256, quién y cuándo, sin `update` ni `delete`. Rige la última. Al generar, el layout vigente se lee una vez.
+- **Los permisos:** las cuatro operaciones (`generarCsvSiga`, `consultarLayoutsSiga`, `descargarPlantillaLayoutSiga` y `cargarLayoutSiga`) exigen `PUBLICACION:APROBACION`: solo la Secretaría general académica genera el CSV y carga el mapeo (aclaración del 2026-11-22). La matriz D-16 no cambia.
+- **La bitácora:** `CSV_SIGA_GENERADO` (objeto `{periodo, version}`, `nuevo` `{layout}`) antes de entregar, y `LAYOUT_SIGA_CARGADO` (objeto `{layout}`, `nuevo` `{columnas, sha256}`) en la transacción de la carga (aclaración del 2026-11-22). El puerto `RegistroDeDescargas` pasa a llamarse `RegistroEnBitacora`.
+- **La validación en la SPA:** solo la presencia y el tamaño del archivo de mapeo; su contenido lo valida el backend, como en las cargas y en F12-H01 (principio XIV).
+- **La pantalla:** «Exportación a SIGA» (`/exportacion-siga`), solo con `PUBLICACION:APROBACION`; «Reportes» no cambia.
+- **El glosario:** entran «CSV para SIGA», «versión del layout de exportación» y «tipo de identificación».
+- **La demostración:** los pasos R9 y R10, y R1, R4 y R5 ampliados.
+- **Errores nuevos:** `REPORTING_LAYOUT_INVALIDO` (400), `REPORTING_ARCHIVO_ILEGIBLE` (400) y `REPORTING_ARCHIVO_DEMASIADO_GRANDE` (413).
+
+**Por qué.**
+- Una llamada interna para 300 docentes, y una sola foto de la versión.
+- El CSV sale del contenido congelado, no de los datos de hoy (principio VII), y deducir el tipo de identificación del número sería una regla inventada.
+- La tabla de puertos de la constitución pone la exportación a SIGA detrás de un puerto.
+- Adaptar el CSV a SIGA es cargar otro archivo, sin tocar el código (ADR-002, principio VI).
+- Traducir actividades y carreras exigiría leer los catálogos de Normativa y Académico al cargar el mapeo, para un formato que nadie conoce todavía.
+
+**Alternativas.**
+- Una llamada por docente, o ampliar el listado de docentes de D-117.
+- Deducir el tipo de identificación del número, o preguntarlo a Docentes al generar.
+- Escribir el CSV en el dominio, sin puerto.
+- El formato del CSV de los reportes (`;`, BOM, coma decimal).
+- JSON para el mapeo, o un campo `posicion` explícito; tablas de columnas y traducciones; un layout por periodo.
+- Mover el lector YAML de Validación OCS a `plataforma`.
+- Un botón en «Reportes».
+
+**Consecuencias.**
+- `datos`, `distributivo` y `salida` se despliegan de la misma versión.
+- Una base de demostración congelada antes de esta decisión saca «NA» en el tipo de identificación; el script la regenera.
+- La traducción de actividades y carreras queda como ampliación del mismo archivo de mapeo.
+- F19-H02 suma la validación previa, la suma de verificación y el registro `ExportacionSiga` sobre este CSV.
+
+**Documentos que hay que poner al día.** El glosario (`sdd/modelo_dominio.md` y su `.docx`), con los tres términos nuevos.
+
+## D-120. La exportación a SIGA: Reporting valida las firmas (ruta interna de Firma por versión) y las inconsistencias abiertas que Generación fija al congelar, rechaza con todos los motivos y lo anota en la bitácora; cada CSV entregado es una `ExportacionSiga` con su SHA-256, guardada con su entrada `CSV_SIGA_GENERADO` antes de entregar
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-28 · **Decidido por:** autor de la tesis
+- **Origen:** F19-H02 (#267); aclaraciones del 2026-11-22 de `specs/061-exportacion-siga/spec.md` y su plan (`research.md` §1 a §12)
+- **Relacionadas:** RF-44, RF-53, RNF-INT-01, MD-07, MD-11, D-16, D-23, D-105, D-113, D-115, D-119, ADR-018, ADR-023; principios I, III, V, VII, VIII, IX, X y XIII
+- **Estimación:** las 13 h restantes de la feature F19 (D-119), por su tamaño S.
+
+**Decisión.**
+- **«Firmada»:** Firma publica `consultarFirmasDeLaVersion` (`/interno/firma/periodos/{periodo}/versiones/{numero}/firmas`), con el token de proceso. Devuelve el `hashContenido` del documento CONSOLIDADO de esa versión, sus pasos (`FIRMADO`, `PENDIENTE` o `RECHAZADO`; el `EN_TURNO` público sale como `PENDIENTE`), y si sus firmas están anuladas o se rechazó en firma. Sin documento, 404. Firma solo informa; la regla es de Reporting: el `hashContenido` es el de la publicación, hay al menos un paso, todos están firmados y no está anulada ni rechazada.
+- **«Sin inconsistencias»:** Generación guarda, al guardar el contenido congelado (D-115), las duras y las blandas sin justificar del panel, en dos columnas opcionales de `contenido_congelado` (V11), solo si el panel es de esa misma versión. `consultarContenidoCongelado` las devuelve como `inconsistenciasAbiertas`. Reporting exige 0 y 0. **Ajuste a FR-003:** sin el registro (contenido anterior a esta decisión, o tardío con una reforma en curso), la versión no se exporta (`INCONSISTENCIAS_SIN_REGISTRO`).
+- **La validación:** `CondicionesDeExportacion`, en el dominio de Reporting, junta todos los motivos (`SIN_DOCUMENTO_FIRMADO`, `DOCUMENTO_DE_OTRA_VERSION`, `FIRMAS_ANULADAS_O_RECHAZADAS`, `FIRMAS_INCOMPLETAS`, `INCONSISTENCIAS_SIN_REGISTRO`, `INCONSISTENCIAS_ABIERTAS`) y rechaza con `ExportacionRechazada`, que sale como `REPORTING_VERSION_NO_EXPORTABLE` (409): la descripción es la fija del catálogo, y cada condición que falla va en un detalle (`firmas`, `inconsistencias`) con sus números, como `VALIDACIONOCS_INCONSISTENCIAS_ABIERTAS`; sin hashes. Va después de `SinPublicacion` y antes de las comprobaciones de D-119.
+- **La suma de verificación:** `SumaDeVerificacion`, el SHA-256 de los bytes entregados en hexadecimal en minúsculas, con `MessageDigest` del JDK. Llega en el encabezado `X-Suma-Verificacion`, no en `Repr-Digest`, que usa base64. La operación sigue siendo GET.
+- **El registro:** el agregado `ExportacionSiga` (id, quién, cuándo, periodo, versión y su hash, versión del layout, nombre, filas y suma) en `reporting.exportacion_siga` (V3), sin `update` ni `delete`. Se guarda en la misma transacción que su entrada, antes de entregar. El archivo no se guarda: la versión y el layout bastan para regenerarlo idéntico. `consultarExportacionesSiga` lista las del periodo, de la más reciente a la más antigua.
+- **La bitácora:** `CSV_SIGA_GENERADO` se conserva y suma `{exportacion, filas, sha256}` a su `nuevo`: una sola entrada por exportación. `EXPORTACION_SIGA_RECHAZADA` (objeto `{periodo, version}`, `nuevo` `{motivos, firmados, pasos, duras, blandas}`) solo para el rechazo de `CondicionesDeExportacion`, en su propia transacción; si no se guarda, el 409 sale igual. `SinPublicacion`, un proceso caído y el contenido inconsistente no dejan entrada (aclaración del 2026-11-22).
+- **Los permisos:** `PUBLICACION:APROBACION` en las dos operaciones públicas; la ruta de Firma, solo `PROCESO`. La matriz D-16 no cambia.
+- **La pantalla:** «Exportación a SIGA» suma el aviso de la hoja de cálculo (`AVISO_DEL_CSV_SIGA`, aclaración del 2026-11-22), la suma con un botón para copiarla, la línea de `certutil` y `sha256sum`, y la tabla «Exportaciones del periodo». La validación corre solo al exportar.
+- **El glosario:** entra «Suma de verificación».
+- **La demostración:** R1, R4, R5 y R9 ampliados; R11, la tabla sin `update` ni `delete`.
+- **Error nuevo:** `REPORTING_VERSION_NO_EXPORTABLE` (409, Negocio).
+
+**Por qué.**
+- RF-53 pide comprobar «firmado, sin inconsistencias», no darlo por hecho porque llegó a PUBLICADO.
+- Firma es el dueño de la cadena, y la versión publicada vigente puede no ser la última del periodo (D-113): por eso la ruta es por versión.
+- Las inconsistencias se calculan al abrir el panel, con la oferta y las reglas del día; fijarlas al congelar es la única forma de comprobarlas sobre lo que se firmó, y cubre los ajustes del Vicerrector posteriores a la revisión (RF-35).
+- Solo se exporta lo que se pudo comprobar.
+- Un solo nombre de acción por exportación en la bitácora.
+
+**Alternativas.**
+- Dar «firmada» por hecho; usar `consultarDocumentoFirmable`, que da el documento vigente; que Firma responda un booleano.
+- Evaluar el panel al exportar; generalizar el motor para versiones que no son la vigente; guardar la lista completa; que Aprobación anote el número al pasar a revisión.
+- `Repr-Digest`; guardar el CSV; un número correlativo por periodo; pasar a POST.
+- Renombrar la acción a `EXPORTACION_SIGA_REGISTRADA`; fallar con 500 si no se guarda la entrada del rechazo.
+- Un indicador previo en la pantalla; una pantalla para subir un archivo y verificarlo (aclaraciones del 2026-11-22).
+
+**Consecuencias.**
+- Una versión congelada antes de esta decisión no se exporta; el script recrea el distributivo, y en el equipo de demostración 2026-I todavía no se congeló.
+- `datos`, `distributivo` y `salida` se despliegan de la misma versión.
+- El rechazo por firmas o inconsistencias no se puede provocar por el flujo normal: lo cubren las pruebas, no el script.
+
+**Documentos que hay que poner al día.** El glosario (`sdd/modelo_dominio.md` y su `.docx`), con «Suma de verificación».
+
+## D-121. Tomcat sube a 11.0.29 y CVE-2026-133325 espera con una excepción de Grype hasta que se publique la 11.0.30
+
+- **Estado:** Aceptada · **Fecha:** 2026-11-28 · **Decidido por:** autor de la tesis
+- **Origen:** los checks «4 · sca» y «5 · imágenes» del PR #290 (F19-H02) fallan por vulnerabilidades nuevas de Tomcat embebido, que viene del BOM de Spring Boot
+- **Sigue a:** D-54 y D-118
+
+**Decisión.**
+- `versionTomcat` pasa de 11.0.27 a 11.0.29 en `backend/gradle.properties`. Corrige CVE-2026-116561 y CVE-2026-118028 (críticas) y seis altas en `tomcat-embed-core` y `tomcat-embed-websocket`.
+- `.grype.yaml` agrega una excepción según D-54 para CVE-2026-133325 (crítica), solo en `tomcat-embed-core` 11.0.29. Rige desde el 2026-11-28 y vence el 2026-12-28.
+- Cuando la 11.0.30 esté en Maven Central, se sube `versionTomcat` y se quita la excepción.
+
+**Por qué.** Las vulnerabilidades se publicaron el 2026-11-28, después del último despliegue. La 11.0.29 es la última versión publicada en Maven Central, y la 11.0.30, que Grype da como corregida, todavía no está: es una versión corregida que todavía no se puede aplicar, el caso de D-54. Mientras tanto, «4 · sca» y «5 · imágenes» bloquean `main` y todos los PR. Las altas de OpenSSL de las imágenes Alpine (`frontend`, `caddy` y `postgres`) y las de `cloudflared` no tienen arreglo todavía y no bloquean, así que no llevan excepción.
+
+**Alternativas.**
+- Esperar la 11.0.30 sin excepción: no se fusiona nada mientras tanto.
+- Quedarse en 11.0.27: deja dos críticas y seis altas con arreglo.
+- Bajar a Tomcat 10.1: no es compatible con Spring Boot 4.1.
+
+**Consecuencias.**
+- La excepción solo cubre esa CVE en la 11.0.29. Una subida de versión la deja sin efecto.
+- Al vencer, `deploy/sca/excepciones.sh` la quita y los checks vuelven a fallar si Tomcat no cambió.
+- `datos`, `distributivo`, `identidad` y `salida` se despliegan con Tomcat 11.0.29.
 
 **Documentos que hay que poner al día.** Ninguno.

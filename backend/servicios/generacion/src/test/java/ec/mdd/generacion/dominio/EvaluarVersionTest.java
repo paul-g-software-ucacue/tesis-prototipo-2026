@@ -469,6 +469,7 @@ class EvaluarVersionTest {
 
     private static DocenteActivo docente(String identificacion, int contratadas) {
         return new DocenteActivo(
+                TipoDeIdentificacion.CEDULA,
                 identificacion,
                 "Docente " + identificacion,
                 Dedicacion.TC,

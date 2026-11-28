@@ -2,18 +2,34 @@ package ec.mdd.reporting.infraestructura;
 
 import ec.mdd.plataforma.eventos.ConsultasEntreProcesos;
 import ec.mdd.reporting.adaptadores.salida.ContenidoDesdeGeneracion;
+import ec.mdd.reporting.adaptadores.salida.ExportacionesSigaJdbc;
+import ec.mdd.reporting.adaptadores.salida.ExportadorSigaCsv;
+import ec.mdd.reporting.adaptadores.salida.FirmasDesdeFirma;
 import ec.mdd.reporting.adaptadores.salida.GeneradorDeReportePdfa;
+import ec.mdd.reporting.adaptadores.salida.LayoutsGuardadosJdbc;
+import ec.mdd.reporting.adaptadores.salida.LectorDeLayoutYaml;
 import ec.mdd.reporting.adaptadores.salida.PublicacionesDesdeAprobacion;
-import ec.mdd.reporting.adaptadores.salida.RegistroDeDescargasEventos;
+import ec.mdd.reporting.adaptadores.salida.RegistroEnBitacoraEventos;
 import ec.mdd.reporting.adaptadores.salida.TransaccionSpring;
+import ec.mdd.reporting.aplicacion.ConsultarExportacionesSigaServicio;
 import ec.mdd.reporting.aplicacion.ConsultarReportesServicio;
 import ec.mdd.reporting.aplicacion.DescargarReporteServicio;
+import ec.mdd.reporting.aplicacion.GenerarCsvSigaServicio;
+import ec.mdd.reporting.aplicacion.GestionarLayoutSigaServicio;
+import ec.mdd.reporting.puertos.entrada.ConsultarExportacionesSiga;
 import ec.mdd.reporting.puertos.entrada.ConsultarReportes;
 import ec.mdd.reporting.puertos.entrada.DescargarReporte;
+import ec.mdd.reporting.puertos.entrada.GenerarCsvSiga;
+import ec.mdd.reporting.puertos.entrada.GestionarLayoutSiga;
 import ec.mdd.reporting.puertos.salida.ContenidoDeLaVersion;
+import ec.mdd.reporting.puertos.salida.ExportacionesSiga;
+import ec.mdd.reporting.puertos.salida.ExportadorSiga;
+import ec.mdd.reporting.puertos.salida.FirmasDeLasVersiones;
 import ec.mdd.reporting.puertos.salida.GeneradorDePdf;
+import ec.mdd.reporting.puertos.salida.LayoutsGuardados;
+import ec.mdd.reporting.puertos.salida.LectorDeLayout;
 import ec.mdd.reporting.puertos.salida.PublicacionesDelDistributivo;
-import ec.mdd.reporting.puertos.salida.RegistroDeDescargas;
+import ec.mdd.reporting.puertos.salida.RegistroEnBitacora;
 import ec.mdd.reporting.puertos.salida.Transaccion;
 import java.net.URI;
 import java.time.Clock;
@@ -21,6 +37,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.transaction.support.TransactionOperations;
 
 /** Ensambla Reporting en el proceso salida (F20-H01, D-115, ADR-006). */
@@ -43,6 +60,14 @@ public class ConfiguracionReporting {
         return new ContenidoDesdeGeneracion(consultas, distributivo);
     }
 
+    /** La cadena de firmas de una versión, de Firma (F19-H02, D-120). */
+    @Bean
+    public FirmasDeLasVersiones firmasDeLasVersiones(
+            ConsultasEntreProcesos consultas,
+            @Value("${mdd.procesos.distributivo}") URI distributivo) {
+        return new FirmasDesdeFirma(consultas, distributivo);
+    }
+
     /** Los reportes de la versión publicada vigente (RF-45). */
     @Bean
     public ConsultarReportes consultarReportes(
@@ -58,11 +83,77 @@ public class ConfiguracionReporting {
 
     /** La bitácora de las descargas, por el registro de publicaciones de salida (ADR-018). */
     @Bean
-    public RegistroDeDescargas registroDeDescargas(ApplicationEventPublisher eventos) {
-        return new RegistroDeDescargasEventos(eventos, Clock.systemUTC());
+    public RegistroEnBitacora registroEnBitacora(ApplicationEventPublisher eventos) {
+        return new RegistroEnBitacoraEventos(eventos, Clock.systemUTC());
     }
 
-    /** La transacción del registro de una descarga. */
+    /** Las versiones del layout de exportación y la plantilla (F19-H01, D-119). */
+    @Bean
+    public LayoutsGuardados layoutsGuardados(JdbcClient jdbc) {
+        return new LayoutsGuardadosJdbc(jdbc);
+    }
+
+    /** Las exportaciones a SIGA de un periodo, para la pantalla (F19-H02, FR-018). */
+    @Bean
+    public ConsultarExportacionesSiga consultarExportacionesSiga(ExportacionesSiga exportaciones) {
+        return new ConsultarExportacionesSigaServicio(exportaciones);
+    }
+
+    /** Las exportaciones a SIGA registradas (F19-H02, D-120). */
+    @Bean
+    public ExportacionesSiga exportacionesSiga(JdbcClient jdbc) {
+        return new ExportacionesSigaJdbc(jdbc);
+    }
+
+    /** El lector del archivo de mapeo, sin anclas, alias ni etiquetas (D-119). */
+    @Bean
+    public LectorDeLayout lectorDeLayout() {
+        return new LectorDeLayoutYaml();
+    }
+
+    /** El puerto «Exportación a SIGA»: el CSV con el layout de exportación (D-119). */
+    @Bean
+    public ExportadorSiga exportadorSiga() {
+        return new ExportadorSigaCsv();
+    }
+
+    /** El CSV para SIGA de la versión publicada vigente, registrado antes de entregarse (RF-52). */
+    @Bean
+    public GenerarCsvSiga generarCsvSiga(
+            PublicacionesDelDistributivo publicaciones,
+            ContenidoDeLaVersion contenido,
+            FirmasDeLasVersiones firmas,
+            LayoutsGuardados guardados,
+            LectorDeLayout lector,
+            ExportadorSiga exportador,
+            ExportacionesSiga exportaciones,
+            RegistroEnBitacora registro,
+            Transaccion transaccion) {
+        return GenerarCsvSigaServicio.de(
+                publicaciones,
+                contenido,
+                firmas,
+                guardados,
+                lector,
+                exportador,
+                exportaciones,
+                registro,
+                transaccion,
+                Clock.systemUTC());
+    }
+
+    /** El layout de exportación: consultarlo, su plantilla y cargar uno nuevo (D-119). */
+    @Bean
+    public GestionarLayoutSiga gestionarLayoutSiga(
+            LayoutsGuardados guardados,
+            LectorDeLayout lector,
+            RegistroEnBitacora registro,
+            Transaccion transaccion) {
+        return GestionarLayoutSigaServicio.de(
+                guardados, lector, registro, transaccion, Clock.systemUTC());
+    }
+
+    /** La transacción del registro de una descarga, de un CSV para SIGA o de un layout. */
     @Bean
     public Transaccion transaccionReporting(TransactionOperations transactionTemplate) {
         return new TransaccionSpring(transactionTemplate);
@@ -73,7 +164,7 @@ public class ConfiguracionReporting {
     public DescargarReporte descargarReporte(
             ConsultarReportes consultar,
             GeneradorDePdf pdf,
-            RegistroDeDescargas registro,
+            RegistroEnBitacora registro,
             Transaccion transaccion) {
         return new DescargarReporteServicio(
                 consultar, pdf, registro, transaccion, Clock.systemUTC());

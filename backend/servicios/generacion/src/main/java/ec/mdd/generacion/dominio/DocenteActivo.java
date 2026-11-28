@@ -6,6 +6,7 @@ import java.util.Objects;
  * Lo que Generación sabe de un docente activo para sugerirlo. Es un tipo propio de este contexto,
  * no el de Docentes (principio V).
  *
+ * @param tipoIdentificacion cédula o pasaporte (F19-H01, D-119)
  * @param identificacion su número de identificación
  * @param nombre sus apellidos y nombres
  * @param dedicacion su dedicación
@@ -13,6 +14,7 @@ import java.util.Objects;
  * @param formacion lo que suma a la afinidad
  */
 public record DocenteActivo(
+        TipoDeIdentificacion tipoIdentificacion,
         String identificacion,
         String nombre,
         Dedicacion dedicacion,
@@ -21,6 +23,7 @@ public record DocenteActivo(
 
     /** Exige los datos. */
     public DocenteActivo {
+        Objects.requireNonNull(tipoIdentificacion, "tipoIdentificacion");
         Objects.requireNonNull(identificacion, "identificacion");
         Objects.requireNonNull(nombre, "nombre");
         Objects.requireNonNull(dedicacion, "dedicacion");

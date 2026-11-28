@@ -1078,6 +1078,54 @@ paths:
                 $ref: '../comun/errores.yaml#/components/schemas/Error'
         '500':
           $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
+  /interno/generacion/periodos/{periodo}/versiones/{numero}/contenido:
+    parameters:
+      - name: periodo
+        in: path
+        required: true
+        description: Código del periodo académico, el que usa Académico.
+        schema:
+          type: string
+          pattern: '^[A-Za-z0-9._-]{1,20}$'
+        example: 2026-I
+      - name: numero
+        in: path
+        required: true
+        description: El número de la versión.
+        schema:
+          type: integer
+          minimum: 1
+    get:
+      tags: [Interno]
+      operationId: consultarContenidoCongelado
+      summary: Devuelve el contenido congelado completo de todos los docentes de una versión.
+      description: >-
+        Solo entre procesos, con el token de proceso: lo usa Reporting para el CSV para SIGA
+        (F19-H01, D-119). El contenido completo de cada docente de una versión congelada, con el
+        mismo cálculo tardío de las otras dos rutas. Las inconsistencias abiertas se fijan al guardar el
+        contenido, no se recalculan (F19-H02, D-120).
+      responses:
+        '200':
+          description: El hash de la versión y la carga congelada de cada docente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContenidoCongeladoCompleto'
+        '400':
+          $ref: '../comun/errores.yaml#/components/responses/SolicitudInvalida'
+        '401':
+          $ref: '../comun/seguridad.yaml#/components/responses/NoAutenticado'
+        '403':
+          $ref: '../comun/seguridad.yaml#/components/responses/AccesoNoAutorizado'
+        '404':
+          description: >-
+            La versión no existe o no está congelada (COMUN_RECURSO_NO_ENCONTRADO).
+          content:
+            application/json:
+              schema:
+                $ref: '../comun/errores.yaml#/components/schemas/Error'
+        '500':
+          $ref: '../comun/errores.yaml#/components/responses/ErrorInterno'
   /interno/generacion/periodos/{periodo}/versiones/{numero}/cargas/{identificacion}:
     parameters:
       - name: periodo
@@ -1167,6 +1215,40 @@ components:
             - $ref: '#/components/schemas/Dedicacion'
         horas:
           $ref: '#/components/schemas/HorasPorComponente'
+    ContenidoCongeladoCompleto:
+      description: El hash de una versión congelada y la carga de cada docente (F19-H01, D-119).
+      type: object
+      additionalProperties: false
+      required: [hash, cargas]
+      properties:
+        hash:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+        cargas:
+          description: Una por docente, por nombre y luego por identificación.
+          type: array
+          items:
+            $ref: '#/components/schemas/CargaCongeladaDelDocente'
+        inconsistenciasAbiertas:
+          $ref: '#/components/schemas/InconsistenciasAlCongelar'
+    InconsistenciasAlCongelar:
+      description: >-
+        Las duras y las blandas sin justificar de la versión cuando se guardó su contenido
+        (F19-H02, D-120). Falta si se guardó antes de F19-H02, o tarde, cuando la versión ya no era
+        la vigente.
+      type: object
+      additionalProperties: false
+      required: [duras, blandas]
+      properties:
+        duras:
+          type: integer
+          minimum: 0
+        blandas:
+          type: integer
+          minimum: 0
+    TipoDeIdentificacion:
+      type: string
+      enum: [CEDULA, PASAPORTE]
     CargaCongeladaDelDocente:
       description: El contenido congelado de un docente (F20-H01, D-115).
       type: object
@@ -1199,6 +1281,12 @@ components:
           type: string
         nombre:
           type: string
+        tipoIdentificacion:
+          description: >-
+            Falta si el docente ya no estaba activo al congelar, o si el contenido se guardó
+            antes de F19-H01 (D-119).
+          allOf:
+            - $ref: '#/components/schemas/TipoDeIdentificacion'
         dedicacion:
           description: Ausente si el docente ya no estaba activo al congelar.
           allOf:
