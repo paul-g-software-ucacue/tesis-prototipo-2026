@@ -10,7 +10,7 @@
 #    desde: 2026-10-15
 #    vence: 2026-11-14
 # Desde 2026-11-01 sin excepciones (D-80, D-81); desde 2026-11-08, las de zlib1g de cloudflared (D-96);
-# desde 2026-11-22, las de libc6 de cloudflared (D-118).
+# desde 2026-11-22, las de libc6 de cloudflared (D-118); desde 2026-11-28, la de Tomcat 11.0.29 (D-121).
 ignore:
   # cloudflared: zlib1g de Debian
   - vulnerability: CVE-2026-76844
@@ -34,3 +34,9 @@ ignore:
     reason: "La imagen oficial de cloudflared 2026.10.7 trae libc6 2.41-12+deb13u4 de Debian, y la 2026.11.1, la última publicada, también; el arreglo (deb13u5) exige que Cloudflare la reconstruya. cloudflared es un binario de Go enlazado estáticamente, sin intérprete dinámico ni bibliotecas compartidas, que no carga la libc del sistema, y el túnel sigue apagado (D-81)."
     desde: 2026-11-22
     vence: 2026-12-22
+  # Tomcat embebido de los cuatro procesos Java (D-121)
+  - vulnerability: CVE-2026-133325
+    package: { name: tomcat-embed-core, version: "11.0.29", type: java-archive }
+    reason: "Tomcat 11.0.29 es la última publicada en Maven Central el 2026-11-28; la 11.0.30, que corrige esta crítica, todavía no está. Se sube versionTomcat en backend/gradle.properties apenas salga, y se quita esta excepción."
+    desde: 2026-11-28
+    vence: 2026-12-28
